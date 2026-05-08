@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flooring Installation NYC | Sani Building Corp Brooklyn</title>
+<meta name="description" content="Expert flooring installation in NYC. Serving Brooklyn, Manhattan, Queens, Bronx &amp; Long Island. Free estimate — call 332-277-0990.">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--gold:#c8860a;--gold-light:#f0a500;--black:#0e0e0e;--dark:#1a1a1a;--gray:#6b6b6b;--light:#f5f4f2;--white:#fff;--border:#e8e4de}
+html{scroll-behavior:smooth}
+body{font-family:"DM Sans",sans-serif;color:var(--black);background:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.nav-logo{display:flex;flex-direction:column;text-decoration:none}
+.nav-logo .brand{font-family:"Playfair Display",serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
+.nav-logo .brand span{color:var(--gold-light)}
+.nav-logo .sub{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:1px}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-links>a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
+.nav-links>a:hover{color:var(--gold-light)}
+.nav-dropdown{position:relative}
+.nav-dropdown>a{display:flex;align-items:center;gap:6px;cursor:pointer;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
+.nav-dropdown>a:hover{color:var(--gold-light)}
+.nav-dropdown>a::after{display:none}
+
+.dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:220px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
+.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.dropdown-menu a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
+.dropdown-menu a:last-child{border-bottom:none}
+.dropdown-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
+.nav-cta{background:var(--gold)!important;color:#fff!important;padding:9px 20px!important;font-size:12px!important;font-weight:500!important;letter-spacing:1.5px!important;text-transform:uppercase!important}
+.nav-cta:hover{background:#a06c08!important}
+.nav-phone{color:var(--gold-light)!important;font-weight:500!important}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{display:block;width:22px;height:2px;background:#fff}
+.mobile-menu{display:none;position:fixed;top:68px;left:0;width:100%;background:rgba(10,10,10,0.98);padding:24px 28px 32px;z-index:999;border-top:1px solid rgba(240,165,0,0.1)}
+.mobile-menu a{display:block;color:rgba(255,255,255,0.8);text-decoration:none;font-size:15px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+.mobile-menu a.mobile-cta{border-bottom:none;margin-top:10px;background:var(--gold);color:#fff;text-align:center;padding:14px;font-weight:500;letter-spacing:1px;text-transform:uppercase;font-size:13px}
+.mobile-menu.open{display:block}
+.mobile-sub{padding-left:16px!important;font-size:13px!important;color:rgba(255,255,255,0.55)!important}
+.btn-primary{background:var(--gold);color:#000;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:15px 32px;text-decoration:none;transition:background .2s,transform .15s;display:inline-block}
+.btn-primary:hover{background:#a06c08;transform:translateY(-2px)}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:500;text-decoration:none;border:1px solid rgba(255,255,255,.28);padding:14px 24px;transition:border-color .2s,color .2s}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold-light)}
+.section-eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.section-eyebrow .line{width:28px;height:2px;background:var(--gold);flex-shrink:0}
+.section-eyebrow span{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:500}
+.page-hero{min-height:60vh;display:flex;align-items:flex-end;background:#0a0a12;position:relative;overflow:hidden;padding-top:68px}
+.page-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.2}
+.page-hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:44px 44px}
+.page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
+.page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 28px 56px;width:100%}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:20px;text-transform:uppercase}
+.breadcrumb a{color:var(--gold-light);text-decoration:none}
+.page-hero h1{font-family:"Playfair Display",serif;font-size:clamp(32px,5vw,60px);font-weight:700;color:#fff;line-height:1.05;margin-bottom:16px}
+.page-hero h1 em{font-style:italic;color:var(--gold-light)}
+.page-hero p{font-size:16px;color:rgba(255,255,255,.6);max-width:560px;line-height:1.7;margin-bottom:28px}
+.sidebar-box{background:var(--dark);padding:32px;margin-bottom:16px}
+.sidebar-box h4{font-family:"Playfair Display",serif;font-size:18px;font-weight:700;color:#fff;margin-bottom:16px}
+.sidebar-box a{display:block;color:rgba(255,255,255,.6);text-decoration:none;font-size:14px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);transition:color .2s}
+.sidebar-box a:last-child{border-bottom:none}
+.sidebar-box a:hover{color:var(--gold-light)}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);border:2px solid var(--border);margin:40px 0}
+.check-item{background:#fff;padding:24px;border-left:3px solid transparent;transition:border-color .2s,background .2s}
+.check-item:hover{border-left-color:var(--gold);background:#faf9f7}
+.check-item strong{display:block;font-size:14px;font-weight:600;color:var(--black);margin-bottom:6px}
+.check-item span{font-size:13px;color:var(--gray);line-height:1.55}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);border:2px solid var(--border);margin:40px 0}
+.process-step{background:#fff;padding:32px 24px;text-align:center}
+.step-num{font-family:"Playfair Display",serif;font-size:48px;font-weight:700;color:var(--gold);opacity:.25;line-height:1;margin-bottom:12px}
+.step-title{font-family:"Playfair Display",serif;font-size:16px;font-weight:600;margin-bottom:8px}
+.step-desc{font-size:13px;color:var(--gray);line-height:1.6}
+footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,165,0,.12)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
+.footer-brand .brand{font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
+.footer-brand .brand span{color:var(--gold-light)}
+.footer-brand .tagline{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;margin-bottom:16px}
+.footer-brand p{font-size:13px;color:rgba(255,255,255,.45);line-height:1.7;max-width:260px}
+.footer-col h4{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:16px}
+.footer-col a{display:block;font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;margin-bottom:9px;transition:color .2s}
+.footer-col a:hover{color:var(--gold-light)}
+.footer-col p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.7;margin-bottom:8px}
+.footer-col p a{display:inline;margin-bottom:0}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p{font-size:12px;color:rgba(255,255,255,.25)}
+@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.check-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.nav-links{display:none}.hamburger{display:flex}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.process-steps{grid-template-columns:1fr}}
+
+/* ── GLOBAL MOBILE FIXES ── */
+@media(max-width:768px){
+  .contact-grid{grid-template-columns:1fr!important;gap:32px!important}
+  .form-row-2{grid-template-columns:1fr!important}
+  .contact-sidebar{position:static!important}
+  section[style*="grid-template-columns:1fr 1fr"]{display:block!important}
+  section[style*="grid-template-columns:1fr 420px"]{display:block!important}
+  div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:1fr 420px"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:2fr 1fr"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:300px 1fr"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:1fr 300px"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:repeat(2"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:repeat(3"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:repeat(4"]{grid-template-columns:1fr 1fr!important}
+  div[style*="position:sticky"]{position:static!important}
+  .page-hero-content{padding:40px 20px 44px!important}
+  .page-hero h1{font-size:32px!important}
+  div[style*="gap:64px"]{gap:24px!important}
+  div[style*="gap:48px"]{gap:20px!important}
+  div[style*="padding:80px 28px"]{padding:48px 20px!important}
+  div[style*="padding:88px 28px"]{padding:48px 20px!important}
+  section[style*="padding:80px 28px"]{padding:48px 20px!important}
+  section[style*="padding:88px 28px"]{padding:48px 20px!important}
+  .check-grid{grid-template-columns:1fr!important}
+  .process-steps{grid-template-columns:1fr!important}
+  .sidebar-box{position:static!important}
+  div[style*="grid-template-columns:1fr 300px"]{display:flex!important;flex-direction:column!important}
+  div[style*="min-height:220px"]{min-height:200px!important}
+}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="brand">SANI <span>BUILDING</span> CORP</div>
+      <div class="sub">NYC Renovation &amp; Repair</div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <div class="nav-dropdown">
+        <a href="services.html">Services ▾</a>
+        <div class="dropdown-menu">
+          <a href="bathroom-renovation.html">&#x1F6C1; Bathroom Renovation</a>
+          <a href="kitchen-renovation.html">&#x1F373; Kitchen Renovation</a>
+          <a href="painting.html">&#x1F3A8; Painting Services</a>
+          <a href="flooring.html">&#x1FAB5; Flooring Installation</a>
+          <a href="carpentry.html">&#x1F528; Carpentry &amp; Millwork</a>
+          <a href="water-damage.html">&#x1F4A7; Water Damage Restoration</a>
+          <a href="services.html">&rarr; View All Services</a>
+        </div>
+      </div>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="tel:3322770990" class="nav-phone">332-277-0990</a>
+      <a href="estimate.html" style="color:var(--gold-light);font-weight:500;">⚡ AI Estimate</a>
+      <a href="contact.html" class="nav-cta">Free Estimate</a>
+    </div>
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.html" onclick="toggleMenu()">Home</a>
+  <a href="services.html" onclick="toggleMenu()">All Services</a>
+  <a href="bathroom-renovation.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Bathroom Renovation</a>
+  <a href="kitchen-renovation.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Kitchen Renovation</a>
+  <a href="painting.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Painting Services</a>
+  <a href="flooring.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Flooring</a>
+  <a href="carpentry.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Carpentry</a>
+  <a href="water-damage.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Water Damage</a>
+  <a href="estimate.html" onclick="toggleMenu()" style="color:var(--gold-light);">⚡ AI Estimate</a>
+  <a href="about.html" onclick="toggleMenu()">About Us</a>
+  <a href="contact.html" onclick="toggleMenu()">Contact</a>
+  <a href="tel:3322770990" onclick="toggleMenu()">&#x1F4DE; 332-277-0990</a>
+  <a href="contact.html" class="mobile-cta" onclick="toggleMenu()">Get Free Estimate</a>
+</div>
+
+<section class="page-hero">
+  <div class="page-hero-bg" style="background-image:url('https://images.unsplash.com/photo-1600585152220-90363fe7e115?w=1600&q=80')"></div>
+  <div class="page-hero-grid"></div>
+  <div class="page-hero-accent"></div>
+  <div class="page-hero-content">
+    <div class="breadcrumb"><a href="index.html">Home</a> <span>&rsaquo;</span> <a href="services.html">Services ▾</a> <span>&rsaquo;</span> <span>Flooring Installation</span></div>
+    <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:12px">Service 04</div>
+    <h1>Flooring Installation <em>NYC</em></h1>
+    <p style="max-width:600px">Beautiful, durable flooring for any space. We work with all materials to match your style and budget across all NYC boroughs.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a href="contact.html" class="btn-primary">Get Free Estimate</a>
+      <a href="tel:3322770990" class="btn-secondary">&#x1F4DE; 332-277-0990</a>
+    </div>
+  </div>
+</section>
+
+<section style="padding:80px 28px;background:#fff">
+  <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 300px;gap:48px;align-items:start">
+    <div>
+      <div class="section-eyebrow"><div class="line"></div><span>What&apos;s Included</span></div>
+      <div style="font-family:'Playfair Display',serif;font-size:clamp(24px,3vw,36px);font-weight:700;margin-bottom:16px">Everything You Need for Your <em style="font-style:italic;color:var(--gold)">Flooring Installation</em></div>
+      <p style="font-size:15px;color:var(--gray);line-height:1.8;margin-bottom:8px">Sani Building Corp handles every aspect of your flooring installation project from start to finish. We serve all 5 NYC boroughs with same-day response and honest pricing.</p>
+      <div class="check-grid">
+    <div class="check-item">
+      <strong>&#10003; Hardwood Flooring</strong>
+      <span>Solid and engineered hardwood installation and refinishing.</span>
+    </div>
+    <div class="check-item">
+      <strong>&#10003; Tile Installation</strong>
+      <span>Ceramic, porcelain, and natural stone tile for any room.</span>
+    </div>
+    <div class="check-item">
+      <strong>&#10003; Luxury Vinyl Plank</strong>
+      <span>Waterproof LVP flooring perfect for kitchens and bathrooms.</span>
+    </div>
+    <div class="check-item">
+      <strong>&#10003; Carpet Installation</strong>
+      <span>Plush and commercial carpet installation for any space.</span>
+    </div>
+    <div class="check-item">
+      <strong>&#10003; Subfloor Repair</strong>
+      <span>Subfloor leveling, repair, and preparation for new flooring.</span>
+    </div>
+    <div class="check-item">
+      <strong>&#10003; Floor Refinishing</strong>
+      <span>Sand, stain, and refinish existing hardwood floors to like-new.</span>
+    </div>
+    <div class="check-item">
+      <strong>&#10003; Transition Strips</strong>
+      <span>Professional transition strip installation between flooring types.</span>
+    </div>
+    <div class="check-item">
+      <strong>&#10003; Removal & Disposal</strong>
+      <span>Old flooring removal and eco-friendly disposal included.</span>
+    </div></div>
+
+      <div class="section-eyebrow" style="margin-top:48px"><div class="line"></div><span>How It Works</span></div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:8px">Our Simple <em style="font-style:italic;color:var(--gold)">4-Step Process</em></div>
+      <div class="process-steps">
+        <div class="process-step"><div class="step-num">01</div><div class="step-title">Free Estimate</div><div class="step-desc">We visit your property and give you a clear, no-obligation quote.</div></div>
+        <div class="process-step"><div class="step-num">02</div><div class="step-title">Design & Plan</div><div class="step-desc">We help you choose materials and finishes that fit your style.</div></div>
+        <div class="process-step"><div class="step-num">03</div><div class="step-title">We Build It</div><div class="step-desc">Our skilled crew handles everything from start to finish.</div></div>
+        <div class="process-step"><div class="step-num">04</div><div class="step-title">Final Walkthrough</div><div class="step-desc">You inspect every detail. We don&apos;t leave until you&apos;re satisfied.</div></div>
+      </div>
+
+      <div style="background:var(--light);border-left:4px solid var(--gold);padding:28px 28px;margin-top:40px">
+        <div style="font-size:16px;color:var(--gold-light);margin-bottom:8px">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p style="font-style:italic;color:var(--gray);font-size:14px;line-height:1.75;margin-bottom:12px">"Outstanding job on my renovation. Great communication, fair pricing, and excellent craftsmanship. The crew was respectful and extremely skilled."</p>
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--black)">Verified Google Review</div>
+      </div>
+    </div>
+
+    <div style="position:sticky;top:90px">
+      <div style="background:var(--dark);padding:32px;margin-bottom:16px">
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;margin-bottom:8px">Get a Free Estimate</div>
+        <p style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:20px">Tell us about your project and we&apos;ll get back to you within hours.</p>
+        <a href="contact.html" style="display:block;background:var(--gold);color:#000;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:14px 20px;text-decoration:none;text-align:center;margin-bottom:12px;transition:background .2s">Request Estimate</a>
+        <a href="tel:3322770990" style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--gold-light);font-size:15px;font-weight:500;text-decoration:none;padding:12px;border:1px solid rgba(240,165,0,.25)">&#x1F4DE; 332-277-0990</a>
+      </div>
+      <div class="sidebar-box">
+        <h4>Other Services</h4>
+        <a href="bathroom-renovation.html">Bathroom Renovation</a><a href="kitchen-renovation.html">Kitchen Renovation</a><a href="painting.html">Painting Services</a><a href="carpentry.html">Carpentry & Millwork</a><a href="water-damage.html">Water Damage Restoration</a>
+        <a href="services.html" style="color:var(--gold-light)!important;font-weight:500">View All Services &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--dark);padding:60px 28px;text-align:center">
+  <div style="max-width:700px;margin:0 auto">
+    <div style="font-family:'Playfair Display',serif;font-size:clamp(24px,3.5vw,38px);font-weight:700;color:#fff;margin-bottom:14px">Ready to Transform<br><em style="font-style:italic;color:var(--gold-light)">Your Space?</em></div>
+    <p style="font-size:15px;color:rgba(255,255,255,.6);margin-bottom:28px">Get a free estimate from Brooklyn&apos;s most trusted renovation contractor.</p>
+    <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap">
+      <a href="contact.html" class="btn-primary">Get Free Estimate</a>
+      <a href="tel:3322770990" class="btn-secondary">&#x1F4DE; 332-277-0990</a>
+    </div>
+  </div>
+</section>
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand">SANI <span>BUILDING</span> CORP</div>
+        <div class="tagline">NYC Renovation &amp; Repair Contractor</div>
+        <p>Professional renovation contractor serving Manhattan, Brooklyn, Queens, Bronx, Staten Island &amp; Long Island since 2015.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Services</h4>
+        <a href="bathroom-renovation.html">Bathroom Renovation</a>
+        <a href="kitchen-renovation.html">Kitchen Renovation</a>
+        <a href="painting.html">Painting Services</a>
+        <a href="flooring.html">Flooring</a>
+        <a href="carpentry.html">Carpentry</a>
+        <a href="water-damage.html">Water Damage</a>
+        <a href="handyman.html">Handyman Services</a>
+        <a href="bathroom-floor-tile-installation.html">Bathroom Floor Tile</a>
+        <a href="estimate.html">&#9889; AI Estimate</a>
+        <a href="services.html">All Services</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="index.html">Home</a>
+        <a href="about.html">About Us</a>
+        <a href="services.html">Services ▾</a>
+        <a href="contact.html">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <p><a href="tel:3322770990">&#x1F4DE; 332-277-0990</a></p>
+        <p><a href="mailto:sanibuildingcorp@gmail.com">&#x2709; sanibuildingcorp@gmail.com</a></p>
+        <p style="margin-top:8px;color:rgba(255,255,255,.4)">2954 Brighton 12th St<br>Brooklyn, NY 11235</p>
+        <p style="margin-top:8px;color:rgba(255,255,255,.3)">Mon&ndash;Sat: 8:00 AM &ndash; 9:00 PM</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Sani Building Corp. All Rights Reserved.</p>
+      <p>Brooklyn &bull; Manhattan &bull; Queens &bull; Bronx &bull; Staten Island &bull; Long Island</p>
+    </div>
+  </div>
+</footer>
+<script>
+function toggleMenu(){document.getElementById("mobileMenu").classList.toggle("open");}
+document.addEventListener("click",function(e){var menu=document.getElementById("mobileMenu");var ham=document.getElementById("hamburger");if(menu&&ham&&!menu.contains(e.target)&&!ham.contains(e.target)){menu.classList.remove("open");}});
+</script>
+</body>
+</html>

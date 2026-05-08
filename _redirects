@@ -1,0 +1,2 @@
+# Clean URLs (optional — Netlify handles .html pretty URLs by default)
+/estimate-html  /estimate  301
