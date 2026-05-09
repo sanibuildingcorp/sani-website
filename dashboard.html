@@ -153,6 +153,17 @@ body{font-family:'DM Sans',sans-serif;background:#f0ede6;color:var(--dark);min-h
 
 @media(max-width:768px){.sidebar{transform:translateX(-100%)}.app{margin-left:0}.stats-grid{grid-template-columns:1fr 1fr}.render-grid{grid-template-columns:1fr}}
 </style>
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.sanibuildingcorp.com/dashboard">
+<meta property="og:title" content="Admin Dashboard | Sani Building Corp">
+<meta property="og:description" content="Sani Building Corp internal admin dashboard.">
+<meta property="og:image" content="https://raw.githubusercontent.com/sanibuildingcorp/sani-website/main/images/og/home.png">
+<meta property="og:site_name" content="Sani Building Corp">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Admin Dashboard | Sani Building Corp">
+<meta name="twitter:description" content="Sani Building Corp internal admin dashboard.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/sanibuildingcorp/sani-website/main/images/og/home.png">
 </head>
 <body>
 
@@ -696,7 +707,7 @@ async function generateScope() {
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:1000,
-        messages:[{role:'user',content:`You are Sani Building Corp, a licensed NYC contractor. Write a professional scope of work for this customer estimate.
+        messages:[{role:'user',content:`You are Sani Building Corp, a professional NYC contractor. Write a professional scope of work for this customer estimate.
 
 Customer: ${currentSub.name}
 Project: ${currentSub.service}
@@ -710,7 +721,7 @@ Total estimate: ${fmt(c.total)}
 Line items:
 ${lines}
 
-Write 3–4 professional paragraphs as the contractor. Be specific, confident, and reassuring. Mention NYC standards, licensed work, permits where applicable, cleanup, and your warranty. No bullet points — flowing prose only.`}]
+Write 3–4 professional paragraphs as the contractor. Be specific, confident, and reassuring. Mention NYC standards, professional work, permits where applicable, cleanup, and your warranty. No bullet points — flowing prose only.`}]
       })
     });
     const data = await res.json();
