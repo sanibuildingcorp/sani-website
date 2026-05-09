@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Project Proposal | Sani Building Corp</title>
+<meta name="description" content="Review and sign your renovation proposal from Sani Building Corp.">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,900;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#c8860a;--gold-light:#f0a500;--black:#0e0e0e;--dark:#1a1a1a;
+  --gray:#6b6b6b;--light:#f5f4f2;--white:#fff;--border:#e8e4de;
+  --green:#16a34a;--red:#dc2626;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--light);-webkit-font-smoothing:antialiased}
+
+/* HEADER */
+.proposal-header{background:var(--dark);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold)}
+.header-brand{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
+.header-brand span{color:var(--gold-light)}
+.header-ref{font-size:12px;color:rgba(255,255,255,.4);letter-spacing:1px}
+
+/* STATUS BAR */
+.status-bar{background:var(--gold);padding:12px 28px;text-align:center}
+.status-bar p{font-size:13px;font-weight:600;color:#fff;letter-spacing:.5px}
+
+/* MAIN */
+.proposal-wrap{max-width:860px;margin:0 auto;padding:40px 20px 80px}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:32px;margin-bottom:24px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.card-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--black);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.card-title span{font-size:11px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--gold);background:rgba(200,134,10,.08);border:1px solid rgba(200,134,10,.2);padding:4px 10px;border-radius:4px}
+
+/* CLIENT INFO */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.info-item label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gray);display:block;margin-bottom:4px}
+.info-item p{font-size:15px;font-weight:500;color:var(--black)}
+
+/* SCOPE */
+.scope-text{font-size:14px;color:var(--gray);line-height:1.8;white-space:pre-wrap}
+
+/* LINE ITEMS */
+.line-items{width:100%;border-collapse:collapse}
+.line-items th{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gray);padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)}
+.line-items td{padding:12px;font-size:14px;color:var(--black);border-bottom:1px solid var(--border)}
+.line-items tr:last-child td{border-bottom:none}
+.line-items .amount{text-align:right;font-weight:500}
+.line-items .category{font-size:11px;color:var(--gray);margin-top:2px}
+.totals-section{margin-top:20px;border-top:2px solid var(--border);padding-top:16px}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+.total-row.main{border-top:2px solid var(--border);margin-top:8px;padding-top:12px}
+.total-row label{font-size:13px;color:var(--gray)}
+.total-row.main label{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--black)}
+.total-row .val{font-size:14px;font-weight:600;color:var(--black)}
+.total-row.main .val{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--gold)}
+
+/* PAYMENT */
+.payment-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.pay-box{border:2px solid var(--border);border-radius:12px;padding:20px;text-align:center;transition:all .2s}
+.pay-box.deposit{border-color:var(--gold);background:rgba(200,134,10,.04)}
+.pay-box-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:6px}
+.pay-box-amount{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px}
+.pay-box-desc{font-size:12px;color:var(--gray)}
+.pay-box.remaining .pay-box-amount{color:var(--black)}
+
+/* PAYMENT METHODS */
+.payment-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.pay-method{border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .2s}
+.pay-method:hover,.pay-method.selected{border-color:var(--gold);background:rgba(200,134,10,.04)}
+.pay-method-icon{font-size:22px;margin-bottom:4px}
+.pay-method-label{font-size:11px;font-weight:600;color:var(--black);letter-spacing:.5px}
+
+/* STRIPE FORM */
+.stripe-form{background:var(--light);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:16px}
+.stripe-form h4{font-size:13px;font-weight:600;color:var(--black);margin-bottom:16px;letter-spacing:.5px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gray);display:block;margin-bottom:6px}
+.form-group input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--black);background:#fff;transition:border-color .2s}
+.form-group input:focus{outline:none;border-color:var(--gold)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card-icons{display:flex;gap:6px;margin-bottom:14px}
+.card-icon{background:#f0f0f0;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:600;color:#555;letter-spacing:.5px}
+.secure-note{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--gray);margin-top:12px}
+
+/* SIGNATURE */
+.sig-area{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;margin-bottom:16px;cursor:crosshair;position:relative;background:#fafafa}
+.sig-canvas{width:100%;height:160px;display:block;touch-action:none}
+.sig-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:.5}
+.sig-placeholder p{font-size:13px;color:var(--gray)}
+.sig-controls{display:flex;gap:10px;justify-content:flex-end;margin-bottom:16px}
+.btn-clear{background:none;border:1.5px solid var(--border);color:var(--gray);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;border-radius:6px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-clear:hover{border-color:var(--red);color:var(--red)}
+
+/* TERMS */
+.terms-box{background:var(--light);border:1px solid var(--border);border-radius:10px;padding:20px;max-height:200px;overflow-y:auto;font-size:13px;color:var(--gray);line-height:1.7;margin-bottom:16px}
+.terms-box h4{font-size:13px;font-weight:700;color:var(--black);margin-bottom:8px}
+.terms-box p{margin-bottom:10px}
+.checkbox-row{display:flex;align-items:flex-start;gap:12px;padding:14px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s}
+.checkbox-row:hover{border-color:var(--gold);background:rgba(200,134,10,.03)}
+.checkbox-row input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:2px;accent-color:var(--gold);cursor:pointer}
+.checkbox-row label{font-size:13px;color:var(--black);cursor:pointer;line-height:1.5}
+.checkbox-row label strong{color:var(--gold)}
+
+/* BUTTONS */
+.btn-sign{width:100%;background:var(--gold);color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:18px;border:none;border-radius:10px;cursor:pointer;transition:all .25s;margin-top:20px;box-shadow:0 8px 24px rgba(200,134,10,.3)}
+.btn-sign:hover{background:#a06c08;transform:translateY(-2px)}
+.btn-sign:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-other{width:100%;background:var(--dark);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:15px;border:none;border-radius:10px;cursor:pointer;transition:all .25s;margin-top:10px}
+.btn-other:hover{background:#000}
+
+/* SUCCESS */
+.success-screen{display:none;text-align:center;padding:60px 20px}
+.success-icon{width:80px;height:80px;border-radius:50%;background:rgba(22,163,74,.1);border:3px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:36px}
+.success-screen h2{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--black);margin-bottom:12px}
+.success-screen h2 em{font-style:italic;color:var(--gold)}
+.success-screen p{font-size:15px;color:var(--gray);line-height:1.7;max-width:480px;margin:0 auto 28px}
+.next-steps{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:24px;text-align:left;max-width:480px;margin:0 auto}
+.next-step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.next-step:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--gold);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-text{font-size:13px;color:var(--gray);line-height:1.5}
+.step-text strong{color:var(--black);display:block;margin-bottom:2px}
+
+/* LOADING */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.loading-overlay.show{display:flex}
+.spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay p{font-size:14px;color:var(--gray);font-weight:500}
+
+/* EXPIRED */
+.expired-screen{display:none;text-align:center;padding:80px 20px}
+.expired-screen h2{font-family:'Playfair Display',serif;font-size:28px;color:var(--black);margin-bottom:12px}
+.expired-screen p{font-size:15px;color:var(--gray);margin-bottom:24px}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .info-grid{grid-template-columns:1fr}
+  .payment-grid{grid-template-columns:1fr}
+  .payment-methods{grid-template-columns:1fr 1fr}
+  .form-row-2{grid-template-columns:1fr}
+  .proposal-wrap{padding:20px 16px 60px}
+  .card{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p id="loadingText">Processing your payment...</p>
+</div>
+
+<!-- HEADER -->
+<div class="proposal-header">
+  <div class="header-brand">SANI <span>BUILDING</span> CORP</div>
+  <div class="header-ref" id="headerRef">Project Proposal</div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar" id="statusBar">
+  <p>⏳ Please review your proposal, sign, and pay your deposit to confirm your project</p>
+</div>
+
+<!-- MAIN PROPOSAL -->
+<div class="proposal-wrap" id="proposalContent">
+
+  <!-- CLIENT INFO -->
+  <div class="card">
+    <div class="card-title">
+      Project Proposal
+      <span id="proposalRef">Loading...</span>
+    </div>
+    <div class="info-grid">
+      <div class="info-item">
+        <label>Client Name</label>
+        <p id="clientName">—</p>
+      </div>
+      <div class="info-item">
+        <label>Phone</label>
+        <p id="clientPhone">—</p>
+      </div>
+      <div class="info-item">
+        <label>Email</label>
+        <p id="clientEmail">—</p>
+      </div>
+      <div class="info-item">
+        <label>Property Address</label>
+        <p id="clientAddress">—</p>
+      </div>
+      <div class="info-item">
+        <label>Service</label>
+        <p id="clientService">—</p>
+      </div>
+      <div class="info-item">
+        <label>Proposal Date</label>
+        <p id="proposalDate">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCOPE OF WORK -->
+  <div class="card">
+    <div class="card-title">Scope of Work</div>
+    <p class="scope-text" id="scopeText">Loading project details...</p>
+  </div>
+
+  <!-- LINE ITEMS -->
+  <div class="card">
+    <div class="card-title">Cost Breakdown</div>
+    <table class="line-items">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="text-align:right">Amount</th>
+        </tr>
+      </thead>
+      <tbody id="lineItemsBody">
+        <tr><td colspan="2" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr>
+      </tbody>
+    </table>
+    <div class="totals-section">
+      <div class="total-row">
+        <label>Subtotal</label>
+        <span class="val" id="subtotal">$0.00</span>
+      </div>
+      <div class="total-row" id="taxRow" style="display:none">
+        <label>Tax</label>
+        <span class="val" id="taxAmount">$0.00</span>
+      </div>
+      <div class="total-row main">
+        <label>Total Project Cost</label>
+        <span class="val" id="totalAmount">$0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT -->
+  <div class="card">
+    <div class="card-title">Payment to Confirm Project</div>
+    <div class="payment-grid">
+      <div class="pay-box deposit">
+        <div class="pay-box-label">Deposit Due Today (10%)</div>
+        <div class="pay-box-amount" id="depositAmount">$0.00</div>
+        <div class="pay-box-desc">Required to schedule your project</div>
+      </div>
+      <div class="pay-box remaining">
+        <div class="pay-box-label">Balance Due on Completion</div>
+        <div class="pay-box-amount" id="balanceAmount">$0.00</div>
+        <div class="pay-box-desc">Paid when work is finished</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:var(--gray);margin-bottom:16px;font-weight:500">Select payment method for deposit:</p>
+
+    <div class="payment-methods">
+      <div class="pay-method selected" onclick="selectMethod('card')" id="method-card">
+        <div class="pay-method-icon">💳</div>
+        <div class="pay-method-label">Credit Card</div>
+      </div>
+      <div class="pay-method" onclick="selectMethod('zelle')" id="method-zelle">
+        <div class="pay-method-icon">🏦</div>
+        <div class="pay-method-label">Zelle</div>
+      </div>
+      <div class="pay-method" onclick="selectMethod('venmo')" id="method-venmo">
+        <div class="pay-method-icon">💜</div>
+        <div class="pay-method-label">Venmo</div>
+      </div>
+      <div class="pay-method" onclick="selectMethod('cash')" id="method-cash">
+        <div class="pay-method-icon">💵</div>
+        <div class="pay-method-label">Cash</div>
+      </div>
+      <div class="pay-method" onclick="selectMethod('check')" id="method-check">
+        <div class="pay-method-icon">📝</div>
+        <div class="pay-method-label">Check</div>
+      </div>
+      <div class="pay-method" onclick="selectMethod('crypto')" id="method-crypto">
+        <div class="pay-method-icon">₿</div>
+        <div class="pay-method-label">Crypto</div>
+      </div>
+    </div>
+
+    <!-- CARD FORM -->
+    <div class="stripe-form" id="cardForm">
+      <h4>💳 Secure Card Payment</h4>
+      <div class="card-icons">
+        <div class="card-icon">VISA</div>
+        <div class="card-icon">MC</div>
+        <div class="card-icon">AMEX</div>
+        <div class="card-icon">DISC</div>
+      </div>
+      <div class="form-group">
+        <label>Cardholder Name</label>
+        <input type="text" id="cardName" placeholder="John Smith">
+      </div>
+      <div class="form-group">
+        <label>Card Number</label>
+        <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCard(this)">
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label>Expiry Date</label>
+          <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this)">
+        </div>
+        <div class="form-group">
+          <label>CVV</label>
+          <input type="text" id="cardCVV" placeholder="123" maxlength="4">
+        </div>
+      </div>
+      <div class="secure-note">
+        🔒 <span>Secured by 256-bit SSL encryption. Your card details are never stored.</span>
+      </div>
+    </div>
+
+    <!-- ZELLE INFO -->
+    <div class="stripe-form" id="zelleForm" style="display:none">
+      <h4>🏦 Pay via Zelle</h4>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:12px">Send your deposit to:</p>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--gray);margin-bottom:4px">Zelle to Phone Number:</div>
+        <div style="font-size:20px;font-weight:700;color:var(--black)">(332) 277-0990</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:8px">Name: Sani Building Corp</div>
+      </div>
+      <p style="font-size:12px;color:var(--gray)">⚠️ Include your proposal reference number in the Zelle memo. Once sent, click "I've Sent Payment" below.</p>
+    </div>
+
+    <!-- VENMO INFO -->
+    <div class="stripe-form" id="venmoForm" style="display:none">
+      <h4>💜 Pay via Venmo</h4>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:12px">Send your deposit to:</p>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--gray);margin-bottom:4px">Venmo Username:</div>
+        <div style="font-size:20px;font-weight:700;color:var(--black)">@SaniBuildingCorp</div>
+      </div>
+      <p style="font-size:12px;color:var(--gray)">⚠️ Include your proposal reference number in the note. Once sent, click "I've Sent Payment" below.</p>
+    </div>
+
+    <!-- CASH INFO -->
+    <div class="stripe-form" id="cashForm" style="display:none">
+      <h4>💵 Pay by Cash</h4>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:12px">Cash deposit is collected at the start of the project. By signing below, you confirm you will provide the cash deposit before work begins.</p>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px">
+        <div style="font-size:13px;color:var(--black)">📍 <strong>2954 Brighton 12th Street, Brooklyn NY 11235</strong></div>
+        <div style="font-size:12px;color:var(--gray);margin-top:6px">Or our team will collect at project start</div>
+      </div>
+    </div>
+
+    <!-- CHECK INFO -->
+    <div class="stripe-form" id="checkForm" style="display:none">
+      <h4>📝 Pay by Check</h4>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:12px">Make check payable to:</p>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px">
+        <div style="font-size:16px;font-weight:700;color:var(--black)">Sani Building Corp</div>
+        <div style="font-size:13px;color:var(--gray);margin-top:6px">2954 Brighton 12th Street<br>Brooklyn, NY 11235</div>
+      </div>
+    </div>
+
+    <!-- CRYPTO INFO -->
+    <div class="stripe-form" id="cryptoForm" style="display:none">
+      <h4>₿ Pay with Crypto</h4>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:12px">Contact us directly for crypto payment address:</p>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px">
+        <div style="font-size:13px;color:var(--black)">📞 <strong>(332) 277-0990</strong></div>
+        <div style="font-size:13px;color:var(--black);margin-top:6px">✉ <strong>info@sanibuildingcorp.com</strong></div>
+        <div style="font-size:12px;color:var(--gray);margin-top:8px">We accept BTC, ETH, USDC</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="card">
+    <div class="card-title">Sign to Confirm</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:16px">By signing below, you agree to the terms and authorize the deposit payment to begin your project.</p>
+
+    <div class="terms-box">
+      <h4>Terms & Conditions</h4>
+      <p>This proposal is valid for 30 days from the date issued. Sani Building Corp agrees to perform the scope of work described above in a professional and workmanlike manner.</p>
+      <p><strong>Deposit:</strong> A 10% deposit is required to schedule and begin your project. This deposit is non-refundable if the client cancels within 7 days of the scheduled start date.</p>
+      <p><strong>Payment Schedule:</strong> The remaining balance is due upon completion of all work. Additional work beyond the agreed scope will be quoted and approved separately.</p>
+      <p><strong>Timeline:</strong> Project timelines are estimates. Delays due to material availability, weather, building approvals, or unforeseen site conditions may extend the timeline.</p>
+      <p><strong>Changes:</strong> Any changes to the scope of work must be agreed upon in writing. Change orders may affect the total project cost and timeline.</p>
+      <p><strong>Warranty:</strong> Sani Building Corp warrants all labor for 1 year from project completion. Material warranties are as provided by manufacturers.</p>
+      <p><strong>Access:</strong> Client agrees to provide reasonable access to the property during normal working hours (Monday–Saturday, 8am–6pm) for the duration of the project.</p>
+    </div>
+
+    <div class="checkbox-row" onclick="toggleAgree()">
+      <input type="checkbox" id="agreeCheck">
+      <label for="agreeCheck">I have read and agree to the <strong>Terms & Conditions</strong> above and authorize Sani Building Corp to proceed with my project upon receipt of the deposit.</label>
+    </div>
+
+    <div style="margin-top:20px">
+      <p style="font-size:12px;color:var(--gray);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase">Your Signature:</p>
+      <div class="sig-area" id="sigArea">
+        <canvas class="sig-canvas" id="sigCanvas"></canvas>
+        <div class="sig-placeholder" id="sigPlaceholder">
+          <p>✍️ Sign here with your finger or mouse</p>
+        </div>
+      </div>
+      <div class="sig-controls">
+        <button class="btn-clear" onclick="clearSig()">Clear Signature</button>
+      </div>
+    </div>
+
+    <div style="margin-top:4px">
+      <div class="form-group">
+        <label>Full Name (Typed)</label>
+        <input type="text" id="typedName" placeholder="Type your full name to confirm">
+      </div>
+    </div>
+
+    <button class="btn-sign" id="signBtn" onclick="submitProposal()" disabled>
+      ✅ Sign & Pay Deposit — Confirm My Project
+    </button>
+    <button class="btn-other" onclick="requestCall()">
+      📞 I Have Questions — Request a Call
+    </button>
+  </div>
+
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div class="proposal-wrap" id="successScreen" style="display:none">
+  <div class="success-screen" style="display:block">
+    <div class="success-icon">✅</div>
+    <h2>Project <em>Confirmed!</em></h2>
+    <p>Thank you! Your deposit has been received and your project is now scheduled. Zura will contact you within 2 hours to confirm your start date.</p>
+    <div class="next-steps">
+      <div class="next-step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Confirmation Email Sent</strong>A copy of your signed proposal has been sent to your email.</div>
+      </div>
+      <div class="next-step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>We'll Call You Within 2 Hours</strong>Zura will call to confirm your project start date and any final details.</div>
+      </div>
+      <div class="next-step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Project Begins</strong>Our team arrives on the agreed date, ready to transform your space.</div>
+      </div>
+    </div>
+    <div style="margin-top:28px">
+      <p style="font-size:14px;color:var(--gray)">Questions? Call us anytime:</p>
+      <a href="tel:3322770990" style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--gold);text-decoration:none">(332) 277-0990</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── LOAD PROPOSAL DATA FROM URL ──
+const params = new URLSearchParams(window.location.search);
+const proposalId = params.get('id') || 'DEMO';
+const proposalData = {
+  ref: params.get('ref') || 'SBC-DEMO',
+  name: params.get('name') || 'John Smith',
+  phone: params.get('phone') || '(212) 555-0000',
+  email: params.get('email') || 'client@example.com',
+  address: params.get('address') || 'Brooklyn, NY',
+  service: params.get('service') || 'Bathroom Renovation',
+  date: params.get('date') || new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),
+  scope: params.get('scope') || 'Full bathroom gut renovation including:\n\n• Demo of existing tile, fixtures, and drywall\n• Waterproofing membrane (Schluter system)\n• 24x24 porcelain floor tile installation\n• Subway tile shower walls floor to ceiling\n• New walk-in shower with frameless glass door\n• Floating vanity with quartz countertop\n• New toilet, fixtures and accessories\n• LED recessed lighting\n• Paint: walls and ceiling\n• All plumbing and electrical coordination',
+  items: params.get('items') ? JSON.parse(decodeURIComponent(params.get('items'))) : [
+    {desc:'Demolition & Disposal',detail:'Labor',amount:1200},
+    {desc:'Waterproofing System',detail:'Schluter Kerdi membrane',amount:800},
+    {desc:'Floor Tile Installation',detail:'24x24 Porcelain, labor + materials',amount:2400},
+    {desc:'Shower Wall Tile',detail:'3x6 Subway tile, floor to ceiling',amount:3200},
+    {desc:'Frameless Glass Door',detail:'Supply & installation',amount:1800},
+    {desc:'Vanity & Countertop',detail:'Floating vanity, quartz top, faucet',amount:2200},
+    {desc:'Plumbing Fixtures',detail:'Toilet, shower system, accessories',amount:1600},
+    {desc:'Electrical & Lighting',detail:'LED recessed lights, exhaust fan',amount:900},
+    {desc:'Paint & Finishing',detail:'Walls, ceiling, trim',amount:600},
+  ],
+  total: params.get('total') ? parseFloat(params.get('total')) : 14700,
+};
+
+// ── POPULATE PAGE ──
+document.getElementById('headerRef').textContent = 'Proposal ' + proposalData.ref;
+document.getElementById('proposalRef').textContent = proposalData.ref;
+document.getElementById('clientName').textContent = proposalData.name;
+document.getElementById('clientPhone').textContent = proposalData.phone;
+document.getElementById('clientEmail').textContent = proposalData.email;
+document.getElementById('clientAddress').textContent = proposalData.address;
+document.getElementById('clientService').textContent = proposalData.service;
+document.getElementById('proposalDate').textContent = proposalData.date;
+document.getElementById('scopeText').textContent = proposalData.scope;
+
+// Line items
+const tbody = document.getElementById('lineItemsBody');
+tbody.innerHTML = '';
+proposalData.items.forEach(item => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><div>${item.desc}</div><div class="category">${item.detail}</div></td><td class="amount">$${item.amount.toLocaleString()}.00</td>`;
+  tbody.appendChild(tr);
+});
+
+const total = proposalData.total;
+const deposit = Math.round(total * 0.10);
+const balance = total - deposit;
+document.getElementById('subtotal').textContent = '$' + total.toLocaleString() + '.00';
+document.getElementById('totalAmount').textContent = '$' + total.toLocaleString() + '.00';
+document.getElementById('depositAmount').textContent = '$' + deposit.toLocaleString() + '.00';
+document.getElementById('balanceAmount').textContent = '$' + balance.toLocaleString() + '.00';
+
+// ── PAYMENT METHOD SELECTION ──
+let selectedMethod = 'card';
+function selectMethod(method) {
+  selectedMethod = method;
+  document.querySelectorAll('.pay-method').forEach(el => el.classList.remove('selected'));
+  document.getElementById('method-' + method).classList.add('selected');
+  ['card','zelle','venmo','cash','check','crypto'].forEach(m => {
+    const f = document.getElementById(m + 'Form');
+    if(f) f.style.display = m === method ? 'block' : 'none';
+  });
+  checkReady();
+}
+
+// ── SIGNATURE CANVAS ──
+const canvas = document.getElementById('sigCanvas');
+const ctx = canvas.getContext('2d');
+let drawing = false, hasSig = false;
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width - 48;
+  canvas.height = 160;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  if(e.touches) return {x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top};
+  return {x: e.clientX - rect.left, y: e.clientY - rect.top};
+}
+
+canvas.addEventListener('mousedown', e => { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+canvas.addEventListener('mousemove', e => {
+  if(!drawing) return;
+  const p = getPos(e);
+  ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#0e0e0e';
+  ctx.lineTo(p.x, p.y); ctx.stroke();
+  hasSig = true;
+  document.getElementById('sigPlaceholder').style.display = 'none';
+  checkReady();
+});
+canvas.addEventListener('mouseup', () => { drawing = false; });
+canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, {passive:false});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault(); if(!drawing) return;
+  const p = getPos(e);
+  ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#0e0e0e';
+  ctx.lineTo(p.x, p.y); ctx.stroke();
+  hasSig = true;
+  document.getElementById('sigPlaceholder').style.display = 'none';
+  checkReady();
+}, {passive:false});
+canvas.addEventListener('touchend', () => { drawing = false; });
+
+function clearSig() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  hasSig = false;
+  document.getElementById('sigPlaceholder').style.display = 'flex';
+  checkReady();
+}
+
+// ── AGREE CHECKBOX ──
+let agreed = false;
+function toggleAgree() {
+  agreed = !agreed;
+  document.getElementById('agreeCheck').checked = agreed;
+  checkReady();
+}
+
+// ── CHECK ALL READY ──
+function checkReady() {
+  const name = document.getElementById('typedName').value.trim();
+  const ready = agreed && hasSig && name.length > 2;
+  document.getElementById('signBtn').disabled = !ready;
+}
+document.getElementById('typedName').addEventListener('input', checkReady);
+
+// ── SUBMIT ──
+function submitProposal() {
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.add('show');
+  document.getElementById('loadingText').textContent = 'Processing your proposal...';
+
+  // Notify contractor via Netlify function
+  fetch('/.netlify/functions/notify', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      type: 'proposal_signed',
+      ref: proposalData.ref,
+      name: proposalData.name,
+      phone: proposalData.phone,
+      email: proposalData.email,
+      service: proposalData.service,
+      total: total,
+      deposit: deposit,
+      paymentMethod: selectedMethod,
+      signedAt: new Date().toISOString()
+    })
+  }).catch(() => {});
+
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    document.getElementById('proposalContent').style.display = 'none';
+    document.getElementById('successScreen').style.display = 'block';
+    document.getElementById('statusBar').style.background = 'var(--green)';
+    document.getElementById('statusBar').querySelector('p').textContent = '✅ Proposal Signed & Deposit Confirmed — Project Scheduled!';
+    window.scrollTo(0,0);
+  }, 2000);
+}
+
+// ── REQUEST CALL ──
+function requestCall() {
+  window.location.href = 'tel:3322770990';
+}
+
+// ── CARD FORMATTING ──
+function formatCard(input) {
+  let v = input.value.replace(/\D/g,'').substring(0,16);
+  input.value = v.replace(/(.{4})/g,'$1 ').trim();
+}
+function formatExpiry(input) {
+  let v = input.value.replace(/\D/g,'').substring(0,4);
+  if(v.length >= 2) v = v.substring(0,2) + '/' + v.substring(2);
+  input.value = v;
+}
+</script>
+</body>
+</html>
