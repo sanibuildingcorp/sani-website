@@ -1,2 +1,16 @@
-# Clean URLs (optional — Netlify handles .html pretty URLs by default)
-/estimate-html  /estimate  301
+# Redirects from old Wix URLs to new site URLs
+# Format: old-url  new-url  status-code
+
+# Old Wix slugs → New pages
+/water-damage-restoration          /water-damage                        301
+/about-nyc-renovation-contractor   /about                               301
+/contact-nyc-renovation-contractor /contact                             301
+/bathroom-renovation/tile-installation-brooklyn  /bathroom-floor-tile-installation  301
+
+# Lobby Restoration → Services page (no dedicated page yet)
+/lobby-restoration                 /services                            301
+
+# Extra safety redirects
+/home                              /                                    301
+/index                             /                                    301
+/index.html                        /                                    301
