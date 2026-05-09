@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="canonical" href="https://sanibuildingcorp.com/painting.html">
 <title>Painting Services NYC | Sani Building Corp Brooklyn</title>
 <meta name="description" content="Expert painting services in NYC. Serving Brooklyn, Manhattan, Queens, Bronx &amp; Long Island. Free estimate — call 332-277-0990.">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -24,8 +25,7 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .nav-dropdown>a{display:flex;align-items:center;gap:6px;cursor:pointer;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
 .nav-dropdown>a:hover{color:var(--gold-light)}
 .nav-dropdown>a::after{display:none}
-
-.dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:220px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
+.dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:240px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
 .nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
 .dropdown-menu a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
 .dropdown-menu a:last-child{border-bottom:none}
@@ -88,8 +88,6 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 .footer-bottom p{font-size:12px;color:rgba(255,255,255,.25)}
 @media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.check-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.nav-links{display:none}.hamburger{display:flex}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.process-steps{grid-template-columns:1fr}}
-
-/* ── GLOBAL MOBILE FIXES ── */
 @media(max-width:768px){
   .contact-grid{grid-template-columns:1fr!important;gap:32px!important}
   .form-row-2{grid-template-columns:1fr!important}
@@ -139,6 +137,8 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
           <a href="flooring.html">&#x1FAB5; Flooring Installation</a>
           <a href="carpentry.html">&#x1F528; Carpentry &amp; Millwork</a>
           <a href="water-damage.html">&#x1F4A7; Water Damage Restoration</a>
+          <a href="handyman.html">&#x1F6E0;&#xFE0F; Handyman Services</a>
+          <a href="bathroom-floor-tile-installation.html">&#x1F9F1; Bathroom Floor Tile</a>
           <a href="services.html">&rarr; View All Services</a>
         </div>
       </div>
@@ -160,6 +160,8 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   <a href="flooring.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Flooring</a>
   <a href="carpentry.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Carpentry</a>
   <a href="water-damage.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Water Damage</a>
+  <a href="handyman.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Handyman Services</a>
+  <a href="bathroom-floor-tile-installation.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Bathroom Floor Tile</a>
   <a href="estimate.html" onclick="toggleMenu()" style="color:var(--gold-light);">⚡ AI Estimate</a>
   <a href="about.html" onclick="toggleMenu()">About Us</a>
   <a href="contact.html" onclick="toggleMenu()">Contact</a>
@@ -248,7 +250,13 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
       </div>
       <div class="sidebar-box">
         <h4>Other Services</h4>
-        <a href="bathroom-renovation.html">Bathroom Renovation</a><a href="kitchen-renovation.html">Kitchen Renovation</a><a href="flooring.html">Flooring Installation</a><a href="carpentry.html">Carpentry & Millwork</a><a href="water-damage.html">Water Damage Restoration</a>
+        <a href="bathroom-renovation.html">Bathroom Renovation</a>
+        <a href="kitchen-renovation.html">Kitchen Renovation</a>
+        <a href="flooring.html">Flooring Installation</a>
+        <a href="carpentry.html">Carpentry &amp; Millwork</a>
+        <a href="water-damage.html">Water Damage Restoration</a>
+        <a href="handyman.html">Handyman Services</a>
+        <a href="bathroom-floor-tile-installation.html">Bathroom Floor Tile</a>
         <a href="services.html" style="color:var(--gold-light)!important;font-weight:500">View All Services &rarr;</a>
       </div>
     </div>
@@ -290,13 +298,13 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
         <h4>Company</h4>
         <a href="index.html">Home</a>
         <a href="about.html">About Us</a>
-        <a href="services.html">Services ▾</a>
+        <a href="services.html">Services</a>
         <a href="contact.html">Contact</a>
       </div>
       <div class="footer-col">
         <h4>Contact</h4>
         <p><a href="tel:3322770990">&#x1F4DE; 332-277-0990</a></p>
-        <p><a href="mailto:sanibuildingcorp@gmail.com">&#x2709; sanibuildingcorp@gmail.com</a></p>
+        <p><a href="mailto:info@sanibuildingcorp.com">&#x2709; info@sanibuildingcorp.com</a></p>
         <p style="margin-top:8px;color:rgba(255,255,255,.4)">2954 Brighton 12th St<br>Brooklyn, NY 11235</p>
         <p style="margin-top:8px;color:rgba(255,255,255,.3)">Mon&ndash;Sat: 8:00 AM &ndash; 9:00 PM</p>
       </div>
