@@ -39,7 +39,7 @@
   .wrap { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; padding: 90px 20px 90px; }
 
   /* NAV */
-  nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
+  nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.55);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
   .nav-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
   .nav-logo{display:flex;flex-direction:column;text-decoration:none}
   .nav-logo .brand{font-family:'Bebas Neue',sans-serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:3px;text-transform:uppercase}
@@ -48,11 +48,11 @@
   .nav-links{display:flex;align-items:center;gap:6px}
   .nav-links>a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;font-weight:400;letter-spacing:.5px;padding:8px 14px;transition:color .2s;white-space:nowrap}
   .nav-links>a:hover{color:var(--gold)}
-  .nav-dropdown{position:relative}
+  .nav-dropdown{position:relative;padding-bottom:10px}
   .nav-dropdown>a{display:flex;align-items:center;gap:6px;cursor:pointer;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
   .nav-dropdown>a:hover{color:var(--gold)}
   .dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:240px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
-  .nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+  .nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)} .nav-dropdown .dropdown-menu{transition-delay:0s} .nav-dropdown:not(:hover) .dropdown-menu{transition-delay:0.15s}
   .dropdown-menu>a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
   .dropdown-menu>a:last-child{border-bottom:none}
   .dropdown-menu>a:hover{color:var(--gold);background:rgba(240,165,0,0.06)}
@@ -144,7 +144,7 @@
   .disclaimer { margin: 14px 32px 24px; background: rgba(201,168,76,.06); border-left: 3px solid var(--gold); border-radius: 0 8px 8px 0; padding: 11px 14px; font-size: 12px; color: var(--gray); line-height: 1.65; }
 
   /* Send modal */
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.40);z-index:2000;align-items:center;justify-content:center}
   .modal-overlay.show{display:flex}
   .modal{background:var(--navy2);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:440px;width:90%;animation:fadeUp .3s ease}
   .modal h3{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold);margin-bottom:6px}

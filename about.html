@@ -25,7 +25,7 @@
 :root{--gold:#c8860a;--gold-light:#f0a500;--black:#0e0e0e;--dark:#1a1a1a;--gray:#6b6b6b;--light:#f5f4f2;--white:#fff;--border:#e8e4de}
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
+nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.55);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
 .nav-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
 .nav-logo{display:flex;flex-direction:column;text-decoration:none}
 .nav-logo .brand{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
@@ -34,11 +34,11 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .nav-links{display:flex;align-items:center;gap:6px}
 .nav-links>a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;font-weight:400;letter-spacing:.5px;padding:8px 14px;transition:color .2s;white-space:nowrap}
 .nav-links>a:hover{color:var(--gold-light)}
-.nav-dropdown{position:relative}
+.nav-dropdown{position:relative;padding-bottom:10px}
 .nav-dropdown>a{display:flex;align-items:center;gap:6px;cursor:pointer;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
 .nav-dropdown>a:hover{color:var(--gold-light)}
 .dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:240px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
-.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)} .nav-dropdown .dropdown-menu{transition-delay:0s} .nav-dropdown:not(:hover) .dropdown-menu{transition-delay:0.15s}
 .dropdown-menu a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
 .dropdown-menu a:last-child{border-bottom:none}
 .dropdown-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
@@ -62,9 +62,9 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .section-title{font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,44px);font-weight:700;line-height:1.1;color:var(--black)}
 .section-title em{font-style:italic;color:var(--gold)}
 .section-title.white{color:#fff}
-.page-hero{min-height:60vh;display:flex;align-items:flex-end;background:#0a0a12;position:relative;overflow:hidden;padding-top:68px}
+.page-hero{min-height:60vh;display:flex;align-items:flex-end;background:#0d1520;position:relative;overflow:hidden;padding-top:68px}
 .page-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.25}
-.page-hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:44px 44px}
+.page-hero-grid{position:absolute;inset:0;background-image:none;background-size:44px 44px}
 .page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
 .page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 28px 56px;width:100%}
 .breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:20px;text-transform:uppercase}
@@ -95,14 +95,14 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .serve-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--black);margin-bottom:10px}
 .serve-desc{font-size:13px;color:var(--gray);line-height:1.65}
 /* CTA */
-.about-cta{background:#0a0a12;padding:72px 28px;text-align:center;position:relative;overflow:hidden}
-.about-cta::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:44px 44px}
+.about-cta{background:#0d1520;padding:72px 28px;text-align:center;position:relative;overflow:hidden}
+.about-cta::before{content:'';position:absolute;inset:0;background-image:none;background-size:44px 44px}
 .about-cta h2{font-family:'Playfair Display',serif;font-size:clamp(24px,3.5vw,38px);font-weight:700;color:#fff;line-height:1.15;margin-bottom:12px;position:relative;z-index:1}
 .about-cta h2 em{font-style:italic;color:var(--gold-light)}
 .about-cta p{font-size:15px;color:rgba(255,255,255,.55);max-width:480px;margin:0 auto 32px;line-height:1.7;position:relative;z-index:1}
 .about-cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
 /* FOOTER */
-footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,165,0,.12)}
+footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,165,0,.12)}
 .footer-inner{max-width:1100px;margin:0 auto}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
 .footer-brand .brand{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
@@ -191,7 +191,7 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 <!-- OUR STORY -->
 <div class="about-grid">
   <div class="about-img">
-    <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=900&q=80" alt="Sani Building Corp professional renovation team NYC Brooklyn">
+    <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&q=80" alt="Sani Building Corp professional renovation team NYC Brooklyn">
     <div class="about-img-badge">
       <div class="num">10+</div>
       <div class="label">Years in NYC</div>

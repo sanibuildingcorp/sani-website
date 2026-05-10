@@ -22,7 +22,7 @@
 :root{--gold:#c8860a;--gold-light:#f0a500;--black:#0e0e0e;--dark:#1a1a1a;--gray:#6b6b6b;--light:#f5f4f2;--white:#fff;--border:#e8e4de}
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
+nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.55);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
 .nav-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
 .nav-logo{display:flex;flex-direction:column;text-decoration:none}
 .nav-logo .brand{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
@@ -31,11 +31,11 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .nav-links{display:flex;align-items:center;gap:6px}
 .nav-links>a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;font-weight:400;letter-spacing:.5px;padding:8px 14px;transition:color .2s;white-space:nowrap}
 .nav-links>a:hover{color:var(--gold-light)}
-.nav-dropdown{position:relative}
+.nav-dropdown{position:relative;padding-bottom:10px}
 .nav-dropdown>a{display:flex;align-items:center;gap:6px;cursor:pointer;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
 .nav-dropdown>a:hover{color:var(--gold-light)}
 .dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:240px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
-.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)} .nav-dropdown .dropdown-menu{transition-delay:0s} .nav-dropdown:not(:hover) .dropdown-menu{transition-delay:0.15s}
 .dropdown-menu a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
 .dropdown-menu a:last-child{border-bottom:none}
 .dropdown-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
@@ -58,9 +58,9 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .section-eyebrow span{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:500}
 .section-title{font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,44px);font-weight:700;line-height:1.1;color:var(--black)}
 .section-title em{font-style:italic;color:var(--gold)}
-.page-hero{min-height:55vh;display:flex;align-items:flex-end;background:#0a0a12;position:relative;overflow:hidden;padding-top:68px}
+.page-hero{min-height:55vh;display:flex;align-items:flex-end;background:#0d1520;position:relative;overflow:hidden;padding-top:68px}
 .page-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.2}
-.page-hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:44px 44px}
+.page-hero-grid{position:absolute;inset:0;background-image:none;background-size:44px 44px}
 .page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
 .page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 28px 56px;width:100%}
 .breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:20px;text-transform:uppercase}
@@ -86,13 +86,13 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .service-features li{font-size:13px;color:var(--gray);padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
 .service-features li::before{content:'✓';color:var(--gold);font-weight:700;flex-shrink:0}
 /* CTA STRIP */
-.cta-strip{background:#0a0a12;padding:64px 28px;text-align:center}
+.cta-strip{background:#0d1520;padding:64px 28px;text-align:center}
 .cta-strip h2{font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,36px);color:#fff;margin-bottom:12px}
 .cta-strip h2 em{font-style:italic;color:var(--gold-light)}
 .cta-strip p{color:rgba(255,255,255,.5);font-size:15px;margin-bottom:28px}
 .cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 /* FOOTER */
-footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,165,0,.12)}
+footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,165,0,.12)}
 .footer-inner{max-width:1100px;margin:0 auto}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
 .footer-brand .brand{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
@@ -108,6 +108,17 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 .footer-bottom p{font-size:12px;color:rgba(255,255,255,.25)}
 @media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.service-item{grid-template-columns:1fr;gap:24px}.service-item:nth-child(even) .service-img,.service-item:nth-child(even) .service-text{order:unset}}
 @media(max-width:600px){.nav-links{display:none}.hamburger{display:flex}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.page-hero-content{padding:40px 20px 44px}}
+
+.has-sub{position:relative}
+.has-sub>a{display:flex!important;align-items:center;justify-content:space-between;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s;cursor:pointer}
+.has-sub>a::after{content:'›';font-size:16px;opacity:0.5;flex-shrink:0}
+.has-sub:hover>a{color:var(--gold-light);background:rgba(240,165,0,0.06)}
+.sub-menu{position:absolute;left:100%;top:0;background:#1a1a1a;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:230px;opacity:0;visibility:hidden;transform:translateX(-6px);transition:all 0.2s ease;z-index:1000}
+.has-sub:hover .sub-menu{opacity:1;visibility:visible;transform:translateX(0)}
+.sub-menu a{display:block;color:rgba(255,255,255,0.65);text-decoration:none;font-size:12px;padding:10px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
+.sub-menu a:last-child{border-bottom:none}
+.sub-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
+.sub-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);padding:8px 18px 4px;display:block;border-bottom:1px solid rgba(255,255,255,0.04);pointer-events:none}
 </style>
 </head>
 <body>
@@ -124,8 +135,14 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
       <div class="nav-dropdown">
         <a href="services.html">Services ▾</a>
         <div class="dropdown-menu">
-          <a href="bathroom-renovation.html">🛁 Bathroom Renovation</a>
-          <a href="bathroom-floor-tile-installation.html">🔲 Bathroom Floor Tile</a>
+          <div class="has-sub">
+            <a href="bathroom-renovation.html">🛁 Bathroom Renovation</a>
+            <div class="sub-menu">
+              <span class="sub-label">Bathroom Services</span>
+              <a href="bathroom-renovation.html">Full Bathroom Renovation</a>
+              <a href="bathroom-floor-tile-installation.html">Floor Tile Installation</a>
+            </div>
+          </div>
           <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
           <a href="painting.html">🎨 Painting Services</a>
           <a href="flooring.html">🪵 Flooring Installation</a>
@@ -217,7 +234,7 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   </div>
 
   <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=800&q=80" alt="Painting services NYC Brooklyn - Sani Building Corp"></div>
+    <div class="service-img"><img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=800&q=80" alt="Painting services NYC Brooklyn - Sani Building Corp"></div>
     <div class="service-text">
       <div class="service-num">Service 03</div>
       <h2>Painting <em>Services</em></h2>
@@ -268,7 +285,7 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   </div>
 
   <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&q=80" alt="Water damage restoration NYC Brooklyn - Sani Building Corp"></div>
+    <div class="service-img"><img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80" alt="Water damage restoration NYC Brooklyn - Sani Building Corp"></div>
     <div class="service-text">
       <div class="service-num">Service 06</div>
       <h2>Water Damage <em>Restoration</em></h2>
@@ -285,7 +302,7 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   </div>
 
   <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80" alt="Handyman services NYC Brooklyn - Sani Building Corp"></div>
+    <div class="service-img"><img src="https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=800&q=80" alt="Handyman services NYC Brooklyn - Sani Building Corp"></div>
     <div class="service-text">
       <div class="service-num">Service 07</div>
       <h2>Handyman <em>Services</em></h2>

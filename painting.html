@@ -25,7 +25,7 @@
 :root{--gold:#c8860a;--gold-light:#f0a500;--black:#0e0e0e;--dark:#1a1a1a;--gray:#6b6b6b;--light:#f5f4f2;--white:#fff;--border:#e8e4de}
 html{scroll-behavior:smooth}
 body{font-family:"DM Sans",sans-serif;color:var(--black);background:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
+nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.55);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
 .nav-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
 .nav-logo{display:flex;flex-direction:column;text-decoration:none}
 .nav-logo .brand{font-family:"Playfair Display",serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
@@ -34,11 +34,11 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .nav-links{display:flex;align-items:center;gap:6px}
 .nav-links>a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;font-weight:400;letter-spacing:.5px;padding:8px 14px;transition:color .2s;white-space:nowrap}
 .nav-links>a:hover{color:var(--gold-light)}
-.nav-dropdown{position:relative}
+.nav-dropdown{position:relative;padding-bottom:10px}
 .nav-dropdown>a{display:flex;align-items:center;gap:6px;cursor:pointer;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
 .nav-dropdown>a:hover{color:var(--gold-light)}
 .dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:240px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
-.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)} .nav-dropdown .dropdown-menu{transition-delay:0s} .nav-dropdown:not(:hover) .dropdown-menu{transition-delay:0.15s}
 .dropdown-menu>a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
 .dropdown-menu>a:last-child{border-bottom:none}
 .dropdown-menu>a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
@@ -70,11 +70,11 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .btn-secondary{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:500;text-decoration:none;border:1px solid rgba(255,255,255,.28);padding:14px 24px;transition:border-color .2s,color .2s}
 .btn-secondary:hover{border-color:var(--gold);color:var(--gold-light)}
 /* HERO */
-.page-hero{min-height:70vh;display:flex;align-items:flex-end;background:#0a0a12;position:relative;overflow:hidden;padding-top:68px}
-.page-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.3}
-.page-hero-bg img{width:100%;height:100%;object-fit:cover;opacity:.3}
-.page-hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:44px 44px}
-.page-hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,10,18,0.95) 0%,rgba(10,10,18,0.6) 60%,rgba(10,10,18,0.2) 100%)}
+.page-hero{min-height:70vh;display:flex;align-items:flex-end;background:#0d1520;position:relative;overflow:hidden;padding-top:68px}
+.page-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.75}
+.page-hero-bg img{width:100%;height:100%;object-fit:cover;opacity:1}
+.page-hero-grid{position:absolute;inset:0;background-image:none;background-size:44px 44px}
+.page-hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,10,18,0.75) 0%,rgba(10,10,18,0.35) 60%,rgba(10,10,18,0.1) 100%)}
 .page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
 .page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 28px 56px;width:100%}
 .breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:20px;text-transform:uppercase}
@@ -132,14 +132,14 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .faq-a{font-size:13.5px;color:var(--gray);line-height:1.7}
 .faq-a strong{color:var(--black)}
 /* CTA */
-.cta-section{background:#0a0a12;padding:72px 28px;text-align:center;position:relative;overflow:hidden}
-.cta-section::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:44px 44px}
+.cta-section{background:#0d1520;padding:72px 28px;text-align:center;position:relative;overflow:hidden}
+.cta-section::before{content:'';position:absolute;inset:0;background-image:none;background-size:44px 44px}
 .cta-section h2{font-family:"Playfair Display",serif;font-size:clamp(24px,3.5vw,38px);color:#fff;margin-bottom:12px;position:relative;z-index:1}
 .cta-section h2 em{font-style:italic;color:var(--gold-light)}
 .cta-section p{color:rgba(255,255,255,.5);font-size:15px;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;position:relative;z-index:1}
 .cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
 /* FOOTER */
-footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,165,0,.12)}
+footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,165,0,.12)}
 .footer-inner{max-width:1100px;margin:0 auto}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
 .footer-brand .brand{font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
@@ -218,7 +218,7 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 <!-- HERO -->
 <section class="page-hero">
   <div class="page-hero-bg">
-    <img src="https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=1600&q=80" alt="Professional painting services NYC Brooklyn">
+    <img src="https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?w=1600&q=80" alt="Professional painting services NYC Brooklyn">
   </div>
   <div class="page-hero-grid"></div>
   <div class="page-hero-overlay"></div>
@@ -248,28 +248,28 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
     <p class="section-sub">From single rooms to full buildings, we deliver premium finishes with meticulous preparation for results that last.</p>
     <div class="services-grid">
       <div class="svc-card">
-        <img src="https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80" alt="Interior painting NYC apartments Brooklyn">
+        <img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&q=80" alt="Interior painting NYC apartments Brooklyn">
         <div class="svc-card-body">
           <div class="svc-card-title">Interior Painting</div>
           <p class="svc-card-desc">Walls, ceilings, trim, doors & baseboards. Premium paints, expert prep, and flawless results for apartments, homes & offices across NYC.</p>
         </div>
       </div>
       <div class="svc-card">
-        <img src="https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=600&q=80" alt="Exterior painting NYC buildings Brooklyn">
+        <img src="https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?w=600&q=80" alt="Exterior painting NYC buildings Brooklyn">
         <div class="svc-card-body">
           <div class="svc-card-title">Exterior Painting</div>
           <p class="svc-card-desc">Facades, fences, decks & exterior trim. Weather-resistant paints and proper surface preparation for long-lasting curb appeal.</p>
         </div>
       </div>
       <div class="svc-card">
-        <img src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&q=80" alt="Skim coating wall prep NYC">
+        <img src="https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80" alt="Skim coating wall prep NYC">
         <div class="svc-card-body">
           <div class="svc-card-title">Skim Coating & Wall Prep</div>
           <p class="svc-card-desc">Smooth over damaged, textured, or imperfect walls. We skim coat entire rooms to create a perfectly flat, paint-ready surface.</p>
         </div>
       </div>
       <div class="svc-card">
-        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80" alt="Commercial painting NYC offices">
+        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&q=80" alt="Commercial painting NYC offices">
         <div class="svc-card-body">
           <div class="svc-card-title">Commercial Painting</div>
           <p class="svc-card-desc">Offices, retail spaces, lobbies & common areas. Minimal disruption to your business. After-hours scheduling available.</p>
@@ -298,7 +298,7 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   <div class="section-inner">
     <div class="why-grid">
       <div class="why-img">
-        <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=900&q=80" alt="Sani Building Corp professional painters NYC">
+        <img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=900&q=80" alt="Sani Building Corp professional painters NYC">
       </div>
       <div>
         <div class="section-eyebrow"><div class="line"></div><span>Why Choose Us</span></div>
@@ -387,7 +387,7 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
       </div>
       <div class="faq-item">
         <div class="faq-q">Are you fully insured for painting in New York?</div>
-        <div class="faq-a">Yes. Sani Building Corp is <strong>fully fully insured</strong> in New York State. We carry full liability insurance and workers' compensation coverage on all painting projects.</div>
+        <div class="faq-a">Yes. Sani Building Corp is <strong>fully insured</strong> in New York State. We carry full liability insurance and workers' compensation coverage on all painting projects.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Do you serve Long Island and Nassau County?</div>
