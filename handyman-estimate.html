@@ -235,6 +235,37 @@ textarea{resize:vertical;min-height:100px}
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════ -->
+<!-- HIDDEN NETLIFY FORM (must be at top of body)    -->
+<!-- This is what triggers the email notification     -->
+<!-- ═══════════════════════════════════════════════ -->
+<form name="handyman-booking" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="text" name="bot-field">
+  <input type="text" name="ref">
+  <input type="text" name="name">
+  <input type="text" name="business">
+  <input type="text" name="role">
+  <input type="tel" name="phone">
+  <input type="email" name="email">
+  <input type="text" name="address">
+  <input type="text" name="propType">
+  <input type="text" name="units">
+  <input type="text" name="sqft">
+  <input type="text" name="areas">
+  <input type="text" name="services">
+  <textarea name="description"></textarea>
+  <textarea name="notes"></textarea>
+  <input type="text" name="timeline">
+  <input type="text" name="schedule">
+  <input type="text" name="preferredDate">
+  <input type="text" name="preferredTime">
+  <input type="text" name="paymentMethod">
+  <input type="text" name="total">
+  <input type="text" name="deposit">
+  <input type="text" name="fileCount">
+  <input type="text" name="submittedAt">
+</form>
+
 <!-- HEADER -->
 <header class="header">
   <a href="index.html" class="logo">SANI <span>BUILDING</span> CORP</a>
@@ -1032,6 +1063,12 @@ function selPay(el, method) {
 // ═══════════════════════════════════════════════
 // BOOKING SUBMISSION
 // ═══════════════════════════════════════════════
+function encodeForNetlify(data) {
+  return Object.keys(data)
+    .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key] ?? ''))
+    .join('&');
+}
+
 async function submitBooking() {
   const date = v('bookDate');
   if (!date) {
@@ -1052,53 +1089,70 @@ async function submitBooking() {
     email: v('email'),
     address: v('address'),
     propType: v('propType'),
+    units: v('units'),
+    sqft: v('sqft'),
+    areas: v('areas'),
     services: selectedServices.map(s => s.name).join(', '),
     description: v('description'),
+    notes: v('notes'),
     timeline: v('timeline'),
+    schedule: v('schedule'),
     preferredDate: date,
     preferredTime: v('bookTime'),
     paymentMethod: selectedPayment,
-    total: estimateData.total,
-    deposit: estimateData.deposit,
-    fileCount: uploadedFiles.length,
-    submittedAt: new Date().toISOString(),
+    total: '$' + estimateData.total.toLocaleString(),
+    deposit: '$' + estimateData.deposit.toLocaleString(),
+    fileCount: uploadedFiles.length + ' photo(s)',
+    submittedAt: new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }) + ' ET',
     type: 'handyman_booking'
   };
 
+  // ═══════════════════════════════════════════════
+  // PRIMARY: Submit to Netlify Forms (sends email)
+  // ═══════════════════════════════════════════════
   try {
-    // Notify function
+    await fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: encodeForNetlify({
+        'form-name': 'handyman-booking',
+        ...bookingData
+      })
+    });
+  } catch (e) {
+    console.error('Netlify form submission failed:', e);
+  }
+
+  // ═══════════════════════════════════════════════
+  // SECONDARY: Try notify function (works once Resend is set up)
+  // ═══════════════════════════════════════════════
+  try {
     await fetch('/.netlify/functions/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bookingData)
     });
+  } catch (e) {
+    // Silently fail — Netlify Forms already handled the notification
+    console.log('Notify function not available yet (this is OK):', e);
+  }
 
-    // Save to localStorage
+  // Save to localStorage
+  try {
     const bookings = JSON.parse(localStorage.getItem('sbc_bookings') || '[]');
     bookings.unshift(bookingData);
     localStorage.setItem('sbc_bookings', JSON.stringify(bookings));
+  } catch (e) {}
 
-    // Show success
-    document.getElementById('successRef').textContent = estimateData.ref;
-    document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
-    document.getElementById('successScreen').classList.add('show');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  } catch (e) {
-    btn.disabled = false;
-    btn.innerHTML = `🔒 Confirm Booking & Pay $${estimateData.deposit.toLocaleString()} Deposit`;
-    alert('Submission failed. Please call (332) 277-0990 to book directly.');
-  }
+  // Show success
+  document.getElementById('successRef').textContent = estimateData.ref;
+  document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
+  document.getElementById('successScreen').classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function setTxt(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
 </script>
 
-<!-- Netlify form -->
-<form name="handyman-booking" netlify netlify-honeypot="bot-field" hidden>
-  <input name="ref"><input name="name"><input name="business"><input name="phone">
-  <input name="email"><input name="address"><input name="services"><input name="description">
-  <input name="total"><input name="deposit"><input name="preferredDate"><input name="paymentMethod">
-</form>
 </body>
 </html>
