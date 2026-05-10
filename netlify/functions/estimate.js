@@ -21,70 +21,90 @@ exports.handler = async function (event) {
     const body = JSON.parse(event.body);
     const { desc, type, size, location, timeline, include, notes } = body;
 
-    const prompt = `You are a professional construction cost estimator for Sani Building Corp in NYC.
+    if (!desc) {
+      return {
+        statusCode: 400,
+        headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "Description is required" }),
+      };
+    }
 
-Generate a detailed cost estimate in JSON format for:
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      console.error("ANTHROPIC_API_KEY not set");
+      return {
+        statusCode: 500,
+        headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "Server configuration error" }),
+      };
+    }
+
+    const prompt = `You are a professional construction cost estimator for Sani Building Corp in NYC. Generate a cost estimate in JSON format. Return ONLY valid JSON with no markdown, no explanation, no backticks. Use exactly this structure: {"projectTitle":"string","laborItems":[{"name":"string","qty":1,"unit":"HRS","rate":1.00,"total":1.00}],"materialItems":[{"name":"string","qty":1,"unit":"PC","rate":1.00,"total":1.00}],"subtotal":1.00,"markup":1.00,"markupPct":25,"tax":0.00,"taxPct":0,"grandTotal":1.00,"notes":"string"}
+
+Project details:
 - Description: ${desc}
 - Type: ${type || "General construction"}
-- Size/Area: ${size || "Not specified"}
-- Location: ${location || "Brooklyn, NY"}
-- Timeline: ${timeline || "Flexible"}
+- Size: ${size || "Not specified"}
+- Location: ${location || "Brooklyn NY"}
 - Include: ${include || "Both material and labor"}
 - Notes: ${notes || "None"}
 
-Return ONLY valid JSON, no markdown, no explanation, exactly this structure:
-{
-  "projectTitle": "Short project title",
-  "laborItems": [
-    {"name": "Labor Carpenter", "qty": 6, "unit": "HRS", "rate": 45.00, "total": 270.00}
-  ],
-  "materialItems": [
-    {"name": "Material name", "qty": 2, "unit": "PC", "rate": 25.00, "total": 50.00}
-  ],
-  "subtotal": 320.00,
-  "markup": 80.00,
-  "markupPct": 25,
-  "tax": 0.00,
-  "taxPct": 0,
-  "grandTotal": 400.00,
-  "notes": "Brief professional note"
-}
-
-Rules: realistic NYC prices, 25% markup, grandTotal = subtotal + markup + tax`;
+Use realistic NYC market prices. Apply exactly 25% markup on subtotal. grandTotal = subtotal + markup + tax.`;
 
     const requestData = JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1200,
+      model: "claude-sonnet-4-5-20250929",
+      max_tokens: 1500,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const result = await new Promise((resolve, reject) => {
+    const responseBody = await new Promise((resolve, reject) => {
       const req = https.request(
         {
           hostname: "api.anthropic.com",
+          port: 443,
           path: "/v1/messages",
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Content-Length": Buffer.byteLength(requestData),
-            "x-api-key": process.env.ANTHROPIC_API_KEY,
+            "x-api-key": apiKey,
             "anthropic-version": "2023-06-01",
           },
+          timeout: 25000,
         },
         (res) => {
-          let data = "";
-          res.on("data", (chunk) => { data += chunk; });
-          res.on("end", () => resolve(JSON.parse(data)));
+          const chunks = [];
+          res.on("data", (chunk) => chunks.push(chunk));
+          res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+          res.on("error", reject);
         }
       );
       req.on("error", reject);
+      req.on("timeout", () => {
+        req.destroy();
+        reject(new Error("Request timeout"));
+      });
       req.write(requestData);
       req.end();
     });
 
-    const raw = result.content?.map((b) => b.text || "").join("") || "";
-    const clean = raw.replace(/```json|```/g, "").trim();
-    const estimate = JSON.parse(clean);
+    console.log("API response length:", responseBody.length);
+    console.log("API response start:", responseBody.substring(0, 300));
+
+    const apiResponse = JSON.parse(responseBody);
+
+    if (apiResponse.error) {
+      console.error("Anthropic API error:", apiResponse.error);
+      throw new Error(apiResponse.error.message || "API error");
+    }
+
+    const rawText = (apiResponse.content || []).map((b) => b.text || "").join("");
+    console.log("Raw text:", rawText.substring(0, 300));
+
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+
+    const estimate = JSON.parse(jsonMatch[0]);
 
     return {
       statusCode: 200,
@@ -95,10 +115,10 @@ Rules: realistic NYC prices, 25% markup, grandTotal = subtotal + markup + tax`;
       body: JSON.stringify(estimate),
     };
   } catch (err) {
-    console.error("Error:", err);
+    console.error("Handler error:", err.message);
     return {
       statusCode: 500,
-      headers: { "Access-Control-Allow-Origin": "*" },
+      headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
       body: JSON.stringify({ error: err.message }),
     };
   }
