@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#9b59b6">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Deposit Invoice | Sani Building Corp</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0d1b2a;--navy2:#1a2d42;--gold:#c9a84c;--cream:#f5f0e8;--gray:#8a9bb0;--border:rgba(201,168,76,0.2);--purple:#9b59b6;--purple-dark:#8e44ad;--success:#2ecc71}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--navy);color:var(--cream);font-family:'DM Sans',sans-serif;min-height:100vh}
+.wrap{max-width:640px;margin:0 auto;padding:30px 20px 60px}
+.brand-header{text-align:center;margin-bottom:30px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:4px;color:var(--gold)}
+.brand-name span{color:#fff}
+.brand-tagline{font-size:11px;letter-spacing:3px;color:var(--gray);text-transform:uppercase;margin-top:4px}
+.invoice-card{background:var(--navy2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:24px}
+.invoice-head{background:linear-gradient(135deg,#9b59b6,#8e44ad);padding:30px;text-align:center;color:#fff}
+.invoice-head .label{font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85;margin-bottom:8px}
+.invoice-head h1{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin-bottom:8px}
+.invoice-head .amount{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:2px;line-height:1;margin:14px 0}
+.invoice-head .due{font-size:14px;opacity:.9}
+.invoice-body{padding:26px 30px}
+.detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:14px}
+.detail-row .lbl{color:var(--gray)}
+.detail-row .val{color:var(--cream);font-weight:500}
+.detail-row .val.gold{color:var(--gold)}
+.payment-section{margin:24px 0}
+.payment-section h2{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--gold);text-align:center;margin-bottom:16px}
+.payment-grid{display:flex;flex-direction:column;gap:10px}
+.pay-btn{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;color:var(--cream);text-decoration:none;cursor:pointer;transition:all .2s;font-size:15px}
+.pay-btn:hover{border-color:var(--gold);background:rgba(201,168,76,.08);transform:translateY(-1px)}
+.pay-btn .left{display:flex;align-items:center;gap:14px}
+.pay-btn .icon{font-size:24px;width:40px;text-align:center}
+.pay-btn .info .title{font-weight:600;font-size:15px}
+.pay-btn .info .sub{font-size:12px;color:var(--gray);margin-top:2px}
+.pay-btn .arrow{color:var(--gold);font-size:20px}
+.copy-bar{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.copy-bar .text{font-family:'DM Mono',monospace;font-size:13px;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copy-bar button{background:var(--gold);color:var(--navy);border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;flex-shrink:0}
+.note-box{background:rgba(155,89,182,.08);border:1px solid rgba(155,89,182,.3);border-radius:10px;padding:16px;margin:18px 0;font-size:13px;color:var(--cream);line-height:1.6}
+.note-box strong{color:#bb8fce}
+.contact-bar{background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center}
+.contact-bar h4{font-size:13px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
+.contact-bar .links{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+.contact-bar a{color:var(--cream);text-decoration:none;font-size:14px;padding:8px 14px;border:1px solid var(--border);border-radius:8px}
+.contact-bar a:hover{border-color:var(--gold);color:var(--gold)}
+.disclaimer{font-size:11px;color:var(--gray);line-height:1.7;margin-top:24px;padding:14px;background:rgba(255,255,255,.02);border-radius:8px;text-align:center}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1}
+@media (max-width:580px){.invoice-head{padding:24px}.invoice-head .amount{font-size:48px}.invoice-body{padding:22px}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="brand-header">
+    <div class="brand-name">SANI <span>BUILDING CORP</span></div>
+    <div class="brand-tagline">Deposit Invoice</div>
+  </div>
+  <div id="invoiceContent"></div>
+  <div class="contact-bar">
+    <h4>Questions About This Invoice?</h4>
+    <div class="links">
+      <a href="tel:3322770990">📞 332-277-0990</a>
+      <a href="mailto:contact@sanibuildingcorp.com">✉ Email Us</a>
+    </div>
+  </div>
+  <div class="disclaimer">
+    Once payment is received, your project will be added to our schedule. The remaining balance will be due upon project completion. Sani Building Corp is fully insured.
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+const fmt=n=>'$'+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const params=new URLSearchParams(window.location.search);
+const data=params.get('i');
+let inv=null;
+try{if(data)inv=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(data)))))}catch(e){console.error(e)}
+
+const ZELLE_EMAIL = 'Sanibuildingcorp@gmail.com';
+const VENMO_HANDLE = '@SaniBuildingCorp';
+const PHONE_TEL = '3322770990';
+const PHONE_DISPLAY = '(332) 277-0990';
+
+if(!inv){
+  document.getElementById('invoiceContent').innerHTML='<div style="text-align:center;padding:60px 20px;background:var(--navy2);border:1px solid var(--border);border-radius:16px"><div style="font-size:48px;margin-bottom:14px">🔍</div><h2 style="font-family:Bebas Neue,sans-serif;font-size:24px;color:var(--gold);margin-bottom:10px">Invoice Not Found</h2><p style="color:var(--gray);font-size:14px;line-height:1.6">This invoice link is invalid or expired.</p></div>';
+} else render();
+
+function render(){
+  const c=inv.customer||{};
+  const e=inv.estimate||{};
+  const d=inv.deposit||{};
+  const methods=d.methods||[];
+
+  let html='<div class="invoice-card"><div class="invoice-head"><div class="label">DEPOSIT REQUIRED</div><h1>'+esc(e.projectTitle||'Renovation Project')+'</h1><div class="amount">'+fmt(d.amount)+'</div><div class="due">Due: '+esc(d.dueDate||'Within 7 days')+'</div></div><div class="invoice-body">';
+
+  html+='<div class="detail-row"><span class="lbl">Reference</span><span class="val">'+esc(inv.ref||'—')+'</span></div>';
+  html+='<div class="detail-row"><span class="lbl">Customer</span><span class="val">'+esc(c.name||'')+'</span></div>';
+  html+='<div class="detail-row"><span class="lbl">Total Project</span><span class="val">'+fmt(e.grandTotal)+'</span></div>';
+  html+='<div class="detail-row"><span class="lbl">Deposit (this invoice)</span><span class="val gold">'+fmt(d.amount)+'</span></div>';
+  html+='<div class="detail-row"><span class="lbl">Balance Due Later</span><span class="val">'+fmt((e.grandTotal||0)-d.amount)+'</span></div>';
+
+  html+='<div class="payment-section"><h2>💳 Choose Payment Method</h2><div class="payment-grid">';
+
+  if(methods.includes('zelle')){
+    html+='<div><a class="pay-btn" href="https://enroll.zellepay.com/qr-codes?data='+encodeURIComponent(ZELLE_EMAIL)+'" target="_blank" rel="noopener"><div class="left"><div class="icon">💜</div><div class="info"><div class="title">Pay with Zelle</div><div class="sub">Send to '+ZELLE_EMAIL+'</div></div></div><span class="arrow">→</span></a><div class="copy-bar"><span class="text">'+ZELLE_EMAIL+'</span><button onclick="copyText(\''+ZELLE_EMAIL+'\')">COPY</button></div></div>';
+  }
+  if(methods.includes('venmo')){
+    html+='<div><a class="pay-btn" href="venmo://paycharge?txn=pay&recipients='+encodeURIComponent(VENMO_HANDLE.replace('@',''))+'&amount='+d.amount+'&note='+encodeURIComponent('Deposit '+(inv.ref||''))+'" target="_blank" rel="noopener"><div class="left"><div class="icon">💙</div><div class="info"><div class="title">Pay with Venmo</div><div class="sub">'+VENMO_HANDLE+'</div></div></div><span class="arrow">→</span></a></div>';
+  }
+  if(methods.includes('card')){
+    html+='<a class="pay-btn" href="tel:'+PHONE_TEL+'"><div class="left"><div class="icon">💳</div><div class="info"><div class="title">Pay by Credit Card</div><div class="sub">Call us at '+PHONE_DISPLAY+' to process</div></div></div><span class="arrow">→</span></a>';
+  }
+  if(methods.includes('check')){
+    html+='<a class="pay-btn" href="tel:'+PHONE_TEL+'"><div class="left"><div class="icon">📝</div><div class="info"><div class="title">Pay by Check</div><div class="sub">Call '+PHONE_DISPLAY+' for mailing details</div></div></div><span class="arrow">→</span></a>';
+  }
+  if(methods.includes('ach')){
+    html+='<a class="pay-btn" href="tel:'+PHONE_TEL+'"><div class="left"><div class="icon">🏦</div><div class="info"><div class="title">Pay by ACH Transfer</div><div class="sub">Call '+PHONE_DISPLAY+' for routing info</div></div></div><span class="arrow">→</span></a>';
+  }
+
+  html+='</div></div>';
+
+  html+='<div class="note-box"><strong>📅 What happens next?</strong><br>Once we receive your deposit, we\'ll confirm your project start date and begin scheduling. The remaining balance of '+fmt((e.grandTotal||0)-d.amount)+' will be due upon project completion.</div>';
+
+  html+='<div class="note-box" style="background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.3)"><strong style="color:var(--gold)">📋 After payment:</strong><br>Please reply to this invoice email confirming your payment method, or call us at <a href="tel:'+PHONE_TEL+'" style="color:var(--gold)">'+PHONE_DISPLAY+'</a> so we can confirm receipt and lock in your project.</div>';
+
+  html+='</div></div>';
+  document.getElementById('invoiceContent').innerHTML=html;
+}
+
+function copyText(text){
+  navigator.clipboard.writeText(text).then(()=>{
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2000);
+  });
+}
+
+function esc(t){if(t==null)return '';return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+</script>
+</body>
+</html>
