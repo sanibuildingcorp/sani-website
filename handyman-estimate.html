@@ -33,7 +33,6 @@
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh;-webkit-font-smoothing:antialiased}
 
-/* ── HEADER ── */
 .header{background:rgba(15,18,24,0.97);border-bottom:1px solid rgba(184,114,10,0.2);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
 .logo{font-family:'Playfair Display',serif;font-size:20px;color:var(--white);text-decoration:none;letter-spacing:1px}
 .logo span{color:var(--gold-light)}
@@ -43,7 +42,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .header-phone{color:var(--gold-light);font-size:14px;font-weight:600;text-decoration:none}
 
-/* ── HERO ── */
 .hero{background:linear-gradient(135deg,var(--dark) 0%,var(--dark2) 60%,var(--dark3) 100%);padding:64px 32px 48px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid rgba(184,114,10,0.15)}
 .hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(184,114,10,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(184,114,10,.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
 .hero::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(184,114,10,0.06) 0%,transparent 70%);pointer-events:none}
@@ -55,10 +53,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);
 .trust-item{display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:.3px}
 .trust-dot{width:4px;height:4px;border-radius:50%;background:var(--gold)}
 
-/* ── LAYOUT ── */
 .main{max-width:900px;margin:0 auto;padding:48px 24px 100px}
 
-/* ── STEP INDICATOR ── */
 .steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:44px}
 .step{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.3);letter-spacing:.5px;text-transform:uppercase}
 .step.active{color:var(--gold-light)}
@@ -69,7 +65,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);
 .step-line{width:40px;height:1px;background:rgba(255,255,255,0.1);margin:0 8px}
 .step-line.done{background:var(--gold)}
 
-/* ── CARDS ── */
 .card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;margin-bottom:20px;overflow:hidden;transition:border-color .3s}
 .card:hover{border-color:rgba(184,114,10,0.2)}
 .card-header{padding:20px 26px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02)}
@@ -77,7 +72,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);
 .card-icon{width:34px;height:34px;border-radius:8px;background:rgba(184,114,10,0.15);border:1px solid rgba(184,114,10,0.25);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
 .card-body{padding:26px}
 
-/* ── FORM ELEMENTS ── */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
 @media(max-width:640px){.form-grid,.form-grid-3{grid-template-columns:1fr}}
@@ -92,19 +86,16 @@ select option{background:var(--dark2);color:var(--white)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,114,10,0.12)}
 textarea{resize:vertical;min-height:100px}
 
-/* ── SERVICE SELECTOR ── */
 .service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
 .svc-btn{background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 12px;cursor:pointer;transition:all .2s;text-align:left;display:flex;align-items:flex-start;gap:10px}
 .svc-btn:hover{border-color:rgba(184,114,10,0.4);background:rgba(184,114,10,0.06)}
 .svc-btn.sel{border-color:var(--gold);background:rgba(184,114,10,0.1)}
 .svc-emoji{font-size:20px;flex-shrink:0;margin-top:1px}
-.svc-info{}
 .svc-name{font-size:13px;font-weight:600;color:var(--white);line-height:1.3}
 .svc-rate{font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;font-family:'DM Mono',monospace}
 .svc-btn.sel .svc-name{color:var(--gold-light)}
 .svc-btn.sel .svc-rate{color:rgba(224,149,0,0.6)}
 
-/* ── UPLOAD ZONE ── */
 .upload-zone{border:2px dashed rgba(255,255,255,0.12);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(255,255,255,0.02);position:relative}
 .upload-zone:hover,.upload-zone.drag{border-color:var(--gold);background:rgba(184,114,10,0.06)}
 .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -118,7 +109,6 @@ textarea{resize:vertical;min-height:100px}
 .preview-file{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;padding:4px}
 .preview-fname{font-size:9px;color:rgba(255,255,255,0.4);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:90%;margin-top:4px}
 
-/* ── CAMERA ── */
 .camera-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;color:rgba(255,255,255,0.7);transition:all .2s}
 .camera-btn:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(184,114,10,0.08)}
 #cameraModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:20px}
@@ -130,7 +120,6 @@ textarea{resize:vertical;min-height:100px}
 .cam-close{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:10px 22px;border-radius:10px;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif}
 #cameraCanvas{display:none}
 
-/* ── AI ESTIMATE BOX ── */
 .ai-box{background:linear-gradient(135deg,rgba(15,18,24,0.95),rgba(26,31,46,0.95));border:1px solid rgba(184,114,10,0.3);border-radius:16px;padding:28px;position:relative;overflow:hidden;margin-bottom:20px}
 .ai-box::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(184,114,10,0.1) 0%,transparent 70%)}
 .ai-glow{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)}
@@ -140,7 +129,6 @@ textarea{resize:vertical;min-height:100px}
 .ai-output{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:18px;font-size:13px;line-height:1.85;color:rgba(255,255,255,0.75);min-height:80px;white-space:pre-wrap;font-family:'DM Sans',sans-serif}
 .ai-output.placeholder{color:rgba(255,255,255,0.25);font-style:italic}
 
-/* ── COST DISPLAY ── */
 .cost-card{background:linear-gradient(145deg,var(--dark2),var(--dark3));border:1px solid rgba(184,114,10,0.25);border-radius:18px;overflow:hidden;margin-bottom:20px}
 .cost-header{padding:20px 26px;background:rgba(184,114,10,0.08);border-bottom:1px solid rgba(184,114,10,0.15);display:flex;align-items:center;justify-content:space-between}
 .cost-header-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--white)}
@@ -162,9 +150,6 @@ textarea{resize:vertical;min-height:100px}
 .deposit-amount{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold-light)}
 .deposit-sub{font-size:11px;color:rgba(255,255,255,0.3);text-align:right;margin-top:2px}
 
-/* ── BOOKING ── */
-.booking-box{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px}
-.booking-title{font-family:'Playfair Display',serif;font-size:17px;margin-bottom:16px;color:var(--white)}
 .booking-form{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
 @media(max-width:500px){.booking-form{grid-template-columns:1fr}}
 .pay-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
@@ -176,7 +161,14 @@ textarea{resize:vertical;min-height:100px}
 .pay-name{font-size:11px;font-weight:600;color:rgba(255,255,255,0.5)}
 .pay-opt.sel .pay-name{color:var(--gold-light)}
 
-/* ── BUTTONS ── */
+.pay-action-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .25s;border:none;text-decoration:none;letter-spacing:.3px}
+.pay-action-zelle{background:#6d1ed4;color:white !important}
+.pay-action-zelle:hover{background:#5818b8;transform:translateY(-1px)}
+.pay-action-venmo{background:#3d95ce;color:white !important}
+.pay-action-venmo:hover{background:#2d7eb0;transform:translateY(-1px)}
+.pay-action-call{background:var(--gold);color:white !important}
+.pay-action-call:hover{background:#96590a;transform:translateY(-1px)}
+
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 24px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .25s;border:none;text-decoration:none;letter-spacing:.3px}
 .btn-gold{background:var(--gold);color:white;box-shadow:var(--shadow-gold)}
 .btn-gold:hover{background:#96590a;transform:translateY(-2px);box-shadow:0 12px 40px rgba(184,114,10,0.4)}
@@ -188,19 +180,16 @@ textarea{resize:vertical;min-height:100px}
 .btn-lg{padding:17px 36px;font-size:16px;border-radius:12px;width:100%}
 .btn-row{display:flex;gap:12px;flex-wrap:wrap}
 
-/* ── NOTICE ── */
 .notice{display:flex;gap:10px;padding:13px 16px;border-radius:10px;font-size:13px;line-height:1.6;margin-bottom:18px}
 .notice-info{background:rgba(30,58,95,0.4);border:1px solid rgba(59,130,246,0.2);color:rgba(147,197,253,0.9)}
 .notice-warn{background:rgba(146,64,14,0.3);border:1px solid rgba(217,119,6,0.25);color:rgba(252,211,77,0.9)}
 .notice-success{background:rgba(45,106,79,0.3);border:1px solid rgba(82,183,136,0.25);color:rgba(134,239,172,0.9)}
 
-/* ── PROGRESS / LOADING ── */
 .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 .progress-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin:10px 0}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:2px;transition:width .4s ease;width:0}
 
-/* ── SUCCESS ── */
 .success-screen{display:none;text-align:center;padding:60px 20px}
 .success-screen.show{display:block}
 .success-icon{font-size:64px;margin-bottom:24px}
@@ -208,17 +197,13 @@ textarea{resize:vertical;min-height:100px}
 .success-screen p{color:rgba(255,255,255,0.5);font-size:15px;line-height:1.75;max-width:460px;margin:0 auto 24px}
 .ref-display{display:inline-block;background:rgba(184,114,10,0.1);border:1px solid rgba(184,114,10,0.25);border-radius:10px;padding:12px 28px;font-family:'DM Mono',monospace;font-size:16px;color:var(--gold-light);margin-bottom:32px;letter-spacing:1px}
 
-/* ── SECTIONS ── */
 .section-view{display:none}
 .section-view.active{display:block}
 
-/* ── DIVIDER ── */
 .gold-line{height:1px;background:linear-gradient(90deg,transparent,rgba(184,114,10,0.4),transparent);margin:24px 0}
 
-/* ── TAGS ── */
 .tag{display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:3px 11px;font-size:11px;color:rgba(255,255,255,0.45);margin:2px}
 
-/* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--dark2)}
 ::-webkit-scrollbar-thumb{background:rgba(184,114,10,0.3);border-radius:3px}
@@ -235,10 +220,7 @@ textarea{resize:vertical;min-height:100px}
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════ -->
-<!-- HIDDEN NETLIFY FORM (must be at top of body)    -->
-<!-- This is what triggers the email notification     -->
-<!-- ═══════════════════════════════════════════════ -->
+<!-- Hidden Netlify form for booking emails -->
 <form name="handyman-booking" data-netlify="true" netlify-honeypot="bot-field" hidden>
   <input type="text" name="bot-field">
   <input type="text" name="ref">
@@ -266,7 +248,6 @@ textarea{resize:vertical;min-height:100px}
   <input type="text" name="submittedAt">
 </form>
 
-<!-- HEADER -->
 <header class="header">
   <a href="index.html" class="logo">SANI <span>BUILDING</span> CORP</a>
   <div class="header-right">
@@ -275,7 +256,6 @@ textarea{resize:vertical;min-height:100px}
   </div>
 </header>
 
-<!-- HERO -->
 <div class="hero">
   <div class="hero-eyebrow">✦ AI-Powered Estimate · Commercial & Industrial</div>
   <h1>Instant Handyman Estimate<br><em>for Your Business</em></h1>
@@ -290,7 +270,6 @@ textarea{resize:vertical;min-height:100px}
 
 <main class="main">
 
-  <!-- STEP INDICATOR -->
   <div class="steps">
     <div class="step active" id="s1"><div class="step-num" id="sn1">1</div><span>Your Info</span></div>
     <div class="step-line" id="sl1"></div>
@@ -301,7 +280,6 @@ textarea{resize:vertical;min-height:100px}
     <div class="step" id="s4"><div class="step-num" id="sn4">4</div><span>Book & Pay</span></div>
   </div>
 
-  <!-- ═══ SECTION 1: CONTACT ═══ -->
   <div class="section-view active" id="sec1">
     <div class="card">
       <div class="card-header">
@@ -309,34 +287,13 @@ textarea{resize:vertical;min-height:100px}
       </div>
       <div class="card-body">
         <div class="form-grid" style="margin-bottom:18px">
-          <div class="form-group">
-            <label>First Name <span class="req">*</span></label>
-            <input type="text" id="firstName" placeholder="John">
-          </div>
-          <div class="form-group">
-            <label>Last Name <span class="req">*</span></label>
-            <input type="text" id="lastName" placeholder="Smith">
-          </div>
-          <div class="form-group">
-            <label>Business Name <span class="req">*</span></label>
-            <input type="text" id="businessName" placeholder="ABC Property Management">
-          </div>
-          <div class="form-group">
-            <label>Your Role / Title</label>
-            <input type="text" id="role" placeholder="Facility Manager, Owner...">
-          </div>
-          <div class="form-group">
-            <label>Phone Number <span class="req">*</span></label>
-            <input type="tel" id="phone" placeholder="(212) 555-0000">
-          </div>
-          <div class="form-group">
-            <label>Email Address <span class="req">*</span></label>
-            <input type="email" id="email" placeholder="john@company.com">
-          </div>
-          <div class="form-group full">
-            <label>Property / Job Address <span class="req">*</span></label>
-            <input type="text" id="address" placeholder="123 Commerce Blvd, Brooklyn, NY 11201">
-          </div>
+          <div class="form-group"><label>First Name <span class="req">*</span></label><input type="text" id="firstName" placeholder="John"></div>
+          <div class="form-group"><label>Last Name <span class="req">*</span></label><input type="text" id="lastName" placeholder="Smith"></div>
+          <div class="form-group"><label>Business Name <span class="req">*</span></label><input type="text" id="businessName" placeholder="ABC Property Management"></div>
+          <div class="form-group"><label>Your Role / Title</label><input type="text" id="role" placeholder="Facility Manager, Owner..."></div>
+          <div class="form-group"><label>Phone Number <span class="req">*</span></label><input type="tel" id="phone" placeholder="(212) 555-0000"></div>
+          <div class="form-group"><label>Email Address <span class="req">*</span></label><input type="email" id="email" placeholder="john@company.com"></div>
+          <div class="form-group full"><label>Property / Job Address <span class="req">*</span></label><input type="text" id="address" placeholder="123 Commerce Blvd, Brooklyn, NY 11201"></div>
           <div class="form-group">
             <label>Property Type <span class="req">*</span></label>
             <select id="propType">
@@ -355,10 +312,7 @@ textarea{resize:vertical;min-height:100px}
               <option>Other Commercial</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Number of Units / Floors</label>
-            <input type="text" id="units" placeholder="e.g. 3 floors, 24 units">
-          </div>
+          <div class="form-group"><label>Number of Units / Floors</label><input type="text" id="units" placeholder="e.g. 3 floors, 24 units"></div>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-top:8px">
           <button class="btn btn-gold" onclick="goSec(2)">Continue to Job Details →</button>
@@ -367,7 +321,6 @@ textarea{resize:vertical;min-height:100px}
     </div>
   </div>
 
-  <!-- ═══ SECTION 2: JOB DETAILS + PHOTOS ═══ -->
   <div class="section-view" id="sec2">
     <div class="card">
       <div class="card-header">
@@ -377,73 +330,33 @@ textarea{resize:vertical;min-height:100px}
       <div class="card-body">
         <div class="notice notice-info"><span>ℹ️</span><span>Select all services that apply. Our AI will use your selections + photos to generate a detailed cost estimate.</span></div>
         <div class="service-grid" id="svcGrid">
-          <button class="svc-btn" onclick="togSvc(this,'General Repairs & Maintenance','$150','hr')">
-            <div class="svc-emoji">🔧</div><div class="svc-info"><div class="svc-name">General Repairs & Maintenance</div><div class="svc-rate">From $150/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Door & Lock Hardware','$160','hr')">
-            <div class="svc-emoji">🚪</div><div class="svc-info"><div class="svc-name">Door & Lock Hardware</div><div class="svc-rate">From $160/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Drywall Patching & Repair','$165','hr')">
-            <div class="svc-emoji">🧱</div><div class="svc-info"><div class="svc-name">Drywall Patching & Repair</div><div class="svc-rate">From $165/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Painting Touch-Ups','$180','hr')">
-            <div class="svc-emoji">🎨</div><div class="svc-info"><div class="svc-name">Painting Touch-Ups</div><div class="svc-rate">From $180/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Light Fixtures & Electrical','$170','hr')">
-            <div class="svc-emoji">💡</div><div class="svc-info"><div class="svc-name">Light Fixtures & Electrical</div><div class="svc-rate">From $170/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Plumbing Fixtures & Leaks','$200','hr')">
-            <div class="svc-emoji">🚰</div><div class="svc-info"><div class="svc-name">Plumbing Fixtures & Leaks</div><div class="svc-rate">From $200/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Ceiling Tiles & Panels','$155','hr')">
-            <div class="svc-emoji">🏗️</div><div class="svc-info"><div class="svc-name">Ceiling Tiles & Panels</div><div class="svc-rate">From $155/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Tile & Grout Repair','$160','hr')">
-            <div class="svc-emoji">🟫</div><div class="svc-info"><div class="svc-name">Tile & Grout Repair</div><div class="svc-rate">From $160/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Flooring Repair & Replacement','$175','hr')">
-            <div class="svc-emoji">🪵</div><div class="svc-info"><div class="svc-name">Flooring Repair & Replacement</div><div class="svc-rate">From $175/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Furniture & Equipment Assembly','$120','hr')">
-            <div class="svc-emoji">🪑</div><div class="svc-info"><div class="svc-name">Furniture & Equipment Assembly</div><div class="svc-rate">From $120/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Caulking & Weatherstripping','$140','hr')">
-            <div class="svc-emoji">🛡️</div><div class="svc-info"><div class="svc-name">Caulking & Weatherstripping</div><div class="svc-rate">From $140/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Signage & Installation','$145','hr')">
-            <div class="svc-emoji">🪧</div><div class="svc-info"><div class="svc-name">Signage & Installation</div><div class="svc-rate">From $145/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'TV & Equipment Mounting','$140','hr')">
-            <div class="svc-emoji">📺</div><div class="svc-info"><div class="svc-name">TV & Equipment Mounting</div><div class="svc-rate">From $140/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Preventive Maintenance','$150','hr')">
-            <div class="svc-emoji">🔍</div><div class="svc-info"><div class="svc-name">Preventive Maintenance</div><div class="svc-rate">From $150/hr</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Full Day Commercial Package','$750','day')">
-            <div class="svc-emoji">📅</div><div class="svc-info"><div class="svc-name">Full Day Package</div><div class="svc-rate">$750/day · Best value</div></div>
-          </button>
-          <button class="svc-btn" onclick="togSvc(this,'Emergency Repair','$250','hr')">
-            <div class="svc-emoji">🚨</div><div class="svc-info"><div class="svc-name">Emergency Repair</div><div class="svc-rate">From $250/hr</div></div>
-          </button>
+          <button class="svc-btn" onclick="togSvc(this,'General Repairs &amp; Maintenance',150,'hr')"><div class="svc-emoji">🔧</div><div class="svc-info"><div class="svc-name">General Repairs &amp; Maintenance</div><div class="svc-rate">From $150/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Door &amp; Lock Hardware',160,'hr')"><div class="svc-emoji">🚪</div><div class="svc-info"><div class="svc-name">Door &amp; Lock Hardware</div><div class="svc-rate">From $160/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Drywall Patching &amp; Repair',165,'hr')"><div class="svc-emoji">🧱</div><div class="svc-info"><div class="svc-name">Drywall Patching &amp; Repair</div><div class="svc-rate">From $165/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Painting Touch-Ups',180,'hr')"><div class="svc-emoji">🎨</div><div class="svc-info"><div class="svc-name">Painting Touch-Ups</div><div class="svc-rate">From $180/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Light Fixtures &amp; Electrical',170,'hr')"><div class="svc-emoji">💡</div><div class="svc-info"><div class="svc-name">Light Fixtures &amp; Electrical</div><div class="svc-rate">From $170/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Plumbing Fixtures &amp; Leaks',200,'hr')"><div class="svc-emoji">🚰</div><div class="svc-info"><div class="svc-name">Plumbing Fixtures &amp; Leaks</div><div class="svc-rate">From $200/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Ceiling Tiles &amp; Panels',155,'hr')"><div class="svc-emoji">🏗️</div><div class="svc-info"><div class="svc-name">Ceiling Tiles &amp; Panels</div><div class="svc-rate">From $155/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Tile &amp; Grout Repair',160,'hr')"><div class="svc-emoji">🟫</div><div class="svc-info"><div class="svc-name">Tile &amp; Grout Repair</div><div class="svc-rate">From $160/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Flooring Repair &amp; Replacement',175,'hr')"><div class="svc-emoji">🪵</div><div class="svc-info"><div class="svc-name">Flooring Repair &amp; Replacement</div><div class="svc-rate">From $175/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Furniture &amp; Equipment Assembly',120,'hr')"><div class="svc-emoji">🪑</div><div class="svc-info"><div class="svc-name">Furniture &amp; Equipment Assembly</div><div class="svc-rate">From $120/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Caulking &amp; Weatherstripping',140,'hr')"><div class="svc-emoji">🛡️</div><div class="svc-info"><div class="svc-name">Caulking &amp; Weatherstripping</div><div class="svc-rate">From $140/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Signage &amp; Installation',145,'hr')"><div class="svc-emoji">🪧</div><div class="svc-info"><div class="svc-name">Signage &amp; Installation</div><div class="svc-rate">From $145/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'TV &amp; Equipment Mounting',140,'hr')"><div class="svc-emoji">📺</div><div class="svc-info"><div class="svc-name">TV &amp; Equipment Mounting</div><div class="svc-rate">From $140/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Preventive Maintenance',150,'hr')"><div class="svc-emoji">🔍</div><div class="svc-info"><div class="svc-name">Preventive Maintenance</div><div class="svc-rate">From $150/hr</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Full Day Commercial Package',750,'day')"><div class="svc-emoji">📅</div><div class="svc-info"><div class="svc-name">Full Day Package</div><div class="svc-rate">$750/day · Best value</div></div></button>
+          <button class="svc-btn" onclick="togSvc(this,'Emergency Repair',250,'hr')"><div class="svc-emoji">🚨</div><div class="svc-info"><div class="svc-name">Emergency Repair</div><div class="svc-rate">From $250/hr</div></div></button>
         </div>
         <div id="selectedSvcs" style="margin-top:12px;min-height:24px"></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="card-icon">📋</div>Job Details</div>
-      </div>
+      <div class="card-header"><div class="card-title"><div class="card-icon">📋</div>Job Details</div></div>
       <div class="card-body">
         <div class="form-grid" style="margin-bottom:18px">
-          <div class="form-group">
-            <label>Estimated Square Footage</label>
-            <input type="text" id="sqft" placeholder="e.g. 2,500 sq ft">
-          </div>
-          <div class="form-group">
-            <label>Number of Areas / Rooms</label>
-            <input type="text" id="areas" placeholder="e.g. 3 offices, 1 lobby">
-          </div>
+          <div class="form-group"><label>Estimated Square Footage</label><input type="text" id="sqft" placeholder="e.g. 2,500 sq ft"></div>
+          <div class="form-group"><label>Number of Areas / Rooms</label><input type="text" id="areas" placeholder="e.g. 3 offices, 1 lobby"></div>
           <div class="form-group">
             <label>Job Timeline <span class="req">*</span></label>
             <select id="timeline">
@@ -466,22 +379,14 @@ textarea{resize:vertical;min-height:100px}
               <option>Overnight (facility stays open)</option>
             </select>
           </div>
-          <div class="form-group full">
-            <label>Describe the Work Needed <span class="req">*</span></label>
-            <textarea id="description" placeholder="Be as specific as possible — e.g. 'Replace 6 broken ceiling tiles in 3rd floor conference room, patch and paint 2 drywall holes in hallway (approx 4-6 inches each), replace 3 door handles on bathroom stalls, fix leaking faucet in break room sink...'"></textarea>
-          </div>
-          <div class="form-group full">
-            <label>Special Requirements or Access Instructions</label>
-            <textarea id="notes" placeholder="e.g. Building requires sign-in at security desk, freight elevator access only, tenant must be notified 24hrs in advance..." style="min-height:70px"></textarea>
-          </div>
+          <div class="form-group full"><label>Describe the Work Needed <span class="req">*</span></label><textarea id="description" placeholder="Be as specific as possible — e.g. 'Replace 6 broken ceiling tiles in 3rd floor conference room, patch and paint 2 drywall holes...'"></textarea></div>
+          <div class="form-group full"><label>Special Requirements or Access Instructions</label><textarea id="notes" placeholder="e.g. Building requires sign-in at security desk, freight elevator access only..." style="min-height:70px"></textarea></div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="card-icon">📸</div>Upload Photos of the Space</div>
-      </div>
+      <div class="card-header"><div class="card-title"><div class="card-icon">📸</div>Upload Photos of the Space</div></div>
       <div class="card-body">
         <div class="notice notice-info"><span>💡</span><span>Photos dramatically improve estimate accuracy. Upload current photos of the areas needing work, blueprints, floor plans, or any reference images.</span></div>
         <div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -507,10 +412,7 @@ textarea{resize:vertical;min-height:100px}
     </div>
   </div>
 
-  <!-- ═══ SECTION 3: AI ESTIMATE ═══ -->
   <div class="section-view" id="sec3">
-
-    <!-- AI GENERATING -->
     <div id="aiGenerating" class="ai-box" style="text-align:center;padding:48px 28px">
       <div class="ai-badge">✦ AI Working</div>
       <div style="font-size:18px;font-weight:700;margin-bottom:10px">Analyzing Your Job...</div>
@@ -520,7 +422,6 @@ textarea{resize:vertical;min-height:100px}
       <div style="font-size:12px;color:rgba(255,255,255,0.25);margin-top:12px" id="progressLabel">Reviewing job details...</div>
     </div>
 
-    <!-- COST DISPLAY -->
     <div id="costDisplay" style="display:none">
       <div class="notice notice-info" style="margin-bottom:20px"><span>📊</span><span>AI-generated estimate based on your job description, selected services, and current NYC commercial rates. Final price confirmed after on-site assessment.</span></div>
 
@@ -530,42 +431,23 @@ textarea{resize:vertical;min-height:100px}
           <div class="cost-ref" id="estRefDisplay">SBC-XXXXXX</div>
         </div>
         <div class="cost-body">
-          <!-- Selected services cost breakdown -->
           <div class="cost-services" id="costServices"></div>
           <div class="cost-divider"></div>
-          <div class="cost-row">
-            <span class="cost-label">Services Subtotal</span>
-            <span class="cost-value" id="costSubtotal">$0</span>
-          </div>
-          <div class="cost-row">
-            <span class="cost-label">Materials & Supplies (est.)</span>
-            <span class="cost-value" id="costMaterials">$0</span>
-          </div>
-          <div class="cost-row">
-            <span class="cost-label">Commercial Complexity Factor</span>
-            <span class="cost-value" id="costComplexity">$0</span>
-          </div>
+          <div class="cost-row"><span class="cost-label">Services Subtotal</span><span class="cost-value" id="costSubtotal">$0</span></div>
+          <div class="cost-row"><span class="cost-label">Materials & Supplies (est.)</span><span class="cost-value" id="costMaterials">$0</span></div>
+          <div class="cost-row"><span class="cost-label">Commercial Complexity Factor</span><span class="cost-value" id="costComplexity">$0</span></div>
           <div class="cost-divider"></div>
           <div class="cost-total-row">
-            <div>
-              <div class="cost-total-label">Total Estimate</div>
-              <div class="cost-range" id="costRange">Range: $X,XXX – $X,XXX</div>
-            </div>
-            <div style="text-align:right">
-              <div class="cost-total-amount" id="costTotal">$0</div>
-            </div>
+            <div><div class="cost-total-label">Total Estimate</div><div class="cost-range" id="costRange">Range: $X,XXX – $X,XXX</div></div>
+            <div style="text-align:right"><div class="cost-total-amount" id="costTotal">$0</div></div>
           </div>
           <div class="cost-deposit-box">
             <div class="deposit-label">To Book Your Date<strong>10% Deposit Required</strong></div>
-            <div>
-              <div class="deposit-amount" id="depositAmt">$0</div>
-              <div class="deposit-sub">Balance due on completion</div>
-            </div>
+            <div><div class="deposit-amount" id="depositAmt">$0</div><div class="deposit-sub">Balance due on completion</div></div>
           </div>
         </div>
       </div>
 
-      <!-- AI SCOPE -->
       <div class="ai-box">
         <div class="ai-glow"></div>
         <div class="ai-badge">✦ AI Scope of Work</div>
@@ -574,7 +456,6 @@ textarea{resize:vertical;min-height:100px}
         <div class="ai-output" id="aiScopeOutput">Generating scope of work...</div>
       </div>
 
-      <!-- PHOTO ANALYSIS -->
       <div class="ai-box" id="photoAnalysisBox" style="display:none">
         <div class="ai-glow"></div>
         <div class="ai-badge">📸 Photo Analysis</div>
@@ -592,7 +473,6 @@ textarea{resize:vertical;min-height:100px}
     </div>
   </div>
 
-  <!-- ═══ SECTION 4: BOOKING ═══ -->
   <div class="section-view" id="sec4">
     <div class="card">
       <div class="card-header">
@@ -600,33 +480,20 @@ textarea{resize:vertical;min-height:100px}
         <button class="btn btn-outline" style="padding:7px 14px;font-size:12px" onclick="goSec(3)">← Back</button>
       </div>
       <div class="card-body">
-
         <div class="cost-deposit-box" style="margin-bottom:24px">
           <div class="deposit-label">Deposit to Secure Your Date<strong id="bookTotalLabel">Total: $0</strong></div>
-          <div>
-            <div class="deposit-amount" id="bookDeposit">$0</div>
-            <div class="deposit-sub">10% of total estimate</div>
-          </div>
+          <div><div class="deposit-amount" id="bookDeposit">$0</div><div class="deposit-sub">10% of total estimate</div></div>
         </div>
 
         <div style="font-weight:700;font-size:15px;color:var(--white);margin-bottom:14px">Preferred Date & Time</div>
         <div class="booking-form">
-          <div class="form-group">
-            <label>Preferred Start Date <span class="req">*</span></label>
-            <input type="text" id="bookDate" placeholder="e.g. Monday May 19, 2026">
-          </div>
+          <div class="form-group"><label>Preferred Start Date <span class="req">*</span></label><input type="text" id="bookDate" placeholder="e.g. Monday May 19, 2026"></div>
           <div class="form-group">
             <label>Preferred Time</label>
             <select id="bookTime">
-              <option>Morning — 8:00 AM</option>
-              <option>Morning — 9:00 AM</option>
-              <option>Morning — 10:00 AM</option>
-              <option>Afternoon — 12:00 PM</option>
-              <option>Afternoon — 1:00 PM</option>
-              <option>Afternoon — 2:00 PM</option>
-              <option>After Hours — 6:00 PM</option>
-              <option>After Hours — 7:00 PM</option>
-              <option>Flexible — Anytime</option>
+              <option>Morning — 8:00 AM</option><option>Morning — 9:00 AM</option><option>Morning — 10:00 AM</option>
+              <option>Afternoon — 12:00 PM</option><option>Afternoon — 1:00 PM</option><option>Afternoon — 2:00 PM</option>
+              <option>After Hours — 6:00 PM</option><option>After Hours — 7:00 PM</option><option>Flexible — Anytime</option>
             </select>
           </div>
         </div>
@@ -635,56 +502,31 @@ textarea{resize:vertical;min-height:100px}
         <div style="font-weight:700;font-size:15px;color:var(--white);margin-bottom:14px">Select Payment Method</div>
 
         <div class="pay-options">
-          <div class="pay-opt sel" onclick="selPay(this,'credit')">
-            <div class="pay-icon">💳</div>
-            <div class="pay-name">Credit Card</div>
-          </div>
-          <div class="pay-opt" onclick="selPay(this,'zelle')">
-            <div class="pay-icon">💜</div>
-            <div class="pay-name">Zelle</div>
-          </div>
-          <div class="pay-opt" onclick="selPay(this,'venmo')">
-            <div class="pay-icon">💙</div>
-            <div class="pay-name">Venmo</div>
-          </div>
-          <div class="pay-opt" onclick="selPay(this,'check')">
-            <div class="pay-icon">📝</div>
-            <div class="pay-name">Check</div>
-          </div>
-          <div class="pay-opt" onclick="selPay(this,'ach')">
-            <div class="pay-icon">🏦</div>
-            <div class="pay-name">ACH / Wire</div>
-          </div>
-          <div class="pay-opt" onclick="selPay(this,'invoice')">
-            <div class="pay-icon">📄</div>
-            <div class="pay-name">Invoice Net30</div>
-          </div>
+          <div class="pay-opt sel" onclick="selPay(this,'credit')"><div class="pay-icon">💳</div><div class="pay-name">Credit Card</div></div>
+          <div class="pay-opt" onclick="selPay(this,'zelle')"><div class="pay-icon">💜</div><div class="pay-name">Zelle</div></div>
+          <div class="pay-opt" onclick="selPay(this,'venmo')"><div class="pay-icon">💙</div><div class="pay-name">Venmo</div></div>
+          <div class="pay-opt" onclick="selPay(this,'check')"><div class="pay-icon">📝</div><div class="pay-name">Check</div></div>
+          <div class="pay-opt" onclick="selPay(this,'ach')"><div class="pay-icon">🏦</div><div class="pay-name">ACH / Wire</div></div>
+          <div class="pay-opt" onclick="selPay(this,'invoice')"><div class="pay-icon">📄</div><div class="pay-name">Invoice Net30</div></div>
         </div>
 
-        <!-- Payment info box -->
-        <div id="payInfoBox" class="notice notice-info" style="margin-bottom:20px">
-          <span>💳</span>
-          <span id="payInfoText">Our team will contact you to securely process your credit card deposit. No card info is stored on this site.</span>
+        <div id="payInfoBox" class="notice notice-info" style="margin-bottom:20px;flex-direction:column;align-items:stretch">
+          <div style="display:flex;gap:10px;align-items:flex-start"><span>💳</span><span id="payInfoText">Our team will contact you to securely process your credit card deposit. No card info is stored on this site.</span></div>
+          <div id="payActions" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
         </div>
 
         <div class="gold-line"></div>
 
-        <div class="notice notice-success" style="margin-bottom:20px">
-          <span>✅</span>
-          <span>By booking you agree to our terms. The 10% deposit locks in your date. Balance is due upon job completion. Cancellations 48hrs+ in advance receive a full refund.</span>
-        </div>
+        <div class="notice notice-success" style="margin-bottom:20px"><span>✅</span><span>By booking you agree to our terms. The 10% deposit locks in your date. Balance is due upon job completion. Cancellations 48hrs+ in advance receive a full refund.</span></div>
 
         <div id="bookError" class="notice notice-warn" style="display:none"><span>⚠️</span><span id="bookErrMsg">Please select a date.</span></div>
 
-        <button class="btn btn-green btn-lg" onclick="submitBooking()" id="bookBtn">
-          🔒 Confirm Booking & Pay <span id="bookDepositLabel">$0</span> Deposit
-        </button>
+        <button class="btn btn-green btn-lg" onclick="submitBooking()" id="bookBtn">🔒 Confirm Booking & Pay <span id="bookDepositLabel">$0</span> Deposit</button>
         <p style="text-align:center;font-size:12px;color:rgba(255,255,255,0.25);margin-top:12px">Secure booking · We respond within 1 hour · Fully Insured</p>
       </div>
     </div>
   </div>
 
-  <!-- SUCCESS -->
   <div class="success-screen" id="successScreen">
     <div class="success-icon">🎉</div>
     <h2>Booking Confirmed!</h2>
@@ -699,7 +541,6 @@ textarea{resize:vertical;min-height:100px}
 
 </main>
 
-<!-- CAMERA MODAL -->
 <div id="cameraModal">
   <video id="cameraVideo" autoplay playsinline></video>
   <canvas id="cameraCanvas"></canvas>
@@ -710,20 +551,14 @@ textarea{resize:vertical;min-height:100px}
 </div>
 
 <script>
-// ═══════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════
+// State
 let selectedServices = [];
 let uploadedFiles = [];
 let cameraStream = null;
 let selectedPayment = 'credit';
 let estimateData = { total: 0, deposit: 0, ref: '' };
 
-// ═══════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════
 function goSec(n) {
-  // Validate before moving forward
   if (n === 2) {
     const fn = v('firstName'), ln = v('lastName'), biz = v('businessName'), ph = v('phone'), em = v('email'), ad = v('address'), pt = v('propType');
     if (!fn || !ln || !biz || !ph || !em || !ad || !pt) {
@@ -743,7 +578,6 @@ function goSec(n) {
     document.getElementById('sec2Error').style.display = 'none';
     startAIEstimate();
   }
-
   document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
   document.getElementById('sec' + n).classList.add('active');
   updateSteps(n);
@@ -771,16 +605,13 @@ function showErr(boxId, msgId, msg) {
   box?.scrollIntoView({ behavior: 'smooth' });
 }
 
-// ═══════════════════════════════════════════════
-// SERVICE SELECTION
-// ═══════════════════════════════════════════════
 function togSvc(el, name, rate, unit) {
   const idx = selectedServices.findIndex(s => s.name === name);
   if (idx >= 0) {
     selectedServices.splice(idx, 1);
     el.classList.remove('sel');
   } else {
-    selectedServices.push({ name, rate: parseFloat(rate), unit });
+    selectedServices.push({ name: name, rate: Number(rate), unit: unit });
     el.classList.add('sel');
   }
   renderSelectedSvcs();
@@ -790,12 +621,9 @@ function renderSelectedSvcs() {
   const el = document.getElementById('selectedSvcs');
   if (!selectedServices.length) { el.innerHTML = ''; return; }
   el.innerHTML = '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase">Selected:</div>'
-    + selectedServices.map(s => `<span class="tag">${s.name} · $${s.rate}/${s.unit}</span>`).join('');
+    + selectedServices.map(s => '<span class="tag">' + s.name + ' · $' + s.rate + '/' + s.unit + '</span>').join('');
 }
 
-// ═══════════════════════════════════════════════
-// FILE HANDLING
-// ═══════════════════════════════════════════════
 function handleFiles(files) {
   Array.from(files).forEach(f => {
     if (f.size > 10 * 1024 * 1024) { alert(f.name + ' exceeds 10MB limit.'); return; }
@@ -815,7 +643,7 @@ function renderPreviews() {
       img.src = URL.createObjectURL(f);
       div.appendChild(img);
     } else {
-      div.innerHTML = `<div class="preview-file"><span style="font-size:24px">📄</span><span class="preview-fname">${f.name}</span></div>`;
+      div.innerHTML = '<div class="preview-file"><span style="font-size:24px">📄</span><span class="preview-fname">' + f.name + '</span></div>';
     }
     const del = document.createElement('button');
     del.className = 'preview-del';
@@ -825,7 +653,7 @@ function renderPreviews() {
     c.appendChild(div);
   });
   document.getElementById('fileCount').textContent = uploadedFiles.length
-    ? `${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''} uploaded`
+    ? uploadedFiles.length + ' file' + (uploadedFiles.length > 1 ? 's' : '') + ' uploaded'
     : 'No files uploaded';
 }
 
@@ -834,9 +662,6 @@ zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add(
 zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
 zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFiles(e.dataTransfer.files); });
 
-// ═══════════════════════════════════════════════
-// CAMERA
-// ═══════════════════════════════════════════════
 async function openCamera() {
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
@@ -851,100 +676,96 @@ function closeCamera() {
   document.getElementById('cameraModal').classList.remove('open');
 }
 function snapPhoto() {
-  const v = document.getElementById('cameraVideo');
+  const vid = document.getElementById('cameraVideo');
   const cv = document.getElementById('cameraCanvas');
-  cv.width = v.videoWidth; cv.height = v.videoHeight;
-  cv.getContext('2d').drawImage(v, 0, 0);
+  cv.width = vid.videoWidth; cv.height = vid.videoHeight;
+  cv.getContext('2d').drawImage(vid, 0, 0);
   cv.toBlob(blob => {
-    uploadedFiles.push(new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' }));
+    uploadedFiles.push(new File([blob], 'photo_' + Date.now() + '.jpg', { type: 'image/jpeg' }));
     renderPreviews();
     closeCamera();
   }, 'image/jpeg', 0.92);
 }
 
-// ═══════════════════════════════════════════════
-// AI ESTIMATE GENERATOR
-// ═══════════════════════════════════════════════
+// Format helper - guarantees no NaN ever appears
+function fmt(n) {
+  const num = Number(n);
+  return '$' + (isNaN(num) ? 0 : num).toLocaleString();
+}
+
 async function startAIEstimate() {
   const ref = 'SBC-' + Date.now().toString(36).toUpperCase().slice(-6);
   estimateData.ref = ref;
   document.getElementById('estRefDisplay').textContent = ref;
 
-  // Show generating state
   document.getElementById('aiGenerating').style.display = 'block';
   document.getElementById('costDisplay').style.display = 'none';
-
-  // Animate progress
   animateProgress();
 
-  // Calculate base estimate from selected services
+  // Calculate cost - all numeric, no NaN possible
   const hrs = estimateHours();
-  const servicesCost = selectedServices.reduce((acc, s) => {
-    if (s.unit === 'day') return acc + s.rate;
-    return acc + (s.rate * hrs);
-  }, 0);
-  const materialsCost = Math.round(servicesCost * 0.15);
-  const complexityFactor = Math.round(servicesCost * 0.1);
-  const total = Math.round(servicesCost + materialsCost + complexityFactor);
-  const deposit = Math.round(total * 0.10);
-  const rangeLow = Math.round(total * 0.9);
-  const rangeHigh = Math.round(total * 1.2);
+  let servicesCost = 0;
+  for (const s of selectedServices) {
+    const rate = Number(s.rate) || 0;
+    if (s.unit === 'day') servicesCost += rate;
+    else servicesCost += rate * hrs;
+  }
+  servicesCost = Math.round(servicesCost) || 0;
+  const materialsCost = Math.round(servicesCost * 0.15) || 0;
+  const complexityFactor = Math.round(servicesCost * 0.10) || 0;
+  const total = servicesCost + materialsCost + complexityFactor;
+  const deposit = Math.round(total * 0.10) || 0;
+  const rangeLow = Math.round(total * 0.9) || 0;
+  const rangeHigh = Math.round(total * 1.2) || 0;
 
-  estimateData = { total, deposit, ref };
+  estimateData = { total: total, deposit: deposit, ref: ref };
+
+  // Call secure Netlify Function for AI scope
+  const payload = {
+    mode: 'scope',
+    businessName: v('businessName'),
+    propType: v('propType'),
+    address: v('address'),
+    firstName: v('firstName'),
+    lastName: v('lastName'),
+    role: v('role'),
+    services: selectedServices.map(s => s.name).join(', '),
+    sqft: v('sqft'),
+    areas: v('areas'),
+    timeline: v('timeline'),
+    schedule: v('schedule'),
+    description: v('description'),
+    notes: v('notes'),
+    photoCount: uploadedFiles.length,
+    total: total
+  };
+
+  let scopeText = 'Our team will review your project details and provide a detailed scope of work upon confirmation.';
 
   try {
-    // Generate AI scope
-    const scopeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/.netlify/functions/handyman-ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: `You are Sani Building Corp, a professional NYC commercial handyman company. Write a professional scope of work and project assessment for this commercial job.
-
-Business: ${v('businessName')} (${v('propType')})
-Address: ${v('address')}
-Contact: ${v('firstName')} ${v('lastName')}, ${v('role')}
-Services requested: ${selectedServices.map(s => s.name).join(', ')}
-Square footage: ${v('sqft') || 'Not specified'}
-Areas: ${v('areas') || 'Not specified'}
-Timeline: ${v('timeline')}
-Schedule preference: ${v('schedule')}
-Job description: ${v('description')}
-Special notes: ${v('notes') || 'None'}
-Photos uploaded: ${uploadedFiles.length} photo(s)
-Total estimate: $${total.toLocaleString()}
-
-Write a professional 3-paragraph scope of work as the contractor. Include:
-1. Project overview and assessment
-2. Specific work to be performed (reference their description)
-3. Timeline, scheduling, and what to expect
-
-Be professional, specific, and reassuring. Mention commercial/industrial expertise, NYC professional work, minimal business disruption, and our satisfaction guarantee. Write in flowing prose — no bullet points.`
-        }]
-      })
+      body: JSON.stringify(payload)
     });
-    const scopeData = await scopeRes.json();
-    const scopeText = scopeData.content?.[0]?.text || 'Scope of work will be provided upon confirmation.';
-
-    // Show results
-    showEstimateResults(servicesCost, materialsCost, complexityFactor, total, deposit, rangeLow, rangeHigh, scopeText, ref);
-
-    // If photos uploaded, generate photo analysis
-    if (uploadedFiles.length > 0) {
-      generatePhotoAnalysis();
+    if (res.ok) {
+      const data = await res.json();
+      if (data.text) scopeText = data.text;
+    } else {
+      console.error('handyman-ai failed:', res.status);
     }
-
   } catch (err) {
-    // Still show cost estimate even if AI fails
-    showEstimateResults(servicesCost, materialsCost, complexityFactor, total, deposit, rangeLow, rangeHigh, 'Our team will review your project details and provide a detailed scope of work upon confirmation.', ref);
+    console.error('handyman-ai error:', err);
+  }
+
+  showEstimateResults(servicesCost, materialsCost, complexityFactor, total, deposit, rangeLow, rangeHigh, scopeText, ref);
+
+  if (uploadedFiles.length > 0) {
+    generatePhotoAnalysis();
   }
 }
 
 function estimateHours() {
-  const timeline = v('timeline');
   const sqft = parseInt(v('sqft')) || 500;
   const svcCount = selectedServices.length;
   let hrs = Math.max(2, svcCount * 1.5);
@@ -979,27 +800,24 @@ function showEstimateResults(svcCost, matCost, compCost, total, deposit, low, hi
     document.getElementById('aiGenerating').style.display = 'none';
     document.getElementById('costDisplay').style.display = 'block';
 
-    // Services breakdown
     const svcEl = document.getElementById('costServices');
-    svcEl.innerHTML = selectedServices.map(s => `
-      <div class="cost-row">
-        <span class="cost-label">${s.name}</span>
-        <span class="cost-value" style="color:rgba(255,255,255,0.6)">$${s.rate.toLocaleString()}/${s.unit}</span>
-      </div>
-    `).join('');
+    svcEl.innerHTML = selectedServices.map(s => '<div class="cost-row"><span class="cost-label">' + s.name + '</span><span class="cost-value" style="color:rgba(255,255,255,0.6)">$' + Number(s.rate).toLocaleString() + '/' + s.unit + '</span></div>').join('');
 
-    setTxt('costSubtotal', '$' + svcCost.toLocaleString());
-    setTxt('costMaterials', '$' + matCost.toLocaleString());
-    setTxt('costComplexity', '$' + compCost.toLocaleString());
-    setTxt('costTotal', '$' + total.toLocaleString());
-    setTxt('costRange', `Range: $${low.toLocaleString()} – $${high.toLocaleString()}`);
-    setTxt('depositAmt', '$' + deposit.toLocaleString());
-    setTxt('bookDeposit', '$' + deposit.toLocaleString());
-    setTxt('bookDepositLabel', '$' + deposit.toLocaleString());
-    setTxt('bookTotalLabel', 'Total: $' + total.toLocaleString());
+    setTxt('costSubtotal', fmt(svcCost));
+    setTxt('costMaterials', fmt(matCost));
+    setTxt('costComplexity', fmt(compCost));
+    setTxt('costTotal', fmt(total));
+    setTxt('costRange', 'Range: ' + fmt(low) + ' – ' + fmt(high));
+    setTxt('depositAmt', fmt(deposit));
+    setTxt('bookDeposit', fmt(deposit));
+    setTxt('bookDepositLabel', fmt(deposit));
+    setTxt('bookTotalLabel', 'Total: ' + fmt(total));
 
     document.getElementById('aiScopeOutput').textContent = scope;
     document.getElementById('aiScopeOutput').classList.remove('placeholder');
+
+    // Update payment buttons with new deposit amount
+    renderPaymentInfo();
   }, 500);
 }
 
@@ -1009,63 +827,94 @@ async function generatePhotoAnalysis() {
   box.style.display = 'block';
   out.textContent = 'Analyzing uploaded photos...';
 
+  const payload = {
+    mode: 'photoAnalysis',
+    businessName: v('businessName'),
+    propType: v('propType'),
+    address: v('address'),
+    services: selectedServices.map(s => s.name).join(', '),
+    description: v('description'),
+    photoCount: uploadedFiles.length
+  };
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/.netlify/functions/handyman-ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 800,
-        messages: [{
-          role: 'user',
-          content: `You are a commercial property assessment expert at Sani Building Corp NYC.
-
-A commercial client at ${v('businessName')} (${v('propType')}) at ${v('address')} uploaded ${uploadedFiles.length} photo(s) of their space needing handyman work.
-
-Services requested: ${selectedServices.map(s => s.name).join(', ')}
-Their description: ${v('description')}
-
-Write a professional 2-paragraph written photo assessment (since we'll analyze images upon arrival). Include:
-1. What you'd expect to see in a ${v('propType')} needing these repairs — typical conditions, common issues found
-2. What the space will look like after Sani Building Corp completes the work — professional finish, minimal disruption to business operations
-
-Be specific to commercial/industrial context. Professional tone. This helps the client visualize the transformation.`
-        }]
-      })
+      body: JSON.stringify(payload)
     });
-    const data = await res.json();
-    out.textContent = data.content?.[0]?.text || 'Photo analysis will be completed upon on-site visit.';
+    if (res.ok) {
+      const data = await res.json();
+      out.textContent = data.text || 'Photo analysis will be completed upon on-site visit.';
+    } else {
+      out.textContent = 'Detailed photo analysis will be completed during our on-site assessment.';
+    }
   } catch {
     out.textContent = 'Detailed photo analysis will be completed during our on-site assessment.';
   }
 }
 
-// ═══════════════════════════════════════════════
-// PAYMENT
-// ═══════════════════════════════════════════════
-const payInfo = {
-  credit: 'Our team will contact you to securely process your credit card deposit. No card info is stored on this site.',
-  zelle: 'Send your deposit to: Sanibuildingcorp@gmail.com via Zelle. Include your reference number in the memo.',
-  venmo: 'Send deposit to @SaniBuildingCorp on Venmo. Include your reference number.',
-  check: 'Mail a check payable to "Sani Building Corp" to 2954 Brighton 12th St, Brooklyn NY 11235.',
-  ach: 'Our team will send you ACH/Wire transfer details via email within 1 hour.',
-  invoice: 'We\'ll send a Net-30 invoice to your business email. Requires credit application for new clients.'
-};
-
 function selPay(el, method) {
   document.querySelectorAll('.pay-opt').forEach(x => x.classList.remove('sel'));
   el.classList.add('sel');
   selectedPayment = method;
-  setTxt('payInfoText', payInfo[method]);
-  document.getElementById('payInfoBox').style.display = 'flex';
+  renderPaymentInfo();
 }
 
-// ═══════════════════════════════════════════════
-// BOOKING SUBMISSION
-// ═══════════════════════════════════════════════
+function renderPaymentInfo() {
+  const ref = estimateData.ref || 'SBC';
+  const amount = Number(estimateData.deposit) || 0;
+  const amountStr = amount.toString();
+  const note = encodeURIComponent('Sani Building Corp deposit ' + ref);
+
+  const infoText = document.getElementById('payInfoText');
+  const actions = document.getElementById('payActions');
+  if (!actions) return;
+  actions.innerHTML = '';
+
+  if (selectedPayment === 'credit') {
+    infoText.textContent = 'Our team will contact you within 1 hour to securely process your credit card deposit by phone. No card info is stored on this site.';
+    actions.innerHTML = '<a href="tel:3322770990" class="pay-action-btn pay-action-call">📞 Call (332) 277-0990 to Pay</a>';
+  } else if (selectedPayment === 'zelle') {
+    infoText.innerHTML = 'Send <strong>' + fmt(amount) + '</strong> via Zelle to <strong>Sanibuildingcorp@gmail.com</strong>. Include reference <strong>' + ref + '</strong> in the memo.';
+    actions.innerHTML = '<a href="https://www.zellepay.com/" target="_blank" class="pay-action-btn pay-action-zelle">💜 Open Zelle</a>' +
+      '<button onclick="copyToClipboard(\'Sanibuildingcorp@gmail.com\')" class="pay-action-btn pay-action-zelle" style="background:#4a1397">📋 Copy Email</button>';
+  } else if (selectedPayment === 'venmo') {
+    infoText.innerHTML = 'Send <strong>' + fmt(amount) + '</strong> to <strong>@SaniBuildingCorp</strong> on Venmo. Include reference <strong>' + ref + '</strong> in the note.';
+    actions.innerHTML = '<a href="https://venmo.com/SaniBuildingCorp?txn=pay&amount=' + amountStr + '&note=' + note + '" target="_blank" class="pay-action-btn pay-action-venmo">💙 Pay with Venmo</a>';
+  } else if (selectedPayment === 'check') {
+    infoText.innerHTML = 'Mail check for <strong>' + fmt(amount) + '</strong> payable to "Sani Building Corp" to: 2954 Brighton 12th St, Brooklyn NY 11235. Include reference <strong>' + ref + '</strong> on the check.';
+    actions.innerHTML = '<a href="tel:3322770990" class="pay-action-btn pay-action-call">📞 Questions? Call Us</a>';
+  } else if (selectedPayment === 'ach') {
+    infoText.textContent = 'Our team will email you ACH/Wire transfer details within 1 hour after booking confirmation.';
+    actions.innerHTML = '<a href="tel:3322770990" class="pay-action-btn pay-action-call">📞 Call (332) 277-0990</a>';
+  } else if (selectedPayment === 'invoice') {
+    infoText.textContent = "We'll send a Net-30 invoice to your business email after booking. Requires credit application for new clients.";
+    actions.innerHTML = '<a href="tel:3322770990" class="pay-action-btn pay-action-call">📞 Call to Set Up Account</a>';
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Copied: ' + text);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Copied: ' + text);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderPaymentInfo();
+});
+
 function encodeForNetlify(data) {
   return Object.keys(data)
-    .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key] ?? ''))
+    .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key] != null ? data[key] : ''))
     .join('&');
 }
 
@@ -1100,51 +949,28 @@ async function submitBooking() {
     preferredDate: date,
     preferredTime: v('bookTime'),
     paymentMethod: selectedPayment,
-    total: '$' + estimateData.total.toLocaleString(),
-    deposit: '$' + estimateData.deposit.toLocaleString(),
+    total: fmt(estimateData.total),
+    deposit: fmt(estimateData.deposit),
     fileCount: uploadedFiles.length + ' photo(s)',
-    submittedAt: new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }) + ' ET',
-    type: 'handyman_booking'
+    submittedAt: new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }) + ' ET'
   };
 
-  // ═══════════════════════════════════════════════
-  // PRIMARY: Submit to Netlify Forms (sends email)
-  // ═══════════════════════════════════════════════
   try {
     await fetch('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: encodeForNetlify({
-        'form-name': 'handyman-booking',
-        ...bookingData
-      })
+      body: encodeForNetlify({ 'form-name': 'handyman-booking', ...bookingData })
     });
   } catch (e) {
     console.error('Netlify form submission failed:', e);
   }
 
-  // ═══════════════════════════════════════════════
-  // SECONDARY: Try notify function (works once Resend is set up)
-  // ═══════════════════════════════════════════════
-  try {
-    await fetch('/.netlify/functions/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(bookingData)
-    });
-  } catch (e) {
-    // Silently fail — Netlify Forms already handled the notification
-    console.log('Notify function not available yet (this is OK):', e);
-  }
-
-  // Save to localStorage
   try {
     const bookings = JSON.parse(localStorage.getItem('sbc_bookings') || '[]');
     bookings.unshift(bookingData);
     localStorage.setItem('sbc_bookings', JSON.stringify(bookings));
   } catch (e) {}
 
-  // Show success
   document.getElementById('successRef').textContent = estimateData.ref;
   document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
   document.getElementById('successScreen').classList.add('show');
