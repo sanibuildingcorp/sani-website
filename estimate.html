@@ -151,7 +151,20 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh;-webkit-font-smoothing:antialiased}
+body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh;-webkit-font-smoothing:antialiased;position:relative}
+
+/* Subtle pattern overlay across entire page */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(184,114,10,0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(224,149,0,0.06) 0%, transparent 50%);
+  z-index:0;
+  pointer-events:none;
+}
+.header,.hero,main,.seo-section,footer{position:relative;z-index:2}
 
 .header{background:rgba(15,18,24,0.97);border-bottom:1px solid rgba(184,114,10,0.2);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
 .logo{font-family:'Playfair Display',serif;font-size:20px;color:var(--white);text-decoration:none;letter-spacing:1px}
@@ -162,16 +175,45 @@ body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .header-phone{color:var(--gold-light);font-size:14px;font-weight:600;text-decoration:none}
 
-.hero{background:linear-gradient(135deg,var(--dark) 0%,var(--dark2) 60%,var(--dark3) 100%);padding:64px 32px 48px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid rgba(184,114,10,0.15)}
-.hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(184,114,10,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(184,114,10,.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
-.hero::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(184,114,10,0.06) 0%,transparent 70%);pointer-events:none}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(184,114,10,0.12);border:1px solid rgba(184,114,10,0.3);border-radius:100px;padding:6px 16px;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--gold-light);margin-bottom:20px;position:relative;z-index:1}
-.hero h1{font-family:'Playfair Display',serif;font-size:clamp(30px,5vw,52px);font-weight:900;line-height:1.1;color:var(--white);margin-bottom:14px;position:relative;z-index:1}
+.hero{
+  position:relative;
+  padding:90px 32px 80px;
+  text-align:center;
+  overflow:hidden;
+  border-bottom:1px solid rgba(184,114,10,0.25);
+  background-color:#0d1217;
+  background-image:
+    linear-gradient(135deg, rgba(15,18,24,0.82) 0%, rgba(15,18,24,0.78) 40%, rgba(184,114,10,0.35) 100%),
+    url('https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1920');
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+.hero::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background-image:linear-gradient(rgba(184,114,10,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(184,114,10,.05) 1px,transparent 1px);
+  background-size:50px 50px;
+  pointer-events:none;
+  opacity:0.6;
+}
+.hero::after{
+  content:'';
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:700px;height:500px;
+  background:radial-gradient(ellipse,rgba(224,149,0,0.15) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(184,114,10,0.25);border:1px solid rgba(224,149,0,0.5);border-radius:100px;padding:7px 18px;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#fff;margin-bottom:24px;position:relative;z-index:2;backdrop-filter:blur(4px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(32px,5.5vw,56px);font-weight:900;line-height:1.1;color:var(--white);margin-bottom:18px;position:relative;z-index:2;text-shadow:0 4px 24px rgba(0,0,0,0.5)}
 .hero h1 em{font-style:italic;color:var(--gold-light)}
-.hero p{color:rgba(255,255,255,0.55);font-size:16px;max-width:620px;margin:0 auto 32px;line-height:1.75;position:relative;z-index:1}
-.hero-trust{display:flex;justify-content:center;gap:32px;flex-wrap:wrap;position:relative;z-index:1}
-.trust-item{display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:.3px}
-.trust-dot{width:4px;height:4px;border-radius:50%;background:var(--gold)}
+.hero p{color:rgba(255,255,255,0.85);font-size:17px;max-width:660px;margin:0 auto 36px;line-height:1.75;position:relative;z-index:2;text-shadow:0 2px 12px rgba(0,0,0,0.5)}
+.hero-trust{display:flex;justify-content:center;gap:32px;flex-wrap:wrap;position:relative;z-index:2}
+.trust-item{display:flex;align-items:center;gap:7px;font-size:13px;color:rgba(255,255,255,0.75);letter-spacing:.3px;font-weight:500}
+.trust-dot{width:5px;height:5px;border-radius:50%;background:var(--gold-light);box-shadow:0 0 8px rgba(224,149,0,0.6)}
 
 .main{max-width:900px;margin:0 auto;padding:48px 24px 60px}
 
@@ -523,71 +565,43 @@ textarea{resize:vertical;min-height:100px}
 
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:8px">
       <button class="btn btn-outline" onclick="goSec(1)">← Back</button>
-      <button class="btn btn-gold" id="getEstBtn" onclick="getEstimate()">Get My Estimate →</button>
+      <button class="btn btn-gold" id="getEstBtn" onclick="getEstimate()">Submit My Project →</button>
     </div>
   </div>
 
-  <!-- ============ STEP 3: ESTIMATE RESULT ============ -->
+  <!-- ============ STEP 3: PROCESSING / THANK YOU ============ -->
   <div class="section-view" id="sec3">
-    <div class="ai-box">
+    <div class="ai-box" id="processingBox">
       <div class="ai-glow"></div>
-      <div class="ai-badge">✦ Professional Estimate</div>
-      <div class="ai-title">Your Detailed Project Quote</div>
-      <div class="ai-sub">Prepared by Sani Building Corp specialists based on your project details</div>
-      <div id="aiLoadingArea" style="display:none">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div class="spinner"></div><span style="color:rgba(255,255,255,0.6);font-size:14px" id="loadMsg">Preparing your estimate...</span></div>
+      <div class="ai-badge">✦ Submitting Your Request</div>
+      <div class="ai-title">Sending Your Project to Our Team</div>
+      <div class="ai-sub">Please wait while we send your details to our specialists</div>
+      <div id="aiLoadingArea">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div class="spinner"></div><span style="color:rgba(255,255,255,0.6);font-size:14px" id="loadMsg">Reviewing your project details...</span></div>
         <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
       </div>
-      <div class="ai-output placeholder" id="aiOutput">Your detailed project scope and recommendations will appear here.</div>
-    </div>
-
-    <div class="cost-card" id="costCard" style="display:none">
-      <div class="cost-header">
-        <div class="cost-header-title">💰 Your Project Estimate</div>
-        <div class="cost-ref" id="costRef">REF-000000</div>
-      </div>
-      <div class="cost-body">
-        <div class="cost-services" id="costServices"></div>
-        <div class="cost-divider"></div>
-        <div class="cost-row"><span class="cost-label">Materials (estimated)</span><span class="cost-value" id="costMaterials">$0</span></div>
-        <div class="cost-row"><span class="cost-label">Labor (estimated)</span><span class="cost-value" id="costLabor">$0</span></div>
-        <div class="cost-row"><span class="cost-label">Project Complexity</span><span class="cost-value" id="costComplexity">$0</span></div>
-        <div class="cost-divider"></div>
-        <div class="cost-total-row">
-          <div>
-            <div class="cost-total-label">Estimated Total</div>
-            <div class="cost-range" id="costRange">Range: $0 - $0</div>
-          </div>
-          <div class="cost-total-amount" id="costTotal">$0</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="notice notice-info" style="margin-bottom:20px"><span>📋</span><span>This is a preliminary estimate based on your project details. Final pricing is confirmed after an on-site assessment by our team — completely free of charge.</span></div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title"><div class="card-icon">📞</div>Next Steps</div></div>
-      <div class="card-body">
-        <p style="color:rgba(255,255,255,0.6);font-size:14px;line-height:1.75;margin-bottom:18px">Our team will review your project and contact you within 24 hours to schedule a free on-site assessment. Want to talk now? Call us directly.</p>
-        <div class="btn-row">
-          <a href="tel:3322770990" class="btn btn-gold btn-lg" style="flex:1">📞 Call (332) 277-0990</a>
-        </div>
-        <div class="btn-row" style="margin-top:12px">
-          <button class="btn btn-outline" onclick="goSec(2)">← Edit Project</button>
-          <button class="btn btn-green" id="submitBtn" onclick="submitEstimate()">✓ Send Me This Estimate</button>
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- ============ SUCCESS SCREEN ============ -->
+  <!-- ============ SUCCESS / THANK YOU SCREEN ============ -->
   <div class="success-screen" id="successScreen">
     <div class="success-icon">✅</div>
-    <h2>Your Estimate Has Been Sent!</h2>
-    <p>Your detailed estimate has been emailed to you and our team has been notified. We'll contact you within 24 hours to schedule your free on-site assessment.</p>
+    <h2>Thank You! Your Request Has Been Received</h2>
+    <p>Our team has been notified with all your project details. A specialist will personally review your project and contact you <strong>within 24 hours</strong> with a detailed, accurate estimate based on NYC market rates and your specific requirements.</p>
     <div class="ref-display" id="successRef">REF-000000</div>
+    <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-top:14px;margin-bottom:24px">Save this reference number for your records</p>
+    <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:12px;padding:20px;margin:24px 0;text-align:left">
+      <div style="font-size:12px;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;font-weight:600">✦ What Happens Next</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:14px;line-height:1.9">
+        <div style="margin-bottom:8px">✓ Our team reviews your project details</div>
+        <div style="margin-bottom:8px">✓ We prepare a detailed, accurate quote for you</div>
+        <div style="margin-bottom:8px">✓ A specialist contacts you within 24 hours</div>
+        <div>✓ Free on-site assessment scheduled at your convenience</div>
+      </div>
+    </div>
+    <p style="color:rgba(255,255,255,0.7);font-size:15px;margin-bottom:18px"><strong>Want to talk right now?</strong> Call us directly:</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-      <a href="tel:3322770990" class="btn btn-gold">📞 Call Us Now</a>
+      <a href="tel:3322770990" class="btn btn-gold btn-lg">📞 Call (332) 277-0990</a>
       <a href="/" class="btn btn-outline">← Back to Home</a>
     </div>
   </div>
@@ -876,17 +890,12 @@ async function getEstimate(){
   ref = genRef();
   goSec(3);
 
-  // Show loading
-  document.getElementById('aiLoadingArea').style.display = 'block';
-  document.getElementById('aiOutput').classList.add('placeholder');
-  document.getElementById('aiOutput').textContent = 'Preparing your estimate...';
-
+  // Show loading progress
   const loadingSteps = [
-    {pct:15, text:'Reviewing your project details...'},
-    {pct:35, text:'Analyzing NYC market rates...'},
-    {pct:55, text:'Calculating materials & labor...'},
-    {pct:75, text:'Applying complexity factors...'},
-    {pct:92, text:'Finalizing your estimate...'}
+    {pct:20, text:'Reviewing your project details...'},
+    {pct:45, text:'Notifying our specialists...'},
+    {pct:70, text:'Preparing your project file...'},
+    {pct:90, text:'Almost done...'}
   ];
 
   let stepIdx = 0;
@@ -897,11 +906,13 @@ async function getEstimate(){
       document.getElementById('loadMsg').textContent = s.text;
       stepIdx++;
     }
-  }, 700);
+  }, 600);
 
-  // Build prompt data
+  // Build project data
   const projectData = {
     name: v('firstName') + ' ' + v('lastName'),
+    firstName: v('firstName'),
+    lastName: v('lastName'),
     phone: v('phone'),
     email: v('email'),
     address: v('address'),
@@ -918,36 +929,81 @@ async function getEstimate(){
     submittedAt: nyTime()
   };
 
-  // Calculate base estimate locally for instant display
-  const baseEstimate = calculateBaseEstimate(projectData);
+  // Calculate internal estimate (FOR CONTRACTOR EMAIL ONLY - never shown to customer)
+  const internalEstimate = calculateBaseEstimate(projectData);
+  projectData.internalEstimate = internalEstimate;
 
-  // Call backend AI for scope text
-  let scopeText = 'Our specialists will review your project details and provide a complete scope of work during your free on-site assessment.';
+  // Submit to Netlify Forms (for email notification)
   try{
-    const res = await fetch('/.netlify/functions/all-services-ai', {
+    const formData = new URLSearchParams();
+    formData.append('form-name', 'estimate-request');
+    formData.append('bot-field', '');
+    formData.append('ref', ref);
+    formData.append('name', projectData.name);
+    formData.append('phone', projectData.phone);
+    formData.append('email', projectData.email);
+    formData.append('address', projectData.address);
+    formData.append('property-type', projectData.propertyType);
+    formData.append('borough', projectData.borough);
+    formData.append('services', selectedServices.join(', '));
+    formData.append('sqft', projectData.sqft);
+    formData.append('areas', projectData.areas);
+    formData.append('timeline', projectData.timeline);
+    formData.append('budget', projectData.budget);
+    formData.append('description', projectData.description);
+    formData.append('internal-estimate', '$' + internalEstimate.total.toLocaleString() + ' (range $' + internalEstimate.rangeLow.toLocaleString() + ' - $' + internalEstimate.rangeHigh.toLocaleString() + ')');
+    formData.append('photo-count', String(uploadedFiles.length));
+
+    await fetch('/', {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body: formData.toString()
+    });
+  }catch(err){
+    console.error('Netlify form submit error:', err);
+  }
+
+  // Also call backend function for richer email via Resend (with internal estimate)
+  try{
+    await fetch('/.netlify/functions/estimate-request', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(projectData)
+      body: JSON.stringify({
+        ref: ref,
+        name: projectData.name,
+        phone: projectData.phone,
+        email: projectData.email,
+        address: projectData.address + ' (' + projectData.borough + ')',
+        type: selectedServices.join(', '),
+        size: projectData.sqft + (projectData.areas ? ' / ' + projectData.areas : ''),
+        description: projectData.description,
+        budget: projectData.budget,
+        timeline: projectData.timeline,
+        contactTime: '',
+        source: 'website-estimate-form',
+        photoCount: uploadedFiles.length,
+        submittedAt: projectData.submittedAt,
+        internalEstimate: internalEstimate,
+        propertyType: projectData.propertyType,
+        borough: projectData.borough
+      })
     });
-    if(res.ok){
-      const data = await res.json();
-      if(data.text) scopeText = data.text;
-      if(data.estimate){
-        // Override with AI estimate if backend provides one
-        Object.assign(baseEstimate, data.estimate);
-      }
-    }
   }catch(err){
-    console.error('AI estimate error:', err);
+    console.error('Backend submit error:', err);
   }
 
   clearInterval(loadInterval);
   document.getElementById('progFill').style.width = '100%';
+  document.getElementById('loadMsg').textContent = 'Done!';
 
+  // Show success screen after brief moment
   setTimeout(() => {
-    document.getElementById('aiLoadingArea').style.display = 'none';
-    showEstimate(baseEstimate, scopeText);
-  }, 400);
+    document.getElementById('successRef').textContent = ref;
+    document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
+    document.querySelector('.steps').style.display = 'none';
+    document.getElementById('successScreen').classList.add('show');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }, 700);
 }
 
 function calculateBaseEstimate(data){
@@ -1001,101 +1057,9 @@ function calculateBaseEstimate(data){
   };
 }
 
-function showEstimate(est, scopeText){
-  document.getElementById('aiOutput').classList.remove('placeholder');
-  document.getElementById('aiOutput').textContent = scopeText;
+function showEstimate_DEPRECATED(){ /* Removed - estimate no longer shown to customer */ }
+// ============ SUBMIT ESTIMATE (LEGACY - now handled inline in getEstimate) ============
 
-  const costCard = document.getElementById('costCard');
-  costCard.style.display = 'block';
-
-  document.getElementById('costRef').textContent = ref;
-
-  // Services breakdown
-  let svcHtml = '<div style="font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Services Selected</div>';
-  est.breakdown.forEach(s => {
-    svcHtml += '<div class="cost-row"><span class="cost-label">'+s.name+'</span><span class="cost-value">$'+s.cost.toLocaleString()+'</span></div>';
-  });
-  document.getElementById('costServices').innerHTML = svcHtml;
-
-  document.getElementById('costMaterials').textContent = '$' + est.materials.toLocaleString();
-  document.getElementById('costLabor').textContent = '$' + est.labor.toLocaleString();
-  document.getElementById('costComplexity').textContent = '$' + est.complexity.toLocaleString();
-  document.getElementById('costTotal').textContent = '$' + est.total.toLocaleString();
-  document.getElementById('costRange').textContent = 'Range: $' + est.rangeLow.toLocaleString() + ' - $' + est.rangeHigh.toLocaleString();
-
-  // Store for submission
-  window._estimateData = est;
-}
-
-// ============ SUBMIT ESTIMATE ============
-async function submitEstimate(){
-  const btn = document.getElementById('submitBtn');
-  const orig = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Sending...';
-
-  const submitData = {
-    ref: ref,
-    name: v('firstName') + ' ' + v('lastName'),
-    phone: v('phone'),
-    email: v('email'),
-    address: v('address'),
-    propertyType: v('propType'),
-    borough: v('borough'),
-    services: selectedServices.join(', '),
-    sqft: v('sqft'),
-    timeline: v('timeline'),
-    budget: v('budget'),
-    description: v('description'),
-    estimateTotal: window._estimateData ? window._estimateData.total : 0,
-    submittedAt: nyTime()
-  };
-
-  // Submit to Netlify form (gets email notification)
-  try{
-    const formData = new URLSearchParams();
-    formData.append('form-name', 'estimate-request');
-    formData.append('bot-field', '');
-    formData.append('ref', submitData.ref);
-    formData.append('name', submitData.name);
-    formData.append('phone', submitData.phone);
-    formData.append('email', submitData.email);
-    formData.append('address', submitData.address);
-    formData.append('property-type', submitData.propertyType);
-    formData.append('services', submitData.services);
-    formData.append('sqft', submitData.sqft);
-    formData.append('timeline', submitData.timeline);
-    formData.append('budget', submitData.budget);
-    formData.append('description', submitData.description);
-    formData.append('estimate-total', '$' + submitData.estimateTotal.toLocaleString());
-
-    await fetch('/', {
-      method: 'POST',
-      headers: {'Content-Type':'application/x-www-form-urlencoded'},
-      body: formData.toString()
-    });
-  }catch(err){
-    console.error('Netlify form submit error:', err);
-  }
-
-  // Also call the estimate-request backend if it exists (for Resend email)
-  try{
-    await fetch('/.netlify/functions/estimate-request', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(submitData)
-    });
-  }catch(err){
-    console.error('Backend submit error:', err);
-  }
-
-  // Show success
-  document.getElementById('successRef').textContent = ref;
-  document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
-  document.querySelector('.steps').style.display = 'none';
-  document.getElementById('successScreen').classList.add('show');
-  window.scrollTo({top:0,behavior:'smooth'});
-}
 
 // ============ FAQ TOGGLE ============
 function toggleFaq(btn){
