@@ -2,12 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <meta name="theme-color" content="#b8720a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NYC Renovation Contractor | Sani Building Corp — Brooklyn, Manhattan & All Boroughs</title>
 <meta name="description" content="Sani Building Corp — Brooklyn's top-rated renovation contractor. Bathroom remodeling, kitchen renovation, painting, carpentry & handyman services across NYC. 4.9★ rated. Call 332-277-0990.">
@@ -159,6 +153,12 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .why-feat-desc{font-size:12.5px;color:var(--gray);line-height:1.55}
 
 /* REVIEWS */
+.process-section{background:var(--dark);padding:80px 28px;color:#fff}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:44px}
+.process-step{text-align:center;padding:0 8px}
+.step-num{width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--gold-light)}
+.step-title{font-family:"Playfair Display",serif;font-size:16px;font-weight:600;color:#fff;margin-bottom:8px}
+.step-desc{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65}
 .reviews-section{background:var(--dark);padding:88px 28px}
 .reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:rgba(255,255,255,.06);margin-top:48px}
 .review-card{background:var(--dark);padding:32px 28px;border-top:3px solid transparent;transition:border-color .25s}
@@ -253,6 +253,7 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   .page-hero h1{font-size:32px!important}
 }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do you offer free estimates?","acceptedAnswer":{"@type":"Answer","text":"Yes - all estimates are completely free with no obligation. We visit your property, assess the space, and provide a clear written quote within 24 hours."}},{"@type":"Question","name":"How quickly can you start a project?","acceptedAnswer":{"@type":"Answer","text":"We offer same-day response for urgent repairs. For full renovations, we typically start within 1-2 weeks depending on project scope and material availability."}},{"@type":"Question","name":"Are you insured in NYC?","acceptedAnswer":{"@type":"Answer","text":"Yes. Sani Building Corp is fully insured to perform renovation work throughout New York City. We carry full liability insurance and workers' compensation on every project."}},{"@type":"Question","name":"Do you work with property managers?","acceptedAnswer":{"@type":"Answer","text":"Absolutely - property managers are one of our primary clients. We offer fast turnaround for unit renovations, common area upgrades, and ongoing building maintenance."}},{"@type":"Question","name":"What areas do you serve?","acceptedAnswer":{"@type":"Answer","text":"We serve all 5 NYC boroughs: Brooklyn, Manhattan, Queens, Bronx, and Staten Island - plus Long Island and surrounding areas including Nassau County and Long Island City."}},{"@type":"Question","name":"Do you handle permits for renovation work?","acceptedAnswer":{"@type":"Answer","text":"Yes. We manage all required permits for plumbing, electrical, and structural work. All renovations meet NYC Department of Buildings requirements."}}]}</script>
 </head>
 <body>
 
@@ -274,22 +275,67 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
               <span class="sub-label">Bathroom Services</span>
               <a href="bathroom-renovation.html">Full Bathroom Renovation</a>
               <a href="bathroom-floor-tile-installation.html">Floor Tile Installation</a>
+              <span class="sub-label">By Location</span>
+              <a href="bathroom-renovation-brooklyn.html">Brooklyn</a>
+              <a href="bathroom-renovation-manhattan.html">Manhattan</a>
+              <a href="bathroom-renovation-queens.html">Queens</a>
             </div>
           </div>
-          <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
-          <a href="painting.html">🎨 Painting Services</a>
+          <div class="has-sub">
+            <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
+            <div class="sub-menu">
+              <span class="sub-label">Kitchen Services</span>
+              <a href="kitchen-renovation.html">Full Kitchen Renovation</a>
+              <span class="sub-label">By Location</span>
+              <a href="kitchen-renovation-brooklyn.html">Brooklyn</a>
+              <a href="kitchen-renovation-manhattan.html">Manhattan</a>
+              <a href="kitchen-renovation-queens.html">Queens</a>
+            </div>
+          </div>
+          <div class="has-sub">
+            <a href="painting.html">🎨 Painting Services</a>
+            <div class="sub-menu">
+              <span class="sub-label">Painting Services</span>
+              <a href="painting.html">All Painting Services</a>
+              <span class="sub-label">By Location</span>
+              <a href="painting-brooklyn.html">Brooklyn</a>
+              <a href="painting-manhattan.html">Manhattan</a>
+            </div>
+          </div>
           <a href="flooring.html">🪵 Flooring Installation</a>
-          <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+          <div class="has-sub">
+            <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+            <div class="sub-menu">
+              <span class="sub-label">Stairs</span>
+              <a href="stair-building.html">Stair Building</a>
+              <a href="stair-renovation.html">Stair Renovation</a>
+              <a href="stair-restoration.html">Stair Restoration</a>
+              <a href="stair-upgrade.html">Stair Upgrade</a>
+              <span class="sub-label">Decks & Exterior</span>
+              <a href="deck-building.html">Deck Building</a>
+              <a href="deck-renovation.html">Deck Renovation</a>
+              <a href="exterior-carpentry.html">Exterior Carpentry</a>
+            </div>
+          </div>
           <a href="water-damage.html">💧 Water Damage Restoration</a>
           <a href="handyman.html">🔧 Handyman Services</a>
+          <div class="has-sub">
+            <a href="services.html">📍 Renovations by Area</a>
+            <div class="sub-menu">
+              <span class="sub-label">NYC Boroughs</span>
+              <a href="renovation-contractor-brooklyn.html">Brooklyn</a>
+              <a href="renovation-contractor-manhattan.html">Manhattan</a>
+              <a href="renovation-contractor-queens.html">Queens</a>
+              <a href="renovation-contractor-long-island.html">Long Island</a>
+            </div>
+          </div>
           <a href="services.html">→ View All Services</a>
         </div>
       </div>
       <a href="about.html">About</a>
       <a href="contact.html">Contact</a>
       <a href="tel:3322770990" class="nav-phone">332-277-0990</a>
-      <a href="/estimate" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#b8720a,#e09500);color:#fff;font-weight:700;font-size:12px;letter-spacing:0.5px;padding:8px 16px;border-radius:8px;text-decoration:none;text-transform:uppercase;box-shadow:0 4px 16px rgba(224,149,0,0.5);border:2px solid #f5c518;transition:all 0.3s ease" onmouseover="this.style.background='linear-gradient(135deg,#e09500,#f5c518)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(245,197,24,0.7)'" onmouseout="this.style.background='linear-gradient(135deg,#b8720a,#e09500)';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 14px rgba(224,149,0,0.5)'">⚡ Cost Calculator</a>
-
+      <a href="estimate.html" style="color:var(--gold-light);font-weight:500;">⚡ AI Estimate</a>
       <a href="contact.html" class="nav-cta">Free Estimate</a>
     </div>
     <div class="hamburger" id="hamburger" onclick="toggleMenu()">
@@ -444,6 +490,27 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 </section>
 
 <!-- REVIEWS -->
+<section class="process-section">
+  <div class="section-inner">
+    <div style="text-align:center">
+      <div class="section-eyebrow" style="justify-content:center"><div class="line"></div><span style="color:var(--gold)">Our Process</span><div class="line"></div></div>
+      <h2 class="section-title" style="color:#fff;text-align:center">How We Work With You<br><em>From Quote to Completion</em></h2>
+    </div>
+    <div class="process-steps">
+      <div class="process-step"><div class="step-num">01</div><div class="step-title">Free Consultation</div><p class="step-desc">We visit your property, listen to your vision, take measurements, and discuss materials, timeline, and budget.</p></div>
+      <div class="process-step"><div class="step-num">02</div><div class="step-title">Detailed Estimate</div><p class="step-desc">Receive a clear written estimate within 24 hours with itemized costs - no hidden fees or surprises.</p></div>
+      <div class="process-step"><div class="step-num">03</div><div class="step-title">Project Planning</div><p class="step-desc">Once approved, we schedule your project, order materials, handle permits, and prepare your space.</p></div>
+      <div class="process-step"><div class="step-num">04</div><div class="step-title">Quality Execution</div><p class="step-desc">Our skilled team executes your project with daily updates, clean workspaces, and on-time delivery.</p></div>
+    </div>
+    <div class="process-steps" style="margin-top:32px">
+      <div class="process-step"><div class="step-num">05</div><div class="step-title">Daily Communication</div><p class="step-desc">Your project manager keeps you informed with photos, progress updates, and answers to any questions.</p></div>
+      <div class="process-step"><div class="step-num">06</div><div class="step-title">Quality Inspection</div><p class="step-desc">We perform multi-stage quality checks throughout the project to ensure excellence at every step.</p></div>
+      <div class="process-step"><div class="step-num">07</div><div class="step-title">Final Walkthrough</div><p class="step-desc">We walk through every detail together, address any concerns, and ensure complete satisfaction.</p></div>
+      <div class="process-step"><div class="step-num">08</div><div class="step-title">Warranty & Support</div><p class="step-desc">Receive full warranty documentation. We stand behind our work and respond quickly to any issues.</p></div>
+    </div>
+  </div>
+</section>
+
 <section class="reviews-section" id="reviews">
   <div class="section-container">
     <div class="section-eyebrow"><div class="line"></div><span>Customer Reviews</span></div>

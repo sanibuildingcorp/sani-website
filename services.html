@@ -2,12 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <meta name="theme-color" content="#b8720a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Renovation Services NYC | Sani Building Corp — All 5 Boroughs</title>
 <meta name="description" content="Full-service renovation contractor in NYC. Bathroom remodeling, kitchen renovation, painting, flooring, carpentry, water damage restoration & handyman across all 5 boroughs. Free estimate.">
@@ -125,7 +119,67 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 .sub-menu a:last-child{border-bottom:none}
 .sub-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
 .sub-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);padding:8px 18px 4px;display:block;border-bottom:1px solid rgba(255,255,255,0.04);pointer-events:none}
+
+.process-section{background:var(--dark);padding:80px 28px;color:#fff}
+.process-section .section-inner{max-width:1200px;margin:0 auto}
+.process-eyebrow{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px}
+.process-eyebrow .line{width:50px;height:1px;background:var(--gold)}
+.process-eyebrow span{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:500}
+.process-title{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,42px);color:#fff;text-align:center;font-weight:700;line-height:1.2;margin-bottom:8px}
+.process-title em{font-style:italic;color:var(--gold-light)}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:44px}
+.process-step{text-align:center;padding:0 8px}
+.step-num{width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--gold-light)}
+.step-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#fff;margin-bottom:8px}
+.step-desc{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65}
+
+.reviews-section{padding:80px 28px;background:var(--light)}
+.reviews-section .section-inner{max-width:1200px;margin:0 auto}
+.reviews-eyebrow{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px}
+.reviews-eyebrow .line{width:50px;height:1px;background:var(--gold)}
+.reviews-eyebrow span{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:500}
+.reviews-title{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,42px);color:var(--black);text-align:center;font-weight:700;line-height:1.2;margin-bottom:44px}
+.reviews-title em{font-style:italic;color:var(--gold)}
+.reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:44px}
+.review-card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:24px;transition:all .25s}
+.review-card:hover{border-color:rgba(200,134,10,.25);box-shadow:0 6px 24px rgba(0,0,0,.08)}
+.review-stars{color:var(--gold-light);font-size:16px;margin-bottom:14px;letter-spacing:2px}
+.review-text{color:var(--gray);font-size:13.5px;line-height:1.7;margin-bottom:18px;font-style:italic}
+.review-author{display:flex;align-items:center;gap:12px}
+.review-avatar{width:42px;height:42px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px;font-family:'Playfair Display',serif}
+.review-name{font-weight:600;color:var(--black);font-size:14px}
+.review-location{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:1px}
+
+.faq-section{padding:80px 28px}
+.faq-section .section-inner{max-width:1100px;margin:0 auto}
+.faq-eyebrow{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px}
+.faq-eyebrow .line{width:50px;height:1px;background:var(--gold)}
+.faq-eyebrow span{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:500}
+.faq-title{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,42px);color:var(--black);text-align:center;font-weight:700;line-height:1.2;margin-bottom:44px}
+.faq-title em{font-style:italic;color:var(--gold)}
+.faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
+.faq-item{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:24px;transition:all .25s}
+.faq-item:hover{border-color:rgba(200,134,10,.25);box-shadow:0 6px 24px rgba(0,0,0,.08)}
+.faq-q{font-family:"Playfair Display",serif;font-size:15px;font-weight:700;color:var(--black);margin-bottom:10px;line-height:1.35}
+.faq-a{font-size:13.5px;color:var(--gray);line-height:1.7}
+.faq-a strong{color:var(--black)}
+
+.areas-section{padding:64px 28px;background:var(--dark);color:#fff}
+.areas-section .section-inner{max-width:1200px;margin:0 auto;text-align:center}
+.areas-eyebrow{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:500;margin-bottom:14px}
+.areas-title{font-family:'Playfair Display',serif;font-size:clamp(26px,3.5vw,36px);color:#fff;font-weight:700;margin-bottom:32px}
+.areas-title em{font-style:italic;color:var(--gold-light)}
+.areas-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:32px}
+.area-card{background:rgba(255,255,255,0.04);border:1px solid rgba(240,165,0,0.15);border-radius:10px;padding:18px;transition:all .25s}
+.area-card:hover{border-color:rgba(240,165,0,0.4);background:rgba(255,255,255,0.06)}
+.area-name{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold-light);font-weight:600;margin-bottom:6px}
+.area-neighborhoods{font-size:12px;color:rgba(255,255,255,0.55);line-height:1.6}
+
+@media(max-width:900px){.process-steps{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.faq-grid{grid-template-columns:1fr}.areas-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.process-steps{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.areas-grid{grid-template-columns:1fr 1fr}}
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"GeneralContractor","name":"Sani Building Corp","url":"https://www.sanibuildingcorp.com","image":"https://raw.githubusercontent.com/sanibuildingcorp/sani-website/main/images/og/services.png","telephone":"+1-332-277-0990","email":"contact@sanibuildingcorp.com","priceRange":"$$","address":{"@type":"PostalAddress","streetAddress":"2954 Brighton 12th Street","addressLocality":"Brooklyn","addressRegion":"NY","postalCode":"11235","addressCountry":"US"},"areaServed":["Manhattan","Brooklyn","Queens","Bronx","Staten Island","Long Island City","Nassau County","Long Island"],"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"62","bestRating":"5","worstRating":"1"},"hasOfferCatalog":{"@type":"OfferCatalog","name":"Renovation Services","itemListElement":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Bathroom Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Kitchen Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Painting Services"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Flooring Installation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Carpentry & Millwork"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Water Damage Restoration"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Handyman Services"}}]}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What services does Sani Building Corp offer in NYC?","acceptedAnswer":{"@type":"Answer","text":"Sani Building Corp is a full-service renovation contractor offering bathroom renovation, kitchen renovation, painting, flooring installation, carpentry & millwork, water damage restoration, and commercial handyman services throughout New York City and Long Island."}},{"@type":"Question","name":"How much do renovation services cost in NYC?","acceptedAnswer":{"@type":"Answer","text":"NYC renovation costs vary by project: bathroom renovations from $12,000-$60,000, kitchen renovations from $25,000-$100,000, painting from $1,800-$3,500 per apartment, flooring from $6-$30 per square foot installed. We provide free detailed written estimates."}},{"@type":"Question","name":"What areas of NYC do you serve?","acceptedAnswer":{"@type":"Answer","text":"We serve all 5 NYC boroughs: Manhattan, Brooklyn, Queens, Bronx, and Staten Island - plus Long Island City, Nassau County, and Long Island. We work with both residential homeowners and commercial property managers."}},{"@type":"Question","name":"Are you fully insured for renovation work in NYC?","acceptedAnswer":{"@type":"Answer","text":"Yes. Sani Building Corp is fully insured with comprehensive liability insurance and worker's compensation. We provide certificates of insurance to building management, co-op boards, and clients on request."}},{"@type":"Question","name":"Do you handle NYC building permits?","acceptedAnswer":{"@type":"Answer","text":"Yes. We manage all required permits through the NYC Department of Buildings for plumbing, electrical, structural, and renovation work. We're experienced with NYC building codes and co-op/condo requirements."}},{"@type":"Question","name":"How quickly can you start a renovation project?","acceptedAnswer":{"@type":"Answer","text":"We offer same-day response for urgent repairs and water damage emergencies. For full renovations, we typically start within 1-2 weeks depending on project scope, material availability, and permit requirements."}},{"@type":"Question","name":"Do you offer free estimates?","acceptedAnswer":{"@type":"Answer","text":"Yes - all estimates are completely free with no obligation. We visit your property, assess the scope, take measurements, and provide a clear written estimate within 24 hours."}},{"@type":"Question","name":"Can you handle commercial renovation projects?","acceptedAnswer":{"@type":"Answer","text":"Absolutely. We handle commercial renovations for offices, retail stores, restaurants, and industrial properties throughout NYC. We work after-hours and weekends to minimize business disruption."}}]}</script>
 </head>
 <body>
 
@@ -147,14 +201,60 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
               <span class="sub-label">Bathroom Services</span>
               <a href="bathroom-renovation.html">Full Bathroom Renovation</a>
               <a href="bathroom-floor-tile-installation.html">Floor Tile Installation</a>
+              <span class="sub-label">By Location</span>
+              <a href="bathroom-renovation-brooklyn.html">Brooklyn</a>
+              <a href="bathroom-renovation-manhattan.html">Manhattan</a>
+              <a href="bathroom-renovation-queens.html">Queens</a>
             </div>
           </div>
-          <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
-          <a href="painting.html">🎨 Painting Services</a>
+          <div class="has-sub">
+            <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
+            <div class="sub-menu">
+              <span class="sub-label">Kitchen Services</span>
+              <a href="kitchen-renovation.html">Full Kitchen Renovation</a>
+              <span class="sub-label">By Location</span>
+              <a href="kitchen-renovation-brooklyn.html">Brooklyn</a>
+              <a href="kitchen-renovation-manhattan.html">Manhattan</a>
+              <a href="kitchen-renovation-queens.html">Queens</a>
+            </div>
+          </div>
+          <div class="has-sub">
+            <a href="painting.html">🎨 Painting Services</a>
+            <div class="sub-menu">
+              <span class="sub-label">Painting Services</span>
+              <a href="painting.html">All Painting Services</a>
+              <span class="sub-label">By Location</span>
+              <a href="painting-brooklyn.html">Brooklyn</a>
+              <a href="painting-manhattan.html">Manhattan</a>
+            </div>
+          </div>
           <a href="flooring.html">🪵 Flooring Installation</a>
-          <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+          <div class="has-sub">
+            <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+            <div class="sub-menu">
+              <span class="sub-label">Stairs</span>
+              <a href="stair-building.html">Stair Building</a>
+              <a href="stair-renovation.html">Stair Renovation</a>
+              <a href="stair-restoration.html">Stair Restoration</a>
+              <a href="stair-upgrade.html">Stair Upgrade</a>
+              <span class="sub-label">Decks & Exterior</span>
+              <a href="deck-building.html">Deck Building</a>
+              <a href="deck-renovation.html">Deck Renovation</a>
+              <a href="exterior-carpentry.html">Exterior Carpentry</a>
+            </div>
+          </div>
           <a href="water-damage.html">💧 Water Damage Restoration</a>
           <a href="handyman.html">🔧 Handyman Services</a>
+          <div class="has-sub">
+            <a href="services.html">📍 Renovations by Area</a>
+            <div class="sub-menu">
+              <span class="sub-label">NYC Boroughs</span>
+              <a href="renovation-contractor-brooklyn.html">Brooklyn</a>
+              <a href="renovation-contractor-manhattan.html">Manhattan</a>
+              <a href="renovation-contractor-queens.html">Queens</a>
+              <a href="renovation-contractor-long-island.html">Long Island</a>
+            </div>
+          </div>
           <a href="services.html">→ View All Services</a>
         </div>
       </div>
@@ -325,6 +425,126 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   </div>
 
 </div>
+
+<!-- OUR PROCESS -->
+<section class="process-section">
+  <div class="section-inner">
+    <div class="process-eyebrow"><div class="line"></div><span>Our Process</span><div class="line"></div></div>
+    <h2 class="process-title">How We Work With You<br><em>From Quote to Completion</em></h2>
+    <div class="process-steps">
+      <div class="process-step"><div class="step-num">01</div><div class="step-title">Free Consultation</div><p class="step-desc">We visit your property, listen to your vision, take measurements, and discuss materials, timeline, and budget.</p></div>
+      <div class="process-step"><div class="step-num">02</div><div class="step-title">Detailed Estimate</div><p class="step-desc">Receive a clear written estimate within 24 hours with itemized costs - no hidden fees or surprises.</p></div>
+      <div class="process-step"><div class="step-num">03</div><div class="step-title">Project Planning</div><p class="step-desc">Once approved, we schedule your project, order materials, handle permits, and prepare your space.</p></div>
+      <div class="process-step"><div class="step-num">04</div><div class="step-title">Quality Execution</div><p class="step-desc">Our skilled team executes your project with daily updates, clean workspaces, and on-time delivery.</p></div>
+    </div>
+    <div class="process-steps" style="margin-top:32px">
+      <div class="process-step"><div class="step-num">05</div><div class="step-title">Daily Communication</div><p class="step-desc">Your project manager keeps you informed with photos, progress updates, and answers to any questions.</p></div>
+      <div class="process-step"><div class="step-num">06</div><div class="step-title">Quality Inspection</div><p class="step-desc">We perform multi-stage quality checks throughout the project to ensure excellence at every step.</p></div>
+      <div class="process-step"><div class="step-num">07</div><div class="step-title">Final Walkthrough</div><p class="step-desc">We walk through every detail together, address any concerns, and ensure complete satisfaction.</p></div>
+      <div class="process-step"><div class="step-num">08</div><div class="step-title">Warranty & Support</div><p class="step-desc">Receive full warranty documentation. We stand behind our work and respond quickly to any issues.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="reviews-section">
+  <div class="section-inner">
+    <div class="reviews-eyebrow"><div class="line"></div><span>Customer Reviews</span><div class="line"></div></div>
+    <h2 class="reviews-title">What NYC Clients Say About<br><em>Our Renovation Services</em></h2>
+    <div class="reviews-grid">
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Sani Building Corp renovated our entire Park Slope brownstone - bathroom, kitchen, painting, and flooring all coordinated by one team. Project ran on schedule and the quality is outstanding. Highly recommend for any major NYC renovation."</p>
+        <div class="review-author"><div class="review-avatar">J</div><div><div class="review-name">Jennifer Walsh</div><div class="review-location">Park Slope, Brooklyn</div></div></div>
+      </div>
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Used Sani for multiple projects in our Manhattan co-op - bathroom remodel, kitchen update, and painting. They handle all building approvals and insurance certificates. Best contractor we've worked with in NYC."</p>
+        <div class="review-author"><div class="review-avatar">D</div><div><div class="review-name">David Chen</div><div class="review-location">Upper East Side, Manhattan</div></div></div>
+      </div>
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Full house renovation in Queens - new bathrooms, kitchen, flooring throughout, and exterior carpentry. Sani managed everything seamlessly. The project came in on budget and the result exceeded our expectations."</p>
+        <div class="review-author"><div class="review-avatar">M</div><div><div class="review-name">Maria Rodriguez</div><div class="review-location">Astoria, Queens</div></div></div>
+      </div>
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Emergency water damage in our Staten Island home. Sani arrived same-day, worked with our insurance, and completely restored the affected areas. You can't tell where the damage was. Professional and fast."</p>
+        <div class="review-author"><div class="review-avatar">R</div><div><div class="review-name">Robert Murphy</div><div class="review-location">Tottenville, Staten Island</div></div></div>
+      </div>
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Property manager here - I use Sani Building Corp for handyman work and renovations across multiple Bronx buildings. Reliable, insured, and excellent communication. They're my go-to NYC contractor."</p>
+        <div class="review-author"><div class="review-avatar">S</div><div><div class="review-name">Sarah Goldman</div><div class="review-location">Riverdale, Bronx</div></div></div>
+      </div>
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Custom kitchen and bathroom renovations in our Long Island home. The carpentry work is gorgeous - custom built-ins matching the original 1920s woodwork perfectly. Worth every penny."</p>
+        <div class="review-author"><div class="review-avatar">E</div><div><div class="review-name">Elizabeth Hartman</div><div class="review-location">Garden City, Long Island</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+  <div class="section-inner">
+    <div class="faq-eyebrow"><div class="line"></div><span>Common Questions</span><div class="line"></div></div>
+    <h2 class="faq-title">Renovation Services <em>FAQs</em></h2>
+    <div class="faq-grid">
+      <div class="faq-item"><div class="faq-q">What services does Sani Building Corp offer in NYC?</div><div class="faq-a">We're a <strong>full-service renovation contractor</strong> offering bathroom renovation, kitchen renovation, painting, flooring, carpentry & millwork, water damage restoration, and commercial handyman services throughout New York City and Long Island.</div></div>
+      <div class="faq-item"><div class="faq-q">How much do renovation services cost in NYC?</div><div class="faq-a">NYC renovation costs vary: bathroom <strong>$12,000-$60,000</strong>, kitchen <strong>$25,000-$100,000</strong>, painting <strong>$1,800-$3,500</strong> per apartment, flooring <strong>$6-$30/sqft</strong> installed. We provide free detailed written estimates.</div></div>
+      <div class="faq-item"><div class="faq-q">What areas of NYC do you serve?</div><div class="faq-a">We serve <strong>all 5 NYC boroughs</strong>: Manhattan, Brooklyn, Queens, Bronx, and Staten Island - plus Long Island City, Nassau County, and Long Island. Residential and commercial.</div></div>
+      <div class="faq-item"><div class="faq-q">Are you fully insured for renovation work in NYC?</div><div class="faq-a">Yes. We're <strong>fully insured</strong> with comprehensive liability insurance and worker's compensation. We provide certificates of insurance to building management and co-op boards on request.</div></div>
+      <div class="faq-item"><div class="faq-q">Do you handle NYC building permits?</div><div class="faq-a">Yes. We manage all required <strong>NYC Department of Buildings permits</strong> for plumbing, electrical, structural, and renovation work. Experienced with co-op/condo requirements.</div></div>
+      <div class="faq-item"><div class="faq-q">How quickly can you start a renovation project?</div><div class="faq-a">We offer <strong>same-day response</strong> for urgent repairs and water damage emergencies. Full renovations typically start within 1-2 weeks depending on scope and permits.</div></div>
+      <div class="faq-item"><div class="faq-q">Do you offer free estimates?</div><div class="faq-a">Yes - <strong>all estimates are completely free</strong> with no obligation. We visit your property, assess the scope, and provide a clear written estimate within 24 hours.</div></div>
+      <div class="faq-item"><div class="faq-q">Can you handle commercial renovation projects?</div><div class="faq-a">Absolutely. We handle <strong>commercial renovations</strong> for offices, retail stores, restaurants, and industrial properties throughout NYC. We work after-hours and weekends to minimize business disruption.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICE AREAS -->
+<section class="areas-section">
+  <div class="section-inner">
+    <div class="areas-eyebrow">✦ Areas We Serve</div>
+    <h2 class="areas-title">Renovation Services Across<br><em>New York City & Long Island</em></h2>
+    <div class="areas-grid">
+      <div class="area-card">
+        <div class="area-name">Manhattan</div>
+        <div class="area-neighborhoods">Upper East Side · Upper West Side · Tribeca · SoHo · Chelsea · Greenwich Village · Midtown · Harlem · Financial District</div>
+      </div>
+      <div class="area-card">
+        <div class="area-name">Brooklyn</div>
+        <div class="area-neighborhoods">Park Slope · Williamsburg · Brooklyn Heights · DUMBO · Bushwick · Crown Heights · Bay Ridge · Cobble Hill · Carroll Gardens</div>
+      </div>
+      <div class="area-card">
+        <div class="area-name">Queens</div>
+        <div class="area-neighborhoods">Astoria · Long Island City · Jackson Heights · Forest Hills · Sunnyside · Bayside · Flushing · Ridgewood</div>
+      </div>
+      <div class="area-card">
+        <div class="area-name">Bronx</div>
+        <div class="area-neighborhoods">Riverdale · Pelham Bay · Throgs Neck · Fordham · Concourse · Hunts Point · Morris Park</div>
+      </div>
+      <div class="area-card">
+        <div class="area-name">Staten Island</div>
+        <div class="area-neighborhoods">Tottenville · St. George · Great Kills · New Dorp · Eltingville · Tottenville · Annadale</div>
+      </div>
+      <div class="area-card">
+        <div class="area-name">Long Island City</div>
+        <div class="area-neighborhoods">LIC waterfront · Court Square · Hunters Point · Queensbridge · Dutch Kills</div>
+      </div>
+      <div class="area-card">
+        <div class="area-name">Nassau County</div>
+        <div class="area-neighborhoods">Garden City · Great Neck · Manhasset · Roslyn · Hempstead · Mineola · New Hyde Park</div>
+      </div>
+      <div class="area-card">
+        <div class="area-name">Long Island</div>
+        <div class="area-neighborhoods">Suffolk County · Huntington · Smithtown · Babylon · Hicksville · Levittown</div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- CTA -->
 <section class="cta-strip">

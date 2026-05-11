@@ -2,12 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <meta name="theme-color" content="#b8720a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Carpentry & Millwork NYC | Custom Built-Ins Brooklyn | Sani Building Corp</title>
 <meta name="description" content="Expert carpentry & millwork in NYC. Custom built-ins, trim, staircases & antique restoration. Brooklyn, Manhattan, Queens, Long Island. Free estimate — (332) 277-0990.">
@@ -120,6 +114,12 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .review-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-family:"Playfair Display",serif;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
 .review-name{font-size:13px;font-weight:600;color:var(--black)}
 .review-location{font-size:11px;color:var(--gray)}
+.process-section{background:var(--dark);padding:80px 28px;color:#fff}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:44px}
+.process-step{text-align:center;padding:0 8px}
+.step-num{width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--gold-light)}
+.step-title{font-family:"Playfair Display",serif;font-size:16px;font-weight:600;color:#fff;margin-bottom:8px}
+.step-desc{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65}
 .faq-section{padding:80px 28px}
 .faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
 .faq-item{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:24px;transition:all .25s}
@@ -147,9 +147,31 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 .footer-col p a{display:inline;margin-bottom:0}
 .footer-bottom{border-top:1px solid rgba(255,255,255,.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 .footer-bottom p{font-size:12px;color:rgba(255,255,255,.25)}
-@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.nav-links{display:none}.hamburger{display:flex}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.services-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:40px 20px 44px}}
+
+.specialty-section{padding:80px 28px;background:linear-gradient(135deg,#0f0f0f 0%,#1a1a1a 100%);color:#fff;position:relative}
+.specialty-section .section-inner{max-width:1200px;margin:0 auto;position:relative;z-index:2}
+.specialty-section .section-title{color:#fff}
+.specialty-section .section-sub{color:rgba(255,255,255,0.65);margin-left:auto;margin-right:auto;text-align:center}
+.specialty-section .section-eyebrow span{color:var(--gold-light)}
+.specialty-section .section-eyebrow .line{background:rgba(240,165,0,0.3)}
+.carpentry-specialty-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:48px}
+.specialty-card{background:#1f1f1f;border:1px solid rgba(240,165,0,0.15);border-radius:14px;overflow:hidden;transition:all .3s;text-decoration:none;color:#fff;display:block}
+.specialty-card:hover{transform:translateY(-6px);border-color:rgba(240,165,0,0.5);box-shadow:0 16px 48px rgba(240,165,0,0.15)}
+.specialty-card img{width:100%;height:180px;object-fit:cover;display:block;transition:transform .4s}
+.specialty-card:hover img{transform:scale(1.06)}
+.specialty-card-body{padding:22px}
+.specialty-card-tag{display:inline-block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-light);margin-bottom:10px;font-weight:500}
+.specialty-card-title{font-size:18px;color:#fff;margin-bottom:8px;font-weight:500}
+.specialty-card-desc{font-size:13px;color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:14px}
+.specialty-card-arrow{font-size:13px;color:var(--gold-light);font-weight:500;letter-spacing:.5px}
+.specialty-card-arrow::after{content:' →';transition:margin .2s}
+.specialty-card:hover .specialty-card-arrow::after{margin-left:6px}
+@media(max-width:900px){.carpentry-specialty-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.carpentry-specialty-grid{grid-template-columns:1fr}}
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How much does custom carpentry cost in NYC?","acceptedAnswer":{"@type":"Answer","text":"Custom carpentry projects in NYC range from $1,500 for simple built-in shelving to $15,000+ for complete custom kitchen cabinetry. Crown molding installation typically starts at $8-$15 per linear foot."}},{"@type":"Question","name":"Can you match existing millwork in my apartment?","acceptedAnswer":{"@type":"Answer","text":"Yes - we specialize in matching existing trim profiles, wood species, and finishes. This is critical for pre-war NYC apartments and brownstones where we need to maintain architectural integrity."}},{"@type":"Question","name":"Do you do antique furniture restoration?","acceptedAnswer":{"@type":"Answer","text":"Yes - we restore antique furniture, repair damaged millwork, and recreate historic woodwork. Our craftsmen have experience with traditional joinery and period-appropriate techniques."}},{"@type":"Question","name":"How long does a custom built-in project take?","acceptedAnswer":{"@type":"Answer","text":"Custom built-ins typically take 2-4 weeks from design to completion. Complex projects with multiple rooms or intricate details may take 4-8 weeks. We provide accurate timelines after consultation."}},{"@type":"Question","name":"Do you serve Long Island and Nassau County?","acceptedAnswer":{"@type":"Answer","text":"Yes - we provide custom carpentry services throughout Long Island, Nassau County, and Long Island City in addition to all 5 NYC boroughs."}},{"@type":"Question","name":"Are you insured for carpentry work in NYC?","acceptedAnswer":{"@type":"Answer","text":"Yes, we carry comprehensive liability insurance and worker compensation. We provide certificates of insurance to building management and co-op boards upon request."}}]}</script>
 </head>
 <body>
 <nav>
@@ -166,21 +188,67 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
               <span class="sub-label">Bathroom Services</span>
               <a href="bathroom-renovation.html">Full Bathroom Renovation</a>
               <a href="bathroom-floor-tile-installation.html">Floor Tile Installation</a>
+              <span class="sub-label">By Location</span>
+              <a href="bathroom-renovation-brooklyn.html">Brooklyn</a>
+              <a href="bathroom-renovation-manhattan.html">Manhattan</a>
+              <a href="bathroom-renovation-queens.html">Queens</a>
             </div>
           </div>
-          <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
-          <a href="painting.html">🎨 Painting Services</a>
+          <div class="has-sub">
+            <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
+            <div class="sub-menu">
+              <span class="sub-label">Kitchen Services</span>
+              <a href="kitchen-renovation.html">Full Kitchen Renovation</a>
+              <span class="sub-label">By Location</span>
+              <a href="kitchen-renovation-brooklyn.html">Brooklyn</a>
+              <a href="kitchen-renovation-manhattan.html">Manhattan</a>
+              <a href="kitchen-renovation-queens.html">Queens</a>
+            </div>
+          </div>
+          <div class="has-sub">
+            <a href="painting.html">🎨 Painting Services</a>
+            <div class="sub-menu">
+              <span class="sub-label">Painting Services</span>
+              <a href="painting.html">All Painting Services</a>
+              <span class="sub-label">By Location</span>
+              <a href="painting-brooklyn.html">Brooklyn</a>
+              <a href="painting-manhattan.html">Manhattan</a>
+            </div>
+          </div>
           <a href="flooring.html">🪵 Flooring Installation</a>
-          <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+          <div class="has-sub">
+            <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+            <div class="sub-menu">
+              <span class="sub-label">Stairs</span>
+              <a href="stair-building.html">Stair Building</a>
+              <a href="stair-renovation.html">Stair Renovation</a>
+              <a href="stair-restoration.html">Stair Restoration</a>
+              <a href="stair-upgrade.html">Stair Upgrade</a>
+              <span class="sub-label">Decks & Exterior</span>
+              <a href="deck-building.html">Deck Building</a>
+              <a href="deck-renovation.html">Deck Renovation</a>
+              <a href="exterior-carpentry.html">Exterior Carpentry</a>
+            </div>
+          </div>
           <a href="water-damage.html">💧 Water Damage Restoration</a>
           <a href="handyman.html">🔧 Handyman Services</a>
+          <div class="has-sub">
+            <a href="services.html">📍 Renovations by Area</a>
+            <div class="sub-menu">
+              <span class="sub-label">NYC Boroughs</span>
+              <a href="renovation-contractor-brooklyn.html">Brooklyn</a>
+              <a href="renovation-contractor-manhattan.html">Manhattan</a>
+              <a href="renovation-contractor-queens.html">Queens</a>
+              <a href="renovation-contractor-long-island.html">Long Island</a>
+            </div>
+          </div>
           <a href="services.html">→ View All Services</a>
         </div>
       </div>
       <a href="about.html">About</a>
       <a href="contact.html">Contact</a>
       <a href="tel:3322770990" class="nav-phone">332-277-0990</a>
-      <a href="/estimate" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#b8720a,#e09500);color:#fff;font-weight:700;font-size:12px;letter-spacing:0.5px;padding:8px 16px;border-radius:8px;text-decoration:none;text-transform:uppercase;box-shadow:0 4px 16px rgba(224,149,0,0.5);border:2px solid #f5c518;transition:all 0.3s ease" onmouseover="this.style.background='linear-gradient(135deg,#e09500,#f5c518)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(245,197,24,0.7)'" onmouseout="this.style.background='linear-gradient(135deg,#b8720a,#e09500)';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 14px rgba(224,149,0,0.5)'">⚡ Cost Calculator<
+      <a href="estimate.html" style="color:var(--gold-light);font-weight:500;">⚡ AI Estimate</a>
       <a href="contact.html" class="nav-cta">Free Estimate</a>
     </div>
     <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
@@ -260,6 +328,86 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   </div>
 </section>
 
+<!-- SPECIALTY CARPENTRY -->
+<section class="specialty-section">
+  <div class="section-inner">
+    <div style="text-align:center">
+      <div class="section-eyebrow" style="justify-content:center"><div class="line"></div><span>Specialty Carpentry Services</span><div class="line"></div></div>
+      <h2 class="section-title">Stairs, Decks &<br><em>Exterior Woodwork</em></h2>
+      <p class="section-sub">Beyond interior millwork, we specialize in custom staircases and outdoor carpentry. Browse our specialty services below.</p>
+    </div>
+    <div class="carpentry-specialty-grid">
+      <a href="stair-building.html" class="specialty-card">
+        <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=600&q=80" alt="Stair building NYC custom staircase">
+        <div class="specialty-card-body">
+          <span class="specialty-card-tag">Stairs</span>
+          <div class="specialty-card-title">Stair Building</div>
+          <p class="specialty-card-desc">Custom-built staircases — straight, L-shaped, U-shaped, spiral & floating designs for NYC homes and brownstones.</p>
+          <span class="specialty-card-arrow">Learn More</span>
+        </div>
+      </a>
+      <a href="stair-renovation.html" class="specialty-card">
+        <img src="https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=600&q=80" alt="Stair renovation NYC modernization">
+        <div class="specialty-card-body">
+          <span class="specialty-card-tag">Stairs</span>
+          <div class="specialty-card-title">Stair Renovation</div>
+          <p class="specialty-card-desc">Modernize tired or outdated staircases with new treads, risers, railings & balusters.</p>
+          <span class="specialty-card-arrow">Learn More</span>
+        </div>
+      </a>
+      <a href="stair-restoration.html" class="specialty-card">
+        <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&q=80" alt="Stair restoration NYC brownstone historical">
+        <div class="specialty-card-body">
+          <span class="specialty-card-tag">Stairs</span>
+          <div class="specialty-card-title">Stair Restoration</div>
+          <p class="specialty-card-desc">Preserve historic brownstone staircases — period-correct restoration of original woodwork and details.</p>
+          <span class="specialty-card-arrow">Learn More</span>
+        </div>
+      </a>
+      <a href="stair-upgrade.html" class="specialty-card">
+        <img src="https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=600&q=80" alt="Stair upgrade NYC railings balusters">
+        <div class="specialty-card-body">
+          <span class="specialty-card-tag">Stairs</span>
+          <div class="specialty-card-title">Stair Upgrade</div>
+          <p class="specialty-card-desc">Partial improvements — new railings, balusters, treads, or modern handrails without full renovation.</p>
+          <span class="specialty-card-arrow">Learn More</span>
+        </div>
+      </a>
+      <a href="deck-building.html" class="specialty-card">
+        <img src="https://images.unsplash.com/photo-1591474200742-8e512e6f98f8?w=600&q=80" alt="Deck building NYC Long Island custom">
+        <div class="specialty-card-body">
+          <span class="specialty-card-tag">Outdoor</span>
+          <div class="specialty-card-title">Deck Building</div>
+          <p class="specialty-card-desc">Custom decks built from scratch — pressure-treated, cedar, composite Trex with railings and stairs.</p>
+          <span class="specialty-card-arrow">Learn More</span>
+        </div>
+      </a>
+      <a href="deck-renovation.html" class="specialty-card">
+        <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80" alt="Deck renovation refinishing NYC">
+        <div class="specialty-card-body">
+          <span class="specialty-card-tag">Outdoor</span>
+          <div class="specialty-card-title">Deck Renovation</div>
+          <p class="specialty-card-desc">Refinish, repair, or rebuild aging decks. Board replacement, sanding, staining & structural reinforcement.</p>
+          <span class="specialty-card-arrow">Learn More</span>
+        </div>
+      </a>
+      <a href="exterior-carpentry.html" class="specialty-card specialty-card-wide" style="grid-column:span 2">
+        <div style="display:grid;grid-template-columns:1fr 1fr;height:100%">
+          <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&q=80" alt="Exterior carpentry NYC pergola fence" style="height:100%">
+          <div class="specialty-card-body" style="display:flex;flex-direction:column;justify-content:center">
+            <span class="specialty-card-tag">Outdoor</span>
+            <div class="specialty-card-title">Exterior Carpentry</div>
+            <p class="specialty-card-desc">Pergolas, gazebos, fences, exterior trim, siding repair & all outdoor woodwork projects throughout NYC and Long Island.</p>
+            <span class="specialty-card-arrow">Explore Exterior Carpentry</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+
 <section class="section">
   <div class="section-inner">
     <div class="why-grid">
@@ -276,6 +424,27 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
         </div>
         <div style="margin-top:24px"><a href="contact.html" class="btn-primary">Get Free Estimate</a></div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="process-section">
+  <div class="section-inner">
+    <div style="text-align:center">
+      <div class="section-eyebrow" style="justify-content:center"><div class="line"></div><span style="color:var(--gold)">Our Process</span><div class="line"></div></div>
+      <h2 class="section-title" style="color:#fff;text-align:center">How We Build Your Custom Carpentry<br><em>Step by Step</em></h2>
+    </div>
+    <div class="process-steps">
+      <div class="process-step"><div class="step-num">01</div><div class="step-title">Design Consultation</div><p class="step-desc">Meet to discuss your vision, take measurements, and create custom design that fits your space perfectly.</p></div>
+      <div class="process-step"><div class="step-num">02</div><div class="step-title">Material Selection</div><p class="step-desc">Choose wood species, stain, hardware, and finish options. We source quality materials from trusted NYC suppliers.</p></div>
+      <div class="process-step"><div class="step-num">03</div><div class="step-title">Shop Drawings</div><p class="step-desc">Detailed shop drawings showing exact dimensions, joinery, and details before any wood is cut.</p></div>
+      <div class="process-step"><div class="step-num">04</div><div class="step-title">Workshop Build</div><p class="step-desc">Skilled carpenters build your custom pieces in our shop using precision tools and traditional joinery techniques.</p></div>
+    </div>
+    <div class="process-steps" style="margin-top:32px">
+      <div class="process-step"><div class="step-num">05</div><div class="step-title">Sanding & Finishing</div><p class="step-desc">Multi-stage sanding from rough to fine grit. Apply stain or paint with proper sealing and protection.</p></div>
+      <div class="process-step"><div class="step-num">06</div><div class="step-title">Site Preparation</div><p class="step-desc">Protect floors and walls. Verify all measurements are accurate before installation begins.</p></div>
+      <div class="process-step"><div class="step-num">07</div><div class="step-title">Installation</div><p class="step-desc">Professional installation with proper anchoring, leveling, and integration with existing trim and walls.</p></div>
+      <div class="process-step"><div class="step-num">08</div><div class="step-title">Touch-Up & Walkthrough</div><p class="step-desc">Final touch-ups, caulking, painting where needed, and walkthrough to ensure perfect results.</p></div>
     </div>
   </div>
 </section>

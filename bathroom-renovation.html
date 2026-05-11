@@ -2,12 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <meta name="theme-color" content="#b8720a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bathroom Renovation NYC | Full Remodeling Brooklyn | Sani Building Corp</title>
 <meta name="description" content="Expert bathroom renovation in NYC — full gut remodels, luxury tile, custom vanities & walk-in showers. Brooklyn, Manhattan, Queens, Long Island. Free estimate — (332) 277-0990.">
@@ -126,6 +120,12 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .review-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-family:"Playfair Display",serif;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
 .review-name{font-size:13px;font-weight:600;color:var(--black)}
 .review-location{font-size:11px;color:var(--gray)}
+.process-section{background:var(--dark);padding:80px 28px;color:#fff}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:44px}
+.process-step{text-align:center;padding:0 8px}
+.step-num{width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--gold-light)}
+.step-title{font-family:"Playfair Display",serif;font-size:16px;font-weight:600;color:#fff;margin-bottom:8px}
+.step-desc{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65}
 .faq-section{padding:80px 28px}
 .faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
 .faq-item{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:24px;transition:all .25s}
@@ -153,9 +153,10 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 .footer-col p a{display:inline;margin-bottom:0}
 .footer-bottom{border-top:1px solid rgba(255,255,255,.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 .footer-bottom p{font-size:12px;color:rgba(255,255,255,.25)}
-@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.nav-links{display:none}.hamburger{display:flex}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.services-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:40px 20px 44px}}
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How much does a bathroom renovation cost in NYC?","acceptedAnswer":{"@type":"Answer","text":"NYC bathroom renovations range from $12,000-$20,000 for a mid-range remodel to $30,000-$60,000+ for a high-end full gut renovation. Smaller refresh projects start around $7,000. We provide free detailed estimates with no obligation."}},{"@type":"Question","name":"How long does a bathroom renovation take?","acceptedAnswer":{"@type":"Answer","text":"A typical NYC bathroom renovation takes 2-4 weeks from demo to completion. Full gut renovations can take 4-6 weeks. Timeline depends on scope, material delivery, and permit requirements for NYC buildings."}},{"@type":"Question","name":"Do you handle all the trades or do I need other contractors?","acceptedAnswer":{"@type":"Answer","text":"We handle everything in-house: demolition, plumbing, electrical, waterproofing, tile installation, carpentry, painting, and fixture installation. One contractor, one accountable team, one project manager."}},{"@type":"Question","name":"Do you do waterproofing before tiling?","acceptedAnswer":{"@type":"Answer","text":"Absolutely. Proper waterproofing is critical for NYC bathrooms. We apply professional waterproof membrane on all shower walls, floors, and around tubs before any tile installation to prevent leaks and mold."}},{"@type":"Question","name":"Can you renovate a very small NYC bathroom?","acceptedAnswer":{"@type":"Answer","text":"Yes - we specialize in maximizing small NYC bathrooms. We use space-saving fixtures, smart storage solutions, large-format tile, and design tricks that make compact bathrooms feel much larger."}},{"@type":"Question","name":"Do you serve Long Island and Nassau County?","acceptedAnswer":{"@type":"Answer","text":"Yes - we regularly renovate bathrooms throughout Long Island, Nassau County, and Long Island City in addition to all 5 NYC boroughs. These areas are within our standard service area."}}]}</script>
 </head>
 <body>
 <nav>
@@ -172,21 +173,67 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
               <span class="sub-label">Bathroom Services</span>
               <a href="bathroom-renovation.html">Full Bathroom Renovation</a>
               <a href="bathroom-floor-tile-installation.html">Floor Tile Installation</a>
+              <span class="sub-label">By Location</span>
+              <a href="bathroom-renovation-brooklyn.html">Brooklyn</a>
+              <a href="bathroom-renovation-manhattan.html">Manhattan</a>
+              <a href="bathroom-renovation-queens.html">Queens</a>
             </div>
           </div>
-          <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
-          <a href="painting.html">🎨 Painting Services</a>
+          <div class="has-sub">
+            <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
+            <div class="sub-menu">
+              <span class="sub-label">Kitchen Services</span>
+              <a href="kitchen-renovation.html">Full Kitchen Renovation</a>
+              <span class="sub-label">By Location</span>
+              <a href="kitchen-renovation-brooklyn.html">Brooklyn</a>
+              <a href="kitchen-renovation-manhattan.html">Manhattan</a>
+              <a href="kitchen-renovation-queens.html">Queens</a>
+            </div>
+          </div>
+          <div class="has-sub">
+            <a href="painting.html">🎨 Painting Services</a>
+            <div class="sub-menu">
+              <span class="sub-label">Painting Services</span>
+              <a href="painting.html">All Painting Services</a>
+              <span class="sub-label">By Location</span>
+              <a href="painting-brooklyn.html">Brooklyn</a>
+              <a href="painting-manhattan.html">Manhattan</a>
+            </div>
+          </div>
           <a href="flooring.html">🪵 Flooring Installation</a>
-          <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+          <div class="has-sub">
+            <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+            <div class="sub-menu">
+              <span class="sub-label">Stairs</span>
+              <a href="stair-building.html">Stair Building</a>
+              <a href="stair-renovation.html">Stair Renovation</a>
+              <a href="stair-restoration.html">Stair Restoration</a>
+              <a href="stair-upgrade.html">Stair Upgrade</a>
+              <span class="sub-label">Decks & Exterior</span>
+              <a href="deck-building.html">Deck Building</a>
+              <a href="deck-renovation.html">Deck Renovation</a>
+              <a href="exterior-carpentry.html">Exterior Carpentry</a>
+            </div>
+          </div>
           <a href="water-damage.html">💧 Water Damage Restoration</a>
           <a href="handyman.html">🔧 Handyman Services</a>
+          <div class="has-sub">
+            <a href="services.html">📍 Renovations by Area</a>
+            <div class="sub-menu">
+              <span class="sub-label">NYC Boroughs</span>
+              <a href="renovation-contractor-brooklyn.html">Brooklyn</a>
+              <a href="renovation-contractor-manhattan.html">Manhattan</a>
+              <a href="renovation-contractor-queens.html">Queens</a>
+              <a href="renovation-contractor-long-island.html">Long Island</a>
+            </div>
+          </div>
           <a href="services.html">→ View All Services</a>
         </div>
       </div>
       <a href="about.html">About</a>
       <a href="contact.html">Contact</a>
       <a href="tel:3322770990" class="nav-phone">332-277-0990</a>
-     <a href="/estimate" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#b8720a,#e09500);color:#fff;font-weight:700;font-size:12px;letter-spacing:0.5px;padding:8px 16px;border-radius:8px;text-decoration:none;text-transform:uppercase;box-shadow:0 4px 16px rgba(224,149,0,0.5);border:2px solid #f5c518;transition:all 0.3s ease" onmouseover="this.style.background='linear-gradient(135deg,#e09500,#f5c518)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(245,197,24,0.7)'" onmouseout="this.style.background='linear-gradient(135deg,#b8720a,#e09500)';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 14px rgba(224,149,0,0.5)'">⚡ Cost Calculator<
+      <a href="estimate.html" style="color:var(--gold-light);font-weight:500;">⚡ AI Estimate</a>
       <a href="contact.html" class="nav-cta">Free Estimate</a>
     </div>
     <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
@@ -291,6 +338,27 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
         </div>
         <div style="margin-top:24px"><a href="contact.html" class="btn-primary">Get Free Estimate</a></div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="process-section">
+  <div class="section-inner">
+    <div style="text-align:center">
+      <div class="section-eyebrow" style="justify-content:center"><div class="line"></div><span style="color:var(--gold)">Our Process</span><div class="line"></div></div>
+      <h2 class="section-title" style="color:#fff;text-align:center">How We Renovate Your Bathroom<br><em>Step by Step</em></h2>
+    </div>
+    <div class="process-steps">
+      <div class="process-step"><div class="step-num">01</div><div class="step-title">Free Consultation & Estimate</div><p class="step-desc">We visit your home, discuss your vision, take measurements, and provide a detailed written estimate with material recommendations.</p></div>
+      <div class="process-step"><div class="step-num">02</div><div class="step-title">Demolition & Prep</div><p class="step-desc">Careful removal of old fixtures, tile, and vanity. We protect adjacent rooms from dust and properly dispose of all debris.</p></div>
+      <div class="process-step"><div class="step-num">03</div><div class="step-title">Plumbing Rough-In</div><p class="step-desc">Update or relocate plumbing for new shower, toilet, vanity, and tub per NYC code with all required permits.</p></div>
+      <div class="process-step"><div class="step-num">04</div><div class="step-title">Electrical & Ventilation</div><p class="step-desc">Install GFCI outlets, upgrade lighting, add ventilation fans, and ensure all wiring meets NYC electrical code.</p></div>
+    </div>
+    <div class="process-steps" style="margin-top:32px">
+      <div class="process-step"><div class="step-num">05</div><div class="step-title">Waterproofing</div><p class="step-desc">Apply proper waterproof membrane on shower walls, floors, and around tub to prevent leaks and mold for decades.</p></div>
+      <div class="process-step"><div class="step-num">06</div><div class="step-title">Tile Installation</div><p class="step-desc">Professional tile installation on floors, walls, and shower surround with precision grout work and sealing.</p></div>
+      <div class="process-step"><div class="step-num">07</div><div class="step-title">Fixtures & Vanity</div><p class="step-desc">Install vanity, sink, faucets, toilet, shower fixtures, mirror, and all accessories with quality craftsmanship.</p></div>
+      <div class="process-step"><div class="step-num">08</div><div class="step-title">Final Walkthrough</div><p class="step-desc">We walk through every detail together, complete cleanup, and deliver your beautiful new bathroom on time.</p></div>
     </div>
   </div>
 </section>

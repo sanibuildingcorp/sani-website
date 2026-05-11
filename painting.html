@@ -2,12 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <meta name="theme-color" content="#b8720a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painting Services NYC | Interior & Exterior Painting Brooklyn | Sani Building Corp</title>
 <meta name="description" content="Professional interior & exterior painting services in NYC. Brooklyn, Manhattan, Queens, Long Island. Skim coating, wall prep, flawless finishes. Call (332) 277-0990.">
@@ -130,6 +124,12 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .review-name{font-size:13px;font-weight:600;color:var(--black)}
 .review-location{font-size:11px;color:var(--gray)}
 /* FAQ */
+.process-section{background:var(--dark);padding:80px 28px;color:#fff}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:44px}
+.process-step{text-align:center;padding:0 8px}
+.step-num{width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--gold-light)}
+.step-title{font-family:"Playfair Display",serif;font-size:16px;font-weight:600;color:#fff;margin-bottom:8px}
+.step-desc{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65}
 .faq-section{padding:80px 28px}
 .faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
 .faq-item{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:24px;transition:all .25s}
@@ -159,9 +159,10 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 .footer-col p a{display:inline;margin-bottom:0}
 .footer-bottom{border-top:1px solid rgba(255,255,255,.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 .footer-bottom p{font-size:12px;color:rgba(255,255,255,.25)}
-@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.nav-links{display:none}.hamburger{display:flex}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.services-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:40px 20px 44px}}
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How much does interior painting cost in NYC?","acceptedAnswer":{"@type":"Answer","text":"Interior painting in NYC typically costs $3-$6 per square foot for walls, depending on prep work, ceiling height, and finish quality. A typical 1-bedroom apartment ranges from $1,800-$3,500. We provide free detailed estimates."}},{"@type":"Question","name":"Do you provide the paint or do I need to buy it?","acceptedAnswer":{"@type":"Answer","text":"We supply all paint, primers, and materials. We use premium brands like Benjamin Moore and Sherwin-Williams. You choose colors and finishes - we handle everything else from purchase to application."}},{"@type":"Question","name":"How long does painting a typical NYC apartment take?","acceptedAnswer":{"@type":"Answer","text":"A standard 1-bedroom NYC apartment takes 2-3 days. A 2-bedroom takes 3-5 days. Larger projects with skim coating, complex trim, or multiple colors can take 5-10 days. We provide accurate timelines upfront."}},{"@type":"Question","name":"Do you do skim coating before painting?","acceptedAnswer":{"@type":"Answer","text":"Yes - skim coating is one of our specialties. For walls with imperfections, old wallpaper damage, or texture issues, we apply skim coat for perfectly smooth surfaces that look brand new."}},{"@type":"Question","name":"Can you paint commercial spaces and offices in NYC?","acceptedAnswer":{"@type":"Answer","text":"Absolutely. We paint offices, retail stores, restaurants, and commercial spaces throughout NYC. We work after-hours and weekends to minimize business disruption with full insurance coverage."}},{"@type":"Question","name":"Are you fully insured for painting in New York?","acceptedAnswer":{"@type":"Answer","text":"Yes, we carry comprehensive liability insurance and worker compensation. We provide certificates of insurance to building management, co-op boards, and clients upon request."}},{"@type":"Question","name":"Do you serve Long Island and Nassau County?","acceptedAnswer":{"@type":"Answer","text":"Yes - we provide interior and exterior painting throughout Long Island, Nassau County, and Long Island City. We service all areas within driving distance of NYC."}},{"@type":"Question","name":"What if I am not happy with the paint job?","acceptedAnswer":{"@type":"Answer","text":"Our work is fully guaranteed. If you notice any issues with the paint job, we return to fix them at no charge. Customer satisfaction is our top priority."}}]}</script>
 </head>
 <body>
 
@@ -182,14 +183,60 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
               <span class="sub-label">Bathroom Services</span>
               <a href="bathroom-renovation.html">Full Bathroom Renovation</a>
               <a href="bathroom-floor-tile-installation.html">Floor Tile Installation</a>
+              <span class="sub-label">By Location</span>
+              <a href="bathroom-renovation-brooklyn.html">Brooklyn</a>
+              <a href="bathroom-renovation-manhattan.html">Manhattan</a>
+              <a href="bathroom-renovation-queens.html">Queens</a>
             </div>
           </div>
-          <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
-          <a href="painting.html">🎨 Painting Services</a>
+          <div class="has-sub">
+            <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
+            <div class="sub-menu">
+              <span class="sub-label">Kitchen Services</span>
+              <a href="kitchen-renovation.html">Full Kitchen Renovation</a>
+              <span class="sub-label">By Location</span>
+              <a href="kitchen-renovation-brooklyn.html">Brooklyn</a>
+              <a href="kitchen-renovation-manhattan.html">Manhattan</a>
+              <a href="kitchen-renovation-queens.html">Queens</a>
+            </div>
+          </div>
+          <div class="has-sub">
+            <a href="painting.html">🎨 Painting Services</a>
+            <div class="sub-menu">
+              <span class="sub-label">Painting Services</span>
+              <a href="painting.html">All Painting Services</a>
+              <span class="sub-label">By Location</span>
+              <a href="painting-brooklyn.html">Brooklyn</a>
+              <a href="painting-manhattan.html">Manhattan</a>
+            </div>
+          </div>
           <a href="flooring.html">🪵 Flooring Installation</a>
-          <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+          <div class="has-sub">
+            <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+            <div class="sub-menu">
+              <span class="sub-label">Stairs</span>
+              <a href="stair-building.html">Stair Building</a>
+              <a href="stair-renovation.html">Stair Renovation</a>
+              <a href="stair-restoration.html">Stair Restoration</a>
+              <a href="stair-upgrade.html">Stair Upgrade</a>
+              <span class="sub-label">Decks & Exterior</span>
+              <a href="deck-building.html">Deck Building</a>
+              <a href="deck-renovation.html">Deck Renovation</a>
+              <a href="exterior-carpentry.html">Exterior Carpentry</a>
+            </div>
+          </div>
           <a href="water-damage.html">💧 Water Damage Restoration</a>
           <a href="handyman.html">🔧 Handyman Services</a>
+          <div class="has-sub">
+            <a href="services.html">📍 Renovations by Area</a>
+            <div class="sub-menu">
+              <span class="sub-label">NYC Boroughs</span>
+              <a href="renovation-contractor-brooklyn.html">Brooklyn</a>
+              <a href="renovation-contractor-manhattan.html">Manhattan</a>
+              <a href="renovation-contractor-queens.html">Queens</a>
+              <a href="renovation-contractor-long-island.html">Long Island</a>
+            </div>
+          </div>
           <a href="services.html">→ View All Services</a>
         </div>
       </div>
@@ -326,6 +373,27 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 </section>
 
 <!-- REVIEWS -->
+<section class="process-section">
+  <div class="section-inner">
+    <div style="text-align:center">
+      <div class="section-eyebrow" style="justify-content:center"><div class="line"></div><span style="color:var(--gold)">Our Process</span><div class="line"></div></div>
+      <h2 class="section-title" style="color:#fff;text-align:center">How We Paint Your Space<br><em>Step by Step</em></h2>
+    </div>
+    <div class="process-steps">
+      <div class="process-step"><div class="step-num">01</div><div class="step-title">Color Consultation</div><p class="step-desc">We meet with you to discuss colors, finishes, and timeline. Free written estimate with paint and labor breakdown.</p></div>
+      <div class="process-step"><div class="step-num">02</div><div class="step-title">Surface Preparation</div><p class="step-desc">Move and cover furniture, protect floors, remove outlets and switches, and prepare all surfaces for painting.</p></div>
+      <div class="process-step"><div class="step-num">03</div><div class="step-title">Patching & Repair</div><p class="step-desc">Fill all holes, cracks, and dents. Repair any drywall damage and sand smooth for a flawless finish.</p></div>
+      <div class="process-step"><div class="step-num">04</div><div class="step-title">Skim Coating</div><p class="step-desc">For premium results, we apply skim coat to walls for perfectly smooth surface — eliminating all imperfections.</p></div>
+    </div>
+    <div class="process-steps" style="margin-top:32px">
+      <div class="process-step"><div class="step-num">05</div><div class="step-title">Primer Application</div><p class="step-desc">Apply quality primer to ensure even color coverage and proper paint adhesion on all surfaces.</p></div>
+      <div class="process-step"><div class="step-num">06</div><div class="step-title">First Coat</div><p class="step-desc">Apply first coat of premium paint using professional rollers and brushes for smooth, streak-free finish.</p></div>
+      <div class="process-step"><div class="step-num">07</div><div class="step-title">Second Coat & Trim</div><p class="step-desc">Apply final coat plus cut in trim, baseboards, doors, and windows with precision and clean lines.</p></div>
+      <div class="process-step"><div class="step-num">08</div><div class="step-title">Cleanup & Walkthrough</div><p class="step-desc">Move furniture back, reinstall outlets, full cleanup, and final walkthrough to ensure your complete satisfaction.</p></div>
+    </div>
+  </div>
+</section>
+
 <section class="reviews-section">
   <div class="section-inner">
     <div class="section-eyebrow"><div class="line"></div><span>Customer Reviews</span></div>

@@ -2,12 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <meta name="theme-color" content="#b8720a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kitchen Renovation NYC | Brooklyn Kitchen Remodeling | Sani Building Corp</title>
 <meta name="description" content="Expert kitchen renovation in NYC. Full gut remodels, cabinets, countertops & custom millwork. Brooklyn, Manhattan, Queens, Long Island. Free estimate — (332) 277-0990.">
@@ -121,6 +115,12 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10
 .review-name{font-size:13px;font-weight:600;color:var(--black)}
 .review-location{font-size:11px;color:var(--gray)}
 .faq-section{padding:80px 28px}
+.process-section{background:var(--dark);padding:80px 28px;color:#fff}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:44px}
+.process-step{text-align:center;padding:0 8px}
+.step-num{width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--gold-light)}
+.step-title{font-family:"Playfair Display",serif;font-size:16px;font-weight:600;color:#fff;margin-bottom:8px}
+.step-desc{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65}
 .faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
 .faq-item{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:24px;transition:all .25s}
 .faq-item:hover{border-color:rgba(200,134,10,.25);box-shadow:0 6px 24px rgba(0,0,0,.08)}
@@ -147,9 +147,10 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 .footer-col p a{display:inline;margin-bottom:0}
 .footer-bottom{border-top:1px solid rgba(255,255,255,.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 .footer-bottom p{font-size:12px;color:rgba(255,255,255,.25)}
-@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.nav-links{display:none}.hamburger{display:flex}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.services-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:40px 20px 44px}}
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How much does a kitchen renovation cost in NYC?","acceptedAnswer":{"@type":"Answer","text":"NYC kitchen renovations range from $25,000-$40,000 for a mid-range renovation to $60,000-$100,000+ for a high-end full gut renovation. Cabinet refacing starts at around $8,000. We provide free detailed estimates."}},{"@type":"Question","name":"How long does a kitchen renovation take in NYC?","acceptedAnswer":{"@type":"Answer","text":"A typical NYC kitchen renovation takes 4-8 weeks from demo to completion. Smaller projects like cabinet replacement take 1-2 weeks. Timeline depends on scope, material delivery, and permit requirements."}},{"@type":"Question","name":"Do you handle permits for kitchen renovations?","acceptedAnswer":{"@type":"Answer","text":"Yes. We manage all required permits through the NYC Department of Buildings for plumbing, electrical and structural work. Our team is experienced with NYC building code requirements for kitchen renovations."}},{"@type":"Question","name":"Can you renovate small NYC galley kitchens?","acceptedAnswer":{"@type":"Answer","text":"Absolutely - we specialize in maximizing small NYC kitchen spaces. We're experts at creative cabinet layouts, space-saving solutions and design tricks that make compact kitchens feel much larger."}},{"@type":"Question","name":"Do you work with co-op and condo buildings?","acceptedAnswer":{"@type":"Answer","text":"Yes. We regularly work in Manhattan and Brooklyn co-ops and condos. We're familiar with alteration agreements, building rules, and noise restrictions. We handle all required paperwork and insurance certificates."}},{"@type":"Question","name":"Do you serve Long Island and Nassau County?","acceptedAnswer":{"@type":"Answer","text":"Yes - we regularly renovate kitchens throughout Long Island, Nassau County, and Long Island City in addition to all 5 NYC boroughs. These areas are within our standard service area."}}]}</script>
 </head>
 <body>
 <nav>
@@ -166,14 +167,60 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
               <span class="sub-label">Bathroom Services</span>
               <a href="bathroom-renovation.html">Full Bathroom Renovation</a>
               <a href="bathroom-floor-tile-installation.html">Floor Tile Installation</a>
+              <span class="sub-label">By Location</span>
+              <a href="bathroom-renovation-brooklyn.html">Brooklyn</a>
+              <a href="bathroom-renovation-manhattan.html">Manhattan</a>
+              <a href="bathroom-renovation-queens.html">Queens</a>
             </div>
           </div>
-          <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
-          <a href="painting.html">🎨 Painting Services</a>
+          <div class="has-sub">
+            <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
+            <div class="sub-menu">
+              <span class="sub-label">Kitchen Services</span>
+              <a href="kitchen-renovation.html">Full Kitchen Renovation</a>
+              <span class="sub-label">By Location</span>
+              <a href="kitchen-renovation-brooklyn.html">Brooklyn</a>
+              <a href="kitchen-renovation-manhattan.html">Manhattan</a>
+              <a href="kitchen-renovation-queens.html">Queens</a>
+            </div>
+          </div>
+          <div class="has-sub">
+            <a href="painting.html">🎨 Painting Services</a>
+            <div class="sub-menu">
+              <span class="sub-label">Painting Services</span>
+              <a href="painting.html">All Painting Services</a>
+              <span class="sub-label">By Location</span>
+              <a href="painting-brooklyn.html">Brooklyn</a>
+              <a href="painting-manhattan.html">Manhattan</a>
+            </div>
+          </div>
           <a href="flooring.html">🪵 Flooring Installation</a>
-          <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+          <div class="has-sub">
+            <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
+            <div class="sub-menu">
+              <span class="sub-label">Stairs</span>
+              <a href="stair-building.html">Stair Building</a>
+              <a href="stair-renovation.html">Stair Renovation</a>
+              <a href="stair-restoration.html">Stair Restoration</a>
+              <a href="stair-upgrade.html">Stair Upgrade</a>
+              <span class="sub-label">Decks & Exterior</span>
+              <a href="deck-building.html">Deck Building</a>
+              <a href="deck-renovation.html">Deck Renovation</a>
+              <a href="exterior-carpentry.html">Exterior Carpentry</a>
+            </div>
+          </div>
           <a href="water-damage.html">💧 Water Damage Restoration</a>
           <a href="handyman.html">🔧 Handyman Services</a>
+          <div class="has-sub">
+            <a href="services.html">📍 Renovations by Area</a>
+            <div class="sub-menu">
+              <span class="sub-label">NYC Boroughs</span>
+              <a href="renovation-contractor-brooklyn.html">Brooklyn</a>
+              <a href="renovation-contractor-manhattan.html">Manhattan</a>
+              <a href="renovation-contractor-queens.html">Queens</a>
+              <a href="renovation-contractor-long-island.html">Long Island</a>
+            </div>
+          </div>
           <a href="services.html">→ View All Services</a>
         </div>
       </div>
@@ -276,6 +323,27 @@ footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,1
         </div>
         <div style="margin-top:24px"><a href="contact.html" class="btn-primary">Get Free Estimate</a></div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="process-section">
+  <div class="section-inner">
+    <div style="text-align:center">
+      <div class="section-eyebrow" style="justify-content:center"><div class="line"></div><span style="color:var(--gold)">Our Process</span><div class="line"></div></div>
+      <h2 class="section-title" style="color:#fff;text-align:center">How We Renovate Your Kitchen<br><em>Step by Step</em></h2>
+    </div>
+    <div class="process-steps">
+      <div class="process-step"><div class="step-num">01</div><div class="step-title">Free Consultation & Design</div><p class="step-desc">We visit your home, discuss your vision, take measurements, and provide a detailed written estimate with material recommendations.</p></div>
+      <div class="process-step"><div class="step-num">02</div><div class="step-title">Demolition & Prep</div><p class="step-desc">Careful removal of old cabinets, countertops and appliances. We protect your floors and adjacent rooms from dust and debris.</p></div>
+      <div class="process-step"><div class="step-num">03</div><div class="step-title">Plumbing & Electrical</div><p class="step-desc">Update plumbing for new sinks and dishwashers, upgrade electrical for modern appliances and lighting per NYC code.</p></div>
+      <div class="process-step"><div class="step-num">04</div><div class="step-title">Cabinets & Countertops</div><p class="step-desc">Install custom cabinets, quartz or granite countertops, tile backsplash, and all hardware with precision craftsmanship.</p></div>
+    </div>
+    <div class="process-steps" style="margin-top:32px">
+      <div class="process-step"><div class="step-num">05</div><div class="step-title">Appliance Installation</div><p class="step-desc">Professional installation of refrigerator, stove, dishwasher, microwave and range hood with all proper connections.</p></div>
+      <div class="process-step"><div class="step-num">06</div><div class="step-title">Flooring & Painting</div><p class="step-desc">Install new flooring if needed, paint walls and ceiling, finish all trim work for a polished professional look.</p></div>
+      <div class="process-step"><div class="step-num">07</div><div class="step-title">Final Walkthrough</div><p class="step-desc">We walk through every detail together, address any concerns, and ensure your new kitchen exceeds your expectations.</p></div>
+      <div class="process-step"><div class="step-num">08</div><div class="step-title">Cleanup & Handover</div><p class="step-desc">Complete cleanup, removal of all debris, and full warranty documentation. You're ready to enjoy your new kitchen.</p></div>
     </div>
   </div>
 </section>
