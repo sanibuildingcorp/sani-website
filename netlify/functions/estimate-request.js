@@ -1,19 +1,14 @@
+// netlify/functions/estimate-request.js
+// Receives final V3 estimate submission.
+// Sends: contractor email with all details, customer confirmation email, contractor SMS.
+// Contractor prices manually in dashboard later.
+
 const https = require("https");
 
 exports.handler = async function (event) {
-  // CORS preflight
   if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-      },
-      body: "",
-    };
+    return { statusCode: 200, headers: corsHeaders(), body: "" };
   }
-
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
@@ -21,23 +16,13 @@ exports.handler = async function (event) {
   try {
     const body = JSON.parse(event.body);
     const {
-      ref,
-      name,
-      phone,
-      email,
-      address,
-      type,
-      size,
-      description,
-      budget,
-      timeline,
-      contactTime,
-      source,
-      photoCount,
-      submittedAt,
+      ref, name, phone, email, address,
+      service, serviceId, serviceAnswers,
+      propertyType, description, timeline,
+      photoCount, photos, submittedAt,
     } = body;
 
-    if (!name || !email || !description) {
+    if (!name || !email || !service) {
       return {
         statusCode: 400,
         headers: corsHeaders(),
@@ -45,60 +30,43 @@ exports.handler = async function (event) {
       };
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      console.error("ANTHROPIC_API_KEY not set");
-      return {
-        statusCode: 500,
-        headers: corsHeaders(),
-        body: JSON.stringify({ error: "Server configuration error" }),
-      };
-    }
-
-    // Generate AI estimate
-    let aiEstimate = null;
-    let aiError = null;
-
-    try {
-      aiEstimate = await generateAIEstimate(apiKey, {
-        type,
-        size,
-        description,
-        address,
-        budget,
-        timeline,
-      });
-    } catch (e) {
-      aiError = e.message;
-      console.error("AI estimate generation failed:", e.message);
-    }
-
-    // Send notification email to contractor (via Resend if configured)
     const resendKey = process.env.RESEND_API_KEY;
     const contractorEmail = process.env.CONTRACTOR_EMAIL || "contact@sanibuildingcorp.com";
 
+    // Fire all notifications in parallel
+    const tasks = [];
+
     if (resendKey) {
-      try {
-        await sendContractorEmail(resendKey, contractorEmail, {
-          ref, name, phone, email, address, type, size,
-          description, budget, timeline, contactTime, source,
-          photoCount, submittedAt, aiEstimate, aiError,
-        });
-      } catch (e) {
-        console.error("Email send failed:", e.message);
-      }
-    } else {
-      console.log("RESEND_API_KEY not set - skipping email notification");
+      tasks.push(
+        sendContractorEmail(resendKey, contractorEmail, body).catch((e) =>
+          console.error("Contractor email failed:", e.message)
+        )
+      );
+      tasks.push(
+        sendCustomerConfirmation(resendKey, contractorEmail, body).catch((e) =>
+          console.error("Customer email failed:", e.message)
+        )
+      );
     }
+
+    const twilioSid = process.env.TWILIO_SID;
+    const twilioToken = process.env.TWILIO_TOKEN;
+    const twilioFrom = process.env.TWILIO_FROM;
+    const contractorPhone = process.env.CONTRACTOR_PHONE;
+    if (twilioSid && twilioToken && twilioFrom && contractorPhone) {
+      tasks.push(
+        sendSMS(twilioSid, twilioToken, twilioFrom, contractorPhone, body).catch((e) =>
+          console.error("SMS failed:", e.message)
+        )
+      );
+    }
+
+    await Promise.all(tasks);
 
     return {
       statusCode: 200,
       headers: corsHeaders(),
-      body: JSON.stringify({
-        success: true,
-        ref,
-        aiEstimate: aiEstimate || null,
-      }),
+      body: JSON.stringify({ success: true, ref }),
     };
   } catch (err) {
     console.error("Handler error:", err.message);
@@ -113,171 +81,136 @@ exports.handler = async function (event) {
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
   };
 }
 
-async function generateAIEstimate(apiKey, project) {
-  const prompt = `You are a professional construction cost estimator for Sani Building Corp in NYC. Generate a detailed cost estimate in JSON format. Return ONLY valid JSON with no markdown, no explanation, no backticks. Use exactly this structure:
-
-{
-  "projectTitle": "string",
-  "summary": "string (2-3 sentences describing the work)",
-  "laborItems": [{"name": "string", "qty": 1, "unit": "HRS", "rate": 1.00, "total": 1.00}],
-  "materialItems": [{"name": "string", "qty": 1, "unit": "PC", "rate": 1.00, "total": 1.00}],
-  "subtotal": 1.00,
-  "markupPct": 25,
-  "markup": 1.00,
-  "taxPct": 0,
-  "tax": 0.00,
-  "grandTotal": 1.00,
-  "timeline": "string (e.g. 3-5 days)",
-  "notes": "string (additional notes for contractor)"
-}
-
-Project details:
-- Type: ${project.type || "General construction"}
-- Size: ${project.size || "Not specified"}
-- Address: ${project.address || "Brooklyn NY"}
-- Description: ${project.description}
-- Customer Budget: ${project.budget || "Not specified"}
-- Timeline: ${project.timeline || "Flexible"}
-
-Use realistic NYC market prices (Brooklyn/Manhattan). Apply exactly 25% markup on subtotal. grandTotal = subtotal + markup + tax. Be detailed with line items - separate skilled labor (carpenter, plumber, electrician at $75-95/hr) from helpers ($45-55/hr). For materials, list specific items with realistic costs.`;
-
-  const requestData = JSON.stringify({
-    model: "claude-sonnet-4-5-20250929",
-    max_tokens: 2000,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const responseBody = await new Promise((resolve, reject) => {
-    const req = https.request(
-      {
-        hostname: "api.anthropic.com",
-        port: 443,
-        path: "/v1/messages",
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(requestData),
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        timeout: 25000,
-      },
-      (res) => {
-        const chunks = [];
-        res.on("data", (chunk) => chunks.push(chunk));
-        res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-        res.on("error", reject);
-      }
-    );
-    req.on("error", reject);
-    req.on("timeout", () => {
-      req.destroy();
-      reject(new Error("Request timeout"));
-    });
-    req.write(requestData);
-    req.end();
-  });
-
-  const apiResponse = JSON.parse(responseBody);
-  if (apiResponse.error) {
-    throw new Error(apiResponse.error.message || "API error");
-  }
-
-  const rawText = (apiResponse.content || []).map((b) => b.text || "").join("");
-  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("No JSON found in response");
-
-  return JSON.parse(jsonMatch[0]);
+function escapeHtml(t) {
+  if (t == null) return "";
+  return String(t)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 async function sendContractorEmail(resendKey, contractorEmail, data) {
-  const fmt = (n) => "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const photoHtml = (data.photos || [])
+    .slice(0, 8)
+    .map(
+      (p, i) =>
+        `<img src="${p.data}" alt="Photo ${i + 1}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;margin:4px;border:1px solid #e8e4dc">`
+    )
+    .join("");
 
-  let estimateHtml = "";
-  if (data.aiEstimate) {
-    const e = data.aiEstimate;
-    let labor = "";
-    (e.laborItems || []).forEach((i) => {
-      labor += `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(i.name)}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">${i.qty} ${escapeHtml(i.unit)}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">${fmt(i.rate)}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${fmt(i.total)}</td></tr>`;
-    });
-    let materials = "";
-    (e.materialItems || []).forEach((i) => {
-      materials += `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(i.name)}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">${i.qty} ${escapeHtml(i.unit)}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">${fmt(i.rate)}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${fmt(i.total)}</td></tr>`;
-    });
+  const answerRows = Object.entries(data.serviceAnswers || {})
+    .filter(([_, v]) => v && String(v).trim())
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:6px 10px;color:#888;text-transform:capitalize;width:160px;background:#faf8f4"><strong>${escapeHtml(k.replace(/-/g, " "))}</strong></td><td style="padding:6px 10px">${escapeHtml(v)}</td></tr>`
+    )
+    .join("");
 
-    estimateHtml = `
-      <h2 style="color:#b8720a;font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:2px;border-top:2px solid #b8720a;padding-top:18px;margin-top:24px">🤖 AI-Generated Estimate</h2>
-      <div style="background:#0d1b2a;color:#fff;padding:18px;border-radius:8px;margin-bottom:18px">
-        <div style="font-size:11px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase">Estimated Total</div>
-        <div style="font-size:36px;font-weight:700;color:#e8c97a">${fmt(e.grandTotal || 0)}</div>
-        <div style="font-size:13px;color:#aaa;margin-top:6px">${escapeHtml(e.summary || "")}</div>
-      </div>
-      ${labor ? `<h3 style="color:#b8720a;margin:16px 0 8px">Labor</h3><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5f0e8"><th style="padding:8px;text-align:left">Item</th><th style="padding:8px;text-align:center">Qty</th><th style="padding:8px;text-align:right">Rate</th><th style="padding:8px;text-align:right">Total</th></tr></thead><tbody>${labor}</tbody></table>` : ""}
-      ${materials ? `<h3 style="color:#b8720a;margin:16px 0 8px">Materials</h3><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5f0e8"><th style="padding:8px;text-align:left">Item</th><th style="padding:8px;text-align:center">Qty</th><th style="padding:8px;text-align:right">Rate</th><th style="padding:8px;text-align:right">Total</th></tr></thead><tbody>${materials}</tbody></table>` : ""}
-      <table style="width:100%;margin-top:14px;font-size:13px">
-        <tr><td style="padding:4px 8px">Subtotal</td><td style="padding:4px 8px;text-align:right">${fmt(e.subtotal || 0)}</td></tr>
-        <tr><td style="padding:4px 8px">Markup (${e.markupPct || 25}%)</td><td style="padding:4px 8px;text-align:right">${fmt(e.markup || 0)}</td></tr>
-        <tr><td style="padding:4px 8px">Tax</td><td style="padding:4px 8px;text-align:right">${fmt(e.tax || 0)}</td></tr>
-        <tr style="background:#f5f0e8;font-weight:700"><td style="padding:8px">GRAND TOTAL</td><td style="padding:8px;text-align:right;color:#b8720a;font-size:18px">${fmt(e.grandTotal || 0)}</td></tr>
-      </table>
-      <div style="background:#fffbe6;border-left:4px solid #c9a84c;padding:12px;margin-top:14px;font-size:12px;color:#666"><strong>AI Notes:</strong> ${escapeHtml(e.notes || "—")}</div>
-      <div style="background:#e8f4fd;border-left:4px solid #3498db;padding:12px;margin-top:10px;font-size:13px"><strong>📝 Edit this estimate:</strong> <a href="https://www.sanibuildingcorp.com/dashboard?ref=${data.ref}" style="color:#3498db">Open in Dashboard</a></div>
-    `;
-  } else if (data.aiError) {
-    estimateHtml = `<div style="background:#fee;border-left:4px solid #e74c3c;padding:14px;margin-top:18px;color:#c0392b"><strong>⚠️ AI estimate failed:</strong> ${escapeHtml(data.aiError)}<br>Please review the customer details and prepare a manual estimate.</div>`;
-  }
-
-  const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;max-width:680px;margin:0 auto;padding:20px;color:#333;line-height:1.6}</style></head>
-<body>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;padding:20px;color:#333;line-height:1.6">
 <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:24px;border-radius:10px 10px 0 0;text-align:center">
   <div style="font-family:'Bebas Neue',Arial,sans-serif;font-size:22px;letter-spacing:3px;color:#c9a84c">SANI BUILDING CORP</div>
   <div style="font-size:11px;letter-spacing:2px;color:#aaa;margin-top:4px">NEW ESTIMATE REQUEST</div>
 </div>
 <div style="background:#fff;border:1px solid #e8e2d9;border-top:none;padding:24px;border-radius:0 0 10px 10px">
-  <h1 style="font-family:'Bebas Neue',Arial,sans-serif;color:#0d1b2a;letter-spacing:2px;font-size:26px;margin:0 0 8px">📋 New Estimate Request</h1>
-  <div style="background:#fffbe6;border-left:4px solid #c9a84c;padding:10px 14px;margin-bottom:18px;font-size:13px"><strong>Reference:</strong> ${escapeHtml(data.ref)} · <strong>Submitted:</strong> ${new Date(data.submittedAt).toLocaleString("en-US", { timeZone: "America/New_York" })} ET</div>
+  <h1 style="font-family:'Bebas Neue',Arial,sans-serif;color:#0d1b2a;letter-spacing:2px;font-size:26px;margin:0 0 8px">🆕 ${escapeHtml(data.service)}</h1>
+  <div style="background:#fffbe6;border-left:4px solid #c9a84c;padding:10px 14px;margin-bottom:18px;font-size:13px">
+    <strong>Ref:</strong> ${escapeHtml(data.ref)} ·
+    <strong>Submitted:</strong> ${new Date(data.submittedAt).toLocaleString("en-US", { timeZone: "America/New_York" })} ET
+  </div>
 
-  <h2 style="color:#b8720a;font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:2px;font-size:18px">👤 Customer</h2>
-  <table style="width:100%;font-size:14px;margin-bottom:14px">
-    <tr><td style="padding:5px 8px;width:130px;color:#888"><strong>Name</strong></td><td style="padding:5px 8px">${escapeHtml(data.name)}</td></tr>
-    <tr><td style="padding:5px 8px;color:#888"><strong>Phone</strong></td><td style="padding:5px 8px"><a href="tel:${escapeHtml(data.phone)}" style="color:#b8720a">${escapeHtml(data.phone)}</a></td></tr>
-    <tr><td style="padding:5px 8px;color:#888"><strong>Email</strong></td><td style="padding:5px 8px"><a href="mailto:${escapeHtml(data.email)}" style="color:#b8720a">${escapeHtml(data.email)}</a></td></tr>
-    <tr><td style="padding:5px 8px;color:#888"><strong>Address</strong></td><td style="padding:5px 8px">${escapeHtml(data.address)}</td></tr>
-    <tr><td style="padding:5px 8px;color:#888"><strong>Best Time</strong></td><td style="padding:5px 8px">${escapeHtml(data.contactTime || "Anytime")}</td></tr>
-    <tr><td style="padding:5px 8px;color:#888"><strong>Source</strong></td><td style="padding:5px 8px">${escapeHtml(data.source || "—")}</td></tr>
+  <h2 style="color:#b8720a;font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:2px;font-size:18px;margin-top:18px">👤 Customer</h2>
+  <table style="width:100%;font-size:14px;margin-bottom:14px;border-collapse:collapse">
+    <tr><td style="padding:6px 10px;width:160px;color:#888;background:#faf8f4"><strong>Name</strong></td><td style="padding:6px 10px">${escapeHtml(data.name)}</td></tr>
+    <tr><td style="padding:6px 10px;color:#888;background:#faf8f4"><strong>Phone</strong></td><td style="padding:6px 10px"><a href="tel:${escapeHtml(data.phone)}" style="color:#b8720a">${escapeHtml(data.phone)}</a></td></tr>
+    <tr><td style="padding:6px 10px;color:#888;background:#faf8f4"><strong>Email</strong></td><td style="padding:6px 10px"><a href="mailto:${escapeHtml(data.email)}" style="color:#b8720a">${escapeHtml(data.email)}</a></td></tr>
+    <tr><td style="padding:6px 10px;color:#888;background:#faf8f4"><strong>Address</strong></td><td style="padding:6px 10px">${escapeHtml(data.address || "—")}</td></tr>
   </table>
 
-  <h2 style="color:#b8720a;font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:2px;font-size:18px">🏗️ Project</h2>
-  <table style="width:100%;font-size:14px;margin-bottom:14px">
-    <tr><td style="padding:5px 8px;width:130px;color:#888"><strong>Type</strong></td><td style="padding:5px 8px"><strong>${escapeHtml(data.type)}</strong></td></tr>
-    <tr><td style="padding:5px 8px;color:#888"><strong>Size</strong></td><td style="padding:5px 8px">${escapeHtml(data.size || "Not specified")}</td></tr>
-    <tr><td style="padding:5px 8px;color:#888"><strong>Budget</strong></td><td style="padding:5px 8px">${escapeHtml(data.budget || "Not specified")}</td></tr>
-    <tr><td style="padding:5px 8px;color:#888"><strong>Timeline</strong></td><td style="padding:5px 8px">${escapeHtml(data.timeline || "Flexible")}</td></tr>
-    <tr><td style="padding:5px 8px;color:#888"><strong>Photos</strong></td><td style="padding:5px 8px">${data.photoCount || 0} attached (see Netlify Forms)</td></tr>
+  <h2 style="color:#b8720a;font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:2px;font-size:18px;margin-top:18px">🏗️ Project</h2>
+  <table style="width:100%;font-size:14px;margin-bottom:14px;border-collapse:collapse">
+    <tr><td style="padding:6px 10px;width:160px;color:#888;background:#faf8f4"><strong>Service</strong></td><td style="padding:6px 10px;font-weight:600">${escapeHtml(data.service)}</td></tr>
+    <tr><td style="padding:6px 10px;color:#888;background:#faf8f4"><strong>Property</strong></td><td style="padding:6px 10px">${escapeHtml(data.propertyType || "—")}</td></tr>
+    <tr><td style="padding:6px 10px;color:#888;background:#faf8f4"><strong>Timeline</strong></td><td style="padding:6px 10px;color:#b8720a;font-weight:600">${escapeHtml(data.timeline || "—")}</td></tr>
+    ${answerRows}
   </table>
-  <div style="background:#f8f8f8;border-radius:8px;padding:14px;margin-bottom:14px"><strong style="color:#888;font-size:12px;letter-spacing:1px;text-transform:uppercase">Description</strong><div style="margin-top:8px;font-size:14px">${escapeHtml(data.description).replace(/\n/g, "<br>")}</div></div>
 
-  ${estimateHtml}
+  ${data.description ? `<div style="background:#f8f8f8;border-radius:8px;padding:14px;margin-bottom:14px"><strong style="color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase">Customer Notes</strong><div style="margin-top:8px;font-size:14px;white-space:pre-wrap">${escapeHtml(data.description)}</div></div>` : ""}
 
-  <div style="margin-top:24px;padding-top:18px;border-top:1px solid #eee;text-align:center;color:#999;font-size:12px">
-    📞 <a href="tel:${escapeHtml(data.phone)}" style="color:#b8720a;text-decoration:none">Call ${escapeHtml(data.name.split(" ")[0])}</a> &nbsp;·&nbsp; ✉ <a href="mailto:${escapeHtml(data.email)}" style="color:#b8720a;text-decoration:none">Email</a> &nbsp;·&nbsp; 📋 <a href="https://www.sanibuildingcorp.com/dashboard" style="color:#b8720a;text-decoration:none">Dashboard</a>
+  ${data.photoCount > 0 ? `<div style="margin-bottom:18px"><strong style="color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase">📷 Photos (${data.photoCount})</strong><div style="margin-top:10px">${photoHtml}</div></div>` : ""}
+
+  <div style="margin-top:24px;padding:16px;background:#fffbe6;border-left:4px solid #c9a84c;border-radius:6px;text-align:center">
+    <strong style="color:#b8720a;font-size:14px">📋 Next:</strong> Open your dashboard to build the scope and send the customer a priced quote.<br>
+    <a href="https://www.sanibuildingcorp.com/dashboard.html" style="display:inline-block;margin-top:10px;background:#c9a84c;color:#0d1b2a;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Dashboard →</a>
+  </div>
+
+  <div style="margin-top:18px;text-align:center;color:#999;font-size:12px">
+    📞 <a href="tel:${escapeHtml(data.phone)}" style="color:#b8720a;text-decoration:none">Call ${escapeHtml((data.name || "").split(" ")[0])}</a> ·
+    ✉ <a href="mailto:${escapeHtml(data.email)}" style="color:#b8720a;text-decoration:none">Email</a>
   </div>
 </div>
 </body></html>`;
 
-  const emailData = JSON.stringify({
+  return sendResend(resendKey, {
     from: "Sani Building Corp <noreply@sanibuildingcorp.com>",
     to: [contractorEmail],
     reply_to: data.email,
-    subject: `🆕 Estimate Request: ${data.type} - ${data.name} (${data.ref})`,
+    subject: `🆕 ${data.service} — ${data.name} (${data.ref})`,
     html,
   });
+}
 
+async function sendCustomerConfirmation(resendKey, contractorEmail, data) {
+  const firstName = (data.name || "there").split(" ")[0];
+  const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
+<div style="max-width:560px;margin:0 auto;padding:20px">
+  <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:30px;border-radius:10px 10px 0 0;text-align:center">
+    <div style="font-family:'Bebas Neue',Arial,sans-serif;font-size:22px;letter-spacing:4px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>
+  </div>
+  <div style="background:#fff;padding:32px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 10px 10px">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="display:inline-block;background:#2ecc71;color:#fff;width:60px;height:60px;border-radius:50%;line-height:60px;font-size:28px">✓</div>
+    </div>
+    <h1 style="text-align:center;color:#0d1b2a;font-size:24px;margin:0 0 12px">Thanks, ${escapeHtml(firstName)}!</h1>
+    <p style="font-size:15px;color:#555;text-align:center;margin-bottom:24px">We received your ${escapeHtml((data.service || "").toLowerCase())} request and we're reviewing it now. You'll hear from us personally within one business day with your detailed estimate.</p>
+
+    <div style="background:#f5f0e8;border-radius:8px;padding:18px;margin:18px 0">
+      <table style="width:100%">
+        <tr><td style="padding:6px 0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px">Reference</td><td style="padding:6px 0;font-size:14px;font-weight:600;color:#0d1b2a;text-align:right">${escapeHtml(data.ref)}</td></tr>
+        <tr><td style="padding:6px 0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px">Project</td><td style="padding:6px 0;font-size:14px;color:#0d1b2a;text-align:right">${escapeHtml(data.service)}</td></tr>
+        <tr><td style="padding:6px 0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px">Timeline</td><td style="padding:6px 0;font-size:14px;color:#0d1b2a;text-align:right">${escapeHtml(data.timeline || "—")}</td></tr>
+      </table>
+    </div>
+
+    <p style="font-size:14px;color:#555;margin:24px 0 0">If anything urgent comes up, you can reach us directly at <a href="tel:+13322770990" style="color:#b8720a;text-decoration:none;font-weight:600">(332) 277-0990</a> or just reply to this email.</p>
+
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #eee;text-align:center">
+      <div style="color:#888;font-size:11px;letter-spacing:2px;text-transform:uppercase">Sani Building Corp</div>
+      <div style="font-size:12px;color:#888;margin-top:4px">Serving NYC Metro · Fully Insured · 4.9 ★</div>
+    </div>
+  </div>
+</div>
+</body></html>`;
+
+  return sendResend(resendKey, {
+    from: "Sani Building Corp <noreply@sanibuildingcorp.com>",
+    to: [data.email],
+    reply_to: contractorEmail,
+    subject: `We got your request — Sani Building Corp (${data.ref})`,
+    html,
+  });
+}
+
+function sendResend(apiKey, payload) {
+  const data = JSON.stringify(payload);
   return new Promise((resolve, reject) => {
     const req = https.request(
       {
@@ -287,35 +220,56 @@ async function sendContractorEmail(resendKey, contractorEmail, data) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(emailData),
-          Authorization: `Bearer ${resendKey}`,
+          "Content-Length": Buffer.byteLength(data),
+          Authorization: `Bearer ${apiKey}`,
         },
       },
       (res) => {
         const chunks = [];
-        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("data", (c) => chunks.push(c));
         res.on("end", () => {
-          const response = Buffer.concat(chunks).toString("utf8");
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(response);
-          } else {
-            reject(new Error(`Resend error: ${response}`));
-          }
+          const body = Buffer.concat(chunks).toString("utf8");
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(body);
+          else reject(new Error(`Resend ${res.statusCode}: ${body}`));
         });
       }
     );
     req.on("error", reject);
-    req.write(emailData);
+    req.write(data);
     req.end();
   });
 }
 
-function escapeHtml(text) {
-  if (text == null) return "";
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function sendSMS(sid, token, from, to, d) {
+  const body = `🛠 NEW ESTIMATE\n${d.service}\n${d.name} · ${d.phone}\n${d.propertyType || ""}\nTimeline: ${d.timeline || "—"}\nRef: ${d.ref}`;
+  const auth = Buffer.from(`${sid}:${token}`).toString("base64");
+  const params = new URLSearchParams({ From: from, To: to, Body: body }).toString();
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "api.twilio.com",
+        port: 443,
+        path: `/2010-04-01/Accounts/${sid}/Messages.json`,
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(params),
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => {
+          const body = Buffer.concat(chunks).toString("utf8");
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(body);
+          else reject(new Error(`Twilio ${res.statusCode}: ${body}`));
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(params);
+    req.end();
+  });
 }
