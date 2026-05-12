@@ -2,409 +2,233 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" type="image/x-icon" href="/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">
-<meta name="theme-color" content="#b8720a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard | Sani Building Corp</title>
 <meta name="robots" content="noindex,nofollow">
-<title>Contractor Dashboard | Sani Building Corp</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--navy:#0d1b2a;--navy2:#1a2d42;--navy3:#243447;--gold:#c9a84c;--gold-light:#e8c97a;--cream:#f5f0e8;--gray:#8a9bb0;--border:rgba(201,168,76,0.2);--error:#e74c3c;--success:#2ecc71;--purple:#9b59b6}
+:root{--navy:#0d1b2a;--navy2:#1a2d42;--gold:#c9a84c;--gold-dark:#9a6f2a;--cream:#f5f0e8;--gray:#8a9bb0;--border:rgba(201,168,76,0.2);--success:#2ecc71;--warn:#e67e22;--danger:#e74c3c}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--navy);color:var(--cream);font-family:'DM Sans',sans-serif;min-height:100vh}
-.wrap{max-width:1100px;margin:0 auto;padding:30px 20px 60px}
-.login-gate{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-.login-box{background:var(--navy2);border:1px solid var(--border);border-radius:16px;padding:40px 32px;max-width:400px;width:100%}
-.login-box h1{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;color:var(--gold);text-align:center;margin-bottom:8px}
-.login-box p{font-size:13px;color:var(--gray);text-align:center;margin-bottom:24px}
-.login-box input{width:100%;padding:14px 16px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;color:var(--cream);font-size:15px;margin-bottom:12px;outline:none}
-.login-box input:focus{border-color:var(--gold)}
-.login-box button{width:100%;padding:14px;background:var(--gold);color:var(--navy);border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer}
-.login-box .err{color:var(--error);font-size:13px;margin-top:10px;text-align:center;display:none}
-.login-box .err.show{display:block}
-.dash-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:30px;padding-bottom:20px;border-bottom:1px solid var(--border)}
-.dash-brand{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--gold)}
-.dash-brand span{color:#fff}
-.dash-actions{display:flex;gap:10px;flex-wrap:wrap}
-.btn-link{padding:9px 18px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--cream);font-size:13px;text-decoration:none;cursor:pointer}
-.btn-link:hover{background:rgba(201,168,76,.1);border-color:var(--gold);color:var(--gold)}
-.btn-primary{padding:9px 18px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer}
-.tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);flex-wrap:wrap;overflow-x:auto}
-.tab{padding:12px 18px;background:transparent;border:none;color:var(--gray);cursor:pointer;font-family:inherit;font-size:13px;border-bottom:2px solid transparent;white-space:nowrap}
+html,body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--cream);min-height:100vh;-webkit-font-smoothing:antialiased}
+.topbar{padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(13,27,42,.95);position:sticky;top:0;z-index:50;backdrop-filter:blur(10px)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--gold);text-decoration:none}
+.logo span{color:var(--cream)}
+.userbar{display:flex;align-items:center;gap:14px;font-size:13px}
+.userbar .who{color:var(--gray)}
+.userbar button{background:none;border:1px solid var(--border);color:var(--cream);padding:6px 12px;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer}
+.userbar button:hover{border-color:var(--gold);color:var(--gold)}
+.wrap{max-width:1200px;margin:0 auto;padding:28px 24px 60px}
+h1.page{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;margin-bottom:24px}
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab{background:none;border:none;color:var(--gray);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:12px 18px;cursor:pointer;border-bottom:2px solid transparent;text-transform:uppercase;transition:all .18s;display:flex;align-items:center;gap:8px}
+.tab:hover{color:var(--cream)}
 .tab.active{color:var(--gold);border-bottom-color:var(--gold)}
-.tab .badge{background:var(--gold);color:var(--navy);font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:600}
-.empty-state{text-align:center;padding:60px 20px;color:var(--gray)}
-.empty-state .icon{font-size:48px;margin-bottom:12px;opacity:.3}
-.empty-state h3{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--cream);margin-bottom:8px}
-.empty-state p{font-size:14px;line-height:1.6;margin-bottom:18px}
-.est-list{display:flex;flex-direction:column;gap:12px}
-.est-card{background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;cursor:pointer}
-.est-card:hover{border-color:var(--gold)}
-.est-card-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:10px}
-.est-card-info h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--cream);margin-bottom:4px}
-.est-card-meta{font-size:12px;color:var(--gray);display:flex;gap:12px;flex-wrap:wrap}
-.est-card-meta strong{color:var(--gold)}
-.est-card-amount{text-align:right}
-.est-card-amount .label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gray)}
-.est-card-amount .val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold)}
-.est-card-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05)}
-.est-status{font-size:11px;padding:4px 10px;border-radius:12px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
-.est-status.new{background:rgba(52,152,219,.15);color:#5dade2}
-.est-status.draft{background:rgba(241,196,15,.15);color:#f1c40f}
-.est-status.sent{background:rgba(46,204,113,.15);color:#2ecc71}
-.est-status.accepted{background:rgba(46,204,113,.3);color:#2ecc71}
-.est-status.invoiced{background:rgba(155,89,182,.2);color:#bb8fce}
-.est-status.paid{background:rgba(241,196,15,.25);color:#f1c40f}
-.est-card-actions{display:flex;gap:8px;flex-wrap:wrap}
-.btn-small{padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--cream);font-size:12px;cursor:pointer;text-decoration:none;display:inline-block}
-.btn-small.primary{background:var(--gold);color:var(--navy);border-color:var(--gold);font-weight:600}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;padding:20px;overflow-y:auto}
-.modal-bg.show{display:flex;align-items:flex-start;justify-content:center}
-.modal{background:var(--navy2);border:1px solid var(--border);border-radius:16px;max-width:920px;width:100%;margin:20px auto;padding:30px}
-.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
-.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)}
-.modal-close{background:none;border:none;color:var(--gray);font-size:28px;cursor:pointer}
-.banner{padding:14px 18px;border-radius:10px;margin-bottom:18px;font-size:13px;line-height:1.5}
-.banner.accepted{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);color:#2ecc71}
-.banner.sent{background:rgba(52,152,219,.1);border:1px solid rgba(52,152,219,.3);color:#5dade2}
-.banner.invoiced{background:rgba(155,89,182,.1);border:1px solid rgba(155,89,182,.3);color:#bb8fce}
-.banner.paid{background:rgba(241,196,15,.15);border:1px solid rgba(241,196,15,.4);color:#f1c40f}
-.cust-card{background:var(--navy3);border-radius:10px;padding:16px;margin-bottom:18px}
-.cust-card h4{font-size:11px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
-.cust-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:13px}
-.cust-grid .lbl{color:var(--gray);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
-.cust-grid .val input{width:100%;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--cream);font-size:13px;outline:none;font-family:inherit}
-.cust-grid .desc{grid-column:1/-1;padding:8px 0}
-.desc-text{background:rgba(0,0,0,.2);padding:10px;border-radius:6px;font-size:13px;line-height:1.6;white-space:pre-wrap}
-.builder-section{margin-bottom:18px}
-.builder-section h4{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.builder-section h4 .add-btn{background:rgba(201,168,76,.15);border:1px solid var(--gold);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer}
-.line-items{display:flex;flex-direction:column;gap:6px}
-.line-item{display:grid;grid-template-columns:2fr 60px 70px 90px 90px 30px;gap:8px;align-items:center;background:rgba(0,0,0,.2);border-radius:8px;padding:8px}
-.line-item input{background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.15);border-radius:6px;padding:6px 8px;color:var(--cream);font-size:13px;width:100%;outline:none;font-family:'DM Mono',monospace}
-.line-item input.name{font-family:inherit}
-.line-item .total-cell{font-family:'DM Mono',monospace;color:var(--gold);font-weight:500;text-align:right;padding-right:8px;font-size:13px}
-.line-item .del{background:transparent;border:none;color:var(--gray);cursor:pointer;font-size:16px}
-.line-headers{display:grid;grid-template-columns:2fr 60px 70px 90px 90px 30px;gap:8px;padding:0 8px 6px;font-size:10px;color:var(--gray);text-transform:uppercase;letter-spacing:1px}
-.totals-box{background:var(--navy3);border-radius:10px;padding:16px 20px;margin-top:18px}
-.tot-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px}
-.tot-row .lbl{color:var(--gray)}
-.tot-row .val{font-family:'DM Mono',monospace;color:var(--cream);font-weight:500}
-.markup-input{width:60px;background:rgba(201,168,76,.1);border:1px solid var(--gold);border-radius:4px;padding:3px 6px;color:var(--gold);font-family:'DM Mono',monospace;font-size:13px;text-align:center;outline:none}
-.tot-grand{display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-top:8px;border-top:2px solid var(--gold);font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)}
-.summary-input,.timeline-input{width:100%;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--cream);font-family:inherit;font-size:13px;outline:none}
-.summary-input{resize:vertical;min-height:70px}
-.toggle-section{background:rgba(0,0,0,.15);border-radius:10px;padding:14px 18px;margin-bottom:18px}
-.toggle-title{font-size:11px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
-.toggle-row{display:flex;flex-wrap:wrap;gap:10px}
-.toggle-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px}
-.toggle-item.on{background:rgba(201,168,76,.1);border-color:var(--gold);color:var(--gold)}
-.toggle-item input{display:none}
-.toggle-item .check{width:16px;height:16px;border:1.5px solid var(--gray);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
-.toggle-item.on .check{background:var(--gold);border-color:var(--gold);color:var(--navy)}
-.photo-upload-area{border:2px dashed rgba(201,168,76,.3);border-radius:8px;padding:18px;text-align:center;cursor:pointer;background:rgba(255,255,255,.02);display:block}
-.photo-upload-area:hover{border-color:var(--gold)}
-.photo-upload-area input{display:none}
-.photo-upload-area .icon{font-size:24px;margin-bottom:6px}
-.photo-upload-area .text{color:var(--gray);font-size:12px}
-.photo-upload-area .text strong{color:var(--gold)}
-.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px}
-.photo-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;background:rgba(0,0,0,.3);border:1px solid var(--border)}
-.photo-thumb img{width:100%;height:100%;object-fit:cover}
-.photo-thumb .label{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:1px}
-.photo-thumb .remove{position:absolute;top:3px;right:3px;background:rgba(231,76,60,.85);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.deposit-card{background:var(--navy3);border-radius:10px;padding:18px;margin-bottom:14px}
-.deposit-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.deposit-row label{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:1px;flex-shrink:0;width:80px}
-.deposit-row input,.deposit-row select{flex:1;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--cream);font-size:13px;outline:none;font-family:inherit}
-.deposit-summary{background:linear-gradient(135deg,#c9a84c,#9a6f2a);color:var(--navy);border-radius:10px;padding:18px;text-align:center;margin:14px 0}
-.deposit-summary .lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;opacity:.8}
-.deposit-summary .val{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px}
-.modal-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--border)}
-.modal-footer-left,.modal-footer-right{display:flex;gap:8px;flex-wrap:wrap}
-.btn-modal{padding:11px 22px;border:none;border-radius:8px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px}
-.btn-save{background:rgba(255,255,255,.08);color:var(--cream)}
-.btn-send{background:var(--gold);color:var(--navy)}
-.btn-invoice{background:var(--purple);color:#fff}
-.btn-mark-paid{background:var(--success);color:#fff}
-.btn-delete{background:transparent;color:var(--error);border:1px solid rgba(231,76,60,.3)}
-.status-msg{display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px}
-.status-msg.show{display:block}
-.status-msg.success{background:rgba(46,204,113,.15);border:1px solid rgba(46,204,113,.3);color:#2ecc71}
-.status-msg.error{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.3);color:var(--error)}
-@media (max-width:700px){.line-item{grid-template-columns:1fr 50px 60px 80px}.line-item .rate,.line-item .del{display:none}.line-headers{display:none}.modal{padding:20px}.cust-grid{grid-template-columns:1fr}}
+.tab .count{background:var(--navy2);color:var(--cream);font-size:11px;padding:2px 7px;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:600;letter-spacing:0}
+.tab.active .count{background:var(--gold);color:var(--navy)}
+.toolbar{display:flex;gap:12px;margin-bottom:18px;align-items:center;flex-wrap:wrap}
+.search{flex:1;min-width:200px;background:var(--navy2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--cream);font-family:inherit;font-size:13px}
+.search:focus{outline:none;border-color:var(--gold)}
+.refresh{background:none;border:1px solid var(--border);color:var(--cream);padding:9px 14px;border-radius:8px;font-family:inherit;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.refresh:hover{border-color:var(--gold);color:var(--gold)}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{background:var(--navy2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;display:grid;grid-template-columns:auto 1fr auto auto;gap:18px;align-items:center;cursor:pointer;transition:all .18s;text-decoration:none;color:inherit}
+.row:hover{border-color:var(--gold);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.status{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:2px;padding:5px 10px;border-radius:6px;text-transform:uppercase;white-space:nowrap}
+.status-new{background:rgba(201,168,76,.18);color:var(--gold)}
+.status-quoting{background:rgba(230,126,34,.18);color:var(--warn)}
+.status-sent{background:rgba(52,152,219,.18);color:#5dade2}
+.status-opened{background:rgba(155,89,182,.18);color:#bb8fce}
+.status-accepted{background:rgba(46,204,113,.18);color:var(--success)}
+.status-declined{background:rgba(231,76,60,.18);color:var(--danger)}
+.row-main .name{font-weight:600;font-size:15px;margin-bottom:3px}
+.row-main .meta{font-size:12px;color:var(--gray)}
+.row-svc{font-size:13px;color:var(--cream);text-align:right}
+.row-svc .timeline{font-size:11px;color:var(--gray);margin-top:3px}
+.row-amount{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;text-align:right;min-width:90px}
+.empty{text-align:center;padding:60px 20px;color:var(--gray)}
+.empty-icon{font-size:42px;margin-bottom:14px;opacity:.4}
+.loading{text-align:center;padding:60px 20px;color:var(--gray)}
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate-card{background:var(--navy2);border:1px solid var(--border);border-radius:16px;padding:40px 36px;max-width:380px;width:100%;text-align:center}
+.gate-card h2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:8px}
+.gate-card p{color:var(--gray);font-size:14px;margin-bottom:22px;line-height:1.5}
+.gate-card button{background:var(--gold);color:var(--navy);border:none;padding:13px 28px;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;width:100%}
+.gate-card button:hover{background:var(--gold-dark);color:var(--cream)}
+@media (max-width:640px){
+  .wrap{padding:18px 14px 50px}
+  h1.page{font-size:26px}
+  .row{grid-template-columns:1fr;gap:8px;padding:14px 16px}
+  .row-svc,.row-amount{text-align:left}
+  .row-amount{font-size:16px}
+  .tab{padding:10px 12px;font-size:11px}
+}
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/netlify-identity-widget@1.9.2/build/netlify-identity-widget.min.css">
 </head>
 <body>
 
-<div class="login-gate" id="loginGate">
-  <div class="login-box">
-    <h1>🔒 DASHBOARD</h1>
-    <p>Contractor access only</p>
-    <input type="password" id="pwd" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
-    <button onclick="login()">UNLOCK</button>
-    <div class="err" id="loginErr">❌ Incorrect password</div>
+<div id="app" style="display:none">
+<header class="topbar">
+  <a href="/" class="logo">SANI <span>BUILDING CORP</span></a>
+  <div class="userbar">
+    <span class="who" id="user-email"></span>
+    <button onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <h1 class="page">Estimate Requests</h1>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-status="">All <span class="count" id="c-all">0</span></button>
+    <button class="tab" data-status="new">New <span class="count" id="c-new">0</span></button>
+    <button class="tab" data-status="quoting">Drafting <span class="count" id="c-quoting">0</span></button>
+    <button class="tab" data-status="sent">Sent <span class="count" id="c-sent">0</span></button>
+    <button class="tab" data-status="opened">Opened <span class="count" id="c-opened">0</span></button>
+    <button class="tab" data-status="accepted">Accepted <span class="count" id="c-accepted">0</span></button>
+  </div>
+
+  <div class="toolbar">
+    <input type="search" class="search" id="search" placeholder="Search by name, phone, email, ref…">
+    <button class="refresh" onclick="loadRequests()">↻ Refresh</button>
+  </div>
+
+  <div id="list-container">
+    <div class="loading">Loading…</div>
+  </div>
+</div>
+</div>
+
+<div id="gate" class="gate" style="display:none">
+  <div class="gate-card">
+    <h2>Dashboard</h2>
+    <p>Sign in to view estimate requests, build scopes, and send quotes.</p>
+    <button onclick="netlifyIdentity.open('login')">Sign In →</button>
   </div>
 </div>
 
-<div class="wrap" id="dashboard" style="display:none">
-  <div class="dash-header">
-    <div class="dash-brand">SANI <span>BUILDING CORP</span> · DASHBOARD</div>
-    <div class="dash-actions">
-      <a href="estimate.html" class="btn-link">↗ Customer Form</a>
-      <button class="btn-link" onclick="loadEstimates()">↻ Refresh</button>
-      <button class="btn-link" onclick="logout()">Logout</button>
-    </div>
-  </div>
-  <div class="tabs">
-    <button class="tab active" onclick="setTab('all')" id="tab-all">All <span class="badge" id="count-all">0</span></button>
-    <button class="tab" onclick="setTab('new')" id="tab-new">New <span class="badge" id="count-new">0</span></button>
-    <button class="tab" onclick="setTab('draft')" id="tab-draft">Drafts <span class="badge" id="count-draft">0</span></button>
-    <button class="tab" onclick="setTab('sent')" id="tab-sent">Sent <span class="badge" id="count-sent">0</span></button>
-    <button class="tab" onclick="setTab('accepted')" id="tab-accepted">Accepted <span class="badge" id="count-accepted">0</span></button>
-    <button class="tab" onclick="setTab('invoiced')" id="tab-invoiced">Invoiced <span class="badge" id="count-invoiced">0</span></button>
-    <button class="tab" onclick="setTab('paid')" id="tab-paid">Paid <span class="badge" id="count-paid">0</span></button>
-  </div>
-  <div id="estList"></div>
-</div>
-
-<div class="modal-bg" id="editModal"><div class="modal">
-  <div class="modal-head"><div class="modal-title" id="modalTitle">EDIT ESTIMATE</div><button class="modal-close" onclick="closeEdit()">✕</button></div>
-  <div id="statusBanner"></div>
-  <div class="cust-card" id="custInfo"></div>
-  <div class="builder-section"><h4>Project Title</h4><input type="text" class="timeline-input" id="projectTitle" placeholder="e.g. Bathroom Renovation - Brooklyn"></div>
-  <div class="builder-section"><h4>Summary (shown to customer)</h4><textarea class="summary-input" id="projectSummary" placeholder="2-3 sentences describing the work..."></textarea></div>
-  <div class="toggle-section">
-    <div class="toggle-title">👁️ Customer View Settings (control what customer sees)</div>
-    <div class="toggle-row" id="displayToggles">
-      <label class="toggle-item on"><input type="checkbox" data-tg="showLabor" checked><span class="check">✓</span>Show Labor section</label>
-      <label class="toggle-item on"><input type="checkbox" data-tg="showMaterial" checked><span class="check">✓</span>Show Materials section</label>
-      <label class="toggle-item"><input type="checkbox" data-tg="showItems"><span class="check">✓</span>Show line items detail</label>
-      <label class="toggle-item on"><input type="checkbox" data-tg="showTotals" checked><span class="check">✓</span>Show category totals</label>
-    </div>
-  </div>
-  <div class="toggle-section">
-    <div class="toggle-title">📸 Photos (customer's + your additions, up to 10)</div>
-    <label class="photo-upload-area"><input type="file" accept="image/*" multiple onchange="handlePhotoAdd(event)"><div class="icon">📤</div><div class="text">Click to add inspiration/rendered photos · <strong>Max 2MB each</strong></div></label>
-    <div class="photos-grid" id="photosGrid"></div>
-  </div>
-  <div class="builder-section"><h4>Labor <button class="add-btn" onclick="addLine('labor')">+ Add</button></h4><div class="line-headers"><div>Item</div><div style="text-align:center">Qty</div><div style="text-align:center">Unit</div><div style="text-align:center">Rate</div><div style="text-align:right;padding-right:8px">Total</div><div></div></div><div class="line-items" id="laborItems"></div></div>
-  <div class="builder-section"><h4>Materials <button class="add-btn" onclick="addLine('material')">+ Add</button></h4><div class="line-headers"><div>Item</div><div style="text-align:center">Qty</div><div style="text-align:center">Unit</div><div style="text-align:center">Rate</div><div style="text-align:right;padding-right:8px">Total</div><div></div></div><div class="line-items" id="materialItems"></div></div>
-  <div class="builder-section"><h4>Estimated Timeline</h4><input type="text" class="timeline-input" id="projectTimeline" placeholder="e.g. 3-5 business days"></div>
-  <div class="totals-box">
-    <div class="tot-row"><span class="lbl">Labor Subtotal</span><span class="val" id="laborTotal">$0.00</span></div>
-    <div class="tot-row"><span class="lbl">Material Subtotal</span><span class="val" id="materialTotal">$0.00</span></div>
-    <div class="tot-row"><span class="lbl">Subtotal</span><span class="val" id="subtotal">$0.00</span></div>
-    <div class="tot-row"><span class="lbl">Markup % <input type="number" class="markup-input" id="markupPct" value="25" min="0" max="100" oninput="recalc()"></span><span class="val" id="markupVal">$0.00</span></div>
-    <div class="tot-grand"><span>GRAND TOTAL</span><span id="grandTotal">$0.00</span></div>
-  </div>
-  <div class="status-msg" id="statusMsg"></div>
-  <div class="modal-footer">
-    <div class="modal-footer-left"><button class="btn-modal btn-delete" onclick="deleteEstimate()">🗑 Delete</button></div>
-    <div class="modal-footer-right">
-      <button class="btn-modal btn-save" onclick="saveDraft()">💾 Save Draft</button>
-      <button class="btn-modal btn-invoice" id="btnInvoice" onclick="openInvoiceModal()" style="display:none">💰 Send Invoice</button>
-      <button class="btn-modal btn-mark-paid" id="btnMarkPaid" onclick="markPaid()" style="display:none">✓ Mark Paid</button>
-      <button class="btn-modal btn-send" onclick="sendQuote()">📩 Send to Customer</button>
-    </div>
-  </div>
-</div></div>
-
-<div class="modal-bg" id="invoiceModal"><div class="modal" style="max-width:520px">
-  <div class="modal-head"><div class="modal-title">💰 SEND DEPOSIT INVOICE</div><button class="modal-close" onclick="closeInvoiceModal()">✕</button></div>
-  <p style="font-size:13px;color:var(--gray);margin-bottom:14px">Send a deposit invoice to <strong id="invCustName" style="color:var(--gold)"></strong> at <span id="invCustEmail" style="color:var(--cream)"></span>.</p>
-  <div class="deposit-card">
-    <div class="deposit-row"><label>Type</label><select id="depType" onchange="recalcDeposit()"><option value="percent">Percentage</option><option value="fixed">Fixed Amount</option></select></div>
-    <div class="deposit-row" id="percentRow"><label>Percent</label><input type="number" id="depPercent" value="25" min="1" max="100" oninput="recalcDeposit()"><span style="color:var(--gray);font-size:12px">% of $<span id="totalRef">0</span></span></div>
-    <div class="deposit-row" id="amountRow" style="display:none"><label>Amount $</label><input type="number" id="depAmount" value="0" step="50" oninput="recalcDeposit()"></div>
-    <div class="deposit-row"><label>Due Date</label><input type="text" id="depDueDate" value="Within 7 days, before work starts"></div>
-  </div>
-  <div class="deposit-summary"><div class="lbl">Deposit Amount</div><div class="val" id="depAmtDisplay">$0.00</div></div>
-  <div class="deposit-card">
-    <div class="toggle-title">Accepted Payment Methods</div>
-    <div class="toggle-row" id="paymentMethods">
-      <label class="toggle-item on"><input type="checkbox" value="zelle" checked><span class="check">✓</span>💜 Zelle</label>
-      <label class="toggle-item on"><input type="checkbox" value="venmo" checked><span class="check">✓</span>💙 Venmo</label>
-      <label class="toggle-item on"><input type="checkbox" value="card" checked><span class="check">✓</span>💳 Card (call)</label>
-      <label class="toggle-item"><input type="checkbox" value="check"><span class="check">✓</span>📝 Check</label>
-      <label class="toggle-item"><input type="checkbox" value="ach"><span class="check">✓</span>🏦 ACH</label>
-    </div>
-  </div>
-  <div class="status-msg" id="invStatusMsg"></div>
-  <div class="modal-footer"><button class="btn-modal btn-save" onclick="closeInvoiceModal()">CANCEL</button><button class="btn-modal btn-invoice" onclick="sendInvoice()">📩 SEND INVOICE</button></div>
-</div></div>
-
+<script src="https://cdn.jsdelivr.net/npm/netlify-identity-widget@1.9.2/build/netlify-identity-widget.min.js"></script>
 <script>
-const PASSWORD='L0nd0n12@';
-let estimates=[],currentTab='all',currentEditing=null;
-function login(){if(document.getElementById('pwd').value===PASSWORD){sessionStorage.setItem('sbc_dash_auth','1');showDashboard()}else document.getElementById('loginErr').classList.add('show')}
-function logout(){sessionStorage.removeItem('sbc_dash_auth');location.reload()}
-function showDashboard(){document.getElementById('loginGate').style.display='none';document.getElementById('dashboard').style.display='block';loadEstimates()}
-if(sessionStorage.getItem('sbc_dash_auth')==='1')showDashboard();
-function loadEstimates(){const s=localStorage.getItem('sbc_estimates');estimates=s?JSON.parse(s):[];renderList()}
-function saveEstimates(){localStorage.setItem('sbc_estimates',JSON.stringify(estimates))}
-function setTab(t){currentTab=t;document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active');renderList()}
-function renderList(){
-  const counts={all:estimates.length,new:0,draft:0,sent:0,accepted:0,invoiced:0,paid:0};
-  estimates.forEach(e=>{counts[e.status||'new']++});
-  Object.keys(counts).forEach(k=>{const el=document.getElementById('count-'+k);if(el)el.textContent=counts[k]});
-  const filtered=currentTab==='all'?estimates:estimates.filter(e=>(e.status||'new')===currentTab);
-  const list=document.getElementById('estList');
-  if(filtered.length===0){list.innerHTML='<div class="empty-state"><div class="icon">📋</div><h3>No estimates yet</h3><p>Customer requests will appear here automatically.</p><button class="btn-primary" onclick="addNewEstimate()">+ Add New Estimate</button></div>';return}
-  list.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:12px;color:var(--gray)">'+filtered.length+' estimate'+(filtered.length!==1?'s':'')+'</div><button class="btn-primary" onclick="addNewEstimate()">+ New Estimate</button></div><div class="est-list">'+filtered.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(e=>{
-    const date=new Date(e.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-    return '<div class="est-card" onclick="openEdit(\''+e.id+'\')"><div class="est-card-top"><div class="est-card-info"><h3>'+esc(e.customer&&e.customer.name||'Unknown')+' · '+esc(e.project&&e.project.type||'Project')+'</h3><div class="est-card-meta"><span><strong>Ref:</strong> '+esc(e.ref||'—')+'</span><span><strong>Date:</strong> '+date+'</span>'+(e.customer&&e.customer.address?'<span>📍 '+esc(e.customer.address)+'</span>':'')+'</div></div><div class="est-card-amount"><div class="label">Total</div><div class="val">'+fmt(e.estimate&&e.estimate.grandTotal)+'</div></div></div><div class="est-card-bottom"><span class="est-status '+(e.status||'new')+'">'+(e.status||'new').toUpperCase()+'</span><div class="est-card-actions">'+(e.customer&&e.customer.phone?'<a class="btn-small" href="tel:'+esc(e.customer.phone)+'" onclick="event.stopPropagation()">📞</a>':'')+(e.customer&&e.customer.email?'<a class="btn-small" href="mailto:'+esc(e.customer.email)+'" onclick="event.stopPropagation()">✉</a>':'')+'<button class="btn-small primary">Edit →</button></div></div></div>';
-  }).join('')+'</div>';
+let allRequests = [];
+let counts = {};
+let currentStatus = "";
+let currentSearch = "";
+
+// ---------- Identity gate ----------
+window.netlifyIdentity = window.netlifyIdentity || null;
+if (window.netlifyIdentity) {
+  netlifyIdentity.on("init", (user) => { renderAuthState(user); });
+  netlifyIdentity.on("login", (user) => { netlifyIdentity.close(); renderAuthState(user); });
+  netlifyIdentity.on("logout", () => { renderAuthState(null); });
+  netlifyIdentity.init();
 }
-function addNewEstimate(){
-  const e={id:'est_'+Date.now().toString(36),ref:'SBC-'+Date.now().toString(36).toUpperCase().slice(-6),createdAt:new Date().toISOString(),status:'new',customer:{name:'',phone:'',email:'',address:''},project:{type:'',description:''},estimate:{projectTitle:'',summary:'',laborItems:[],materialItems:[],markupPct:25,timeline:'',display:{showLabor:true,showMaterial:true,showItems:false,showTotals:true},photos:[]},deposit:null};
-  estimates.unshift(e);saveEstimates();openEdit(e.id);
-}
-function openEdit(id){
-  const est=estimates.find(e=>e.id===id);if(!est)return;
-  currentEditing=est;
-  est.estimate=est.estimate||{};est.estimate.display=est.estimate.display||{showLabor:true,showMaterial:true,showItems:false,showTotals:true};est.estimate.photos=est.estimate.photos||[];
-  document.getElementById('modalTitle').textContent='EDIT · '+est.ref;
-  let banner='';
-  if(est.status==='accepted')banner='<div class="banner accepted">✅ <strong>Customer accepted!</strong> '+(est.acceptedAt?'on '+new Date(est.acceptedAt).toLocaleDateString():'')+' · Send a deposit invoice below.</div>';
-  else if(est.status==='sent')banner='<div class="banner sent">📤 Quote sent to '+esc(est.customer&&est.customer.email||'')+' · Awaiting response.</div>';
-  else if(est.status==='invoiced')banner='<div class="banner invoiced">💰 <strong>Invoice sent</strong> for deposit of '+fmt(est.deposit&&est.deposit.amount)+' · Awaiting payment.</div>';
-  else if(est.status==='paid')banner='<div class="banner paid">💸 <strong>Deposit received!</strong> '+fmt(est.deposit&&est.deposit.amount)+' · Project ready to start.</div>';
-  document.getElementById('statusBanner').innerHTML=banner;
-  const c=est.customer||{},p=est.project||{};
-  document.getElementById('custInfo').innerHTML='<h4>👤 Customer & Project</h4><div class="cust-grid"><div><div class="lbl">Name</div><div class="val"><input type="text" value="'+esc(c.name||'')+'" oninput="setField(\'customer\',\'name\',this.value)"></div></div><div><div class="lbl">Phone</div><div class="val"><input type="text" value="'+esc(c.phone||'')+'" oninput="setField(\'customer\',\'phone\',this.value)"></div></div><div><div class="lbl">Email</div><div class="val"><input type="email" value="'+esc(c.email||'')+'" oninput="setField(\'customer\',\'email\',this.value)"></div></div><div><div class="lbl">Address</div><div class="val"><input type="text" value="'+esc(c.address||'')+'" oninput="setField(\'customer\',\'address\',this.value)"></div></div>'+(p.description?'<div class="desc"><div class="lbl">Project Description</div><div class="desc-text">'+esc(p.description)+'</div></div>':'')+'</div>';
-  document.getElementById('projectTitle').value=est.estimate.projectTitle||'';
-  document.getElementById('projectSummary').value=est.estimate.summary||'';
-  document.getElementById('projectTimeline').value=est.estimate.timeline||'';
-  document.getElementById('markupPct').value=est.estimate.markupPct||25;
-  document.querySelectorAll('#displayToggles input').forEach(cb=>{const k=cb.dataset.tg;cb.checked=est.estimate.display[k];cb.parentElement.classList.toggle('on',cb.checked);cb.onchange=()=>{est.estimate.display[k]=cb.checked;cb.parentElement.classList.toggle('on',cb.checked)}});
-  renderPhotosGrid();
-  renderLineItems('labor',est.estimate.laborItems||[]);
-  renderLineItems('material',est.estimate.materialItems||[]);
-  recalc();
-  document.getElementById('btnInvoice').style.display=(est.status==='accepted'||est.status==='invoiced')?'inline-block':'none';
-  document.getElementById('btnMarkPaid').style.display=(est.status==='invoiced')?'inline-block':'none';
-  document.getElementById('editModal').classList.add('show');
-}
-function closeEdit(){document.getElementById('editModal').classList.remove('show');currentEditing=null}
-function setField(s,f,v){if(!currentEditing)return;currentEditing[s]=currentEditing[s]||{};currentEditing[s][f]=v}
-function renderPhotosGrid(){
-  if(!currentEditing)return;
-  const photos=currentEditing.estimate.photos||[];
-  document.getElementById('photosGrid').innerHTML=photos.map((p,i)=>'<div class="photo-thumb"><img src="'+esc(p.dataUrl)+'" alt=""><span class="label">'+(p.source==='customer'?'CUSTOMER':'YOURS')+'</span><button class="remove" onclick="removePhoto('+i+')">✕</button></div>').join('');
-}
-async function handlePhotoAdd(e){
-  if(!currentEditing)return;
-  const files=Array.from(e.target.files);
-  const photos=currentEditing.estimate.photos=currentEditing.estimate.photos||[];
-  if(photos.length+files.length>10){alert('Max 10 photos total');e.target.value='';return}
-  for(const f of files){
-    if(f.size>2*1024*1024){alert('"'+f.name+'" too large (max 2MB)');continue}
-    const dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)});
-    photos.push({source:'contractor',dataUrl,name:f.name});
+
+function renderAuthState(user) {
+  if (user) {
+    document.getElementById("gate").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    document.getElementById("user-email").textContent = user.email;
+    loadRequests();
+    // Deep link to /request/REF
+    if (location.hash.startsWith("#/request/")) {
+      const ref = location.hash.replace("#/request/", "");
+      if (ref) location.href = `/request-detail.html?ref=${encodeURIComponent(ref)}`;
+    }
+  } else {
+    document.getElementById("gate").style.display = "flex";
+    document.getElementById("app").style.display = "none";
   }
-  e.target.value='';renderPhotosGrid();
 }
-function removePhoto(i){if(!currentEditing||!confirm('Remove this photo?'))return;currentEditing.estimate.photos.splice(i,1);renderPhotosGrid()}
-function renderLineItems(kind,items){document.getElementById(kind+'Items').innerHTML=items.map((it,i)=>'<div class="line-item"><input class="name" type="text" value="'+esc(it.name||'')+'" placeholder="'+(kind==='labor'?'e.g. Carpenter':'e.g. Lumber')+'" oninput="updateLine(\''+kind+'\','+i+',\'name\',this.value)"><input type="number" value="'+(it.qty||0)+'" step="0.5" oninput="updateLine(\''+kind+'\','+i+',\'qty\',this.value)"><input type="text" value="'+esc(it.unit||(kind==='labor'?'HRS':'PC'))+'" oninput="updateLine(\''+kind+'\','+i+',\'unit\',this.value)"><input type="number" class="rate" value="'+(it.rate||0)+'" step="0.01" oninput="updateLine(\''+kind+'\','+i+',\'rate\',this.value)"><div class="total-cell" id="total-'+kind+'-'+i+'">'+fmt(it.total||0)+'</div><button class="del" onclick="removeLine(\''+kind+'\','+i+')">✕</button></div>').join('')}
-function addLine(k){if(!currentEditing)return;const key=k+'Items';currentEditing.estimate[key]=currentEditing.estimate[key]||[];currentEditing.estimate[key].push({name:'',qty:1,unit:k==='labor'?'HRS':'PC',rate:0,total:0});renderLineItems(k,currentEditing.estimate[key]);recalc()}
-function updateLine(k,i,f,v){const key=k+'Items';const it=currentEditing.estimate[key][i];if(f==='qty'||f==='rate'){it[f]=parseFloat(v)||0;it.total=(it.qty||0)*(it.rate||0);document.getElementById('total-'+k+'-'+i).textContent=fmt(it.total)}else it[f]=v;recalc()}
-function removeLine(k,i){currentEditing.estimate[k+'Items'].splice(i,1);renderLineItems(k,currentEditing.estimate[k+'Items']);recalc()}
-function recalc(){
-  if(!currentEditing)return;
-  const labor=(currentEditing.estimate.laborItems||[]).reduce((s,i)=>s+(Number(i.total)||0),0);
-  const material=(currentEditing.estimate.materialItems||[]).reduce((s,i)=>s+(Number(i.total)||0),0);
-  const subtotal=labor+material;
-  const markupPct=parseFloat(document.getElementById('markupPct').value)||0;
-  const markup=subtotal*(markupPct/100);
-  const grandTotal=subtotal+markup;
-  document.getElementById('laborTotal').textContent=fmt(labor);
-  document.getElementById('materialTotal').textContent=fmt(material);
-  document.getElementById('subtotal').textContent=fmt(subtotal);
-  document.getElementById('markupVal').textContent=fmt(markup);
-  document.getElementById('grandTotal').textContent=fmt(grandTotal);
-  Object.assign(currentEditing.estimate,{subtotal,markup,markupPct,grandTotal});
+
+// ---------- Load + render ----------
+async function loadRequests() {
+  const container = document.getElementById("list-container");
+  container.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const token = netlifyIdentity.currentUser()?.token?.access_token;
+    const res = await fetch("/.netlify/functions/list-requests", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allRequests = data.requests || [];
+    counts = data.counts || {};
+    updateCounts();
+    renderList();
+  } catch (e) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Couldn't load requests. <br><small style="opacity:.6">${e.message}</small></div>`;
+  }
 }
-function syncFields(){if(!currentEditing)return;currentEditing.estimate.projectTitle=document.getElementById('projectTitle').value;currentEditing.estimate.summary=document.getElementById('projectSummary').value;currentEditing.estimate.timeline=document.getElementById('projectTimeline').value}
-function saveDraft(){if(!currentEditing)return;syncFields();if(currentEditing.status==='new')currentEditing.status='draft';currentEditing.updatedAt=new Date().toISOString();saveEstimates();showStatus('✓ Saved','success');setTimeout(()=>{closeEdit();renderList()},800)}
-async function sendQuote(){
-  if(!currentEditing)return;
-  if(!currentEditing.customer||!currentEditing.customer.email){showStatus('⚠️ Customer email required','error');return}
-  if(!currentEditing.estimate||!currentEditing.estimate.grandTotal||currentEditing.estimate.grandTotal<=0){showStatus('⚠️ Add line items first','error');return}
-  syncFields();
-  if(!currentEditing.estimate.projectTitle)currentEditing.estimate.projectTitle=(currentEditing.project&&currentEditing.project.type)||'Renovation';
-  showStatus('Sending...','success');
-  try{
-    const res=await fetch('/.netlify/functions/send-quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:currentEditing.ref,customer:currentEditing.customer,project:currentEditing.project,estimate:currentEditing.estimate})});
-    if(!res.ok)throw new Error('Server error');
-    const r=await res.json();
-    currentEditing.status='sent';currentEditing.sentAt=new Date().toISOString();currentEditing.quoteUrl=r.quoteUrl;
-    saveEstimates();showStatus('✓ Sent to '+currentEditing.customer.email,'success');
-    setTimeout(()=>{closeEdit();renderList()},1500);
-  }catch(err){showStatus('❌ '+err.message,'error')}
+
+function updateCounts() {
+  document.getElementById("c-all").textContent = allRequests.length;
+  document.getElementById("c-new").textContent = counts.new || 0;
+  document.getElementById("c-quoting").textContent = counts.quoting || 0;
+  document.getElementById("c-sent").textContent = counts.sent || 0;
+  document.getElementById("c-opened").textContent = counts.opened || 0;
+  document.getElementById("c-accepted").textContent = counts.accepted || 0;
 }
-function deleteEstimate(){if(!currentEditing||!confirm('Delete this estimate?'))return;estimates=estimates.filter(e=>e.id!==currentEditing.id);saveEstimates();closeEdit();renderList()}
-function openInvoiceModal(){
-  if(!currentEditing)return;
-  syncFields();saveEstimates();
-  document.getElementById('invCustName').textContent=(currentEditing.customer&&currentEditing.customer.name)||'';
-  document.getElementById('invCustEmail').textContent=(currentEditing.customer&&currentEditing.customer.email)||'';
-  document.getElementById('totalRef').textContent=((currentEditing.estimate&&currentEditing.estimate.grandTotal)||0).toFixed(0);
-  document.getElementById('depPercent').value=25;
-  document.getElementById('depAmount').value=Math.round(((currentEditing.estimate&&currentEditing.estimate.grandTotal)||0)*0.25);
-  document.getElementById('depType').value='percent';
-  document.getElementById('percentRow').style.display='flex';
-  document.getElementById('amountRow').style.display='none';
-  recalcDeposit();
-  document.querySelectorAll('#paymentMethods .toggle-item').forEach(t=>{const cb=t.querySelector('input');cb.onchange=()=>t.classList.toggle('on',cb.checked)});
-  document.getElementById('invoiceModal').classList.add('show');
+
+function renderList() {
+  const container = document.getElementById("list-container");
+  let items = allRequests;
+  if (currentStatus) items = items.filter(r => r.status === currentStatus);
+  if (currentSearch) {
+    const q = currentSearch.toLowerCase();
+    items = items.filter(r =>
+      (r.name||"").toLowerCase().includes(q) ||
+      (r.email||"").toLowerCase().includes(q) ||
+      (r.phone||"").includes(q) ||
+      (r.ref||"").toLowerCase().includes(q) ||
+      (r.service||"").toLowerCase().includes(q)
+    );
+  }
+  if (items.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>No requests${currentStatus ? ` in "${currentStatus}"` : ""} yet.</div>`;
+    return;
+  }
+  container.innerHTML = '<div class="list">' + items.map(r => `
+    <a href="/request-detail.html?ref=${encodeURIComponent(r.ref)}" class="row">
+      <span class="status status-${r.status||'new'}">${r.status||'new'}</span>
+      <div class="row-main">
+        <div class="name">${esc(r.name)}</div>
+        <div class="meta">${esc(r.phone)} · ${esc(r.ref)} · ${fmtDate(r.createdAt)}</div>
+      </div>
+      <div class="row-svc">
+        ${esc(r.service)}
+        <div class="timeline">${esc(r.timeline || r.propertyType || "")}</div>
+      </div>
+      <div class="row-amount">${r.quote?.total ? "$"+r.quote.total.toLocaleString() : "—"}</div>
+    </a>
+  `).join('') + '</div>';
 }
-function closeInvoiceModal(){document.getElementById('invoiceModal').classList.remove('show')}
-function recalcDeposit(){
-  const type=document.getElementById('depType').value;
-  document.getElementById('percentRow').style.display=type==='percent'?'flex':'none';
-  document.getElementById('amountRow').style.display=type==='fixed'?'flex':'none';
-  const total=(currentEditing&&currentEditing.estimate&&currentEditing.estimate.grandTotal)||0;
-  let amt=0;
-  if(type==='percent'){const pct=parseFloat(document.getElementById('depPercent').value)||0;amt=total*(pct/100);document.getElementById('depAmount').value=amt.toFixed(2)}
-  else amt=parseFloat(document.getElementById('depAmount').value)||0;
-  document.getElementById('depAmtDisplay').textContent=fmt(amt);
+
+function esc(s){if(!s)return'';return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtDate(iso){
+  if(!iso)return'';
+  const d=new Date(iso);
+  const now=new Date();
+  const diff=(now-d)/1000;
+  if(diff<60)return'just now';
+  if(diff<3600)return Math.floor(diff/60)+'m ago';
+  if(diff<86400)return Math.floor(diff/3600)+'h ago';
+  if(diff<86400*7)return Math.floor(diff/86400)+'d ago';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
-async function sendInvoice(){
-  if(!currentEditing)return;
-  const amount=parseFloat(document.getElementById('depAmount').value)||0;
-  if(amount<=0){showInvStatus('⚠️ Amount must be > 0','error');return}
-  const methods=Array.from(document.querySelectorAll('#paymentMethods input:checked')).map(c=>c.value);
-  if(methods.length===0){showInvStatus('⚠️ Select at least one payment method','error');return}
-  const dueDate=document.getElementById('depDueDate').value||'Within 7 days';
-  const deposit={amount,methods,dueDate,sentAt:new Date().toISOString(),status:'pending'};
-  showInvStatus('Sending invoice...','success');
-  try{
-    const res=await fetch('/.netlify/functions/send-invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:currentEditing.ref,customer:currentEditing.customer,estimate:currentEditing.estimate,deposit})});
-    if(!res.ok)throw new Error('Server error');
-    const r=await res.json();
-    currentEditing.deposit=deposit;currentEditing.deposit.invoiceUrl=r.invoiceUrl;currentEditing.status='invoiced';
-    saveEstimates();showInvStatus('✓ Invoice sent!','success');
-    setTimeout(()=>{closeInvoiceModal();closeEdit();renderList()},1500);
-  }catch(err){showInvStatus('❌ '+err.message,'error')}
-}
-function markPaid(){
-  if(!currentEditing||!confirm('Mark deposit as received?'))return;
-  currentEditing.status='paid';
-  if(currentEditing.deposit){currentEditing.deposit.status='paid';currentEditing.deposit.paidAt=new Date().toISOString()}
-  saveEstimates();showStatus('✓ Marked as paid','success');
-  setTimeout(()=>{closeEdit();renderList()},800);
-}
-function showStatus(m,t){const el=document.getElementById('statusMsg');el.textContent=m;el.className='status-msg show '+t;setTimeout(()=>el.classList.remove('show'),4000)}
-function showInvStatus(m,t){const el=document.getElementById('invStatusMsg');el.textContent=m;el.className='status-msg show '+t;setTimeout(()=>el.classList.remove('show'),4000)}
-function fmt(n){return '$'+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
-function esc(t){if(t==null)return '';return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-const refParam=new URLSearchParams(window.location.search).get('ref');
-if(refParam&&sessionStorage.getItem('sbc_dash_auth')==='1'){setTimeout(()=>{const f=estimates.find(e=>e.ref===refParam);if(f)openEdit(f.id)},200)}
+
+document.getElementById("tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest(".tab");
+  if (!btn) return;
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+  currentStatus = btn.dataset.status;
+  renderList();
+});
+
+document.getElementById("search").addEventListener("input", (e) => {
+  currentSearch = e.target.value.trim();
+  renderList();
+});
 </script>
 </body>
 </html>
