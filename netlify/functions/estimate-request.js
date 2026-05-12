@@ -14,7 +14,10 @@ exports.handler = async function (event) {
   }
 
   try {
-    const body = JSON.parse(event.body);
+    console.log("=== estimate-request HIT ===");
+    console.log("Body length:", event.body ? event.body.length : 0);
+
+    const body = JSON.parse(event.body || "{}");
     const {
       ref, name, phone, email, address,
       service, serviceId, serviceAnswers,
@@ -22,13 +25,21 @@ exports.handler = async function (event) {
       photoCount, photos, submittedAt,
     } = body;
 
+    console.log("Fields received - name:", !!name, "email:", !!email, "service:", !!service, "ref:", ref);
+    console.log("Service value:", JSON.stringify(service));
+
     if (!name || !email || !service) {
+      console.error("VALIDATION FAILED - name:", JSON.stringify(name), "email:", JSON.stringify(email), "service:", JSON.stringify(service));
       return {
         statusCode: 400,
         headers: corsHeaders(),
-        body: JSON.stringify({ error: "Missing required fields" }),
+        body: JSON.stringify({ error: "Missing required fields", got: { name: !!name, email: !!email, service: !!service } }),
       };
     }
+
+    console.log("Validation passed. Proceeding to send emails/SMS.");
+    console.log("RESEND_API_KEY set?", !!process.env.RESEND_API_KEY);
+    console.log("CONTRACTOR_EMAIL:", process.env.CONTRACTOR_EMAIL);
 
     const resendKey = process.env.RESEND_API_KEY;
     const contractorEmail = process.env.CONTRACTOR_EMAIL || "contact@sanibuildingcorp.com";
@@ -160,7 +171,7 @@ async function sendContractorEmail(resendKey, contractorEmail, data) {
 </body></html>`;
 
   return sendResend(resendKey, {
-    from: "Sani Building Corp <noreply@sanibuildingcorp.com>",
+    from: "Sani Building Corp <onboarding@resend.dev>",
     to: [contractorEmail],
     reply_to: data.email,
     subject: `🆕 ${data.service} — ${data.name} (${data.ref})`,
@@ -201,7 +212,7 @@ async function sendCustomerConfirmation(resendKey, contractorEmail, data) {
 </body></html>`;
 
   return sendResend(resendKey, {
-    from: "Sani Building Corp <noreply@sanibuildingcorp.com>",
+    from: "Sani Building Corp <onboarding@resend.dev>",
     to: [data.email],
     reply_to: contractorEmail,
     subject: `We got your request — Sani Building Corp (${data.ref})`,
