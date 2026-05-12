@@ -14,7 +14,6 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--cr
 .logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--gold);text-decoration:none}
 .logo span{color:var(--cream)}
 .userbar{display:flex;align-items:center;gap:14px;font-size:13px}
-.userbar .who{color:var(--gray)}
 .userbar button{background:none;border:1px solid var(--border);color:var(--cream);padding:6px 12px;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer}
 .userbar button:hover{border-color:var(--gold);color:var(--gold)}
 .wrap{max-width:1200px;margin:0 auto;padding:28px 24px 60px}
@@ -48,12 +47,20 @@ h1.page{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;ma
 .empty{text-align:center;padding:60px 20px;color:var(--gray)}
 .empty-icon{font-size:42px;margin-bottom:14px;opacity:.4}
 .loading{text-align:center;padding:60px 20px;color:var(--gray)}
+
+/* Login gate */
 .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .gate-card{background:var(--navy2);border:1px solid var(--border);border-radius:16px;padding:40px 36px;max-width:380px;width:100%;text-align:center}
+.gate-card .lock-icon{font-size:32px;margin-bottom:12px;opacity:.7}
 .gate-card h2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:8px}
 .gate-card p{color:var(--gray);font-size:14px;margin-bottom:22px;line-height:1.5}
-.gate-card button{background:var(--gold);color:var(--navy);border:none;padding:13px 28px;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;width:100%}
-.gate-card button:hover{background:var(--gold-dark);color:var(--cream)}
+.gate-input{width:100%;background:rgba(255,255,255,.05);border:1.5px solid var(--border);border-radius:8px;padding:14px 16px;color:var(--cream);font-family:inherit;font-size:15px;margin-bottom:12px}
+.gate-input:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.08)}
+.gate-btn{background:var(--gold);color:var(--navy);border:none;padding:13px 28px;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;width:100%;font-weight:700}
+.gate-btn:hover{background:var(--gold-dark);color:var(--cream)}
+.gate-btn:disabled{opacity:.5;cursor:not-allowed}
+.gate-err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
+
 @media (max-width:640px){
   .wrap{padding:18px 14px 50px}
   h1.page{font-size:26px}
@@ -63,16 +70,27 @@ h1.page{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;ma
   .tab{padding:10px 12px;font-size:11px}
 }
 </style>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/netlify-identity-widget@1.9.2/build/netlify-identity-widget.min.css">
 </head>
 <body>
 
+<!-- LOGIN GATE -->
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <div class="lock-icon">🔒</div>
+    <h2>Dashboard Access</h2>
+    <p>Enter your dashboard password to continue.</p>
+    <input type="password" class="gate-input" id="gate-pw" placeholder="Password" autofocus>
+    <button class="gate-btn" id="gate-btn" onclick="tryLogin()">Sign In →</button>
+    <div class="gate-err" id="gate-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
 <div id="app" style="display:none">
 <header class="topbar">
   <a href="/" class="logo">SANI <span>BUILDING CORP</span></a>
   <div class="userbar">
-    <span class="who" id="user-email"></span>
-    <button onclick="netlifyIdentity.logout()">Sign out</button>
+    <button onclick="logout()">Sign out</button>
   </div>
 </header>
 
@@ -99,56 +117,119 @@ h1.page{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;ma
 </div>
 </div>
 
-<div id="gate" class="gate" style="display:none">
-  <div class="gate-card">
-    <h2>Dashboard</h2>
-    <p>Sign in to view estimate requests, build scopes, and send quotes.</p>
-    <button onclick="netlifyIdentity.open('login')">Sign In →</button>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/netlify-identity-widget@1.9.2/build/netlify-identity-widget.min.js"></script>
 <script>
 let allRequests = [];
 let counts = {};
 let currentStatus = "";
 let currentSearch = "";
 
-// ---------- Identity gate ----------
-window.netlifyIdentity = window.netlifyIdentity || null;
-if (window.netlifyIdentity) {
-  netlifyIdentity.on("init", (user) => { renderAuthState(user); });
-  netlifyIdentity.on("login", (user) => { netlifyIdentity.close(); renderAuthState(user); });
-  netlifyIdentity.on("logout", () => { renderAuthState(null); });
-  netlifyIdentity.init();
-}
+// ---------- Password gate ----------
+function getStoredPw(){ return sessionStorage.getItem('sbc_dash_pw') || ''; }
+function storePw(p){ sessionStorage.setItem('sbc_dash_pw', p); }
+function clearPw(){ sessionStorage.removeItem('sbc_dash_pw'); }
 
-function renderAuthState(user) {
-  if (user) {
-    document.getElementById("gate").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    document.getElementById("user-email").textContent = user.email;
-    loadRequests();
-    // Deep link to /request/REF
-    if (location.hash.startsWith("#/request/")) {
-      const ref = location.hash.replace("#/request/", "");
-      if (ref) location.href = `/request-detail.html?ref=${encodeURIComponent(ref)}`;
+function authToken(){ return getStoredPw(); }
+
+async function tryLogin(){
+  const pw = document.getElementById('gate-pw').value.trim();
+  const errEl = document.getElementById('gate-err');
+  const btn = document.getElementById('gate-btn');
+  if(!pw){ errEl.textContent = 'Enter a password'; return; }
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+  // Try a real call with the password to verify it
+  try{
+    const res = await fetch('/.netlify/functions/list-requests',{
+      headers:{ Authorization:`Bearer ${pw}` }
+    });
+    if(res.status === 401){
+      errEl.textContent = 'Wrong password';
+      btn.disabled = false;
+      btn.textContent = 'Sign In →';
+      return;
     }
-  } else {
-    document.getElementById("gate").style.display = "flex";
-    document.getElementById("app").style.display = "none";
+    if(!res.ok){
+      const data = await res.json().catch(()=>({}));
+      errEl.textContent = data.error || `Error ${res.status}`;
+      btn.disabled = false;
+      btn.textContent = 'Sign In →';
+      return;
+    }
+    // Success — store and show app
+    storePw(pw);
+    showApp();
+    const data = await res.json();
+    allRequests = data.requests || [];
+    counts = data.counts || {};
+    updateCounts();
+    renderList();
+  } catch(e){
+    errEl.textContent = e.message;
+    btn.disabled = false;
+    btn.textContent = 'Sign In →';
   }
 }
+
+document.getElementById('gate-pw').addEventListener('keypress', (e)=>{
+  if(e.key === 'Enter') tryLogin();
+});
+
+function logout(){
+  clearPw();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('gate-pw').value = '';
+  document.getElementById('gate-err').textContent = '';
+}
+
+function showApp(){
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  // Deep link to /request/REF
+  if(location.hash.startsWith('#/request/')){
+    const ref = location.hash.replace('#/request/','');
+    if(ref) location.href = `/request-detail.html?ref=${encodeURIComponent(ref)}`;
+  }
+}
+
+// On load — if we have a stored password, try it silently
+(async function init(){
+  const pw = getStoredPw();
+  if(!pw){
+    document.getElementById('gate-pw').focus();
+    return;
+  }
+  try{
+    const res = await fetch('/.netlify/functions/list-requests',{
+      headers:{ Authorization:`Bearer ${pw}` }
+    });
+    if(res.status === 401){
+      clearPw();
+      document.getElementById('gate-pw').focus();
+      return;
+    }
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    showApp();
+    const data = await res.json();
+    allRequests = data.requests || [];
+    counts = data.counts || {};
+    updateCounts();
+    renderList();
+  } catch(e){
+    document.getElementById('gate-err').textContent = e.message;
+  }
+})();
 
 // ---------- Load + render ----------
 async function loadRequests() {
   const container = document.getElementById("list-container");
   container.innerHTML = '<div class="loading">Loading…</div>';
   try {
-    const token = netlifyIdentity.currentUser()?.token?.access_token;
     const res = await fetch("/.netlify/functions/list-requests", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${authToken()}` },
     });
+    if (res.status === 401) { logout(); return; }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     allRequests = data.requests || [];
