@@ -2,264 +2,599 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" type="image/x-icon" href="/favicon.ico">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<meta name="theme-color" content="#b8720a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex,nofollow">
-<title>Your Quote | Sani Building Corp</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>Your Estimate · Sani Building Corp</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
-:root{--navy:#0d1b2a;--navy2:#1a2d42;--gold:#c9a84c;--gold-light:#e8c97a;--cream:#f5f0e8;--gray:#8a9bb0;--border:rgba(201,168,76,0.2);--success:#2ecc71}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--navy);color:var(--cream);font-family:'DM Sans',sans-serif;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 50%,rgba(201,168,76,0.07) 0%,transparent 55%),radial-gradient(ellipse at 85% 15%,rgba(201,168,76,0.05) 0%,transparent 50%);pointer-events:none;z-index:0}
-.wrap{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:30px 20px 60px}
-.brand-header{text-align:center;margin-bottom:30px;padding-bottom:24px;border-bottom:1px solid var(--border)}
-.brand-name{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:4px;color:var(--gold)}
-.brand-name span{color:#fff}
-.brand-tagline{font-size:11px;letter-spacing:3px;color:var(--gray);text-transform:uppercase;margin-top:4px}
-.welcome{text-align:center;margin-bottom:30px}
-.welcome .label{font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
-.welcome h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,6vw,48px);letter-spacing:2px;color:#fff;margin-bottom:12px;line-height:1.05}
-.welcome h1 span{color:var(--gold)}
-.welcome p{color:var(--gray);font-size:15px;line-height:1.7;max-width:500px;margin:0 auto}
-.quote-card{background:var(--navy2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:24px}
-.quote-head{background:linear-gradient(135deg,#c9a84c 0%,#9a6f2a 100%);padding:28px 32px}
-.quote-head .ref{font-size:11px;letter-spacing:2px;color:rgba(13,27,42,.7);text-transform:uppercase;margin-bottom:6px}
-.quote-head h2{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:#0d1b2a;margin-bottom:14px;line-height:1.1}
-.total-row{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;border-top:1px solid rgba(13,27,42,.2)}
-.total-row .lbl{font-size:12px;letter-spacing:2px;color:rgba(13,27,42,.7);text-transform:uppercase;font-weight:600}
-.total-row .val{font-family:'Bebas Neue',sans-serif;font-size:44px;color:#0d1b2a;letter-spacing:1px}
-.quote-body{padding:26px 32px}
-.summary-text{font-size:15px;color:var(--cream);line-height:1.75;margin-bottom:20px;padding:16px;background:rgba(255,255,255,.03);border-left:3px solid var(--gold);border-radius:6px}
-.photos-section{margin:20px 0}
-.photos-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--gold);margin-bottom:10px}
-.photos-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-.photo-item{aspect-ratio:1;border-radius:8px;overflow:hidden;background:rgba(0,0,0,.3);border:1px solid var(--border);cursor:pointer;transition:transform .2s}
-.photo-item:hover{transform:scale(1.02);border-color:var(--gold)}
-.photo-item img{width:100%;height:100%;object-fit:cover}
-.breakdown-section{margin-bottom:18px}
-.breakdown-head{display:flex;justify-content:space-between;align-items:center;padding:10px 0 8px;border-bottom:1px solid var(--border);margin-bottom:8px}
-.breakdown-head h3{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--gold)}
-.breakdown-head .amt{font-size:14px;color:var(--gold-light);font-weight:500}
-.breakdown-list{list-style:none}
-.breakdown-list li{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;color:var(--gray)}
-.breakdown-list li .name{flex:1}
-.breakdown-list li .qty{font-size:12px;color:var(--gray);margin-right:12px}
-.timeline-card{background:rgba(255,255,255,.04);border-radius:10px;padding:14px 18px;margin:18px 0;display:flex;align-items:center;gap:12px}
-.timeline-card .icon{font-size:24px}
-.timeline-card .info .lbl{font-size:10px;letter-spacing:2px;color:var(--gray);text-transform:uppercase}
-.timeline-card .info .val{font-size:14px;color:var(--cream)}
-.includes-list{list-style:none;padding:16px 18px;background:rgba(46,204,113,.05);border:1px solid rgba(46,204,113,.15);border-radius:10px;margin:16px 0}
-.includes-list li{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:var(--cream)}
-.includes-list li::before{content:'✓';color:var(--success);font-weight:700;flex-shrink:0}
-.total-final{background:var(--navy);border:2px solid var(--gold);border-radius:12px;padding:22px;text-align:center;margin:18px 0}
-.total-final .lbl{font-size:11px;letter-spacing:3px;color:var(--gray);text-transform:uppercase;margin-bottom:6px}
-.total-final .val{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--gold);letter-spacing:2px;line-height:1}
-.total-final .note{font-size:12px;color:var(--gray);margin-top:8px}
-.actions{display:flex;gap:12px;margin:24px 0;flex-wrap:wrap}
-.btn-accept{flex:1;min-width:200px;padding:18px;background:var(--success);color:#fff;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;cursor:pointer}
-.btn-accept:hover:not(:disabled){background:#27ae60;transform:translateY(-2px)}
-.btn-accept:disabled{opacity:.5;cursor:not-allowed}
-.btn-discuss{flex:1;min-width:200px;padding:18px;background:transparent;color:var(--gold);border:2px solid var(--gold);border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;cursor:pointer}
-.contact-bar{background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center}
-.contact-bar h4{font-size:13px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
-.contact-bar .links{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
-.contact-bar a{color:var(--cream);text-decoration:none;font-size:14px;padding:8px 14px;border:1px solid var(--border);border-radius:8px}
-.contact-bar a:hover{border-color:var(--gold);color:var(--gold)}
-.disclaimer{font-size:11px;color:var(--gray);line-height:1.7;margin-top:24px;padding:14px;background:rgba(255,255,255,.02);border-radius:8px;text-align:center}
-.success-state{display:none;text-align:center;padding:40px 20px;background:var(--navy2);border:1px solid rgba(46,204,113,.3);border-radius:16px;animation:fadeUp .5s ease both}
-.success-state.show{display:block}
-.success-state .icon{width:80px;height:80px;background:var(--success);border-radius:50%;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;font-size:44px;color:#fff}
-.success-state h2{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;color:var(--success);margin-bottom:10px}
-.success-state p{color:var(--cream);font-size:15px;line-height:1.7;margin-bottom:14px}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;padding:20px;align-items:center;justify-content:center}
-.modal-bg.show{display:flex}
-.modal{background:var(--navy2);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:460px;width:100%}
-.modal h3{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold);margin-bottom:6px}
-.modal p{font-size:13px;color:var(--gray);margin-bottom:16px;line-height:1.6}
-.modal textarea{width:100%;padding:12px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;min-height:100px;outline:none;margin-bottom:14px}
-.modal-btns{display:flex;gap:10px}
-.modal-btns button{flex:1;padding:12px;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;border:none}
-.modal-btns .cancel{background:transparent;border:1px solid var(--border);color:var(--gray)}
-.modal-btns .send{background:var(--gold);color:var(--navy)}
-.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:200;padding:20px;align-items:center;justify-content:center;cursor:pointer}
-.lightbox.show{display:flex}
-.lightbox img{max-width:100%;max-height:90vh;border-radius:8px}
-.deposit-banner{background:linear-gradient(135deg,#9b59b6,#8e44ad);color:#fff;border-radius:12px;padding:18px 22px;margin:18px 0;text-align:center}
-.deposit-banner h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;margin-bottom:6px}
-.deposit-banner p{font-size:13px;opacity:.9;margin-bottom:12px}
-.deposit-banner a{display:inline-block;background:#fff;color:#8e44ad;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px}
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-@media (max-width:580px){.quote-head{padding:22px}.quote-body{padding:22px}.total-row .val{font-size:36px}.actions{flex-direction:column}}
+:root {
+  --navy: #0d1b2a;
+  --navy-2: #1a2d42;
+  --gold: #c9a84c;
+  --gold-soft: #f7f0e3;
+  --bg: #f5f0e8;
+  --card: #ffffff;
+  --ink: #1a1a1a;
+  --ink-soft: #555;
+  --ink-muted: #8a8a8a;
+  --line: #e8e2d9;
+  --good: #2ecc71;
+  --bad: #e74c3c;
+  --display: 'Bebas Neue', Arial, sans-serif;
+  --body: 'Inter', -apple-system, sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: var(--body);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  padding: 20px 16px 60px;
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+
+.hero {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: #fff;
+  padding: 36px 28px;
+  border-radius: 14px 14px 0 0;
+  text-align: center;
+}
+.brand {
+  font-family: var(--display);
+  font-size: 24px;
+  letter-spacing: 4px;
+  color: var(--gold);
+}
+.tag {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #aaa;
+  margin-top: 8px;
+  text-transform: uppercase;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-top: none;
+  padding: 32px 28px;
+}
+.card:last-child {
+  border-radius: 0 0 14px 14px;
+  margin-bottom: 0;
+}
+
+h1 {
+  font-family: var(--display);
+  font-size: 32px;
+  letter-spacing: 2px;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+.ref-row {
+  font-size: 12px;
+  color: var(--ink-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+
+.summary {
+  background: var(--gold-soft);
+  border-left: 4px solid var(--gold);
+  padding: 16px 20px;
+  font-size: 15px;
+  color: #444;
+  border-radius: 0 8px 8px 0;
+  margin: 18px 0 26px;
+  line-height: 1.6;
+}
+
+.section-title {
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--navy);
+  margin: 28px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.scope-text {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+}
+
+.line-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 8px;
+}
+.line-table th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 8px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.line-table th.num, .line-table td.num { text-align: right; }
+.line-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #f4f0e8;
+}
+.line-table .item-name { color: var(--ink); }
+.line-table .qty-unit { color: var(--ink-muted); font-size: 13px; }
+
+.totals {
+  margin-top: 22px;
+  background: #faf8f4;
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.tot-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.tot-row.grand {
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 2px solid var(--navy);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.tot-row.grand .label { font-family: var(--display); letter-spacing: 2px; }
+
+.timeline-pill {
+  display: inline-block;
+  background: var(--gold-soft);
+  color: var(--navy);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.actions {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .actions { grid-template-columns: 1fr; }
+}
+.btn {
+  padding: 16px 24px;
+  border-radius: 10px;
+  border: none;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-accept {
+  background: var(--good);
+  color: #fff;
+}
+.btn-decline {
+  background: #fff;
+  color: var(--ink-soft);
+  border: 1.5px solid var(--line);
+}
+
+.footer {
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--ink-muted);
+  letter-spacing: 1px;
+}
+.footer strong { color: var(--gold); letter-spacing: 2px; }
+.footer a { color: #b8720a; text-decoration: none; font-weight: 600; }
+
+/* ===== Loading & Error states ===== */
+.state {
+  text-align: center;
+  padding: 80px 24px;
+}
+.state h2 {
+  font-family: var(--display);
+  font-size: 28px;
+  letter-spacing: 2px;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.state p { color: var(--ink-muted); font-size: 14px; }
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--line);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  margin: 0 auto 18px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== Accept modal ===== */
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-backdrop.show { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 32px 28px;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+}
+.modal h3 {
+  font-family: var(--display);
+  font-size: 24px;
+  letter-spacing: 2px;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.modal p { font-size: 14px; color: var(--ink-soft); margin-bottom: 18px; }
+.modal label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.modal input, .modal textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-family: var(--body);
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+.modal input:focus, .modal textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.modal-actions button { flex: 1; padding: 13px; }
+
+.success-screen {
+  text-align: center;
+  padding: 60px 24px;
+}
+.success-icon {
+  width: 80px; height: 80px;
+  background: var(--good);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 40px;
+  line-height: 80px;
+  margin: 0 auto 20px;
+}
 </style>
 </head>
 <body>
-
 <div class="wrap">
-  <div class="brand-header">
-    <div class="brand-name">SANI <span>BUILDING CORP</span></div>
-    <div class="brand-tagline">NYC Renovation &amp; Repair · Since 2015</div>
+  <div id="state-loading" class="hero" style="border-radius:14px">
+    <div class="spinner"></div>
+    <div class="brand">SANI BUILDING CORP</div>
+    <div class="tag">Loading your estimate…</div>
   </div>
-  <div id="quoteContent"></div>
-  <div class="success-state" id="successState">
-    <div class="icon">✓</div>
-    <h2 id="successTitle">Thank You!</h2>
-    <p id="successMsg"></p>
-    <p style="font-size:13px;color:var(--gray)">We'll be in touch shortly. Need to reach us right away?</p>
-    <div style="margin-top:14px"><a href="tel:3322770990" style="color:var(--gold);font-weight:600;text-decoration:none">📞 332-277-0990</a></div>
-  </div>
-  <div class="contact-bar" id="contactBar">
-    <h4>Questions? We're Here to Help</h4>
-    <div class="links">
-      <a href="tel:3322770990">📞 332-277-0990</a>
-      <a href="mailto:contact@sanibuildingcorp.com">✉ Email Us</a>
+
+  <div id="state-error" style="display:none">
+    <div class="hero" style="border-radius:14px">
+      <div class="brand">SANI BUILDING CORP</div>
+      <div class="tag" style="color:#e74c3c">Estimate not found</div>
+    </div>
+    <div class="card" style="border-radius:0 0 14px 14px;text-align:center">
+      <p style="color:var(--ink-soft);margin:20px 0">We couldn't find this estimate. The link may be expired or incorrect.</p>
+      <p style="color:var(--ink-muted);font-size:13px">Need help? Call <a href="tel:+13322770990" style="color:#b8720a;text-decoration:none;font-weight:600">(332) 277-0990</a></p>
     </div>
   </div>
-  <div class="disclaimer" id="disclaimer">
-    This estimate is valid for 30 days from the date issued. Final pricing may vary based on site conditions discovered during work, material availability, or scope changes. All work is performed by professionals and is fully insured.
+
+  <div id="state-quote" style="display:none">
+    <div class="hero">
+      <div class="brand">SANI BUILDING CORP</div>
+      <div class="tag">Your Estimate</div>
+    </div>
+    <div class="card">
+      <h1 id="project-title">Project</h1>
+      <div class="ref-row">Ref <span id="ref-id"></span> · Prepared for <span id="customer-name"></span></div>
+
+      <div id="summary" class="summary"></div>
+
+      <div id="timeline-wrap" style="display:none">
+        <div class="section-title">Estimated Timeline</div>
+        <div class="timeline-pill" id="timeline-text"></div>
+      </div>
+
+      <div id="scope-wrap" style="display:none">
+        <div class="section-title">Scope of Work</div>
+        <div class="scope-text" id="scope-text"></div>
+      </div>
+
+      <div id="labor-wrap" style="display:none">
+        <div class="section-title">Labor</div>
+        <table class="line-table">
+          <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Total</th></tr></thead>
+          <tbody id="labor-body"></tbody>
+        </table>
+      </div>
+
+      <div id="materials-wrap" style="display:none">
+        <div class="section-title">Materials</div>
+        <table class="line-table">
+          <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Total</th></tr></thead>
+          <tbody id="materials-body"></tbody>
+        </table>
+      </div>
+
+      <div class="totals">
+        <div class="tot-row"><span>Labor subtotal</span><span id="labor-sub">$0.00</span></div>
+        <div class="tot-row"><span>Materials subtotal</span><span id="mat-sub">$0.00</span></div>
+        <div class="tot-row"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+        <div class="tot-row"><span id="markup-label">Overhead</span><span id="markup-amt">$0.00</span></div>
+        <div class="tot-row grand"><span class="label">TOTAL</span><span id="grand-total">$0.00</span></div>
+      </div>
+
+      <div class="actions" id="actions-row">
+        <button class="btn btn-decline" onclick="openDecline()">Decline</button>
+        <button class="btn btn-accept" onclick="openAccept()">Accept Estimate</button>
+      </div>
+
+      <div class="footer">
+        <strong>SANI BUILDING CORP</strong><br>
+        Fully Insured · NYC Metro · 4.9 ★<br>
+        <a href="tel:+13322770990">(332) 277-0990</a> · <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="state-success" style="display:none">
+    <div class="hero" style="border-radius:14px">
+      <div class="brand">SANI BUILDING CORP</div>
+      <div class="tag" id="success-tag">Thank you</div>
+    </div>
+    <div class="card" style="border-radius:0 0 14px 14px">
+      <div class="success-screen">
+        <div class="success-icon" id="success-icon">✓</div>
+        <h1 id="success-title">Estimate Accepted</h1>
+        <p style="color:var(--ink-soft);font-size:15px;margin:16px 0 24px;max-width:420px;margin-left:auto;margin-right:auto" id="success-msg">Thanks! We'll be in touch shortly to schedule the start date and send over the invoice with deposit details.</p>
+        <p style="color:var(--ink-muted);font-size:13px">Questions? Call <a href="tel:+13322770990" style="color:#b8720a;text-decoration:none;font-weight:600">(332) 277-0990</a></p>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="modal-bg" id="discussModal"><div class="modal">
-  <h3>💬 Discuss Quote</h3>
-  <p>Have questions, suggestions, or want to adjust scope? Let us know:</p>
-  <textarea id="discussMsg" placeholder="e.g. I'd like to discuss materials, timeline, or schedule a site visit..."></textarea>
-  <div class="modal-btns">
-    <button class="cancel" onclick="closeDiscuss()">CANCEL</button>
-    <button class="send" onclick="sendDiscuss()">SEND MESSAGE</button>
+<!-- Accept modal -->
+<div id="accept-modal" class="modal-backdrop">
+  <div class="modal">
+    <h3>ACCEPT ESTIMATE</h3>
+    <p>By typing your full name below, you accept this estimate and authorize Sani Building Corp to proceed with the work as described.</p>
+    <label>Type your full name to sign</label>
+    <input type="text" id="signature-input" placeholder="e.g. John Smith">
+    <div class="modal-actions">
+      <button class="btn btn-decline" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-accept" id="confirm-accept" onclick="submitAccept()">Accept & Sign</button>
+    </div>
   </div>
-</div></div>
+</div>
 
-<div class="lightbox" id="lightbox" onclick="closeLightbox()"><img id="lightboxImg" src="" alt=""></div>
+<!-- Decline modal -->
+<div id="decline-modal" class="modal-backdrop">
+  <div class="modal">
+    <h3>DECLINE ESTIMATE</h3>
+    <p>No problem. Mind sharing why so we can improve? (Optional)</p>
+    <label>Reason (optional)</label>
+    <textarea id="decline-reason" rows="3" placeholder="e.g. Found a different contractor / Price too high / Changed plans"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-decline" onclick="closeModals()">Back</button>
+      <button class="btn" style="background:#e74c3c;color:#fff" id="confirm-decline" onclick="submitDecline()">Send Decline</button>
+    </div>
+  </div>
+</div>
 
 <script>
-const fmt=n=>'$'+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
-const params=new URLSearchParams(window.location.search);
-const quoteData=params.get('q');
-let quote=null;
-try{if(quoteData)quote=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(quoteData)))))}catch(e){console.error(e)}
+const params = new URLSearchParams(window.location.search);
+const ref = params.get("ref");
+let record = null;
 
-if(!quote){
-  document.getElementById('quoteContent').innerHTML='<div style="text-align:center;padding:60px 20px;background:var(--navy2);border:1px solid var(--border);border-radius:16px"><div style="font-size:48px;margin-bottom:14px">🔍</div><h2 style="font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:2px;color:var(--gold);margin-bottom:10px">Quote Not Found</h2><p style="color:var(--gray);font-size:14px;line-height:1.6;margin-bottom:18px">The quote link appears to be invalid or expired.<br>Please check your email or contact us.</p><a href="tel:3322770990" style="display:inline-block;padding:12px 28px;background:var(--gold);color:var(--navy);border-radius:10px;text-decoration:none;font-family:Bebas Neue,sans-serif;letter-spacing:2px">📞 CALL US</a></div>';
-  document.getElementById('contactBar').style.display='none';
-  document.getElementById('disclaimer').style.display='none';
-} else { renderQuote(); trackOpen(); }
+function fmt(n) {
+  return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function esc(s) { return String(s == null ? "" : s); }
 
-function trackOpen(){
-  if(!quote||!quote.ref)return;
-  const k='sbc_tracked_'+quote.ref;
-  if(sessionStorage.getItem(k))return;
-  sessionStorage.setItem(k,'1');
-  fetch('/.netlify/functions/track-open',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:quote.ref,source:'quote_page',customer:quote.customer||{},projectTitle:quote.estimate?.projectTitle||quote.project?.type||'Project'})}).catch(()=>{});
+function calcTotal(est) {
+  const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
+  const mat = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
+  const sub = labor + mat;
+  const markup = sub * ((Number(est.markupPct) || 0) / 100);
+  return { labor, mat, sub, markup, grand: sub + markup };
 }
 
-function renderQuote(){
-  const e=quote.estimate||{};
-  const c=quote.customer||{};
-  const display=e.display||{showLabor:true,showMaterial:true,showItems:false,showTotals:true};
-  const photos=e.photos||[];
-  const firstName=(c.name||'there').split(' ')[0];
-  const grandTotal=Number(e.grandTotal)||0;
-  const laborTotal=(e.laborItems||[]).reduce((s,i)=>s+(Number(i.total)||0),0);
-  const materialTotal=(e.materialItems||[]).reduce((s,i)=>s+(Number(i.total)||0),0);
-  const total=laborTotal+materialTotal;
-  const ratio=total>0?grandTotal/total:1;
-  const customerLaborTotal=laborTotal*ratio;
-  const customerMaterialTotal=materialTotal*ratio;
+async function load() {
+  if (!ref) { showError(); return; }
+  try {
+    const r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref));
+    if (!r.ok) { showError(); return; }
+    record = await r.json();
+    render();
+  } catch (e) {
+    console.error(e); showError();
+  }
+}
 
-  let html='<div class="welcome"><div class="label">PERSONALIZED QUOTE</div><h1>Hi '+esc(firstName)+',<br>here\'s your <span>quote</span></h1><p>Thank you for considering Sani Building Corp for your project. We\'ve prepared the following estimate based on your specifications.</p></div>';
+function showError() {
+  document.getElementById("state-loading").style.display = "none";
+  document.getElementById("state-error").style.display = "block";
+}
 
-  html+='<div class="quote-card"><div class="quote-head"><div class="ref">REF: '+esc(quote.ref||'—')+'</div><h2>'+esc(e.projectTitle||(quote.project&&quote.project.type)||'Renovation Project')+'</h2><div class="total-row"><span class="lbl">Estimated Total</span><span class="val">'+fmt(grandTotal)+'</span></div></div><div class="quote-body">';
-
-  if(e.summary)html+='<div class="summary-text">'+esc(e.summary)+'</div>';
-
-  // Photos gallery
-  if(photos.length>0){
-    html+='<div class="photos-section"><div class="photos-title">📸 PROJECT PHOTOS &amp; INSPIRATION</div><div class="photos-gallery">';
-    photos.forEach((p,i)=>{html+='<div class="photo-item" onclick="openLightbox(\''+esc(p.dataUrl)+'\')"><img src="'+esc(p.dataUrl)+'" alt=""></div>'});
-    html+='</div></div>';
+function render() {
+  // If already accepted/declined, show success screen
+  if (record.status === "accepted") {
+    showSuccess("accepted");
+    return;
+  }
+  if (record.status === "declined") {
+    showSuccess("declined");
+    return;
   }
 
-  // Deposit banner if invoice exists
-  if(quote.deposit&&quote.deposit.invoiceUrl){
-    html+='<div class="deposit-banner"><h3>💰 DEPOSIT INVOICE READY</h3><p>A deposit of '+fmt(quote.deposit.amount)+' is required to schedule your project</p><a href="'+esc(quote.deposit.invoiceUrl)+'">PAY DEPOSIT →</a></div>';
-  }
+  const est = record.estimate || {};
+  const customer = record.customer || {};
+  document.getElementById("project-title").textContent = est.projectTitle || (record.request?.service || "Your Project");
+  document.getElementById("ref-id").textContent = record.ref;
+  document.getElementById("customer-name").textContent = customer.name || "—";
 
-  // Labor section
-  if(display.showLabor){
-    html+='<div class="breakdown-section"><div class="breakdown-head"><h3>🔨 Labor &amp; Installation</h3>'+(display.showTotals?'<span class="amt">'+fmt(customerLaborTotal)+'</span>':'')+'</div>';
-    if(display.showItems){
-      html+='<ul class="breakdown-list">';
-      (e.laborItems||[]).forEach(i=>{html+='<li><span class="name">'+esc(i.name||'')+'</span></li>'});
-      html+='</ul>';
-    }
-    html+='</div>';
-  }
-
-  // Materials section
-  if(display.showMaterial){
-    html+='<div class="breakdown-section"><div class="breakdown-head"><h3>📦 Materials &amp; Fixtures</h3>'+(display.showTotals?'<span class="amt">'+fmt(customerMaterialTotal)+'</span>':'')+'</div>';
-    if(display.showItems){
-      html+='<ul class="breakdown-list">';
-      (e.materialItems||[]).forEach(i=>{html+='<li><span class="name">'+esc(i.name||'')+'</span></li>'});
-      html+='</ul>';
-    }
-    html+='</div>';
-  }
-
-  if(e.timeline)html+='<div class="timeline-card"><div class="icon">⏱️</div><div class="info"><div class="lbl">Estimated Timeline</div><div class="val">'+esc(e.timeline)+'</div></div></div>';
-
-  html+='<ul class="includes-list"><li>Fully insured work</li><li>Professional cleanup &amp; debris removal</li><li>1-year workmanship warranty</li><li>Direct communication with project manager</li></ul>';
-  html+='<div class="total-final"><div class="lbl">Your Total</div><div class="val">'+fmt(grandTotal)+'</div><div class="note">All inclusive · No hidden fees</div></div>';
-
-  // Hide accept button if already accepted
-  const isAccepted=quote.status==='accepted'||quote.status==='invoiced'||quote.status==='paid';
-  if(isAccepted){
-    html+='<div style="background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);border-radius:12px;padding:18px;text-align:center;margin:24px 0"><div style="color:#2ecc71;font-size:18px;font-family:Bebas Neue,sans-serif;letter-spacing:2px">✓ QUOTE ACCEPTED</div><div style="color:var(--gray);font-size:13px;margin-top:6px">Thank you for choosing Sani Building Corp</div></div>';
+  if (est.summary) {
+    document.getElementById("summary").textContent = est.summary;
   } else {
-    html+='<div class="actions"><button class="btn-accept" id="acceptBtn" onclick="acceptQuote()">✓ ACCEPT QUOTE</button><button class="btn-discuss" onclick="openDiscuss()">💬 DISCUSS</button></div>';
+    document.getElementById("summary").style.display = "none";
   }
 
-  html+='</div></div>';
-  document.getElementById('quoteContent').innerHTML=html;
+  if (est.timelineText) {
+    document.getElementById("timeline-wrap").style.display = "block";
+    document.getElementById("timeline-text").textContent = est.timelineText;
+  }
+
+  if (est.scopeOfWork) {
+    document.getElementById("scope-wrap").style.display = "block";
+    document.getElementById("scope-text").textContent = est.scopeOfWork;
+  }
+
+  if (est.labor && est.labor.length) {
+    document.getElementById("labor-wrap").style.display = "block";
+    document.getElementById("labor-body").innerHTML = est.labor.map(i => `
+      <tr>
+        <td><div class="item-name">${esc(i.item)}</div></td>
+        <td class="num qty-unit">${esc(i.qty)} ${esc(i.unit || "")}</td>
+        <td class="num">${fmt(i.rate)}</td>
+        <td class="num">${fmt((Number(i.qty) || 0) * (Number(i.rate) || 0))}</td>
+      </tr>
+    `).join("");
+  }
+
+  if (est.materials && est.materials.length) {
+    document.getElementById("materials-wrap").style.display = "block";
+    document.getElementById("materials-body").innerHTML = est.materials.map(i => `
+      <tr>
+        <td><div class="item-name">${esc(i.item)}</div></td>
+        <td class="num qty-unit">${esc(i.qty)} ${esc(i.unit || "")}</td>
+        <td class="num">${fmt(i.rate)}</td>
+        <td class="num">${fmt((Number(i.qty) || 0) * (Number(i.rate) || 0))}</td>
+      </tr>
+    `).join("");
+  }
+
+  const t = calcTotal(est);
+  document.getElementById("labor-sub").textContent = fmt(t.labor);
+  document.getElementById("mat-sub").textContent = fmt(t.mat);
+  document.getElementById("subtotal").textContent = fmt(t.sub);
+  document.getElementById("markup-label").textContent = `Overhead (${est.markupPct || 0}%)`;
+  document.getElementById("markup-amt").textContent = fmt(t.markup);
+  document.getElementById("grand-total").textContent = fmt(t.grand);
+
+  document.getElementById("state-loading").style.display = "none";
+  document.getElementById("state-quote").style.display = "block";
 }
 
-async function acceptQuote(){
-  const btn=document.getElementById('acceptBtn');
-  btn.disabled=true;btn.textContent='SENDING...';
-  try{
-    await fetch('/.netlify/functions/quote-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:quote.ref,action:'accepted',customer:quote.customer,estimate:quote.estimate,respondedAt:new Date().toISOString()})});
-  }catch(e){console.error(e)}
-  document.getElementById('quoteContent').style.display='none';
-  document.getElementById('successTitle').textContent='Quote Accepted!';
-  document.getElementById('successMsg').innerHTML='Thank you for choosing Sani Building Corp. We\'ve received your acceptance and our team will contact you shortly to schedule the work and finalize the project details.<br><br>A confirmation email has been sent to <strong style="color:var(--gold)">'+esc(quote.customer.email)+'</strong>.';
-  document.getElementById('successState').classList.add('show');
-  document.getElementById('contactBar').style.display='none';
-  window.scrollTo({top:0,behavior:'smooth'});
+function showSuccess(kind) {
+  document.getElementById("state-loading").style.display = "none";
+  document.getElementById("state-quote").style.display = "none";
+  document.getElementById("state-success").style.display = "block";
+  if (kind === "declined") {
+    document.getElementById("success-tag").textContent = "Response received";
+    document.getElementById("success-icon").textContent = "✕";
+    document.getElementById("success-icon").style.background = "#999";
+    document.getElementById("success-title").textContent = "Estimate Declined";
+    document.getElementById("success-msg").textContent = "Thanks for letting us know. If anything changes, feel free to reach out — we're always here.";
+  }
 }
 
-function openDiscuss(){document.getElementById('discussModal').classList.add('show')}
-function closeDiscuss(){document.getElementById('discussModal').classList.remove('show')}
-async function sendDiscuss(){
-  const msg=document.getElementById('discussMsg').value.trim();
-  if(!msg){alert('Please write a message');return}
-  try{
-    await fetch('/.netlify/functions/quote-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:quote.ref,action:'discuss',customer:quote.customer,message:msg,respondedAt:new Date().toISOString()})});
-  }catch(e){console.error(e)}
-  closeDiscuss();
-  document.getElementById('quoteContent').style.display='none';
-  document.getElementById('successTitle').textContent='Message Sent!';
-  document.getElementById('successMsg').innerHTML='Thanks '+esc((quote.customer.name||'').split(' ')[0])+'! We\'ve received your message and will get back to you within a few hours.';
-  document.getElementById('successState').classList.add('show');
-  window.scrollTo({top:0,behavior:'smooth'});
+function openAccept() { document.getElementById("accept-modal").classList.add("show"); }
+function openDecline() { document.getElementById("decline-modal").classList.add("show"); }
+function closeModals() {
+  document.getElementById("accept-modal").classList.remove("show");
+  document.getElementById("decline-modal").classList.remove("show");
 }
 
-function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('show')}
-function closeLightbox(){document.getElementById('lightbox').classList.remove('show')}
+async function submitAccept() {
+  const sig = document.getElementById("signature-input").value.trim();
+  if (!sig) { alert("Please type your full name to sign."); return; }
+  const btn = document.getElementById("confirm-accept");
+  btn.disabled = true; btn.textContent = "Submitting…";
+  try {
+    const r = await fetch("/.netlify/functions/quote-response", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref, action: "accept", signature: sig }),
+    });
+    if (!r.ok) throw new Error("Failed");
+    closeModals();
+    showSuccess("accepted");
+  } catch (e) {
+    alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
+    btn.disabled = false; btn.textContent = "Accept & Sign";
+  }
+}
 
-function esc(t){if(t==null)return '';return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+async function submitDecline() {
+  const reason = document.getElementById("decline-reason").value.trim();
+  const btn = document.getElementById("confirm-decline");
+  btn.disabled = true; btn.textContent = "Submitting…";
+  try {
+    const r = await fetch("/.netlify/functions/quote-response", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref, action: "decline", declineReason: reason }),
+    });
+    if (!r.ok) throw new Error("Failed");
+    closeModals();
+    showSuccess("declined");
+  } catch (e) {
+    alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
+    btn.disabled = false; btn.textContent = "Send Decline";
+  }
+}
+
+load();
 </script>
 </body>
 </html>
