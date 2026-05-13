@@ -1,9 +1,10 @@
 // netlify/functions/estimate-request.js
 // Receives final V3 estimate submission.
-// Sends: contractor email with all details, customer confirmation email, contractor SMS.
-// Contractor prices manually in dashboard later.
+// SAVES to Netlify Blobs (so dashboard can load it).
+// Sends: contractor email, customer confirmation email, contractor SMS (if Twilio set).
 
 const https = require("https");
+const { getStore } = require("@netlify/blobs");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -14,10 +15,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    console.log("=== estimate-request HIT ===");
-    console.log("Body length:", event.body ? event.body.length : 0);
-
-    const body = JSON.parse(event.body || "{}");
+    const body = JSON.parse(event.body);
     const {
       ref, name, phone, email, address,
       service, serviceId, serviceAnswers,
@@ -25,26 +23,55 @@ exports.handler = async function (event) {
       photoCount, photos, submittedAt,
     } = body;
 
-    console.log("Fields received - name:", !!name, "email:", !!email, "service:", !!service, "ref:", ref);
-    console.log("Service value:", JSON.stringify(service));
-
     if (!name || !email || !service) {
-      console.error("VALIDATION FAILED - name:", JSON.stringify(name), "email:", JSON.stringify(email), "service:", JSON.stringify(service));
       return {
         statusCode: 400,
         headers: corsHeaders(),
-        body: JSON.stringify({ error: "Missing required fields", got: { name: !!name, email: !!email, service: !!service } }),
+        body: JSON.stringify({ error: "Missing required fields" }),
       };
     }
 
-    console.log("Validation passed. Proceeding to send emails/SMS.");
-    console.log("RESEND_API_KEY set?", !!process.env.RESEND_API_KEY);
-    console.log("CONTRACTOR_EMAIL:", process.env.CONTRACTOR_EMAIL);
+    // ============ SAVE TO BLOBS ============
+    // This is the new piece — dashboard reads from here
+    try {
+      const store = getStore("estimates");
+      const record = {
+        ref,
+        status: "new", // new | drafted | sent | accepted | declined | invoiced | paid
+        customer: { name, phone, email, address },
+        request: {
+          service, serviceId, serviceAnswers,
+          propertyType, description, timeline,
+          photoCount: photoCount || 0,
+          photos: photos || [],
+        },
+        // Estimate fields (filled in later by contractor + AI)
+        estimate: {
+          projectTitle: "",
+          summary: "",
+          scopeOfWork: "",
+          labor: [],
+          materials: [],
+          timelineText: "",
+          markupPct: 25,
+          notes: "",
+        },
+        submittedAt: submittedAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        sentAt: null,
+        acceptedAt: null,
+      };
+      await store.setJSON(ref, record);
+      console.log("Saved to Blobs:", ref);
+    } catch (blobErr) {
+      console.error("Blobs save failed:", blobErr.message);
+      // Don't fail the whole request if Blobs fails — emails still go
+    }
 
+    // ============ SEND NOTIFICATIONS ============
     const resendKey = process.env.RESEND_API_KEY;
-    const contractorEmail = process.env.CONTRACTOR_EMAIL || "contact@sanibuildingcorp.com";
+    const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
 
-    // Fire all notifications in parallel
     const tasks = [];
 
     if (resendKey) {
@@ -160,7 +187,7 @@ async function sendContractorEmail(resendKey, contractorEmail, data) {
 
   <div style="margin-top:24px;padding:16px;background:#fffbe6;border-left:4px solid #c9a84c;border-radius:6px;text-align:center">
     <strong style="color:#b8720a;font-size:14px">📋 Next:</strong> Open your dashboard to build the scope and send the customer a priced quote.<br>
-    <a href="https://www.sanibuildingcorp.com/dashboard.html" style="display:inline-block;margin-top:10px;background:#c9a84c;color:#0d1b2a;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Dashboard →</a>
+    <a href="https://velvety-horse-2aa6e3.netlify.app/dashboard.html" style="display:inline-block;margin-top:10px;background:#c9a84c;color:#0d1b2a;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Dashboard →</a>
   </div>
 
   <div style="margin-top:18px;text-align:center;color:#999;font-size:12px">
@@ -180,6 +207,13 @@ async function sendContractorEmail(resendKey, contractorEmail, data) {
 }
 
 async function sendCustomerConfirmation(resendKey, contractorEmail, data) {
+  // While domain not verified at Resend, customer confirmation only sends if customer's email
+  // matches the verified one. Skip it gracefully if it would fail.
+  if (data.email.toLowerCase() !== (contractorEmail || "").toLowerCase()) {
+    console.log("Skipping customer confirmation (domain not verified at Resend yet)");
+    return;
+  }
+
   const firstName = (data.name || "there").split(" ")[0];
   const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
 <div style="max-width:560px;margin:0 auto;padding:20px">
