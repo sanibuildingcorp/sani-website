@@ -1,0 +1,8 @@
+{
+  "name": "sani-website-functions",
+  "version": "1.0.0",
+  "description": "Netlify functions for Sani Building Corp",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
