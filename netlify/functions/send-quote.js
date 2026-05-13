@@ -1,159 +1,166 @@
 // netlify/functions/send-quote.js
-// Sends quote email to customer with tracking pixel + notifies contractor
+// Sends the customer an email with a link to their quote page.
+// Updates status to "sent" in Blobs.
 
-exports.handler = async (event) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json',
-  };
+const https = require("https");
+const { getStore } = require("@netlify/blobs");
 
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
-  if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+exports.handler = async function (event) {
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers: cors(), body: "" };
+  }
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
+  }
 
   try {
-    const data = JSON.parse(event.body);
-    const { ref, customer, project, estimate } = data;
-
-    if (!customer?.email) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing customer email' }) };
+    const { ref } = JSON.parse(event.body);
+    if (!ref) {
+      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
     }
 
-    const RESEND_API_KEY = process.env.RESEND_API_KEY;
-    const CONTRACTOR_EMAIL = process.env.CONTRACTOR_EMAIL || 'contact@sanibuildingcorp.com';
-    const SITE_URL = process.env.URL || 'https://sanibuildingcorp.com';
-
-    if (!RESEND_API_KEY) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Email service not configured (RESEND_API_KEY missing)' }) };
+    const store = getStore("estimates");
+    const record = await store.get(ref, { type: "json" });
+    if (!record) {
+      return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "Not found" }) };
     }
 
-    // Build quote URL
-    const quotePayload = { ref, customer, project, estimate };
-    const encoded = encodeURIComponent(Buffer.from(JSON.stringify(quotePayload), 'utf8').toString('base64'));
-    const quoteUrl = `${SITE_URL}/quote.html?q=${encoded}`;
+    const resendKey = process.env.RESEND_API_KEY;
+    if (!resendKey) {
+      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "RESEND_API_KEY not set" }) };
+    }
 
-    // Build tracking pixel URL
-    const pixelParams = new URLSearchParams({
-      ref: ref || '',
-      name: customer.name || '',
-      email: customer.email || '',
-      title: estimate?.projectTitle || project?.type || 'Project',
-    });
-    const pixelUrl = `${SITE_URL}/.netlify/functions/track-open?${pixelParams.toString()}`;
+    const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+    const siteUrl = process.env.SITE_URL || "https://velvety-horse-2aa6e3.netlify.app";
 
-    const fmt = n => '$' + Number(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const firstName = (customer.name || '').split(' ')[0] || 'there';
-    const projectTitle = estimate?.projectTitle || project?.type || 'Your Project';
-    const grandTotal = estimate?.grandTotal || 0;
-    const display = estimate?.display || { showLabor: true, showMaterials: true };
-    const photoCount = (estimate?.photos || []).length;
+    const customer = record.customer || {};
+    const est = record.estimate || {};
+    const total = calculateTotal(est);
+    const quoteUrl = `${siteUrl}/quote.html?ref=${encodeURIComponent(ref)}`;
 
-    // Customer email with tracking pixel
-    const customerHtml = `
-<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Your Quote</title></head>
-<body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:30px 10px;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.08);">
-        <tr><td style="background:linear-gradient(135deg,#c9a84c,#9a6f2a);padding:30px 28px;text-align:center;">
-          <div style="font-size:11px;letter-spacing:3px;color:rgba(13,27,42,.7);text-transform:uppercase;margin-bottom:6px;font-weight:600;">YOUR PERSONALIZED QUOTE</div>
-          <h1 style="margin:0;color:#0d1b2a;font-size:26px;letter-spacing:1px;">${esc(projectTitle)}</h1>
-        </td></tr>
-        <tr><td style="padding:30px;">
-          <p style="font-size:16px;line-height:1.6;color:#0d1b2a;margin:0 0 14px;">Hi ${esc(firstName)},</p>
-          <p style="font-size:14px;line-height:1.7;color:#444;margin:0 0 20px;">Thank you for considering Sani Building Corp! We've prepared a detailed quote for your project. Click below to review it and accept when you're ready.</p>
+    // Check if Resend domain is verified (if not, only sends to contractor's own email)
+    const canSendToCustomer = customer.email && customer.email.toLowerCase() === contractorEmail.toLowerCase();
+    const useTestSender = !canSendToCustomer; // use onboarding@resend.dev sender always until domain is verified
 
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f5ee;border:1px solid #e8c97a;border-radius:10px;padding:18px;margin-bottom:20px;">
-            <tr><td align="center" style="padding:8px;">
-              <div style="font-size:11px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:6px;">Estimated Total</div>
-              <div style="font-size:36px;color:#9a6f2a;font-weight:700;letter-spacing:1px;">${fmt(grandTotal)}</div>
-              <div style="font-size:12px;color:#666;margin-top:4px;">All inclusive · No hidden fees</div>
-            </td></tr>
-          </table>
+    // While domain is not verified at Resend, we can't email arbitrary customers.
+    // In that case, send the quote email to the contractor with instructions to forward.
+    const recipientEmail = canSendToCustomer ? customer.email : contractorEmail;
 
-          ${photoCount > 0 ? `<p style="font-size:13px;color:#666;margin:0 0 16px;text-align:center;">📷 Includes ${photoCount} photo${photoCount > 1 ? 's' : ''} for your reference</p>` : ''}
+    const firstName = (customer.name || "there").split(" ")[0];
+    const subjectPrefix = canSendToCustomer ? "" : `[FORWARD TO ${customer.email}] `;
 
-          <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:12px 0 24px;">
-            <a href="${quoteUrl}" style="display:inline-block;padding:18px 44px;background:#c9a84c;color:#0d1b2a;text-decoration:none;font-size:16px;font-weight:700;letter-spacing:2px;border-radius:10px;">VIEW YOUR QUOTE →</a>
-          </td></tr></table>
+    const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
+<div style="max-width:560px;margin:0 auto;padding:20px">
+  <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:30px;border-radius:10px 10px 0 0;text-align:center">
+    <div style="font-family:Arial,sans-serif;font-size:22px;letter-spacing:4px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>
+    <div style="font-size:11px;letter-spacing:2px;color:#aaa;margin-top:6px">YOUR ESTIMATE IS READY</div>
+  </div>
+  <div style="background:#fff;padding:32px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 10px 10px">
+    <h1 style="color:#0d1b2a;font-size:24px;margin:0 0 12px">Hi ${escapeHtml(firstName)},</h1>
+    <p style="font-size:15px;color:#555">Thanks for reaching out about your <strong>${escapeHtml(est.projectTitle || record.request?.service || "project")}</strong>. We've put together a detailed estimate for you.</p>
 
-          <p style="font-size:13px;line-height:1.7;color:#666;margin:0 0 8px;text-align:center;">On the quote page you can:</p>
-          <ul style="font-size:13px;line-height:1.8;color:#666;margin:0 0 20px;padding-left:20px;">
-            <li>Review project details &amp; timeline</li>
-            ${display.showLabor || display.showMaterials ? '<li>See full breakdown of work</li>' : ''}
-            ${photoCount > 0 ? '<li>View project photos</li>' : ''}
-            <li>Accept the quote with one click</li>
-            <li>Send us a message to discuss</li>
-          </ul>
+    ${est.summary ? `<div style="background:#faf8f4;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:14px;color:#444">${escapeHtml(est.summary)}</div>` : ""}
 
-          <p style="font-size:13px;line-height:1.7;color:#666;margin:24px 0 0;">This quote is valid for 30 days. Questions? Reply to this email or call us anytime.</p>
+    <div style="background:#0d1b2a;color:#fff;padding:24px;border-radius:10px;margin:24px 0;text-align:center">
+      <div style="font-size:12px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase">Total Estimate</div>
+      <div style="font-size:38px;font-weight:700;color:#fff;margin:8px 0">$${total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      ${est.timelineText ? `<div style="font-size:13px;color:#aaa">Estimated timeline: ${escapeHtml(est.timelineText)}</div>` : ""}
+    </div>
 
-          <p style="margin:24px 0 0;font-size:14px;color:#0d1b2a;">Thank you,<br><strong style="color:#c9a84c;">Sani Building Corp</strong></p>
-        </td></tr>
-        <tr><td style="background:#f8f5ee;padding:20px 30px;text-align:center;border-top:1px solid #e8c97a;">
-          <div style="font-size:12px;color:#666;line-height:1.7;">
-            <strong style="color:#0d1b2a;">Sani Building Corp</strong> · Insured &amp; Trusted NYC Contractors<br>
-            <a href="tel:3322770990" style="color:#c9a84c;text-decoration:none;">📞 332-277-0990</a> · 
-            <a href="mailto:contact@sanibuildingcorp.com" style="color:#c9a84c;text-decoration:none;">✉ contact@sanibuildingcorp.com</a><br>
-            <span style="font-size:11px;color:#999;">Ref: ${esc(ref)}</span>
-          </div>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-  <!-- TRACKING PIXEL: fires when email is opened -->
-  <img src="${pixelUrl}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />
+    <div style="text-align:center;margin:28px 0">
+      <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">View Full Estimate →</a>
+    </div>
+
+    <p style="font-size:14px;color:#555;margin:24px 0 0">Full scope of work, line-item breakdown, and the option to accept are all on the estimate page. Any questions? Just reply to this email or call <a href="tel:+13322770990" style="color:#b8720a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
+
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #eee;text-align:center">
+      <div style="color:#888;font-size:11px;letter-spacing:2px;text-transform:uppercase">Sani Building Corp</div>
+      <div style="font-size:12px;color:#888;margin-top:4px">Ref: ${escapeHtml(ref)} · Fully Insured · 4.9 ★</div>
+    </div>
+  </div>
+</div>
 </body></html>`;
 
-    // Send to customer
-    const customerRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: 'Sani Building Corp <quotes@sanibuildingcorp.com>',
-        to: [customer.email],
-        reply_to: CONTRACTOR_EMAIL,
-        subject: `📋 Your Quote: ${projectTitle} - ${fmt(grandTotal)} (Ref ${ref})`,
-        html: customerHtml,
-      }),
+    await sendResend(resendKey, {
+      from: "Sani Building Corp <onboarding@resend.dev>",
+      to: [recipientEmail],
+      reply_to: contractorEmail,
+      subject: `${subjectPrefix}Your Estimate from Sani Building Corp — ${est.projectTitle || record.request?.service || "Project"} (${ref})`,
+      html,
     });
 
-    if (!customerRes.ok) {
-      const errBody = await customerRes.text();
-      console.error('Resend customer error:', errBody);
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Email send failed', details: errBody }) };
-    }
+    // Update status
+    record.status = "sent";
+    record.sentAt = new Date().toISOString();
+    record.updatedAt = record.sentAt;
+    await store.setJSON(ref, record);
 
-    // Notify contractor
-    const contractorHtml = `<p style="font-family:Arial,sans-serif;font-size:14px;color:#0d1b2a;line-height:1.7">
-      <strong>📤 Quote sent to ${esc(customer.name)} (${esc(customer.email)})</strong><br>
-      Ref: ${esc(ref)}<br>Project: ${esc(projectTitle)}<br>Total: ${fmt(grandTotal)}<br>
-      Photos attached: ${photoCount}<br><br>
-      Customer link: <a href="${quoteUrl}">${quoteUrl}</a><br><br>
-      🔔 You'll be notified when they open the email or click through to the quote.
-    </p>`;
-
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: 'Sani Building Corp <noreply@sanibuildingcorp.com>',
-        to: [CONTRACTOR_EMAIL],
-        subject: `📤 Quote Sent: ${fmt(grandTotal)} to ${customer.name} - Ref ${ref}`,
-        html: contractorHtml,
-      }),
-    });
-
-    return { statusCode: 200, headers, body: JSON.stringify({ success: true, quoteUrl }) };
+    return {
+      statusCode: 200,
+      headers: cors(),
+      body: JSON.stringify({ success: true, quoteUrl, sentTo: recipientEmail, forwardedToContractor: !canSendToCustomer }),
+    };
   } catch (err) {
-    console.error('send-quote error:', err);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Internal error', message: err.message }) };
+    console.error("send-quote error:", err.message);
+    return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
   }
 };
 
-function esc(t) {
-  if (t == null) return '';
-  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function calculateTotal(est) {
+  if (!est) return 0;
+  const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
+  const materials = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
+  const subtotal = labor + materials;
+  const markup = subtotal * ((Number(est.markupPct) || 0) / 100);
+  return Math.round((subtotal + markup) * 100) / 100;
+}
+
+function escapeHtml(t) {
+  if (t == null) return "";
+  return String(t)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function sendResend(apiKey, payload) {
+  const data = JSON.stringify(payload);
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "api.resend.com",
+        port: 443,
+        path: "/emails",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(data),
+          Authorization: `Bearer ${apiKey}`,
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => {
+          const body = Buffer.concat(chunks).toString("utf8");
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(body);
+          else reject(new Error(`Resend ${res.statusCode}: ${body}`));
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+function cors() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Content-Type": "application/json",
+  };
 }
