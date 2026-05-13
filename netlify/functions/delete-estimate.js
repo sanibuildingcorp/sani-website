@@ -16,7 +16,7 @@ exports.handler = async function (event) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
     }
 
-    const store = getStore("estimates");
+    const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
     await store.delete(ref);
 
     return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true }) };

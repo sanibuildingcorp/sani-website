@@ -12,7 +12,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    const store = getStore("estimates");
+    const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
     const { blobs } = await store.list();
 
     const estimates = [];

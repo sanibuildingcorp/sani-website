@@ -19,7 +19,7 @@ exports.handler = async function (event) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
     }
 
-    const store = getStore("estimates");
+    const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
     const record = await store.get(ref, { type: "json" });
     if (!record) {
       return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "Not found" }) };

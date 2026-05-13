@@ -34,7 +34,7 @@ exports.handler = async function (event) {
     // ============ SAVE TO BLOBS ============
     // This is the new piece — dashboard reads from here
     try {
-      const store = getStore("estimates");
+      const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
       const record = {
         ref,
         status: "new", // new | drafted | sent | accepted | declined | invoiced | paid
