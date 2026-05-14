@@ -93,6 +93,7 @@ exports.handler = async function (event) {
     record.status = "sent";
     record.sentAt = new Date().toISOString();
     record.updatedAt = record.sentAt;
+    record.openedAt = null;
     await store.setJSON(ref, record);
 
     return {
