@@ -3,7 +3,7 @@
 // ------------------------------------------------------------
 // Fires ONCE when the customer opens quote.html.
 // - Looks up the estimate in Netlify Blobs by ?ref=ESTxxxxx
-// - If openedAt is NOT set: marks it, sends email + SMS to you
+// - If openedAt is NOT set: marks it, sends email notification
 // - If openedAt IS set: does nothing (refresh = silent)
 // ============================================================
 
@@ -51,7 +51,8 @@ exports.handler = async (event) => {
     record.status = record.status === "sent" ? "opened" : record.status;
     await store.setJSON(ref, record);
 
-    await Promise.allSettled([sendEmail(record), sendSMS(record)]);
+    // Send email notification only (SMS removed)
+    await sendEmail(record);
 
     console.log("track-quote-open: notified for", ref);
   } catch (err) {
@@ -134,41 +135,6 @@ async function sendEmail(record) {
   if (!res.ok) {
     const txt = await res.text();
     console.error("Resend failed:", res.status, txt);
-  }
-}
-
-async function sendSMS(record) {
-  const sid = process.env.TWILIO_SID;
-  const token = process.env.TWILIO_TOKEN;
-  const from = process.env.TWILIO_FROM;
-  const to = process.env.CONTRACTOR_PHONE;
-  if (!sid || !token || !from || !to) {
-    console.log("SMS skipped — Twilio vars missing");
-    return;
-  }
-
-  const name = record.fullName || record.name || "Customer";
-  const ref = record.ref || "";
-  const body = `Sani Building: ${name} just opened quote ${ref}. Check your email.`;
-
-  const auth = Buffer.from(`${sid}:${token}`).toString("base64");
-  const params = new URLSearchParams({ To: to, From: from, Body: body });
-
-  const res = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    }
-  );
-
-  if (!res.ok) {
-    const txt = await res.text();
-    console.error("Twilio failed:", res.status, txt);
   }
 }
 
