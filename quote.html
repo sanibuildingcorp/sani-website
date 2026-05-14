@@ -596,5 +596,26 @@ async function submitDecline() {
 
 load();
 </script>
+
+  <script>
+  (function trackOpen() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var ref = params.get("ref");
+      if (!ref) return;
+
+      // Fire-and-forget. Server-side gate handles "once per quote".
+      fetch("/.netlify/functions/track-quote-open?ref=" + encodeURIComponent(ref), {
+        method: "GET",
+        keepalive: true,
+        cache: "no-store",
+      }).catch(function () {
+        // Silent — never break the page for the customer.
+      });
+    } catch (e) {
+      // Silent
+    }
+  })();
+</script>
 </body>
 </html>
