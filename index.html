@@ -149,7 +149,7 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 
 /* ══════════ SERVICES STRIP (bottom of hero) ══════════ */
 .services-strip{position:relative;z-index:5;background:rgba(10,22,40,0.6);backdrop-filter:blur(12px);border-top:1px solid rgba(240,165,0,0.18);overflow:hidden}
-.strip-inner{display:flex;gap:0;width:max-content;animation:strip-scroll 45s linear infinite}
+.strip-inner{display:flex;gap:0;width:max-content;animation:strip-scroll 45s linear infinite;touch-action:pan-y;will-change:transform}
 .services-strip:hover .strip-inner{animation-play-state:paused}
 .services-strip.is-paused .strip-inner{animation-play-state:paused}
 @keyframes strip-scroll{
@@ -1555,54 +1555,135 @@ document.addEventListener('click',function(e){
   }
 });
 
-/* ══════════ SERVICES MARQUEE — Mobile Touch Pause ══════════ */
+/* ══════════ SERVICES MARQUEE — Mobile Touch + Swipe Scrolling ══════════ */
 (function(){
   var strip = document.querySelector('.services-strip');
   if(!strip) return;
+  var inner = strip.querySelector('.strip-inner');
   var items = strip.querySelectorAll('.strip-item');
+  if(!inner) return;
+
+  var isDragging = false;
+  var hasDragged = false;
+  var startX = 0;
+  var currentTranslateX = 0;
+  var dragStartTranslateX = 0;
   var resumeTimer = null;
-  var currentItem = null;
+  var pauseTimer = null;
+  var DRAG_THRESHOLD = 6; // px before counting as drag vs tap
 
-  function pauseStrip(item){
+  // Get the current translateX of the animation
+  function getAnimatedTranslateX(){
+    var matrix = window.getComputedStyle(inner).transform;
+    if(matrix === 'none') return 0;
+    var values = matrix.match(/matrix.*\((.+)\)/);
+    if(!values) return 0;
+    var arr = values[1].split(', ');
+    return parseFloat(arr[4] || arr[12] || 0);
+  }
+
+  // Get total scroll width for one set (half of total since we duplicate)
+  function getLoopWidth(){
+    return inner.scrollWidth / 2;
+  }
+
+  // Apply translateX without the CSS animation interfering
+  function setTranslate(x){
+    var loopWidth = getLoopWidth();
+    // Wrap around for infinite feel
+    if(x > 0) x = x - loopWidth;
+    if(x < -loopWidth) x = x + loopWidth;
+    currentTranslateX = x;
+    inner.style.transform = 'translateX(' + x + 'px)';
+  }
+
+  function pauseAuto(){
+    // Capture current animated position before freezing
+    var animX = getAnimatedTranslateX();
+    inner.style.animation = 'none';
+    inner.style.transform = 'translateX(' + animX + 'px)';
+    currentTranslateX = animX;
     strip.classList.add('is-paused');
-    if(currentItem && currentItem !== item){
-      currentItem.classList.remove('is-tapped');
-    }
-    if(item){
-      item.classList.add('is-tapped');
-      currentItem = item;
-    }
-    if(resumeTimer) clearTimeout(resumeTimer);
-    resumeTimer = setTimeout(resumeStrip, 3500);
   }
 
-  function resumeStrip(){
+  function resumeAuto(){
+    if(!strip.classList.contains('is-paused')) return;
+    // Calculate negative delay so animation resumes from current position
+    var loopWidth = getLoopWidth();
+    var progress = Math.abs(currentTranslateX) / loopWidth; // 0 to 1
+    if(progress < 0) progress = 0;
+    if(progress > 1) progress = progress % 1;
+    var duration = 45; // matches CSS animation-duration in seconds (desktop)
+    if(window.matchMedia('(max-width:768px)').matches) duration = 38;
+    if(window.matchMedia('(hover:none) and (pointer:coarse)').matches) duration = 32;
+    var delay = -(progress * duration);
+    inner.style.transform = '';
+    inner.style.animation = 'strip-scroll ' + duration + 's linear infinite';
+    inner.style.animationDelay = delay + 's';
     strip.classList.remove('is-paused');
-    if(currentItem){
-      currentItem.classList.remove('is-tapped');
-      currentItem = null;
-    }
-    if(resumeTimer){
-      clearTimeout(resumeTimer);
-      resumeTimer = null;
-    }
+    items.forEach(function(it){ it.classList.remove('is-tapped'); });
   }
 
-  items.forEach(function(item){
-    item.addEventListener('touchstart', function(e){
-      if(strip.classList.contains('is-paused') && currentItem === item){
-        return; // allow navigation when tapped second time
-      }
+  function scheduleResume(ms){
+    if(resumeTimer) clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(resumeAuto, ms || 4000);
+  }
+
+  // ───── Touch handlers ─────
+  inner.addEventListener('touchstart', function(e){
+    if(resumeTimer){ clearTimeout(resumeTimer); resumeTimer = null; }
+    if(!strip.classList.contains('is-paused')){
+      pauseAuto();
+    }
+    isDragging = true;
+    hasDragged = false;
+    startX = e.touches[0].clientX;
+    dragStartTranslateX = currentTranslateX;
+  }, {passive:true});
+
+  inner.addEventListener('touchmove', function(e){
+    if(!isDragging) return;
+    var deltaX = e.touches[0].clientX - startX;
+    if(Math.abs(deltaX) > DRAG_THRESHOLD){
+      hasDragged = true;
       e.preventDefault();
-      pauseStrip(item);
-    }, {passive:false});
+      setTranslate(dragStartTranslateX + deltaX);
+    }
+  }, {passive:false});
+
+  inner.addEventListener('touchend', function(e){
+    isDragging = false;
+    // If user dragged, schedule resume after 4 seconds
+    // If user just tapped (no drag), resume after 4 seconds too but allow link nav
+    scheduleResume(4000);
   });
 
+  inner.addEventListener('touchcancel', function(){
+    isDragging = false;
+    scheduleResume(4000);
+  });
+
+  // ───── Tap handling: prevent navigation while dragging, allow when just tapping ─────
+  items.forEach(function(item){
+    item.addEventListener('click', function(e){
+      if(hasDragged){
+        e.preventDefault();
+        e.stopPropagation();
+        hasDragged = false;
+      } else {
+        // Highlight the tapped card briefly
+        items.forEach(function(it){ it.classList.remove('is-tapped'); });
+        item.classList.add('is-tapped');
+      }
+    });
+  });
+
+  // ───── Tap outside strip resumes scrolling ─────
   document.addEventListener('touchstart', function(e){
     if(!strip.contains(e.target) && strip.classList.contains('is-paused')){
-      resumeStrip();
+      resumeAuto();
     }
-  });
+  }, {passive:true});
 })();
 </script>
 </body>
