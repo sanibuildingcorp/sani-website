@@ -376,10 +376,11 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
 }
 @media(max-width:900px){
   .hero{min-height:auto}
-  .hero-content{padding:60px 28px 50px}
+  .hero-content{padding:40px 28px 24px}
   .hero-image{background-color:#050d1a;background-size:auto 70%;background-position:center 35%;background-repeat:no-repeat}
   .hero-image::after{background:linear-gradient(180deg,rgba(5,13,26,0.55) 0%,rgba(5,13,26,0.35) 35%,rgba(10,22,40,0.55) 70%,rgba(5,13,26,0.92) 100%)}
-  .hero-stats{gap:0}
+  .hero-cta{margin-bottom:28px}
+  .hero-stats{gap:0;margin-top:0;margin-bottom:20px}
   .hstat{padding:6px 18px;min-width:auto;flex:1 1 calc(50% - 0px)}
   .why-grid{grid-template-columns:1fr;gap:50px}
   .why-img{height:380px}
@@ -395,12 +396,15 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .nav-logo .logo-text .brand{font-size:16px;letter-spacing:1.8px}
   .nav-logo .logo-text .sub{font-size:8.5px}
   .logo-mark{width:32px;height:32px}
-  .hero-image{background-color:#050d1a;background-size:auto 65%;background-position:center 40%;background-repeat:no-repeat}
-  .hero-content{padding:40px 22px 40px}
+  .hero-image{background-color:#050d1a;background-size:auto 65%;background-position:center 35%;background-repeat:no-repeat}
+  .hero-content{padding:32px 22px 20px}
   .hero h1{font-size:38px;line-height:1.05;text-shadow:0 2px 18px rgba(0,0,0,0.85),0 1px 4px rgba(0,0,0,0.7)}
-  .hero-stats{margin-bottom:32px;border-left:none}
-  .hstat{padding:10px 16px;border-right:none;border-bottom:1px solid rgba(240,165,0,.12);flex:1 1 100%;flex-direction:row;align-items:center;gap:14px}
-  .hstat:last-child{border-bottom:none;border-right:none}
+  .hero-cta{margin-bottom:24px;gap:10px}
+  .hero-stats{margin-top:0;margin-bottom:18px;border-left:none;gap:0;display:grid;grid-template-columns:1fr 1fr}
+  .hstat{padding:14px 14px;border-right:1px solid rgba(240,165,0,.12);border-bottom:1px solid rgba(240,165,0,.12);flex:none;flex-direction:row;align-items:center;gap:12px;min-width:0}
+  .hstat:nth-child(2n){border-right:none}
+  .hstat:nth-last-child(-n+1){border-bottom:none}
+  .hstat:nth-child(5){grid-column:1/-1;border-right:none;border-bottom:none}
   .hero-btn{width:100%;justify-content:center;padding:18px 24px;font-size:12px;letter-spacing:1.8px}
   .hero-rating{flex-direction:column;align-items:flex-start;gap:6px}
   .svc-grid{grid-template-columns:1fr}
