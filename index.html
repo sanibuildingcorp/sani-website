@@ -151,26 +151,32 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 .services-strip{position:relative;z-index:5;background:rgba(10,22,40,0.6);backdrop-filter:blur(12px);border-top:1px solid rgba(240,165,0,0.18);overflow:hidden}
 .strip-inner{display:flex;gap:0;width:max-content;animation:strip-scroll 45s linear infinite}
 .services-strip:hover .strip-inner{animation-play-state:paused}
+.services-strip.is-paused .strip-inner{animation-play-state:paused}
 @keyframes strip-scroll{
   0%{transform:translateX(0)}
   100%{transform:translateX(-50%)}
 }
-.strip-item{position:relative;display:block;width:280px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.08);transition:all .35s;text-decoration:none;cursor:pointer;overflow:hidden;min-height:170px;background-color:#0a1628}
+.strip-item{position:relative;display:block;width:280px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.08);transition:all .35s;text-decoration:none;cursor:pointer;overflow:hidden;min-height:170px;background-color:#0a1628;-webkit-tap-highlight-color:transparent}
 .strip-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.85;transition:opacity .4s ease,transform .6s ease;z-index:0}
-.strip-item::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,40,0.15) 0%,rgba(10,22,40,0.45) 55%,rgba(10,22,40,0.92) 100%);z-index:1;transition:opacity .35s}
-.strip-item:hover .strip-bg{opacity:1;transform:scale(1.08)}
-.strip-item:hover::after{background:linear-gradient(180deg,rgba(10,22,40,0.05) 0%,rgba(10,22,40,0.35) 55%,rgba(200,134,10,0.88) 100%)}
+.strip-item::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,40,0.15) 0%,rgba(10,22,40,0.45) 55%,rgba(10,22,40,0.92) 100%);z-index:1;transition:opacity .35s,background .35s}
+.strip-item:hover .strip-bg,.strip-item:active .strip-bg,.strip-item.is-tapped .strip-bg{opacity:1;transform:scale(1.08)}
+.strip-item:hover::after,.strip-item:active::after,.strip-item.is-tapped::after{background:linear-gradient(180deg,rgba(10,22,40,0.05) 0%,rgba(10,22,40,0.35) 55%,rgba(200,134,10,0.88) 100%)}
 .strip-label{font-size:13px;letter-spacing:1.8px;text-transform:uppercase;color:#fff;font-weight:700;line-height:1.35;position:absolute;left:22px;right:22px;bottom:18px;z-index:2;text-shadow:0 2px 8px rgba(0,0,0,0.7)}
 .strip-label::before{content:'';display:block;width:28px;height:2px;background:var(--gold-light);margin-bottom:10px;transition:width .35s,background .35s}
-.strip-item:hover .strip-label::before{width:42px;background:#fff}
+.strip-item:hover .strip-label::before,.strip-item:active .strip-label::before,.strip-item.is-tapped .strip-label::before{width:42px;background:#fff}
 /* Subtle gradient fades on left/right edges */
 .services-strip::before,.services-strip::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:6;pointer-events:none}
 .services-strip::before{left:0;background:linear-gradient(90deg,rgba(10,22,40,0.6) 0%,transparent 100%)}
 .services-strip::after{right:0;background:linear-gradient(270deg,rgba(10,22,40,0.6) 0%,transparent 100%)}
 @media (max-width:768px){
-  .strip-item{width:220px;min-height:140px}
-  .strip-label{font-size:11.5px;letter-spacing:1.4px;left:18px;right:18px;bottom:14px}
-  .strip-inner{animation-duration:35s}
+  .strip-item{width:240px;min-height:160px}
+  .strip-label{font-size:12px;letter-spacing:1.4px;left:18px;right:18px;bottom:14px}
+  .strip-inner{animation-duration:38s}
+}
+@media (hover:none) and (pointer:coarse){
+  /* Touch device: faster scroll + visual hint that scroll is interactive */
+  .strip-inner{animation-duration:32s}
+  .services-strip{cursor:grab}
 }
 
 /* ══════════ SECTION BASE ══════════ */
@@ -1548,6 +1554,56 @@ document.addEventListener('click',function(e){
     resetMobilePanels();
   }
 });
+
+/* ══════════ SERVICES MARQUEE — Mobile Touch Pause ══════════ */
+(function(){
+  var strip = document.querySelector('.services-strip');
+  if(!strip) return;
+  var items = strip.querySelectorAll('.strip-item');
+  var resumeTimer = null;
+  var currentItem = null;
+
+  function pauseStrip(item){
+    strip.classList.add('is-paused');
+    if(currentItem && currentItem !== item){
+      currentItem.classList.remove('is-tapped');
+    }
+    if(item){
+      item.classList.add('is-tapped');
+      currentItem = item;
+    }
+    if(resumeTimer) clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(resumeStrip, 3500);
+  }
+
+  function resumeStrip(){
+    strip.classList.remove('is-paused');
+    if(currentItem){
+      currentItem.classList.remove('is-tapped');
+      currentItem = null;
+    }
+    if(resumeTimer){
+      clearTimeout(resumeTimer);
+      resumeTimer = null;
+    }
+  }
+
+  items.forEach(function(item){
+    item.addEventListener('touchstart', function(e){
+      if(strip.classList.contains('is-paused') && currentItem === item){
+        return; // allow navigation when tapped second time
+      }
+      e.preventDefault();
+      pauseStrip(item);
+    }, {passive:false});
+  });
+
+  document.addEventListener('touchstart', function(e){
+    if(!strip.contains(e.target) && strip.classList.contains('is-paused')){
+      resumeStrip();
+    }
+  });
+})();
 </script>
 </body>
 </html>
