@@ -254,20 +254,45 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 .feat-stat{display:none}
 .svc-icon{display:none}
 
-/* ══════════ WHY US ══════════ */
-.why-section{background:#fff;padding:120px 36px}
-.why-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:80px;align-items:center}
-.why-img{position:relative;height:560px;background:linear-gradient(160deg,#0a1628,#1a2940);overflow:hidden}
-.why-img::before{content:'';position:absolute;inset:0;background:url('images/projects/marble-shower-brass-jets.jpg') center/cover;opacity:.85}
-.why-badge{position:absolute;bottom:30px;left:30px;background:rgba(10,22,40,.9);border:1px solid var(--gold);padding:22px 28px;backdrop-filter:blur(10px)}
-.why-badge .wnum{font-family:'Playfair Display',serif;font-size:46px;color:var(--gold-light);font-weight:700;line-height:1}
-.why-badge .wlbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.7);margin-top:4px;font-weight:500}
-.why-features{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:36px}
-.why-feat{display:flex;gap:14px}
-.why-feat-icon{width:42px;height:42px;background:rgba(200,134,10,.08);border:1px solid rgba(200,134,10,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.why-feat-icon svg{width:20px;height:20px;stroke:var(--gold);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.why-feat-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--black);margin-bottom:4px}
-.why-feat-desc{font-size:13.5px;color:var(--gray);line-height:1.55}
+/* ══════════ WHY US (Full-Width Hero) ══════════ */
+.why-section{position:relative;padding:0;background:var(--navy-deep);overflow:hidden}
+.why-hero{position:relative;min-height:680px;display:flex;align-items:center;padding:90px 60px}
+.why-hero::before{content:'';position:absolute;inset:0;background-image:url('images/why/why-us.jpg'),url('images/why/why-us.JPG'),url('images/why/why-us.png'),url('images/why/why-us.PNG'),url('images/projects/marble-shower-brass-jets.jpg');background-size:cover;background-position:center;z-index:0}
+.why-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,22,40,.92) 0%,rgba(10,22,40,.78) 45%,rgba(10,22,40,.55) 75%,rgba(10,22,40,.35) 100%);z-index:1}
+.why-hero-inner{position:relative;z-index:2;max-width:1300px;margin:0 auto;width:100%;display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:start}
+.why-text-side{padding-top:10px}
+.why-section-eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.why-section-eyebrow .line{width:40px;height:1px;background:var(--gold);}
+.why-section-eyebrow span{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-light);font-weight:600}
+.why-section-title{font-family:'Playfair Display',serif;font-size:54px;font-weight:700;color:#fff;line-height:1.05;letter-spacing:-1px;margin-bottom:50px}
+.why-section-title em{display:block;font-style:italic;color:var(--gold-light);font-weight:600}
+.review-card{background:rgba(10,22,40,.55);border:1px solid rgba(240,165,0,.25);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:36px;position:relative;max-width:560px}
+.review-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.review-avatar{width:52px;height:52px;border-radius:50%;background:#1ca7ec;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#fff;flex-shrink:0}
+.review-meta-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:3px}
+.review-meta-sub{font-size:12.5px;color:rgba(255,255,255,.55);font-weight:500}
+.review-stars-row{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.review-stars{display:flex;gap:2px}
+.review-stars svg{width:18px;height:18px;fill:var(--gold-light)}
+.review-time{font-size:12.5px;color:rgba(255,255,255,.55)}
+.review-text{font-size:14.5px;line-height:1.7;color:rgba(255,255,255,.88);font-weight:400}
+.review-text strong{color:#fff;font-weight:600}
+.review-quote{position:absolute;left:36px;bottom:-12px;font-family:'Playfair Display',serif;font-size:62px;color:var(--gold);line-height:1;font-weight:700}
+.review-quote::after{content:'';position:absolute;left:54px;bottom:30px;width:80px;height:1px;background:rgba(240,165,0,.4)}
+.why-badge-side{position:relative;display:flex;justify-content:flex-end;align-items:flex-end;height:100%;min-height:520px}
+.why-badge-new{border:1.5px solid var(--gold);padding:48px 60px;text-align:center;background:rgba(10,22,40,.4);backdrop-filter:blur(8px)}
+.why-badge-new .wnum{font-family:'Playfair Display',serif;font-size:96px;color:var(--gold-light);font-weight:700;line-height:1;letter-spacing:-2px}
+.why-badge-new .wlbl{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.85);margin-top:10px;font-weight:600}
+.why-features-strip{position:relative;z-index:2;background:rgba(10,22,40,.95);border-top:1px solid rgba(240,165,0,.15);padding:48px 60px;display:grid;grid-template-columns:repeat(5,1fr);gap:30px}
+.why-feat-col{text-align:center;padding:0 10px;border-right:1px solid rgba(255,255,255,.08)}
+.why-feat-col:last-child{border-right:none}
+.why-feat-col-icon{width:54px;height:54px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+.why-feat-col-icon svg{width:44px;height:44px;stroke:var(--gold-light);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.why-feat-col-title{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#fff;font-weight:700;margin-bottom:12px}
+.why-feat-col-desc{font-size:13px;color:rgba(255,255,255,.65);line-height:1.6}
+
+/* Keep old classes for fallback - hidden */
+.why-grid,.why-img,.why-badge,.why-features,.why-feat{display:none}
 
 /* ══════════ FAQ ══════════ */
 .faq-section{background:var(--light);padding:120px 36px}
@@ -427,13 +452,24 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .hero-cta{margin-bottom:24px}
   .hero-stats{gap:0;margin-top:0;margin-bottom:16px;background:transparent;border-top:1px solid rgba(240,165,0,0.18);padding:20px 0 0}
   .hstat{padding:6px 18px;min-width:auto;flex:1 1 calc(50% - 0px);background:transparent}
-  .why-grid{grid-template-columns:1fr;gap:50px}
-  .why-img{height:380px}
-  .why-features{grid-template-columns:1fr 1fr;gap:20px}
+  .why-section{padding:0}
+  .why-hero{padding:60px 32px;min-height:auto}
+  .why-hero-inner{grid-template-columns:1fr;gap:40px}
+  .why-section-title{font-size:38px;margin-bottom:32px}
+  .review-card{padding:28px;max-width:100%}
+  .review-text{font-size:14px}
+  .why-badge-side{min-height:auto;justify-content:center;margin-top:10px}
+  .why-badge-new{padding:36px 48px}
+  .why-badge-new .wnum{font-size:72px}
+  .why-features-strip{grid-template-columns:repeat(2,1fr);gap:32px 20px;padding:40px 32px}
+  .why-feat-col{padding:0 4px;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:24px}
+  .why-feat-col:nth-last-child(-n+2){border-bottom:none;padding-bottom:0}
+  .why-feat-col:nth-child(odd){border-right:1px solid rgba(255,255,255,.08)}
+  .why-feat-col:last-child{grid-column:span 2;border-right:none}
   .svc-grid{grid-template-columns:1fr 1fr}
   .faq-grid{grid-template-columns:1fr}
   .footer-grid{grid-template-columns:1fr 1fr;gap:36px}
-  .section,.why-section,.faq-section,.areas-section,.cta-section{padding:80px 28px}
+  .section,.faq-section,.areas-section,.cta-section{padding:80px 28px}
 }
 @media(max-width:600px){
   .nav-inner{padding:0 22px;height:68px}
@@ -454,7 +490,21 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .hero-rating{flex-direction:column;align-items:flex-start;gap:6px}
   .svc-grid{grid-template-columns:1fr}
   .svc-card{padding:30px 24px;min-height:auto}
-  .why-features{grid-template-columns:1fr}
+  .why-section{padding:0}
+  .why-hero{padding:48px 22px}
+  .why-section-title{font-size:30px;margin-bottom:26px}
+  .review-card{padding:24px}
+  .review-text{font-size:13.5px;line-height:1.65}
+  .review-meta-name{font-size:17px}
+  .review-avatar{width:46px;height:46px;font-size:20px}
+  .why-badge-new{padding:30px 40px}
+  .why-badge-new .wnum{font-size:60px}
+  .why-badge-new .wlbl{font-size:11px;letter-spacing:2.5px}
+  .why-features-strip{padding:36px 22px;grid-template-columns:1fr 1fr;gap:28px 16px}
+  .why-feat-col-icon{width:46px;height:46px;margin-bottom:12px}
+  .why-feat-col-icon svg{width:38px;height:38px}
+  .why-feat-col-title{font-size:11px;letter-spacing:1.8px;margin-bottom:8px}
+  .why-feat-col-desc{font-size:12.5px}
   .footer-grid{grid-template-columns:1fr;gap:40px}
   .footer-bottom{flex-direction:column;text-align:center}
   .cta-btns{flex-direction:column}
@@ -1270,22 +1320,66 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
 
 <!-- ══════════ WHY US ══════════ -->
 <section class="why-section" id="why-us">
-  <div class="section-container">
-    <div class="why-grid">
-      <div class="why-img">
-        <div class="why-badge"><div class="wnum">10+</div><div class="wlbl">Years in NYC</div></div>
-      </div>
-      <div>
-        <div class="section-eyebrow"><div class="line"></div><span>Why Choose Us</span></div>
-        <h2 class="section-title">Brooklyn's Most Trusted<br><em>Renovation Partner</em></h2>
-        <p class="section-sub">We bridge the gap between a high-end restoration firm and a reliable local contractor. White-glove craftsmanship at honest prices — for every project, every borough.</p>
-        <div class="why-features">
-          <div class="why-feat"><div class="why-feat-icon"><svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><div class="why-feat-title">Same-Day Response</div><div class="why-feat-desc">Quick turnaround for urgent repairs and maintenance across NYC.</div></div></div>
-          <div class="why-feat"><div class="why-feat-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div><div class="why-feat-title">4.9★ Google Rated</div><div class="why-feat-desc">62+ verified reviews from real NYC homeowners and property managers.</div></div></div>
-          <div class="why-feat"><div class="why-feat-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><div class="why-feat-title">Transparent Pricing</div><div class="why-feat-desc">Clear upfront quotes. No hidden fees. Free estimates always.</div></div></div>
-          <div class="why-feat"><div class="why-feat-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><div class="why-feat-title">Fully Insured</div><div class="why-feat-desc">Fully insured for all commercial and residential work throughout NYC.</div></div></div>
+  <div class="why-hero">
+    <div class="why-hero-inner">
+      <div class="why-text-side">
+        <div class="why-section-eyebrow"><div class="line"></div><span>Why Choose Us</span></div>
+        <h2 class="why-section-title">Brooklyn's Most Trusted <em>Renovation Partner</em></h2>
+        <div class="review-card">
+          <div class="review-header">
+            <div class="review-avatar">M</div>
+            <div>
+              <div class="review-meta-name">Maxwell Zetlin</div>
+              <div class="review-meta-sub">2 reviews</div>
+            </div>
+          </div>
+          <div class="review-stars-row">
+            <div class="review-stars">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+            </div>
+            <div class="review-time">8 months ago</div>
+          </div>
+          <p class="review-text">Zura and the <strong>team</strong> are exceptional! They bring a rare combination of skill, dedication, and creativity to every aspect of home building and rectifications. Whether it's correcting mistakes left by other contractors or finding innovative solutions to complex challenges, they consistently go above and beyond with professionalism and passion. Truly a versatile and reliable <strong>team</strong>!</p>
+          <div class="review-quote">"</div>
         </div>
       </div>
+      <div class="why-badge-side">
+        <div class="why-badge-new">
+          <div class="wnum">10+</div>
+          <div class="wlbl">Years in NYC</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="why-features-strip">
+    <div class="why-feat-col">
+      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="17" cy="7" r="3" opacity=".6"/><path d="M21 21v-2a3 3 0 00-2-2.83"/></svg></div>
+      <div class="why-feat-col-title">Experienced Team</div>
+      <div class="why-feat-col-desc">Skilled professionals with 10+ years of hands-on experience in NYC.</div>
+    </div>
+    <div class="why-feat-col">
+      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><polyline points="9 8 11 10 15 6"/><path d="M8.5 13l-2 8 5.5-3 5.5 3-2-8"/></svg></div>
+      <div class="why-feat-col-title">Quality Craftsmanship</div>
+      <div class="why-feat-col-desc">We use premium materials and deliver flawless results on every project.</div>
+    </div>
+    <div class="why-feat-col">
+      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="1"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
+      <div class="why-feat-col-title">Transparent Process</div>
+      <div class="why-feat-col-desc">Clear communication, detailed estimates, and no hidden costs.</div>
+    </div>
+    <div class="why-feat-col">
+      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="why-feat-col-title">On-Time Delivery</div>
+      <div class="why-feat-col-desc">We respect your time and complete every project as promised.</div>
+    </div>
+    <div class="why-feat-col">
+      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><rect x="4" y="8" width="6" height="13"/><rect x="14" y="3" width="6" height="18"/><line x1="6" y1="12" x2="8" y2="12"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="16" y1="7" x2="18" y2="7"/><line x1="16" y1="11" x2="18" y2="11"/><line x1="16" y1="15" x2="18" y2="15"/></svg></div>
+      <div class="why-feat-col-title">Built For NYC</div>
+      <div class="why-feat-col-desc">We understand NYC buildings, permits, and standards — and get the job done right.</div>
     </div>
   </div>
 </section>
