@@ -256,17 +256,17 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 
 /* ══════════ WHY US (Full-Width Hero) ══════════ */
 .why-section{position:relative;padding:0;background:var(--navy-deep);overflow:hidden}
-.why-hero{position:relative;min-height:680px;display:flex;align-items:center;padding:90px 60px}
+.why-hero{position:relative;min-height:540px;display:flex;align-items:center;padding:64px 60px}
 .why-hero::before{content:'';position:absolute;inset:0;background-image:url('images/why/why-us.jpg'),url('images/why/why-us.JPG'),url('images/why/why-us.png'),url('images/why/why-us.PNG'),url('images/projects/marble-shower-brass-jets.jpg');background-size:cover;background-position:center;z-index:0}
-.why-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,22,40,.92) 0%,rgba(10,22,40,.78) 45%,rgba(10,22,40,.55) 75%,rgba(10,22,40,.35) 100%);z-index:1}
+.why-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,22,40,.62) 0%,rgba(10,22,40,.42) 45%,rgba(10,22,40,.22) 75%,rgba(10,22,40,.15) 100%);z-index:1}
 .why-hero-inner{position:relative;z-index:2;max-width:1300px;margin:0 auto;width:100%;display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:start}
 .why-text-side{padding-top:10px}
 .why-section-eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:18px}
 .why-section-eyebrow .line{width:40px;height:1px;background:var(--gold);}
 .why-section-eyebrow span{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-light);font-weight:600}
-.why-section-title{font-family:'Playfair Display',serif;font-size:54px;font-weight:700;color:#fff;line-height:1.05;letter-spacing:-1px;margin-bottom:50px}
+.why-section-title{font-family:'Playfair Display',serif;font-size:54px;font-weight:700;color:#fff;line-height:1.05;letter-spacing:-1px;margin-bottom:36px;text-shadow:0 2px 24px rgba(0,0,0,.4)}
 .why-section-title em{display:block;font-style:italic;color:var(--gold-light);font-weight:600}
-.review-card{background:rgba(10,22,40,.55);border:1px solid rgba(240,165,0,.25);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:36px;position:relative;max-width:560px}
+.review-card{background:rgba(10,22,40,.32);border:1px solid rgba(240,165,0,.35);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:32px;position:relative;max-width:540px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
 .review-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
 .review-avatar{width:52px;height:52px;border-radius:50%;background:#1ca7ec;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#fff;flex-shrink:0}
 .review-meta-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:3px}
@@ -279,8 +279,8 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 .review-text strong{color:#fff;font-weight:600}
 .review-quote{position:absolute;left:36px;bottom:-12px;font-family:'Playfair Display',serif;font-size:62px;color:var(--gold);line-height:1;font-weight:700}
 .review-quote::after{content:'';position:absolute;left:54px;bottom:30px;width:80px;height:1px;background:rgba(240,165,0,.4)}
-.why-badge-side{position:relative;display:flex;justify-content:flex-end;align-items:flex-end;height:100%;min-height:520px}
-.why-badge-new{border:1.5px solid var(--gold);padding:48px 60px;text-align:center;background:rgba(10,22,40,.4);backdrop-filter:blur(8px)}
+.why-badge-side{position:relative;display:flex;justify-content:flex-end;align-items:center;height:100%;min-height:auto;padding-top:20px}
+.why-badge-new{border:1.5px solid var(--gold);padding:42px 56px;text-align:center;background:rgba(10,22,40,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
 .why-badge-new .wnum{font-family:'Playfair Display',serif;font-size:96px;color:var(--gold-light);font-weight:700;line-height:1;letter-spacing:-2px}
 .why-badge-new .wlbl{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.85);margin-top:10px;font-weight:600}
 .why-features-strip{position:relative;z-index:2;background:rgba(10,22,40,.95);border-top:1px solid rgba(240,165,0,.15);padding:48px 60px;display:grid;grid-template-columns:repeat(5,1fr);gap:30px}
@@ -453,7 +453,7 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .hero-stats{gap:0;margin-top:0;margin-bottom:16px;background:transparent;border-top:1px solid rgba(240,165,0,0.18);padding:20px 0 0}
   .hstat{padding:6px 18px;min-width:auto;flex:1 1 calc(50% - 0px);background:transparent}
   .why-section{padding:0}
-  .why-hero{padding:60px 32px;min-height:auto}
+  .why-hero{padding:48px 32px;min-height:auto}
   .why-hero-inner{grid-template-columns:1fr;gap:40px}
   .why-section-title{font-size:38px;margin-bottom:32px}
   .review-card{padding:28px;max-width:100%}
@@ -491,7 +491,7 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .svc-grid{grid-template-columns:1fr}
   .svc-card{padding:30px 24px;min-height:auto}
   .why-section{padding:0}
-  .why-hero{padding:48px 22px}
+  .why-hero{padding:40px 22px}
   .why-section-title{font-size:30px;margin-bottom:26px}
   .review-card{padding:24px}
   .review-text{font-size:13.5px;line-height:1.65}
