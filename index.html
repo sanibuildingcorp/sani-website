@@ -452,12 +452,13 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .hero-cta{margin-bottom:24px}
   .hero-stats{gap:0;margin-top:0;margin-bottom:16px;background:transparent;border-top:1px solid rgba(240,165,0,0.18);padding:20px 0 0}
   .hstat{padding:6px 18px;min-width:auto;flex:1 1 calc(50% - 0px);background:transparent}
-  .why-section{padding:0}
+  .why-section{padding:0;margin-left:0;margin-right:0;width:100%;overflow:hidden}
   /* Mobile: very light overlay - photo MUST show through clearly */
-  .why-hero::after{background:linear-gradient(180deg,rgba(10,22,40,.35) 0%,rgba(10,22,40,.20) 60%,var(--navy-deep) 100%)}
-  /* ZERO side padding - photo edge-to-edge, content has its own padding */
-  .why-hero{padding:0;min-height:auto}
-  .why-hero-inner{grid-template-columns:1fr;gap:0;padding:32px 18px 36px}
+  .why-hero::after{background:linear-gradient(180deg,rgba(10,22,40,.35) 0%,rgba(10,22,40,.20) 60%,var(--navy-deep) 100%) !important}
+  /* FORCE full viewport width photo - zero padding, zero margin */
+  .why-hero{padding:0 !important;min-height:auto;margin:0;width:100%;left:0;right:0}
+  .why-hero::before{background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;width:100% !important;height:100% !important;left:0;right:0;top:0;bottom:0}
+  .why-hero-inner{grid-template-columns:1fr;gap:0;padding:32px 18px 36px;max-width:100%;width:100%}
   .why-section-title{font-size:34px;margin-bottom:26px;line-height:1.08}
   .why-text-side{padding-top:0}
   /* Card on LEFT side - 78% width, leaves right side showing photo */
