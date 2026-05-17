@@ -258,13 +258,13 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 .why-section{position:relative;padding:0;background:var(--navy-deep);overflow:hidden}
 .why-hero{position:relative;min-height:540px;display:flex;align-items:center;padding:64px 60px}
 .why-hero::before{content:'';position:absolute;inset:0;background-image:url('images/why/why-us.jpg'),url('images/why/why-us.JPG'),url('images/why/why-us.png'),url('images/why/why-us.PNG'),url('images/projects/marble-shower-brass-jets.jpg');background-size:cover;background-position:center;z-index:0}
-.why-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,22,40,.62) 0%,rgba(10,22,40,.42) 45%,rgba(10,22,40,.22) 75%,rgba(10,22,40,.15) 100%);z-index:1}
+.why-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,22,40,.35) 0%,rgba(10,22,40,.22) 45%,rgba(10,22,40,.12) 75%,rgba(10,22,40,.08) 100%);z-index:1}
 .why-hero-inner{position:relative;z-index:2;max-width:1300px;margin:0 auto;width:100%;display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:start}
 .why-text-side{padding-top:10px}
 .why-section-eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:18px}
 .why-section-eyebrow .line{width:40px;height:1px;background:var(--gold);}
-.why-section-eyebrow span{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-light);font-weight:600}
-.why-section-title{font-family:'Playfair Display',serif;font-size:54px;font-weight:700;color:#fff;line-height:1.05;letter-spacing:-1px;margin-bottom:36px;text-shadow:0 2px 24px rgba(0,0,0,.4)}
+.why-section-eyebrow span{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-light);font-weight:600;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.why-section-title{font-family:'Playfair Display',serif;font-size:54px;font-weight:700;color:#fff;line-height:1.05;letter-spacing:-1px;margin-bottom:36px;text-shadow:0 2px 30px rgba(0,0,0,.85),0 1px 8px rgba(0,0,0,.6)}
 .why-section-title em{display:block;font-style:italic;color:var(--gold-light);font-weight:600}
 .review-card{background:rgba(10,22,40,.32);border:1px solid rgba(240,165,0,.35);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:32px;position:relative;max-width:540px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
 .review-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
@@ -461,11 +461,14 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-badge-side{min-height:auto;justify-content:center;margin-top:10px}
   .why-badge-new{padding:36px 48px}
   .why-badge-new .wnum{font-size:72px}
-  .why-features-strip{grid-template-columns:repeat(2,1fr);gap:32px 20px;padding:40px 32px}
-  .why-feat-col{padding:0 4px;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:24px}
-  .why-feat-col:nth-last-child(-n+2){border-bottom:none;padding-bottom:0}
+  .why-features-strip{grid-template-columns:repeat(2,1fr);gap:24px 16px;padding:32px 24px}
+  .why-feat-col{padding:0 4px;border-right:none;border-bottom:none;padding-bottom:0}
   .why-feat-col:nth-child(odd){border-right:1px solid rgba(255,255,255,.08)}
-  .why-feat-col:last-child{grid-column:span 2;border-right:none}
+  .why-feat-col:last-child{grid-column:span 2;border-right:none;padding-top:24px;border-top:1px solid rgba(255,255,255,.08)}
+  .why-feat-col-icon{width:44px;height:44px;margin-bottom:10px}
+  .why-feat-col-icon svg{width:36px;height:36px}
+  .why-feat-col-title{font-size:11px;letter-spacing:1.8px;margin-bottom:8px}
+  .why-feat-col-desc{font-size:12px;line-height:1.5}
   .svc-grid{grid-template-columns:1fr 1fr}
   .faq-grid{grid-template-columns:1fr}
   .footer-grid{grid-template-columns:1fr 1fr;gap:36px}
@@ -500,11 +503,11 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-badge-new{padding:30px 40px}
   .why-badge-new .wnum{font-size:60px}
   .why-badge-new .wlbl{font-size:11px;letter-spacing:2.5px}
-  .why-features-strip{padding:36px 22px;grid-template-columns:1fr 1fr;gap:28px 16px}
-  .why-feat-col-icon{width:46px;height:46px;margin-bottom:12px}
-  .why-feat-col-icon svg{width:38px;height:38px}
-  .why-feat-col-title{font-size:11px;letter-spacing:1.8px;margin-bottom:8px}
-  .why-feat-col-desc{font-size:12.5px}
+  .why-features-strip{padding:28px 18px;grid-template-columns:1fr 1fr;gap:22px 14px}
+  .why-feat-col-icon{width:42px;height:42px;margin-bottom:10px}
+  .why-feat-col-icon svg{width:34px;height:34px}
+  .why-feat-col-title{font-size:10.5px;letter-spacing:1.5px;margin-bottom:6px}
+  .why-feat-col-desc{font-size:11.5px;line-height:1.5}
   .footer-grid{grid-template-columns:1fr;gap:40px}
   .footer-bottom{flex-direction:column;text-align:center}
   .cta-btns{flex-direction:column}
