@@ -462,16 +462,17 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-section-title{font-size:34px;margin-bottom:26px;line-height:1.08}
   .why-text-side{padding-top:0}
   /* Card on LEFT side - 78% width, leaves right side showing photo */
-  .review-card{padding:22px 20px;max-width:78%;width:78%;background:rgba(10,22,40,.55);border:1px solid rgba(240,165,0,.5);border-radius:12px;position:relative}
-  .review-text{font-size:13px;line-height:1.6;margin-bottom:0}
-  /* Quote mark - STATIC, flows naturally after text */
-  .review-quote{position:static;display:block;font-size:34px;color:var(--gold-light);line-height:1;margin:22px 0 0 0;padding:0;height:auto;width:auto;font-family:'Playfair Display',serif;font-weight:700}
-  .review-quote::after{content:'';display:block;width:62%;height:1px;background:rgba(240,165,0,.4);position:static;margin:10px 0 0 0}
-  /* 10+ badge - INSIDE the review card naturally below the quote line */
-  .why-badge-side{min-height:auto;background:transparent;border:none;border-radius:0;padding:0;margin:-50px 0 0 0;display:block;position:relative;z-index:3;max-width:78%;width:78%}
-  .why-badge-new{padding:14px 20px 12px;background:transparent;border:1.5px solid var(--gold);backdrop-filter:none;-webkit-backdrop-filter:none;display:inline-block;text-align:left;box-shadow:none;margin:0 0 20px 20px}
-  .why-badge-new .wnum{font-size:30px;letter-spacing:-1px;display:block;line-height:1;margin:0}
-  .why-badge-new .wlbl{font-size:9.5px;letter-spacing:1.6px;margin-top:4px;display:block;color:var(--gold-light)}
+  /* Black glass/blur - square corners, LIGHT GRAY border (like ChatGPT) */
+  .review-card{padding:24px 22px 24px;max-width:78%;width:78%;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.18);border-radius:0;position:relative;backdrop-filter:blur(24px) saturate(120%);-webkit-backdrop-filter:blur(24px) saturate(120%);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+  .review-text{font-size:13px;line-height:1.6;margin-bottom:0;color:rgba(255,255,255,.95)}
+  /* Quote mark + line - flush left, aligned with badge below */
+  .review-quote{position:static;display:flex;align-items:center;gap:14px;font-size:34px;color:var(--gold-light);line-height:1;margin:22px 0 0 0;padding:0;height:auto;width:auto;font-family:'Playfair Display',serif;font-weight:700}
+  .review-quote::after{content:'';display:block;flex:1;max-width:160px;height:1px;background:rgba(255,255,255,.3);position:static;margin:0}
+  /* 10+ badge - PULLED UP HIGH into the card, just below quote line */
+  .why-badge-side{min-height:auto;background:transparent;border:none;border-radius:0;padding:0;margin:-110px 0 22px 0;display:block;position:relative;z-index:3;max-width:78%;width:78%;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .why-badge-new{padding:14px 22px 14px;background:transparent;border:1.5px solid var(--gold);backdrop-filter:none;-webkit-backdrop-filter:none;display:inline-block;text-align:left;box-shadow:none;margin:0 0 0 22px;border-radius:0}
+  .why-badge-new .wnum{font-size:30px;letter-spacing:-1px;display:block;line-height:1;margin:0;color:var(--gold-light)}
+  .why-badge-new .wlbl{font-size:9.5px;letter-spacing:1.6px;margin-top:5px;display:block;color:var(--gold-light)}
   /* Features list - FULL WIDTH, separate dark section below photo */
   .why-features-strip{grid-template-columns:1fr;gap:0;padding:8px 20px 24px}
   .why-feat-col{display:grid;grid-template-columns:54px 1fr 18px;column-gap:0;row-gap:0;text-align:left;padding:20px 0;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);align-items:center;position:relative}
