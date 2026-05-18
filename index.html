@@ -295,6 +295,8 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 }
 /* Make all card children sit above the gradient overlay */
 .review-card > *{position:relative;z-index:1}
+/* Hide inside-card badge on desktop - it's only for mobile */
+.why-badge-inside-card{display:none}
 .review-header{display:flex;align-items:center;gap:18px;margin-bottom:22px}
 .review-avatar{width:56px;height:56px;border-radius:50%;background:#1ca7ec;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 4px 12px rgba(28,167,236,.3)}
 .review-meta-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:4px;letter-spacing:.2px}
@@ -514,42 +516,44 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   /* FORCE full viewport width photo - zero padding, zero margin */
   .why-hero{padding:0 !important;min-height:auto;margin:0;width:100%;left:0;right:0}
   .why-hero::before{background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;width:100% !important;height:100% !important;left:0;right:0;top:0;bottom:0}
-  .why-hero-inner{grid-template-columns:1fr;gap:0;padding:38px 18px 36px;max-width:100%;width:100%}
+  .why-hero-inner{grid-template-columns:1fr;gap:0;padding:38px 18px 0;max-width:100%;width:100%}
   .why-section-title{font-size:34px;margin-bottom:26px;line-height:1.08}
   .why-text-side{padding-top:0}
-  /* Card on LEFT side - 70% width, transparent black glass */
-  /* PREMIUM LUXURY mobile testimonial - REAL GLASS, 10% black bg, slim vertical */
+  /* ═══ EXACT REPLICA - LUXURY BLACK GLASS CARD ═══ */
   .review-card{
-    padding:22px 24px;
-    max-width:70%;
-    width:70%;
-    background:rgba(0,0,0,0.10);
-    backdrop-filter:blur(10px) saturate(140%);
-    -webkit-backdrop-filter:blur(10px) saturate(140%);
-    border:1px solid rgba(212,160,23,0.35);
-    border-radius:6px;
+    padding:30px 28px 26px;
+    max-width:88%;
+    width:88%;
+    background:rgba(0,0,0,0.45);
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    border:1px solid rgba(212,160,23,0.40);
+    border-radius:18px;
     position:relative;
     box-shadow:
-      0 30px 80px rgba(0,0,0,0.45),
-      inset 0 1px 0 rgba(255,255,255,0.14),
-      inset 0 -1px 0 rgba(212,160,23,0.10);
+      0 40px 120px rgba(0,0,0,0.85),
+      0 20px 60px rgba(0,0,0,0.60),
+      inset 0 1px 0 rgba(255,255,255,0.10),
+      inset 0 -1px 0 rgba(212,160,23,0.12);
     overflow:hidden;
   }
-  .review-text{font-size:14px;line-height:1.7;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px}
+  .review-text{font-size:13.5px;line-height:1.6;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px}
   .review-text strong{color:#fff;font-weight:600}
   .review-meta-name{color:#fff;font-size:20px}
   .review-meta-sub{color:rgba(255,255,255,.6);font-size:13px}
   .review-time{color:rgba(255,255,255,.55);font-size:13px}
   .review-stars svg{fill:#D4A017}
-  /* Mobile quote block - lower position near bottom-left */
-  .review-quote-block{margin-top:20px;gap:14px}
-  .review-quote-icon{font-size:52px}
-  .review-quote-line{width:100px}
-  /* 10+ badge - smaller on mobile, less dominant */
-  .why-badge-side{min-height:auto;background:transparent;border:none;border-radius:0;padding:0;margin:24px 0 22px 0;display:block;position:relative;z-index:3;max-width:78%;width:78%;backdrop-filter:none;-webkit-backdrop-filter:none}
-  .why-badge-new{padding:10px 18px;background:transparent;border:1px solid #D4A017;backdrop-filter:none;-webkit-backdrop-filter:none;display:inline-block;text-align:left;box-shadow:none;margin:0 0 0 22px;border-radius:0}
-  .why-badge-new .wnum{font-size:22px;letter-spacing:-.5px;display:block;line-height:1;margin:0;color:var(--gold-light)}
-  .why-badge-new .wlbl{font-size:8.5px;letter-spacing:1.4px;margin-top:4px;display:block;color:var(--gold-light)}
+  /* Mobile quote block - sleek matching screenshot */
+  .review-quote-block{margin-top:18px;margin-bottom:0;gap:16px;align-items:center}
+  .review-quote-icon{font-size:56px;line-height:0.8}
+  .review-quote-line{width:220px;height:1px}
+  /* HIDE outside badge on mobile - we use the inside-card one */
+  .why-badge-side{display:none !important}
+  /* INSIDE-CARD 10+ badge - LARGER, matching screenshot */
+  .why-badge-inside-card{display:block;margin-top:16px;margin-bottom:0;position:relative;z-index:3}
+  .why-badge-inside-card .why-badge-new{padding:18px 32px 16px;background:transparent;border:1px solid rgba(212,160,23,0.6);display:inline-block;text-align:left;box-shadow:none;margin:0;border-radius:0}
+  .why-badge-inside-card .wnum{font-size:44px;letter-spacing:-1px;display:block;line-height:1;margin:0;color:var(--gold-light);font-family:'Playfair Display',serif;font-weight:700}
+  .why-badge-inside-card .wlbl{font-size:11px;letter-spacing:2.2px;margin-top:8px;display:block;color:var(--gold-light);font-weight:600;text-transform:uppercase}
   /* Features list - FULL WIDTH, separate dark section below photo */
   .why-features-strip{grid-template-columns:1fr;gap:0;padding:8px 20px 24px}
   .why-feat-col{display:grid;grid-template-columns:54px 1fr 18px;column-gap:0;row-gap:0;text-align:left;padding:20px 0;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);align-items:center;position:relative}
@@ -587,10 +591,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-section{padding:0}
   .why-hero{padding:24px 8px 24px}
   .why-section-title{font-size:30px;margin-bottom:20px}
-  .review-card{padding:20px 18px 100px;border-radius:12px}
+  .review-card{padding:30px 28px 26px;border-radius:18px}
   .review-text{font-size:12.5px;line-height:1.55}
   .review-meta-name{font-size:16px}
-  .review-avatar{width:44px;height:44px;font-size:19px}
+  .review-avatar{width:48px;height:48px;background:#2a8aaa;font-size:22px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
   .review-quote{left:18px;bottom:80px;font-size:34px}
   .review-quote::after{left:40px;bottom:96px;width:130px}
   .why-badge-side{margin-top:-72px}
@@ -1446,6 +1450,12 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
           <div class="review-quote-block">
             <span class="review-quote-icon">"</span>
             <span class="review-quote-line"></span>
+          </div>
+          <div class="why-badge-inside-card">
+            <div class="why-badge-new">
+              <div class="wnum">10+</div>
+              <div class="wlbl">Years in NYC</div>
+            </div>
           </div>
         </div>
       </div>
