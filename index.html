@@ -628,11 +628,11 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-hero-inner{grid-template-columns:1fr;gap:0;padding:38px 18px 40px;max-width:100%;width:100%}
   /* Carousel: mobile - section padding constrains it, card sized like before */
   .reviews-carousel-wrap{max-width:100%;width:100%;overflow:hidden;position:relative}
-  .reviews-carousel{gap:16px;width:100%;overflow-x:auto;overflow-y:visible;scrollbar-width:none;display:flex}
+  .reviews-carousel{gap:16px;width:100%;overflow-x:auto;overflow-y:visible;scrollbar-width:none;display:flex;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
   .reviews-carousel::-webkit-scrollbar{display:none}
-  .reviews-carousel .review-card{flex:0 0 72%;max-width:72%;width:72%;min-width:0;box-sizing:border-box;margin-right:0}
-  .reviews-carousel .review-card:first-child{margin-left:0}
-  .reviews-carousel .review-text{max-width:100%;word-wrap:break-word;overflow-wrap:break-word;-webkit-line-clamp:3;white-space:normal}
+  .reviews-carousel .review-card{flex:0 0 72% !important;max-width:72% !important;width:72% !important;min-width:0 !important;box-sizing:border-box !important;margin:0 !important;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+  .reviews-carousel .review-text-wrap{width:100%;max-width:100%;overflow:hidden;box-sizing:border-box}
+  .reviews-carousel .review-text{max-width:100% !important;width:100% !important;word-wrap:break-word !important;overflow-wrap:break-word !important;-webkit-line-clamp:3;white-space:normal;box-sizing:border-box}
   .review-toggle{font-size:11.5px}
   .rc-arrow{display:none}
   .rc-dots{margin-top:16px;justify-content:flex-start;padding-left:4px}
