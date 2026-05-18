@@ -339,6 +339,122 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 /* Legacy fallback - hide old .review-quote if it still exists somewhere */
 .review-quote{display:none}
 
+/* ═══ REVIEW MODAL (POP-UP) ═══ */
+.review-modal{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+}
+.review-modal.is-open{display:flex}
+.review-modal-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(5,13,26,0.88);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  cursor:pointer;
+}
+.review-modal-panel{
+  position:relative;
+  background:#0a1628;
+  border:1px solid rgba(240,165,0,0.3);
+  border-radius:20px;
+  padding:36px 32px 32px;
+  max-width:560px;
+  width:calc(100% - 32px);
+  max-height:90vh;
+  overflow-y:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,0.7);
+  animation:reviewModalIn .35s cubic-bezier(.16,1,.3,1);
+}
+@keyframes reviewModalIn{
+  from{opacity:0;transform:translateY(20px) scale(.96)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.review-modal-close{
+  position:absolute;
+  top:14px;
+  right:14px;
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.15);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  padding:0;
+  z-index:2;
+  -webkit-tap-highlight-color:rgba(240,165,0,0.3);
+  transition:background .25s ease, border-color .25s ease;
+}
+.review-modal-close:hover,.review-modal-close:active{background:rgba(240,165,0,0.2);border-color:var(--gold-light)}
+.review-modal-close svg{width:18px;height:18px}
+.review-modal-header{display:flex;align-items:center;gap:16px;margin-bottom:18px;padding-right:48px}
+.review-modal-avatar{
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:#2a8aaa;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Playfair Display',serif;
+  font-size:28px;
+  font-weight:700;
+  color:#fff;
+  flex-shrink:0;
+  box-shadow:0 4px 12px rgba(0,0,0,.4);
+}
+.review-modal-name{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:4px;letter-spacing:.2px}
+.review-modal-sub{font-size:14px;color:rgba(255,255,255,.6);font-weight:400;letter-spacing:.3px}
+.review-modal-stars-row{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.review-modal-stars{display:flex;gap:3px}
+.review-modal-stars svg{width:22px;height:22px;fill:#D4A017}
+.review-modal-time{font-size:14px;color:rgba(255,255,255,.6);font-weight:400}
+.review-modal-text{
+  font-size:18px;
+  line-height:1.7;
+  color:rgba(255,255,255,.95);
+  font-weight:400;
+  letter-spacing:.1px;
+  margin-bottom:24px;
+}
+.review-modal-text strong{color:#fff;font-weight:600}
+.review-modal-google{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding-top:18px;
+  border-top:1px solid rgba(255,255,255,0.08);
+  font-size:13px;
+  color:rgba(255,255,255,.55);
+  letter-spacing:.3px;
+}
+.review-modal-google svg{flex-shrink:0}
+/* Lock body scroll when modal is open */
+body.modal-locked{overflow:hidden;position:fixed;width:100%}
+/* Make all review cards tappable */
+.review-card{cursor:pointer;-webkit-tap-highlight-color:rgba(240,165,0,0.15)}
+/* Mobile: bigger text in modal for older readers */
+@media(max-width:700px){
+  .review-modal-panel{padding:32px 22px 26px;border-radius:16px;max-height:88vh}
+  .review-modal-avatar{width:52px;height:52px;font-size:24px}
+  .review-modal-name{font-size:21px}
+  .review-modal-sub{font-size:13px}
+  .review-modal-stars svg{width:20px;height:20px}
+  .review-modal-time{font-size:13px}
+  .review-modal-text{font-size:17px;line-height:1.65}
+  .review-modal-close{width:36px;height:36px;top:10px;right:10px}
+  .review-modal-close svg{width:16px;height:16px}
+}
+
 /* ═══ REVIEWS CAROUSEL WRAP ═══ */
 .reviews-carousel-wrap{position:relative;width:100%;max-width:650px}
 .reviews-carousel{
@@ -614,14 +730,14 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .review-quote-icon{font-size:38px;line-height:0.8}
   .review-quote-line{width:140px;height:1px}
   /* Mobile carousel - card on LEFT EDGE, arrow on RIGHT, photo bg visible on right */
-  .reviews-carousel-wrap{max-width:100%;width:100%;overflow:hidden;box-sizing:border-box;position:relative;padding:0}
+  .reviews-carousel-wrap{max-width:100%;width:100%;overflow:hidden;box-sizing:border-box;position:relative;padding:18px 0 32px 0}
   .reviews-carousel{
     display:flex;
-    gap:22vw;
+    gap:26vw;
     overflow:hidden !important;
     scrollbar-width:none;
     -ms-overflow-style:none;
-    padding:0 22vw 0 4vw;
+    padding:0 26vw 0 0;
     box-sizing:border-box;
     width:100%;
     transition:transform .4s cubic-bezier(.4,0,.2,1);
@@ -642,26 +758,44 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
       inset 0 1px 0 rgba(255,255,255,0.06),
       inset 0 -1px 0 rgba(220,220,220,0.08) !important;
   }
-  /* HIDE prev arrow on mobile, show ONLY right arrow */
+  /* HIDE prev arrow on mobile, HIDE floating right arrow too - using below-card arrow instead */
   .rc-arrow.rc-prev{display:none !important}
-  .rc-arrow.rc-next{
-    display:flex !important;
-    width:42px !important;
-    height:42px !important;
-    background:rgba(0,0,0,0.92) !important;
-    border:1px solid rgba(240,165,0,0.7) !important;
-    box-shadow:0 6px 18px rgba(0,0,0,0.8) !important;
-    z-index:20;
-    color:#f0a500 !important;
-    pointer-events:auto !important;
-    cursor:pointer;
-    -webkit-tap-highlight-color:rgba(240,165,0,0.3);
-    right:12px !important;
-    left:auto !important;
-    top:50% !important;
-    transform:translateY(-50%) !important;
+  .rc-arrow.rc-next{display:none !important}
+  /* Controls row below the card - dots + arrow side by side */
+  .rc-controls-below{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    padding:18px 18px 0 4vw;
+    box-sizing:border-box;
+    width:100%;
   }
-  .rc-arrow.rc-next svg{width:20px !important;height:20px !important;stroke:#f0a500 !important}
+  .rc-controls-below .rc-dots{
+    margin:0;
+    flex:1;
+    justify-content:flex-start;
+  }
+  /* Below-card arrow button */
+  .rc-arrow-below{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    background:rgba(0,0,0,0.88);
+    border:1px solid rgba(240,165,0,0.7);
+    box-shadow:0 4px 14px rgba(0,0,0,0.5);
+    color:#f0a500;
+    cursor:pointer;
+    padding:0;
+    flex-shrink:0;
+    -webkit-tap-highlight-color:rgba(240,165,0,0.3);
+    transition:background .25s ease, border-color .25s ease;
+  }
+  .rc-arrow-below:hover,.rc-arrow-below:active{background:rgba(0,0,0,0.95);border-color:var(--gold-light)}
+  .rc-arrow-below svg{width:20px;height:20px;stroke:#f0a500}
   /* Force text to wrap inside the card */
   .reviews-carousel .review-text,
   .reviews-carousel .review-meta-name,
@@ -1702,11 +1836,16 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
             </div>
 
           </div>
-          <div class="rc-dots" id="reviewsDots">
-            <button class="rc-dot active" data-idx="0" aria-label="Review 1"></button>
-            <button class="rc-dot" data-idx="1" aria-label="Review 2"></button>
-            <button class="rc-dot" data-idx="2" aria-label="Review 3"></button>
-            <button class="rc-dot" data-idx="3" aria-label="Review 4"></button>
+          <div class="rc-controls-below">
+            <div class="rc-dots" id="reviewsDots">
+              <button class="rc-dot active" data-idx="0" aria-label="Review 1"></button>
+              <button class="rc-dot" data-idx="1" aria-label="Review 2"></button>
+              <button class="rc-dot" data-idx="2" aria-label="Review 3"></button>
+              <button class="rc-dot" data-idx="3" aria-label="Review 4"></button>
+            </div>
+            <button class="rc-arrow-below" id="rcArrowBelow" aria-label="Next review">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -2203,8 +2342,8 @@ document.addEventListener('click',function(e){
   function getStepWidth(){
     // Card width + gap. On mobile use vw math; on desktop measure DOM.
     if(isMobile()){
-      // 74vw card + 22vw gap = 96vw per step
-      return window.innerWidth*0.96;
+      // 74vw card + 26vw gap = 100vw per step
+      return window.innerWidth*1.0;
     }
     if(cards.length<2)return cards[0]?cards[0].offsetWidth:0;
     return cards[1].offsetLeft-cards[0].offsetLeft;
@@ -2261,6 +2400,17 @@ document.addEventListener('click',function(e){
       e.preventDefault();
       e.stopPropagation();
       goTo(currentIdx+1);
+    });
+  }
+  // Below-card arrow - loops back to start when at the end
+  var arrowBelow=document.getElementById('rcArrowBelow');
+  if(arrowBelow){
+    arrowBelow.addEventListener('click',function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      var next=currentIdx+1;
+      if(next>=cards.length)next=0; // loop back to start
+      goTo(next);
     });
   }
 
@@ -2339,7 +2489,118 @@ document.addEventListener('click',function(e){
       }
     }
   });
+
+  // ───── Tap-to-open modal (don't trigger during swipe) ─────
+  var modal=document.getElementById('reviewModal');
+  var modalAvatar=document.getElementById('reviewModalAvatar');
+  var modalName=document.getElementById('reviewModalName');
+  var modalSub=document.getElementById('reviewModalSub');
+  var modalTime=document.getElementById('reviewModalTime');
+  var modalText=document.getElementById('reviewModalText');
+  var modalCloseBtn=document.getElementById('reviewModalClose');
+
+  function openModal(card){
+    if(!modal||!card)return;
+    var avatar=card.querySelector('.review-avatar');
+    var name=card.querySelector('.review-meta-name');
+    var sub=card.querySelector('.review-meta-sub');
+    var time=card.querySelector('.review-time');
+    var text=card.querySelector('.review-text');
+    if(avatar && modalAvatar){
+      modalAvatar.textContent=avatar.textContent;
+      // Copy avatar background color
+      var bg=avatar.style.background || window.getComputedStyle(avatar).backgroundColor;
+      if(bg)modalAvatar.style.background=bg;
+    }
+    if(name && modalName)modalName.textContent=name.textContent;
+    if(sub && modalSub)modalSub.textContent=sub.textContent;
+    if(time && modalTime)modalTime.textContent=time.textContent;
+    if(text && modalText)modalText.innerHTML=text.innerHTML;
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden','false');
+    document.body.classList.add('modal-locked');
+  }
+
+  function closeModal(){
+    if(!modal)return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden','true');
+    document.body.classList.remove('modal-locked');
+  }
+
+  // Track touch start position to distinguish tap from swipe on cards
+  var cardTouchStartX=0, cardTouchStartY=0, cardTouchMoved=false;
+  cards.forEach(function(card){
+    card.addEventListener('touchstart',function(e){
+      if(e.touches.length!==1)return;
+      cardTouchStartX=e.touches[0].clientX;
+      cardTouchStartY=e.touches[0].clientY;
+      cardTouchMoved=false;
+    },{passive:true});
+    card.addEventListener('touchmove',function(e){
+      if(e.touches.length!==1)return;
+      var dx=Math.abs(e.touches[0].clientX-cardTouchStartX);
+      var dy=Math.abs(e.touches[0].clientY-cardTouchStartY);
+      if(dx>8 || dy>8)cardTouchMoved=true;
+    },{passive:true});
+    card.addEventListener('touchend',function(e){
+      if(!cardTouchMoved)openModal(card);
+    },{passive:true});
+    // Also handle click (for desktop and accessibility)
+    card.addEventListener('click',function(e){
+      // Only fire on click if this wasn't from a touch (touchend already handled it)
+      // Use ontouchstart check — if device has touch, click follows touchend
+      if('ontouchstart' in window)return;
+      openModal(card);
+    });
+  });
+
+  // Close handlers
+  if(modalCloseBtn){
+    modalCloseBtn.addEventListener('click',closeModal);
+  }
+  if(modal){
+    // Close on backdrop click
+    var backdrop=modal.querySelector('[data-modal-close]');
+    if(backdrop)backdrop.addEventListener('click',closeModal);
+    // Close on Escape key
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape' && modal.classList.contains('is-open'))closeModal();
+    });
+  }
 })();
 </script>
+<!-- ══════════ REVIEW MODAL ══════════ -->
+<div class="review-modal" id="reviewModal" aria-hidden="true">
+  <div class="review-modal-backdrop" data-modal-close></div>
+  <div class="review-modal-panel" role="dialog" aria-modal="true" aria-labelledby="reviewModalName">
+    <button class="review-modal-close" id="reviewModalClose" aria-label="Close review">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="review-modal-header">
+      <div class="review-modal-avatar" id="reviewModalAvatar">M</div>
+      <div class="review-modal-meta">
+        <div class="review-modal-name" id="reviewModalName">Maxwell Zetlin</div>
+        <div class="review-modal-sub" id="reviewModalSub">2 reviews</div>
+      </div>
+    </div>
+    <div class="review-modal-stars-row">
+      <div class="review-modal-stars" id="reviewModalStars">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+      </div>
+      <div class="review-modal-time" id="reviewModalTime">8 months ago</div>
+    </div>
+    <div class="review-modal-text" id="reviewModalText"></div>
+    <div class="review-modal-google">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      <span>Verified Google Review</span>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
