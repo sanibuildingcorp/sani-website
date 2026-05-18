@@ -575,7 +575,7 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .hstat{padding:6px 18px;min-width:auto;flex:1 1 calc(50% - 0px);background:transparent}
   .why-section{padding:0;margin-left:0;margin-right:0;width:100%;overflow:hidden}
   /* Mobile: very light overlay - photo MUST show through clearly */
-  .why-hero::after{background:linear-gradient(90deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.35) 35%,rgba(0,0,0,0.10) 60%,transparent 80%) !important}
+  .why-hero::after{background:linear-gradient(90deg,rgba(0,0,0,0.30) 0%,rgba(0,0,0,0.12) 35%,transparent 55%,transparent 100%) !important}
   /* FORCE full viewport width photo - zero padding, zero margin */
   .why-hero{padding:0 !important;min-height:auto;margin:0;width:100%;left:0;right:0}
   .why-hero::before{background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;width:100% !important;height:100% !important;left:0;right:0;top:0;bottom:0;filter:brightness(1.25) saturate(1.1)}
@@ -637,6 +637,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
     box-sizing:border-box;
     margin:0 !important;
     scroll-snap-align:none;
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      inset 0 -1px 0 rgba(220,220,220,0.08) !important;
   }
   /* HIDE prev arrow on mobile, show ONLY right arrow */
   .rc-arrow.rc-prev{display:none !important}
