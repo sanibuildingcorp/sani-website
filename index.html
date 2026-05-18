@@ -258,7 +258,7 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 .why-section{position:relative;padding:0;background:var(--navy-deep);overflow:hidden}
 .why-hero{position:relative;min-height:540px;display:flex;align-items:center;padding:64px 60px}
 .why-hero::before{content:'';position:absolute;inset:0;background-image:url('images/why/why-us.jpg'),url('images/why/why-us.JPG'),url('images/why/why-us.png'),url('images/why/why-us.PNG'),url('images/projects/marble-shower-brass-jets.jpg');background-size:cover;background-position:center;z-index:0;filter:brightness(1.15) saturate(1.05)}
-.why-hero::after{content:'';position:absolute;inset:0;background:transparent;z-index:1;pointer-events:none}
+.why-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.35) 35%,rgba(0,0,0,0.10) 60%,transparent 80%);z-index:1;pointer-events:none}
 .why-hero-inner{position:relative;z-index:2;max-width:1300px;margin:0 auto;width:100%;display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:start}
 .why-text-side{padding-top:10px}
 .why-section-eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:18px}
@@ -339,7 +339,7 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 /* Legacy fallback - hide old .review-quote if it still exists somewhere */
 .review-quote{display:none}
 .why-badge-side{position:relative;display:flex;justify-content:flex-end;align-items:flex-end;height:100%;min-height:auto;padding-top:20px;padding-bottom:20px}
-.why-badge-new{border:1px solid var(--gold-light);padding:24px 36px;text-align:center;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;border-radius:0}
+.why-badge-new{border:1px solid var(--gold-light);padding:24px 36px;text-align:center;background:rgba(0,0,0,0.78);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:-30px 40px 100px rgba(0,0,0,0.85),-15px 20px 50px rgba(0,0,0,0.60);border-radius:0}
 .why-badge-new .wnum{font-family:'Playfair Display',serif;font-size:62px;color:var(--gold-light);font-weight:700;line-height:1;letter-spacing:-1.5px}
 .why-badge-new .wlbl{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#ffffff;margin-top:8px;font-weight:600}
 .why-features-strip{position:relative;z-index:2;background:transparent;border-top:none;padding:48px 60px;display:grid;grid-template-columns:repeat(5,1fr);gap:30px}
@@ -513,7 +513,7 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .hstat{padding:6px 18px;min-width:auto;flex:1 1 calc(50% - 0px);background:transparent}
   .why-section{padding:0;margin-left:0;margin-right:0;width:100%;overflow:hidden}
   /* Mobile: very light overlay - photo MUST show through clearly */
-  .why-hero::after{background:transparent !important}
+  .why-hero::after{background:linear-gradient(90deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.35) 35%,rgba(0,0,0,0.10) 60%,transparent 80%) !important}
   /* FORCE full viewport width photo - zero padding, zero margin */
   .why-hero{padding:0 !important;min-height:auto;margin:0;width:100%;left:0;right:0}
   .why-hero::before{background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;width:100% !important;height:100% !important;left:0;right:0;top:0;bottom:0;filter:brightness(1.25) saturate(1.1)}
@@ -522,7 +522,7 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-text-side{padding-top:0}
   /* ═══ EXACT REPLICA - LUXURY BLACK GLASS CARD (SMALLER OVERALL) ═══ */
   .review-card{
-    padding:24px 22px 20px;
+    padding:20px 22px 16px;
     max-width:72%;
     width:72%;
     background:rgba(0,0,0,0.78);
@@ -538,11 +538,14 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
       inset 0 -1px 0 rgba(220,220,220,0.08);
     overflow:hidden;
   }
-  .review-text{font-size:12px;line-height:1.55;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px}
+  .review-text{font-size:11.5px;line-height:1.5;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px}
   .review-text strong{color:#fff;font-weight:600}
   .review-meta-name{color:#fff;font-size:17px}
   .review-meta-sub{color:rgba(255,255,255,.6);font-size:11.5px}
   .review-time{color:rgba(255,255,255,.55);font-size:11.5px}
+  .review-header{margin-bottom:14px}
+  .review-stars-row{margin-bottom:14px}
+  .review-stars svg{width:16px;height:16px}
   .review-stars svg{fill:#D4A017}
   /* Mobile quote block - smaller proportionally */
   .review-quote-block{margin-top:16px;margin-bottom:0;gap:14px;align-items:center}
