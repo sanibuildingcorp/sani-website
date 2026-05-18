@@ -332,7 +332,7 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
   display:block;
   width:120px;
   height:1px;
-  background:rgba(212,160,23,.5);
+  background:rgba(220,220,220,0.35);
   flex-shrink:0;
 }
 /* Legacy fallback - hide old .review-quote if it still exists somewhere */
@@ -512,10 +512,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .hstat{padding:6px 18px;min-width:auto;flex:1 1 calc(50% - 0px);background:transparent}
   .why-section{padding:0;margin-left:0;margin-right:0;width:100%;overflow:hidden}
   /* Mobile: very light overlay - photo MUST show through clearly */
-  .why-hero::after{background:linear-gradient(180deg,rgba(10,22,40,.35) 0%,rgba(10,22,40,.20) 60%,var(--navy-deep) 100%) !important}
+  .why-hero::after{background:linear-gradient(180deg,rgba(10,22,40,.10) 0%,rgba(10,22,40,.05) 60%,var(--navy-deep) 100%) !important}
   /* FORCE full viewport width photo - zero padding, zero margin */
   .why-hero{padding:0 !important;min-height:auto;margin:0;width:100%;left:0;right:0}
-  .why-hero::before{background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;width:100% !important;height:100% !important;left:0;right:0;top:0;bottom:0}
+  .why-hero::before{background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;width:100% !important;height:100% !important;left:0;right:0;top:0;bottom:0;filter:brightness(1.25) saturate(1.1)}
   .why-hero-inner{grid-template-columns:1fr;gap:0;padding:38px 18px 0;max-width:100%;width:100%}
   .why-section-title{font-size:34px;margin-bottom:26px;line-height:1.08}
   .why-text-side{padding-top:0}
@@ -527,14 +527,14 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
     background:rgba(0,0,0,0.45);
     backdrop-filter:none;
     -webkit-backdrop-filter:none;
-    border:1px solid rgba(212,160,23,0.40);
+    border:1px solid rgba(220,220,220,0.25);
     border-radius:18px;
     position:relative;
     box-shadow:
-      0 40px 120px rgba(0,0,0,0.85),
-      0 20px 60px rgba(0,0,0,0.60),
-      inset 0 1px 0 rgba(255,255,255,0.10),
-      inset 0 -1px 0 rgba(212,160,23,0.12);
+      -30px 40px 120px rgba(0,0,0,0.90),
+      -15px 20px 60px rgba(0,0,0,0.65),
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      inset 0 -1px 0 rgba(220,220,220,0.08);
     overflow:hidden;
   }
   .review-text{font-size:13.5px;line-height:1.6;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px}
@@ -551,9 +551,9 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-badge-side{display:none !important}
   /* INSIDE-CARD 10+ badge - LARGER, matching screenshot */
   .why-badge-inside-card{display:block;margin-top:16px;margin-bottom:0;position:relative;z-index:3}
-  .why-badge-inside-card .why-badge-new{padding:18px 32px 16px;background:transparent;border:1px solid rgba(212,160,23,0.6);display:inline-block;text-align:left;box-shadow:none;margin:0;border-radius:0}
+  .why-badge-inside-card .why-badge-new{padding:18px 32px 16px;background:transparent;border:1px solid var(--gold-light);display:inline-block;text-align:left;box-shadow:none;margin:0;border-radius:0}
   .why-badge-inside-card .wnum{font-size:44px;letter-spacing:-1px;display:block;line-height:1;margin:0;color:var(--gold-light);font-family:'Playfair Display',serif;font-weight:700}
-  .why-badge-inside-card .wlbl{font-size:11px;letter-spacing:2.2px;margin-top:8px;display:block;color:var(--gold-light);font-weight:600;text-transform:uppercase}
+  .why-badge-inside-card .wlbl{font-size:11px;letter-spacing:2.2px;margin-top:8px;display:block;color:#ffffff;font-weight:600;text-transform:uppercase}
   /* Features list - FULL WIDTH, separate dark section below photo */
   .why-features-strip{grid-template-columns:1fr;gap:0;padding:8px 20px 24px}
   .why-feat-col{display:grid;grid-template-columns:54px 1fr 18px;column-gap:0;row-gap:0;text-align:left;padding:20px 0;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);align-items:center;position:relative}
