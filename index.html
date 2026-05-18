@@ -296,114 +296,6 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 }
 /* Make all card children sit above the gradient overlay */
 .review-card > *{position:relative;z-index:1}
-
-/* ═══ REVIEW TEXT TRUNCATION & READ MORE ═══ */
-.review-text-wrap{position:relative;width:100%;max-width:100%;box-sizing:border-box}
-.review-text{
-  display:-webkit-box;
-  -webkit-line-clamp:4;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  word-wrap:break-word;
-  overflow-wrap:break-word;
-  max-width:100%;
-  margin:0;
-  transition:all .3s ease;
-}
-.review-text-wrap.expanded .review-text{
-  -webkit-line-clamp:unset;
-  display:block;
-  overflow:visible;
-}
-.review-toggle{
-  background:transparent;
-  border:none;
-  color:var(--gold-light);
-  font-size:13px;
-  font-weight:600;
-  letter-spacing:.3px;
-  margin-top:8px;
-  padding:4px 0;
-  cursor:pointer;
-  font-family:inherit;
-  text-decoration:underline;
-  text-underline-offset:3px;
-  outline:none;
-}
-.review-toggle:hover{color:#fff}
-
-/* ═══ REVIEWS SWIPE CAROUSEL ═══ */
-.reviews-carousel-wrap{position:relative;width:100%;max-width:650px}
-.reviews-carousel{
-  display:flex;
-  gap:24px;
-  overflow-x:auto;
-  scroll-snap-type:x mandatory;
-  scroll-behavior:smooth;
-  scrollbar-width:none;
-  -ms-overflow-style:none;
-  -webkit-overflow-scrolling:touch;
-  padding-bottom:4px;
-}
-.reviews-carousel::-webkit-scrollbar{display:none}
-.reviews-carousel .review-card{
-  scroll-snap-align:center;
-  scroll-snap-stop:always;
-  flex:0 0 100%;
-  max-width:100%;
-}
-/* Dots */
-.rc-dots{
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  margin-top:24px;
-  padding:0;
-}
-.rc-dot{
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  border:none;
-  background:rgba(220,220,220,0.25);
-  cursor:pointer;
-  padding:0;
-  transition:all .3s ease;
-  outline:none;
-}
-.rc-dot:hover{background:rgba(220,220,220,0.5)}
-.rc-dot.active{
-  background:var(--gold-light);
-  width:28px;
-  border-radius:4px;
-  box-shadow:0 0 12px rgba(240,165,0,.5);
-}
-/* Arrows (desktop only) */
-.rc-arrow{
-  position:absolute;
-  top:50%;
-  transform:translateY(-50%);
-  width:44px;
-  height:44px;
-  border-radius:50%;
-  background:rgba(0,0,0,0.78);
-  border:1px solid rgba(220,220,220,0.25);
-  color:var(--gold-light);
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:10;
-  transition:all .25s ease;
-  outline:none;
-  padding:0;
-  box-shadow:0 8px 24px rgba(0,0,0,.5);
-}
-.rc-arrow:hover{background:rgba(0,0,0,0.9);transform:translateY(-50%) scale(1.08);box-shadow:0 8px 32px rgba(240,165,0,.3)}
-.rc-arrow:disabled{opacity:.3;cursor:not-allowed}
-.rc-prev{left:-22px}
-.rc-next{right:-22px}
 /* Hide inside-card badge on desktop - it's only for mobile */
 .why-badge-inside-card{display:none}
 .review-header{display:flex;align-items:center;gap:18px;margin-bottom:22px}
@@ -626,23 +518,13 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-hero{padding:0 !important;min-height:auto;margin:0;width:100%;left:0;right:0}
   .why-hero::before{background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;width:100% !important;height:100% !important;left:0;right:0;top:0;bottom:0;filter:brightness(1.25) saturate(1.1)}
   .why-hero-inner{grid-template-columns:1fr;gap:0;padding:38px 18px 40px;max-width:100%;width:100%}
-  /* Carousel: mobile - section padding constrains it, card sized like before */
-  .reviews-carousel-wrap{max-width:100%;width:100%;overflow:hidden;position:relative}
-  .reviews-carousel{gap:16px;width:100%;overflow-x:auto;overflow-y:visible;scrollbar-width:none;display:flex;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
-  .reviews-carousel::-webkit-scrollbar{display:none}
-  .reviews-carousel .review-card{flex:0 0 72% !important;max-width:72% !important;width:72% !important;min-width:0 !important;box-sizing:border-box !important;margin:0 !important;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
-  .reviews-carousel .review-text-wrap{width:100%;max-width:100%;overflow:hidden;box-sizing:border-box}
-  .reviews-carousel .review-text{max-width:100% !important;width:100% !important;word-wrap:break-word !important;overflow-wrap:break-word !important;-webkit-line-clamp:3;white-space:normal;box-sizing:border-box}
-  .review-toggle{font-size:11.5px}
-  .rc-arrow{display:none}
-  .rc-dots{margin-top:16px;justify-content:flex-start;padding-left:4px}
   .why-section-title{font-size:34px;margin-bottom:26px;line-height:1.08}
   .why-text-side{padding-top:0}
   /* ═══ EXACT REPLICA - LUXURY BLACK GLASS CARD (SMALLER OVERALL) ═══ */
   .review-card{
     padding:20px 22px 16px;
-    max-width:100%;
-    width:100%;
+    max-width:72%;
+    width:72%;
     background:rgba(0,0,0,0.78);
     backdrop-filter:none;
     -webkit-backdrop-filter:none;
@@ -655,9 +537,8 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
       inset 0 1px 0 rgba(255,255,255,0.06),
       inset 0 -1px 0 rgba(220,220,220,0.08);
     overflow:hidden;
-    box-sizing:border-box;
   }
-  .review-text{font-size:11.5px;line-height:1.5;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px;word-wrap:break-word;overflow-wrap:break-word;max-width:100%}
+  .review-text{font-size:11.5px;line-height:1.5;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px}
   .review-text strong{color:#fff;font-weight:600}
   .review-meta-name{color:#fff;font-size:17px}
   .review-meta-sub{color:rgba(255,255,255,.6);font-size:11.5px}
@@ -714,8 +595,8 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-section{padding:0}
   .why-hero{padding:24px 8px 24px}
   .why-section-title{font-size:30px;margin-bottom:20px}
-  .review-card{border-radius:14px !important;padding:20px 22px 16px !important}
-  .review-text{font-size:11.5px !important;line-height:1.5 !important;word-wrap:break-word;overflow-wrap:break-word;max-width:100%}
+  .review-card{padding:30px 28px 26px;border-radius:18px}
+  .review-text{font-size:12.5px;line-height:1.55}
   .review-meta-name{font-size:16px}
   .review-avatar{width:40px;height:40px;background:#2a8aaa;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
   .review-quote{left:18px;bottom:80px;font-size:34px}
@@ -1551,163 +1432,34 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
       <div class="why-text-side">
         <div class="why-section-eyebrow"><div class="line"></div><span>Why Choose Us</span></div>
         <h2 class="why-section-title">Brooklyn's Most Trusted <em>Renovation Partner</em></h2>
-        <!-- ═══ SWIPEABLE REVIEWS CAROUSEL ═══ -->
-        <div class="reviews-carousel-wrap">
-          <button class="rc-arrow rc-prev" aria-label="Previous review">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button class="rc-arrow rc-next" aria-label="Next review">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-          <div class="reviews-carousel" id="reviewsCarousel">
-
-            <!-- Review 1: Maxwell Zetlin -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="review-avatar" style="background:#1ca7ec">M</div>
-                <div>
-                  <div class="review-meta-name">Maxwell Zetlin</div>
-                  <div class="review-meta-sub">2 reviews</div>
-                </div>
-              </div>
-              <div class="review-stars-row">
-                <div class="review-stars">
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                </div>
-                <div class="review-time">8 months ago</div>
-              </div>
-              <div class="review-text-wrap">
-                <p class="review-text">Zura and the <strong>team</strong> are exceptional! They bring a rare combination of skill, dedication, and creativity to every aspect of home building and rectifications. Whether it's correcting mistakes left by other contractors or finding innovative solutions to complex challenges, they consistently go above and beyond with professionalism and passion. Truly a versatile and reliable <strong>team</strong>!</p>
-                <button class="review-toggle" type="button">Read more</button>
-              </div>
-              <div class="review-quote-block">
-                <span class="review-quote-icon">"</span>
-                <span class="review-quote-line"></span>
-              </div>
-              <div class="why-badge-inside-card">
-                <div class="why-badge-new">
-                  <div class="wnum">10+</div>
-                  <div class="wlbl">Years in NYC</div>
-                </div>
-              </div>
+        <div class="review-card">
+          <div class="review-header">
+            <div class="review-avatar">M</div>
+            <div>
+              <div class="review-meta-name">Maxwell Zetlin</div>
+              <div class="review-meta-sub">2 reviews</div>
             </div>
-
-            <!-- Review 2: Roshni Patel -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="review-avatar" style="background:#e8a87c">R</div>
-                <div>
-                  <div class="review-meta-name">Roshni Patel</div>
-                  <div class="review-meta-sub">Local Guide · 9 reviews</div>
-                </div>
-              </div>
-              <div class="review-stars-row">
-                <div class="review-stars">
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                </div>
-                <div class="review-time">a year ago</div>
-              </div>
-              <div class="review-text-wrap">
-                <p class="review-text">Zura and his <strong>team</strong> were INCREDIBLE. They did a phenomenal job with all of their work: rust removal and painting our gate and fire escape, sanding and refinishing the deck, and re-surfacing all of our bathroom vanities. He was great to work with! Gave costs and set expectations up front, gave a timeline and stuck to it even with some rain delays. We will definitely be using his services again in the future!</p>
-                <button class="review-toggle" type="button">Read more</button>
-              </div>
-              <div class="review-quote-block">
-                <span class="review-quote-icon">"</span>
-                <span class="review-quote-line"></span>
-              </div>
-              <div class="why-badge-inside-card">
-                <div class="why-badge-new">
-                  <div class="wnum">10+</div>
-                  <div class="wlbl">Years in NYC</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Review 3: Екатерине Асанидзе -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="review-avatar" style="background:#8b6f47">E</div>
-                <div>
-                  <div class="review-meta-name">Екатерине Асанидзе</div>
-                  <div class="review-meta-sub">1 review</div>
-                </div>
-              </div>
-              <div class="review-stars-row">
-                <div class="review-stars">
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                </div>
-                <div class="review-time">2 months ago</div>
-              </div>
-              <div class="review-text-wrap">
-                <p class="review-text">Great experience with <strong>Sani Building Corp</strong>. Very professional <strong>team</strong> and high-quality interior and exterior renovation work. They also helped us with water damage repair. Highly recommend them if you need a reliable NYC contractor.</p>
-                <button class="review-toggle" type="button">Read more</button>
-              </div>
-              <div class="review-quote-block">
-                <span class="review-quote-icon">"</span>
-                <span class="review-quote-line"></span>
-              </div>
-              <div class="why-badge-inside-card">
-                <div class="why-badge-new">
-                  <div class="wnum">10+</div>
-                  <div class="wlbl">Years in NYC</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Review 4: John Greenough -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="review-avatar" style="background:#7c4dff">J</div>
-                <div>
-                  <div class="review-meta-name">John Greenough</div>
-                  <div class="review-meta-sub">5 reviews</div>
-                </div>
-              </div>
-              <div class="review-stars-row">
-                <div class="review-stars">
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                </div>
-                <div class="review-time">2 months ago</div>
-              </div>
-              <div class="review-text-wrap">
-                <p class="review-text">Zura and the <strong>Sani Building Corp</strong> <strong>team</strong> were fantastic to work with during our apartment renovation in NYC. They completely redid our kitchen tiles which came out beautifully, refinished our hardwood floors throughout the apartment, and handled everything with great care and professionalism. Highly recommend!</p>
-                <button class="review-toggle" type="button">Read more</button>
-              </div>
-              <div class="review-quote-block">
-                <span class="review-quote-icon">"</span>
-                <span class="review-quote-line"></span>
-              </div>
-              <div class="why-badge-inside-card">
-                <div class="why-badge-new">
-                  <div class="wnum">10+</div>
-                  <div class="wlbl">Years in NYC</div>
-                </div>
-              </div>
-            </div>
-
           </div>
-          <!-- Pagination Dots -->
-          <div class="rc-dots" id="reviewsDots">
-            <button class="rc-dot active" data-idx="0" aria-label="Review 1"></button>
-            <button class="rc-dot" data-idx="1" aria-label="Review 2"></button>
-            <button class="rc-dot" data-idx="2" aria-label="Review 3"></button>
-            <button class="rc-dot" data-idx="3" aria-label="Review 4"></button>
+          <div class="review-stars-row">
+            <div class="review-stars">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+            </div>
+            <div class="review-time">8 months ago</div>
+          </div>
+          <p class="review-text">Zura and the <strong>team</strong> are exceptional! They bring a rare combination of skill, dedication, and creativity to every aspect of home building and rectifications. Whether it's correcting mistakes left by other contractors or finding innovative solutions to complex challenges, they consistently go above and beyond with professionalism and passion. Truly a versatile and reliable <strong>team</strong>!</p>
+          <div class="review-quote-block">
+            <span class="review-quote-icon">"</span>
+            <span class="review-quote-line"></span>
+          </div>
+          <div class="why-badge-inside-card">
+            <div class="why-badge-new">
+              <div class="wnum">10+</div>
+              <div class="wlbl">Years in NYC</div>
+            </div>
           </div>
         </div>
       </div>
@@ -2181,102 +1933,6 @@ document.addEventListener('click',function(e){
       resumeAuto();
     }
   }, {passive:true});
-})();
-
-/* ═══ REVIEWS CAROUSEL ═══ */
-(function(){
-  var carousel = document.getElementById('reviewsCarousel');
-  var dotsWrap = document.getElementById('reviewsDots');
-  if(!carousel || !dotsWrap) return;
-  var dots = dotsWrap.querySelectorAll('.rc-dot');
-  var prevBtn = document.querySelector('.rc-prev');
-  var nextBtn = document.querySelector('.rc-next');
-  var cards = carousel.querySelectorAll('.review-card');
-  var currentIdx = 0;
-  var total = cards.length;
-
-  // ───── READ MORE TOGGLE ─────
-  function setupToggles(){
-    var wraps = carousel.querySelectorAll('.review-text-wrap');
-    wraps.forEach(function(wrap){
-      var textEl = wrap.querySelector('.review-text');
-      var btn = wrap.querySelector('.review-toggle');
-      if(!textEl || !btn) return;
-      // Hide button if text not actually truncated
-      if(textEl.scrollHeight <= textEl.clientHeight + 2){
-        btn.style.display = 'none';
-        return;
-      }
-      btn.addEventListener('click', function(e){
-        e.stopPropagation();
-        var isExpanded = wrap.classList.toggle('expanded');
-        btn.textContent = isExpanded ? 'Read less' : 'Read more';
-      });
-    });
-  }
-  // Run after layout settles
-  setTimeout(setupToggles, 100);
-  window.addEventListener('resize', function(){
-    // Reset and re-evaluate
-    var wraps = carousel.querySelectorAll('.review-text-wrap');
-    wraps.forEach(function(wrap){
-      var btn = wrap.querySelector('.review-toggle');
-      if(btn) btn.style.display = '';
-    });
-    setTimeout(setupToggles, 100);
-  });
-
-  function scrollToIdx(idx){
-    if(idx < 0) idx = 0;
-    if(idx >= total) idx = total - 1;
-    var card = cards[idx];
-    if(!card) return;
-    carousel.scrollTo({ left: card.offsetLeft - carousel.offsetLeft, behavior: 'smooth' });
-    currentIdx = idx;
-    updateUI();
-  }
-
-  function updateUI(){
-    dots.forEach(function(d, i){
-      d.classList.toggle('active', i === currentIdx);
-    });
-    if(prevBtn) prevBtn.disabled = currentIdx === 0;
-    if(nextBtn) nextBtn.disabled = currentIdx === total - 1;
-  }
-
-  // Dot clicks
-  dots.forEach(function(d){
-    d.addEventListener('click', function(){
-      scrollToIdx(parseInt(this.dataset.idx, 10));
-    });
-  });
-
-  // Arrow clicks
-  if(prevBtn) prevBtn.addEventListener('click', function(){ scrollToIdx(currentIdx - 1); });
-  if(nextBtn) nextBtn.addEventListener('click', function(){ scrollToIdx(currentIdx + 1); });
-
-  // Detect swipe / scroll position - update dots
-  var scrollTimer;
-  carousel.addEventListener('scroll', function(){
-    clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(function(){
-      var scrollLeft = carousel.scrollLeft;
-      var cardWidth = cards[0].offsetWidth + 24; // gap
-      var idx = Math.round(scrollLeft / cardWidth);
-      if(idx !== currentIdx && idx >= 0 && idx < total){
-        currentIdx = idx;
-        updateUI();
-      }
-    }, 80);
-  });
-
-  // Keyboard nav (desktop)
-  carousel.addEventListener('keydown', function(e){
-    if(e.key === 'ArrowLeft') scrollToIdx(currentIdx - 1);
-    if(e.key === 'ArrowRight') scrollToIdx(currentIdx + 1);
-  });
-
-  updateUI();
 })();
 </script>
 </body>
