@@ -297,6 +297,42 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 /* Make all card children sit above the gradient overlay */
 .review-card > *{position:relative;z-index:1}
 
+/* ═══ REVIEW TEXT TRUNCATION & READ MORE ═══ */
+.review-text-wrap{position:relative;width:100%;max-width:100%;box-sizing:border-box}
+.review-text{
+  display:-webkit-box;
+  -webkit-line-clamp:4;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+  max-width:100%;
+  margin:0;
+  transition:all .3s ease;
+}
+.review-text-wrap.expanded .review-text{
+  -webkit-line-clamp:unset;
+  display:block;
+  overflow:visible;
+}
+.review-toggle{
+  background:transparent;
+  border:none;
+  color:var(--gold-light);
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.3px;
+  margin-top:8px;
+  padding:4px 0;
+  cursor:pointer;
+  font-family:inherit;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  outline:none;
+}
+.review-toggle:hover{color:#fff}
+
 /* ═══ REVIEWS SWIPE CAROUSEL ═══ */
 .reviews-carousel-wrap{position:relative;width:100%;max-width:650px}
 .reviews-carousel{
@@ -594,7 +630,8 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .reviews-carousel-wrap{max-width:72%;width:72%;overflow:hidden}
   .reviews-carousel{gap:16px;width:100%;overflow-x:auto}
   .reviews-carousel .review-card{flex:0 0 100%;max-width:100%;width:100%;min-width:0}
-  .reviews-carousel .review-text{max-width:100%;word-wrap:break-word;overflow-wrap:break-word}
+  .reviews-carousel .review-text{max-width:100%;word-wrap:break-word;overflow-wrap:break-word;-webkit-line-clamp:3}
+  .review-toggle{font-size:11.5px}
   .rc-arrow{display:none}
   .rc-dots{margin-top:16px;justify-content:flex-start;padding-left:4px}
   .why-section-title{font-size:34px;margin-bottom:26px;line-height:1.08}
@@ -1541,7 +1578,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
                 </div>
                 <div class="review-time">8 months ago</div>
               </div>
-              <p class="review-text">Zura and the <strong>team</strong> are exceptional! They bring a rare combination of skill, dedication, and creativity to every aspect of home building and rectifications. Whether it's correcting mistakes left by other contractors or finding innovative solutions to complex challenges, they consistently go above and beyond with professionalism and passion. Truly a versatile and reliable <strong>team</strong>!</p>
+              <div class="review-text-wrap">
+                <p class="review-text">Zura and the <strong>team</strong> are exceptional! They bring a rare combination of skill, dedication, and creativity to every aspect of home building and rectifications. Whether it's correcting mistakes left by other contractors or finding innovative solutions to complex challenges, they consistently go above and beyond with professionalism and passion. Truly a versatile and reliable <strong>team</strong>!</p>
+                <button class="review-toggle" type="button">Read more</button>
+              </div>
               <div class="review-quote-block">
                 <span class="review-quote-icon">"</span>
                 <span class="review-quote-line"></span>
@@ -1573,7 +1613,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
                 </div>
                 <div class="review-time">a year ago</div>
               </div>
-              <p class="review-text">Zura and his <strong>team</strong> were INCREDIBLE. They did a phenomenal job with all of their work: rust removal and painting our gate and fire escape, sanding and refinishing the deck, and re-surfacing all of our bathroom vanities. He was great to work with! Gave costs and set expectations up front, gave a timeline and stuck to it even with some rain delays. We will definitely be using his services again in the future!</p>
+              <div class="review-text-wrap">
+                <p class="review-text">Zura and his <strong>team</strong> were INCREDIBLE. They did a phenomenal job with all of their work: rust removal and painting our gate and fire escape, sanding and refinishing the deck, and re-surfacing all of our bathroom vanities. He was great to work with! Gave costs and set expectations up front, gave a timeline and stuck to it even with some rain delays. We will definitely be using his services again in the future!</p>
+                <button class="review-toggle" type="button">Read more</button>
+              </div>
               <div class="review-quote-block">
                 <span class="review-quote-icon">"</span>
                 <span class="review-quote-line"></span>
@@ -1605,7 +1648,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
                 </div>
                 <div class="review-time">2 months ago</div>
               </div>
-              <p class="review-text">Great experience with <strong>Sani Building Corp</strong>. Very professional <strong>team</strong> and high-quality interior and exterior renovation work. They also helped us with water damage repair. Highly recommend them if you need a reliable NYC contractor.</p>
+              <div class="review-text-wrap">
+                <p class="review-text">Great experience with <strong>Sani Building Corp</strong>. Very professional <strong>team</strong> and high-quality interior and exterior renovation work. They also helped us with water damage repair. Highly recommend them if you need a reliable NYC contractor.</p>
+                <button class="review-toggle" type="button">Read more</button>
+              </div>
               <div class="review-quote-block">
                 <span class="review-quote-icon">"</span>
                 <span class="review-quote-line"></span>
@@ -1637,7 +1683,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
                 </div>
                 <div class="review-time">2 months ago</div>
               </div>
-              <p class="review-text">Zura and the <strong>Sani Building Corp</strong> <strong>team</strong> were fantastic to work with during our apartment renovation in NYC. They completely redid our kitchen tiles which came out beautifully, refinished our hardwood floors throughout the apartment, and handled everything with great care and professionalism. Highly recommend!</p>
+              <div class="review-text-wrap">
+                <p class="review-text">Zura and the <strong>Sani Building Corp</strong> <strong>team</strong> were fantastic to work with during our apartment renovation in NYC. They completely redid our kitchen tiles which came out beautifully, refinished our hardwood floors throughout the apartment, and handled everything with great care and professionalism. Highly recommend!</p>
+                <button class="review-toggle" type="button">Read more</button>
+              </div>
               <div class="review-quote-block">
                 <span class="review-quote-icon">"</span>
                 <span class="review-quote-line"></span>
@@ -2143,6 +2192,37 @@ document.addEventListener('click',function(e){
   var cards = carousel.querySelectorAll('.review-card');
   var currentIdx = 0;
   var total = cards.length;
+
+  // ───── READ MORE TOGGLE ─────
+  function setupToggles(){
+    var wraps = carousel.querySelectorAll('.review-text-wrap');
+    wraps.forEach(function(wrap){
+      var textEl = wrap.querySelector('.review-text');
+      var btn = wrap.querySelector('.review-toggle');
+      if(!textEl || !btn) return;
+      // Hide button if text not actually truncated
+      if(textEl.scrollHeight <= textEl.clientHeight + 2){
+        btn.style.display = 'none';
+        return;
+      }
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var isExpanded = wrap.classList.toggle('expanded');
+        btn.textContent = isExpanded ? 'Read less' : 'Read more';
+      });
+    });
+  }
+  // Run after layout settles
+  setTimeout(setupToggles, 100);
+  window.addEventListener('resize', function(){
+    // Reset and re-evaluate
+    var wraps = carousel.querySelectorAll('.review-text-wrap');
+    wraps.forEach(function(wrap){
+      var btn = wrap.querySelector('.review-toggle');
+      if(btn) btn.style.display = '';
+    });
+    setTimeout(setupToggles, 100);
+  });
 
   function scrollToIdx(idx){
     if(idx < 0) idx = 0;
