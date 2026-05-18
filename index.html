@@ -267,7 +267,34 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 .why-section-title{font-family:'Playfair Display',serif;font-size:54px;font-weight:700;color:#fff;line-height:1.05;letter-spacing:-1px;margin-bottom:36px;text-shadow:0 2px 30px rgba(0,0,0,.85),0 1px 8px rgba(0,0,0,.6)}
 .why-section-title em{display:block;font-style:italic;color:var(--gold-light);font-weight:600}
 /* ═══ PREMIUM LUXURY TESTIMONIAL CARD ═══ */
-.review-card{background:rgba(0,0,0,.28);border:1px solid rgba(212,160,23,.35);backdrop-filter:blur(36px) saturate(160%);-webkit-backdrop-filter:blur(36px) saturate(160%);padding:40px 44px;position:relative;max-width:650px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);border-radius:6px}
+/* ═══ PREMIUM LUXURY TESTIMONIAL CARD - REAL GLASS ═══ */
+.review-card{
+  background:linear-gradient(135deg,rgba(5,13,26,0.72),rgba(5,13,26,0.42));
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  border:1px solid rgba(212,160,23,0.35);
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    inset 0 -1px 0 rgba(212,160,23,0.10);
+  padding:40px 44px;
+  position:relative;
+  max-width:650px;
+  width:100%;
+  border-radius:6px;
+  overflow:hidden;
+}
+.review-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.02) 35%,rgba(212,160,23,0.06));
+  pointer-events:none;
+  z-index:0;
+}
+/* Make all card children sit above the gradient overlay */
+.review-card > *{position:relative;z-index:1}
 .review-header{display:flex;align-items:center;gap:18px;margin-bottom:22px}
 .review-avatar{width:56px;height:56px;border-radius:50%;background:#1ca7ec;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 4px 12px rgba(28,167,236,.3)}
 .review-meta-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:4px;letter-spacing:.2px}
@@ -490,9 +517,24 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-hero-inner{grid-template-columns:1fr;gap:0;padding:32px 18px 36px;max-width:100%;width:100%}
   .why-section-title{font-size:34px;margin-bottom:26px;line-height:1.08}
   .why-text-side{padding-top:0}
-  /* Card on LEFT side - 78% width, leaves right side showing photo */
-  /* PREMIUM LUXURY mobile testimonial - more transparent glass */
-  .review-card{padding:28px 24px;max-width:88%;width:88%;background:rgba(0,0,0,.28);border:1px solid rgba(212,160,23,.35);border-radius:6px;position:relative;backdrop-filter:blur(36px) saturate(160%);-webkit-backdrop-filter:blur(36px) saturate(160%);box-shadow:0 12px 48px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06)}
+  /* Card on LEFT side - 88% width, leaves right side showing photo */
+  /* PREMIUM LUXURY mobile testimonial - REAL GLASS */
+  .review-card{
+    padding:28px 24px;
+    max-width:88%;
+    width:88%;
+    background:linear-gradient(135deg,rgba(5,13,26,0.72),rgba(5,13,26,0.42));
+    backdrop-filter:blur(18px) saturate(140%);
+    -webkit-backdrop-filter:blur(18px) saturate(140%);
+    border:1px solid rgba(212,160,23,0.35);
+    border-radius:6px;
+    position:relative;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.14),
+      inset 0 -1px 0 rgba(212,160,23,0.10);
+    overflow:hidden;
+  }
   .review-text{font-size:14px;line-height:1.7;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px}
   .review-text strong{color:#fff;font-weight:600}
   .review-meta-name{color:#fff;font-size:20px}
