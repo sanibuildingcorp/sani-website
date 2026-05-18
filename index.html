@@ -591,9 +591,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-hero::before{background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;width:100% !important;height:100% !important;left:0;right:0;top:0;bottom:0;filter:brightness(1.25) saturate(1.1)}
   .why-hero-inner{grid-template-columns:1fr;gap:0;padding:38px 18px 40px;max-width:100%;width:100%}
   /* Carousel: mobile - 72% width to match previous single card, hide arrows */
-  .reviews-carousel-wrap{max-width:72%;width:72%}
+  .reviews-carousel-wrap{max-width:72%;width:72%;overflow:hidden}
   .reviews-carousel{gap:16px;width:100%;overflow-x:auto}
-  .reviews-carousel .review-card{flex:0 0 100%;max-width:100%;width:100%}
+  .reviews-carousel .review-card{flex:0 0 100%;max-width:100%;width:100%;min-width:0}
+  .reviews-carousel .review-text{max-width:100%;word-wrap:break-word;overflow-wrap:break-word}
   .rc-arrow{display:none}
   .rc-dots{margin-top:16px;justify-content:flex-start;padding-left:4px}
   .why-section-title{font-size:34px;margin-bottom:26px;line-height:1.08}
@@ -617,7 +618,7 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
     overflow:hidden;
     box-sizing:border-box;
   }
-  .review-text{font-size:11.5px;line-height:1.5;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px}
+  .review-text{font-size:11.5px;line-height:1.5;margin-bottom:0;color:rgba(255,255,255,.94);font-weight:400;letter-spacing:.1px;word-wrap:break-word;overflow-wrap:break-word;max-width:100%}
   .review-text strong{color:#fff;font-weight:600}
   .review-meta-name{color:#fff;font-size:17px}
   .review-meta-sub{color:rgba(255,255,255,.6);font-size:11.5px}
@@ -674,8 +675,8 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .why-section{padding:0}
   .why-hero{padding:24px 8px 24px}
   .why-section-title{font-size:30px;margin-bottom:20px}
-  .review-card{padding:30px 28px 26px;border-radius:18px}
-  .review-text{font-size:12.5px;line-height:1.55}
+  .review-card{border-radius:14px !important;padding:20px 22px 16px !important}
+  .review-text{font-size:11.5px !important;line-height:1.5 !important;word-wrap:break-word;overflow-wrap:break-word;max-width:100%}
   .review-meta-name{font-size:16px}
   .review-avatar{width:40px;height:40px;background:#2a8aaa;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
   .review-quote{left:18px;bottom:80px;font-size:34px}
