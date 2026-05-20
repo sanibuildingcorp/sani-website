@@ -95,6 +95,8 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,
 .has-sub>a::after{content:'›';font-size:18px;opacity:0.5;flex-shrink:0;line-height:1}
 .has-sub:hover>a{color:var(--gold-light);background:rgba(240,165,0,0.06)}
 .sub-menu{position:absolute;right:100%;top:0;background:#0a1628;border:1px solid rgba(240,165,0,0.18);border-top:2px solid var(--gold);min-width:220px;opacity:0;visibility:hidden;transform:translateX(6px);transition:all 0.2s ease;z-index:1000}
+/* Bottom-aligned submenus (for long lists near the bottom of parent dropdown) */
+.has-sub-bottom .sub-menu{top:auto;bottom:0}
 .has-sub:hover .sub-menu{opacity:1;visibility:visible;transform:translateX(0)}
 .sub-menu a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:12.5px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.05);transition:color 0.2s,background 0.2s}
 .sub-menu a:last-child{border-bottom:none}
@@ -1118,7 +1120,7 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
           </div>
           <a href="water-damage.html">💧 Water Damage Restoration</a>
           <a href="handyman.html">🔧 Handyman Services</a>
-          <div class="has-sub">
+          <div class="has-sub has-sub-bottom">
             <a href="services.html">📍 Renovations by Area</a>
             <div class="sub-menu">
               <span class="sub-label">NYC Boroughs</span>
