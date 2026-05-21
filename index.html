@@ -66,81 +66,6 @@ html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
 /* ══════════ NAV — Current website style ══════════ */
-nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(8,16,32,0.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(240,165,0,0.12)}
-.nav-inner{max-width:1400px;margin:0 auto;padding:0 28px;height:78px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.nav-logo{display:flex;align-items:center;gap:14px;text-decoration:none;flex-shrink:0;white-space:nowrap}
-.logo-mark{width:38px;height:38px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo-mark svg{width:100%;height:100%}
-.nav-logo .logo-text .brand{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:2.2px;text-transform:uppercase;line-height:1;white-space:nowrap}
-.nav-logo .logo-text .brand span{color:var(--gold-light)}
-.nav-logo .logo-text .sub{font-size:9px;letter-spacing:2.6px;text-transform:uppercase;color:rgba(255,255,255,0.42);margin-top:4px;font-weight:400;white-space:nowrap}
-
-.nav-links{display:flex;align-items:center;gap:2px}
-.nav-links>a{color:rgba(255,255,255,0.78);text-decoration:none;font-size:11.5px;font-weight:500;letter-spacing:1.5px;padding:10px 13px;transition:color .2s;white-space:nowrap;text-transform:uppercase;line-height:1;display:inline-flex;align-items:center;height:38px}
-.nav-links>a:hover{color:var(--gold-light)}
-
-.nav-dropdown{position:relative;height:38px;display:flex;align-items:center}
-.nav-dropdown>a{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:rgba(255,255,255,0.78);text-decoration:none;font-size:11.5px;padding:10px 13px;transition:color .2s;text-transform:uppercase;letter-spacing:1.5px;font-weight:500;line-height:1;height:38px;white-space:nowrap}
-.nav-dropdown>a .arrow{display:inline-block;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-left:3px;margin-top:-3px}
-.nav-dropdown::after{content:'';position:absolute;left:0;right:0;top:100%;height:10px;display:block}
-.dropdown-menu{position:absolute;top:calc(100% + 4px);left:0;background:#0a1628;border:1px solid rgba(240,165,0,0.18);border-top:2px solid var(--gold);min-width:240px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.22s ease;z-index:999}
-.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
-.dropdown-menu>a{display:block;color:rgba(255,255,255,0.78);text-decoration:none;font-size:13px;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s;letter-spacing:.4px;font-weight:500}
-.dropdown-menu>a:last-child{border-bottom:none}
-.dropdown-menu>a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
-
-/* Nested sub-menu */
-.has-sub{position:relative}
-.has-sub>a{display:flex!important;align-items:center;justify-content:space-between;color:rgba(255,255,255,0.78);text-decoration:none;font-size:13px;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s;cursor:pointer;letter-spacing:.4px;font-weight:500}
-.has-sub>a::after{content:'›';font-size:18px;opacity:0.5;flex-shrink:0;line-height:1}
-.has-sub:hover>a{color:var(--gold-light);background:rgba(240,165,0,0.06)}
-.sub-menu{position:absolute;right:100%;top:0;background:#0a1628;border:1px solid rgba(240,165,0,0.18);border-top:2px solid var(--gold);min-width:220px;opacity:0;visibility:hidden;transform:translateX(6px);transition:all 0.2s ease;z-index:1000}
-/* Bottom-aligned submenus (for long lists near the bottom of parent dropdown) */
-.has-sub-bottom .sub-menu{top:auto;bottom:0}
-.has-sub:hover .sub-menu{opacity:1;visibility:visible;transform:translateX(0)}
-.sub-menu a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:12.5px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.05);transition:color 0.2s,background 0.2s}
-.sub-menu a:last-child{border-bottom:none}
-.sub-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
-.sub-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.3);padding:9px 18px 4px;display:block;border-bottom:1px solid rgba(255,255,255,0.04);pointer-events:none}
-
-.nav-cta{background:var(--gold-light)!important;color:#0a1628!important;border:1.5px solid var(--gold-light)!important;padding:11px 22px!important;font-size:11.5px!important;font-weight:700!important;letter-spacing:1.8px!important;text-transform:uppercase;transition:all .25s!important;height:38px}
-.nav-cta:hover{background:var(--gold-bright)!important;border-color:var(--gold-bright)!important}
-.nav-phone{display:inline-flex!important;align-items:center;gap:7px;color:var(--gold-light)!important;font-size:13px!important;font-weight:600!important;letter-spacing:0.3px!important;text-transform:none!important;padding:10px 10px!important;height:38px}
-.nav-ai{color:var(--gold-light)!important;font-weight:500!important;display:inline-flex!important;align-items:center;gap:5px}
-.nav-ai .bolt{color:var(--gold-light)}
-
-/* HAMBURGER */
-.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px}
-.hamburger span{display:block;width:24px;height:2.5px;background:#fff;transition:all .3s;border-radius:1px}
-.hamburger.active span:nth-child(1){transform:translateY(7px) rotate(45deg)}
-.hamburger.active span:nth-child(2){opacity:0}
-.hamburger.active span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-
-/* ══════════ MOBILE MENU — DRILL-DOWN STYLE ══════════ */
-.mobile-menu{display:none;position:fixed;top:78px;left:0;width:100%;height:calc(100vh - 78px);background:#080f1c;z-index:999;border-top:1px solid rgba(240,165,0,0.2);overflow:hidden}
-.mobile-menu.open{display:block}
-.m-panels{position:relative;width:100%;height:100%;overflow:hidden}
-.m-panel{position:absolute;top:0;left:0;width:100%;height:100%;overflow-y:auto;padding:8px 0 32px;background:#080f1c;transition:transform .32s cubic-bezier(.4,0,.2,1);transform:translateX(100%)}
-.m-panel.active{transform:translateX(0)}
-.m-panel.prev{transform:translateX(-100%)}
-.m-panel[data-level="0"]{transform:translateX(0)}
-.m-panel[data-level="0"].pushed{transform:translateX(-100%)}
-.m-panel-header{display:flex;align-items:center;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.08);background:#080f1c;position:sticky;top:0;z-index:5}
-.m-back{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;padding:6px 0}
-.m-back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.m-panel-title{margin-left:auto;font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#fff;letter-spacing:1px}
-.m-item{display:flex;align-items:center;justify-content:space-between;width:100%;padding:18px 24px;color:#fff;text-decoration:none;font-size:16px;font-weight:600;letter-spacing:0.3px;border-bottom:1px solid rgba(255,255,255,0.08);background:none;border-left:none;border-right:none;border-top:none;font-family:'DM Sans',sans-serif;text-align:left;cursor:pointer;transition:background .15s,color .15s}
-.m-item:hover,.m-item:active{background:rgba(240,165,0,0.06);color:var(--gold-light)}
-.m-item .chev{font-size:22px;color:rgba(255,255,255,0.4);font-weight:300;flex-shrink:0;margin-left:12px;line-height:1}
-.m-item.gold{color:var(--gold-light)}
-.m-item .icon{font-size:18px;margin-right:10px;flex-shrink:0}
-.m-item-label{flex:1;display:flex;align-items:center}
-.m-cta-box{padding:24px;border-top:1px solid rgba(240,165,0,0.15);background:linear-gradient(180deg,#080f1c 0%,#000 100%)}
-.m-cta{display:block;width:100%;background:var(--gold-light);color:#0a1628;text-align:center;padding:18px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:background .2s}
-.m-cta:hover{background:var(--gold-bright)}
-.m-phone-mobile{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;margin-bottom:10px;color:var(--gold-light);font-size:15px;font-weight:600;letter-spacing:1.5px;text-decoration:none;border:1px solid rgba(240,165,0,0.3);transition:background .2s}
-.m-phone-mobile:hover{background:rgba(240,165,0,0.06)}
-.m-section-label{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);font-weight:600;padding:20px 24px 8px;display:block;border-bottom:1px solid rgba(255,255,255,0.04)}
 
 /* ══════════ HERO ══════════ */
 .hero{position:relative;min-height:100vh;padding-top:78px;background:var(--navy-deep);overflow:hidden;display:flex;flex-direction:column}
@@ -644,21 +569,6 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 .cta-info-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);letter-spacing:.5px}
 .cta-info-item svg{width:16px;height:16px;stroke:var(--gold);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-/* ══════════ FOOTER ══════════ */
-footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,165,0,.12)}
-.footer-inner{max-width:1300px;margin:0 auto}
-.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr;gap:60px;margin-bottom:56px}
-.footer-brand .brand{font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#fff;letter-spacing:2.5px;text-transform:uppercase}
-.footer-brand .brand span{color:var(--gold-light)}
-.footer-brand .tagline{font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:6px;margin-bottom:20px}
-.footer-brand p{font-size:13.5px;color:rgba(255,255,255,.5);line-height:1.7;max-width:280px}
-.footer-col h4{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:18px;font-weight:600}
-.footer-col a{display:block;color:rgba(255,255,255,.6);font-size:13.5px;text-decoration:none;padding:6px 0;transition:color .2s}
-.footer-col a:hover{color:var(--gold-light)}
-.footer-col p{font-size:13.5px;color:rgba(255,255,255,.55);line-height:1.7;margin-bottom:6px}
-.footer-col p a{display:inline;padding:0}
-.footer-bottom{border-top:1px solid rgba(255,255,255,.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-.footer-bottom p{font-size:11.5px;color:rgba(255,255,255,.3);letter-spacing:.5px}
 
 /* ══════════ ANIMATIONS ══════════ */
 @keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
@@ -678,10 +588,6 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
 @media(max-width:1100px){
   .why-grid{gap:50px}
   .svc-grid{grid-template-columns:1fr 1fr;gap:16px}
-}
-@media(max-width:1100px){
-  .nav-links{display:none}
-  .hamburger{display:flex}
 }
 @media(max-width:900px){
   .hero{min-height:auto}
@@ -842,11 +748,6 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .section,.faq-section,.areas-section,.cta-section{padding:80px 28px}
 }
 @media(max-width:600px){
-  .nav-inner{padding:0 22px;height:68px}
-  .mobile-menu{top:68px}
-  .nav-logo .logo-text .brand{font-size:16px;letter-spacing:1.8px}
-  .nav-logo .logo-text .sub{font-size:8.5px}
-  .logo-mark{width:32px;height:32px}
   .hero-image{background-color:#050d1a;background-size:auto 80%;background-position:center top;background-repeat:no-repeat}
   .hero-content{padding:16px 22px 16px;justify-content:flex-start}
   .hero h1{font-size:38px;line-height:1.05;text-shadow:0 2px 18px rgba(0,0,0,0.85),0 1px 4px rgba(0,0,0,0.7)}
@@ -1039,242 +940,12 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .borough-strip::before,.borough-strip::after{display:none}
 }
 </style>
+<link rel="stylesheet" href="partials/site.css">
 </head>
 <body>
 
-<!-- ══════════ NAV ══════════ -->
-<nav>
-  <div class="nav-inner">
-    <a href="index.html" class="nav-logo">
-      <div class="logo-mark">
-        <svg viewBox="0 0 40 40" fill="none">
-          <path d="M6 34V14L14 8L14 34" stroke="#f0a500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M14 34V18L24 12L24 34" stroke="#f0a500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M24 34V22L34 16L34 34" stroke="#f0a500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="9" y="18" width="2" height="2" fill="#f0a500"/>
-          <rect x="9" y="24" width="2" height="2" fill="#f0a500"/>
-          <rect x="17" y="22" width="2" height="2" fill="#f0a500"/>
-          <rect x="17" y="28" width="2" height="2" fill="#f0a500"/>
-          <rect x="27" y="26" width="2" height="2" fill="#f0a500"/>
-        </svg>
-      </div>
-      <div class="logo-text">
-        <div class="brand">SANI <span>BUILDING</span> CORP</div>
-        <div class="sub">NYC Renovation &amp; Repair</div>
-      </div>
-    </a>
-
-    <!-- DESKTOP NAV -->
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <div class="nav-dropdown">
-        <a href="services.html">Services<span class="arrow"></span></a>
-        <div class="dropdown-menu">
-          <div class="has-sub">
-            <a href="bathroom-renovation.html">🛁 Bathroom Renovation</a>
-            <div class="sub-menu">
-              <span class="sub-label">Bathroom Services</span>
-              <a href="bathroom-renovation.html">Full Bathroom Renovation</a>
-              <a href="bathroom-floor-tile-installation.html">Floor Tile Installation</a>
-              <span class="sub-label">By Location</span>
-              <a href="bathroom-renovation-brooklyn.html">Brooklyn</a>
-              <a href="bathroom-renovation-manhattan.html">Manhattan</a>
-              <a href="bathroom-renovation-queens.html">Queens</a>
-            </div>
-          </div>
-          <div class="has-sub">
-            <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
-            <div class="sub-menu">
-              <span class="sub-label">Kitchen Services</span>
-              <a href="kitchen-renovation.html">Full Kitchen Renovation</a>
-              <span class="sub-label">By Location</span>
-              <a href="kitchen-renovation-brooklyn.html">Brooklyn</a>
-              <a href="kitchen-renovation-manhattan.html">Manhattan</a>
-              <a href="kitchen-renovation-queens.html">Queens</a>
-            </div>
-          </div>
-          <div class="has-sub">
-            <a href="painting.html">🎨 Painting Services</a>
-            <div class="sub-menu">
-              <span class="sub-label">Painting Services</span>
-              <a href="painting.html">All Painting Services</a>
-              <span class="sub-label">By Location</span>
-              <a href="painting-brooklyn.html">Brooklyn</a>
-              <a href="painting-manhattan.html">Manhattan</a>
-            </div>
-          </div>
-          <a href="flooring.html">🪵 Flooring Installation</a>
-          <div class="has-sub">
-            <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
-            <div class="sub-menu">
-              <span class="sub-label">Stairs</span>
-              <a href="stair-building.html">Stair Building</a>
-              <a href="stair-renovation.html">Stair Renovation</a>
-              <a href="stair-restoration.html">Stair Restoration</a>
-              <a href="stair-upgrade.html">Stair Upgrade</a>
-              <span class="sub-label">Decks &amp; Exterior</span>
-              <a href="deck-building.html">Deck Building</a>
-              <a href="deck-renovation.html">Deck Renovation</a>
-              <a href="exterior-carpentry.html">Exterior Carpentry</a>
-            </div>
-          </div>
-          <a href="water-damage.html">💧 Water Damage Restoration</a>
-          <a href="handyman.html">🔧 Handyman Services</a>
-          <div class="has-sub has-sub-bottom">
-            <a href="services.html">📍 Renovations by Area</a>
-            <div class="sub-menu">
-              <span class="sub-label">NYC Boroughs</span>
-              <a href="renovation-contractor-brooklyn.html">Brooklyn</a>
-              <a href="renovation-contractor-manhattan.html">Manhattan</a>
-              <a href="renovation-contractor-queens.html">Queens</a>
-              <a href="renovation-contractor-bronx.html">Bronx</a>
-              <a href="renovation-contractor-staten-island.html">Staten Island</a>
-              <span class="sub-label">Long Island</span>
-              <a href="renovation-contractor-long-island.html">All Long Island</a>
-              <a href="renovation-contractor-nassau-county.html">Nassau County</a>
-              <a href="renovation-contractor-suffolk-county.html">Suffolk County</a>
-            </div>
-          </div>
-          <a href="services.html">→ View All Services</a>
-        </div>
-      </div>
-      <a href="gallery.html">Gallery</a>
-      <a href="about.html">About</a>
-      <a href="contact.html">Contact</a>
-      <a href="tel:3322770990" class="nav-phone">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-        332-277-0990
-      </a>
-      <a href="estimate.html" class="nav-ai"><span class="bolt">⚡</span> AI Estimate</a>
-      <a href="contact.html" class="nav-cta">Free Estimate</a>
-    </div>
-
-    <div class="hamburger" id="hamburger" onclick="toggleMobileMenu()">
-      <span></span><span></span><span></span>
-    </div>
-  </div>
-</nav>
-
-<!-- ════════════ MOBILE MENU (drill-down) ════════════ -->
-<div class="mobile-menu" id="mobileMenu">
-  <div class="m-panels">
-
-    <!-- LEVEL 0 — Main menu -->
-    <div class="m-panel active" data-level="0" id="panel-root">
-      <a href="index.html" class="m-item"><span class="m-item-label">Home</span></a>
-      <button class="m-item" onclick="mobileOpen('services')">
-        <span class="m-item-label">Services</span>
-        <span class="chev">›</span>
-      </button>
-      <a href="gallery.html" class="m-item"><span class="m-item-label">Gallery</span></a>
-      <a href="about.html" class="m-item"><span class="m-item-label">About</span></a>
-      <a href="contact.html" class="m-item"><span class="m-item-label">Contact</span></a>
-      <a href="estimate.html" class="m-item gold"><span class="m-item-label"><span class="icon">⚡</span>AI Estimate</span></a>
-      <div class="m-cta-box">
-        <a href="tel:3322770990" class="m-phone-mobile">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-          332-277-0990
-        </a>
-        <a href="contact.html" class="m-cta">Get Free Estimate</a>
-      </div>
-    </div>
-
-    <!-- LEVEL 1 — Services -->
-    <div class="m-panel" data-level="1" id="panel-services">
-      <div class="m-panel-header">
-        <button class="m-back" onclick="mobileBack('services')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
-        <span class="m-panel-title">Services</span>
-      </div>
-      <button class="m-item" onclick="mobileOpen('bathroom')"><span class="m-item-label"><span class="icon">🛁</span>Bathroom Renovation</span><span class="chev">›</span></button>
-      <button class="m-item" onclick="mobileOpen('kitchen')"><span class="m-item-label"><span class="icon">🍳</span>Kitchen Renovation</span><span class="chev">›</span></button>
-      <button class="m-item" onclick="mobileOpen('painting')"><span class="m-item-label"><span class="icon">🎨</span>Painting Services</span><span class="chev">›</span></button>
-      <a href="flooring.html" class="m-item"><span class="m-item-label"><span class="icon">🪵</span>Flooring Installation</span></a>
-      <button class="m-item" onclick="mobileOpen('carpentry')"><span class="m-item-label"><span class="icon">🔨</span>Carpentry &amp; Millwork</span><span class="chev">›</span></button>
-      <a href="water-damage.html" class="m-item"><span class="m-item-label"><span class="icon">💧</span>Water Damage Restoration</span></a>
-      <a href="handyman.html" class="m-item"><span class="m-item-label"><span class="icon">🔧</span>Handyman Services</span></a>
-      <button class="m-item" onclick="mobileOpen('areas')"><span class="m-item-label"><span class="icon">📍</span>Renovations by Area</span><span class="chev">›</span></button>
-      <a href="services.html" class="m-item gold"><span class="m-item-label">→ View All Services</span></a>
-    </div>
-
-    <!-- LEVEL 2 — Bathroom -->
-    <div class="m-panel" data-level="2" id="panel-bathroom">
-      <div class="m-panel-header">
-        <button class="m-back" onclick="mobileBack('bathroom')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
-        <span class="m-panel-title">🛁 Bathroom</span>
-      </div>
-      <span class="m-section-label">Bathroom Services</span>
-      <a href="bathroom-renovation.html" class="m-item"><span class="m-item-label">Full Bathroom Renovation</span></a>
-      <a href="bathroom-floor-tile-installation.html" class="m-item"><span class="m-item-label">Floor Tile Installation</span></a>
-      <span class="m-section-label">By Location</span>
-      <a href="bathroom-renovation-brooklyn.html" class="m-item"><span class="m-item-label">Brooklyn</span></a>
-      <a href="bathroom-renovation-manhattan.html" class="m-item"><span class="m-item-label">Manhattan</span></a>
-      <a href="bathroom-renovation-queens.html" class="m-item"><span class="m-item-label">Queens</span></a>
-    </div>
-
-    <!-- LEVEL 2 — Kitchen -->
-    <div class="m-panel" data-level="2" id="panel-kitchen">
-      <div class="m-panel-header">
-        <button class="m-back" onclick="mobileBack('kitchen')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
-        <span class="m-panel-title">🍳 Kitchen</span>
-      </div>
-      <span class="m-section-label">Kitchen Services</span>
-      <a href="kitchen-renovation.html" class="m-item"><span class="m-item-label">Full Kitchen Renovation</span></a>
-      <span class="m-section-label">By Location</span>
-      <a href="kitchen-renovation-brooklyn.html" class="m-item"><span class="m-item-label">Brooklyn</span></a>
-      <a href="kitchen-renovation-manhattan.html" class="m-item"><span class="m-item-label">Manhattan</span></a>
-      <a href="kitchen-renovation-queens.html" class="m-item"><span class="m-item-label">Queens</span></a>
-    </div>
-
-    <!-- LEVEL 2 — Painting -->
-    <div class="m-panel" data-level="2" id="panel-painting">
-      <div class="m-panel-header">
-        <button class="m-back" onclick="mobileBack('painting')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
-        <span class="m-panel-title">🎨 Painting</span>
-      </div>
-      <span class="m-section-label">Painting Services</span>
-      <a href="painting.html" class="m-item"><span class="m-item-label">All Painting Services</span></a>
-      <span class="m-section-label">By Location</span>
-      <a href="painting-brooklyn.html" class="m-item"><span class="m-item-label">Brooklyn</span></a>
-      <a href="painting-manhattan.html" class="m-item"><span class="m-item-label">Manhattan</span></a>
-    </div>
-
-    <!-- LEVEL 2 — Carpentry -->
-    <div class="m-panel" data-level="2" id="panel-carpentry">
-      <div class="m-panel-header">
-        <button class="m-back" onclick="mobileBack('carpentry')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
-        <span class="m-panel-title">🔨 Carpentry</span>
-      </div>
-      <span class="m-section-label">Stairs</span>
-      <a href="stair-building.html" class="m-item"><span class="m-item-label">Stair Building</span></a>
-      <a href="stair-renovation.html" class="m-item"><span class="m-item-label">Stair Renovation</span></a>
-      <a href="stair-restoration.html" class="m-item"><span class="m-item-label">Stair Restoration</span></a>
-      <a href="stair-upgrade.html" class="m-item"><span class="m-item-label">Stair Upgrade</span></a>
-      <span class="m-section-label">Decks &amp; Exterior</span>
-      <a href="deck-building.html" class="m-item"><span class="m-item-label">Deck Building</span></a>
-      <a href="deck-renovation.html" class="m-item"><span class="m-item-label">Deck Renovation</span></a>
-      <a href="exterior-carpentry.html" class="m-item"><span class="m-item-label">Exterior Carpentry</span></a>
-    </div>
-
-    <!-- LEVEL 2 — Renovations by Area -->
-    <div class="m-panel" data-level="2" id="panel-areas">
-      <div class="m-panel-header">
-        <button class="m-back" onclick="mobileBack('areas')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
-        <span class="m-panel-title">📍 By Area</span>
-      </div>
-      <span class="m-section-label">NYC Boroughs</span>
-      <a href="renovation-contractor-brooklyn.html" class="m-item"><span class="m-item-label">Brooklyn</span></a>
-      <a href="renovation-contractor-manhattan.html" class="m-item"><span class="m-item-label">Manhattan</span></a>
-      <a href="renovation-contractor-queens.html" class="m-item"><span class="m-item-label">Queens</span></a>
-      <a href="renovation-contractor-bronx.html" class="m-item"><span class="m-item-label">Bronx</span></a>
-      <a href="renovation-contractor-staten-island.html" class="m-item"><span class="m-item-label">Staten Island</span></a>
-      <span class="m-section-label">Long Island</span>
-      <a href="renovation-contractor-long-island.html" class="m-item"><span class="m-item-label">All Long Island</span></a>
-      <a href="renovation-contractor-nassau-county.html" class="m-item"><span class="m-item-label">Nassau County</span></a>
-      <a href="renovation-contractor-suffolk-county.html" class="m-item"><span class="m-item-label">Suffolk County</span></a>
-    </div>
-
-  </div>
-</div>
+<!-- Menu loaded from partials/menu.html via partials/site.js -->
+<div id="site-menu"></div>
 
 <!-- ══════════ HERO ══════════ -->
 <section class="hero">
@@ -2096,119 +1767,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   </div>
 </section>
 
-<!-- ══════════ FOOTER ══════════ -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <div class="brand">SANI <span>BUILDING</span> CORP</div>
-        <div class="tagline">NYC Renovation & Repair Contractor</div>
-        <p>Professional renovation contractor serving Brooklyn, Manhattan, Queens, Bronx, Staten Island, Nassau County &amp; Suffolk County since 2015.</p>
-      </div>
-      <div class="footer-col">
-        <h4>Services</h4>
-        <a href="bathroom-renovation.html">Bathroom Renovation</a>
-        <a href="kitchen-renovation.html">Kitchen Renovation</a>
-        <a href="painting.html">Interior Painting</a>
-        <a href="carpentry.html">Carpentry</a>
-        <a href="water-damage.html">Water Damage Repair</a>
-        <a href="flooring.html">Flooring Installation</a>
-        <a href="services.html">All Services</a>
-        <a href="gallery.html">Project Gallery</a>
-      </div>
-      <div class="footer-col">
-        <h4>Service Areas</h4>
-        <a href="renovation-contractor-brooklyn.html">Brooklyn, NY</a>
-        <a href="renovation-contractor-manhattan.html">Manhattan, NY</a>
-        <a href="renovation-contractor-queens.html">Queens, NY</a>
-        <a href="renovation-contractor-bronx.html">Bronx, NY</a>
-        <a href="renovation-contractor-staten-island.html">Staten Island, NY</a>
-        <a href="renovation-contractor-long-island.html">Long Island, NY</a>
-        <a href="renovation-contractor-nassau-county.html">Nassau County</a>
-        <a href="renovation-contractor-suffolk-county.html">Suffolk County</a>
-      </div>
-      <div class="footer-col">
-        <h4>Contact</h4>
-        <p><a href="tel:3322770990">📞 332-277-0990</a></p>
-        <p><a href="mailto:contact@sanibuildingcorp.com">✉ contact@sanibuildingcorp.com</a></p>
-        <p style="margin-top:10px;color:rgba(255,255,255,.4);line-height:1.7">
-          <span style="color:rgba(255,255,255,.55)">Office (By Appointment):</span><br>
-          2954 Brighton 12th Street<br>
-          Brooklyn, NY 11235
-        </p>
-        <p style="margin-top:8px;color:rgba(255,255,255,.4);line-height:1.6">
-          <span style="color:rgba(255,255,255,.55)">Service Area:</span><br>
-          All 5 NYC Boroughs &amp; Long Island
-        </p>
-        <p style="margin-top:10px;color:rgba(255,255,255,.4);line-height:1.7">
-          <span style="color:rgba(255,255,255,.55)">Mon–Fri:</span> 8:00 AM – 6:00 PM<br>
-          <span style="color:rgba(255,255,255,.55)">Saturday:</span> 8:00 AM – 4:00 PM<br>
-          <span style="color:rgba(255,255,255,.55)">Sunday:</span> Closed
-        </p>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>© 2026 Sani Building Corp. All Rights Reserved.</p>
-      <p>Brooklyn • Manhattan • Queens • Bronx • Staten Island • Nassau County • Suffolk County</p>
-    </div>
-  </div>
-</footer>
+<!-- Footer loaded from partials/footer.html via partials/site.js -->
+<div id="site-footer"></div>
 
 <script>
-function toggleMobileMenu(){
-  var menu=document.getElementById('mobileMenu');
-  var ham=document.getElementById('hamburger');
-  menu.classList.toggle('open');
-  ham.classList.toggle('active');
-  if(!menu.classList.contains('open')){
-    resetMobilePanels();
-  }
-}
-var mobileStack=[];
-function mobileOpen(panelName){
-  var current = mobileStack.length===0 ? 'root' : mobileStack[mobileStack.length-1];
-  var currentPanel = document.getElementById('panel-'+current);
-  var nextPanel = document.getElementById('panel-'+panelName);
-  if(!nextPanel)return;
-  if(current==='root'){
-    currentPanel.classList.add('pushed');
-  } else {
-    currentPanel.classList.remove('active');
-    currentPanel.classList.add('prev');
-  }
-  nextPanel.classList.add('active');
-  mobileStack.push(panelName);
-}
-function mobileBack(panelName){
-  var currentPanel = document.getElementById('panel-'+panelName);
-  mobileStack.pop();
-  var prev = mobileStack.length===0 ? 'root' : mobileStack[mobileStack.length-1];
-  var prevPanel = document.getElementById('panel-'+prev);
-  currentPanel.classList.remove('active');
-  if(prev==='root'){
-    prevPanel.classList.remove('pushed');
-  } else {
-    prevPanel.classList.remove('prev');
-    prevPanel.classList.add('active');
-  }
-}
-function resetMobilePanels(){
-  mobileStack=[];
-  document.querySelectorAll('.m-panel').forEach(function(p){
-    p.classList.remove('active','prev','pushed');
-  });
-  var root = document.getElementById('panel-root');
-  if(root) root.classList.add('active');
-}
-document.addEventListener('click',function(e){
-  var menu=document.getElementById('mobileMenu');
-  var ham=document.getElementById('hamburger');
-  if(menu&&ham&&menu.classList.contains('open')&&!menu.contains(e.target)&&!ham.contains(e.target)){
-    menu.classList.remove('open');
-    ham.classList.remove('active');
-    resetMobilePanels();
-  }
-});
 
 /* ══════════ SERVICES MARQUEE — Mobile Touch + Swipe Scrolling ══════════ */
 (function(){
@@ -2622,5 +2184,7 @@ document.addEventListener('click',function(e){
   </div>
 </div>
 
+<!-- Loads menu/footer partials + mobile menu functions -->
+<script src="partials/site.js"></script>
 </body>
 </html>
