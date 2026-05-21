@@ -3,609 +3,171 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Renovation Services NYC | Sani Building Corp — All 5 Boroughs</title>
-<meta name="description" content="Full-service renovation contractor in NYC. Bathroom remodeling, kitchen renovation, painting, flooring, carpentry, water damage restoration & handyman across all 5 boroughs. Free estimate.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://www.sanibuildingcorp.com/services">
-<meta property="og:title" content="Renovation & Handyman Services NYC | Sani Building Corp">
-<meta property="og:description" content="Full renovation services in NYC: bathroom, kitchen, painting, flooring, carpentry, water damage & handyman. Serving all 5 boroughs. Free estimate.">
-<meta property="og:image" content="https://raw.githubusercontent.com/sanibuildingcorp/sani-website/main/images/og/services.png">
-<meta property="og:site_name" content="Sani Building Corp">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Renovation & Handyman Services NYC | Sani Building Corp">
-<meta name="twitter:description" content="Full renovation services in NYC: bathroom, kitchen, painting, flooring, carpentry, water damage & handyman. Serving all 5 boroughs. Free estimate.">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/sanibuildingcorp/sani-website/main/images/og/services.png">
-<link rel="canonical" href="https://www.sanibuildingcorp.com/services">
+<title>Renovation Services NYC | Sani Building Corp</title>
+<meta name="description" content="Full-service renovation in NYC. Bathroom, kitchen, painting, flooring, carpentry, water damage. All 5 boroughs. Free estimate.">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--gold:#c8860a;--gold-light:#f0a500;--black:#0e0e0e;--dark:#1a1a1a;--gray:#6b6b6b;--light:#f5f4f2;--white:#fff;--border:#e8e4de}
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.55);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
-.nav-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.nav-logo{display:flex;flex-direction:column;text-decoration:none}
-.nav-logo .brand{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
-.nav-logo .brand span{color:var(--gold-light)}
-.nav-logo .sub{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:1px}
-.nav-links{display:flex;align-items:center;gap:6px}
-.nav-links>a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;font-weight:400;letter-spacing:.5px;padding:8px 14px;transition:color .2s;white-space:nowrap}
-.nav-links>a:hover{color:var(--gold-light)}
-.nav-dropdown{position:relative;padding-bottom:10px}
-.nav-dropdown>a{display:flex;align-items:center;gap:6px;cursor:pointer;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
-.nav-dropdown>a:hover{color:var(--gold-light)}
-.dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:240px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
-.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)} .nav-dropdown .dropdown-menu{transition-delay:0s} .nav-dropdown:not(:hover) .dropdown-menu{transition-delay:0.15s}
-.dropdown-menu a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
-.dropdown-menu a:last-child{border-bottom:none}
-.dropdown-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
-.nav-cta{background:var(--gold)!important;color:#fff!important;padding:9px 20px!important;font-size:12px!important;font-weight:500!important;letter-spacing:1.5px!important;text-transform:uppercase!important}
-.nav-cta:hover{background:#a06c08!important}
-.nav-phone{color:var(--gold-light)!important;font-weight:500!important}
-.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
-.hamburger span{display:block;width:22px;height:2px;background:#fff;transition:all .3s}
-.mobile-menu{display:none;position:fixed;top:68px;left:0;width:100%;background:rgba(10,10,10,0.98);padding:24px 28px 32px;z-index:999;border-top:1px solid rgba(240,165,0,0.1)}
-.mobile-menu a{display:block;color:rgba(255,255,255,0.8);text-decoration:none;font-size:15px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
-.mobile-menu a.mobile-cta{border-bottom:none;margin-top:10px;background:var(--gold);color:#fff;text-align:center;padding:14px;font-weight:500;letter-spacing:1px;text-transform:uppercase;font-size:13px}
-.mobile-menu.open{display:block}
-.mobile-sub{padding-left:16px!important;font-size:13px!important;color:rgba(255,255,255,0.55)!important}
 .btn-primary{background:var(--gold);color:#000;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:15px 32px;text-decoration:none;transition:background .2s,transform .15s;display:inline-block}
 .btn-primary:hover{background:#a06c08;transform:translateY(-2px)}
-.btn-secondary{display:inline-flex;align-items:center;gap:8px;color:var(--gray);font-size:14px;font-weight:500;text-decoration:none;border:1px solid var(--border);padding:14px 24px;transition:border-color .2s,color .2s}
-.btn-secondary:hover{border-color:var(--gold);color:var(--gold)}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:500;text-decoration:none;border:1px solid rgba(255,255,255,.28);padding:14px 24px;transition:border-color .2s,color .2s}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold-light)}
+.btn-dark{display:inline-block;background:var(--dark);color:#fff;font-size:13px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:14px 28px;text-decoration:none;transition:background .2s}
+.btn-dark:hover{background:#000}
 .section-eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .section-eyebrow .line{width:28px;height:2px;background:var(--gold);flex-shrink:0}
 .section-eyebrow span{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:500}
 .section-title{font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,44px);font-weight:700;line-height:1.1;color:var(--black)}
 .section-title em{font-style:italic;color:var(--gold)}
-.page-hero{min-height:55vh;display:flex;align-items:flex-end;background:#0d1520;position:relative;overflow:hidden;padding-top:68px}
+.section-title.white{color:#fff}
+.page-hero{min-height:60vh;display:flex;align-items:flex-end;background:#0a0a12;position:relative;overflow:hidden;padding-top:68px}
 .page-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.2}
-.page-hero-grid{position:absolute;inset:0;background-image:none;background-size:44px 44px}
+.page-hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:44px 44px}
 .page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
 .page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 28px 56px;width:100%}
 .breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:20px;text-transform:uppercase}
 .breadcrumb a{color:var(--gold-light);text-decoration:none}
-.page-hero h1{font-family:'Playfair Display',serif;font-size:clamp(32px,5vw,58px);font-weight:700;color:#fff;line-height:1.05;margin-bottom:16px}
+.page-hero h1{font-family:'Playfair Display',serif;font-size:clamp(32px,5vw,60px);font-weight:700;color:#fff;line-height:1.05;margin-bottom:16px}
 .page-hero h1 em{font-style:italic;color:var(--gold-light)}
 .page-hero p{font-size:16px;color:rgba(255,255,255,.6);max-width:560px;line-height:1.7;margin-bottom:28px}
-/* SERVICES LIST */
-.services-list{max-width:1100px;margin:0 auto;padding:72px 28px}
-.service-item{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:56px 0;border-bottom:1px solid var(--border)}
-.service-item:last-child{border-bottom:none}
-.service-item:nth-child(even) .service-img{order:2}
-.service-item:nth-child(even) .service-text{order:1}
-.service-img{border-radius:16px;overflow:hidden;height:340px}
-.service-img img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
-.service-img:hover img{transform:scale(1.04)}
-.service-num{font-family:'Playfair Display',serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.service-num::before{content:'';display:inline-block;width:24px;height:2px;background:var(--gold)}
-.service-text h2{font-family:'Playfair Display',serif;font-size:clamp(24px,3vw,36px);font-weight:700;line-height:1.15;color:var(--black);margin-bottom:14px}
-.service-text h2 em{font-style:italic;color:var(--gold)}
-.service-text p{font-size:15px;color:var(--gray);line-height:1.75;margin-bottom:20px}
-.service-features{list-style:none;margin-bottom:24px}
-.service-features li{font-size:13px;color:var(--gray);padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
-.service-features li::before{content:'✓';color:var(--gold);font-weight:700;flex-shrink:0}
-/* CTA STRIP */
-.cta-strip{background:#0d1520;padding:64px 28px;text-align:center}
-.cta-strip h2{font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,36px);color:#fff;margin-bottom:12px}
-.cta-strip h2 em{font-style:italic;color:var(--gold-light)}
-.cta-strip p{color:rgba(255,255,255,.5);font-size:15px;margin-bottom:28px}
-.cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-/* FOOTER */
-footer{background:#0d1520;padding:52px 28px 28px;border-top:1px solid rgba(240,165,0,.12)}
-.footer-inner{max-width:1100px;margin:0 auto}
-.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
-.footer-brand .brand{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
-.footer-brand .brand span{color:var(--gold-light)}
-.footer-brand .tagline{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;margin-bottom:16px}
-.footer-brand p{font-size:13px;color:rgba(255,255,255,.45);line-height:1.7;max-width:260px}
-.footer-col h4{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:16px}
-.footer-col a{display:block;font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;margin-bottom:9px;transition:color .2s}
-.footer-col a:hover{color:var(--gold-light)}
-.footer-col p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.7;margin-bottom:8px}
-.footer-col p a{display:inline;margin-bottom:0}
-.footer-bottom{border-top:1px solid rgba(255,255,255,.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-.footer-bottom p{font-size:12px;color:rgba(255,255,255,.25)}
-@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.service-item{grid-template-columns:1fr;gap:24px}.service-item:nth-child(even) .service-img,.service-item:nth-child(even) .service-text{order:unset}}
-@media(max-width:600px){.nav-links{display:none}.hamburger{display:flex}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.page-hero-content{padding:40px 20px 44px}}
+.hero-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
+.hero-badge{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;padding:6px 12px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65)}
+.hero-badge.gold{border-color:var(--gold);color:var(--gold);background:rgba(200,134,10,.08)}
+@media(max-width:600px){.page-hero-content{padding:40px 20px 44px}}
 
-.has-sub{position:relative}
-.has-sub>a{display:flex!important;align-items:center;justify-content:space-between;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s;cursor:pointer}
-.has-sub>a::after{content:'›';font-size:16px;opacity:0.5;flex-shrink:0}
-.has-sub:hover>a{color:var(--gold-light);background:rgba(240,165,0,0.06)}
-.sub-menu{position:absolute;left:100%;top:0;background:#1a1a1a;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:230px;opacity:0;visibility:hidden;transform:translateX(-6px);transition:all 0.2s ease;z-index:1000}
-.has-sub:hover .sub-menu{opacity:1;visibility:visible;transform:translateX(0)}
-.sub-menu a{display:block;color:rgba(255,255,255,0.65);text-decoration:none;font-size:12px;padding:10px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
-.sub-menu a:last-child{border-bottom:none}
-.sub-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
-.sub-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);padding:8px 18px 4px;display:block;border-bottom:1px solid rgba(255,255,255,0.04);pointer-events:none}
-
-.process-section{background:var(--dark);padding:80px 28px;color:#fff}
-.process-section .section-inner{max-width:1200px;margin:0 auto}
-.process-eyebrow{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px}
-.process-eyebrow .line{width:50px;height:1px;background:var(--gold)}
-.process-eyebrow span{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:500}
-.process-title{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,42px);color:#fff;text-align:center;font-weight:700;line-height:1.2;margin-bottom:8px}
-.process-title em{font-style:italic;color:var(--gold-light)}
-.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:44px}
-.process-step{text-align:center;padding:0 8px}
-.step-num{width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--gold-light)}
-.step-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#fff;margin-bottom:8px}
-.step-desc{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65}
-
-.reviews-section{padding:80px 28px;background:var(--light)}
-.reviews-section .section-inner{max-width:1200px;margin:0 auto}
-.reviews-eyebrow{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px}
-.reviews-eyebrow .line{width:50px;height:1px;background:var(--gold)}
-.reviews-eyebrow span{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:500}
-.reviews-title{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,42px);color:var(--black);text-align:center;font-weight:700;line-height:1.2;margin-bottom:44px}
-.reviews-title em{font-style:italic;color:var(--gold)}
-.reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:44px}
-.review-card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:24px;transition:all .25s}
-.review-card:hover{border-color:rgba(200,134,10,.25);box-shadow:0 6px 24px rgba(0,0,0,.08)}
-.review-stars{color:var(--gold-light);font-size:16px;margin-bottom:14px;letter-spacing:2px}
-.review-text{color:var(--gray);font-size:13.5px;line-height:1.7;margin-bottom:18px;font-style:italic}
-.review-author{display:flex;align-items:center;gap:12px}
-.review-avatar{width:42px;height:42px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px;font-family:'Playfair Display',serif}
-.review-name{font-weight:600;color:var(--black);font-size:14px}
-.review-location{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:1px}
-
-.faq-section{padding:80px 28px}
-.faq-section .section-inner{max-width:1100px;margin:0 auto}
-.faq-eyebrow{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px}
-.faq-eyebrow .line{width:50px;height:1px;background:var(--gold)}
-.faq-eyebrow span{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:500}
-.faq-title{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,42px);color:var(--black);text-align:center;font-weight:700;line-height:1.2;margin-bottom:44px}
-.faq-title em{font-style:italic;color:var(--gold)}
-.faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
-.faq-item{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:24px;transition:all .25s}
-.faq-item:hover{border-color:rgba(200,134,10,.25);box-shadow:0 6px 24px rgba(0,0,0,.08)}
-.faq-q{font-family:"Playfair Display",serif;font-size:15px;font-weight:700;color:var(--black);margin-bottom:10px;line-height:1.35}
-.faq-a{font-size:13.5px;color:var(--gray);line-height:1.7}
-.faq-a strong{color:var(--black)}
-
-.areas-section{padding:64px 28px;background:var(--dark);color:#fff}
-.areas-section .section-inner{max-width:1200px;margin:0 auto;text-align:center}
-.areas-eyebrow{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:500;margin-bottom:14px}
-.areas-title{font-family:'Playfair Display',serif;font-size:clamp(26px,3.5vw,36px);color:#fff;font-weight:700;margin-bottom:32px}
-.areas-title em{font-style:italic;color:var(--gold-light)}
-.areas-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:32px}
-.area-card{background:rgba(255,255,255,0.04);border:1px solid rgba(240,165,0,0.15);border-radius:10px;padding:18px;transition:all .25s}
-.area-card:hover{border-color:rgba(240,165,0,0.4);background:rgba(255,255,255,0.06)}
-.area-name{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold-light);font-weight:600;margin-bottom:6px}
-.area-neighborhoods{font-size:12px;color:rgba(255,255,255,0.55);line-height:1.6}
-
-@media(max-width:900px){.process-steps{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.faq-grid{grid-template-columns:1fr}.areas-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.process-steps{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.areas-grid{grid-template-columns:1fr 1fr}}
+/* ── GLOBAL MOBILE FIXES ── */
+@media(max-width:768px){
+  .contact-grid{grid-template-columns:1fr!important;gap:32px!important}
+  .form-row-2{grid-template-columns:1fr!important}
+  .contact-sidebar{position:static!important}
+  section[style*="grid-template-columns:1fr 1fr"]{display:block!important}
+  section[style*="grid-template-columns:1fr 420px"]{display:block!important}
+  div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:1fr 420px"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:2fr 1fr"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:300px 1fr"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:1fr 300px"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:repeat(2"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:repeat(3"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:repeat(4"]{grid-template-columns:1fr 1fr!important}
+  div[style*="position:sticky"]{position:static!important}
+  .page-hero-content{padding:40px 20px 44px!important}
+  .page-hero h1{font-size:32px!important}
+  div[style*="gap:64px"]{gap:24px!important}
+  div[style*="gap:48px"]{gap:20px!important}
+  div[style*="padding:80px 28px"]{padding:48px 20px!important}
+  div[style*="padding:88px 28px"]{padding:48px 20px!important}
+  section[style*="padding:80px 28px"]{padding:48px 20px!important}
+  section[style*="padding:88px 28px"]{padding:48px 20px!important}
+  .check-grid{grid-template-columns:1fr!important}
+  .process-steps{grid-template-columns:1fr!important}
+  .sidebar-box{position:static!important}
+  div[style*="grid-template-columns:1fr 300px"]{display:flex!important;flex-direction:column!important}
+  div[style*="min-height:220px"]{min-height:200px!important}
+}
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"GeneralContractor","name":"Sani Building Corp","url":"https://www.sanibuildingcorp.com","image":"https://raw.githubusercontent.com/sanibuildingcorp/sani-website/main/images/og/services.png","telephone":"+1-332-277-0990","email":"contact@sanibuildingcorp.com","priceRange":"$$","address":{"@type":"PostalAddress","streetAddress":"2954 Brighton 12th Street","addressLocality":"Brooklyn","addressRegion":"NY","postalCode":"11235","addressCountry":"US"},"areaServed":["Manhattan","Brooklyn","Queens","Bronx","Staten Island","Long Island City","Nassau County","Long Island"],"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"62","bestRating":"5","worstRating":"1"},"hasOfferCatalog":{"@type":"OfferCatalog","name":"Renovation Services","itemListElement":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Bathroom Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Kitchen Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Painting Services"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Flooring Installation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Carpentry & Millwork"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Water Damage Restoration"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Handyman Services"}}]}}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What services does Sani Building Corp offer in NYC?","acceptedAnswer":{"@type":"Answer","text":"Sani Building Corp is a full-service renovation contractor offering bathroom renovation, kitchen renovation, painting, flooring installation, carpentry & millwork, water damage restoration, and commercial handyman services throughout New York City and Long Island."}},{"@type":"Question","name":"How much do renovation services cost in NYC?","acceptedAnswer":{"@type":"Answer","text":"NYC renovation costs vary by project: bathroom renovations from $12,000-$60,000, kitchen renovations from $25,000-$100,000, painting from $1,800-$3,500 per apartment, flooring from $6-$30 per square foot installed. We provide free detailed written estimates."}},{"@type":"Question","name":"What areas of NYC do you serve?","acceptedAnswer":{"@type":"Answer","text":"We serve all 5 NYC boroughs: Manhattan, Brooklyn, Queens, Bronx, and Staten Island - plus Long Island City, Nassau County, and Long Island. We work with both residential homeowners and commercial property managers."}},{"@type":"Question","name":"Are you fully insured for renovation work in NYC?","acceptedAnswer":{"@type":"Answer","text":"Yes. Sani Building Corp is fully insured with comprehensive liability insurance and worker's compensation. We provide certificates of insurance to building management, co-op boards, and clients on request."}},{"@type":"Question","name":"Do you handle NYC building permits?","acceptedAnswer":{"@type":"Answer","text":"Yes. We manage all required permits through the NYC Department of Buildings for plumbing, electrical, structural, and renovation work. We're experienced with NYC building codes and co-op/condo requirements."}},{"@type":"Question","name":"How quickly can you start a renovation project?","acceptedAnswer":{"@type":"Answer","text":"We offer same-day response for urgent repairs and water damage emergencies. For full renovations, we typically start within 1-2 weeks depending on project scope, material availability, and permit requirements."}},{"@type":"Question","name":"Do you offer free estimates?","acceptedAnswer":{"@type":"Answer","text":"Yes - all estimates are completely free with no obligation. We visit your property, assess the scope, take measurements, and provide a clear written estimate within 24 hours."}},{"@type":"Question","name":"Can you handle commercial renovation projects?","acceptedAnswer":{"@type":"Answer","text":"Absolutely. We handle commercial renovations for offices, retail stores, restaurants, and industrial properties throughout NYC. We work after-hours and weekends to minimize business disruption."}}]}</script>
+<link rel="stylesheet" href="partials/site.css">
 </head>
 <body>
+<!-- Menu loaded from partials/menu.html via partials/site.js -->
+<div id="site-menu"></div>
 
-<!-- NAV -->
-<nav>
-  <div class="nav-inner">
-    <a href="index.html" class="nav-logo">
-      <div class="brand">SANI <span>BUILDING</span> CORP</div>
-      <div class="sub">NYC Renovation &amp; Repair</div>
-    </a>
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <div class="nav-dropdown">
-        <a href="services.html">Services ▾</a>
-        <div class="dropdown-menu">
-          <div class="has-sub">
-            <a href="bathroom-renovation.html">🛁 Bathroom Renovation</a>
-            <div class="sub-menu">
-              <span class="sub-label">Bathroom Services</span>
-              <a href="bathroom-renovation.html">Full Bathroom Renovation</a>
-              <a href="bathroom-floor-tile-installation.html">Floor Tile Installation</a>
-              <span class="sub-label">By Location</span>
-              <a href="bathroom-renovation-brooklyn.html">Brooklyn</a>
-              <a href="bathroom-renovation-manhattan.html">Manhattan</a>
-              <a href="bathroom-renovation-queens.html">Queens</a>
-            </div>
-          </div>
-          <div class="has-sub">
-            <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
-            <div class="sub-menu">
-              <span class="sub-label">Kitchen Services</span>
-              <a href="kitchen-renovation.html">Full Kitchen Renovation</a>
-              <span class="sub-label">By Location</span>
-              <a href="kitchen-renovation-brooklyn.html">Brooklyn</a>
-              <a href="kitchen-renovation-manhattan.html">Manhattan</a>
-              <a href="kitchen-renovation-queens.html">Queens</a>
-            </div>
-          </div>
-          <div class="has-sub">
-            <a href="painting.html">🎨 Painting Services</a>
-            <div class="sub-menu">
-              <span class="sub-label">Painting Services</span>
-              <a href="painting.html">All Painting Services</a>
-              <span class="sub-label">By Location</span>
-              <a href="painting-brooklyn.html">Brooklyn</a>
-              <a href="painting-manhattan.html">Manhattan</a>
-            </div>
-          </div>
-          <a href="flooring.html">🪵 Flooring Installation</a>
-          <div class="has-sub">
-            <a href="carpentry.html">🔨 Carpentry &amp; Millwork</a>
-            <div class="sub-menu">
-              <span class="sub-label">Stairs</span>
-              <a href="stair-building.html">Stair Building</a>
-              <a href="stair-renovation.html">Stair Renovation</a>
-              <a href="stair-restoration.html">Stair Restoration</a>
-              <a href="stair-upgrade.html">Stair Upgrade</a>
-              <span class="sub-label">Decks & Exterior</span>
-              <a href="deck-building.html">Deck Building</a>
-              <a href="deck-renovation.html">Deck Renovation</a>
-              <a href="exterior-carpentry.html">Exterior Carpentry</a>
-            </div>
-          </div>
-          <a href="water-damage.html">💧 Water Damage Restoration</a>
-          <a href="handyman.html">🔧 Handyman Services</a>
-          <div class="has-sub">
-            <a href="services.html">📍 Renovations by Area</a>
-            <div class="sub-menu">
-              <span class="sub-label">NYC Boroughs</span>
-              <a href="renovation-contractor-brooklyn.html">Brooklyn</a>
-              <a href="renovation-contractor-manhattan.html">Manhattan</a>
-              <a href="renovation-contractor-queens.html">Queens</a>
-              <a href="renovation-contractor-long-island.html">Long Island</a>
-            </div>
-          </div>
-          <a href="services.html">→ View All Services</a>
-        </div>
-      </div>
-      <a href="about.html">About</a>
-      <a href="contact.html">Contact</a>
-      <a href="tel:3322770990" class="nav-phone">332-277-0990</a>
-      <a href="estimate.html" style="color:var(--gold-light);font-weight:500;">⚡ AI Estimate</a>
-      <a href="contact.html" class="nav-cta">Free Estimate</a>
-    </div>
-    <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
-  </div>
-</nav>
-
-<div class="mobile-menu" id="mobileMenu">
-  <a href="index.html" onclick="toggleMenu()">Home</a>
-  <a href="services.html" onclick="toggleMenu()">All Services</a>
-  <a href="bathroom-renovation.html" class="mobile-sub" onclick="toggleMenu()">↳ Bathroom Renovation</a>
-  <a href="bathroom-floor-tile-installation.html" class="mobile-sub" onclick="toggleMenu()">↳ Bathroom Floor Tile</a>
-  <a href="kitchen-renovation.html" class="mobile-sub" onclick="toggleMenu()">↳ Kitchen Renovation</a>
-  <a href="painting.html" class="mobile-sub" onclick="toggleMenu()">↳ Painting Services</a>
-  <a href="flooring.html" class="mobile-sub" onclick="toggleMenu()">↳ Flooring</a>
-  <a href="carpentry.html" class="mobile-sub" onclick="toggleMenu()">↳ Carpentry</a>
-  <a href="water-damage.html" class="mobile-sub" onclick="toggleMenu()">↳ Water Damage</a>
-  <a href="handyman.html" class="mobile-sub" onclick="toggleMenu()">↳ Handyman Services</a>
-  <a href="estimate.html" onclick="toggleMenu()" style="color:var(--gold-light);">⚡ AI Estimate</a>
-  <a href="about.html" onclick="toggleMenu()">About Us</a>
-  <a href="contact.html" onclick="toggleMenu()">Contact</a>
-  <a href="tel:3322770990" onclick="toggleMenu()">📞 332-277-0990</a>
-  <a href="contact.html" class="mobile-cta" onclick="toggleMenu()">Get Free Estimate</a>
-</div>
-
-<!-- HERO -->
 <section class="page-hero">
-  <div class="page-hero-bg" style="background-image:url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1600&q=80')"></div>
+  <div class="page-hero-bg" style="background-image:url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1600&q=80')"></div>
   <div class="page-hero-grid"></div>
   <div class="page-hero-accent"></div>
   <div class="page-hero-content">
-    <div class="breadcrumb"><a href="index.html">Home</a> <span>›</span> <span>Services</span></div>
-    <h1>Full-Service Renovation<br><em>Experts</em></h1>
-    <p>From bathroom remodels to full gut renovations, Sani Building Corp delivers expert results for residential and commercial clients across all 5 NYC boroughs.</p>
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div class="breadcrumb"><a href="index.html">Home</a> <span>&rsaquo;</span> <span>Services</span></div>
+    <h1>Our Renovation <em>Services</em></h1>
+    <p>From bathroom remodels to full gut renovations &mdash; we handle every trade, every project, every NYC borough.</p>
+  </div>
+</section>
+
+<section style="padding:80px 28px;background:#fff">
+  <div style="max-width:1100px;margin:0 auto">
+    <div style="display:grid;gap:2px;background:var(--border);border:2px solid var(--border)">
+
+      <a href="bathroom-renovation.html" style="display:grid;grid-template-columns:300px 1fr;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+        <div style="background:url('https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80') center/cover;min-height:220px"></div>
+        <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
+          <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 01</span>
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--black);margin-bottom:12px">Bathroom Renovation</div>
+          <p style="font-size:14px;color:var(--gray);line-height:1.65;margin-bottom:20px">Full gut remodels, custom tile, vanities, walk-in showers, and waterproofing across all NYC boroughs.</p>
+          <span style="font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">View Service &rarr;</span>
+        </div>
+      </a>
+
+      <a href="kitchen-renovation.html" style="display:grid;grid-template-columns:1fr 300px;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+        <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
+          <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 02</span>
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--black);margin-bottom:12px">Kitchen Renovation</div>
+          <p style="font-size:14px;color:var(--gray);line-height:1.65;margin-bottom:20px">Full remodels, cabinets, countertops, backsplash, appliances, and custom millwork.</p>
+          <span style="font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">View Service &rarr;</span>
+        </div>
+        <div style="background:url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80') center/cover;min-height:220px"></div>
+      </a>
+
+      <a href="painting.html" style="display:grid;grid-template-columns:300px 1fr;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+        <div style="background:url('https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=600&q=80') center/cover;min-height:220px"></div>
+        <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
+          <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 03</span>
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--black);margin-bottom:12px">Painting Services</div>
+          <p style="font-size:14px;color:var(--gray);line-height:1.65;margin-bottom:20px">Interior & exterior painting, skim coating, wall prep and premium finishes for any space.</p>
+          <span style="font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">View Service &rarr;</span>
+        </div>
+      </a>
+
+      <a href="flooring.html" style="display:grid;grid-template-columns:1fr 300px;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+        <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
+          <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 04</span>
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--black);margin-bottom:12px">Flooring Installation</div>
+          <p style="font-size:14px;color:var(--gray);line-height:1.65;margin-bottom:20px">Hardwood, tile, LVP, and carpet installation for residential and commercial spaces.</p>
+          <span style="font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">View Service &rarr;</span>
+        </div>
+        <div style="background:url('https://images.unsplash.com/photo-1600585152220-90363fe7e115?w=600&q=80') center/cover;min-height:220px"></div>
+      </a>
+
+      <a href="carpentry.html" style="display:grid;grid-template-columns:300px 1fr;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+        <div style="background:url('https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&q=80') center/cover;min-height:220px"></div>
+        <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
+          <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 05</span>
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--black);margin-bottom:12px">Carpentry &amp; Millwork</div>
+          <p style="font-size:14px;color:var(--gray);line-height:1.65;margin-bottom:20px">Custom built-ins, trim, stair repair, cabinetry, and antique furniture restoration.</p>
+          <span style="font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">View Service &rarr;</span>
+        </div>
+      </a>
+
+      <a href="water-damage.html" style="display:grid;grid-template-columns:1fr 300px;background:#fff;text-decoration:none;color:inherit;transition:background .2s">
+        <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
+          <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 06</span>
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--black);margin-bottom:12px">Water Damage Restoration</div>
+          <p style="font-size:14px;color:var(--gray);line-height:1.65;margin-bottom:20px">Fast restoration for walls, ceilings, and floors. Emergency same-day response available.</p>
+          <span style="font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">View Service &rarr;</span>
+        </div>
+        <div style="background:url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80') center/cover;min-height:220px"></div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--dark);padding:60px 28px;text-align:center">
+  <div style="max-width:700px;margin:0 auto">
+    <div style="font-family:'Playfair Display',serif;font-size:clamp(26px,4vw,40px);font-weight:700;color:#fff;margin-bottom:16px">Not Sure What You Need?<br><em style="font-style:italic;color:var(--gold-light)">We'll Help You Figure It Out.</em></div>
+    <p style="font-size:15px;color:rgba(255,255,255,.6);margin-bottom:28px">Get a free consultation — we'll assess your space and recommend the best approach.</p>
+    <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap">
       <a href="contact.html" class="btn-primary">Get Free Estimate</a>
-      <a href="tel:3322770990" style="display:inline-flex;align-items:center;gap:8px;color:rgba(255,255,255,.7);font-size:14px;text-decoration:none;border:1px solid rgba(255,255,255,.2);padding:14px 24px;">📞 332-277-0990</a>
+      <a href="tel:3322770990" class="btn-secondary">&#x1F4DE; 332-277-0990</a>
     </div>
   </div>
 </section>
 
-<!-- SERVICES LIST -->
-<div class="services-list">
-
-  <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80" alt="Bathroom renovation NYC Brooklyn - Sani Building Corp"></div>
-    <div class="service-text">
-      <div class="service-num">Service 01</div>
-      <h2>Bathroom <em>Renovation</em></h2>
-      <p>Complete bathroom transformations — from tile to fixtures. We handle every detail so you get a stunning, functional space built to last.</p>
-      <ul class="service-features">
-        <li>Full bathroom gut renovations</li>
-        <li>Custom tile &amp; shower installation</li>
-        <li>Vanity, fixture &amp; lighting upgrades</li>
-        <li>Bathtub refinishing &amp; replacement</li>
-        <li>Waterproofing &amp; plumbing coordination</li>
-      </ul>
-      <a href="bathroom-renovation.html" class="btn-primary">Learn More</a>
-    </div>
-  </div>
-
-  <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80" alt="Kitchen renovation NYC Brooklyn - Sani Building Corp"></div>
-    <div class="service-text">
-      <div class="service-num">Service 02</div>
-      <h2>Kitchen <em>Renovation</em></h2>
-      <p>Modern kitchen remodels designed around your lifestyle. From cabinet installation to high-end countertops, we deliver the kitchen you deserve.</p>
-      <ul class="service-features">
-        <li>Full kitchen gut renovations</li>
-        <li>Cabinet installation &amp; refinishing</li>
-        <li>Countertop &amp; backsplash installation</li>
-        <li>Appliance integration</li>
-        <li>Custom millwork &amp; storage</li>
-      </ul>
-      <a href="kitchen-renovation.html" class="btn-primary">Learn More</a>
-    </div>
-  </div>
-
-  <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=800&q=80" alt="Painting services NYC Brooklyn - Sani Building Corp"></div>
-    <div class="service-text">
-      <div class="service-num">Service 03</div>
-      <h2>Painting <em>Services</em></h2>
-      <p>Premium interior and exterior painting with meticulous prep work and flawless finishes. We treat your property like our own.</p>
-      <ul class="service-features">
-        <li>Interior &amp; exterior painting</li>
-        <li>Skim coating &amp; wall preparation</li>
-        <li>Ceiling &amp; trim painting</li>
-        <li>Door &amp; fence painting</li>
-        <li>Commercial &amp; residential</li>
-      </ul>
-      <a href="painting.html" class="btn-primary">Learn More</a>
-    </div>
-  </div>
-
-  <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80" alt="Flooring installation NYC Brooklyn - Sani Building Corp"></div>
-    <div class="service-text">
-      <div class="service-num">Service 04</div>
-      <h2>Flooring <em>Installation</em></h2>
-      <p>Beautiful, durable flooring for any space. We work with all materials to match your style and budget.</p>
-      <ul class="service-features">
-        <li>Hardwood &amp; engineered wood</li>
-        <li>Tile &amp; stone installation</li>
-        <li>Luxury vinyl plank (LVP)</li>
-        <li>Carpet installation</li>
-        <li>Subfloor repair &amp; leveling</li>
-      </ul>
-      <a href="flooring.html" class="btn-primary">Learn More</a>
-    </div>
-  </div>
-
-  <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=80" alt="Carpentry millwork NYC Brooklyn - Sani Building Corp"></div>
-    <div class="service-text">
-      <div class="service-num">Service 05</div>
-      <h2>Carpentry &amp; <em>Millwork</em></h2>
-      <p>Expert carpentry for custom built-ins, trim, staircases, and antique restoration. Precision craftsmanship in every detail.</p>
-      <ul class="service-features">
-        <li>Custom cabinet &amp; built-in installation</li>
-        <li>Trim &amp; molding work</li>
-        <li>Stair repair &amp; installation</li>
-        <li>Antique &amp; furniture restoration</li>
-        <li>Door installation &amp; repair</li>
-      </ul>
-      <a href="carpentry.html" class="btn-primary">Learn More</a>
-    </div>
-  </div>
-
-  <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80" alt="Water damage restoration NYC Brooklyn - Sani Building Corp"></div>
-    <div class="service-text">
-      <div class="service-num">Service 06</div>
-      <h2>Water Damage <em>Restoration</em></h2>
-      <p>Fast, effective restoration for any water-damaged space. We respond quickly to minimize damage and restore your property.</p>
-      <ul class="service-features">
-        <li>Wall &amp; ceiling restoration</li>
-        <li>Floor damage repair</li>
-        <li>Drywall replacement</li>
-        <li>Mold remediation coordination</li>
-        <li>Emergency same-day response</li>
-      </ul>
-      <a href="water-damage.html" class="btn-primary">Learn More</a>
-    </div>
-  </div>
-
-  <div class="service-item">
-    <div class="service-img"><img src="https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=800&q=80" alt="Handyman services NYC Brooklyn - Sani Building Corp"></div>
-    <div class="service-text">
-      <div class="service-num">Service 07</div>
-      <h2>Handyman <em>Services</em></h2>
-      <p>Same-day handyman services for homes, offices, and commercial properties. Reliable, insured, and always on time.</p>
-      <ul class="service-features">
-        <li>General repairs &amp; maintenance</li>
-        <li>Painting touch-ups</li>
-        <li>Furniture assembly &amp; mounting</li>
-        <li>Plumbing &amp; electrical minor fixes</li>
-        <li>Commercial &amp; industrial properties</li>
-      </ul>
-      <a href="handyman.html" class="btn-primary">Learn More</a>
-    </div>
-  </div>
-
-</div>
-
-<!-- OUR PROCESS -->
-<section class="process-section">
-  <div class="section-inner">
-    <div class="process-eyebrow"><div class="line"></div><span>Our Process</span><div class="line"></div></div>
-    <h2 class="process-title">How We Work With You<br><em>From Quote to Completion</em></h2>
-    <div class="process-steps">
-      <div class="process-step"><div class="step-num">01</div><div class="step-title">Free Consultation</div><p class="step-desc">We visit your property, listen to your vision, take measurements, and discuss materials, timeline, and budget.</p></div>
-      <div class="process-step"><div class="step-num">02</div><div class="step-title">Detailed Estimate</div><p class="step-desc">Receive a clear written estimate within 24 hours with itemized costs - no hidden fees or surprises.</p></div>
-      <div class="process-step"><div class="step-num">03</div><div class="step-title">Project Planning</div><p class="step-desc">Once approved, we schedule your project, order materials, handle permits, and prepare your space.</p></div>
-      <div class="process-step"><div class="step-num">04</div><div class="step-title">Quality Execution</div><p class="step-desc">Our skilled team executes your project with daily updates, clean workspaces, and on-time delivery.</p></div>
-    </div>
-    <div class="process-steps" style="margin-top:32px">
-      <div class="process-step"><div class="step-num">05</div><div class="step-title">Daily Communication</div><p class="step-desc">Your project manager keeps you informed with photos, progress updates, and answers to any questions.</p></div>
-      <div class="process-step"><div class="step-num">06</div><div class="step-title">Quality Inspection</div><p class="step-desc">We perform multi-stage quality checks throughout the project to ensure excellence at every step.</p></div>
-      <div class="process-step"><div class="step-num">07</div><div class="step-title">Final Walkthrough</div><p class="step-desc">We walk through every detail together, address any concerns, and ensure complete satisfaction.</p></div>
-      <div class="process-step"><div class="step-num">08</div><div class="step-title">Warranty & Support</div><p class="step-desc">Receive full warranty documentation. We stand behind our work and respond quickly to any issues.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- REVIEWS -->
-<section class="reviews-section">
-  <div class="section-inner">
-    <div class="reviews-eyebrow"><div class="line"></div><span>Customer Reviews</span><div class="line"></div></div>
-    <h2 class="reviews-title">What NYC Clients Say About<br><em>Our Renovation Services</em></h2>
-    <div class="reviews-grid">
-      <div class="review-card">
-        <div class="review-stars">★★★★★</div>
-        <p class="review-text">"Sani Building Corp renovated our entire Park Slope brownstone - bathroom, kitchen, painting, and flooring all coordinated by one team. Project ran on schedule and the quality is outstanding. Highly recommend for any major NYC renovation."</p>
-        <div class="review-author"><div class="review-avatar">J</div><div><div class="review-name">Jennifer Walsh</div><div class="review-location">Park Slope, Brooklyn</div></div></div>
-      </div>
-      <div class="review-card">
-        <div class="review-stars">★★★★★</div>
-        <p class="review-text">"Used Sani for multiple projects in our Manhattan co-op - bathroom remodel, kitchen update, and painting. They handle all building approvals and insurance certificates. Best contractor we've worked with in NYC."</p>
-        <div class="review-author"><div class="review-avatar">D</div><div><div class="review-name">David Chen</div><div class="review-location">Upper East Side, Manhattan</div></div></div>
-      </div>
-      <div class="review-card">
-        <div class="review-stars">★★★★★</div>
-        <p class="review-text">"Full house renovation in Queens - new bathrooms, kitchen, flooring throughout, and exterior carpentry. Sani managed everything seamlessly. The project came in on budget and the result exceeded our expectations."</p>
-        <div class="review-author"><div class="review-avatar">M</div><div><div class="review-name">Maria Rodriguez</div><div class="review-location">Astoria, Queens</div></div></div>
-      </div>
-      <div class="review-card">
-        <div class="review-stars">★★★★★</div>
-        <p class="review-text">"Emergency water damage in our Staten Island home. Sani arrived same-day, worked with our insurance, and completely restored the affected areas. You can't tell where the damage was. Professional and fast."</p>
-        <div class="review-author"><div class="review-avatar">R</div><div><div class="review-name">Robert Murphy</div><div class="review-location">Tottenville, Staten Island</div></div></div>
-      </div>
-      <div class="review-card">
-        <div class="review-stars">★★★★★</div>
-        <p class="review-text">"Property manager here - I use Sani Building Corp for handyman work and renovations across multiple Bronx buildings. Reliable, insured, and excellent communication. They're my go-to NYC contractor."</p>
-        <div class="review-author"><div class="review-avatar">S</div><div><div class="review-name">Sarah Goldman</div><div class="review-location">Riverdale, Bronx</div></div></div>
-      </div>
-      <div class="review-card">
-        <div class="review-stars">★★★★★</div>
-        <p class="review-text">"Custom kitchen and bathroom renovations in our Long Island home. The carpentry work is gorgeous - custom built-ins matching the original 1920s woodwork perfectly. Worth every penny."</p>
-        <div class="review-author"><div class="review-avatar">E</div><div><div class="review-name">Elizabeth Hartman</div><div class="review-location">Garden City, Long Island</div></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ -->
-<section class="faq-section">
-  <div class="section-inner">
-    <div class="faq-eyebrow"><div class="line"></div><span>Common Questions</span><div class="line"></div></div>
-    <h2 class="faq-title">Renovation Services <em>FAQs</em></h2>
-    <div class="faq-grid">
-      <div class="faq-item"><div class="faq-q">What services does Sani Building Corp offer in NYC?</div><div class="faq-a">We're a <strong>full-service renovation contractor</strong> offering bathroom renovation, kitchen renovation, painting, flooring, carpentry & millwork, water damage restoration, and commercial handyman services throughout New York City and Long Island.</div></div>
-      <div class="faq-item"><div class="faq-q">How much do renovation services cost in NYC?</div><div class="faq-a">NYC renovation costs vary: bathroom <strong>$12,000-$60,000</strong>, kitchen <strong>$25,000-$100,000</strong>, painting <strong>$1,800-$3,500</strong> per apartment, flooring <strong>$6-$30/sqft</strong> installed. We provide free detailed written estimates.</div></div>
-      <div class="faq-item"><div class="faq-q">What areas of NYC do you serve?</div><div class="faq-a">We serve <strong>all 5 NYC boroughs</strong>: Manhattan, Brooklyn, Queens, Bronx, and Staten Island - plus Long Island City, Nassau County, and Long Island. Residential and commercial.</div></div>
-      <div class="faq-item"><div class="faq-q">Are you fully insured for renovation work in NYC?</div><div class="faq-a">Yes. We're <strong>fully insured</strong> with comprehensive liability insurance and worker's compensation. We provide certificates of insurance to building management and co-op boards on request.</div></div>
-      <div class="faq-item"><div class="faq-q">Do you handle NYC building permits?</div><div class="faq-a">Yes. We manage all required <strong>NYC Department of Buildings permits</strong> for plumbing, electrical, structural, and renovation work. Experienced with co-op/condo requirements.</div></div>
-      <div class="faq-item"><div class="faq-q">How quickly can you start a renovation project?</div><div class="faq-a">We offer <strong>same-day response</strong> for urgent repairs and water damage emergencies. Full renovations typically start within 1-2 weeks depending on scope and permits.</div></div>
-      <div class="faq-item"><div class="faq-q">Do you offer free estimates?</div><div class="faq-a">Yes - <strong>all estimates are completely free</strong> with no obligation. We visit your property, assess the scope, and provide a clear written estimate within 24 hours.</div></div>
-      <div class="faq-item"><div class="faq-q">Can you handle commercial renovation projects?</div><div class="faq-a">Absolutely. We handle <strong>commercial renovations</strong> for offices, retail stores, restaurants, and industrial properties throughout NYC. We work after-hours and weekends to minimize business disruption.</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- SERVICE AREAS -->
-<section class="areas-section">
-  <div class="section-inner">
-    <div class="areas-eyebrow">✦ Areas We Serve</div>
-    <h2 class="areas-title">Renovation Services Across<br><em>New York City & Long Island</em></h2>
-    <div class="areas-grid">
-      <div class="area-card">
-        <div class="area-name">Manhattan</div>
-        <div class="area-neighborhoods">Upper East Side · Upper West Side · Tribeca · SoHo · Chelsea · Greenwich Village · Midtown · Harlem · Financial District</div>
-      </div>
-      <div class="area-card">
-        <div class="area-name">Brooklyn</div>
-        <div class="area-neighborhoods">Park Slope · Williamsburg · Brooklyn Heights · DUMBO · Bushwick · Crown Heights · Bay Ridge · Cobble Hill · Carroll Gardens</div>
-      </div>
-      <div class="area-card">
-        <div class="area-name">Queens</div>
-        <div class="area-neighborhoods">Astoria · Long Island City · Jackson Heights · Forest Hills · Sunnyside · Bayside · Flushing · Ridgewood</div>
-      </div>
-      <div class="area-card">
-        <div class="area-name">Bronx</div>
-        <div class="area-neighborhoods">Riverdale · Pelham Bay · Throgs Neck · Fordham · Concourse · Hunts Point · Morris Park</div>
-      </div>
-      <div class="area-card">
-        <div class="area-name">Staten Island</div>
-        <div class="area-neighborhoods">Tottenville · St. George · Great Kills · New Dorp · Eltingville · Tottenville · Annadale</div>
-      </div>
-      <div class="area-card">
-        <div class="area-name">Long Island City</div>
-        <div class="area-neighborhoods">LIC waterfront · Court Square · Hunters Point · Queensbridge · Dutch Kills</div>
-      </div>
-      <div class="area-card">
-        <div class="area-name">Nassau County</div>
-        <div class="area-neighborhoods">Garden City · Great Neck · Manhasset · Roslyn · Hempstead · Mineola · New Hyde Park</div>
-      </div>
-      <div class="area-card">
-        <div class="area-name">Long Island</div>
-        <div class="area-neighborhoods">Suffolk County · Huntington · Smithtown · Babylon · Hicksville · Levittown</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section class="cta-strip">
-  <h2>Not Sure What You Need?<br><em>We'll Help You Figure It Out.</em></h2>
-  <p>Get a free estimate — we assess your space and recommend the best approach.</p>
-  <div class="cta-btns">
-    <a href="contact.html" class="btn-primary">Get Free Estimate</a>
-    <a href="tel:3322770990" style="display:inline-flex;align-items:center;gap:8px;color:rgba(255,255,255,.7);font-size:14px;text-decoration:none;border:1px solid rgba(255,255,255,.2);padding:14px 24px;">📞 Call 332-277-0990</a>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <div class="brand">SANI <span>BUILDING</span> CORP</div>
-        <div class="tagline">NYC Renovation &amp; Repair Contractor</div>
-        <p>Professional renovation contractor serving Manhattan, Brooklyn, Queens, Bronx, Staten Island &amp; Long Island since 2015.</p>
-      </div>
-      <div class="footer-col">
-        <h4>Services</h4>
-        <a href="bathroom-renovation.html">Bathroom Renovation</a>
-        <a href="kitchen-renovation.html">Kitchen Renovation</a>
-        <a href="painting.html">Painting Services</a>
-        <a href="flooring.html">Flooring Installation</a>
-        <a href="carpentry.html">Carpentry</a>
-        <a href="water-damage.html">Water Damage</a>
-        <a href="handyman.html">Handyman Services</a>
-        <a href="bathroom-floor-tile-installation.html">Bathroom Floor Tile</a>
-        <a href="estimate.html">⚡ AI Estimate</a>
-        <a href="services.html">All Services</a>
-      </div>
-      <div class="footer-col">
-        <h4>Company</h4>
-        <a href="index.html">Home</a>
-        <a href="about.html">About Us</a>
-        <a href="services.html">Services</a>
-        <a href="contact.html">Contact</a>
-      </div>
-      <div class="footer-col">
-        <h4>Contact</h4>
-        <p><a href="tel:3322770990">📞 332-277-0990</a></p>
-        <p><a href="mailto:contact@sanibuildingcorp.com">✉ contact@sanibuildingcorp.com</a></p>
-        <p>📍 2954 Brighton 12th St<br>Brooklyn, NY 11235</p>
-        <p>🕐 Mon–Sat: 8:00 AM – 9:00 PM</p>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>© 2026 Sani Building Corp. All Rights Reserved. | NYC Renovation Contractor | Brooklyn, NY 11235</p>
-      <p>Brooklyn · Manhattan · Queens · Bronx · Staten Island · Long Island</p>
-    </div>
-  </div>
-</footer>
-
-<script>
-function toggleMenu(){document.getElementById('mobileMenu').classList.toggle('open')}
-document.addEventListener('click',function(e){
-  const m=document.getElementById('mobileMenu'),h=document.querySelector('.hamburger');
-  if(m&&h&&!m.contains(e.target)&&!h.contains(e.target))m.classList.remove('open');
-});
-</script>
+<!-- Footer loaded from partials/footer.html via partials/site.js -->
+<div id="site-footer"></div>
+<!-- Loads menu/footer partials + mobile menu functions -->
+<script src="partials/site.js"></script>
 </body>
 </html>
