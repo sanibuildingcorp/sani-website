@@ -19,71 +19,28 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "name": "Handyman Services NYC",
-  "provider": {
-    "@type": "GeneralContractor",
-    "name": "Sani Building Corp",
-    "telephone": "332-277-0990",
-    "email": "contact@sanibuildingcorp.com",
-    "address": {"@type":"PostalAddress","streetAddress":"2954 Brighton 12th Street","addressLocality":"Brooklyn","addressRegion":"NY","postalCode":"11235"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"62","bestRating":"5"}}
-  },
-  "areaServed": ["Brooklyn","Manhattan","Queens","Bronx","Staten Island"],
-  "description": "Same-day handyman services in NYC including repairs, installations, painting touch-ups, and maintenance.",
-  "offers": {"@type":"Offer","priceCurrency":"USD","price":"150"}
-}
+{"@context":"https://schema.org","@type":"Service","name":"Handyman Services NYC","provider":{"@type":"GeneralContractor","name":"Sani Building Corp","telephone":"332-277-0990","email":"contact@sanibuildingcorp.com","address":{"@type":"PostalAddress","streetAddress":"2954 Brighton 12th Street","addressLocality":"Brooklyn","addressRegion":"NY","postalCode":"11235"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"62","bestRating":"5"}},"areaServed":["Brooklyn","Manhattan","Queens","Bronx","Staten Island"],"description":"Same-day handyman services in NYC including repairs, installations, painting touch-ups, and maintenance.","offers":{"@type":"Offer","priceCurrency":"USD","price":"150"}}
 </script>
 
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How quickly can you send a handyman in Brooklyn?","acceptedAnswer":{"@type":"Answer","text":"We typically schedule handyman visits within 24-48 hours throughout Brooklyn. For commercial emergencies, we provide same-day response when possible during business hours."}},{"@type":"Question","name":"How much does a handyman cost in NYC?","acceptedAnswer":{"@type":"Answer","text":"Our handyman services start at $150/hour with a 2-hour minimum for commercial work. For larger projects, we provide flat-rate written estimates. Daily rates start at $750 for full-day commercial packages."}},{"@type":"Question","name":"Are your handymen fully insured?","acceptedAnswer":{"@type":"Answer","text":"Yes - all our handymen are fully insured with comprehensive liability coverage and worker compensation. We provide certificates of insurance to property managers, landlords, and commercial clients."}},{"@type":"Question","name":"What types of repairs do you handle?","acceptedAnswer":{"@type":"Answer","text":"We handle commercial and industrial handyman work including drywall repair, painting touch-ups, fixture installation, door and window repair, minor electrical, plumbing, carpentry, and general maintenance."}},{"@type":"Question","name":"Do you offer handyman services for property managers?","acceptedAnswer":{"@type":"Answer","text":"Yes - we work with NYC property managers, landlords, and building owners providing ongoing handyman services. We offer flexible scheduling, volume pricing, and detailed reporting for management companies."}},{"@type":"Question","name":"What if I am not satisfied with the work?","acceptedAnswer":{"@type":"Answer","text":"Our work is fully guaranteed. If you notice any issues, we return to fix them at no charge. Customer satisfaction is our top priority and we stand behind every job."}},{"@type":"Question","name":"Do you bring your own tools and materials?","acceptedAnswer":{"@type":"Answer","text":"Yes - our handymen come fully equipped with professional tools and standard materials. For specialized materials or fixtures, we coordinate purchases or use materials you provide."}},{"@type":"Question","name":"Can you handle both small repairs and bigger projects?","acceptedAnswer":{"@type":"Answer","text":"Yes - from single repairs to multi-day projects, we handle the full range. For larger renovations, we transition to our general contractor team while maintaining the same accountability."}}]}</script>
+
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+/* PAGE-SPECIFIC STYLES (kept) */
 :root{
-  --gold:#b8720a;--gold-light:#e09500;--gold-pale:#fef3e2;
-  --dark:#0f1218;--dark2:#1a1f2e;--dark3:#222836;
   --rust:#c94f1a;--rust-light:#e8622a;
-  --black:#1c1c1c;--gray:#6b6b6b;--gray-light:#9a9a9a;
-  --cream:#faf8f5;--white:#ffffff;--border:#e8e2d9;
+  --dark2:#1a1f2e;--dark3:#222836;
+  --gold-pale:#fef3e2;
+  --gray-light:#9a9a9a;
+  --cream:#faf8f5;
   --shadow-sm:0 2px 12px rgba(0,0,0,0.07);
   --shadow-md:0 8px 32px rgba(0,0,0,0.12);
   --shadow-gold:0 8px 32px rgba(184,114,10,0.25);
   --shadow-3d:0 24px 64px rgba(0,0,0,0.16);
   --radius:16px;
 }
-html{scroll-behavior:smooth}
-body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
 /* ══ NOISE TEXTURE ══ */
 body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.5}
-
-/* ══ NAV ══ */
-nav{position:fixed;top:0;left:0;width:100%;z-index:100;background:rgba(10,10,10,0.55);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
-.nav-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.nav-logo{text-decoration:none;display:flex;flex-direction:column}
-.nav-logo .brand{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
-.nav-logo .brand span{color:var(--gold-light)}
-.nav-logo .sub{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:1px}
-.nav-links{display:flex;align-items:center;gap:6px}
-.nav-links>a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;font-weight:400;letter-spacing:.5px;padding:8px 14px;transition:color .2s;white-space:nowrap}
-.nav-links>a:hover{color:var(--gold-light)}
-.nav-dropdown{position:relative;padding-bottom:10px}
-.nav-dropdown>a{display:flex;align-items:center;gap:6px;cursor:pointer;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
-.nav-dropdown>a:hover{color:var(--gold-light)}
-.dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:240px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
-.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)} .nav-dropdown .dropdown-menu{transition-delay:0s} .nav-dropdown:not(:hover) .dropdown-menu{transition-delay:0.15s}
-.dropdown-menu a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
-.dropdown-menu a:last-child{border-bottom:none}
-.dropdown-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
-.nav-cta{background:var(--gold)!important;color:#fff!important;padding:9px 20px!important;font-size:12px!important;font-weight:600!important;letter-spacing:1.5px!important;text-transform:uppercase;box-shadow:var(--shadow-gold);transition:all .2s!important}
-.nav-cta:hover{background:#96590a!important;transform:translateY(-1px)}
-.nav-phone{color:var(--gold-light)!important;font-weight:500!important}
-.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
-.hamburger span{display:block;width:22px;height:2px;background:#fff;transition:all .3s}
-.mobile-menu{display:none;position:fixed;top:68px;left:0;width:100%;background:rgba(10,10,10,0.98);padding:24px 28px 32px;z-index:999;border-top:1px solid rgba(240,165,0,0.1)}
-.mobile-menu a{display:block;color:rgba(255,255,255,0.8);text-decoration:none;font-size:15px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
-.mobile-menu a.mobile-cta{border-bottom:none;margin-top:10px;background:var(--gold);color:#fff;text-align:center;padding:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;font-size:13px}
-.mobile-menu.open{display:block}
-.mobile-sub{padding-left:16px!important;font-size:13px!important;color:rgba(255,255,255,0.55)!important}
 
 /* ══ HERO ══ */
 .hero{min-height:100vh;padding-top:68px;position:relative;overflow:hidden;display:flex;align-items:center;background:var(--dark)}
@@ -290,20 +247,6 @@ nav{position:fixed;top:0;left:0;width:100%;z-index:100;background:rgba(10,10,10,
 .ccc-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px}
 .ccc-val{font-size:13px;font-weight:500;color:rgba(255,255,255,.7)}
 
-/* ══ FOOTER ══ */
-footer{background:var(--dark);padding:44px 28px 24px;border-top:4px solid var(--gold)}
-.footer-inner{max-width:1100px;margin:0 auto}
-.footer-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:32px;margin-bottom:28px}
-.footer-brand .brand{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:white;letter-spacing:2px;text-transform:uppercase}
-.footer-brand .brand span{color:var(--gold-light)}
-.footer-brand .tagline{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:3px}
-.footer-brand p{font-size:13px;color:rgba(255,255,255,.35);margin-top:12px;max-width:260px;line-height:1.6}
-.footer-col h4{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:14px}
-.footer-col a{display:block;font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;margin-bottom:8px;transition:color .2s}
-.footer-col a:hover{color:var(--gold-light)}
-.footer-bottom{border-top:1px solid rgba(255,255,255,.06);padding-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-.footer-bottom p{font-size:11px;color:rgba(255,255,255,.2)}
-
 /* ══ RESPONSIVE ══ */
 @media(max-width:900px){
   .hero-content,.why-grid{grid-template-columns:1fr;gap:40px}
@@ -314,8 +257,6 @@ footer{background:var(--dark);padding:44px 28px 24px;border-top:4px solid var(--
   .faq-grid{grid-template-columns:1fr}
 }
 @media(max-width:600px){
-  .nav-links{display:none}
-  .hamburger{display:flex}
   .section{padding:56px 20px}
   .svc-grid,.pricing-grid,.reviews-grid{grid-template-columns:1fr}
   .pricing-card.featured{transform:none}
@@ -324,7 +265,6 @@ footer{background:var(--dark);padding:44px 28px 24px;border-top:4px solid var(--
   .btn-primary,.btn-ghost{width:100%;text-align:center;justify-content:center}
   .cta-body{padding:28px 20px}
   .why-features{grid-template-columns:1fr}
-  .footer-top{flex-direction:column}
 }
 
 /* ══ ANIMATIONS ══ */
@@ -332,89 +272,12 @@ footer{background:var(--dark);padding:44px 28px 24px;border-top:4px solid var(--
 .fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
 .fade-up.visible{opacity:1;transform:translateY(0)}
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How quickly can you send a handyman in Brooklyn?","acceptedAnswer":{"@type":"Answer","text":"We typically schedule handyman visits within 24-48 hours throughout Brooklyn. For commercial emergencies, we provide same-day response when possible during business hours."}},{"@type":"Question","name":"How much does a handyman cost in NYC?","acceptedAnswer":{"@type":"Answer","text":"Our handyman services start at $150/hour with a 2-hour minimum for commercial work. For larger projects, we provide flat-rate written estimates. Daily rates start at $750 for full-day commercial packages."}},{"@type":"Question","name":"Are your handymen fully insured?","acceptedAnswer":{"@type":"Answer","text":"Yes - all our handymen are fully insured with comprehensive liability coverage and worker compensation. We provide certificates of insurance to property managers, landlords, and commercial clients."}},{"@type":"Question","name":"What types of repairs do you handle?","acceptedAnswer":{"@type":"Answer","text":"We handle commercial and industrial handyman work including drywall repair, painting touch-ups, fixture installation, door and window repair, minor electrical, plumbing, carpentry, and general maintenance."}},{"@type":"Question","name":"Do you offer handyman services for property managers?","acceptedAnswer":{"@type":"Answer","text":"Yes - we work with NYC property managers, landlords, and building owners providing ongoing handyman services. We offer flexible scheduling, volume pricing, and detailed reporting for management companies."}},{"@type":"Question","name":"What if I am not satisfied with the work?","acceptedAnswer":{"@type":"Answer","text":"Our work is fully guaranteed. If you notice any issues, we return to fix them at no charge. Customer satisfaction is our top priority and we stand behind every job."}},{"@type":"Question","name":"Do you bring your own tools and materials?","acceptedAnswer":{"@type":"Answer","text":"Yes - our handymen come fully equipped with professional tools and standard materials. For specialized materials or fixtures, we coordinate purchases or use materials you provide."}},{"@type":"Question","name":"Can you handle both small repairs and bigger projects?","acceptedAnswer":{"@type":"Answer","text":"Yes - from single repairs to multi-day projects, we handle the full range. For larger renovations, we transition to our general contractor team while maintaining the same accountability."}}]}</script>
+<link rel="stylesheet" href="partials/site.css">
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <div class="nav-inner">
-    <a href="index.html" class="nav-logo">
-      <div class="brand">SANI <span>BUILDING</span> CORP</div>
-      <div class="sub">NYC Renovation & Repair</div>
-    </a>
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <div class="nav-dropdown">
-        <a href="services.html">Services ▾</a>
-        <div class="dropdown-menu">
-          <a href="bathroom-renovation.html">🛁 Bathroom Renovation</a>
-          <a href="bathroom-floor-tile-installation.html">🔲 Bathroom Floor Tile</a>
-          <div class="has-sub">
-            <a href="kitchen-renovation.html">🍳 Kitchen Renovation</a>
-            <div class="sub-menu">
-              <span class="sub-label">Kitchen Services</span>
-              <a href="kitchen-renovation.html">Full Kitchen Renovation</a>
-              <span class="sub-label">By Location</span>
-              <a href="kitchen-renovation-brooklyn.html">Brooklyn</a>
-              <a href="kitchen-renovation-manhattan.html">Manhattan</a>
-              <a href="kitchen-renovation-queens.html">Queens</a>
-            </div>
-          </div>
-          <div class="has-sub">
-            <a href="painting.html">🎨 Painting Services</a>
-            <div class="sub-menu">
-              <span class="sub-label">Painting Services</span>
-              <a href="painting.html">All Painting Services</a>
-              <span class="sub-label">By Location</span>
-              <a href="painting-brooklyn.html">Brooklyn</a>
-              <a href="painting-manhattan.html">Manhattan</a>
-            </div>
-          </div>
-          <a href="flooring.html">🪵 Flooring Installation</a>
-          <a href="carpentry.html">🔨 Carpentry & Millwork</a>
-          <a href="water-damage.html">💧 Water Damage Restoration</a>
-          <a href="handyman.html">🔧 Handyman Services</a>
-          <div class="has-sub">
-            <a href="services.html">📍 Renovations by Area</a>
-            <div class="sub-menu">
-              <span class="sub-label">NYC Boroughs</span>
-              <a href="renovation-contractor-brooklyn.html">Brooklyn</a>
-              <a href="renovation-contractor-manhattan.html">Manhattan</a>
-              <a href="renovation-contractor-queens.html">Queens</a>
-              <a href="renovation-contractor-long-island.html">Long Island</a>
-            </div>
-          </div>
-          <a href="services.html">→ View All Services</a>
-        </div>
-      </div>
-      <a href="about.html">About</a>
-      <a href="contact.html">Contact</a>
-      <a href="tel:3322770990" class="nav-phone">332-277-0990</a>
-      <a href="estimate.html" class="nav-links" style="color:rgba(255,255,255,0.7);padding:8px 14px">⚡ AI Estimate</a>
-      <a href="contact.html" class="nav-cta">Free Estimate</a>
-    </div>
-    <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
-  </div>
-</nav>
-
-<div class="mobile-menu" id="mobileMenu">
-  <a href="index.html" onclick="toggleMenu()">Home</a>
-  <a href="services.html" onclick="toggleMenu()">All Services</a>
-  <a href="bathroom-renovation.html" class="mobile-sub" onclick="toggleMenu()">↳ Bathroom Renovation</a>
-  <a href="bathroom-floor-tile-installation.html" class="mobile-sub" onclick="toggleMenu()">↳ Bathroom Floor Tile</a>
-  <a href="kitchen-renovation.html" class="mobile-sub" onclick="toggleMenu()">↳ Kitchen Renovation</a>
-  <a href="painting.html" class="mobile-sub" onclick="toggleMenu()">↳ Painting Services</a>
-  <a href="flooring.html" class="mobile-sub" onclick="toggleMenu()">↳ Flooring</a>
-  <a href="carpentry.html" class="mobile-sub" onclick="toggleMenu()">↳ Carpentry</a>
-  <a href="water-damage.html" class="mobile-sub" onclick="toggleMenu()">↳ Water Damage</a>
-  <a href="handyman.html" class="mobile-sub" onclick="toggleMenu()">↳ Handyman Services</a>
-  <a href="estimate.html" onclick="toggleMenu()">⚡ AI Estimate</a>
-  <a href="about.html" onclick="toggleMenu()">About Us</a>
-  <a href="contact.html" onclick="toggleMenu()">Contact</a>
-  <a href="tel:3322770990" onclick="toggleMenu()">📞 332-277-0990</a>
-  <a href="contact.html" class="mobile-cta" onclick="toggleMenu()">Get Free Estimate</a>
-</div>
+<!-- Menu loaded from partials/menu.html via partials/site.js -->
+<div id="site-menu"></div>
 
 <!-- HERO -->
 <section class="hero">
@@ -486,7 +349,7 @@ footer{background:var(--dark);padding:44px 28px 24px;border-top:4px solid var(--
   <div class="strip-inner">
     <div class="strip-item"><svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Same-Day Service</div>
     <div class="strip-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>On-Time Guaranteed</div>
-    <div class="strip-item"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Fully Fully Insured</div>
+    <div class="strip-item"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Fully Insured</div>
     <div class="strip-item"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>No Hidden Fees</div>
     <div class="strip-item"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>4.9★ Google Rated</div>
   </div>
@@ -838,7 +701,7 @@ footer{background:var(--dark);padding:44px 28px 24px;border-top:4px solid var(--
     <div class="faq-grid fade-up">
       <div class="faq-item"><div class="faq-q">How quickly can you send a handyman in Brooklyn?</div><div class="faq-a">In most cases we can have a handyman at your door <strong>same day</strong> — especially if you call before noon. We serve Brooklyn, Manhattan, Queens & the Bronx with fast dispatch times.</div></div>
       <div class="faq-item"><div class="faq-q">How much does a handyman cost in NYC?</div><div class="faq-a">Our rates start at <strong>$150/hour</strong> for general repairs with a 2-hour minimum. Full day rates start at <strong>$750</strong>. We always give you a flat-rate quote before starting — no surprise fees.</div></div>
-      <div class="faq-item"><div class="faq-q">Are your handymen fully insured?</div><div class="faq-a">Yes. Sani Building Corp is <strong>fully fully insured</strong> in New York State. All our handymen are background-checked, experienced, and covered by liability insurance and workers' compensation.</div></div>
+      <div class="faq-item"><div class="faq-q">Are your handymen fully insured?</div><div class="faq-a">Yes. Sani Building Corp is <strong>fully insured</strong> in New York State. All our handymen are background-checked, experienced, and covered by liability insurance and workers' compensation.</div></div>
       <div class="faq-item"><div class="faq-q">What types of repairs do you handle?</div><div class="faq-a">We handle most household and commercial repairs including drywall, doors, windows, plumbing fixtures, light electrical, tile & grout, painting touch-ups, furniture assembly, TV mounting, and general maintenance.</div></div>
       <div class="faq-item"><div class="faq-q">Do you offer handyman services for property managers?</div><div class="faq-a">Yes — property managers are one of our primary clients. We offer <strong>priority scheduling</strong>, turnover repairs between tenants, ongoing maintenance contracts, and monthly invoicing for multi-unit buildings.</div></div>
       <div class="faq-item"><div class="faq-q">What if I'm not satisfied with the work?</div><div class="faq-a">We guarantee our work. If something isn't right, we come back and fix it at <strong>no additional charge</strong>. Your satisfaction is our only standard — that's why we have a 4.9★ Google rating.</div></div>
@@ -867,62 +730,19 @@ footer{background:var(--dark);padding:44px 28px 24px;border-top:4px solid var(--
       <div class="cta-contact">
         <div class="ccc"><div class="ccc-label">Phone</div><div class="ccc-val">332-277-0990</div></div>
         <div class="ccc"><div class="ccc-label">Email</div><div class="ccc-val">contact@sanibuildingcorp.com</div></div>
-        <div class="ccc"><div class="ccc-label">Hours</div><div class="ccc-val">Mon–Sat: 8am–9pm</div></div>
+        <div class="ccc"><div class="ccc-label">Hours</div><div class="ccc-val">Mon–Fri 8am–6pm · Sat 8am–4pm</div></div>
         <div class="ccc"><div class="ccc-label">Response</div><div class="ccc-val">Same Day Guaranteed</div></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <div class="brand">SANI <span>BUILDING</span> CORP</div>
-        <div class="tagline">NYC Handyman & Renovation Services</div>
-        <p>Professional renovation contractor serving Manhattan, Brooklyn, Queens, Bronx, Staten Island & Long Island since 2015.</p>
-      </div>
-      <div class="footer-col">
-        <h4>Services</h4>
-        <a href="bathroom-renovation.html">Bathroom Renovation</a>
-        <a href="kitchen-renovation.html">Kitchen Renovation</a>
-        <a href="painting.html">Interior Painting</a>
-        <a href="flooring.html">Flooring Installation</a>
-        <a href="carpentry.html">Carpentry</a>
-        <a href="water-damage.html">Water Damage Repair</a>
-        <a href="handyman.html">Handyman Services</a>
-        <a href="bathroom-floor-tile-installation.html">Bathroom Floor Tile</a>
-        <a href="estimate.html">⚡ AI Estimate</a>
-      </div>
-      <div class="footer-col">
-        <h4>Company</h4>
-        <a href="index.html">Home</a>
-        <a href="about.html">About Us</a>
-        <a href="services.html">All Services</a>
-        <a href="contact.html">Contact</a>
-      </div>
-      <div class="footer-col">
-        <h4>Contact</h4>
-        <a href="tel:3322770990">📞 (332) 277-0990</a>
-        <a href="mailto:contact@sanibuildingcorp.com">✉ contact@sanibuildingcorp.com</a>
-        <a href="contact.html">📍 2954 Brighton 12th St, Brooklyn, NY 11235</a>
-        <a href="contact.html">🕐 Mon–Sat: 8:00 AM – 9:00 PM</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>© 2026 Sani Building Corp. All Rights Reserved. | Handyman Services NYC | Brooklyn, NY 11235</p>
-      <p>Brooklyn • Manhattan • Queens • Bronx • Staten Island • Long Island</p>
-    </div>
-  </div>
-</footer>
+<!-- Footer loaded from partials/footer.html via partials/site.js -->
+<div id="site-footer"></div>
 
+<!-- Loads menu/footer partials + mobile menu functions -->
+<script src="partials/site.js"></script>
 <script>
-function toggleMenu(){document.getElementById('mobileMenu').classList.toggle('open')}
-document.addEventListener('click',function(e){
-  const m=document.getElementById('mobileMenu'),h=document.querySelector('.hamburger');
-  if(m&&h&&!m.contains(e.target)&&!h.contains(e.target))m.classList.remove('open');
-});
 const obs=new IntersectionObserver(function(entries){
   entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
 },{threshold:0.08});
