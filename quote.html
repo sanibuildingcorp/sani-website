@@ -51,7 +51,11 @@ body {
   font-size: 24px;
   letter-spacing: 4px;
   color: var(--gold);
+  text-decoration: none;
+  display: inline-block;
+  transition: opacity 0.15s;
 }
+.brand:hover { opacity: 0.85; }
 .tag {
   font-size: 11px;
   letter-spacing: 3px;
@@ -138,11 +142,53 @@ h1 {
 .line-table .item-name { color: var(--ink); }
 .line-table .qty-unit { color: var(--ink-muted); font-size: 13px; }
 
+/* Simplified labor list for "labor" display mode */
+.scope-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 8px;
+}
+.scope-list li {
+  padding: 11px 4px;
+  border-bottom: 1px solid #f4f0e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  font-size: 14.5px;
+  color: var(--ink);
+}
+.scope-list li:last-child { border-bottom: none; }
+.scope-list .scope-item-name { flex: 1; }
+.scope-list .scope-item-qty {
+  color: var(--ink-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.included-note {
+  background: #f7f9f5;
+  border-left: 3px solid var(--good);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 14px;
+  border-radius: 0 6px 6px 0;
+}
+.included-note strong { color: var(--good); }
+
+/* Totals box for "total" mode is large and prominent */
 .totals {
   margin-top: 22px;
   background: #faf8f4;
   border-radius: 10px;
   padding: 18px 20px;
+}
+.totals.total-only {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: #fff;
+  text-align: center;
+  padding: 36px 24px;
 }
 .tot-row {
   display: flex;
@@ -161,6 +207,32 @@ h1 {
   color: var(--navy);
 }
 .tot-row.grand .label { font-family: var(--display); letter-spacing: 2px; }
+
+/* Total-only mode: BIG centered total */
+.total-only-display {
+  text-align: center;
+}
+.total-only-display .label {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.total-only-display .amount {
+  font-family: var(--display);
+  font-size: 56px;
+  letter-spacing: 2px;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.total-only-display .note {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 8px;
+}
 
 .timeline-pill {
   display: inline-block;
@@ -216,6 +288,36 @@ h1 {
 }
 .footer strong { color: var(--gold); letter-spacing: 2px; }
 .footer a { color: #b8720a; text-decoration: none; font-weight: 600; }
+
+/* Back to website link */
+.back-link-wrap {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  text-decoration: none;
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.back-link:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+.back-link-arrow {
+  font-size: 16px;
+  line-height: 1;
+}
 
 /* ===== Loading & Error states ===== */
 .state {
@@ -316,24 +418,29 @@ h1 {
 <div class="wrap">
   <div id="state-loading" class="hero" style="border-radius:14px">
     <div class="spinner"></div>
-    <div class="brand">SANI BUILDING CORP</div>
+    <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
     <div class="tag">Loading your estimate…</div>
   </div>
 
   <div id="state-error" style="display:none">
     <div class="hero" style="border-radius:14px">
-      <div class="brand">SANI BUILDING CORP</div>
+      <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
       <div class="tag" style="color:#e74c3c">Estimate not found</div>
     </div>
     <div class="card" style="border-radius:0 0 14px 14px;text-align:center">
       <p style="color:var(--ink-soft);margin:20px 0">We couldn't find this estimate. The link may be expired or incorrect.</p>
       <p style="color:var(--ink-muted);font-size:13px">Need help? Call <a href="tel:+13322770990" style="color:#b8720a;text-decoration:none;font-weight:600">(332) 277-0990</a></p>
+      <div class="back-link-wrap">
+        <a href="https://www.sanibuildingcorp.com" class="back-link">
+          <span class="back-link-arrow">←</span> Back to sanibuildingcorp.com
+        </a>
+      </div>
     </div>
   </div>
 
   <div id="state-quote" style="display:none">
     <div class="hero">
-      <div class="brand">SANI BUILDING CORP</div>
+      <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
       <div class="tag">Your Estimate</div>
     </div>
     <div class="card">
@@ -352,6 +459,7 @@ h1 {
         <div class="scope-text" id="scope-text"></div>
       </div>
 
+      <!-- LABOR (full mode - with rates and totals) -->
       <div id="labor-wrap" style="display:none">
         <div class="section-title">Labor</div>
         <table class="line-table">
@@ -360,6 +468,16 @@ h1 {
         </table>
       </div>
 
+      <!-- LABOR (labor mode - just items + qty, no rates) -->
+      <div id="labor-simple-wrap" style="display:none">
+        <div class="section-title">Labor &amp; Work</div>
+        <ul class="scope-list" id="labor-simple-body"></ul>
+        <div class="included-note">
+          <strong>✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the total price.
+        </div>
+      </div>
+
+      <!-- MATERIALS (only shown in full mode) -->
       <div id="materials-wrap" style="display:none">
         <div class="section-title">Materials</div>
         <table class="line-table">
@@ -368,12 +486,28 @@ h1 {
         </table>
       </div>
 
-      <div class="totals">
+      <!-- TOTALS (full mode) -->
+      <div class="totals" id="totals-full" style="display:none">
         <div class="tot-row"><span>Labor subtotal</span><span id="labor-sub">$0.00</span></div>
         <div class="tot-row"><span>Materials subtotal</span><span id="mat-sub">$0.00</span></div>
         <div class="tot-row"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
         <div class="tot-row"><span id="markup-label">Overhead</span><span id="markup-amt">$0.00</span></div>
-        <div class="tot-row grand"><span class="label">TOTAL</span><span id="grand-total">$0.00</span></div>
+        <div class="tot-row grand"><span class="label">TOTAL</span><span id="grand-total-full">$0.00</span></div>
+      </div>
+
+      <!-- TOTALS (labor mode - just one big total) -->
+      <div class="totals" id="totals-labor" style="display:none">
+        <div class="tot-row grand" style="margin-top:0;padding-top:0;border-top:none"><span class="label">TOTAL</span><span id="grand-total-labor">$0.00</span></div>
+        <div style="text-align:center;font-size:12px;color:var(--ink-muted);margin-top:6px;letter-spacing:0.5px">All-inclusive · Materials &amp; labor</div>
+      </div>
+
+      <!-- TOTALS (total-only mode - dramatic display) -->
+      <div class="totals total-only" id="totals-only" style="display:none">
+        <div class="total-only-display">
+          <div class="label">Your Estimate</div>
+          <div class="amount" id="grand-total-only">$0.00</div>
+          <div class="note">All-inclusive · No hidden fees</div>
+        </div>
       </div>
 
       <div class="actions" id="actions-row">
@@ -386,12 +520,18 @@ h1 {
         Fully Insured · NYC Metro · 4.9 ★<br>
         <a href="tel:+13322770990">(332) 277-0990</a> · <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a>
       </div>
+
+      <div class="back-link-wrap">
+        <a href="https://www.sanibuildingcorp.com" class="back-link">
+          <span class="back-link-arrow">←</span> Back to sanibuildingcorp.com
+        </a>
+      </div>
     </div>
   </div>
 
   <div id="state-success" style="display:none">
     <div class="hero" style="border-radius:14px">
-      <div class="brand">SANI BUILDING CORP</div>
+      <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
       <div class="tag" id="success-tag">Thank you</div>
     </div>
     <div class="card" style="border-radius:0 0 14px 14px">
@@ -400,6 +540,11 @@ h1 {
         <h1 id="success-title">Estimate Accepted</h1>
         <p style="color:var(--ink-soft);font-size:15px;margin:16px 0 24px;max-width:420px;margin-left:auto;margin-right:auto" id="success-msg">Thanks! We'll be in touch shortly to schedule the start date and send over the invoice with deposit details.</p>
         <p style="color:var(--ink-muted);font-size:13px">Questions? Call <a href="tel:+13322770990" style="color:#b8720a;text-decoration:none;font-weight:600">(332) 277-0990</a></p>
+        <div class="back-link-wrap">
+          <a href="https://www.sanibuildingcorp.com" class="back-link">
+            <span class="back-link-arrow">←</span> Back to sanibuildingcorp.com
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -414,7 +559,7 @@ h1 {
     <input type="text" id="signature-input" placeholder="e.g. John Smith">
     <div class="modal-actions">
       <button class="btn btn-decline" onclick="closeModals()">Cancel</button>
-      <button class="btn btn-accept" id="confirm-accept" onclick="submitAccept()">Accept & Sign</button>
+      <button class="btn btn-accept" id="confirm-accept" onclick="submitAccept()">Accept &amp; Sign</button>
     </div>
   </div>
 </div>
@@ -481,57 +626,87 @@ function render() {
 
   const est = record.estimate || {};
   const customer = record.customer || {};
-  document.getElementById("project-title").textContent = est.projectTitle || (record.request?.service || "Your Project");
+  // Determine display mode (default: "labor")
+  // Valid values: "total" | "labor" | "full"
+  const displayMode = ["total", "labor", "full"].includes(est.displayMode) ? est.displayMode : "labor";
+
+  document.getElementById("project-title").textContent = est.projectTitle || (record.request && record.request.service) || "Your Project";
   document.getElementById("ref-id").textContent = record.ref;
   document.getElementById("customer-name").textContent = customer.name || "—";
 
+  // Summary - shown in all modes
   if (est.summary) {
     document.getElementById("summary").textContent = est.summary;
   } else {
     document.getElementById("summary").style.display = "none";
   }
 
+  // Timeline - shown in all modes
   if (est.timelineText) {
     document.getElementById("timeline-wrap").style.display = "block";
     document.getElementById("timeline-text").textContent = est.timelineText;
   }
 
-  if (est.scopeOfWork) {
+  // Scope of work - hidden in "total" mode, shown otherwise
+  if (est.scopeOfWork && displayMode !== "total") {
     document.getElementById("scope-wrap").style.display = "block";
     document.getElementById("scope-text").textContent = est.scopeOfWork;
   }
 
-  if (est.labor && est.labor.length) {
-    document.getElementById("labor-wrap").style.display = "block";
-    document.getElementById("labor-body").innerHTML = est.labor.map(i => `
-      <tr>
-        <td><div class="item-name">${esc(i.item)}</div></td>
-        <td class="num qty-unit">${esc(i.qty)} ${esc(i.unit || "")}</td>
-        <td class="num">${fmt(i.rate)}</td>
-        <td class="num">${fmt((Number(i.qty) || 0) * (Number(i.rate) || 0))}</td>
-      </tr>
-    `).join("");
-  }
-
-  if (est.materials && est.materials.length) {
-    document.getElementById("materials-wrap").style.display = "block";
-    document.getElementById("materials-body").innerHTML = est.materials.map(i => `
-      <tr>
-        <td><div class="item-name">${esc(i.item)}</div></td>
-        <td class="num qty-unit">${esc(i.qty)} ${esc(i.unit || "")}</td>
-        <td class="num">${fmt(i.rate)}</td>
-        <td class="num">${fmt((Number(i.qty) || 0) * (Number(i.rate) || 0))}</td>
-      </tr>
-    `).join("");
-  }
-
+  // Calculate totals once
   const t = calcTotal(est);
-  document.getElementById("labor-sub").textContent = fmt(t.labor);
-  document.getElementById("mat-sub").textContent = fmt(t.mat);
-  document.getElementById("subtotal").textContent = fmt(t.sub);
-  document.getElementById("markup-label").textContent = `Overhead (${est.markupPct || 0}%)`;
-  document.getElementById("markup-amt").textContent = fmt(t.markup);
-  document.getElementById("grand-total").textContent = fmt(t.grand);
+
+  // ===== MODE-SPECIFIC RENDERING =====
+  if (displayMode === "full") {
+    // FULL MODE: Show everything (current behavior)
+    if (est.labor && est.labor.length) {
+      document.getElementById("labor-wrap").style.display = "block";
+      document.getElementById("labor-body").innerHTML = est.labor.map(function(i) {
+        return '<tr>' +
+          '<td><div class="item-name">' + esc(i.item) + '</div></td>' +
+          '<td class="num qty-unit">' + esc(i.qty) + ' ' + esc(i.unit || "") + '</td>' +
+          '<td class="num">' + fmt(i.rate) + '</td>' +
+          '<td class="num">' + fmt((Number(i.qty) || 0) * (Number(i.rate) || 0)) + '</td>' +
+        '</tr>';
+      }).join("");
+    }
+    if (est.materials && est.materials.length) {
+      document.getElementById("materials-wrap").style.display = "block";
+      document.getElementById("materials-body").innerHTML = est.materials.map(function(i) {
+        return '<tr>' +
+          '<td><div class="item-name">' + esc(i.item) + '</div></td>' +
+          '<td class="num qty-unit">' + esc(i.qty) + ' ' + esc(i.unit || "") + '</td>' +
+          '<td class="num">' + fmt(i.rate) + '</td>' +
+          '<td class="num">' + fmt((Number(i.qty) || 0) * (Number(i.rate) || 0)) + '</td>' +
+        '</tr>';
+      }).join("");
+    }
+    document.getElementById("totals-full").style.display = "block";
+    document.getElementById("labor-sub").textContent = fmt(t.labor);
+    document.getElementById("mat-sub").textContent = fmt(t.mat);
+    document.getElementById("subtotal").textContent = fmt(t.sub);
+    document.getElementById("markup-label").textContent = "Overhead (" + (est.markupPct || 0) + "%)";
+    document.getElementById("markup-amt").textContent = fmt(t.markup);
+    document.getElementById("grand-total-full").textContent = fmt(t.grand);
+  } else if (displayMode === "labor") {
+    // LABOR MODE: Show labor items as a simple list (no rates/totals), hide materials, show single total
+    if (est.labor && est.labor.length) {
+      document.getElementById("labor-simple-wrap").style.display = "block";
+      document.getElementById("labor-simple-body").innerHTML = est.labor.map(function(i) {
+        const qtyDisplay = (Number(i.qty) > 0) ? (esc(i.qty) + ' ' + esc(i.unit || '')) : '';
+        return '<li>' +
+          '<span class="scope-item-name">' + esc(i.item) + '</span>' +
+          (qtyDisplay ? '<span class="scope-item-qty">' + qtyDisplay + '</span>' : '') +
+        '</li>';
+      }).join("");
+    }
+    document.getElementById("totals-labor").style.display = "block";
+    document.getElementById("grand-total-labor").textContent = fmt(t.grand);
+  } else {
+    // TOTAL ONLY MODE: Just the big number
+    document.getElementById("totals-only").style.display = "block";
+    document.getElementById("grand-total-only").textContent = fmt(t.grand);
+  }
 
   document.getElementById("state-loading").style.display = "none";
   document.getElementById("state-quote").style.display = "block";
@@ -565,7 +740,7 @@ async function submitAccept() {
   try {
     const r = await fetch("/.netlify/functions/quote-response", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref, action: "accept", signature: sig }),
+      body: JSON.stringify({ ref: ref, action: "accept", signature: sig }),
     });
     if (!r.ok) throw new Error("Failed");
     closeModals();
@@ -583,7 +758,7 @@ async function submitDecline() {
   try {
     const r = await fetch("/.netlify/functions/quote-response", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref, action: "decline", declineReason: reason }),
+      body: JSON.stringify({ ref: ref, action: "decline", declineReason: reason }),
     });
     if (!r.ok) throw new Error("Failed");
     closeModals();
@@ -597,25 +772,19 @@ async function submitDecline() {
 load();
 </script>
 
-  <script>
-  (function trackOpen() {
-    try {
-      var params = new URLSearchParams(window.location.search);
-      var ref = params.get("ref");
-      if (!ref) return;
-
-      // Fire-and-forget. Server-side gate handles "once per quote".
-      fetch("/.netlify/functions/track-quote-open?ref=" + encodeURIComponent(ref), {
-        method: "GET",
-        keepalive: true,
-        cache: "no-store",
-      }).catch(function () {
-        // Silent — never break the page for the customer.
-      });
-    } catch (e) {
-      // Silent
-    }
-  })();
+<script>
+(function trackOpen() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var refVal = params.get("ref");
+    if (!refVal) return;
+    fetch("/.netlify/functions/track-quote-open?ref=" + encodeURIComponent(refVal), {
+      method: "GET",
+      keepalive: true,
+      cache: "no-store",
+    }).catch(function () {});
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>
