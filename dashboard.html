@@ -492,6 +492,101 @@ body {
 }
 .field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
 
+/* ============ DISPLAY MODE SELECTOR (NEW) ============ */
+.display-mode-panel {
+  background: var(--navy);
+  border: 1.5px solid var(--gold);
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+}
+.display-mode-panel h3 {
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.display-mode-panel .helper-text {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+.mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 640px) { .mode-options { grid-template-columns: 1fr; } }
+.mode-option {
+  background: var(--card-2);
+  border: 1.5px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+.mode-option:hover {
+  border-color: var(--gold);
+  background: var(--navy-3);
+}
+.mode-option.selected {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+.mode-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.mode-option .mode-radio-dot {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  transition: all .15s;
+}
+.mode-option.selected .mode-radio-dot {
+  border-color: var(--gold);
+  background: var(--gold);
+  box-shadow: inset 0 0 0 3px var(--card-2);
+}
+.mode-option .mode-name {
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  color: var(--ink);
+  padding-right: 28px;
+  text-transform: uppercase;
+}
+.mode-option.selected .mode-name { color: var(--gold); }
+.mode-option .mode-desc {
+  font-size: 11px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+.mode-option .mode-tag {
+  display: inline-block;
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  margin-top: 4px;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
 /* line item tables */
 .lines-table {
   width: 100%;
@@ -709,11 +804,11 @@ const TABS = [
 
 let estimates = [];
 let activeTab = "all";
-let currentRecord = null; // full record being edited
+let currentRecord = null;
 
 /* ===== LOGIN ===== */
 document.getElementById("pw-btn").addEventListener("click", tryLogin);
-document.getElementById("pw-input").addEventListener("keypress", e => { if (e.key === "Enter") tryLogin(); });
+document.getElementById("pw-input").addEventListener("keypress", function(e) { if (e.key === "Enter") tryLogin(); });
 
 function tryLogin() {
   const v = document.getElementById("pw-input").value;
@@ -750,32 +845,32 @@ function fmtDate(iso) {
 }
 function calcTotal(est) {
   if (!est) return { labor: 0, mat: 0, sub: 0, markup: 0, grand: 0 };
-  const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const mat = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
+  const labor = (est.labor || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
+  const mat = (est.materials || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
   const sub = labor + mat;
   const markup = sub * ((Number(est.markupPct) || 0) / 100);
-  return { labor, mat, sub, markup, grand: sub + markup };
+  return { labor: labor, mat: mat, sub: sub, markup: markup, grand: sub + markup };
 }
-function toast(msg, isError = false) {
+function toast(msg, isError) {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.className = "toast show" + (isError ? " error" : "");
-  setTimeout(() => t.classList.remove("show"), 3200);
+  setTimeout(function() { t.classList.remove("show"); }, 3200);
 }
 
 /* ===== TABS ===== */
 function renderTabs() {
   const counts = { all: estimates.length };
-  TABS.forEach(t => { if (t.id !== "all") counts[t.id] = 0; });
-  estimates.forEach(e => { if (counts[e.status] !== undefined) counts[e.status]++; });
-  document.getElementById("tabs-row").innerHTML = TABS.map(t => `
-    <button class="tab ${activeTab === t.id ? "active" : ""}" data-tab="${t.id}">
-      <span>${t.label}</span>
-      <span class="tab-count">${counts[t.id] || 0}</span>
-    </button>
-  `).join("");
-  document.querySelectorAll(".tab").forEach(btn => {
-    btn.addEventListener("click", () => {
+  TABS.forEach(function(t) { if (t.id !== "all") counts[t.id] = 0; });
+  estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
+  document.getElementById("tabs-row").innerHTML = TABS.map(function(t) {
+    return '<button class="tab ' + (activeTab === t.id ? "active" : "") + '" data-tab="' + t.id + '">' +
+      '<span>' + t.label + '</span>' +
+      '<span class="tab-count">' + (counts[t.id] || 0) + '</span>' +
+    '</button>';
+  }).join("");
+  document.querySelectorAll(".tab").forEach(function(btn) {
+    btn.addEventListener("click", function() {
       activeTab = btn.dataset.tab;
       renderTabs(); renderList();
     });
@@ -785,7 +880,7 @@ function renderTabs() {
 /* ===== LIST ===== */
 async function loadEstimates() {
   const host = document.getElementById("list-host");
-  host.innerHTML = `<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>`;
+  host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
   try {
     const r = await fetch("/.netlify/functions/list-estimates");
     if (!r.ok) throw new Error("Load failed");
@@ -795,7 +890,7 @@ async function loadEstimates() {
     renderList();
   } catch (e) {
     console.error(e);
-    host.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>Couldn't load</h3><p>${esc(e.message)}</p><button class="topbar-btn" onclick="loadEstimates()">Retry</button></div>`;
+    host.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Could not load</h3><p>' + esc(e.message) + '</p><button class="topbar-btn" onclick="loadEstimates()">Retry</button></div>';
   }
 }
 
@@ -803,60 +898,57 @@ function renderList() {
   const host = document.getElementById("list-host");
   const filtered = activeTab === "all"
     ? estimates
-    : estimates.filter(e => e.status === activeTab);
+    : estimates.filter(function(e) { return e.status === activeTab; });
 
   if (filtered.length === 0) {
-    host.innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">📋</div>
-        <h3>No estimates here yet</h3>
-        <p>${activeTab === "all" ? "Customer requests will appear here when they submit the form." : "No estimates in this status."}</p>
-      </div>`;
+    host.innerHTML =
+      '<div class="empty">' +
+        '<div class="empty-icon">📋</div>' +
+        '<h3>No estimates here yet</h3>' +
+        '<p>' + (activeTab === "all" ? "Customer requests will appear here when they submit the form." : "No estimates in this status.") + '</p>' +
+      '</div>';
     return;
   }
 
-  host.innerHTML = `
-    <div class="list-header">
-      <div class="list-count">${filtered.length} ${filtered.length === 1 ? "estimate" : "estimates"}</div>
-    </div>
-    ${filtered.map(e => {
-      const title = e.estimate?.projectTitle || e.request?.service || "Untitled";
-      const cust = e.customer?.name || "—";
-      return `
-        <div class="est-card" data-ref="${esc(e.ref)}">
-          <div class="est-main">
-            <div class="est-title">${esc(title)}</div>
-            <div class="est-meta">
-              <span class="customer">${esc(cust)}</span>
-              <span>•</span>
-              <span>${esc(e.request?.service || "")}</span>
-              <span>•</span>
-              <span>${fmtDate(e.submittedAt)}</span>
-              ${e.request?.photoCount ? `<span>•</span><span>📷 ${e.request.photoCount}</span>` : ""}
-            </div>
-            <div class="est-badges">
-              <span class="badge ${e.status}">${e.status}</span>
-              <span style="font-size:11px;color:var(--ink-muted);letter-spacing:1px">${esc(e.ref)}</span>
-            </div>
-          </div>
-          <div class="est-right">
-            <div class="est-total-label">Total</div>
-            <div class="est-total">${fmt(e.estimate?.grandTotal || 0)}</div>
-          </div>
-        </div>
-      `;
-    }).join("")}
-  `;
+  host.innerHTML =
+    '<div class="list-header">' +
+      '<div class="list-count">' + filtered.length + ' ' + (filtered.length === 1 ? "estimate" : "estimates") + '</div>' +
+    '</div>' +
+    filtered.map(function(e) {
+      const title = (e.estimate && e.estimate.projectTitle) || (e.request && e.request.service) || "Untitled";
+      const cust = (e.customer && e.customer.name) || "—";
+      return '<div class="est-card" data-ref="' + esc(e.ref) + '">' +
+        '<div class="est-main">' +
+          '<div class="est-title">' + esc(title) + '</div>' +
+          '<div class="est-meta">' +
+            '<span class="customer">' + esc(cust) + '</span>' +
+            '<span>•</span>' +
+            '<span>' + esc((e.request && e.request.service) || "") + '</span>' +
+            '<span>•</span>' +
+            '<span>' + fmtDate(e.submittedAt) + '</span>' +
+            ((e.request && e.request.photoCount) ? '<span>•</span><span>📷 ' + e.request.photoCount + '</span>' : "") +
+          '</div>' +
+          '<div class="est-badges">' +
+            '<span class="badge ' + e.status + '">' + e.status + '</span>' +
+            '<span style="font-size:11px;color:var(--ink-muted);letter-spacing:1px">' + esc(e.ref) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="est-right">' +
+          '<div class="est-total-label">Total</div>' +
+          '<div class="est-total">' + fmt((e.estimate && e.estimate.grandTotal) || 0) + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join("");
 
-  document.querySelectorAll(".est-card").forEach(card => {
-    card.addEventListener("click", () => openEdit(card.dataset.ref));
+  document.querySelectorAll(".est-card").forEach(function(card) {
+    card.addEventListener("click", function() { openEdit(card.dataset.ref); });
   });
 }
 
 /* ===== EDIT MODAL ===== */
 async function openEdit(ref) {
   const card = document.getElementById("edit-card");
-  card.innerHTML = `<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>`;
+  card.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
   document.getElementById("edit-modal").classList.add("show");
   document.body.style.overflow = "hidden";
 
@@ -866,7 +958,7 @@ async function openEdit(ref) {
     currentRecord = await r.json();
     renderEdit();
   } catch (e) {
-    card.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>${esc(e.message)}</h3><button class="btn-secondary" onclick="closeEdit()">Close</button></div>`;
+    card.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>' + esc(e.message) + '</h3><button class="btn-secondary" onclick="closeEdit()">Close</button></div>';
   }
 }
 function closeEdit() {
@@ -882,154 +974,160 @@ function renderEdit() {
   const req = r.request || {};
   const est = r.estimate || {};
 
+  const displayMode = ["total", "labor", "full"].indexOf(est.displayMode) >= 0 ? est.displayMode : "labor";
+
   const answers = req.serviceAnswers || {};
   const answersHtml = Object.entries(answers)
-    .filter(([_, v]) => v && String(v).trim())
-    .map(([k, v]) => `
-      <div class="answer-row">
-        <div class="ak">${esc(k.replace(/-/g, " "))}</div>
-        <div class="av">${esc(v)}</div>
-      </div>
-    `).join("");
+    .filter(function(kv) { return kv[1] && String(kv[1]).trim(); })
+    .map(function(kv) {
+      return '<div class="answer-row">' +
+        '<div class="ak">' + esc(kv[0].replace(/-/g, " ")) + '</div>' +
+        '<div class="av">' + esc(kv[1]) + '</div>' +
+      '</div>';
+    }).join("");
 
-  const photosHtml = (req.photos || []).slice(0, 10).map(p => 
-    `<img src="${esc(p.data)}" alt="customer photo">`
-  ).join("");
+  const photosHtml = (req.photos || []).slice(0, 10).map(function(p) {
+    return '<img src="' + esc(p.data) + '" alt="customer photo">';
+  }).join("");
 
   const showAiBar = !est.scopeOfWork && (!est.labor || est.labor.length === 0);
 
-  document.getElementById("edit-card").innerHTML = `
-    <div class="modal-head">
-      <div>
-        <h2>${esc(est.projectTitle || req.service || "ESTIMATE")}</h2>
-        <div class="ref-sub">Ref ${esc(r.ref)} · ${esc(r.status || "new").toUpperCase()} · Submitted ${fmtDate(r.submittedAt)}</div>
-      </div>
-      <button class="modal-close" onclick="closeEdit()">×</button>
-    </div>
-
-    <!-- CUSTOMER REQUEST -->
-    <div class="cust-panel">
-      <h3>📥 CUSTOMER REQUEST</h3>
-      <div class="cust-grid">
-        <div class="cust-field"><span class="lbl">Name</span><span class="val">${esc(cust.name)}</span></div>
-        <div class="cust-field"><span class="lbl">Phone</span><a href="tel:${esc(cust.phone)}" class="val">${esc(cust.phone)}</a></div>
-        <div class="cust-field"><span class="lbl">Email</span><a href="mailto:${esc(cust.email)}" class="val">${esc(cust.email)}</a></div>
-        <div class="cust-field"><span class="lbl">Address</span><span class="val">${esc(cust.address || "—")}</span></div>
-        <div class="cust-field"><span class="lbl">Service</span><span class="val">${esc(req.service || "—")}</span></div>
-        <div class="cust-field"><span class="lbl">Property</span><span class="val">${esc(req.propertyType || "—")}</span></div>
-        <div class="cust-field"><span class="lbl">Timeline</span><span class="val">${esc(req.timeline || "—")}</span></div>
-        <div class="cust-field"><span class="lbl">Photos</span><span class="val">${req.photoCount || 0}</span></div>
-      </div>
-      ${req.description ? `<div class="cust-field" style="margin-top:8px"><span class="lbl">Description</span><span class="val" style="font-size:13px;line-height:1.6;white-space:pre-wrap">${esc(req.description)}</span></div>` : ""}
-      ${answersHtml ? `<div class="answers-list">${answersHtml}</div>` : ""}
-      ${photosHtml ? `<div class="cust-photos">${photosHtml}</div>` : ""}
-    </div>
-
-    <!-- AI GENERATE BAR -->
-    ${showAiBar ? `
-    <div class="ai-bar">
-      <div class="ai-bar-text">
-        <h4>✨ AI ESTIMATE GENERATOR</h4>
-        <p>Let Claude draft the scope of work, labor, and materials based on the customer's answers. You can review and edit everything before sending.</p>
-      </div>
-      <button class="btn-ai" id="gen-btn" onclick="generateAI()">Generate Estimate</button>
-    </div>
-    ` : `
-    <div class="ai-bar">
-      <div class="ai-bar-text">
-        <h4>↻ REGENERATE</h4>
-        <p>Want a different draft? Re-run the AI estimator. Your current work will be replaced.</p>
-      </div>
-      <button class="btn-ai" id="gen-btn" onclick="generateAI(true)">Regenerate with AI</button>
-    </div>
-    `}
-
-    <!-- PROJECT DETAILS -->
-    <div class="form-section">
-      <h3>📋 PROJECT</h3>
-      <div class="field" style="margin-bottom:12px">
-        <label>Project Title</label>
-        <input type="text" id="f-title" value="${esc(est.projectTitle || "")}" placeholder="e.g. Master Bathroom Renovation — Brooklyn">
-      </div>
-      <div class="field" style="margin-bottom:12px">
-        <label>Summary (shown to customer)</label>
-        <textarea id="f-summary" placeholder="2–3 sentences describing the project">${esc(est.summary || "")}</textarea>
-      </div>
-      <div class="field">
-        <label>Scope of Work</label>
-        <textarea id="f-scope" rows="6" placeholder="Detailed scope, line breaks supported">${esc(est.scopeOfWork || "")}</textarea>
-      </div>
-    </div>
-
-    <!-- LABOR -->
-    <div class="form-section">
-      <h3>🔨 LABOR <button class="btn-add-row" onclick="addLine('labor')">+ Add Item</button></h3>
-      <table class="lines-table">
-        <thead>
-          <tr>
-            <th class="col-item">Item</th>
-            <th class="col-qty num">Qty</th>
-            <th class="col-unit">Unit</th>
-            <th class="col-rate num">Rate</th>
-            <th class="col-total num">Total</th>
-            <th style="width:40px"></th>
-          </tr>
-        </thead>
-        <tbody id="labor-body"></tbody>
-      </table>
-    </div>
-
-    <!-- MATERIALS -->
-    <div class="form-section">
-      <h3>🧰 MATERIALS <button class="btn-add-row" onclick="addLine('materials')">+ Add Item</button></h3>
-      <table class="lines-table">
-        <thead>
-          <tr>
-            <th class="col-item">Item</th>
-            <th class="col-qty num">Qty</th>
-            <th class="col-unit">Unit</th>
-            <th class="col-rate num">Rate</th>
-            <th class="col-total num">Total</th>
-            <th style="width:40px"></th>
-          </tr>
-        </thead>
-        <tbody id="materials-body"></tbody>
-      </table>
-    </div>
-
-    <!-- TIMELINE & NOTES -->
-    <div class="form-row">
-      <div class="field">
-        <label>Estimated Timeline (customer sees)</label>
-        <input type="text" id="f-timeline" value="${esc(est.timelineText || "")}" placeholder="e.g. 5–7 business days">
-      </div>
-      <div class="field">
-        <label>Internal Notes (NOT shown to customer)</label>
-        <input type="text" id="f-notes" value="${esc(est.notes || "")}" placeholder="Reminders, assumptions, things to verify">
-      </div>
-    </div>
-
-    <!-- TOTALS -->
-    <div class="totals-box">
-      <div class="tot-line"><span>Labor subtotal</span><span id="tot-labor">$0.00</span></div>
-      <div class="tot-line"><span>Materials subtotal</span><span id="tot-mat">$0.00</span></div>
-      <div class="tot-line"><span>Subtotal</span><span id="tot-sub">$0.00</span></div>
-      <div class="tot-line">
-        <span class="markup-row">Markup <input type="number" id="f-markup" class="markup-input" value="${esc(est.markupPct ?? 25)}" min="0" max="100" step="1"> %</span>
-        <span id="tot-markup">$0.00</span>
-      </div>
-      <div class="tot-line grand"><span>GRAND TOTAL</span><span id="tot-grand">$0.00</span></div>
-    </div>
-
-    <!-- ACTIONS -->
-    <div class="modal-actions">
-      <button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>
-      <div class="modal-actions-right">
-        <button class="btn-secondary" onclick="saveDraft()">💾 Save Draft</button>
-        <button class="btn-primary" onclick="sendToCustomer()">📨 Send to Customer</button>
-      </div>
-    </div>
-  `;
+  document.getElementById("edit-card").innerHTML =
+    '<div class="modal-head">' +
+      '<div>' +
+        '<h2>' + esc(est.projectTitle || req.service || "ESTIMATE") + '</h2>' +
+        '<div class="ref-sub">Ref ' + esc(r.ref) + ' · ' + esc((r.status || "new").toUpperCase()) + ' · Submitted ' + fmtDate(r.submittedAt) + '</div>' +
+      '</div>' +
+      '<button class="modal-close" onclick="closeEdit()">×</button>' +
+    '</div>' +
+    '<div class="cust-panel">' +
+      '<h3>📥 CUSTOMER REQUEST</h3>' +
+      '<div class="cust-grid">' +
+        '<div class="cust-field"><span class="lbl">Name</span><span class="val">' + esc(cust.name) + '</span></div>' +
+        '<div class="cust-field"><span class="lbl">Phone</span><a href="tel:' + esc(cust.phone) + '" class="val">' + esc(cust.phone) + '</a></div>' +
+        '<div class="cust-field"><span class="lbl">Email</span><a href="mailto:' + esc(cust.email) + '" class="val">' + esc(cust.email) + '</a></div>' +
+        '<div class="cust-field"><span class="lbl">Address</span><span class="val">' + esc(cust.address || "—") + '</span></div>' +
+        '<div class="cust-field"><span class="lbl">Service</span><span class="val">' + esc(req.service || "—") + '</span></div>' +
+        '<div class="cust-field"><span class="lbl">Property</span><span class="val">' + esc(req.propertyType || "—") + '</span></div>' +
+        '<div class="cust-field"><span class="lbl">Timeline</span><span class="val">' + esc(req.timeline || "—") + '</span></div>' +
+        '<div class="cust-field"><span class="lbl">Photos</span><span class="val">' + (req.photoCount || 0) + '</span></div>' +
+      '</div>' +
+      (req.description ? '<div class="cust-field" style="margin-top:8px"><span class="lbl">Description</span><span class="val" style="font-size:13px;line-height:1.6;white-space:pre-wrap">' + esc(req.description) + '</span></div>' : "") +
+      (answersHtml ? '<div class="answers-list">' + answersHtml + '</div>' : "") +
+      (photosHtml ? '<div class="cust-photos">' + photosHtml + '</div>' : "") +
+    '</div>' +
+    (showAiBar ?
+      '<div class="ai-bar">' +
+        '<div class="ai-bar-text">' +
+          '<h4>✨ AI ESTIMATE GENERATOR</h4>' +
+          '<p>Let Claude draft the scope of work, labor, and materials based on the customer answers. You can review and edit everything before sending.</p>' +
+        '</div>' +
+        '<button class="btn-ai" id="gen-btn" onclick="generateAI()">Generate Estimate</button>' +
+      '</div>'
+      :
+      '<div class="ai-bar">' +
+        '<div class="ai-bar-text">' +
+          '<h4>↻ REGENERATE</h4>' +
+          '<p>Want a different draft? Re-run the AI estimator. Your current work will be replaced.</p>' +
+        '</div>' +
+        '<button class="btn-ai" id="gen-btn" onclick="generateAI(true)">Regenerate with AI</button>' +
+      '</div>'
+    ) +
+    '<div class="form-section">' +
+      '<h3>📋 PROJECT</h3>' +
+      '<div class="field" style="margin-bottom:12px">' +
+        '<label>Project Title</label>' +
+        '<input type="text" id="f-title" value="' + esc(est.projectTitle || "") + '" placeholder="e.g. Master Bathroom Renovation — Brooklyn">' +
+      '</div>' +
+      '<div class="field" style="margin-bottom:12px">' +
+        '<label>Summary (shown to customer)</label>' +
+        '<textarea id="f-summary" placeholder="2-3 sentences describing the project">' + esc(est.summary || "") + '</textarea>' +
+      '</div>' +
+      '<div class="field">' +
+        '<label>Scope of Work</label>' +
+        '<textarea id="f-scope" rows="6" placeholder="Detailed scope, line breaks supported">' + esc(est.scopeOfWork || "") + '</textarea>' +
+      '</div>' +
+    '</div>' +
+    '<div class="form-section">' +
+      '<h3>🔨 LABOR <button class="btn-add-row" onclick="addLine(\'labor\')">+ Add Item</button></h3>' +
+      '<table class="lines-table">' +
+        '<thead><tr>' +
+          '<th class="col-item">Item</th>' +
+          '<th class="col-qty num">Qty</th>' +
+          '<th class="col-unit">Unit</th>' +
+          '<th class="col-rate num">Rate</th>' +
+          '<th class="col-total num">Total</th>' +
+          '<th style="width:40px"></th>' +
+        '</tr></thead>' +
+        '<tbody id="labor-body"></tbody>' +
+      '</table>' +
+    '</div>' +
+    '<div class="form-section">' +
+      '<h3>🧰 MATERIALS <button class="btn-add-row" onclick="addLine(\'materials\')">+ Add Item</button></h3>' +
+      '<table class="lines-table">' +
+        '<thead><tr>' +
+          '<th class="col-item">Item</th>' +
+          '<th class="col-qty num">Qty</th>' +
+          '<th class="col-unit">Unit</th>' +
+          '<th class="col-rate num">Rate</th>' +
+          '<th class="col-total num">Total</th>' +
+          '<th style="width:40px"></th>' +
+        '</tr></thead>' +
+        '<tbody id="materials-body"></tbody>' +
+      '</table>' +
+    '</div>' +
+    '<div class="form-row">' +
+      '<div class="field">' +
+        '<label>Estimated Timeline (customer sees)</label>' +
+        '<input type="text" id="f-timeline" value="' + esc(est.timelineText || "") + '" placeholder="e.g. 5-7 business days">' +
+      '</div>' +
+      '<div class="field">' +
+        '<label>Internal Notes (NOT shown to customer)</label>' +
+        '<input type="text" id="f-notes" value="' + esc(est.notes || "") + '" placeholder="Reminders, assumptions, things to verify">' +
+      '</div>' +
+    '</div>' +
+    '<div class="display-mode-panel">' +
+      '<h3>👁 CUSTOMER VIEW MODE</h3>' +
+      '<div class="helper-text">Choose how much detail the customer sees on their quote page and email. Internal totals and markup are never shown to customer.</div>' +
+      '<div class="mode-options" id="mode-options">' +
+        '<div class="mode-option' + (displayMode === "total" ? " selected" : "") + '" data-mode="total" onclick="selectMode(\'total\')">' +
+          '<span class="mode-radio-dot"></span>' +
+          '<input type="radio" name="display-mode" value="total"' + (displayMode === "total" ? " checked" : "") + '>' +
+          '<div class="mode-name">Total Only</div>' +
+          '<div class="mode-desc">Just the final price. No labor, no materials. Most minimal.</div>' +
+        '</div>' +
+        '<div class="mode-option' + (displayMode === "labor" ? " selected" : "") + '" data-mode="labor" onclick="selectMode(\'labor\')">' +
+          '<span class="mode-radio-dot"></span>' +
+          '<input type="radio" name="display-mode" value="labor"' + (displayMode === "labor" ? " checked" : "") + '>' +
+          '<div class="mode-name">Labor Visible</div>' +
+          '<div class="mode-desc">Shows what work will be done (no rates). Materials included silently.</div>' +
+          '<span class="mode-tag">Recommended</span>' +
+        '</div>' +
+        '<div class="mode-option' + (displayMode === "full" ? " selected" : "") + '" data-mode="full" onclick="selectMode(\'full\')">' +
+          '<span class="mode-radio-dot"></span>' +
+          '<input type="radio" name="display-mode" value="full"' + (displayMode === "full" ? " checked" : "") + '>' +
+          '<div class="mode-name">Full Breakdown</div>' +
+          '<div class="mode-desc">Every labor and material line with qty, rate, total. Maximum transparency.</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="totals-box">' +
+      '<div class="tot-line"><span>Labor subtotal</span><span id="tot-labor">$0.00</span></div>' +
+      '<div class="tot-line"><span>Materials subtotal</span><span id="tot-mat">$0.00</span></div>' +
+      '<div class="tot-line"><span>Subtotal</span><span id="tot-sub">$0.00</span></div>' +
+      '<div class="tot-line">' +
+        '<span class="markup-row">Markup <input type="number" id="f-markup" class="markup-input" value="' + esc(est.markupPct == null ? 25 : est.markupPct) + '" min="0" max="100" step="1"> %</span>' +
+        '<span id="tot-markup">$0.00</span>' +
+      '</div>' +
+      '<div class="tot-line grand"><span>GRAND TOTAL</span><span id="tot-grand">$0.00</span></div>' +
+    '</div>' +
+    '<div class="modal-actions">' +
+      '<button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>' +
+      '<div class="modal-actions-right">' +
+        '<button class="btn-secondary" onclick="saveDraft()">💾 Save Draft</button>' +
+        '<button class="btn-primary" onclick="sendToCustomer()">📨 Send to Customer</button>' +
+      '</div>' +
+    '</div>';
 
   renderLines("labor", est.labor || []);
   renderLines("materials", est.materials || []);
@@ -1038,23 +1136,35 @@ function renderEdit() {
   recalc();
 }
 
+/* ===== DISPLAY MODE SELECTOR (NEW) ===== */
+function selectMode(mode) {
+  if (!currentRecord) return;
+  document.querySelectorAll(".mode-option").forEach(function(opt) {
+    opt.classList.toggle("selected", opt.dataset.mode === mode);
+    const radio = opt.querySelector('input[type="radio"]');
+    if (radio) radio.checked = (opt.dataset.mode === mode);
+  });
+  if (!currentRecord.estimate) currentRecord.estimate = {};
+  currentRecord.estimate.displayMode = mode;
+}
+
 /* ===== LINE ITEMS ===== */
 function renderLines(kind, items) {
   const body = document.getElementById(kind + "-body");
   if (!items.length) {
-    body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--ink-muted);font-size:13px;padding:18px">No ${kind} yet. Click "+ Add Item" or use AI to generate.</td></tr>`;
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--ink-muted);font-size:13px;padding:18px">No ' + kind + ' yet. Click "+ Add Item" or use AI to generate.</td></tr>';
     return;
   }
-  body.innerHTML = items.map((it, idx) => `
-    <tr data-idx="${idx}">
-      <td><input type="text" class="line-item" value="${esc(it.item || "")}" placeholder="Description"></td>
-      <td class="num"><input type="number" class="line-qty" value="${esc(it.qty ?? "")}" step="0.5" min="0" style="text-align:right"></td>
-      <td><input type="text" class="line-unit" value="${esc(it.unit || "")}" placeholder="hrs/ea/sqft" style="text-align:center"></td>
-      <td class="num"><input type="number" class="line-rate" value="${esc(it.rate ?? "")}" step="0.01" min="0" style="text-align:right"></td>
-      <td class="num"><input type="text" class="line-total" value="${fmt((Number(it.qty) || 0) * (Number(it.rate) || 0))}" readonly></td>
-      <td><button class="del-row" onclick="deleteLine('${kind}', ${idx})">×</button></td>
-    </tr>
-  `).join("");
+  body.innerHTML = items.map(function(it, idx) {
+    return '<tr data-idx="' + idx + '">' +
+      '<td><input type="text" class="line-item" value="' + esc(it.item || "") + '" placeholder="Description"></td>' +
+      '<td class="num"><input type="number" class="line-qty" value="' + esc(it.qty == null ? "" : it.qty) + '" step="0.5" min="0" style="text-align:right"></td>' +
+      '<td><input type="text" class="line-unit" value="' + esc(it.unit || "") + '" placeholder="hrs/ea/sqft" style="text-align:center"></td>' +
+      '<td class="num"><input type="number" class="line-rate" value="' + esc(it.rate == null ? "" : it.rate) + '" step="0.01" min="0" style="text-align:right"></td>' +
+      '<td class="num"><input type="text" class="line-total" value="' + fmt((Number(it.qty) || 0) * (Number(it.rate) || 0)) + '" readonly></td>' +
+      '<td><button class="del-row" onclick="deleteLine(\'' + kind + '\', ' + idx + ')">×</button></td>' +
+    '</tr>';
+  }).join("");
 }
 function addLine(kind) {
   const arr = currentRecord.estimate[kind] || [];
@@ -1071,9 +1181,9 @@ function deleteLine(kind, idx) {
   recalc();
 }
 function attachLineListeners() {
-  document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(row => {
-    row.querySelectorAll("input").forEach(inp => {
-      inp.addEventListener("input", () => {
+  document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(function(row) {
+    row.querySelectorAll("input").forEach(function(inp) {
+      inp.addEventListener("input", function() {
         syncLines();
         recalc();
       });
@@ -1081,10 +1191,10 @@ function attachLineListeners() {
   });
 }
 function syncLines() {
-  ["labor", "materials"].forEach(kind => {
-    const rows = document.querySelectorAll(`#${kind}-body tr[data-idx]`);
+  ["labor", "materials"].forEach(function(kind) {
+    const rows = document.querySelectorAll("#" + kind + "-body tr[data-idx]");
     const items = [];
-    rows.forEach(row => {
+    rows.forEach(function(row) {
       items.push({
         item: row.querySelector(".line-item").value,
         qty: parseFloat(row.querySelector(".line-qty").value) || 0,
@@ -1104,8 +1214,7 @@ function recalc() {
   document.getElementById("tot-sub").textContent = fmt(t.sub);
   document.getElementById("tot-markup").textContent = fmt(t.markup);
   document.getElementById("tot-grand").textContent = fmt(t.grand);
-  // Update per-row totals
-  document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(row => {
+  document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(function(row) {
     const totEl = row.querySelector(".line-total");
     if (!totEl) return;
     const q = parseFloat(row.querySelector(".line-qty").value) || 0;
@@ -1119,7 +1228,7 @@ async function generateAI(isRegenerate) {
   if (isRegenerate && !confirm("This will replace the current scope and line items with a new AI draft. Continue?")) return;
   const btn = document.getElementById("gen-btn");
   btn.disabled = true;
-  btn.innerHTML = `<span class="ai-spin"></span> Generating…`;
+  btn.innerHTML = '<span class="ai-spin"></span> Generating…';
 
   try {
     const r = await fetch("/.netlify/functions/generate-estimate", {
@@ -1130,7 +1239,11 @@ async function generateAI(isRegenerate) {
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || "AI generation failed");
 
+    const prevMode = currentRecord.estimate && currentRecord.estimate.displayMode;
     currentRecord.estimate = data.estimate;
+    if (prevMode && !currentRecord.estimate.displayMode) {
+      currentRecord.estimate.displayMode = prevMode;
+    }
     currentRecord.status = data.status;
     renderEdit();
     toast("✓ AI estimate generated");
@@ -1145,6 +1258,8 @@ async function generateAI(isRegenerate) {
 /* ===== SAVE / SEND / DELETE ===== */
 function gatherForm() {
   syncLines();
+  const checkedRadio = document.querySelector('input[name="display-mode"]:checked');
+  const displayMode = checkedRadio ? checkedRadio.value : "labor";
   return {
     projectTitle: document.getElementById("f-title").value.trim(),
     summary: document.getElementById("f-summary").value.trim(),
@@ -1152,6 +1267,7 @@ function gatherForm() {
     timelineText: document.getElementById("f-timeline").value.trim(),
     notes: document.getElementById("f-notes").value.trim(),
     markupPct: parseFloat(document.getElementById("f-markup").value) || 0,
+    displayMode: displayMode,
     labor: currentRecord.estimate.labor || [],
     materials: currentRecord.estimate.materials || [],
   };
@@ -1177,12 +1293,14 @@ async function saveDraft() {
 async function sendToCustomer() {
   const est = gatherForm();
   if (!est.projectTitle) { toast("Add a project title first", true); return; }
-  const t = calcTotal({ ...est });
+  const t = calcTotal(est);
   if (t.grand <= 0) { toast("Add labor or materials with prices first", true); return; }
-  if (!confirm(`Send estimate of ${fmt(t.grand)} to ${currentRecord.customer.name}?`)) return;
+
+  const modeLabel = est.displayMode === "total" ? "Total Only" :
+                    est.displayMode === "full" ? "Full Breakdown" : "Labor Visible";
+  if (!confirm("Send estimate of " + fmt(t.grand) + " to " + currentRecord.customer.name + "?\n\nCustomer will see: " + modeLabel)) return;
 
   try {
-    // Save first
     let r = await fetch("/.netlify/functions/save-estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1190,7 +1308,6 @@ async function sendToCustomer() {
     });
     if (!r.ok) throw new Error("Save before send failed");
 
-    // Then send
     r = await fetch("/.netlify/functions/send-quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1207,7 +1324,7 @@ async function sendToCustomer() {
 }
 
 async function deleteEstimate() {
-  if (!confirm(`Delete estimate ${currentRecord.ref}? This cannot be undone.`)) return;
+  if (!confirm("Delete estimate " + currentRecord.ref + "? This cannot be undone.")) return;
   try {
     const r = await fetch("/.netlify/functions/delete-estimate", {
       method: "POST",
@@ -1223,8 +1340,7 @@ async function deleteEstimate() {
   }
 }
 
-// Close modal on backdrop click
-document.getElementById("edit-modal").addEventListener("click", (e) => {
+document.getElementById("edit-modal").addEventListener("click", function(e) {
   if (e.target.id === "edit-modal") closeEdit();
 });
 </script>
