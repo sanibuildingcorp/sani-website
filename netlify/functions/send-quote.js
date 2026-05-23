@@ -1,7 +1,6 @@
 // netlify/functions/send-quote.js
-// Sends the customer an email with a link to their quote page.
-// Updates status to "sent" in Blobs.
-// Email format adapts to estimate.displayMode: "total" | "labor" | "full"
+// Sends customer email with link to their quote page.
+// Email format adapts to estimate.showLaborCost / estimate.showMaterialsCost checkboxes.
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
@@ -36,135 +35,164 @@ exports.handler = async function (event) {
 
     const customer = record.customer || {};
     const est = record.estimate || {};
-    const total = calculateTotal(est);
+    const reqData = record.request || {};
+    const calc = calcAll(est);
     const quoteUrl = `${siteUrl}/quote.html?ref=${encodeURIComponent(ref)}`;
-
-    // Determine display mode (default: "labor")
-    const displayMode = ["total", "labor", "full"].includes(est.displayMode) ? est.displayMode : "labor";
 
     const canSendToCustomer = customer.email && customer.email.toLowerCase() === contractorEmail.toLowerCase();
     const recipientEmail = canSendToCustomer ? customer.email : contractorEmail;
-
     const firstName = (customer.name || "there").split(" ")[0];
     const subjectPrefix = canSendToCustomer ? "" : `[FORWARD TO ${customer.email}] `;
 
-    // Build mode-specific HTML sections
-    const laborItemsHtml = (est.labor || []).map(item => {
-      const qtyDisplay = (Number(item.qty) > 0) ? `${escapeHtml(item.qty)} ${escapeHtml(item.unit || "")}` : "";
-      return `<tr>
-        <td style="padding:10px 12px;border-bottom:1px solid #f0ebe0;color:#444">${escapeHtml(item.item)}</td>
-        ${qtyDisplay ? `<td style="padding:10px 12px;border-bottom:1px solid #f0ebe0;color:#888;font-size:13px;text-align:right;white-space:nowrap">${qtyDisplay}</td>` : '<td style="padding:10px 12px;border-bottom:1px solid #f0ebe0"></td>'}
-      </tr>`;
-    }).join("");
+    // Build categorized scope HTML (if scope has CATEGORY: headers)
+    const categories = parseScope(est.scopeOfWork || "");
+    const breakdownHtml = categories.length > 0
+      ? categories.map(cat => `
+          <div style="margin-bottom:18px">
+            <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#c9a84c;padding:11px 18px;font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;font-weight:700;text-transform:uppercase;border-radius:6px 6px 0 0;border-left:4px solid #c9a84c">
+              ${escapeHtml(cat.name)}
+            </div>
+            <div style="background:#faf8f4;padding:14px 18px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 6px 6px">
+              <ul style="list-style:none;padding:0;margin:0">
+                ${cat.items.map(item => `
+                  <li style="padding:6px 0 6px 18px;position:relative;font-size:14px;color:#555;line-height:1.55">
+                    <span style="position:absolute;left:0;color:#c9a84c;font-weight:700">•</span>
+                    ${escapeHtml(item)}
+                  </li>
+                `).join("")}
+              </ul>
+            </div>
+          </div>
+        `).join("")
+      : "";
 
-    const laborFullHtml = (est.labor || []).map(item => `<tr>
-      <td style="padding:8px 10px;border-bottom:1px solid #f0ebe0;color:#444">${escapeHtml(item.item)}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #f0ebe0;color:#888;text-align:right;font-size:13px">${escapeHtml(item.qty)} ${escapeHtml(item.unit || "")}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #f0ebe0;color:#888;text-align:right;font-size:13px">${fmt(item.rate)}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #f0ebe0;color:#444;text-align:right;font-weight:600">${fmt((Number(item.qty) || 0) * (Number(item.rate) || 0))}</td>
-    </tr>`).join("");
+    // Build line items section based on checkboxes
+    let lineItemsHtml = "";
+    let includedNoteHtml = "";
 
-    const materialsFullHtml = (est.materials || []).map(item => `<tr>
-      <td style="padding:8px 10px;border-bottom:1px solid #f0ebe0;color:#444">${escapeHtml(item.item)}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #f0ebe0;color:#888;text-align:right;font-size:13px">${escapeHtml(item.qty)} ${escapeHtml(item.unit || "")}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #f0ebe0;color:#888;text-align:right;font-size:13px">${fmt(item.rate)}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #f0ebe0;color:#444;text-align:right;font-weight:600">${fmt((Number(item.qty) || 0) * (Number(item.rate) || 0))}</td>
-    </tr>`).join("");
-
-    // Mode-specific middle content
-    let scopeAndItemsHtml = "";
-
-    if (displayMode === "full") {
-      // FULL: scope + labor table + materials table + breakdown totals
-      scopeAndItemsHtml = `
-        ${est.scopeOfWork ? `
-        <h3 style="font-family:Arial,sans-serif;color:#0d1b2a;font-size:15px;letter-spacing:1px;margin:24px 0 8px;padding-bottom:8px;border-bottom:1px solid #e8e2d9;text-transform:uppercase">Scope of Work</h3>
-        <div style="font-size:14px;color:#555;line-height:1.7;white-space:pre-wrap;margin-bottom:18px">${escapeHtml(est.scopeOfWork)}</div>
-        ` : ""}
-        ${laborFullHtml ? `
-        <h3 style="font-family:Arial,sans-serif;color:#0d1b2a;font-size:15px;letter-spacing:1px;margin:24px 0 8px;padding-bottom:8px;border-bottom:1px solid #e8e2d9;text-transform:uppercase">Labor</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
-          <thead><tr>
-            <th style="text-align:left;padding:8px 10px;color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;border-bottom:1px solid #e8e2d9">Description</th>
-            <th style="text-align:right;padding:8px 10px;color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;border-bottom:1px solid #e8e2d9">Qty</th>
-            <th style="text-align:right;padding:8px 10px;color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;border-bottom:1px solid #e8e2d9">Rate</th>
-            <th style="text-align:right;padding:8px 10px;color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;border-bottom:1px solid #e8e2d9">Total</th>
-          </tr></thead>
-          <tbody>${laborFullHtml}</tbody>
-        </table>` : ""}
-        ${materialsFullHtml ? `
-        <h3 style="font-family:Arial,sans-serif;color:#0d1b2a;font-size:15px;letter-spacing:1px;margin:24px 0 8px;padding-bottom:8px;border-bottom:1px solid #e8e2d9;text-transform:uppercase">Materials</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
-          <thead><tr>
-            <th style="text-align:left;padding:8px 10px;color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;border-bottom:1px solid #e8e2d9">Description</th>
-            <th style="text-align:right;padding:8px 10px;color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;border-bottom:1px solid #e8e2d9">Qty</th>
-            <th style="text-align:right;padding:8px 10px;color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;border-bottom:1px solid #e8e2d9">Rate</th>
-            <th style="text-align:right;padding:8px 10px;color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;border-bottom:1px solid #e8e2d9">Total</th>
-          </tr></thead>
-          <tbody>${materialsFullHtml}</tbody>
-        </table>` : ""}
+    if (calc.bothHidden) {
+      // Dramatic total only
+      lineItemsHtml = `
+        <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:42px 24px;border-radius:14px;margin:24px 0;text-align:center">
+          <div style="font-size:12px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;margin-bottom:10px">Your Estimate</div>
+          <div style="font-size:56px;font-weight:700;color:#fff;line-height:1;letter-spacing:2px">${fmt(calc.customerTotal)}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:10px">All-inclusive · No hidden fees</div>
+        </div>
       `;
-    } else if (displayMode === "labor") {
-      // LABOR: scope + simple labor list (no rates) + "materials included" note
-      scopeAndItemsHtml = `
-        ${est.scopeOfWork ? `
-        <h3 style="font-family:Arial,sans-serif;color:#0d1b2a;font-size:15px;letter-spacing:1px;margin:24px 0 8px;padding-bottom:8px;border-bottom:1px solid #e8e2d9;text-transform:uppercase">Scope of Work</h3>
-        <div style="font-size:14px;color:#555;line-height:1.7;white-space:pre-wrap;margin-bottom:18px">${escapeHtml(est.scopeOfWork)}</div>
-        ` : ""}
-        ${laborItemsHtml ? `
-        <h3 style="font-family:Arial,sans-serif;color:#0d1b2a;font-size:15px;letter-spacing:1px;margin:24px 0 8px;padding-bottom:8px;border-bottom:1px solid #e8e2d9;text-transform:uppercase">Labor &amp; Work Included</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:14px">
-          <tbody>${laborItemsHtml}</tbody>
-        </table>
-        <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:10px 14px;font-size:13px;color:#555;margin:14px 0 0;border-radius:0 6px 6px 0">
-          <strong style="color:#2ecc71">✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the total price.
-        </div>` : ""}
+    } else {
+      // Box with dotted leader rows
+      let rowsHtml = "";
+      if (calc.showLabor) {
+        rowsHtml += `
+          <tr>
+            <td style="padding:9px 0;font-size:14.5px;color:#555">Labor</td>
+            <td style="padding:9px 0;font-size:14.5px;color:#1a1a1a;font-weight:600;text-align:right">${fmt(calc.shownLabor)}</td>
+          </tr>`;
+      }
+      if (calc.showMaterials) {
+        rowsHtml += `
+          <tr>
+            <td style="padding:9px 0;font-size:14.5px;color:#555">Materials</td>
+            <td style="padding:9px 0;font-size:14.5px;color:#1a1a1a;font-weight:600;text-align:right">${fmt(calc.shownMaterials)}</td>
+          </tr>`;
+      }
+      lineItemsHtml = `
+        <div style="margin:24px 0">
+          <div style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:10px">Line Items</div>
+          <div style="background:#faf8f4;border:1px solid #e8e2d9;border-radius:10px;padding:16px 22px">
+            <table style="width:100%;border-collapse:collapse">
+              ${rowsHtml}
+              <tr>
+                <td style="padding-top:12px;border-top:2px solid #0d1b2a;font-family:Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:1.5px;color:#0d1b2a">TOTAL</td>
+                <td style="padding-top:12px;border-top:2px solid #0d1b2a;font-family:Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:1.5px;color:#0d1b2a;text-align:right">${fmt(calc.customerTotal)}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
       `;
+      // Note when one side hidden
+      if (calc.showLabor && !calc.showMaterials && calc.hasMaterials) {
+        includedNoteHtml = `
+          <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:11px 16px;font-size:13px;color:#555;border-radius:0 6px 6px 0;margin:-12px 0 24px">
+            <strong style="color:#2ecc71">✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.
+          </div>
+        `;
+      } else if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
+        includedNoteHtml = `
+          <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:11px 16px;font-size:13px;color:#555;border-radius:0 6px 6px 0;margin:-12px 0 24px">
+            <strong style="color:#2ecc71">✓ Labor included</strong> — all work is covered in the price above.
+          </div>
+        `;
+      }
     }
-    // Mode "total" = no scope, no items, just the dramatic total below
 
-    const totalDisplay = displayMode === "total" ? `
-      <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:48px 24px;border-radius:14px;margin:32px 0;text-align:center">
-        <div style="font-size:12px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;margin-bottom:12px">Your Estimate</div>
-        <div style="font-size:54px;font-weight:700;color:#fff;line-height:1;letter-spacing:2px;margin-bottom:12px">$${total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.6)">All-inclusive · No hidden fees</div>
-        ${est.timelineText ? `<div style="font-size:13px;color:#aaa;margin-top:12px">Estimated timeline: ${escapeHtml(est.timelineText)}</div>` : ""}
-      </div>
-    ` : `
-      <div style="background:#0d1b2a;color:#fff;padding:24px;border-radius:10px;margin:24px 0;text-align:center">
-        <div style="font-size:12px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase">Total Estimate</div>
-        <div style="font-size:38px;font-weight:700;color:#fff;margin:8px 0">$${total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-        ${displayMode === "labor" ? '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px">All-inclusive · Materials &amp; labor</div>' : ""}
-        ${est.timelineText ? `<div style="font-size:13px;color:#aaa;margin-top:8px">Estimated timeline: ${escapeHtml(est.timelineText)}</div>` : ""}
-      </div>
-    `;
+    // Issued date
+    const issuedDate = new Date(record.sentAt || record.submittedAt || Date.now()).toLocaleDateString("en-US", {
+      month: "long", day: "numeric", year: "numeric"
+    });
 
     const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
-<div style="max-width:600px;margin:0 auto;padding:20px">
-  <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:30px;border-radius:10px 10px 0 0;text-align:center">
-    <a href="https://www.sanibuildingcorp.com" style="text-decoration:none;color:inherit"><div style="font-family:Arial,sans-serif;font-size:22px;letter-spacing:4px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div></a>
-    <div style="font-size:11px;letter-spacing:2px;color:#aaa;margin-top:6px">YOUR ESTIMATE IS READY</div>
+<div style="max-width:640px;margin:0 auto;padding:20px">
+
+  <!-- HEADER -->
+  <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:32px 24px;border-radius:12px 12px 0 0;text-align:center">
+    <a href="https://www.sanibuildingcorp.com" style="text-decoration:none;color:inherit">
+      <div style="font-family:Arial,sans-serif;font-size:24px;letter-spacing:4px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>
+    </a>
+    <div style="font-size:11px;letter-spacing:2.5px;color:#aaa;margin-top:8px;text-transform:uppercase">YOUR ESTIMATE IS READY</div>
   </div>
-  <div style="background:#fff;padding:32px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 10px 10px">
-    <h1 style="color:#0d1b2a;font-size:24px;margin:0 0 12px">Hi ${escapeHtml(firstName)},</h1>
-    <p style="font-size:15px;color:#555">Thanks for reaching out about your <strong>${escapeHtml(est.projectTitle || record.request?.service || "project")}</strong>. We've put together a detailed estimate for you.</p>
 
-    ${est.summary ? `<div style="background:#faf8f4;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:14px;color:#444">${escapeHtml(est.summary)}</div>` : ""}
+  <!-- BODY -->
+  <div style="background:#fff;padding:30px 28px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 12px 12px">
 
-    ${scopeAndItemsHtml}
+    <h1 style="color:#0d1b2a;font-size:23px;margin:0 0 14px">Hi ${escapeHtml(firstName)},</h1>
+    <p style="font-size:14.5px;color:#555;margin-bottom:18px">Thanks for reaching out about your <strong>${escapeHtml(est.projectTitle || reqData.service || "project")}</strong>. We've put together a detailed estimate for you.</p>
 
-    ${totalDisplay}
+    ${est.summary ? `<div style="background:#f7f0e3;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:14px;color:#444;border-radius:0 6px 6px 0">${escapeHtml(est.summary)}</div>` : ""}
 
-    <div style="text-align:center;margin:28px 0">
-      <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">View Full Estimate &amp; Accept →</a>
+    <!-- ESTIMATE INFO BOX -->
+    <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden;margin:20px 0">
+      <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:13px 18px;font-family:Arial,sans-serif;font-size:15px;letter-spacing:2px;font-weight:700">
+        ESTIMATE <span style="color:#c9a84c">#${escapeHtml(ref)}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555;width:110px">Issued</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(issuedDate)}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Total</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-family:Arial,sans-serif;font-size:20px;color:#0d1b2a;font-weight:700;letter-spacing:1px">${fmt(calc.customerTotal)}</td>
+        </tr>
+        ${est.timelineText ? `
+        <tr>
+          <td style="padding:12px 18px;font-size:13px;color:#555">Timeline</td>
+          <td style="padding:12px 18px;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(est.timelineText)}</td>
+        </tr>
+        ` : ""}
+      </table>
     </div>
 
-    <p style="font-size:14px;color:#555;margin:24px 0 0">Click the button above to view your estimate, accept it online, or get in touch with any questions. You can also reply directly to this email or call <a href="tel:+13322770990" style="color:#b8720a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
+    ${breakdownHtml ? `
+    <div style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;color:#888;text-transform:uppercase;margin:28px 0 14px">Project Breakdown</div>
+    ${breakdownHtml}
+    ` : ""}
 
+    ${lineItemsHtml}
+    ${includedNoteHtml}
+
+    <!-- CTA BUTTON -->
+    <div style="text-align:center;margin:28px 0">
+      <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">View Full Estimate &amp; Approve →</a>
+    </div>
+
+    <p style="font-size:14px;color:#555;margin:24px 0 0">Click the button above to view your estimate, approve it online, or request changes. You can also reply directly to this email or call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
+
+    <!-- FOOTER -->
     <div style="margin-top:32px;padding-top:24px;border-top:1px solid #eee;text-align:center">
       <div style="color:#888;font-size:11px;letter-spacing:2px;text-transform:uppercase">Sani Building Corp</div>
-      <div style="font-size:12px;color:#888;margin-top:4px">Ref: ${escapeHtml(ref)} · Fully Insured · 4.9 ★</div>
-      <div style="margin-top:14px"><a href="https://www.sanibuildingcorp.com" style="color:#b8720a;text-decoration:none;font-size:12px;font-weight:600">← Visit sanibuildingcorp.com</a></div>
+      <div style="font-size:12px;color:#888;margin-top:4px">Fully Insured · 4.9 ★ · NYC Metro</div>
+      <div style="margin-top:14px"><a href="https://www.sanibuildingcorp.com" style="color:#b8930a;text-decoration:none;font-size:12px;font-weight:600">← Visit sanibuildingcorp.com</a></div>
     </div>
   </div>
 </div>
@@ -174,7 +202,7 @@ exports.handler = async function (event) {
       from: "Sani Building Corp <onboarding@resend.dev>",
       to: [recipientEmail],
       reply_to: contractorEmail,
-      subject: `${subjectPrefix}Your Estimate from Sani Building Corp — ${est.projectTitle || record.request?.service || "Project"} (${ref})`,
+      subject: `${subjectPrefix}Your Estimate from Sani Building Corp — ${est.projectTitle || reqData.service || "Project"} (${ref})`,
       html,
     });
 
@@ -195,13 +223,78 @@ exports.handler = async function (event) {
   }
 };
 
-function calculateTotal(est) {
-  if (!est) return 0;
+/**
+ * Calculate customer-facing totals based on showLaborCost / showMaterialsCost.
+ * MUST match the logic in quote.html exactly.
+ */
+function calcAll(est) {
+  if (!est) return { customerTotal: 0, shownLabor: 0, shownMaterials: 0, hasLabor: false, hasMaterials: false, showLabor: false, showMaterials: false, bothHidden: true };
   const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const materials = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const subtotal = labor + materials;
-  const markup = subtotal * ((Number(est.markupPct) || 0) / 100);
-  return Math.round((subtotal + markup) * 100) / 100;
+  const mat = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
+  const markupPct = Number(est.markupPct) || 0;
+  const laborWithMarkup = labor * (1 + markupPct / 100);
+  const matWithMarkup = mat * (1 + markupPct / 100);
+
+  let showLabor, showMaterials;
+  if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
+    showLabor = est.showLaborCost !== false;
+    showMaterials = est.showMaterialsCost === true;
+  } else if (est.displayMode === "total") {
+    showLabor = false; showMaterials = false;
+  } else if (est.displayMode === "full") {
+    showLabor = true; showMaterials = true;
+  } else {
+    showLabor = true; showMaterials = false; // default
+  }
+
+  const bothHidden = !showLabor && !showMaterials;
+  const fallbackGrand = (labor + mat) * (1 + markupPct / 100);
+  const shownLabor = showLabor ? laborWithMarkup : 0;
+  const shownMaterials = showMaterials ? matWithMarkup : 0;
+  const customerTotal = bothHidden ? fallbackGrand : (shownLabor + shownMaterials);
+
+  return {
+    customerTotal: Math.round(customerTotal * 100) / 100,
+    shownLabor: Math.round(shownLabor * 100) / 100,
+    shownMaterials: Math.round(shownMaterials * 100) / 100,
+    hasLabor: labor > 0,
+    hasMaterials: mat > 0,
+    showLabor,
+    showMaterials,
+    bothHidden
+  };
+}
+
+/**
+ * Parse scope text into categorized sections (same logic as quote.html).
+ */
+function parseScope(scopeText) {
+  if (!scopeText || !scopeText.trim()) return [];
+  const lines = scopeText.split(/\r?\n/);
+  const categories = [];
+  let current = null;
+  const preCategoryItems = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) continue;
+    const isHeader = /^[^•\-*\d].*:$/.test(trimmed) && trimmed.length < 80 && !trimmed.startsWith("•") && !trimmed.startsWith("-") && !trimmed.startsWith("*");
+    if (isHeader) {
+      if (current && current.items.length) categories.push(current);
+      current = { name: trimmed.replace(/:$/, "").trim(), items: [] };
+    } else {
+      const cleanedItem = trimmed.replace(/^[•\-*]\s*/, "").replace(/^\d+\.\s*/, "").trim();
+      if (!cleanedItem) continue;
+      if (current) current.items.push(cleanedItem);
+      else preCategoryItems.push(cleanedItem);
+    }
+  }
+  if (current && current.items.length) categories.push(current);
+  if (preCategoryItems.length) {
+    if (categories.length === 0) categories.push({ name: "Scope of Work", items: preCategoryItems });
+    else categories.unshift({ name: "Scope of Work", items: preCategoryItems });
+  }
+  return categories;
 }
 
 function fmt(n) {
