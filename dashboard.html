@@ -809,6 +809,196 @@ body {
 }
 .btn-danger:hover { background: var(--bad-bg); }
 
+/* ============ INVOICE MODAL ============ */
+.invoice-modal-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  max-width: 720px;
+  margin: 20px auto;
+  padding: 28px 32px;
+  position: relative;
+}
+.inv-section {
+  margin-bottom: 20px;
+}
+.inv-section-label {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.inv-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 640px) { .inv-type-grid { grid-template-columns: 1fr 1fr; } }
+.inv-type-opt {
+  background: var(--card-2);
+  border: 1.5px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 12px 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+}
+.inv-type-opt:hover { border-color: var(--gold); }
+.inv-type-opt.selected {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+.inv-type-opt .ito-name {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  color: var(--ink);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.inv-type-opt.selected .ito-name { color: var(--gold); }
+.inv-type-opt .ito-amount {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+.inv-type-opt.selected .ito-amount { color: var(--gold); }
+
+.inv-amount-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+@media (max-width: 640px) { .inv-amount-row { grid-template-columns: 1fr; } }
+
+.inv-pay-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+@media (max-width: 640px) { .inv-pay-grid { grid-template-columns: 1fr; } }
+.inv-pay-opt {
+  background: var(--card-2);
+  border: 1.5px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all .15s;
+  font-size: 13px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.inv-pay-opt:hover { border-color: var(--gold); }
+.inv-pay-opt.selected {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+.inv-pay-opt .ipo-icon { font-size: 16px; }
+
+.inv-link-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--card-2);
+  border: 1.5px solid var(--line-soft);
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+.inv-link-toggle.checked {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+.inv-link-toggle .ilt-box {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--line);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inv-link-toggle.checked .ilt-box {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+.inv-link-toggle .ilt-box::after {
+  content: "✓";
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 14px;
+  opacity: 0;
+}
+.inv-link-toggle.checked .ilt-box::after { opacity: 1; }
+.inv-link-toggle .ilt-text { flex: 1; font-size: 13px; color: var(--ink-soft); }
+.inv-link-toggle.checked .ilt-text { color: var(--gold); font-weight: 600; }
+
+.inv-preview {
+  background: #f5f0e8;
+  color: #1a1a1a;
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-top: 14px;
+  font-family: var(--body);
+}
+.inv-preview-head {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  color: #c9a84c;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.inv-preview-amount {
+  font-family: var(--display);
+  font-size: 32px;
+  letter-spacing: 1.5px;
+  color: #0d1b2a;
+  margin-bottom: 4px;
+}
+.inv-preview-meta {
+  font-size: 12px;
+  color: #666;
+}
+
+/* History of invoices on this estimate */
+.inv-history {
+  background: var(--navy);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+.inv-history-label {
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--ink-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.inv-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+.inv-history-row:last-child { border-bottom: none; }
+.inv-history-row .ih-number { font-weight: 600; color: var(--gold); }
+.inv-history-row .ih-amount { color: var(--ink); font-weight: 600; }
+
 /* toast */
 .toast {
   position: fixed;
@@ -865,6 +1055,13 @@ body {
   </div>
 </div>
 
+<!-- INVOICE MODAL -->
+<div id="invoice-modal" class="modal-backdrop">
+  <div class="invoice-modal-card" id="invoice-card">
+    <!-- filled by JS -->
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
@@ -876,6 +1073,8 @@ const TABS = [
   { id: "drafted", label: "Drafts" },
   { id: "sent", label: "Sent" },
   { id: "accepted", label: "Accepted" },
+  { id: "invoiced", label: "Invoiced" },
+  { id: "paid", label: "Paid" },
   { id: "declined", label: "Declined" },
 ];
 
@@ -1274,6 +1473,7 @@ function renderEdit() {
     '<div class="modal-actions">' +
       '<button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>' +
       '<div class="modal-actions-right">' +
+        '<button class="btn-secondary" onclick="openInvoiceModal()">💳 Send Invoice</button>' +
         '<button class="btn-secondary" onclick="saveDraft()">💾 Save Draft</button>' +
         '<button class="btn-primary" onclick="sendToCustomer()">📨 Send to Customer</button>' +
       '</div>' +
@@ -1553,6 +1753,277 @@ async function deleteEstimate() {
     toast("Delete failed: " + e.message, true);
   }
 }
+
+/* ===== INVOICE MODAL ===== */
+let invoiceState = {
+  type: "full",  // deposit | final | full | custom
+  amount: 0,
+  dueDate: "",
+  memo: "",
+  paymentMethod: "zelle",
+  paymentDetails: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
+  paymentLink: "",
+  includePaymentLink: false,
+};
+
+function openInvoiceModal() {
+  if (!currentRecord) return;
+  const est = gatherForm();
+  const t = calcTotal(est);
+  // Save the form first so the invoice can use latest totals
+  syncLines();
+  
+  // Calculate prior invoiced amount
+  const prior = (currentRecord.invoices || []).reduce(function(s, inv) { return s + (Number(inv.amount) || 0); }, 0);
+  const remaining = Math.max(0, t.grand - prior);
+
+  // Default state
+  invoiceState = {
+    type: "full",
+    amount: t.grand,
+    dueDate: "",
+    memo: "",
+    paymentMethod: "zelle",
+    paymentDetails: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
+    paymentLink: "",
+    includePaymentLink: false,
+  };
+
+  renderInvoiceModal(t, prior, remaining);
+  document.getElementById("invoice-modal").classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+
+function closeInvoiceModal() {
+  document.getElementById("invoice-modal").classList.remove("show");
+  // Only close body overflow if edit modal isn't also showing
+  if (!document.getElementById("edit-modal").classList.contains("show")) {
+    document.body.style.overflow = "";
+  }
+}
+
+function renderInvoiceModal(totals, prior, remaining) {
+  const cust = currentRecord.customer || {};
+  const est = currentRecord.estimate || {};
+  const invoices = currentRecord.invoices || [];
+
+  const depositAmt = totals.grand * 0.5;
+  const fullAmt = totals.grand;
+
+  const historyHtml = invoices.length ? (
+    '<div class="inv-history">' +
+      '<div class="inv-history-label">📜 Invoice History</div>' +
+      invoices.map(function(inv) {
+        const d = inv.sentAt ? new Date(inv.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
+        return '<div class="inv-history-row">' +
+          '<span><span class="ih-number">' + esc(inv.number || "—") + '</span> · ' + esc(inv.type || "") + ' · ' + esc(d) + '</span>' +
+          '<span class="ih-amount">' + fmt(inv.amount) + '</span>' +
+        '</div>';
+      }).join("") +
+    '</div>'
+  ) : '';
+
+  document.getElementById("invoice-card").innerHTML =
+    '<div class="modal-head">' +
+      '<div>' +
+        '<h2>💳 CREATE INVOICE</h2>' +
+        '<div class="ref-sub">For ' + esc(cust.name || "—") + ' · Estimate Ref ' + esc(currentRecord.ref) + '</div>' +
+      '</div>' +
+      '<button class="modal-close" onclick="closeInvoiceModal()">×</button>' +
+    '</div>' +
+    historyHtml +
+    '<div class="inv-section">' +
+      '<div class="inv-section-label">📋 Invoice Type</div>' +
+      '<div class="inv-type-grid">' +
+        '<div class="inv-type-opt' + (invoiceState.type === "deposit" ? " selected" : "") + '" onclick="setInvoiceType(\'deposit\')">' +
+          '<div class="ito-name">Deposit</div>' +
+          '<div class="ito-amount">' + fmt(depositAmt) + '<br><span style="font-size:10px;opacity:0.7">(50% of estimate)</span></div>' +
+        '</div>' +
+        '<div class="inv-type-opt' + (invoiceState.type === "final" ? " selected" : "") + '" onclick="setInvoiceType(\'final\')">' +
+          '<div class="ito-name">Final</div>' +
+          '<div class="ito-amount">' + fmt(remaining) + '<br><span style="font-size:10px;opacity:0.7">(remaining)</span></div>' +
+        '</div>' +
+        '<div class="inv-type-opt' + (invoiceState.type === "full" ? " selected" : "") + '" onclick="setInvoiceType(\'full\')">' +
+          '<div class="ito-name">Full</div>' +
+          '<div class="ito-amount">' + fmt(fullAmt) + '<br><span style="font-size:10px;opacity:0.7">(full amount)</span></div>' +
+        '</div>' +
+        '<div class="inv-type-opt' + (invoiceState.type === "custom" ? " selected" : "") + '" onclick="setInvoiceType(\'custom\')">' +
+          '<div class="ito-name">Custom</div>' +
+          '<div class="ito-amount">Enter below<br><span style="font-size:10px;opacity:0.7">&nbsp;</span></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="inv-section">' +
+      '<div class="inv-amount-row">' +
+        '<div class="field">' +
+          '<label>Amount</label>' +
+          '<input type="number" id="inv-amount" value="' + invoiceState.amount + '" step="0.01" min="0" oninput="updateInvoiceState()">' +
+        '</div>' +
+        '<div class="field">' +
+          '<label>Due Date (optional)</label>' +
+          '<input type="date" id="inv-duedate" value="' + esc(invoiceState.dueDate) + '" oninput="updateInvoiceState()">' +
+        '</div>' +
+      '</div>' +
+      '<div class="field">' +
+        '<label>Memo / Notes for Customer (optional)</label>' +
+        '<textarea id="inv-memo" rows="2" placeholder="e.g. Thank you for choosing Sani Building Corp..." oninput="updateInvoiceState()">' + esc(invoiceState.memo) + '</textarea>' +
+      '</div>' +
+    '</div>' +
+    '<div class="inv-section">' +
+      '<div class="inv-section-label">💰 Payment Method</div>' +
+      '<div class="inv-pay-grid">' +
+        buildPayOpt("zelle", "💸", "Zelle") +
+        buildPayOpt("bank", "🏦", "Bank Transfer") +
+        buildPayOpt("cash", "💵", "Cash") +
+        buildPayOpt("check", "📝", "Check") +
+      '</div>' +
+      '<div class="field">' +
+        '<label>Payment Instructions (shown on invoice)</label>' +
+        '<textarea id="inv-paydetails" rows="3" placeholder="e.g. Zelle to (332) 277-0990" oninput="updateInvoiceState()">' + esc(invoiceState.paymentDetails) + '</textarea>' +
+      '</div>' +
+    '</div>' +
+    '<div class="inv-section">' +
+      '<div class="inv-section-label">🔗 Online Payment Link (optional)</div>' +
+      '<div class="inv-link-toggle' + (invoiceState.includePaymentLink ? " checked" : "") + '" onclick="togglePaymentLink()">' +
+        '<span class="ilt-box"></span>' +
+        '<span class="ilt-text">Include "Pay Now" button with link below</span>' +
+      '</div>' +
+      '<div class="field" id="inv-link-field" style="' + (invoiceState.includePaymentLink ? "" : "display:none") + '">' +
+        '<label>Payment Link URL (Stripe, PayPal, etc.)</label>' +
+        '<input type="url" id="inv-paylink" value="' + esc(invoiceState.paymentLink) + '" placeholder="https://..." oninput="updateInvoiceState()">' +
+      '</div>' +
+    '</div>' +
+    '<div class="inv-preview">' +
+      '<div class="inv-preview-head">CUSTOMER WILL SEE</div>' +
+      '<div class="inv-preview-amount" id="inv-preview-amount">' + fmt(invoiceState.amount) + '</div>' +
+      '<div class="inv-preview-meta" id="inv-preview-meta">Amount due · No due date set</div>' +
+    '</div>' +
+    '<div class="modal-actions">' +
+      '<button class="btn-secondary" onclick="closeInvoiceModal()">Cancel</button>' +
+      '<div class="modal-actions-right">' +
+        '<button class="btn-primary" id="inv-send-btn" onclick="submitInvoice()">📨 Send Invoice</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function buildPayOpt(method, icon, label) {
+  const sel = invoiceState.paymentMethod === method ? " selected" : "";
+  return '<div class="inv-pay-opt' + sel + '" onclick="setPaymentMethod(\'' + method + '\')">' +
+    '<span class="ipo-icon">' + icon + '</span>' +
+    '<span>' + label + '</span>' +
+  '</div>';
+}
+
+function setInvoiceType(type) {
+  invoiceState.type = type;
+  // Recalculate amount based on type
+  const est = currentRecord.estimate || {};
+  const t = calcTotal(est);
+  const prior = (currentRecord.invoices || []).reduce(function(s, inv) { return s + (Number(inv.amount) || 0); }, 0);
+  if (type === "deposit") {
+    invoiceState.amount = Math.round(t.grand * 0.5 * 100) / 100;
+  } else if (type === "final") {
+    invoiceState.amount = Math.max(0, Math.round((t.grand - prior) * 100) / 100);
+  } else if (type === "full") {
+    invoiceState.amount = Math.round(t.grand * 100) / 100;
+  }
+  // For "custom", don't change amount
+  renderInvoiceModal(t, prior, Math.max(0, t.grand - prior));
+}
+
+function setPaymentMethod(method) {
+  invoiceState.paymentMethod = method;
+  // Auto-fill payment details based on method
+  const defaults = {
+    zelle: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
+    bank: "Bank Transfer:\nBank name: [your bank]\nRouting: xxx\nAccount: xxx",
+    cash: "Cash payment accepted in person.\nPlease call (332) 277-0990 to schedule.",
+    check: "Make check payable to:\nSani Building Corp\nMail to: 2954 Brighton 12th Street, Brooklyn, NY 11235",
+  };
+  if (defaults[method]) {
+    invoiceState.paymentDetails = defaults[method];
+  }
+  const est = currentRecord.estimate || {};
+  const t = calcTotal(est);
+  const prior = (currentRecord.invoices || []).reduce(function(s, inv) { return s + (Number(inv.amount) || 0); }, 0);
+  renderInvoiceModal(t, prior, Math.max(0, t.grand - prior));
+}
+
+function togglePaymentLink() {
+  invoiceState.includePaymentLink = !invoiceState.includePaymentLink;
+  const est = currentRecord.estimate || {};
+  const t = calcTotal(est);
+  const prior = (currentRecord.invoices || []).reduce(function(s, inv) { return s + (Number(inv.amount) || 0); }, 0);
+  renderInvoiceModal(t, prior, Math.max(0, t.grand - prior));
+}
+
+function updateInvoiceState() {
+  invoiceState.amount = parseFloat(document.getElementById("inv-amount").value) || 0;
+  invoiceState.dueDate = document.getElementById("inv-duedate").value;
+  invoiceState.memo = document.getElementById("inv-memo").value;
+  invoiceState.paymentDetails = document.getElementById("inv-paydetails").value;
+  const linkField = document.getElementById("inv-paylink");
+  if (linkField) invoiceState.paymentLink = linkField.value;
+  // Update preview live
+  document.getElementById("inv-preview-amount").textContent = fmt(invoiceState.amount);
+  const dueText = invoiceState.dueDate
+    ? "Due " + new Date(invoiceState.dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+    : "No due date set";
+  document.getElementById("inv-preview-meta").textContent = invoiceState.type.charAt(0).toUpperCase() + invoiceState.type.slice(1) + " invoice · " + dueText;
+}
+
+async function submitInvoice() {
+  // Validate
+  if (!invoiceState.amount || invoiceState.amount <= 0) {
+    toast("Please enter a valid amount", true);
+    return;
+  }
+  if (invoiceState.includePaymentLink && (!invoiceState.paymentLink || !invoiceState.paymentLink.trim())) {
+    toast("Please enter a payment link URL or uncheck the option", true);
+    return;
+  }
+
+  const typeLabel = invoiceState.type.charAt(0).toUpperCase() + invoiceState.type.slice(1);
+  if (!confirm("Send " + typeLabel + " invoice of " + fmt(invoiceState.amount) + " to " + (currentRecord.customer.name || "customer") + "?")) return;
+
+  const btn = document.getElementById("inv-send-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ai-spin"></span> Sending…';
+
+  try {
+    const r = await fetch("/.netlify/functions/send-invoice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ref: currentRecord.ref,
+        invoiceType: invoiceState.type,
+        amount: invoiceState.amount,
+        dueDate: invoiceState.dueDate,
+        memo: invoiceState.memo,
+        paymentMethod: invoiceState.paymentMethod,
+        paymentDetails: invoiceState.paymentDetails,
+        paymentLink: invoiceState.paymentLink,
+        includePaymentLink: invoiceState.includePaymentLink,
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || "Send failed");
+    toast(data.forwardedToContractor ? "✓ Invoice sent to your inbox to forward" : "✓ Invoice sent to customer (" + data.invoiceNumber + ")");
+    closeInvoiceModal();
+    // Refresh the estimate to show updated status + invoice history
+    await loadEstimates();
+    closeEdit();
+  } catch (e) {
+    console.error(e);
+    toast("Send failed: " + e.message, true);
+    btn.disabled = false;
+    btn.textContent = "📨 Send Invoice";
+  }
+}
+
+document.getElementById("invoice-modal").addEventListener("click", function(e) {
+  if (e.target.id === "invoice-modal") closeInvoiceModal();
+});
 
 document.getElementById("edit-modal").addEventListener("click", function(e) {
   if (e.target.id === "edit-modal") closeEdit();
