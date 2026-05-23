@@ -492,99 +492,168 @@ body {
 }
 .field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
 
-/* ============ DISPLAY MODE SELECTOR (NEW) ============ */
-.display-mode-panel {
+/* ============ CUSTOMER VIEW MODE - CHECKBOXES + PREVIEW ============ */
+.cv-panel {
   background: var(--navy);
   border: 1.5px solid var(--gold);
   border-radius: 12px;
-  padding: 18px 22px;
+  padding: 20px 24px;
   margin-bottom: 24px;
 }
-.display-mode-panel h3 {
+.cv-panel h3 {
   font-family: var(--display);
   font-size: 14px;
   letter-spacing: 2px;
   color: var(--gold);
   margin-bottom: 6px;
 }
-.display-mode-panel .helper-text {
+.cv-panel .cv-helper {
   font-size: 12px;
   color: var(--ink-muted);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   line-height: 1.5;
 }
-.mode-options {
+.cv-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 720px) { .cv-grid { grid-template-columns: 1fr; } }
+
+.cv-checks {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
-@media (max-width: 640px) { .mode-options { grid-template-columns: 1fr; } }
-.mode-option {
+.cv-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
   background: var(--card-2);
   border: 1.5px solid var(--line-soft);
   border-radius: 10px;
-  padding: 14px 16px;
   cursor: pointer;
   transition: all .15s;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
 }
-.mode-option:hover {
-  border-color: var(--gold);
-  background: var(--navy-3);
-}
-.mode-option.selected {
+.cv-check:hover { border-color: var(--gold); }
+.cv-check.checked {
   border-color: var(--gold);
   background: var(--gold-soft);
 }
-.mode-option input[type="radio"] {
+.cv-check input[type="checkbox"] {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
-.mode-option .mode-radio-dot {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+.cv-checkbox-box {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   border: 2px solid var(--line);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all .15s;
+  position: relative;
 }
-.mode-option.selected .mode-radio-dot {
+.cv-check.checked .cv-checkbox-box {
   border-color: var(--gold);
   background: var(--gold);
-  box-shadow: inset 0 0 0 3px var(--card-2);
 }
-.mode-option .mode-name {
+.cv-checkbox-box::after {
+  content: "✓";
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.cv-check.checked .cv-checkbox-box::after { opacity: 1; }
+.cv-check-text { flex: 1; }
+.cv-check-label {
   font-family: var(--display);
   font-size: 14px;
   letter-spacing: 1.5px;
   color: var(--ink);
-  padding-right: 28px;
   text-transform: uppercase;
 }
-.mode-option.selected .mode-name { color: var(--gold); }
-.mode-option .mode-desc {
-  font-size: 11px;
+.cv-check.checked .cv-check-label { color: var(--gold); }
+.cv-check-amount {
+  font-size: 12px;
   color: var(--ink-muted);
-  line-height: 1.5;
+  margin-top: 2px;
 }
-.mode-option .mode-tag {
-  display: inline-block;
-  background: var(--gold-soft);
-  color: var(--gold);
-  font-size: 9px;
+.cv-check.checked .cv-check-amount { color: var(--ink-soft); }
+
+/* Live preview box */
+.cv-preview {
+  background: #f5f0e8;
+  color: #1a1a1a;
+  border-radius: 10px;
+  padding: 18px 20px;
+  position: relative;
+}
+.cv-preview-label {
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 1.5px;
-  padding: 2px 7px;
+  padding: 3px 10px;
   border-radius: 8px;
-  margin-top: 4px;
   text-transform: uppercase;
-  width: fit-content;
+}
+.cv-preview-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+  color: #555;
+  font-family: var(--body);
+}
+.cv-preview-row.divider {
+  border-top: 1px dashed #aaa;
+  margin-top: 4px;
+  padding-top: 8px;
+}
+.cv-preview-row.preview-grand {
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 1.5px;
+  color: #0d1b2a;
+  padding-top: 10px;
+  margin-top: 4px;
+  border-top: 2px solid #0d1b2a;
+}
+.cv-preview-row .pv-value {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.cv-preview-row.preview-grand .pv-value {
+  color: #0d1b2a;
+  font-family: var(--display);
+}
+.cv-preview-note {
+  background: #f7f9f5;
+  border-left: 3px solid var(--good);
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #555;
+  margin-top: 8px;
+  border-radius: 0 4px 4px 0;
+}
+.cv-preview-note strong { color: var(--good); }
+.cv-preview-empty {
+  text-align: center;
+  padding: 20px 0;
+  color: #888;
+  font-size: 13px;
+  font-style: italic;
 }
 
 /* line item tables */
@@ -650,13 +719,21 @@ body {
 }
 .btn-add-row:hover { background: var(--gold); color: var(--navy); }
 
-/* totals */
+/* totals (internal) */
 .totals-box {
   background: var(--navy);
   border: 1px solid var(--line-soft);
   border-radius: 10px;
   padding: 16px 20px;
   margin-top: 16px;
+}
+.totals-box .internal-tag {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 600;
 }
 .tot-line {
   display: flex;
@@ -843,19 +920,84 @@ function fmtDate(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
+
+/**
+ * Calculate internal totals (with markup, before display filter).
+ */
 function calcTotal(est) {
-  if (!est) return { labor: 0, mat: 0, sub: 0, markup: 0, grand: 0 };
+  if (!est) return { labor: 0, mat: 0, sub: 0, markup: 0, grand: 0, laborWithMarkup: 0, matWithMarkup: 0 };
   const labor = (est.labor || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
   const mat = (est.materials || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
   const sub = labor + mat;
-  const markup = sub * ((Number(est.markupPct) || 0) / 100);
-  return { labor: labor, mat: mat, sub: sub, markup: markup, grand: sub + markup };
+  const markupPct = Number(est.markupPct) || 0;
+  const markup = sub * (markupPct / 100);
+  // Pro-rate markup proportionally to labor & materials so they each carry their share
+  const laborWithMarkup = labor * (1 + markupPct / 100);
+  const matWithMarkup = mat * (1 + markupPct / 100);
+  return { labor: labor, mat: mat, sub: sub, markup: markup, grand: sub + markup, laborWithMarkup: laborWithMarkup, matWithMarkup: matWithMarkup };
 }
+
+/**
+ * Calculate CUSTOMER-FACING display amounts based on checkboxes.
+ * Returns what the customer actually sees.
+ */
+function calcCustomerView(est) {
+  const t = calcTotal(est);
+  const showLabor = est.showLaborCost !== false; // default true
+  const showMaterials = est.showMaterialsCost === true; // default false
+
+  // If both unchecked, fall back to showing just the grand total (full project)
+  if (!showLabor && !showMaterials) {
+    return {
+      showLabor: false,
+      showMaterials: false,
+      laborAmount: 0,
+      materialsAmount: 0,
+      customerTotal: t.grand,
+      bothHidden: true
+    };
+  }
+
+  const laborAmount = showLabor ? t.laborWithMarkup : 0;
+  const materialsAmount = showMaterials ? t.matWithMarkup : 0;
+  const customerTotal = laborAmount + materialsAmount;
+
+  return {
+    showLabor: showLabor,
+    showMaterials: showMaterials,
+    laborAmount: laborAmount,
+    materialsAmount: materialsAmount,
+    customerTotal: customerTotal,
+    bothHidden: false
+  };
+}
+
 function toast(msg, isError) {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.className = "toast show" + (isError ? " error" : "");
   setTimeout(function() { t.classList.remove("show"); }, 3200);
+}
+
+/**
+ * Migrate legacy displayMode to checkboxes
+ */
+function normalizeDisplayFlags(est) {
+  if (!est) return;
+  // If already has new flags, skip
+  if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") return;
+  // Migrate from old displayMode
+  if (est.displayMode === "total") {
+    est.showLaborCost = false;
+    est.showMaterialsCost = false;
+  } else if (est.displayMode === "full") {
+    est.showLaborCost = true;
+    est.showMaterialsCost = true;
+  } else {
+    // "labor" or undefined → default
+    est.showLaborCost = true;
+    est.showMaterialsCost = false;
+  }
 }
 
 /* ===== TABS ===== */
@@ -956,6 +1098,9 @@ async function openEdit(ref) {
     const r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref));
     if (!r.ok) throw new Error("Load failed");
     currentRecord = await r.json();
+    // Migrate legacy displayMode to new flags
+    if (!currentRecord.estimate) currentRecord.estimate = {};
+    normalizeDisplayFlags(currentRecord.estimate);
     renderEdit();
   } catch (e) {
     card.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>' + esc(e.message) + '</h3><button class="btn-secondary" onclick="closeEdit()">Close</button></div>';
@@ -974,8 +1119,6 @@ function renderEdit() {
   const req = r.request || {};
   const est = r.estimate || {};
 
-  const displayMode = ["total", "labor", "full"].indexOf(est.displayMode) >= 0 ? est.displayMode : "labor";
-
   const answers = req.serviceAnswers || {};
   const answersHtml = Object.entries(answers)
     .filter(function(kv) { return kv[1] && String(kv[1]).trim(); })
@@ -991,6 +1134,9 @@ function renderEdit() {
   }).join("");
 
   const showAiBar = !est.scopeOfWork && (!est.labor || est.labor.length === 0);
+
+  const laborChecked = est.showLaborCost !== false;
+  const materialsChecked = est.showMaterialsCost === true;
 
   document.getElementById("edit-card").innerHTML =
     '<div class="modal-head">' +
@@ -1044,8 +1190,8 @@ function renderEdit() {
         '<textarea id="f-summary" placeholder="2-3 sentences describing the project">' + esc(est.summary || "") + '</textarea>' +
       '</div>' +
       '<div class="field">' +
-        '<label>Scope of Work</label>' +
-        '<textarea id="f-scope" rows="6" placeholder="Detailed scope, line breaks supported">' + esc(est.scopeOfWork || "") + '</textarea>' +
+        '<label>Scope of Work (Tip: Use CATEGORY: headers + bullets for sectioned display)</label>' +
+        '<textarea id="f-scope" rows="8" placeholder="DEMOLITION:&#10;- Remove old fixtures&#10;- Haul debris&#10;&#10;INSTALLATION:&#10;- Install new tile&#10;- Mount vanity">' + esc(est.scopeOfWork || "") + '</textarea>' +
       '</div>' +
     '</div>' +
     '<div class="form-section">' +
@@ -1086,32 +1232,36 @@ function renderEdit() {
         '<input type="text" id="f-notes" value="' + esc(est.notes || "") + '" placeholder="Reminders, assumptions, things to verify">' +
       '</div>' +
     '</div>' +
-    '<div class="display-mode-panel">' +
+    '<div class="cv-panel">' +
       '<h3>👁 CUSTOMER VIEW MODE</h3>' +
-      '<div class="helper-text">Choose how much detail the customer sees on their quote page and email. Internal totals and markup are never shown to customer.</div>' +
-      '<div class="mode-options" id="mode-options">' +
-        '<div class="mode-option' + (displayMode === "total" ? " selected" : "") + '" data-mode="total" onclick="selectMode(\'total\')">' +
-          '<span class="mode-radio-dot"></span>' +
-          '<input type="radio" name="display-mode" value="total"' + (displayMode === "total" ? " checked" : "") + '>' +
-          '<div class="mode-name">Total Only</div>' +
-          '<div class="mode-desc">Just the final price. No labor, no materials. Most minimal.</div>' +
+      '<div class="cv-helper">Choose what costs to show on the customer\'s quote. The total they see equals only what you check. Markup still applies internally.</div>' +
+      '<div class="cv-grid">' +
+        '<div class="cv-checks">' +
+          '<div class="cv-check' + (laborChecked ? " checked" : "") + '" data-kind="labor" onclick="toggleCv(\'labor\')">' +
+            '<span class="cv-checkbox-box"></span>' +
+            '<input type="checkbox"' + (laborChecked ? " checked" : "") + ' id="cv-labor">' +
+            '<div class="cv-check-text">' +
+              '<div class="cv-check-label">Show Labor Cost</div>' +
+              '<div class="cv-check-amount" id="cv-labor-amt">—</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="cv-check' + (materialsChecked ? " checked" : "") + '" data-kind="materials" onclick="toggleCv(\'materials\')">' +
+            '<span class="cv-checkbox-box"></span>' +
+            '<input type="checkbox"' + (materialsChecked ? " checked" : "") + ' id="cv-materials">' +
+            '<div class="cv-check-text">' +
+              '<div class="cv-check-label">Show Materials Cost</div>' +
+              '<div class="cv-check-amount" id="cv-materials-amt">—</div>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
-        '<div class="mode-option' + (displayMode === "labor" ? " selected" : "") + '" data-mode="labor" onclick="selectMode(\'labor\')">' +
-          '<span class="mode-radio-dot"></span>' +
-          '<input type="radio" name="display-mode" value="labor"' + (displayMode === "labor" ? " checked" : "") + '>' +
-          '<div class="mode-name">Labor Visible</div>' +
-          '<div class="mode-desc">Shows what work will be done (no rates). Materials included silently.</div>' +
-          '<span class="mode-tag">Recommended</span>' +
-        '</div>' +
-        '<div class="mode-option' + (displayMode === "full" ? " selected" : "") + '" data-mode="full" onclick="selectMode(\'full\')">' +
-          '<span class="mode-radio-dot"></span>' +
-          '<input type="radio" name="display-mode" value="full"' + (displayMode === "full" ? " checked" : "") + '>' +
-          '<div class="mode-name">Full Breakdown</div>' +
-          '<div class="mode-desc">Every labor and material line with qty, rate, total. Maximum transparency.</div>' +
+        '<div class="cv-preview">' +
+          '<div class="cv-preview-label">Customer Sees</div>' +
+          '<div id="cv-preview-body"></div>' +
         '</div>' +
       '</div>' +
     '</div>' +
     '<div class="totals-box">' +
+      '<div class="internal-tag">Internal · Not shown to customer</div>' +
       '<div class="tot-line"><span>Labor subtotal</span><span id="tot-labor">$0.00</span></div>' +
       '<div class="tot-line"><span>Materials subtotal</span><span id="tot-mat">$0.00</span></div>' +
       '<div class="tot-line"><span>Subtotal</span><span id="tot-sub">$0.00</span></div>' +
@@ -1136,16 +1286,68 @@ function renderEdit() {
   recalc();
 }
 
-/* ===== DISPLAY MODE SELECTOR (NEW) ===== */
-function selectMode(mode) {
-  if (!currentRecord) return;
-  document.querySelectorAll(".mode-option").forEach(function(opt) {
-    opt.classList.toggle("selected", opt.dataset.mode === mode);
-    const radio = opt.querySelector('input[type="radio"]');
-    if (radio) radio.checked = (opt.dataset.mode === mode);
-  });
-  if (!currentRecord.estimate) currentRecord.estimate = {};
-  currentRecord.estimate.displayMode = mode;
+/* ===== CHECKBOX TOGGLE ===== */
+function toggleCv(kind) {
+  if (!currentRecord || !currentRecord.estimate) return;
+  if (kind === "labor") {
+    currentRecord.estimate.showLaborCost = !(currentRecord.estimate.showLaborCost !== false);
+  } else if (kind === "materials") {
+    currentRecord.estimate.showMaterialsCost = !(currentRecord.estimate.showMaterialsCost === true);
+  }
+  // Update visual state
+  const el = document.querySelector('.cv-check[data-kind="' + kind + '"]');
+  const checkbox = document.getElementById("cv-" + kind);
+  const isChecked = kind === "labor"
+    ? currentRecord.estimate.showLaborCost !== false
+    : currentRecord.estimate.showMaterialsCost === true;
+  el.classList.toggle("checked", isChecked);
+  if (checkbox) checkbox.checked = isChecked;
+  updateCvPreview();
+}
+
+function updateCvPreview() {
+  if (!currentRecord || !currentRecord.estimate) return;
+  const t = calcTotal(currentRecord.estimate);
+  const cv = calcCustomerView(currentRecord.estimate);
+
+  // Update amount labels next to checkboxes
+  const laborAmtEl = document.getElementById("cv-labor-amt");
+  const matAmtEl = document.getElementById("cv-materials-amt");
+  if (laborAmtEl) laborAmtEl.textContent = "Will show: " + fmt(t.laborWithMarkup);
+  if (matAmtEl) matAmtEl.textContent = "Will show: " + fmt(t.matWithMarkup);
+
+  // Build preview body
+  const body = document.getElementById("cv-preview-body");
+  if (!body) return;
+
+  if (cv.bothHidden) {
+    // Just total, no breakdown
+    body.innerHTML =
+      '<div style="text-align:center;padding:18px 0">' +
+        '<div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:4px">Your Estimate</div>' +
+        '<div style="font-family:var(--display);font-size:28px;color:#0d1b2a;letter-spacing:1.5px">' + fmt(cv.customerTotal) + '</div>' +
+      '</div>';
+    return;
+  }
+
+  let html = "";
+  if (cv.showLabor) {
+    html += '<div class="cv-preview-row"><span>Labor</span><span class="pv-value">' + fmt(cv.laborAmount) + '</span></div>';
+  }
+  if (cv.showMaterials) {
+    html += '<div class="cv-preview-row"><span>Materials</span><span class="pv-value">' + fmt(cv.materialsAmount) + '</span></div>';
+  }
+  html += '<div class="cv-preview-row preview-grand"><span>TOTAL</span><span class="pv-value">' + fmt(cv.customerTotal) + '</span></div>';
+
+  // "All materials included" note when labor shown but materials hidden AND materials exist
+  if (cv.showLabor && !cv.showMaterials && t.mat > 0) {
+    html += '<div class="cv-preview-note"><strong>✓ All materials included</strong> in the total price.</div>';
+  }
+  // Note when materials shown but labor hidden
+  if (!cv.showLabor && cv.showMaterials && t.labor > 0) {
+    html += '<div class="cv-preview-note"><strong>✓ Labor included</strong> in the total price.</div>';
+  }
+  body.innerHTML = html;
 }
 
 /* ===== LINE ITEMS ===== */
@@ -1221,6 +1423,7 @@ function recalc() {
     const r = parseFloat(row.querySelector(".line-rate").value) || 0;
     totEl.value = fmt(q * r);
   });
+  updateCvPreview();
 }
 
 /* ===== AI GENERATE ===== */
@@ -1239,11 +1442,13 @@ async function generateAI(isRegenerate) {
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || "AI generation failed");
 
-    const prevMode = currentRecord.estimate && currentRecord.estimate.displayMode;
+    // Preserve checkbox preferences
+    const prevShowLabor = currentRecord.estimate && currentRecord.estimate.showLaborCost;
+    const prevShowMat = currentRecord.estimate && currentRecord.estimate.showMaterialsCost;
     currentRecord.estimate = data.estimate;
-    if (prevMode && !currentRecord.estimate.displayMode) {
-      currentRecord.estimate.displayMode = prevMode;
-    }
+    if (typeof prevShowLabor === "boolean") currentRecord.estimate.showLaborCost = prevShowLabor;
+    if (typeof prevShowMat === "boolean") currentRecord.estimate.showMaterialsCost = prevShowMat;
+    normalizeDisplayFlags(currentRecord.estimate);
     currentRecord.status = data.status;
     renderEdit();
     toast("✓ AI estimate generated");
@@ -1258,8 +1463,6 @@ async function generateAI(isRegenerate) {
 /* ===== SAVE / SEND / DELETE ===== */
 function gatherForm() {
   syncLines();
-  const checkedRadio = document.querySelector('input[name="display-mode"]:checked');
-  const displayMode = checkedRadio ? checkedRadio.value : "labor";
   return {
     projectTitle: document.getElementById("f-title").value.trim(),
     summary: document.getElementById("f-summary").value.trim(),
@@ -1267,7 +1470,8 @@ function gatherForm() {
     timelineText: document.getElementById("f-timeline").value.trim(),
     notes: document.getElementById("f-notes").value.trim(),
     markupPct: parseFloat(document.getElementById("f-markup").value) || 0,
-    displayMode: displayMode,
+    showLaborCost: currentRecord.estimate.showLaborCost !== false,
+    showMaterialsCost: currentRecord.estimate.showMaterialsCost === true,
     labor: currentRecord.estimate.labor || [],
     materials: currentRecord.estimate.materials || [],
   };
@@ -1293,12 +1497,22 @@ async function saveDraft() {
 async function sendToCustomer() {
   const est = gatherForm();
   if (!est.projectTitle) { toast("Add a project title first", true); return; }
-  const t = calcTotal(est);
-  if (t.grand <= 0) { toast("Add labor or materials with prices first", true); return; }
+  const cv = calcCustomerView(est);
+  if (cv.customerTotal <= 0) { toast("Add labor or materials with prices first", true); return; }
 
-  const modeLabel = est.displayMode === "total" ? "Total Only" :
-                    est.displayMode === "full" ? "Full Breakdown" : "Labor Visible";
-  if (!confirm("Send estimate of " + fmt(t.grand) + " to " + currentRecord.customer.name + "?\n\nCustomer will see: " + modeLabel)) return;
+  // Build confirm message showing what customer will see
+  let visibility;
+  if (est.showLaborCost && est.showMaterialsCost) {
+    visibility = "Labor + Materials (split into both)";
+  } else if (est.showLaborCost) {
+    visibility = "Labor only";
+  } else if (est.showMaterialsCost) {
+    visibility = "Materials only";
+  } else {
+    visibility = "Total only (no breakdown)";
+  }
+
+  if (!confirm("Send estimate of " + fmt(cv.customerTotal) + " to " + currentRecord.customer.name + "?\n\nCustomer will see: " + visibility)) return;
 
   try {
     let r = await fetch("/.netlify/functions/save-estimate", {
