@@ -605,16 +605,69 @@ function updateContact(){
 }
 
 // ====== Photos ======
-function handlePhotos(e){
-  const files = Array.from(e.target.files).slice(0, 8 - formData.photos.length);
-  files.forEach(file=>{
+// Compress image client-side to keep payload under Netlify's 6MB limit
+async function compressImage(file, maxWidth, quality){
+  maxWidth = maxWidth || 1200;
+  quality = quality || 0.85;
+  return new Promise(function(resolve, reject){
     const reader = new FileReader();
-    reader.onload = ev => {
-      formData.photos.push({name:file.name,data:ev.target.result});
-      renderPhotoPreview();
+    reader.onerror = reject;
+    reader.onload = function(e){
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = function(){
+        // Calculate new dimensions preserving aspect ratio
+        let w = img.width, h = img.height;
+        if (w > maxWidth){
+          h = Math.round(h * (maxWidth / w));
+          w = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        // Always export as JPEG for max compression (even if input is PNG)
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressed);
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   });
+}
+
+async function handlePhotos(e){
+  const files = Array.from(e.target.files).slice(0, 8 - formData.photos.length);
+  // Show "Processing..." text while compressing
+  const uploadZone = document.querySelector('.upload-title');
+  const originalText = uploadZone ? uploadZone.textContent : '';
+  if (uploadZone) uploadZone.textContent = 'Processing photos...';
+  
+  for (const file of files){
+    try {
+      const compressed = await compressImage(file, 1200, 0.85);
+      // Log compression result for debugging (visible in browser console)
+      const origKB = Math.round(file.size / 1024);
+      const newKB = Math.round((compressed.length * 0.75) / 1024); // base64 -> bytes approx
+      console.log('Photo compressed:', file.name, origKB + 'KB → ' + newKB + 'KB');
+      formData.photos.push({name: file.name, data: compressed});
+      renderPhotoPreview();
+    } catch(err){
+      console.error('Photo compression failed:', file.name, err);
+      // Fallback: use original
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        formData.photos.push({name: file.name, data: ev.target.result});
+        renderPhotoPreview();
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+  
+  if (uploadZone) uploadZone.textContent = originalText;
+  // Reset input so user can re-upload same file if they removed it
+  e.target.value = '';
 }
 function renderPhotoPreview(){
   document.getElementById('photo-preview').innerHTML = formData.photos.map((p,i)=>`<div class="photo-thumb"><img src="${p.data}" alt=""><button class="photo-remove" onclick="formData.photos.splice(${i},1);renderPhotoPreview()">×</button></div>`).join('');
@@ -686,13 +739,40 @@ async function submitForm(){
     source:'V3 Estimate Form'
   };
 
+  // Log payload size for debugging (visible in browser console)
+  const payloadStr = JSON.stringify(payload);
+  const payloadKB = Math.round(payloadStr.length / 1024);
+  console.log('Submitting payload:', payloadKB + 'KB');
+
   try {
-    await fetch('/.netlify/functions/estimate-request',{
+    const res = await fetch('/.netlify/functions/estimate-request',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
+      body: payloadStr
     });
-  } catch(e) { console.error('estimate-request failed:',e); }
+    
+    if (!res.ok){
+      // Function returned an error (4xx or 5xx)
+      let errMsg = 'Server error ' + res.status;
+      try {
+        const errBody = await res.text();
+        console.error('Submit failed:', res.status, errBody);
+        if (res.status === 413){
+          errMsg = 'Photos too large. Please try with fewer or smaller photos.';
+        }
+      } catch(_) {}
+      btn.disabled = false;
+      btn.textContent = 'Try Again';
+      alert('Something went wrong: ' + errMsg + '\n\nYour reference is ' + ref + '. Please call us directly at (332) 277-0990 if this keeps happening.');
+      return;
+    }
+  } catch(e) {
+    console.error('estimate-request network error:', e);
+    btn.disabled = false;
+    btn.textContent = 'Try Again';
+    alert('Connection issue. Please check your internet and try again, or call us at (332) 277-0990.');
+    return;
+  }
 
   showSuccess(ref);
 }
