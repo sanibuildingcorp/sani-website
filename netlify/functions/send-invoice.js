@@ -1,127 +1,259 @@
+// netlify/functions/send-invoice.js
+// Sends an invoice email to the customer.
+// Supports: deposit / final / full / custom amounts.
+// Payment link is OPTIONAL — invoice can also be sent without one.
+
 const https = require("https");
+const { getStore } = require("@netlify/blobs");
 
 exports.handler = async function (event) {
-  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: corsHeaders(), body: "" };
-  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers: cors(), body: "" };
+  }
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
+  }
 
   try {
-    const body = JSON.parse(event.body);
-    const { ref, customer, estimate, deposit } = body;
-    if (!customer?.email || !deposit?.amount) {
-      return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: "Missing required fields" }) };
+    const body = JSON.parse(event.body || "{}");
+    const {
+      ref,
+      invoiceType,        // "deposit" | "final" | "full" | "custom"
+      amount,             // dollar amount
+      dueDate,            // ISO date string
+      memo,               // optional note from contractor
+      paymentMethod,      // "zelle" | "bank" | "cash" | "check" | "link" | "none"
+      paymentDetails,     // string with details (e.g. "Zelle: (332) 277-0990")
+      paymentLink,        // optional URL if paymentMethod === "link"
+      includePaymentLink, // true if customer should see "Pay Now" button
+    } = body;
+
+    if (!ref) {
+      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
+    }
+    if (!amount || Number(amount) <= 0) {
+      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Invalid amount" }) };
+    }
+
+    const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
+    const record = await store.get(ref, { type: "json" });
+    if (!record) {
+      return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "Estimate not found" }) };
     }
 
     const resendKey = process.env.RESEND_API_KEY;
     if (!resendKey) {
-      return { statusCode: 500, headers: corsHeaders(), body: JSON.stringify({ error: "RESEND_API_KEY not configured" }) };
+      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "RESEND_API_KEY not set" }) };
     }
 
-    const contractorEmail = process.env.CONTRACTOR_EMAIL || "contact@sanibuildingcorp.com";
-    const siteUrl = process.env.SITE_URL || "https://www.sanibuildingcorp.com";
+    const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+    const siteUrl = process.env.SITE_URL || "https://velvety-horse-2aa6e3.netlify.app";
 
-    // Build invoice URL
-    const invoicePayload = { ref, customer, estimate: { projectTitle: estimate?.projectTitle, grandTotal: estimate?.grandTotal }, deposit };
-    const json = JSON.stringify(invoicePayload);
-    const encoded = Buffer.from(json, 'utf8').toString("base64");
-    const invoiceUrl = `${siteUrl}/invoice.html?i=${encodeURIComponent(encoded)}`;
+    const customer = record.customer || {};
+    const est = record.estimate || {};
+    const reqData = record.request || {};
 
-    // Send to customer
-    await sendEmail(resendKey, {
-      from: "Sani Building Corp <noreply@sanibuildingcorp.com>",
-      to: [customer.email],
-      reply_to: contractorEmail,
-      subject: `💰 Deposit Invoice · ${ref} · Sani Building Corp`,
-      html: buildCustomerInvoice({ ref, customer, estimate, deposit, invoiceUrl }),
-    });
+    // Generate invoice number (one-up per estimate)
+    const invoiceCount = (record.invoices || []).length + 1;
+    const invoiceNumber = `INV-${ref.replace("SBC-", "")}-${String(invoiceCount).padStart(2, "0")}`;
 
-    // Copy to contractor
-    await sendEmail(resendKey, {
-      from: "Sani Building Corp <noreply@sanibuildingcorp.com>",
-      to: [contractorEmail],
-      subject: `💰 Invoice Sent: ${customer.name} - ${fmt(deposit.amount)}`,
-      html: buildContractorCopy({ ref, customer, deposit, invoiceUrl }),
-    });
+    // Format due date
+    const dueDateFormatted = dueDate
+      ? new Date(dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      : "Upon receipt";
+    const issuedDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
-    return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ success: true, ref, invoiceUrl }) };
-  } catch (err) {
-    console.error("send-invoice error:", err.message);
-    return { statusCode: 500, headers: corsHeaders(), body: JSON.stringify({ error: err.message }) };
-  }
-};
+    // Invoice type label
+    const typeLabel = {
+      deposit: "Deposit Invoice",
+      final: "Final Invoice",
+      full: "Invoice",
+      custom: "Invoice",
+    }[invoiceType] || "Invoice";
 
-function corsHeaders(){return{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"}}
-function fmt(n){return"$"+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,",")}
-function escapeHtml(t){if(t==null)return"";return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
+    const canSendToCustomer = customer.email && customer.email.toLowerCase() === contractorEmail.toLowerCase();
+    const recipientEmail = canSendToCustomer ? customer.email : contractorEmail;
+    const firstName = (customer.name || "there").split(" ")[0];
+    const subjectPrefix = canSendToCustomer ? "" : `[FORWARD TO ${customer.email}] `;
 
-function buildCustomerInvoice({ ref, customer, estimate, deposit, invoiceUrl }) {
-  const firstName = (customer.name || "there").split(" ")[0];
-  const methodLabels = { zelle: "💜 Zelle", venmo: "💙 Venmo", card: "💳 Credit Card", check: "📝 Check", ach: "🏦 ACH Transfer" };
-  const methodsHtml = (deposit.methods || []).map(m => `<span style="display:inline-block;background:#fff;border:1px solid #c9a84c;color:#b8720a;padding:6px 14px;border-radius:6px;margin:3px;font-size:13px;font-weight:600">${methodLabels[m] || m}</span>`).join('');
+    // Payment instructions section
+    let paymentInstructionsHtml = "";
+    if (paymentDetails && paymentDetails.trim()) {
+      paymentInstructionsHtml = `
+        <div style="margin:24px 0">
+          <div style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:10px">How to Pay</div>
+          <div style="background:#faf8f4;border:1px solid #e8e2d9;border-radius:10px;padding:18px 22px;font-size:14.5px;color:#444;line-height:1.7;white-space:pre-wrap">${escapeHtml(paymentDetails)}</div>
+        </div>
+      `;
+    }
 
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
+    // Optional payment button
+    let payButtonHtml = "";
+    if (includePaymentLink && paymentLink && paymentLink.trim()) {
+      payButtonHtml = `
+        <div style="text-align:center;margin:28px 0">
+          <a href="${escapeHtml(paymentLink)}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 40px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">💳 Pay Now</a>
+        </div>
+      `;
+    }
+
+    // Memo
+    const memoHtml = memo && memo.trim()
+      ? `<div style="background:#f7f0e3;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:14px;color:#444;border-radius:0 6px 6px 0">${escapeHtml(memo)}</div>`
+      : "";
+
+    const amountFormatted = fmt(amount);
+
+    const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
 <div style="max-width:640px;margin:0 auto;padding:20px">
-  <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:30px;border-radius:12px 12px 0 0;text-align:center">
-    <div style="font-size:24px;letter-spacing:4px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>
-    <div style="font-size:11px;letter-spacing:3px;color:#aaa;margin-top:4px;text-transform:uppercase">Deposit Invoice</div>
+
+  <!-- HEADER -->
+  <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:32px 24px;border-radius:12px 12px 0 0;text-align:center">
+    <a href="https://www.sanibuildingcorp.com" style="text-decoration:none;color:inherit">
+      <div style="font-family:Arial,sans-serif;font-size:24px;letter-spacing:4px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>
+    </a>
+    <div style="font-size:11px;letter-spacing:2.5px;color:#aaa;margin-top:8px;text-transform:uppercase">${escapeHtml(typeLabel.toUpperCase())}</div>
   </div>
-  <div style="background:#fff;padding:32px;border:1px solid #e8e2d9;border-top:none">
-    <h1 style="color:#0d1b2a;font-size:26px;margin:0 0 8px">Hi ${escapeHtml(firstName)},</h1>
-    <p style="font-size:15px;color:#555;margin:0 0 20px">Thank you for accepting your quote! Below is your deposit invoice to secure your project schedule.</p>
-    <div style="background:linear-gradient(135deg,#9b59b6,#8e44ad);color:#fff;padding:24px;border-radius:10px;margin:20px 0;text-align:center">
-      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.8;margin-bottom:6px">Deposit Required</div>
-      <div style="font-size:42px;font-weight:700;line-height:1.1">${fmt(deposit.amount)}</div>
-      <div style="font-size:13px;opacity:.85;margin-top:8px">Due: ${escapeHtml(deposit.dueDate || "Within 7 days")}</div>
+
+  <!-- BODY -->
+  <div style="background:#fff;padding:30px 28px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 12px 12px">
+
+    <h1 style="color:#0d1b2a;font-size:23px;margin:0 0 14px">Hi ${escapeHtml(firstName)},</h1>
+    <p style="font-size:14.5px;color:#555;margin-bottom:18px">
+      ${invoiceType === "deposit"
+        ? `Please find your deposit invoice for <strong>${escapeHtml(est.projectTitle || reqData.service || "your project")}</strong> below. This deposit secures your project on our schedule.`
+        : invoiceType === "final"
+        ? `Thank you for your business! Your final invoice for <strong>${escapeHtml(est.projectTitle || reqData.service || "your project")}</strong> is ready.`
+        : `Please find your invoice for <strong>${escapeHtml(est.projectTitle || reqData.service || "your project")}</strong> below.`}
+    </p>
+
+    ${memoHtml}
+
+    <!-- INVOICE INFO BOX -->
+    <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden;margin:20px 0">
+      <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:13px 18px;font-family:Arial,sans-serif;font-size:15px;letter-spacing:2px;font-weight:700">
+        ${escapeHtml(typeLabel.toUpperCase())} <span style="color:#c9a84c">#${escapeHtml(invoiceNumber)}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555;width:140px">Project</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(est.projectTitle || reqData.service || "Your Project")}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Estimate Ref</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(ref)}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Issued</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(issuedDate)}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Due</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(dueDateFormatted)}</td>
+        </tr>
+        <tr>
+          <td style="padding:14px 18px;font-size:13px;color:#555;background:#faf8f4">Amount Due</td>
+          <td style="padding:14px 18px;font-family:Arial,sans-serif;font-size:24px;color:#0d1b2a;font-weight:700;letter-spacing:1px;background:#faf8f4">${escapeHtml(amountFormatted)}</td>
+        </tr>
+      </table>
     </div>
-    <table style="width:100%;font-size:14px;margin:14px 0;border-collapse:collapse">
-      <tr style="background:#f5f0e8"><td style="padding:10px"><strong>Reference</strong></td><td style="padding:10px">${escapeHtml(ref)}</td></tr>
-      <tr><td style="padding:10px"><strong>Project</strong></td><td style="padding:10px">${escapeHtml(estimate?.projectTitle || "Renovation")}</td></tr>
-      <tr style="background:#f5f0e8"><td style="padding:10px"><strong>Total Project</strong></td><td style="padding:10px">${fmt(estimate?.grandTotal)}</td></tr>
-      <tr><td style="padding:10px"><strong>Deposit Amount</strong></td><td style="padding:10px;color:#9b59b6;font-weight:700">${fmt(deposit.amount)}</td></tr>
-      <tr style="background:#f5f0e8"><td style="padding:10px"><strong>Balance Due Later</strong></td><td style="padding:10px">${fmt((estimate?.grandTotal || 0) - deposit.amount)}</td></tr>
-    </table>
-    <h3 style="color:#b8720a;font-size:14px;letter-spacing:2px;text-transform:uppercase;margin:24px 0 10px">💳 How to Pay</h3>
-    <div style="background:#f5f0e8;padding:16px;border-radius:8px;text-align:center">${methodsHtml}</div>
-    <div style="text-align:center;margin:28px 0">
-      <a href="${invoiceUrl}" style="display:inline-block;background:#9b59b6;color:#fff;padding:16px 40px;border-radius:10px;text-decoration:none;font-size:16px;font-weight:700;letter-spacing:2px;text-transform:uppercase">VIEW INVOICE &amp; PAY</a>
+
+    ${payButtonHtml}
+    ${paymentInstructionsHtml}
+
+    <p style="font-size:14px;color:#555;margin:24px 0 0">Questions about this invoice? Reply directly to this email or call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
+
+    <!-- FOOTER -->
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #eee;text-align:center">
+      <div style="color:#888;font-size:11px;letter-spacing:2px;text-transform:uppercase">Sani Building Corp</div>
+      <div style="font-size:12px;color:#888;margin-top:4px">Fully Insured · 4.9 ★ · NYC Metro</div>
+      <div style="font-size:12px;color:#888;margin-top:2px">2954 Brighton 12th Street · Brooklyn, NY 11235</div>
+      <div style="margin-top:14px"><a href="https://www.sanibuildingcorp.com" style="color:#b8930a;text-decoration:none;font-size:12px;font-weight:600">← Visit sanibuildingcorp.com</a></div>
     </div>
-    <div style="background:#fff8e1;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:13px;color:#555">
-      <strong style="color:#b8720a">📅 Next Steps:</strong> Once we receive your deposit, we'll confirm your project start date and finalize all scheduling details.
-    </div>
-    <div style="border-top:1px solid #eee;padding-top:18px;margin-top:24px;text-align:center">
-      <div style="color:#888;font-size:12px;margin-bottom:8px">Questions about your invoice?</div>
-      <div style="font-size:14px"><a href="tel:3322770990" style="color:#b8720a;text-decoration:none;font-weight:600">📞 332-277-0990</a></div>
-    </div>
-  </div>
-  <div style="background:#0d1b2a;color:#aaa;padding:20px;border-radius:0 0 12px 12px;text-align:center;font-size:11px">
-    SANI BUILDING CORP · 2954 Brighton 12th St, Brooklyn, NY 11235<br>
-    <span style="color:#666">© 2026 Sani Building Corp · All Rights Reserved</span>
   </div>
 </div>
 </body></html>`;
+
+    await sendResend(resendKey, {
+      from: "Sani Building Corp <onboarding@resend.dev>",
+      to: [recipientEmail],
+      reply_to: contractorEmail,
+      subject: `${subjectPrefix}${typeLabel} ${invoiceNumber} from Sani Building Corp — ${amountFormatted}`,
+      html,
+    });
+
+    // Update record with invoice history
+    const invoice = {
+      number: invoiceNumber,
+      type: invoiceType,
+      amount: Number(amount),
+      dueDate: dueDate || null,
+      memo: memo || "",
+      paymentMethod: paymentMethod || "none",
+      paymentDetails: paymentDetails || "",
+      paymentLink: paymentLink || "",
+      includePaymentLink: !!includePaymentLink,
+      sentAt: new Date().toISOString(),
+      sentTo: recipientEmail,
+      status: "sent",
+    };
+
+    record.invoices = record.invoices || [];
+    record.invoices.push(invoice);
+
+    // Update top-level status to "invoiced" unless already at "paid"
+    if (record.status !== "paid") {
+      record.status = "invoiced";
+    }
+    record.lastInvoiceAt = invoice.sentAt;
+    record.updatedAt = invoice.sentAt;
+    await store.setJSON(ref, record);
+
+    return {
+      statusCode: 200,
+      headers: cors(),
+      body: JSON.stringify({
+        success: true,
+        invoiceNumber,
+        sentTo: recipientEmail,
+        forwardedToContractor: !canSendToCustomer,
+      }),
+    };
+  } catch (err) {
+    console.error("send-invoice error:", err.message);
+    return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
+  }
+};
+
+function fmt(n) {
+  return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function buildContractorCopy({ ref, customer, deposit, invoiceUrl }) {
-  return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-<h2 style="color:#9b59b6">💰 Deposit Invoice Sent</h2>
-<p>You sent a deposit invoice to <strong>${escapeHtml(customer.name)}</strong>.</p>
-<table style="width:100%;font-size:14px;margin:14px 0">
-  <tr><td><strong>Ref:</strong></td><td>${escapeHtml(ref)}</td></tr>
-  <tr><td><strong>Amount:</strong></td><td style="color:#9b59b6;font-weight:700">${fmt(deposit.amount)}</td></tr>
-  <tr><td><strong>Due:</strong></td><td>${escapeHtml(deposit.dueDate || "Within 7 days")}</td></tr>
-  <tr><td><strong>Methods:</strong></td><td>${(deposit.methods || []).join(", ")}</td></tr>
-</table>
-<p><a href="${invoiceUrl}" style="display:inline-block;background:#9b59b6;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:700">View Invoice Page</a></p>
-<p style="color:#666;font-size:12px">When you receive payment, mark it as paid in your dashboard.</p>
-</body></html>`;
+function escapeHtml(t) {
+  if (t == null) return "";
+  return String(t)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-function sendEmail(apiKey, payload) {
+function sendResend(apiKey, payload) {
   const data = JSON.stringify(payload);
   return new Promise((resolve, reject) => {
     const req = https.request(
-      { hostname: "api.resend.com", port: 443, path: "/emails", method: "POST",
-        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data), Authorization: `Bearer ${apiKey}` } },
+      {
+        hostname: "api.resend.com",
+        port: 443,
+        path: "/emails",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(data),
+          Authorization: `Bearer ${apiKey}`,
+        },
+      },
       (res) => {
         const chunks = [];
         res.on("data", (c) => chunks.push(c));
@@ -136,4 +268,13 @@ function sendEmail(apiKey, payload) {
     req.write(data);
     req.end();
   });
+}
+
+function cors() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Content-Type": "application/json",
+  };
 }
