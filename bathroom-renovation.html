@@ -25,21 +25,25 @@
 .btn-primary:hover{background:#a06c08;transform:translateY(-2px)}
 .btn-secondary{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:500;text-decoration:none;border:1px solid rgba(255,255,255,.28);padding:14px 24px;transition:border-color .2s,color .2s}
 .btn-secondary:hover{border-color:var(--gold);color:var(--gold-light)}
-.page-hero{min-height:70vh;display:flex;align-items:flex-end;background:#0d1520;position:relative;overflow:hidden;padding-top:68px}
-.page-hero-bg{position:absolute;inset:0}
-.page-hero-bg img{width:100%;height:100%;object-fit:cover;opacity:1}
-.page-hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,10,18,0.55) 0%,rgba(10,10,18,0.2) 60%,rgba(10,10,18,0.05) 100%)}
-.page-hero-grid{position:absolute;inset:0;background-image:none;background-size:44px 44px}
-.page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
-.page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 28px 56px;width:100%}
-.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.85);margin-bottom:20px;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,0.7)}
+.page-hero{position:relative;min-height:60vh;display:flex;align-items:center;background:#0d1520;overflow:hidden;padding-top:68px}
+.page-hero-bg{position:absolute;inset:0;z-index:0}
+.page-hero-bg img{width:100%;height:100%;object-fit:cover;display:block}
+.page-hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,21,32,0.88) 0%,rgba(10,21,32,0.65) 45%,rgba(10,21,32,0.25) 100%)}
+.page-hero-accent{position:absolute;left:0;top:68px;bottom:0;width:4px;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent);z-index:2}
+.page-hero-content{position:relative;z-index:3;max-width:1100px;margin:0 auto;padding:64px 28px;width:100%}
+.page-hero-inner{max-width:600px}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1.5px;color:rgba(255,255,255,.7);margin-bottom:22px;text-transform:uppercase}
 .breadcrumb a{color:var(--gold-light);text-decoration:none}
-.page-hero h1{font-family:"Playfair Display",serif;font-size:clamp(32px,5vw,60px);font-weight:700;color:#fff;line-height:1.05;margin-bottom:16px;text-shadow:0 2px 8px rgba(0,0,0,0.75),0 0 20px rgba(0,0,0,0.4)}
-.page-hero h1 em{font-style:italic;color:var(--gold-light)}
-.page-hero p{font-size:16px;color:rgba(255,255,255,.95);max-width:560px;line-height:1.7;margin-bottom:28px;text-shadow:0 1px 4px rgba(0,0,0,0.85),0 0 10px rgba(0,0,0,0.5)}
-.hero-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
-.hero-badge{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;padding:6px 12px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65)}
-.hero-badge.gold{border-color:var(--gold);color:var(--gold);background:rgba(200,134,10,.08)}
+.page-hero h1{font-family:"Playfair Display",serif;font-size:clamp(32px,4.8vw,56px);font-weight:700;color:#fff;line-height:1.06;margin-bottom:18px;text-shadow:0 2px 12px rgba(0,0,0,0.5)}
+.page-hero h1 em{font-style:italic;color:var(--gold-light);display:block;margin-top:6px}
+.page-hero .hero-tagline{font-size:17px;color:rgba(255,255,255,.92);line-height:1.5;margin-bottom:26px;font-weight:400;max-width:460px;text-shadow:0 1px 6px rgba(0,0,0,0.5)}
+.hero-rating{display:inline-flex;align-items:center;gap:8px;background:rgba(200,134,10,.15);border:1px solid var(--gold);padding:7px 14px;border-radius:30px;margin-bottom:24px;color:var(--gold-light);font-size:12px;font-weight:500;letter-spacing:1px;text-transform:uppercase}
+.hero-rating .stars{color:var(--gold-light);letter-spacing:1px}
+/* Credentials strip below hero */
+.creds-strip{background:var(--dark);padding:18px 28px;border-bottom:1px solid rgba(240,165,0,.15)}
+.creds-strip-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap}
+.cred-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.7);font-size:12px;letter-spacing:1.2px;text-transform:uppercase}
+.cred-item-icon{color:var(--gold-light);font-size:15px}
 /* SUB-SERVICES BANNER */
 .sub-services-bar{background:var(--dark);padding:20px 28px;border-bottom:1px solid rgba(240,165,0,.15)}
 .sub-services-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -99,8 +103,24 @@
 .cta-section h2 em{font-style:italic;color:var(--gold-light)}
 .cta-section p{color:rgba(255,255,255,.5);font-size:15px;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;position:relative;z-index:1}
 .cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
-@media(max-width:900px){.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.services-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:40px 20px 44px}}
+@media(max-width:900px){.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}.creds-strip-inner{gap:18px}}
+@media(max-width:600px){.services-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:48px 20px}.page-hero-bg::after{background:linear-gradient(180deg,rgba(10,21,32,0.55) 0%,rgba(10,21,32,0.88) 100%)}.creds-strip{padding:14px 18px}.creds-strip-inner{gap:14px}.cred-item{font-size:11px}}
+
+/* CLICKABLE PHOTOS + LIGHTBOX */
+.svc-card{cursor:pointer}
+.svc-card img{cursor:zoom-in}
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;padding:20px;animation:fadeIn .25s ease}
+.lightbox.active{display:flex}
+.lightbox-img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px;box-shadow:0 20px 80px rgba(0,0,0,.5)}
+.lightbox-close{position:absolute;top:24px;right:28px;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:10}
+.lightbox-close:hover{background:rgba(255,255,255,.2);transform:rotate(90deg)}
+.lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:10}
+.lightbox-nav:hover{background:rgba(255,255,255,.2)}
+.lightbox-prev{left:24px}
+.lightbox-next{right:24px}
+.lightbox-caption{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.85);font-size:13px;letter-spacing:1px;text-transform:uppercase;text-align:center;padding:8px 18px;background:rgba(0,0,0,.4);border-radius:30px;border:1px solid rgba(255,255,255,.1)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@media(max-width:600px){.lightbox-nav{width:42px;height:42px;font-size:20px}.lightbox-prev{left:12px}.lightbox-next{right:12px}.lightbox-close{top:16px;right:18px;width:40px;height:40px}}
 </style>
 <link rel="stylesheet" href="partials/site.css">
 </head>
@@ -110,26 +130,32 @@
 <div id="site-menu"></div>
 
 <section class="page-hero">
-  <div class="page-hero-bg"><img src="images/service-pages/bathroom-renovation/hero.jpg" alt="Bathroom renovation NYC Brooklyn luxury remodel"></div>
-  <div class="page-hero-grid"></div>
-  <div class="page-hero-overlay"></div>
+  <div class="page-hero-bg"><img src="images/service-pages/bathroom-renovation/hero.jpg" alt="Bathroom renovation NYC Brooklyn luxury remodel" style="cursor:zoom-in" onclick="openLightbox(this.src, this.alt)"></div>
   <div class="page-hero-accent"></div>
   <div class="page-hero-content">
-    <div class="breadcrumb"><a href="index.html">Home</a> <span>›</span> <a href="services.html">Services</a> <span>›</span> <span>Bathroom Renovation</span></div>
-    <h1>Full Bathroom Renovation<br><em>Brooklyn & All NYC</em></h1>
-    <p>Complete bathroom transformations — luxury tile work, custom vanities, walk-in showers & waterproofing. Serving Brooklyn, Manhattan, Queens, Long Island & Nassau County.</p>
-    <div class="hero-badges">
-      <span class="hero-badge gold">4.9★ Google Rated</span>
-      <span class="hero-badge">Full Gut Remodels</span>
-      <span class="hero-badge">Free Design Consult</span>
-      <span class="hero-badge">Fully Insured</span>
-    </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
-      <a href="contact.html" class="btn-primary">Get Free Estimate</a>
-      <a href="tel:3322770990" class="btn-secondary">📞 332-277-0990</a>
+    <div class="page-hero-inner">
+      <div class="breadcrumb"><a href="index.html">Home</a> <span>›</span> <a href="services.html">Services</a> <span>›</span> <span>Bathroom Renovation</span></div>
+      <div class="hero-rating"><span class="stars">★★★★★</span> 4.9 Google Rated · 62+ Reviews</div>
+      <h1>Full Bathroom Renovation<em>Brooklyn & All NYC</em></h1>
+      <p class="hero-tagline">Luxury tile, custom vanities & walk-in showers — built to last.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a href="contact.html" class="btn-primary">Get Free Estimate</a>
+        <a href="tel:3322770990" class="btn-secondary">📞 332-277-0990</a>
+      </div>
     </div>
   </div>
 </section>
+
+<!-- CREDENTIALS STRIP (moved out of hero for clean look) -->
+<div class="creds-strip">
+  <div class="creds-strip-inner">
+    <div class="cred-item"><span class="cred-item-icon">🛡️</span> Fully Insured</div>
+    <div class="cred-item"><span class="cred-item-icon">📋</span> NYC Permits</div>
+    <div class="cred-item"><span class="cred-item-icon">⚡</span> Free Design Consult</div>
+    <div class="cred-item"><span class="cred-item-icon">🏆</span> 10+ Years</div>
+    <div class="cred-item"><span class="cred-item-icon">🚀</span> Full Gut Remodels</div>
+  </div>
+</div>
 
 <!-- SUB-SERVICES BAR -->
 <div class="sub-services-bar">
@@ -147,27 +173,27 @@
     <p class="section-sub">We handle every aspect of your bathroom renovation — from demolition to the final grout line.</p>
     <div class="services-grid">
       <div class="svc-card">
-        <img src="images/service-pages/bathroom-renovation/service-1-gut-renovation.jpg" alt="Full bathroom gut renovation NYC Brooklyn">
+        <img onclick="openLightbox(this.src, this.alt)" src="images/service-pages/bathroom-renovation/service-1-gut-renovation.jpg" alt="Full bathroom gut renovation NYC Brooklyn">
         <div class="svc-card-body"><div class="svc-card-title">Full Gut Renovation</div><p class="svc-card-desc">Complete bathroom demo and rebuild. New layout, waterproofing, tile, fixtures, vanity, lighting & plumbing — fully transformed.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/service-pages/bathroom-renovation/service-2-walk-in-shower.jpg" alt="Walk-in shower installation NYC">
+        <img onclick="openLightbox(this.src, this.alt)" src="images/service-pages/bathroom-renovation/service-2-walk-in-shower.jpg" alt="Walk-in shower installation NYC">
         <div class="svc-card-body"><div class="svc-card-title">Walk-In Shower Installation</div><p class="svc-card-desc">Custom walk-in showers with frameless glass, niche shelving, rain heads & luxury tile work. NYC's premier shower specialists.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/service-pages/bathroom-renovation/service-3-tile-waterproofing.jpg" alt="Bathroom tile installation NYC Brooklyn">
+        <img onclick="openLightbox(this.src, this.alt)" src="images/service-pages/bathroom-renovation/service-3-tile-waterproofing.jpg" alt="Bathroom tile installation NYC Brooklyn">
         <div class="svc-card-body"><div class="svc-card-title">Tile Work & Waterproofing</div><p class="svc-card-desc">Floor & wall tile installation with proper waterproofing membranes. Porcelain, marble, subway tile & custom patterns throughout NYC.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/service-pages/bathroom-renovation/service-4-vanity-fixtures.jpg" alt="Bathroom vanity installation NYC">
+        <img onclick="openLightbox(this.src, this.alt)" src="images/service-pages/bathroom-renovation/service-4-vanity-fixtures.jpg" alt="Bathroom vanity installation NYC">
         <div class="svc-card-body"><div class="svc-card-title">Vanity & Fixture Installation</div><p class="svc-card-desc">Custom and semi-custom vanity installation, faucets, lighting, mirrors & accessories. We source and install premium fixtures.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/service-pages/bathroom-renovation/service-5-plumbing.jpg" alt="Bathroom plumbing NYC Brooklyn">
+        <img onclick="openLightbox(this.src, this.alt)" src="images/service-pages/bathroom-renovation/service-5-plumbing.jpg" alt="Bathroom plumbing NYC Brooklyn">
         <div class="svc-card-body"><div class="svc-card-title">Plumbing & Rough Work</div><p class="svc-card-desc">Full plumbing rough-in, drain relocation, supply line replacement & fixture hookup. Professional plumbing coordination throughout NYC.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/service-pages/bathroom-renovation/service-6-bathtub.jpg" alt="Bathtub replacement installation NYC">
+        <img onclick="openLightbox(this.src, this.alt)" src="images/service-pages/bathroom-renovation/service-6-bathtub.jpg" alt="Bathtub replacement installation NYC">
         <div class="svc-card-body"><div class="svc-card-title">Bathtub Replacement & Refinishing</div><p class="svc-card-desc">Freestanding tub installation, alcove tub replacement, and bathtub refinishing to restore worn surfaces to like-new condition.</p></div>
       </div>
     </div>
@@ -177,7 +203,7 @@
 <section class="section">
   <div class="section-inner">
     <div class="why-grid">
-      <div class="why-img"><img src="images/service-pages/bathroom-renovation/feature.jpg" alt="Sani Building Corp bathroom renovation NYC"></div>
+      <div class="why-img"><img onclick="openLightbox(this.src, this.alt)" src="images/service-pages/bathroom-renovation/feature.jpg" alt="Sani Building Corp bathroom renovation NYC"></div>
       <div>
         <div class="section-eyebrow"><div class="line"></div><span>Why Choose Us</span></div>
         <h2 class="section-title">NYC's Premier Bathroom<br><em>Renovation Specialists</em></h2>
@@ -277,6 +303,25 @@
     <a href="tel:3322770990" class="btn-secondary">📞 Call 332-277-0990</a>
   </div>
 </section>
+
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">✕</button>
+  <button class="lightbox-nav lightbox-prev" onclick="event.stopPropagation();navLightbox(-1)" aria-label="Previous">‹</button>
+  <img class="lightbox-img" id="lightboxImg" alt="">
+  <button class="lightbox-nav lightbox-next" onclick="event.stopPropagation();navLightbox(1)" aria-label="Next">›</button>
+  <div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
+<script>
+let lightboxImages=[],lightboxIndex=0;
+function gatherImages(){lightboxImages=Array.from(document.querySelectorAll('.page-hero-photo img,.svc-card img,.why-img img')).map(img=>({src:img.src,alt:img.alt}))}
+function openLightbox(src,alt){gatherImages();lightboxIndex=lightboxImages.findIndex(i=>i.src===src);if(lightboxIndex<0)lightboxIndex=0;document.getElementById('lightboxImg').src=src;document.getElementById('lightboxImg').alt=alt;document.getElementById('lightboxCaption').textContent=alt||'';document.getElementById('lightbox').classList.add('active');document.body.style.overflow='hidden'}
+function closeLightbox(e){if(e&&e.target.id!=='lightbox'&&!e.target.classList.contains('lightbox-close'))return;document.getElementById('lightbox').classList.remove('active');document.body.style.overflow=''}
+function navLightbox(dir){if(!lightboxImages.length)return;lightboxIndex=(lightboxIndex+dir+lightboxImages.length)%lightboxImages.length;const img=lightboxImages[lightboxIndex];document.getElementById('lightboxImg').src=img.src;document.getElementById('lightboxImg').alt=img.alt;document.getElementById('lightboxCaption').textContent=img.alt||''}
+document.addEventListener('keydown',e=>{if(!document.getElementById('lightbox').classList.contains('active'))return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')navLightbox(-1);if(e.key==='ArrowRight')navLightbox(1)});
+let touchStartX=0;document.getElementById('lightbox').addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX},{passive:true});document.getElementById('lightbox').addEventListener('touchend',e=>{const diff=touchStartX-e.changedTouches[0].clientX;if(Math.abs(diff)>50)navLightbox(diff>0?1:-1)},{passive:true});
+</script>
 
 <!-- Footer loaded from partials/footer.html via partials/site.js -->
 <div id="site-footer"></div>
