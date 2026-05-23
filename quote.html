@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard · Sani Building Corp</title>
+<title>Your Estimate · Sani Building Corp</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
 
@@ -13,26 +13,21 @@
 
 <style>
 :root {
-  --navy: #0b1828;
-  --navy-2: #122740;
-  --navy-3: #1a3354;
-  --gold: #d4b572;
-  --gold-2: #c9a84c;
-  --gold-soft: rgba(212, 181, 114, 0.12);
-  --ink: #e8edf5;
-  --ink-soft: #b8c4d6;
-  --ink-muted: #7a8aa3;
-  --line: rgba(212, 181, 114, 0.18);
-  --line-soft: rgba(255,255,255,0.06);
-  --bg: #06101e;
-  --card: #0f1f33;
-  --card-2: #142a44;
-  --good: #4ade80;
-  --good-bg: rgba(74, 222, 128, 0.12);
-  --bad: #f87171;
-  --bad-bg: rgba(248, 113, 113, 0.12);
-  --warn: #fbbf24;
-  --warn-bg: rgba(251, 191, 36, 0.12);
+  --navy: #0d1b2a;
+  --navy-2: #1a2d42;
+  --gold: #c9a84c;
+  --gold-2: #b8930a;
+  --gold-soft: #f7f0e3;
+  --bg: #f5f0e8;
+  --card: #ffffff;
+  --ink: #1a1a1a;
+  --ink-soft: #555;
+  --ink-muted: #8a8a8a;
+  --line: #e8e2d9;
+  --good: #2ecc71;
+  --bad: #e74c3c;
+  --warn: #d4a017;
+  --info: #3b82f6;
   --display: 'Bebas Neue', Arial, sans-serif;
   --body: 'Inter', -apple-system, sans-serif;
 }
@@ -43,1520 +38,944 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  padding: 20px 16px 100px;
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+
+/* HEADER */
+.hero {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: #fff;
+  padding: 36px 28px;
+  border-radius: 14px 14px 0 0;
+  text-align: center;
+}
+.brand {
+  font-family: var(--display);
+  font-size: 26px;
+  letter-spacing: 4px;
+  color: var(--gold);
+  text-decoration: none;
+  display: inline-block;
+  transition: opacity 0.15s;
+}
+.brand:hover { opacity: 0.85; }
+.tag {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #aaa;
+  margin-top: 8px;
+  text-transform: uppercase;
 }
 
-/* ============ LOGIN GATE ============ */
-.login-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: radial-gradient(circle at 30% 20%, var(--navy-2) 0%, var(--bg) 60%);
-}
-.login-card {
+.card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 44px 36px;
-  max-width: 400px;
-  width: 100%;
-  text-align: center;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  border-top: none;
+  padding: 32px 28px;
 }
-.login-logo {
+.card:last-child { border-radius: 0 0 14px 14px; }
+
+/* ESTIMATE INFO BOX */
+.estimate-info-box {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+.estimate-info-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: #fff;
+  padding: 14px 20px;
   font-family: var(--display);
-  font-size: 28px;
-  letter-spacing: 5px;
-  color: var(--gold);
-  margin-bottom: 6px;
+  font-size: 17px;
+  letter-spacing: 2.5px;
 }
-.login-sub {
-  font-size: 12px;
-  letter-spacing: 3px;
-  color: var(--ink-muted);
-  margin-bottom: 32px;
-  text-transform: uppercase;
-}
-.login-input {
-  width: 100%;
-  padding: 14px 16px;
-  background: var(--navy);
-  border: 1.5px solid var(--line);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 15px;
-  border-radius: 10px;
-  margin-bottom: 14px;
-}
-.login-input:focus { outline: none; border-color: var(--gold); }
-.login-btn {
-  width: 100%;
-  padding: 14px;
-  background: var(--gold);
-  color: var(--navy);
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  font-family: var(--body);
-  text-transform: uppercase;
-}
-.login-error { color: var(--bad); font-size: 13px; margin-top: 10px; min-height: 18px; }
-
-/* ============ HEADER ============ */
-.app { display: none; }
-.app.show { display: block; }
-
-.topbar {
-  background: var(--card);
-  border-bottom: 1px solid var(--line);
-  padding: 16px 24px;
+.estimate-info-header .gold-accent { color: var(--gold); }
+.info-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
 }
-.brand-mark {
-  font-family: var(--display);
-  font-size: 18px;
-  letter-spacing: 3px;
-  color: var(--gold);
+.info-row:last-child { border-bottom: none; }
+.info-row .info-label {
+  color: var(--ink-soft);
+  width: 110px;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+.info-row .info-value {
+  color: var(--ink);
+  font-weight: 600;
   flex: 1;
 }
-.brand-mark .sep { opacity: 0.4; margin: 0 8px; }
-.brand-mark .sub { color: var(--ink-soft); letter-spacing: 4px; }
+.info-row.total-row .info-value {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 1.5px;
+  color: var(--navy);
+}
 
-.topbar-btn {
-  padding: 9px 16px;
-  background: var(--gold-soft);
-  border: 1px solid var(--line);
-  color: var(--gold);
-  border-radius: 8px;
+/* STATUS PILL */
+.status-pill {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 16px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 1px;
-  cursor: pointer;
-  font-family: var(--body);
-  text-decoration: none;
   text-transform: uppercase;
-  transition: all .15s;
 }
-.topbar-btn:hover { background: var(--gold); color: var(--navy); }
+.status-pill.pending { background: var(--gold-soft); color: var(--gold-2); border: 1px solid var(--gold); }
+.status-pill.viewed { background: rgba(59, 130, 246, 0.12); color: var(--info); border: 1px solid var(--info); }
+.status-pill.approved { background: rgba(46, 204, 113, 0.12); color: var(--good); border: 1px solid var(--good); }
+.status-pill.declined { background: rgba(231, 76, 60, 0.12); color: var(--bad); border: 1px solid var(--bad); }
 
-/* ============ TABS ============ */
-.tabs-row {
-  padding: 20px 24px 0;
-  display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--line-soft);
-}
-.tab {
-  padding: 12px 16px;
-  background: none;
-  border: none;
+/* SECTION TITLES */
+.section-label {
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: 2.5px;
   color: var(--ink-muted);
-  font-family: var(--body);
+  margin: 32px 0 14px;
+  text-transform: uppercase;
+}
+
+/* SUMMARY */
+.summary {
+  background: var(--gold-soft);
+  border-left: 4px solid var(--gold);
+  padding: 16px 20px;
+  font-size: 15px;
+  color: #444;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 22px;
+  line-height: 1.6;
+}
+
+/* TIMELINE PILL */
+.timeline-pill {
+  display: inline-block;
+  background: var(--gold-soft);
+  color: var(--navy);
+  padding: 7px 16px;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 1px;
-  cursor: pointer;
-  text-transform: uppercase;
-  border-bottom: 2px solid transparent;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
+  margin-bottom: 22px;
+  border: 1px solid var(--gold);
 }
-.tab.active {
-  color: var(--gold);
-  border-bottom-color: var(--gold);
-}
-.tab-count {
-  background: var(--gold-soft);
-  color: var(--gold);
-  padding: 1px 9px;
-  border-radius: 10px;
+.timeline-pill .pill-label {
+  color: var(--gold-2);
   font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   font-weight: 700;
-  min-width: 22px;
-  text-align: center;
+  margin-right: 6px;
 }
 
-/* ============ LIST ============ */
-.list-section { padding: 24px; }
-.list-header {
+/* CATEGORIZED SCOPE */
+.scope-category { margin-bottom: 22px; }
+.scope-category-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: var(--gold);
+  padding: 12px 20px;
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  border-radius: 8px 8px 0 0;
+  border-left: 4px solid var(--gold);
+}
+.scope-category-body {
+  background: #faf8f4;
+  padding: 16px 20px 16px 24px;
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+.scope-category-body ul { list-style: none; padding: 0; }
+.scope-category-body li {
+  padding: 7px 0 7px 22px;
+  position: relative;
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+.scope-category-body li::before {
+  content: "•";
+  color: var(--gold);
+  position: absolute;
+  left: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  top: 4px;
+}
+
+/* LINE ITEMS BOX (with dotted leader) */
+.line-items-box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 22px;
+  background: #faf8f4;
+  margin-bottom: 22px;
+}
+.line-items-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  padding: 8px 0;
+  font-size: 14.5px;
+  color: var(--ink-soft);
 }
-.list-count {
-  color: var(--ink-muted);
+.line-items-row .li-label { flex-shrink: 0; }
+.line-items-row .li-dots {
+  flex: 1;
+  margin: 0 12px;
+  border-bottom: 2px dotted var(--ink-muted);
+  height: 12px;
+  opacity: 0.4;
+}
+.line-items-row .li-value {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.line-items-row.grand-total {
+  padding-top: 12px;
+  margin-top: 8px;
+  border-top: 2px solid var(--navy);
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 1.5px;
+  color: var(--navy);
+}
+.line-items-row.grand-total .li-value {
+  color: var(--navy);
+  font-family: var(--display);
+}
+
+/* "Included" note */
+.included-note {
+  background: #f7f9f5;
+  border-left: 3px solid var(--good);
+  padding: 11px 16px;
   font-size: 13px;
+  color: var(--ink-soft);
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 22px;
+}
+.included-note strong { color: var(--good); }
+
+/* NOTES */
+.notes-box {
+  background: #faf8f4;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 22px;
+}
+.notes-label {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--gold-2);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.notes-body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+}
+
+/* TOTAL ONLY (dramatic centerpiece when no breakdown) */
+.totals-only {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: #fff;
+  text-align: center;
+  padding: 42px 24px;
+  border-radius: 14px;
+  margin: 28px 0;
+}
+.totals-only .label {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.totals-only .amount {
+  font-family: var(--display);
+  font-size: 60px;
+  letter-spacing: 2px;
+  color: #fff;
+  line-height: 1.1;
+}
+.totals-only .note {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 10px;
   letter-spacing: 0.5px;
 }
 
-.empty {
-  text-align: center;
-  padding: 80px 24px;
-  color: var(--ink-muted);
+/* ACTIONS */
+.actions {
+  margin: 32px 0 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
 }
-.empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
-.empty h3 {
-  font-family: var(--display);
-  font-size: 22px;
-  letter-spacing: 2px;
-  color: var(--ink-soft);
-  margin-bottom: 8px;
-}
-.empty p { font-size: 14px; margin-bottom: 20px; }
-
-.est-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px 22px;
-  margin-bottom: 12px;
+@media (max-width: 540px) { .actions { grid-template-columns: 1fr; } }
+.btn {
+  padding: 14px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--gold);
+  background: #fff;
+  color: var(--navy);
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all .15s;
   display: flex;
   align-items: center;
-  gap: 18px;
-  transition: all .15s;
-  cursor: pointer;
-}
-.est-card:hover { border-color: var(--gold); transform: translateY(-1px); }
-.est-main { flex: 1; min-width: 0; }
-.est-title {
-  font-family: var(--display);
-  font-size: 18px;
-  letter-spacing: 1.5px;
-  color: var(--ink);
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.est-meta {
-  font-size: 13px;
-  color: var(--ink-muted);
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.est-meta .customer { color: var(--ink-soft); font-weight: 500; }
-.est-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-.badge {
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-.badge.new { background: var(--warn-bg); color: var(--warn); }
-.badge.drafted { background: var(--gold-soft); color: var(--gold); }
-.badge.sent { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
-.badge.accepted { background: var(--good-bg); color: var(--good); }
-.badge.declined { background: var(--bad-bg); color: var(--bad); }
-.badge.invoiced { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
-.badge.paid { background: var(--good-bg); color: var(--good); }
-
-.est-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  justify-content: center;
   gap: 6px;
-  flex-shrink: 0;
+  text-decoration: none;
 }
-.est-total {
-  font-family: var(--display);
-  font-size: 22px;
-  letter-spacing: 1px;
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-icon { font-size: 15px; line-height: 1; }
+.btn-accept {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
   color: var(--gold);
+  border-color: var(--navy);
 }
-.est-total-label {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: var(--ink-muted);
-  text-transform: uppercase;
+.btn-accept:hover:not(:disabled) {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold);
 }
 
-/* ============ EDIT MODAL ============ */
+/* FOOTER */
+.footer {
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--ink-muted);
+  letter-spacing: 1px;
+  line-height: 1.8;
+}
+.footer strong { color: var(--gold); letter-spacing: 2px; }
+.footer a { color: var(--gold-2); text-decoration: none; font-weight: 600; }
+
+.back-link-wrap {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  text-decoration: none;
+  padding: 10px 20px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.back-link:hover {
+  border-color: var(--gold);
+  color: var(--gold-2);
+  background: var(--gold-soft);
+}
+.back-link-arrow { font-size: 16px; line-height: 1; }
+
+/* LOADING */
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--line);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  margin: 0 auto 18px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* MODALS */
 .modal-backdrop {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.5);
   z-index: 100;
-  padding: 20px;
-  overflow-y: auto;
-}
-.modal-backdrop.show { display: block; }
-.modal-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 28px 32px;
-  position: relative;
-}
-.modal-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 22px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--line-soft);
-}
-.modal-head h2 {
-  font-family: var(--display);
-  font-size: 22px;
-  letter-spacing: 2px;
-  color: var(--gold);
-}
-.modal-head .ref-sub {
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  color: var(--ink-muted);
-  margin-top: 4px;
-  text-transform: uppercase;
-}
-.modal-close {
-  background: none;
-  border: none;
-  color: var(--ink-muted);
-  cursor: pointer;
-  font-size: 24px;
-  padding: 4px 10px;
-}
-.modal-close:hover { color: var(--gold); }
-
-/* ============ CUSTOMER REQUEST PANEL ============ */
-.cust-panel {
-  background: var(--navy);
-  border: 1px solid var(--line-soft);
-  border-radius: 12px;
-  padding: 18px 22px;
-  margin-bottom: 22px;
-}
-.cust-panel h3 {
-  font-family: var(--display);
-  font-size: 14px;
-  letter-spacing: 2px;
-  color: var(--gold);
-  margin-bottom: 14px;
-}
-.cust-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  font-size: 13px;
-  margin-bottom: 12px;
-}
-@media (max-width: 640px) { .cust-grid { grid-template-columns: 1fr; } }
-.cust-field { display: flex; flex-direction: column; gap: 2px; }
-.cust-field .lbl {
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  color: var(--ink-muted);
-  text-transform: uppercase;
-}
-.cust-field .val { color: var(--ink); font-weight: 500; }
-.cust-field a { color: var(--gold); text-decoration: none; }
-
-.answers-list {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line-soft);
-}
-.answer-row {
-  display: flex;
-  font-size: 13px;
-  padding: 4px 0;
-  gap: 12px;
-}
-.answer-row .ak {
-  color: var(--ink-muted);
-  text-transform: capitalize;
-  min-width: 140px;
-  font-size: 12px;
-}
-.answer-row .av { color: var(--ink-soft); flex: 1; }
-
-.cust-photos {
-  margin-top: 14px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.cust-photos img {
-  width: 80px; height: 80px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid var(--line-soft);
-}
-
-/* ============ AI GENERATE BUTTON ============ */
-.ai-bar {
-  background: linear-gradient(135deg, var(--gold-soft), transparent);
-  border: 1.5px solid var(--gold);
-  border-radius: 12px;
-  padding: 18px 22px;
-  margin-bottom: 22px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-}
-.ai-bar-text { flex: 1; min-width: 200px; }
-.ai-bar h4 {
-  font-family: var(--display);
-  font-size: 16px;
-  letter-spacing: 2px;
-  color: var(--gold);
-  margin-bottom: 4px;
-}
-.ai-bar p { font-size: 13px; color: var(--ink-soft); }
-.btn-ai {
-  padding: 12px 24px;
-  background: var(--gold);
-  color: var(--navy);
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  font-family: var(--body);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.btn-ai:hover:not(:disabled) { background: var(--gold-2); }
-.btn-ai:disabled { opacity: 0.6; cursor: not-allowed; }
-.ai-spin {
-  display: inline-block;
-  width: 14px; height: 14px;
-  border: 2px solid rgba(11, 24, 40, 0.3);
-  border-top-color: var(--navy);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  vertical-align: middle;
-  margin-right: 8px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ============ FORM SECTIONS ============ */
-.form-section { margin-bottom: 24px; }
-.form-section h3 {
-  font-family: var(--display);
-  font-size: 14px;
-  letter-spacing: 2px;
-  color: var(--gold);
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-@media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field label {
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  color: var(--ink-muted);
-  text-transform: uppercase;
-  font-weight: 600;
-}
-.field input, .field textarea, .field select {
-  background: var(--navy);
-  border: 1.5px solid var(--line-soft);
-  color: var(--ink);
-  padding: 11px 14px;
-  border-radius: 8px;
-  font-family: var(--body);
-  font-size: 14px;
-}
-.field input:focus, .field textarea:focus, .field select:focus {
-  outline: none; border-color: var(--gold);
-}
-.field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
-
-/* ============ CUSTOMER VIEW MODE - CHECKBOXES + PREVIEW ============ */
-.cv-panel {
-  background: var(--navy);
-  border: 1.5px solid var(--gold);
-  border-radius: 12px;
-  padding: 20px 24px;
-  margin-bottom: 24px;
-}
-.cv-panel h3 {
-  font-family: var(--display);
-  font-size: 14px;
-  letter-spacing: 2px;
-  color: var(--gold);
-  margin-bottom: 6px;
-}
-.cv-panel .cv-helper {
-  font-size: 12px;
-  color: var(--ink-muted);
-  margin-bottom: 16px;
-  line-height: 1.5;
-}
-.cv-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-@media (max-width: 720px) { .cv-grid { grid-template-columns: 1fr; } }
-
-.cv-checks {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.cv-check {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--card-2);
-  border: 1.5px solid var(--line-soft);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all .15s;
-}
-.cv-check:hover { border-color: var(--gold); }
-.cv-check.checked {
-  border-color: var(--gold);
-  background: var(--gold-soft);
-}
-.cv-check input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-.cv-checkbox-box {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 2px solid var(--line);
-  flex-shrink: 0;
-  display: flex;
   align-items: center;
   justify-content: center;
-  transition: all .15s;
-  position: relative;
+  padding: 20px;
 }
-.cv-check.checked .cv-checkbox-box {
-  border-color: var(--gold);
-  background: var(--gold);
-}
-.cv-checkbox-box::after {
-  content: "✓";
-  color: var(--navy);
-  font-weight: 700;
-  font-size: 14px;
-  opacity: 0;
-  transition: opacity .15s;
-}
-.cv-check.checked .cv-checkbox-box::after { opacity: 1; }
-.cv-check-text { flex: 1; }
-.cv-check-label {
-  font-family: var(--display);
-  font-size: 14px;
-  letter-spacing: 1.5px;
-  color: var(--ink);
-  text-transform: uppercase;
-}
-.cv-check.checked .cv-check-label { color: var(--gold); }
-.cv-check-amount {
-  font-size: 12px;
-  color: var(--ink-muted);
-  margin-top: 2px;
-}
-.cv-check.checked .cv-check-amount { color: var(--ink-soft); }
-
-/* Live preview box */
-.cv-preview {
-  background: #f5f0e8;
-  color: #1a1a1a;
-  border-radius: 10px;
-  padding: 18px 20px;
-  position: relative;
-}
-.cv-preview-label {
-  position: absolute;
-  top: -10px;
-  left: 14px;
-  background: var(--gold);
-  color: var(--navy);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  padding: 3px 10px;
-  border-radius: 8px;
-  text-transform: uppercase;
-}
-.cv-preview-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  font-size: 14px;
-  color: #555;
-  font-family: var(--body);
-}
-.cv-preview-row.divider {
-  border-top: 1px dashed #aaa;
-  margin-top: 4px;
-  padding-top: 8px;
-}
-.cv-preview-row.preview-grand {
-  font-family: var(--display);
-  font-size: 20px;
-  letter-spacing: 1.5px;
-  color: #0d1b2a;
-  padding-top: 10px;
-  margin-top: 4px;
-  border-top: 2px solid #0d1b2a;
-}
-.cv-preview-row .pv-value {
-  font-weight: 600;
-  color: #1a1a1a;
-}
-.cv-preview-row.preview-grand .pv-value {
-  color: #0d1b2a;
-  font-family: var(--display);
-}
-.cv-preview-note {
-  background: #f7f9f5;
-  border-left: 3px solid var(--good);
-  padding: 8px 12px;
-  font-size: 12px;
-  color: #555;
-  margin-top: 8px;
-  border-radius: 0 4px 4px 0;
-}
-.cv-preview-note strong { color: var(--good); }
-.cv-preview-empty {
-  text-align: center;
-  padding: 20px 0;
-  color: #888;
-  font-size: 13px;
-  font-style: italic;
-}
-
-/* line item tables */
-.lines-table {
+.modal-backdrop.show { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 32px 28px;
+  max-width: 460px;
   width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  margin-bottom: 10px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.3);
 }
-.lines-table th {
-  text-align: left;
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  color: var(--ink-muted);
-  text-transform: uppercase;
-  padding: 8px 6px;
-  font-weight: 600;
-  border-bottom: 1px solid var(--line-soft);
-}
-.lines-table th.num, .lines-table td.num { text-align: right; }
-.lines-table th.col-item { width: 50%; }
-.lines-table th.col-qty { width: 12%; }
-.lines-table th.col-unit { width: 12%; }
-.lines-table th.col-rate { width: 14%; }
-.lines-table th.col-total { width: 12%; }
-.lines-table td { padding: 6px 6px; border-bottom: 1px solid var(--line-soft); }
-.lines-table input {
-  width: 100%;
-  background: var(--navy);
-  border: 1px solid transparent;
-  color: var(--ink);
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-family: var(--body);
-  font-size: 13px;
-}
-.lines-table input:focus {
-  outline: none; border-color: var(--gold); background: var(--navy-2);
-}
-.lines-table input[readonly] { color: var(--gold); font-weight: 600; cursor: default; }
-.lines-table .del-row {
-  background: none;
-  border: none;
-  color: var(--bad);
-  cursor: pointer;
-  padding: 4px 8px;
-  font-size: 16px;
-}
-.lines-table .del-row:hover { color: var(--gold); }
-
-.btn-add-row {
-  background: var(--gold-soft);
-  border: 1px dashed var(--line);
-  color: var(--gold);
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  cursor: pointer;
-  text-transform: uppercase;
-  font-family: var(--body);
-}
-.btn-add-row:hover { background: var(--gold); color: var(--navy); }
-
-/* totals (internal) */
-.totals-box {
-  background: var(--navy);
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  padding: 16px 20px;
-  margin-top: 16px;
-}
-.totals-box .internal-tag {
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  color: var(--ink-muted);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-.tot-line {
-  display: flex;
-  justify-content: space-between;
-  padding: 5px 0;
-  font-size: 14px;
-  color: var(--ink-soft);
-}
-.tot-line.grand {
-  margin-top: 8px;
-  padding-top: 12px;
-  border-top: 2px solid var(--gold);
-  color: var(--gold);
+.modal h3 {
   font-family: var(--display);
-  font-size: 22px;
+  font-size: 24px;
   letter-spacing: 2px;
+  color: var(--navy);
+  margin-bottom: 8px;
 }
-.tot-line .markup-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.modal p { font-size: 14px; color: var(--ink-soft); margin-bottom: 18px; }
+.modal label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 600;
 }
-.tot-line input.markup-input {
-  width: 60px;
-  padding: 4px 8px;
-  background: var(--navy-2);
-  border: 1px solid var(--line-soft);
-  color: var(--ink);
-  border-radius: 5px;
-  font-size: 13px;
-  text-align: right;
+.modal input, .modal textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
   font-family: var(--body);
+  font-size: 15px;
+  margin-bottom: 16px;
 }
-
-/* footer actions */
+.modal input:focus, .modal textarea:focus { outline: none; border-color: var(--gold); }
 .modal-actions {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 28px;
-  padding-top: 22px;
-  border-top: 1px solid var(--line-soft);
-  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
 }
-.modal-actions-right { display: flex; gap: 10px; flex-wrap: wrap; }
-.btn-primary, .btn-secondary, .btn-danger {
-  padding: 12px 22px;
-  border: none;
-  border-radius: 10px;
-  font-family: var(--body);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  text-transform: uppercase;
-}
-.btn-primary {
-  background: var(--gold);
-  color: var(--navy);
-}
-.btn-primary:hover:not(:disabled) { background: var(--gold-2); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary {
-  background: transparent;
-  border: 1px solid var(--line);
+.modal-actions button { flex: 1; padding: 13px; }
+.modal-actions .btn-cancel {
+  background: #fff;
   color: var(--ink-soft);
+  border: 1.5px solid var(--line);
 }
-.btn-secondary:hover { color: var(--gold); border-color: var(--gold); }
-.btn-danger {
-  background: transparent;
-  border: 1px solid var(--bad);
-  color: var(--bad);
+.modal-actions .btn-confirm {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: var(--gold);
+  border: 1.5px solid var(--navy);
 }
-.btn-danger:hover { background: var(--bad-bg); }
+.modal-actions .btn-decline-confirm {
+  background: #e74c3c;
+  color: #fff;
+  border: 1.5px solid #e74c3c;
+}
 
-/* toast */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: var(--navy-2);
-  color: var(--ink);
-  border: 1px solid var(--gold);
-  padding: 14px 22px;
-  border-radius: 10px;
-  font-size: 14px;
-  z-index: 200;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
-  transition: transform 0.3s;
+/* SUCCESS */
+.success-screen { text-align: center; padding: 50px 24px; }
+.success-icon {
+  width: 80px; height: 80px;
+  background: var(--good);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 40px;
+  line-height: 80px;
+  margin: 0 auto 20px;
 }
-.toast.show { transform: translateX(-50%) translateY(0); }
-.toast.error { border-color: var(--bad); }
+.success-screen h1 {
+  font-family: var(--display);
+  font-size: 32px;
+  letter-spacing: 2px;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+
+/* PRINT */
+@media print {
+  body { background: #fff; padding: 0; }
+  .actions, .back-link-wrap, #state-loading, #state-error { display: none !important; }
+  .card, .hero { border-radius: 0; box-shadow: none; }
+  .btn { display: none; }
+}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<!-- LOGIN -->
-<div id="login-screen" class="login-screen">
-  <div class="login-card">
-    <div class="login-logo">SBC · DASHBOARD</div>
-    <div class="login-sub">Contractor Access</div>
-    <input type="password" id="pw-input" class="login-input" placeholder="Password" autofocus>
-    <button id="pw-btn" class="login-btn">UNLOCK</button>
-    <div id="pw-error" class="login-error"></div>
+  <!-- LOADING -->
+  <div id="state-loading" class="hero" style="border-radius:14px">
+    <div class="spinner"></div>
+    <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
+    <div class="tag">Loading your estimate…</div>
+  </div>
+
+  <!-- ERROR -->
+  <div id="state-error" style="display:none">
+    <div class="hero" style="border-radius:14px">
+      <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
+      <div class="tag" style="color:#e74c3c">Estimate not found</div>
+    </div>
+    <div class="card" style="border-radius:0 0 14px 14px;text-align:center">
+      <p style="color:var(--ink-soft);margin:20px 0">We couldn't find this estimate. The link may be expired or incorrect.</p>
+      <p style="color:var(--ink-muted);font-size:13px">Need help? Call <a href="tel:+13322770990" style="color:var(--gold-2);text-decoration:none;font-weight:600">(332) 277-0990</a></p>
+      <div class="back-link-wrap">
+        <a href="https://www.sanibuildingcorp.com" class="back-link">
+          <span class="back-link-arrow">←</span> Back to sanibuildingcorp.com
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="state-quote" style="display:none">
+    <div class="hero">
+      <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
+      <div class="tag">Your Estimate</div>
+    </div>
+    <div class="card">
+
+      <!-- INFO BOX -->
+      <div class="estimate-info-box">
+        <div class="estimate-info-header">ESTIMATE <span class="gold-accent">#<span id="est-ref"></span></span></div>
+        <div class="info-row"><div class="info-label">Project</div><div class="info-value" id="est-project">—</div></div>
+        <div class="info-row"><div class="info-label">Prepared for</div><div class="info-value" id="est-customer">—</div></div>
+        <div class="info-row"><div class="info-label">Issued</div><div class="info-value" id="est-issued">—</div></div>
+        <div class="info-row total-row"><div class="info-label">Total</div><div class="info-value" id="est-total">$0.00</div></div>
+        <div class="info-row"><div class="info-label">Status</div><div class="info-value"><span class="status-pill pending" id="status-pill">Pending</span></div></div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div id="summary-wrap" style="display:none"><div class="summary" id="summary-text"></div></div>
+
+      <!-- TIMELINE -->
+      <div id="timeline-wrap" style="display:none">
+        <div class="timeline-pill"><span class="pill-label">Timeline:</span><span id="timeline-text"></span></div>
+      </div>
+
+      <!-- PROJECT BREAKDOWN -->
+      <div id="breakdown-wrap" style="display:none">
+        <div class="section-label">Project Breakdown</div>
+        <div id="breakdown-body"></div>
+      </div>
+
+      <!-- LINE ITEMS (dynamic based on checkboxes) -->
+      <div id="lineitems-wrap" style="display:none">
+        <div class="section-label">Line Items</div>
+        <div class="line-items-box" id="lineitems-body"></div>
+        <div id="included-note-wrap"></div>
+      </div>
+
+      <!-- TOTAL ONLY (if both unchecked) -->
+      <div id="totals-only-wrap" style="display:none">
+        <div class="totals-only">
+          <div class="label">Your Estimate</div>
+          <div class="amount" id="totals-only-amount">$0.00</div>
+          <div class="note">All-inclusive · No hidden fees</div>
+        </div>
+      </div>
+
+      <!-- NOTES -->
+      <div id="notes-wrap" style="display:none">
+        <div class="notes-box">
+          <div class="notes-label">Notes</div>
+          <div class="notes-body" id="notes-body"></div>
+        </div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="actions" id="actions-row">
+        <button class="btn" onclick="downloadQuote()">
+          <span class="btn-icon">⬇</span> Download
+        </button>
+        <button class="btn" onclick="openDecline()">
+          <span class="btn-icon">✎</span> Request Change
+        </button>
+        <button class="btn btn-accept" onclick="openAccept()">
+          <span class="btn-icon">✓</span> Approve
+        </button>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="footer">
+        <strong>SANI BUILDING CORP</strong><br>
+        Fully Insured · NYC Metro · 4.9 ★<br>
+        <a href="tel:+13322770990">(332) 277-0990</a> · <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a>
+      </div>
+
+      <div class="back-link-wrap">
+        <a href="https://www.sanibuildingcorp.com" class="back-link">
+          <span class="back-link-arrow">←</span> Back to sanibuildingcorp.com
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="state-success" style="display:none">
+    <div class="hero" style="border-radius:14px">
+      <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
+      <div class="tag" id="success-tag">Thank you</div>
+    </div>
+    <div class="card" style="border-radius:0 0 14px 14px">
+      <div class="success-screen">
+        <div class="success-icon" id="success-icon">✓</div>
+        <h1 id="success-title">Estimate Approved</h1>
+        <p style="color:var(--ink-soft);font-size:15px;margin:16px 0 24px;max-width:420px;margin-left:auto;margin-right:auto" id="success-msg">Thanks! We'll be in touch shortly to schedule the start date and send over the invoice with deposit details.</p>
+        <p style="color:var(--ink-muted);font-size:13px">Questions? Call <a href="tel:+13322770990" style="color:var(--gold-2);text-decoration:none;font-weight:600">(332) 277-0990</a></p>
+        <div class="back-link-wrap">
+          <a href="https://www.sanibuildingcorp.com" class="back-link">
+            <span class="back-link-arrow">←</span> Back to sanibuildingcorp.com
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ACCEPT MODAL -->
+<div id="accept-modal" class="modal-backdrop">
+  <div class="modal">
+    <h3>APPROVE ESTIMATE</h3>
+    <p>By typing your full name below, you accept this estimate and authorize Sani Building Corp to proceed with the work as described.</p>
+    <label>Type your full name to sign</label>
+    <input type="text" id="signature-input" placeholder="e.g. John Smith">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">Cancel</button>
+      <button class="btn-confirm" id="confirm-accept" onclick="submitAccept()">Approve &amp; Sign</button>
+    </div>
   </div>
 </div>
 
-<!-- APP -->
-<div id="app" class="app">
-  <div class="topbar">
-    <div class="brand-mark">SANI <span class="sep">·</span><span class="sub">DASHBOARD</span></div>
-    <a href="/estimate" target="_blank" class="topbar-btn">↗ Customer Form</a>
-    <button class="topbar-btn" onclick="loadEstimates()">⟳ Refresh</button>
-    <button class="topbar-btn" onclick="logout()">Logout</button>
-  </div>
-
-  <div class="tabs-row" id="tabs-row"></div>
-
-  <div class="list-section">
-    <div id="list-host"></div>
+<!-- REQUEST CHANGE MODAL -->
+<div id="decline-modal" class="modal-backdrop">
+  <div class="modal">
+    <h3>REQUEST CHANGE</h3>
+    <p>Want adjustments to this estimate? Let us know what you'd like changed and we'll get back to you quickly.</p>
+    <label>Your request or feedback</label>
+    <textarea id="decline-reason" rows="4" placeholder="e.g. Can we lower the scope? Different timeline? Price too high? Changed plans?"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">Back</button>
+      <button class="btn-decline-confirm" id="confirm-decline" onclick="submitDecline()">Send Request</button>
+    </div>
   </div>
 </div>
-
-<!-- EDIT MODAL -->
-<div id="edit-modal" class="modal-backdrop">
-  <div class="modal-card" id="edit-card">
-    <!-- filled by JS -->
-  </div>
-</div>
-
-<!-- TOAST -->
-<div id="toast" class="toast"></div>
 
 <script>
-const DASHBOARD_PASSWORD = "L0nd0n12@";
-const TABS = [
-  { id: "all", label: "All" },
-  { id: "new", label: "New" },
-  { id: "drafted", label: "Drafts" },
-  { id: "sent", label: "Sent" },
-  { id: "accepted", label: "Accepted" },
-  { id: "declined", label: "Declined" },
-];
+const params = new URLSearchParams(window.location.search);
+const ref = params.get("ref");
+let record = null;
 
-let estimates = [];
-let activeTab = "all";
-let currentRecord = null;
-
-/* ===== LOGIN ===== */
-document.getElementById("pw-btn").addEventListener("click", tryLogin);
-document.getElementById("pw-input").addEventListener("keypress", function(e) { if (e.key === "Enter") tryLogin(); });
-
-function tryLogin() {
-  const v = document.getElementById("pw-input").value;
-  if (v === DASHBOARD_PASSWORD) {
-    sessionStorage.setItem("sbc-auth", "1");
-    showApp();
-  } else {
-    document.getElementById("pw-error").textContent = "Incorrect password";
-  }
-}
-function logout() {
-  sessionStorage.removeItem("sbc-auth");
-  location.reload();
-}
-function showApp() {
-  document.getElementById("login-screen").style.display = "none";
-  document.getElementById("app").classList.add("show");
-  renderTabs();
-  loadEstimates();
-}
-if (sessionStorage.getItem("sbc-auth") === "1") showApp();
-
-/* ===== UTILS ===== */
 function fmt(n) {
   return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-function esc(s) {
+function esc(s) { return String(s == null ? "" : s); }
+function escHtml(s) {
   if (s == null) return "";
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function fmtDate(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  try { return new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); }
+  catch (e) { return "—"; }
 }
 
 /**
- * Calculate internal totals (with markup, before display filter).
+ * Calculate internal totals + customer-facing totals.
+ * shownLabor + shownMaterials = customerTotal (sum of CHECKED items only)
  */
-function calcTotal(est) {
-  if (!est) return { labor: 0, mat: 0, sub: 0, markup: 0, grand: 0, laborWithMarkup: 0, matWithMarkup: 0 };
+function calcAll(est) {
+  if (!est) return { customerTotal: 0, shownLabor: 0, shownMaterials: 0, hasLabor: false, hasMaterials: false, internalLabor: 0, internalMaterials: 0, showLabor: false, showMaterials: false, bothHidden: true };
   const labor = (est.labor || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
   const mat = (est.materials || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
-  const sub = labor + mat;
   const markupPct = Number(est.markupPct) || 0;
-  const markup = sub * (markupPct / 100);
-  // Pro-rate markup proportionally to labor & materials so they each carry their share
+  // Each carries its proportional markup share
   const laborWithMarkup = labor * (1 + markupPct / 100);
   const matWithMarkup = mat * (1 + markupPct / 100);
-  return { labor: labor, mat: mat, sub: sub, markup: markup, grand: sub + markup, laborWithMarkup: laborWithMarkup, matWithMarkup: matWithMarkup };
-}
 
-/**
- * Calculate CUSTOMER-FACING display amounts based on checkboxes.
- * Returns what the customer actually sees.
- */
-function calcCustomerView(est) {
-  const t = calcTotal(est);
-  const showLabor = est.showLaborCost !== false; // default true
-  const showMaterials = est.showMaterialsCost === true; // default false
-
-  // If both unchecked, fall back to showing just the grand total (full project)
-  if (!showLabor && !showMaterials) {
-    return {
-      showLabor: false,
-      showMaterials: false,
-      laborAmount: 0,
-      materialsAmount: 0,
-      customerTotal: t.grand,
-      bothHidden: true
-    };
+  // Migrate from old displayMode if needed
+  let showLabor, showMaterials;
+  if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
+    showLabor = est.showLaborCost !== false;
+    showMaterials = est.showMaterialsCost === true;
+  } else if (est.displayMode === "total") {
+    showLabor = false; showMaterials = false;
+  } else if (est.displayMode === "full") {
+    showLabor = true; showMaterials = true;
+  } else {
+    showLabor = true; showMaterials = false; // default
   }
 
-  const laborAmount = showLabor ? t.laborWithMarkup : 0;
-  const materialsAmount = showMaterials ? t.matWithMarkup : 0;
-  const customerTotal = laborAmount + materialsAmount;
+  const bothHidden = !showLabor && !showMaterials;
+  // If both hidden, customer sees the grand total (labor + materials + markup)
+  const fallbackGrand = (labor + mat) * (1 + markupPct / 100);
+
+  const shownLabor = showLabor ? laborWithMarkup : 0;
+  const shownMaterials = showMaterials ? matWithMarkup : 0;
+  const customerTotal = bothHidden ? fallbackGrand : (shownLabor + shownMaterials);
 
   return {
+    customerTotal: customerTotal,
+    shownLabor: shownLabor,
+    shownMaterials: shownMaterials,
+    internalLabor: labor,
+    internalMaterials: mat,
+    hasLabor: labor > 0,
+    hasMaterials: mat > 0,
     showLabor: showLabor,
     showMaterials: showMaterials,
-    laborAmount: laborAmount,
-    materialsAmount: materialsAmount,
-    customerTotal: customerTotal,
-    bothHidden: false
+    bothHidden: bothHidden
   };
-}
-
-function toast(msg, isError) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className = "toast show" + (isError ? " error" : "");
-  setTimeout(function() { t.classList.remove("show"); }, 3200);
 }
 
 /**
- * Migrate legacy displayMode to checkboxes
+ * Parse scope-of-work text into categorized sections.
  */
-function normalizeDisplayFlags(est) {
-  if (!est) return;
-  // If already has new flags, skip
-  if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") return;
-  // Migrate from old displayMode
-  if (est.displayMode === "total") {
-    est.showLaborCost = false;
-    est.showMaterialsCost = false;
-  } else if (est.displayMode === "full") {
-    est.showLaborCost = true;
-    est.showMaterialsCost = true;
-  } else {
-    // "labor" or undefined → default
-    est.showLaborCost = true;
-    est.showMaterialsCost = false;
+function parseScope(scopeText) {
+  if (!scopeText || !scopeText.trim()) return [];
+  const lines = scopeText.split(/\r?\n/);
+  const categories = [];
+  let current = null;
+  let preCategoryItems = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) continue;
+    const isHeader = /^[^•\-*\d].*:$/.test(trimmed) && trimmed.length < 80 && !trimmed.startsWith("•") && !trimmed.startsWith("-") && !trimmed.startsWith("*");
+    if (isHeader) {
+      if (current && current.items.length) categories.push(current);
+      current = { name: trimmed.replace(/:$/, "").trim(), items: [] };
+    } else {
+      const cleanedItem = trimmed.replace(/^[•\-*]\s*/, "").replace(/^\d+\.\s*/, "").trim();
+      if (!cleanedItem) continue;
+      if (current) current.items.push(cleanedItem);
+      else preCategoryItems.push(cleanedItem);
+    }
+  }
+  if (current && current.items.length) categories.push(current);
+  if (preCategoryItems.length) {
+    if (categories.length === 0) categories.push({ name: "Scope of Work", items: preCategoryItems });
+    else categories.unshift({ name: "Scope of Work", items: preCategoryItems });
+  }
+  return categories;
+}
+
+function getStatusPill(status) {
+  switch (status) {
+    case "accepted": return { className: "approved", text: "Approved" };
+    case "declined": return { className: "declined", text: "Declined" };
+    case "opened": return { className: "viewed", text: "Viewed" };
+    case "sent": return { className: "pending", text: "Pending" };
+    default: return { className: "pending", text: "Pending" };
   }
 }
 
-/* ===== TABS ===== */
-function renderTabs() {
-  const counts = { all: estimates.length };
-  TABS.forEach(function(t) { if (t.id !== "all") counts[t.id] = 0; });
-  estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
-  document.getElementById("tabs-row").innerHTML = TABS.map(function(t) {
-    return '<button class="tab ' + (activeTab === t.id ? "active" : "") + '" data-tab="' + t.id + '">' +
-      '<span>' + t.label + '</span>' +
-      '<span class="tab-count">' + (counts[t.id] || 0) + '</span>' +
-    '</button>';
-  }).join("");
-  document.querySelectorAll(".tab").forEach(function(btn) {
-    btn.addEventListener("click", function() {
-      activeTab = btn.dataset.tab;
-      renderTabs(); renderList();
-    });
-  });
-}
-
-/* ===== LIST ===== */
-async function loadEstimates() {
-  const host = document.getElementById("list-host");
-  host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
-  try {
-    const r = await fetch("/.netlify/functions/list-estimates");
-    if (!r.ok) throw new Error("Load failed");
-    const data = await r.json();
-    estimates = data.estimates || [];
-    renderTabs();
-    renderList();
-  } catch (e) {
-    console.error(e);
-    host.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Could not load</h3><p>' + esc(e.message) + '</p><button class="topbar-btn" onclick="loadEstimates()">Retry</button></div>';
-  }
-}
-
-function renderList() {
-  const host = document.getElementById("list-host");
-  const filtered = activeTab === "all"
-    ? estimates
-    : estimates.filter(function(e) { return e.status === activeTab; });
-
-  if (filtered.length === 0) {
-    host.innerHTML =
-      '<div class="empty">' +
-        '<div class="empty-icon">📋</div>' +
-        '<h3>No estimates here yet</h3>' +
-        '<p>' + (activeTab === "all" ? "Customer requests will appear here when they submit the form." : "No estimates in this status.") + '</p>' +
-      '</div>';
-    return;
-  }
-
-  host.innerHTML =
-    '<div class="list-header">' +
-      '<div class="list-count">' + filtered.length + ' ' + (filtered.length === 1 ? "estimate" : "estimates") + '</div>' +
-    '</div>' +
-    filtered.map(function(e) {
-      const title = (e.estimate && e.estimate.projectTitle) || (e.request && e.request.service) || "Untitled";
-      const cust = (e.customer && e.customer.name) || "—";
-      return '<div class="est-card" data-ref="' + esc(e.ref) + '">' +
-        '<div class="est-main">' +
-          '<div class="est-title">' + esc(title) + '</div>' +
-          '<div class="est-meta">' +
-            '<span class="customer">' + esc(cust) + '</span>' +
-            '<span>•</span>' +
-            '<span>' + esc((e.request && e.request.service) || "") + '</span>' +
-            '<span>•</span>' +
-            '<span>' + fmtDate(e.submittedAt) + '</span>' +
-            ((e.request && e.request.photoCount) ? '<span>•</span><span>📷 ' + e.request.photoCount + '</span>' : "") +
-          '</div>' +
-          '<div class="est-badges">' +
-            '<span class="badge ' + e.status + '">' + e.status + '</span>' +
-            '<span style="font-size:11px;color:var(--ink-muted);letter-spacing:1px">' + esc(e.ref) + '</span>' +
-          '</div>' +
-        '</div>' +
-        '<div class="est-right">' +
-          '<div class="est-total-label">Total</div>' +
-          '<div class="est-total">' + fmt((e.estimate && e.estimate.grandTotal) || 0) + '</div>' +
-        '</div>' +
-      '</div>';
-    }).join("");
-
-  document.querySelectorAll(".est-card").forEach(function(card) {
-    card.addEventListener("click", function() { openEdit(card.dataset.ref); });
-  });
-}
-
-/* ===== EDIT MODAL ===== */
-async function openEdit(ref) {
-  const card = document.getElementById("edit-card");
-  card.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
-  document.getElementById("edit-modal").classList.add("show");
-  document.body.style.overflow = "hidden";
-
+async function load() {
+  if (!ref) { showError(); return; }
   try {
     const r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref));
-    if (!r.ok) throw new Error("Load failed");
-    currentRecord = await r.json();
-    // Migrate legacy displayMode to new flags
-    if (!currentRecord.estimate) currentRecord.estimate = {};
-    normalizeDisplayFlags(currentRecord.estimate);
-    renderEdit();
+    if (!r.ok) { showError(); return; }
+    record = await r.json();
+    render();
   } catch (e) {
-    card.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>' + esc(e.message) + '</h3><button class="btn-secondary" onclick="closeEdit()">Close</button></div>';
-  }
-}
-function closeEdit() {
-  document.getElementById("edit-modal").classList.remove("show");
-  document.body.style.overflow = "";
-  currentRecord = null;
-}
-
-function renderEdit() {
-  if (!currentRecord) return;
-  const r = currentRecord;
-  const cust = r.customer || {};
-  const req = r.request || {};
-  const est = r.estimate || {};
-
-  const answers = req.serviceAnswers || {};
-  const answersHtml = Object.entries(answers)
-    .filter(function(kv) { return kv[1] && String(kv[1]).trim(); })
-    .map(function(kv) {
-      return '<div class="answer-row">' +
-        '<div class="ak">' + esc(kv[0].replace(/-/g, " ")) + '</div>' +
-        '<div class="av">' + esc(kv[1]) + '</div>' +
-      '</div>';
-    }).join("");
-
-  const photosHtml = (req.photos || []).slice(0, 10).map(function(p) {
-    return '<img src="' + esc(p.data) + '" alt="customer photo">';
-  }).join("");
-
-  const showAiBar = !est.scopeOfWork && (!est.labor || est.labor.length === 0);
-
-  const laborChecked = est.showLaborCost !== false;
-  const materialsChecked = est.showMaterialsCost === true;
-
-  document.getElementById("edit-card").innerHTML =
-    '<div class="modal-head">' +
-      '<div>' +
-        '<h2>' + esc(est.projectTitle || req.service || "ESTIMATE") + '</h2>' +
-        '<div class="ref-sub">Ref ' + esc(r.ref) + ' · ' + esc((r.status || "new").toUpperCase()) + ' · Submitted ' + fmtDate(r.submittedAt) + '</div>' +
-      '</div>' +
-      '<button class="modal-close" onclick="closeEdit()">×</button>' +
-    '</div>' +
-    '<div class="cust-panel">' +
-      '<h3>📥 CUSTOMER REQUEST</h3>' +
-      '<div class="cust-grid">' +
-        '<div class="cust-field"><span class="lbl">Name</span><span class="val">' + esc(cust.name) + '</span></div>' +
-        '<div class="cust-field"><span class="lbl">Phone</span><a href="tel:' + esc(cust.phone) + '" class="val">' + esc(cust.phone) + '</a></div>' +
-        '<div class="cust-field"><span class="lbl">Email</span><a href="mailto:' + esc(cust.email) + '" class="val">' + esc(cust.email) + '</a></div>' +
-        '<div class="cust-field"><span class="lbl">Address</span><span class="val">' + esc(cust.address || "—") + '</span></div>' +
-        '<div class="cust-field"><span class="lbl">Service</span><span class="val">' + esc(req.service || "—") + '</span></div>' +
-        '<div class="cust-field"><span class="lbl">Property</span><span class="val">' + esc(req.propertyType || "—") + '</span></div>' +
-        '<div class="cust-field"><span class="lbl">Timeline</span><span class="val">' + esc(req.timeline || "—") + '</span></div>' +
-        '<div class="cust-field"><span class="lbl">Photos</span><span class="val">' + (req.photoCount || 0) + '</span></div>' +
-      '</div>' +
-      (req.description ? '<div class="cust-field" style="margin-top:8px"><span class="lbl">Description</span><span class="val" style="font-size:13px;line-height:1.6;white-space:pre-wrap">' + esc(req.description) + '</span></div>' : "") +
-      (answersHtml ? '<div class="answers-list">' + answersHtml + '</div>' : "") +
-      (photosHtml ? '<div class="cust-photos">' + photosHtml + '</div>' : "") +
-    '</div>' +
-    (showAiBar ?
-      '<div class="ai-bar">' +
-        '<div class="ai-bar-text">' +
-          '<h4>✨ AI ESTIMATE GENERATOR</h4>' +
-          '<p>Let Claude draft the scope of work, labor, and materials based on the customer answers. You can review and edit everything before sending.</p>' +
-        '</div>' +
-        '<button class="btn-ai" id="gen-btn" onclick="generateAI()">Generate Estimate</button>' +
-      '</div>'
-      :
-      '<div class="ai-bar">' +
-        '<div class="ai-bar-text">' +
-          '<h4>↻ REGENERATE</h4>' +
-          '<p>Want a different draft? Re-run the AI estimator. Your current work will be replaced.</p>' +
-        '</div>' +
-        '<button class="btn-ai" id="gen-btn" onclick="generateAI(true)">Regenerate with AI</button>' +
-      '</div>'
-    ) +
-    '<div class="form-section">' +
-      '<h3>📋 PROJECT</h3>' +
-      '<div class="field" style="margin-bottom:12px">' +
-        '<label>Project Title</label>' +
-        '<input type="text" id="f-title" value="' + esc(est.projectTitle || "") + '" placeholder="e.g. Master Bathroom Renovation — Brooklyn">' +
-      '</div>' +
-      '<div class="field" style="margin-bottom:12px">' +
-        '<label>Summary (shown to customer)</label>' +
-        '<textarea id="f-summary" placeholder="2-3 sentences describing the project">' + esc(est.summary || "") + '</textarea>' +
-      '</div>' +
-      '<div class="field">' +
-        '<label>Scope of Work (Tip: Use CATEGORY: headers + bullets for sectioned display)</label>' +
-        '<textarea id="f-scope" rows="8" placeholder="DEMOLITION:&#10;- Remove old fixtures&#10;- Haul debris&#10;&#10;INSTALLATION:&#10;- Install new tile&#10;- Mount vanity">' + esc(est.scopeOfWork || "") + '</textarea>' +
-      '</div>' +
-    '</div>' +
-    '<div class="form-section">' +
-      '<h3>🔨 LABOR <button class="btn-add-row" onclick="addLine(\'labor\')">+ Add Item</button></h3>' +
-      '<table class="lines-table">' +
-        '<thead><tr>' +
-          '<th class="col-item">Item</th>' +
-          '<th class="col-qty num">Qty</th>' +
-          '<th class="col-unit">Unit</th>' +
-          '<th class="col-rate num">Rate</th>' +
-          '<th class="col-total num">Total</th>' +
-          '<th style="width:40px"></th>' +
-        '</tr></thead>' +
-        '<tbody id="labor-body"></tbody>' +
-      '</table>' +
-    '</div>' +
-    '<div class="form-section">' +
-      '<h3>🧰 MATERIALS <button class="btn-add-row" onclick="addLine(\'materials\')">+ Add Item</button></h3>' +
-      '<table class="lines-table">' +
-        '<thead><tr>' +
-          '<th class="col-item">Item</th>' +
-          '<th class="col-qty num">Qty</th>' +
-          '<th class="col-unit">Unit</th>' +
-          '<th class="col-rate num">Rate</th>' +
-          '<th class="col-total num">Total</th>' +
-          '<th style="width:40px"></th>' +
-        '</tr></thead>' +
-        '<tbody id="materials-body"></tbody>' +
-      '</table>' +
-    '</div>' +
-    '<div class="form-row">' +
-      '<div class="field">' +
-        '<label>Estimated Timeline (customer sees)</label>' +
-        '<input type="text" id="f-timeline" value="' + esc(est.timelineText || "") + '" placeholder="e.g. 5-7 business days">' +
-      '</div>' +
-      '<div class="field">' +
-        '<label>Internal Notes (NOT shown to customer)</label>' +
-        '<input type="text" id="f-notes" value="' + esc(est.notes || "") + '" placeholder="Reminders, assumptions, things to verify">' +
-      '</div>' +
-    '</div>' +
-    '<div class="cv-panel">' +
-      '<h3>👁 CUSTOMER VIEW MODE</h3>' +
-      '<div class="cv-helper">Choose what costs to show on the customer\'s quote. The total they see equals only what you check. Markup still applies internally.</div>' +
-      '<div class="cv-grid">' +
-        '<div class="cv-checks">' +
-          '<div class="cv-check' + (laborChecked ? " checked" : "") + '" data-kind="labor" onclick="toggleCv(\'labor\')">' +
-            '<span class="cv-checkbox-box"></span>' +
-            '<input type="checkbox"' + (laborChecked ? " checked" : "") + ' id="cv-labor">' +
-            '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Show Labor Cost</div>' +
-              '<div class="cv-check-amount" id="cv-labor-amt">—</div>' +
-            '</div>' +
-          '</div>' +
-          '<div class="cv-check' + (materialsChecked ? " checked" : "") + '" data-kind="materials" onclick="toggleCv(\'materials\')">' +
-            '<span class="cv-checkbox-box"></span>' +
-            '<input type="checkbox"' + (materialsChecked ? " checked" : "") + ' id="cv-materials">' +
-            '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Show Materials Cost</div>' +
-              '<div class="cv-check-amount" id="cv-materials-amt">—</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="cv-preview">' +
-          '<div class="cv-preview-label">Customer Sees</div>' +
-          '<div id="cv-preview-body"></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="totals-box">' +
-      '<div class="internal-tag">Internal · Not shown to customer</div>' +
-      '<div class="tot-line"><span>Labor subtotal</span><span id="tot-labor">$0.00</span></div>' +
-      '<div class="tot-line"><span>Materials subtotal</span><span id="tot-mat">$0.00</span></div>' +
-      '<div class="tot-line"><span>Subtotal</span><span id="tot-sub">$0.00</span></div>' +
-      '<div class="tot-line">' +
-        '<span class="markup-row">Markup <input type="number" id="f-markup" class="markup-input" value="' + esc(est.markupPct == null ? 25 : est.markupPct) + '" min="0" max="100" step="1"> %</span>' +
-        '<span id="tot-markup">$0.00</span>' +
-      '</div>' +
-      '<div class="tot-line grand"><span>GRAND TOTAL</span><span id="tot-grand">$0.00</span></div>' +
-    '</div>' +
-    '<div class="modal-actions">' +
-      '<button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>' +
-      '<div class="modal-actions-right">' +
-        '<button class="btn-secondary" onclick="saveDraft()">💾 Save Draft</button>' +
-        '<button class="btn-primary" onclick="sendToCustomer()">📨 Send to Customer</button>' +
-      '</div>' +
-    '</div>';
-
-  renderLines("labor", est.labor || []);
-  renderLines("materials", est.materials || []);
-  attachLineListeners();
-  document.getElementById("f-markup").addEventListener("input", recalc);
-  recalc();
-}
-
-/* ===== CHECKBOX TOGGLE ===== */
-function toggleCv(kind) {
-  if (!currentRecord || !currentRecord.estimate) return;
-  if (kind === "labor") {
-    currentRecord.estimate.showLaborCost = !(currentRecord.estimate.showLaborCost !== false);
-  } else if (kind === "materials") {
-    currentRecord.estimate.showMaterialsCost = !(currentRecord.estimate.showMaterialsCost === true);
-  }
-  // Update visual state
-  const el = document.querySelector('.cv-check[data-kind="' + kind + '"]');
-  const checkbox = document.getElementById("cv-" + kind);
-  const isChecked = kind === "labor"
-    ? currentRecord.estimate.showLaborCost !== false
-    : currentRecord.estimate.showMaterialsCost === true;
-  el.classList.toggle("checked", isChecked);
-  if (checkbox) checkbox.checked = isChecked;
-  updateCvPreview();
-}
-
-function updateCvPreview() {
-  if (!currentRecord || !currentRecord.estimate) return;
-  const t = calcTotal(currentRecord.estimate);
-  const cv = calcCustomerView(currentRecord.estimate);
-
-  // Update amount labels next to checkboxes
-  const laborAmtEl = document.getElementById("cv-labor-amt");
-  const matAmtEl = document.getElementById("cv-materials-amt");
-  if (laborAmtEl) laborAmtEl.textContent = "Will show: " + fmt(t.laborWithMarkup);
-  if (matAmtEl) matAmtEl.textContent = "Will show: " + fmt(t.matWithMarkup);
-
-  // Build preview body
-  const body = document.getElementById("cv-preview-body");
-  if (!body) return;
-
-  if (cv.bothHidden) {
-    // Just total, no breakdown
-    body.innerHTML =
-      '<div style="text-align:center;padding:18px 0">' +
-        '<div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:4px">Your Estimate</div>' +
-        '<div style="font-family:var(--display);font-size:28px;color:#0d1b2a;letter-spacing:1.5px">' + fmt(cv.customerTotal) + '</div>' +
-      '</div>';
-    return;
-  }
-
-  let html = "";
-  if (cv.showLabor) {
-    html += '<div class="cv-preview-row"><span>Labor</span><span class="pv-value">' + fmt(cv.laborAmount) + '</span></div>';
-  }
-  if (cv.showMaterials) {
-    html += '<div class="cv-preview-row"><span>Materials</span><span class="pv-value">' + fmt(cv.materialsAmount) + '</span></div>';
-  }
-  html += '<div class="cv-preview-row preview-grand"><span>TOTAL</span><span class="pv-value">' + fmt(cv.customerTotal) + '</span></div>';
-
-  // "All materials included" note when labor shown but materials hidden AND materials exist
-  if (cv.showLabor && !cv.showMaterials && t.mat > 0) {
-    html += '<div class="cv-preview-note"><strong>✓ All materials included</strong> in the total price.</div>';
-  }
-  // Note when materials shown but labor hidden
-  if (!cv.showLabor && cv.showMaterials && t.labor > 0) {
-    html += '<div class="cv-preview-note"><strong>✓ Labor included</strong> in the total price.</div>';
-  }
-  body.innerHTML = html;
-}
-
-/* ===== LINE ITEMS ===== */
-function renderLines(kind, items) {
-  const body = document.getElementById(kind + "-body");
-  if (!items.length) {
-    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--ink-muted);font-size:13px;padding:18px">No ' + kind + ' yet. Click "+ Add Item" or use AI to generate.</td></tr>';
-    return;
-  }
-  body.innerHTML = items.map(function(it, idx) {
-    return '<tr data-idx="' + idx + '">' +
-      '<td><input type="text" class="line-item" value="' + esc(it.item || "") + '" placeholder="Description"></td>' +
-      '<td class="num"><input type="number" class="line-qty" value="' + esc(it.qty == null ? "" : it.qty) + '" step="0.5" min="0" style="text-align:right"></td>' +
-      '<td><input type="text" class="line-unit" value="' + esc(it.unit || "") + '" placeholder="hrs/ea/sqft" style="text-align:center"></td>' +
-      '<td class="num"><input type="number" class="line-rate" value="' + esc(it.rate == null ? "" : it.rate) + '" step="0.01" min="0" style="text-align:right"></td>' +
-      '<td class="num"><input type="text" class="line-total" value="' + fmt((Number(it.qty) || 0) * (Number(it.rate) || 0)) + '" readonly></td>' +
-      '<td><button class="del-row" onclick="deleteLine(\'' + kind + '\', ' + idx + ')">×</button></td>' +
-    '</tr>';
-  }).join("");
-}
-function addLine(kind) {
-  const arr = currentRecord.estimate[kind] || [];
-  arr.push({ item: "", qty: 1, unit: kind === "labor" ? "hrs" : "ea", rate: 0 });
-  currentRecord.estimate[kind] = arr;
-  renderLines(kind, arr);
-  attachLineListeners();
-  recalc();
-}
-function deleteLine(kind, idx) {
-  currentRecord.estimate[kind].splice(idx, 1);
-  renderLines(kind, currentRecord.estimate[kind]);
-  attachLineListeners();
-  recalc();
-}
-function attachLineListeners() {
-  document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(function(row) {
-    row.querySelectorAll("input").forEach(function(inp) {
-      inp.addEventListener("input", function() {
-        syncLines();
-        recalc();
-      });
-    });
-  });
-}
-function syncLines() {
-  ["labor", "materials"].forEach(function(kind) {
-    const rows = document.querySelectorAll("#" + kind + "-body tr[data-idx]");
-    const items = [];
-    rows.forEach(function(row) {
-      items.push({
-        item: row.querySelector(".line-item").value,
-        qty: parseFloat(row.querySelector(".line-qty").value) || 0,
-        unit: row.querySelector(".line-unit").value,
-        rate: parseFloat(row.querySelector(".line-rate").value) || 0,
-      });
-    });
-    currentRecord.estimate[kind] = items;
-  });
-}
-function recalc() {
-  syncLines();
-  currentRecord.estimate.markupPct = parseFloat(document.getElementById("f-markup").value) || 0;
-  const t = calcTotal(currentRecord.estimate);
-  document.getElementById("tot-labor").textContent = fmt(t.labor);
-  document.getElementById("tot-mat").textContent = fmt(t.mat);
-  document.getElementById("tot-sub").textContent = fmt(t.sub);
-  document.getElementById("tot-markup").textContent = fmt(t.markup);
-  document.getElementById("tot-grand").textContent = fmt(t.grand);
-  document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(function(row) {
-    const totEl = row.querySelector(".line-total");
-    if (!totEl) return;
-    const q = parseFloat(row.querySelector(".line-qty").value) || 0;
-    const r = parseFloat(row.querySelector(".line-rate").value) || 0;
-    totEl.value = fmt(q * r);
-  });
-  updateCvPreview();
-}
-
-/* ===== AI GENERATE ===== */
-async function generateAI(isRegenerate) {
-  if (isRegenerate && !confirm("This will replace the current scope and line items with a new AI draft. Continue?")) return;
-  const btn = document.getElementById("gen-btn");
-  btn.disabled = true;
-  btn.innerHTML = '<span class="ai-spin"></span> Generating…';
-
-  try {
-    const r = await fetch("/.netlify/functions/generate-estimate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref }),
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || "AI generation failed");
-
-    // Preserve checkbox preferences
-    const prevShowLabor = currentRecord.estimate && currentRecord.estimate.showLaborCost;
-    const prevShowMat = currentRecord.estimate && currentRecord.estimate.showMaterialsCost;
-    currentRecord.estimate = data.estimate;
-    if (typeof prevShowLabor === "boolean") currentRecord.estimate.showLaborCost = prevShowLabor;
-    if (typeof prevShowMat === "boolean") currentRecord.estimate.showMaterialsCost = prevShowMat;
-    normalizeDisplayFlags(currentRecord.estimate);
-    currentRecord.status = data.status;
-    renderEdit();
-    toast("✓ AI estimate generated");
-  } catch (e) {
-    console.error(e);
-    btn.disabled = false;
-    btn.textContent = "Generate Estimate";
-    toast("AI generation failed: " + e.message, true);
+    console.error(e); showError();
   }
 }
 
-/* ===== SAVE / SEND / DELETE ===== */
-function gatherForm() {
-  syncLines();
-  return {
-    projectTitle: document.getElementById("f-title").value.trim(),
-    summary: document.getElementById("f-summary").value.trim(),
-    scopeOfWork: document.getElementById("f-scope").value.trim(),
-    timelineText: document.getElementById("f-timeline").value.trim(),
-    notes: document.getElementById("f-notes").value.trim(),
-    markupPct: parseFloat(document.getElementById("f-markup").value) || 0,
-    showLaborCost: currentRecord.estimate.showLaborCost !== false,
-    showMaterialsCost: currentRecord.estimate.showMaterialsCost === true,
-    labor: currentRecord.estimate.labor || [],
-    materials: currentRecord.estimate.materials || [],
-  };
+function showError() {
+  document.getElementById("state-loading").style.display = "none";
+  document.getElementById("state-error").style.display = "block";
 }
 
-async function saveDraft() {
-  const est = gatherForm();
-  try {
-    const r = await fetch("/.netlify/functions/save-estimate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref, estimate: est, status: currentRecord.status === "new" ? "drafted" : currentRecord.status }),
-    });
-    if (!r.ok) throw new Error("Save failed");
-    toast("✓ Draft saved");
-    currentRecord.estimate = est;
-    await loadEstimates();
-  } catch (e) {
-    toast("Save failed: " + e.message, true);
+function render() {
+  if (record.status === "accepted") { showSuccess("accepted"); return; }
+  if (record.status === "declined") { showSuccess("declined"); return; }
+
+  const est = record.estimate || {};
+  const customer = record.customer || {};
+  const reqData = record.request || {};
+
+  const calc = calcAll(est);
+
+  // INFO BOX
+  document.getElementById("est-ref").textContent = record.ref || "—";
+  document.getElementById("est-project").textContent = est.projectTitle || reqData.service || "Your Project";
+  document.getElementById("est-customer").textContent = customer.name || "—";
+  document.getElementById("est-issued").textContent = fmtDate(record.sentAt || record.submittedAt);
+  document.getElementById("est-total").textContent = fmt(calc.customerTotal);
+
+  const pillInfo = getStatusPill(record.status);
+  const pillEl = document.getElementById("status-pill");
+  pillEl.className = "status-pill " + pillInfo.className;
+  pillEl.textContent = pillInfo.text;
+
+  // SUMMARY
+  if (est.summary) {
+    document.getElementById("summary-wrap").style.display = "block";
+    document.getElementById("summary-text").textContent = est.summary;
   }
-}
 
-async function sendToCustomer() {
-  const est = gatherForm();
-  if (!est.projectTitle) { toast("Add a project title first", true); return; }
-  const cv = calcCustomerView(est);
-  if (cv.customerTotal <= 0) { toast("Add labor or materials with prices first", true); return; }
+  // TIMELINE
+  if (est.timelineText) {
+    document.getElementById("timeline-wrap").style.display = "block";
+    document.getElementById("timeline-text").textContent = est.timelineText;
+  }
 
-  // Build confirm message showing what customer will see
-  let visibility;
-  if (est.showLaborCost && est.showMaterialsCost) {
-    visibility = "Labor + Materials (split into both)";
-  } else if (est.showLaborCost) {
-    visibility = "Labor only";
-  } else if (est.showMaterialsCost) {
-    visibility = "Materials only";
+  // PROJECT BREAKDOWN (categorized scope)
+  if (est.scopeOfWork) {
+    const categories = parseScope(est.scopeOfWork);
+    if (categories.length > 0) {
+      document.getElementById("breakdown-wrap").style.display = "block";
+      const html = categories.map(function(cat) {
+        const itemsHtml = cat.items.map(function(item) {
+          return '<li>' + escHtml(item) + '</li>';
+        }).join("");
+        return '<div class="scope-category">' +
+          '<div class="scope-category-header">' + escHtml(cat.name) + '</div>' +
+          '<div class="scope-category-body"><ul>' + itemsHtml + '</ul></div>' +
+        '</div>';
+      }).join("");
+      document.getElementById("breakdown-body").innerHTML = html;
+    }
+  }
+
+  // ===== LINE ITEMS (Labor / Materials / Total) =====
+  if (calc.bothHidden) {
+    // Both unchecked → just the dramatic total
+    document.getElementById("totals-only-wrap").style.display = "block";
+    document.getElementById("totals-only-amount").textContent = fmt(calc.customerTotal);
   } else {
-    visibility = "Total only (no breakdown)";
+    // Build the line-items box
+    document.getElementById("lineitems-wrap").style.display = "block";
+    let rowsHtml = "";
+    if (calc.showLabor) {
+      rowsHtml += '<div class="line-items-row">' +
+        '<span class="li-label">Labor</span>' +
+        '<span class="li-dots"></span>' +
+        '<span class="li-value">' + fmt(calc.shownLabor) + '</span>' +
+      '</div>';
+    }
+    if (calc.showMaterials) {
+      rowsHtml += '<div class="line-items-row">' +
+        '<span class="li-label">Materials</span>' +
+        '<span class="li-dots"></span>' +
+        '<span class="li-value">' + fmt(calc.shownMaterials) + '</span>' +
+      '</div>';
+    }
+    rowsHtml += '<div class="line-items-row grand-total">' +
+      '<span class="li-label">TOTAL</span>' +
+      '<span class="li-dots"></span>' +
+      '<span class="li-value">' + fmt(calc.customerTotal) + '</span>' +
+    '</div>';
+    document.getElementById("lineitems-body").innerHTML = rowsHtml;
+
+    // "Included" notes
+    let noteHtml = "";
+    if (calc.showLabor && !calc.showMaterials && calc.hasMaterials) {
+      noteHtml = '<div class="included-note"><strong>✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.</div>';
+    } else if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
+      noteHtml = '<div class="included-note"><strong>✓ Labor included</strong> — all work is covered in the price above.</div>';
+    }
+    document.getElementById("included-note-wrap").innerHTML = noteHtml;
   }
 
-  if (!confirm("Send estimate of " + fmt(cv.customerTotal) + " to " + currentRecord.customer.name + "?\n\nCustomer will see: " + visibility)) return;
+  // NOTES (customer's original description)
+  if (reqData.description) {
+    document.getElementById("notes-wrap").style.display = "block";
+    document.getElementById("notes-body").textContent = reqData.description;
+  }
 
-  try {
-    let r = await fetch("/.netlify/functions/save-estimate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref, estimate: est }),
-    });
-    if (!r.ok) throw new Error("Save before send failed");
+  document.getElementById("state-loading").style.display = "none";
+  document.getElementById("state-quote").style.display = "block";
+}
 
-    r = await fetch("/.netlify/functions/send-quote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref }),
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || "Send failed");
-    toast(data.forwardedToContractor ? "✓ Sent to your inbox to forward (Resend domain not verified yet)" : "✓ Quote sent to customer");
-    closeEdit();
-    await loadEstimates();
-  } catch (e) {
-    toast("Send failed: " + e.message, true);
+function showSuccess(kind) {
+  document.getElementById("state-loading").style.display = "none";
+  document.getElementById("state-quote").style.display = "none";
+  document.getElementById("state-success").style.display = "block";
+  if (kind === "declined") {
+    document.getElementById("success-tag").textContent = "Response received";
+    document.getElementById("success-icon").textContent = "✎";
+    document.getElementById("success-icon").style.background = "#999";
+    document.getElementById("success-title").textContent = "Change Request Received";
+    document.getElementById("success-msg").textContent = "Thanks for letting us know. We'll review your request and get back to you shortly with an updated estimate.";
   }
 }
 
-async function deleteEstimate() {
-  if (!confirm("Delete estimate " + currentRecord.ref + "? This cannot be undone.")) return;
+function downloadQuote() { window.print(); }
+function openAccept() { document.getElementById("accept-modal").classList.add("show"); }
+function openDecline() { document.getElementById("decline-modal").classList.add("show"); }
+function closeModals() {
+  document.getElementById("accept-modal").classList.remove("show");
+  document.getElementById("decline-modal").classList.remove("show");
+}
+
+async function submitAccept() {
+  const sig = document.getElementById("signature-input").value.trim();
+  if (!sig) { alert("Please type your full name to sign."); return; }
+  const btn = document.getElementById("confirm-accept");
+  btn.disabled = true; btn.textContent = "Submitting…";
   try {
-    const r = await fetch("/.netlify/functions/delete-estimate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref }),
+    const r = await fetch("/.netlify/functions/quote-response", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: ref, action: "accept", signature: sig }),
     });
-    if (!r.ok) throw new Error("Delete failed");
-    toast("Deleted");
-    closeEdit();
-    await loadEstimates();
+    if (!r.ok) throw new Error("Failed");
+    closeModals();
+    showSuccess("accepted");
   } catch (e) {
-    toast("Delete failed: " + e.message, true);
+    alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
+    btn.disabled = false; btn.textContent = "Approve & Sign";
   }
 }
 
-document.getElementById("edit-modal").addEventListener("click", function(e) {
-  if (e.target.id === "edit-modal") closeEdit();
-});
+async function submitDecline() {
+  const reason = document.getElementById("decline-reason").value.trim();
+  const btn = document.getElementById("confirm-decline");
+  btn.disabled = true; btn.textContent = "Submitting…";
+  try {
+    const r = await fetch("/.netlify/functions/quote-response", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: ref, action: "decline", declineReason: reason }),
+    });
+    if (!r.ok) throw new Error("Failed");
+    closeModals();
+    showSuccess("declined");
+  } catch (e) {
+    alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
+    btn.disabled = false; btn.textContent = "Send Request";
+  }
+}
+
+load();
+</script>
+
+<script>
+(function trackOpen() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var refVal = params.get("ref");
+    if (!refVal) return;
+    fetch("/.netlify/functions/track-quote-open?ref=" + encodeURIComponent(refVal), {
+      method: "GET", keepalive: true, cache: "no-store"
+    }).catch(function () {});
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>
