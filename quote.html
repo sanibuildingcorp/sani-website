@@ -16,6 +16,7 @@
   --navy: #0d1b2a;
   --navy-2: #1a2d42;
   --gold: #c9a84c;
+  --gold-2: #b8930a;
   --gold-soft: #f7f0e3;
   --bg: #f5f0e8;
   --card: #ffffff;
@@ -25,6 +26,8 @@
   --line: #e8e2d9;
   --good: #2ecc71;
   --bad: #e74c3c;
+  --warn: #d4a017;
+  --info: #3b82f6;
   --display: 'Bebas Neue', Arial, sans-serif;
   --body: 'Inter', -apple-system, sans-serif;
 }
@@ -35,10 +38,11 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  padding: 20px 16px 60px;
+  padding: 20px 16px 100px;
 }
 .wrap { max-width: 760px; margin: 0 auto; }
 
+/* ============ HEADER (clean - brand only) ============ */
 .hero {
   background: linear-gradient(135deg, var(--navy), var(--navy-2));
   color: #fff;
@@ -48,7 +52,7 @@ body {
 }
 .brand {
   font-family: var(--display);
-  font-size: 24px;
+  font-size: 26px;
   letter-spacing: 4px;
   color: var(--gold);
   text-decoration: none;
@@ -72,24 +76,91 @@ body {
 }
 .card:last-child {
   border-radius: 0 0 14px 14px;
-  margin-bottom: 0;
 }
 
-h1 {
-  font-family: var(--display);
-  font-size: 32px;
-  letter-spacing: 2px;
-  color: var(--navy);
-  margin-bottom: 6px;
+/* ============ ESTIMATE INFO BOX (new - SimplyWise style) ============ */
+.estimate-info-box {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 28px;
 }
-.ref-row {
+.estimate-info-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: #fff;
+  padding: 14px 20px;
+  font-family: var(--display);
+  font-size: 17px;
+  letter-spacing: 2.5px;
+}
+.estimate-info-header .gold-accent { color: var(--gold); }
+.info-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row .info-label {
+  color: var(--ink-soft);
+  width: 110px;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+.info-row .info-value {
+  color: var(--ink);
+  font-weight: 600;
+}
+.info-row.total-row .info-value {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 1.5px;
+  color: var(--navy);
+}
+
+/* Status pills */
+.status-pill {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 16px;
   font-size: 12px;
-  color: var(--ink-muted);
+  font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  margin-bottom: 22px;
+}
+.status-pill.pending {
+  background: var(--gold-soft);
+  color: var(--gold-2);
+  border: 1px solid var(--gold);
+}
+.status-pill.viewed {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--info);
+  border: 1px solid var(--info);
+}
+.status-pill.approved {
+  background: rgba(46, 204, 113, 0.12);
+  color: var(--good);
+  border: 1px solid var(--good);
+}
+.status-pill.declined {
+  background: rgba(231, 76, 60, 0.12);
+  color: var(--bad);
+  border: 1px solid var(--bad);
 }
 
+/* ============ SECTION TITLES ============ */
+.section-label {
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: 2.5px;
+  color: var(--ink-muted);
+  margin: 32px 0 14px;
+  text-transform: uppercase;
+}
+
+/* ============ SUMMARY (kept from before) ============ */
 .summary {
   background: var(--gold-soft);
   border-left: 4px solid var(--gold);
@@ -97,122 +168,192 @@ h1 {
   font-size: 15px;
   color: #444;
   border-radius: 0 8px 8px 0;
-  margin: 18px 0 26px;
+  margin-bottom: 22px;
   line-height: 1.6;
 }
 
-.section-title {
-  font-family: var(--display);
-  font-size: 18px;
-  letter-spacing: 2px;
+/* ============ TIMELINE PILL ============ */
+.timeline-pill {
+  display: inline-block;
+  background: var(--gold-soft);
   color: var(--navy);
-  margin: 28px 0 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 22px;
+  border: 1px solid var(--gold);
+}
+.timeline-pill .pill-label {
+  color: var(--gold-2);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-right: 6px;
 }
 
+/* ============ CATEGORIZED SCOPE (SimplyWise-style with gold accent) ============ */
+.scope-category {
+  margin-bottom: 22px;
+}
+.scope-category-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: var(--gold);
+  padding: 12px 20px;
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  border-radius: 8px 8px 0 0;
+  border-left: 4px solid var(--gold);
+}
+.scope-category-body {
+  background: #faf8f4;
+  padding: 16px 20px 16px 24px;
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+.scope-category-body ul {
+  list-style: none;
+  padding: 0;
+}
+.scope-category-body li {
+  padding: 7px 0 7px 22px;
+  position: relative;
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+.scope-category-body li::before {
+  content: "•";
+  color: var(--gold);
+  position: absolute;
+  left: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  top: 4px;
+}
+
+/* Fallback scope (no categories) */
 .scope-text {
+  background: #faf8f4;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px 22px;
   font-size: 14.5px;
   line-height: 1.75;
   color: var(--ink-soft);
   white-space: pre-wrap;
+  margin-bottom: 22px;
 }
 
+/* ============ LINE ITEMS BOX (SimplyWise-style) ============ */
+.line-items-box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 22px;
+  background: #faf8f4;
+  margin-bottom: 22px;
+}
+.line-items-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14.5px;
+  color: var(--ink-soft);
+}
+.line-items-row .li-label {
+  flex-shrink: 0;
+}
+.line-items-row .li-dots {
+  flex: 1;
+  margin: 0 12px;
+  border-bottom: 2px dotted var(--ink-muted);
+  height: 12px;
+  opacity: 0.4;
+}
+.line-items-row .li-value {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.line-items-row.grand-total {
+  padding-top: 10px;
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 1.5px;
+  color: var(--navy);
+}
+.line-items-row.grand-total .li-value {
+  color: var(--navy);
+}
+
+/* Full mode - detailed tables */
 .line-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  margin-top: 8px;
+  margin-bottom: 22px;
+  background: #faf8f4;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
 }
 .line-table th {
   text-align: left;
   font-size: 11px;
-  letter-spacing: 1px;
-  color: var(--ink-muted);
+  letter-spacing: 1.5px;
+  color: #fff;
   text-transform: uppercase;
-  font-weight: 600;
-  padding: 8px 8px;
-  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+  padding: 10px 14px;
+  background: var(--navy);
 }
 .line-table th.num, .line-table td.num { text-align: right; }
 .line-table td {
-  padding: 10px 8px;
-  border-bottom: 1px solid #f4f0e8;
+  padding: 11px 14px;
+  border-bottom: 1px solid #f0ebe0;
 }
-.line-table .item-name { color: var(--ink); }
+.line-table tbody tr:last-child td { border-bottom: none; }
+.line-table .item-name { color: var(--ink); font-weight: 500; }
 .line-table .qty-unit { color: var(--ink-muted); font-size: 13px; }
 
-/* Simplified labor list for "labor" display mode */
-.scope-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 8px;
-}
-.scope-list li {
-  padding: 11px 4px;
-  border-bottom: 1px solid #f4f0e8;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  font-size: 14.5px;
-  color: var(--ink);
-}
-.scope-list li:last-child { border-bottom: none; }
-.scope-list .scope-item-name { flex: 1; }
-.scope-list .scope-item-qty {
-  color: var(--ink-muted);
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.included-note {
-  background: #f7f9f5;
-  border-left: 3px solid var(--good);
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--ink-soft);
-  margin-top: 14px;
-  border-radius: 0 6px 6px 0;
-}
-.included-note strong { color: var(--good); }
-
-/* Totals box for "total" mode is large and prominent */
-.totals {
-  margin-top: 22px;
+/* ============ NOTES (customer's original description) ============ */
+.notes-box {
   background: #faf8f4;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 18px 20px;
+  padding: 18px 22px;
+  margin-bottom: 22px;
 }
-.totals.total-only {
+.notes-label {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--gold-2);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.notes-body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+}
+
+/* ============ TOTAL ONLY MODE (dramatic) ============ */
+.totals-only {
   background: linear-gradient(135deg, var(--navy), var(--navy-2));
   color: #fff;
   text-align: center;
-  padding: 36px 24px;
+  padding: 42px 24px;
+  border-radius: 14px;
+  margin: 28px 0;
 }
-.tot-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  font-size: 14px;
-  color: var(--ink-soft);
-}
-.tot-row.grand {
-  margin-top: 10px;
-  padding-top: 14px;
-  border-top: 2px solid var(--navy);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--navy);
-}
-.tot-row.grand .label { font-family: var(--display); letter-spacing: 2px; }
-
-/* Total-only mode: BIG centered total */
-.total-only-display {
-  text-align: center;
-}
-.total-only-display .label {
+.totals-only .label {
   font-family: var(--display);
   font-size: 13px;
   letter-spacing: 3px;
@@ -220,63 +361,66 @@ h1 {
   margin-bottom: 8px;
   text-transform: uppercase;
 }
-.total-only-display .amount {
+.totals-only .amount {
   font-family: var(--display);
-  font-size: 56px;
+  font-size: 60px;
   letter-spacing: 2px;
   color: #fff;
   line-height: 1.1;
-  margin-bottom: 6px;
 }
-.total-only-display .note {
+.totals-only .note {
   font-size: 13px;
   color: rgba(255,255,255,0.6);
-  margin-top: 8px;
+  margin-top: 10px;
+  letter-spacing: 0.5px;
 }
 
-.timeline-pill {
-  display: inline-block;
-  background: var(--gold-soft);
-  color: var(--navy);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
+/* ============ ACTION BUTTONS (3-button row like SimplyWise) ============ */
 .actions {
-  margin-top: 36px;
+  margin: 32px 0 24px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
 }
-@media (max-width: 480px) {
+@media (max-width: 540px) {
   .actions { grid-template-columns: 1fr; }
 }
 .btn {
-  padding: 16px 24px;
-  border-radius: 10px;
-  border: none;
+  padding: 14px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--gold);
+  background: #fff;
+  color: var(--navy);
   font-family: var(--body);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.5px;
   cursor: pointer;
-  transition: transform .15s, box-shadow .15s;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
 }
-.btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-icon { font-size: 15px; line-height: 1; }
 .btn-accept {
-  background: var(--good);
-  color: #fff;
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: var(--gold);
+  border-color: var(--navy);
 }
-.btn-decline {
-  background: #fff;
-  color: var(--ink-soft);
-  border: 1.5px solid var(--line);
+.btn-accept:hover:not(:disabled) {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold);
 }
 
+/* ============ FOOTER ============ */
 .footer {
   text-align: center;
   margin-top: 28px;
@@ -285,14 +429,14 @@ h1 {
   font-size: 12px;
   color: var(--ink-muted);
   letter-spacing: 1px;
+  line-height: 1.8;
 }
 .footer strong { color: var(--gold); letter-spacing: 2px; }
-.footer a { color: #b8720a; text-decoration: none; font-weight: 600; }
+.footer a { color: var(--gold-2); text-decoration: none; font-weight: 600; }
 
-/* Back to website link */
 .back-link-wrap {
-  margin-top: 18px;
-  padding-top: 18px;
+  margin-top: 20px;
+  padding-top: 20px;
   border-top: 1px solid var(--line);
   text-align: center;
 }
@@ -303,7 +447,7 @@ h1 {
   color: var(--ink-soft);
   font-size: 13px;
   text-decoration: none;
-  padding: 10px 18px;
+  padding: 10px 20px;
   border: 1px solid var(--line);
   border-radius: 24px;
   transition: all 0.2s;
@@ -311,27 +455,12 @@ h1 {
 }
 .back-link:hover {
   border-color: var(--gold);
-  color: var(--gold);
+  color: var(--gold-2);
   background: var(--gold-soft);
 }
-.back-link-arrow {
-  font-size: 16px;
-  line-height: 1;
-}
+.back-link-arrow { font-size: 16px; line-height: 1; }
 
-/* ===== Loading & Error states ===== */
-.state {
-  text-align: center;
-  padding: 80px 24px;
-}
-.state h2 {
-  font-family: var(--display);
-  font-size: 28px;
-  letter-spacing: 2px;
-  color: var(--navy);
-  margin-bottom: 8px;
-}
-.state p { color: var(--ink-muted); font-size: 14px; }
+/* ============ LOADING & ERROR ============ */
 .spinner {
   width: 40px; height: 40px;
   border: 3px solid var(--line);
@@ -342,7 +471,7 @@ h1 {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ===== Accept modal ===== */
+/* ============ MODALS ============ */
 .modal-backdrop {
   display: none;
   position: fixed;
@@ -398,10 +527,26 @@ h1 {
   margin-top: 12px;
 }
 .modal-actions button { flex: 1; padding: 13px; }
+.modal-actions .btn-cancel {
+  background: #fff;
+  color: var(--ink-soft);
+  border: 1.5px solid var(--line);
+}
+.modal-actions .btn-confirm {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  color: var(--gold);
+  border: 1.5px solid var(--navy);
+}
+.modal-actions .btn-decline-confirm {
+  background: #e74c3c;
+  color: #fff;
+  border: 1.5px solid #e74c3c;
+}
 
+/* ============ SUCCESS SCREEN ============ */
 .success-screen {
   text-align: center;
-  padding: 60px 24px;
+  padding: 50px 24px;
 }
 .success-icon {
   width: 80px; height: 80px;
@@ -412,16 +557,34 @@ h1 {
   line-height: 80px;
   margin: 0 auto 20px;
 }
+.success-screen h1 {
+  font-family: var(--display);
+  font-size: 32px;
+  letter-spacing: 2px;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+
+/* ============ PRINT STYLES ============ */
+@media print {
+  body { background: #fff; padding: 0; }
+  .actions, .back-link-wrap, #state-loading, #state-error { display: none !important; }
+  .card, .hero { border-radius: 0; box-shadow: none; }
+  .btn { display: none; }
+}
 </style>
 </head>
 <body>
 <div class="wrap">
+
+  <!-- LOADING -->
   <div id="state-loading" class="hero" style="border-radius:14px">
     <div class="spinner"></div>
     <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
     <div class="tag">Loading your estimate…</div>
   </div>
 
+  <!-- ERROR -->
   <div id="state-error" style="display:none">
     <div class="hero" style="border-radius:14px">
       <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
@@ -429,7 +592,7 @@ h1 {
     </div>
     <div class="card" style="border-radius:0 0 14px 14px;text-align:center">
       <p style="color:var(--ink-soft);margin:20px 0">We couldn't find this estimate. The link may be expired or incorrect.</p>
-      <p style="color:var(--ink-muted);font-size:13px">Need help? Call <a href="tel:+13322770990" style="color:#b8720a;text-decoration:none;font-weight:600">(332) 277-0990</a></p>
+      <p style="color:var(--ink-muted);font-size:13px">Need help? Call <a href="tel:+13322770990" style="color:var(--gold-2);text-decoration:none;font-weight:600">(332) 277-0990</a></p>
       <div class="back-link-wrap">
         <a href="https://www.sanibuildingcorp.com" class="back-link">
           <span class="back-link-arrow">←</span> Back to sanibuildingcorp.com
@@ -438,83 +601,160 @@ h1 {
     </div>
   </div>
 
+  <!-- MAIN QUOTE -->
   <div id="state-quote" style="display:none">
     <div class="hero">
       <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
       <div class="tag">Your Estimate</div>
     </div>
     <div class="card">
-      <h1 id="project-title">Project</h1>
-      <div class="ref-row">Ref <span id="ref-id"></span> · Prepared for <span id="customer-name"></span></div>
 
-      <div id="summary" class="summary"></div>
+      <!-- ESTIMATE INFO BOX -->
+      <div class="estimate-info-box">
+        <div class="estimate-info-header">
+          ESTIMATE <span class="gold-accent">#<span id="est-ref"></span></span>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Project</div>
+          <div class="info-value" id="est-project">—</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Prepared for</div>
+          <div class="info-value" id="est-customer">—</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Issued</div>
+          <div class="info-value" id="est-issued">—</div>
+        </div>
+        <div class="info-row total-row">
+          <div class="info-label">Total</div>
+          <div class="info-value" id="est-total">$0.00</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Status</div>
+          <div class="info-value">
+            <span class="status-pill pending" id="status-pill">Pending</span>
+          </div>
+        </div>
+      </div>
 
+      <!-- SUMMARY (optional) -->
+      <div id="summary-wrap" style="display:none">
+        <div class="summary" id="summary-text"></div>
+      </div>
+
+      <!-- TIMELINE PILL -->
       <div id="timeline-wrap" style="display:none">
-        <div class="section-title">Estimated Timeline</div>
-        <div class="timeline-pill" id="timeline-text"></div>
+        <div class="timeline-pill"><span class="pill-label">Timeline:</span><span id="timeline-text"></span></div>
       </div>
 
-      <div id="scope-wrap" style="display:none">
-        <div class="section-title">Scope of Work</div>
-        <div class="scope-text" id="scope-text"></div>
+      <!-- PROJECT BREAKDOWN (categorized scope) -->
+      <div id="breakdown-wrap" style="display:none">
+        <div class="section-label">Project Breakdown</div>
+        <div id="breakdown-body"></div>
       </div>
 
-      <!-- LABOR (full mode - with rates and totals) -->
+      <!-- LABOR TABLE (full mode) -->
       <div id="labor-wrap" style="display:none">
-        <div class="section-title">Labor</div>
+        <div class="section-label">Labor</div>
         <table class="line-table">
           <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Total</th></tr></thead>
           <tbody id="labor-body"></tbody>
         </table>
       </div>
 
-      <!-- LABOR (labor mode - just items + qty, no rates) -->
-      <div id="labor-simple-wrap" style="display:none">
-        <div class="section-title">Labor &amp; Work</div>
-        <ul class="scope-list" id="labor-simple-body"></ul>
-        <div class="included-note">
-          <strong>✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the total price.
-        </div>
-      </div>
-
-      <!-- MATERIALS (only shown in full mode) -->
+      <!-- MATERIALS TABLE (full mode) -->
       <div id="materials-wrap" style="display:none">
-        <div class="section-title">Materials</div>
+        <div class="section-label">Materials</div>
         <table class="line-table">
           <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Total</th></tr></thead>
           <tbody id="materials-body"></tbody>
         </table>
       </div>
 
-      <!-- TOTALS (full mode) -->
-      <div class="totals" id="totals-full" style="display:none">
-        <div class="tot-row"><span>Labor subtotal</span><span id="labor-sub">$0.00</span></div>
-        <div class="tot-row"><span>Materials subtotal</span><span id="mat-sub">$0.00</span></div>
-        <div class="tot-row"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
-        <div class="tot-row"><span id="markup-label">Overhead</span><span id="markup-amt">$0.00</span></div>
-        <div class="tot-row grand"><span class="label">TOTAL</span><span id="grand-total-full">$0.00</span></div>
+      <!-- LINE ITEMS (labor mode - dotted line summary) -->
+      <div id="lineitems-labor-wrap" style="display:none">
+        <div class="section-label">Line Items</div>
+        <div class="line-items-box">
+          <div class="line-items-row">
+            <span class="li-label">Subtotal</span>
+            <span class="li-dots"></span>
+            <span class="li-value" id="li-subtotal-labor">$0.00</span>
+          </div>
+          <div class="line-items-row grand-total">
+            <span class="li-label">Total</span>
+            <span class="li-dots"></span>
+            <span class="li-value" id="li-total-labor">$0.00</span>
+          </div>
+        </div>
+        <div style="background:#f7f9f5;border-left:3px solid var(--good);padding:11px 16px;font-size:13px;color:var(--ink-soft);border-radius:0 6px 6px 0;margin-top:-12px;margin-bottom:18px">
+          <strong style="color:var(--good)">✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the total price.
+        </div>
       </div>
 
-      <!-- TOTALS (labor mode - just one big total) -->
-      <div class="totals" id="totals-labor" style="display:none">
-        <div class="tot-row grand" style="margin-top:0;padding-top:0;border-top:none"><span class="label">TOTAL</span><span id="grand-total-labor">$0.00</span></div>
-        <div style="text-align:center;font-size:12px;color:var(--ink-muted);margin-top:6px;letter-spacing:0.5px">All-inclusive · Materials &amp; labor</div>
+      <!-- LINE ITEMS (full mode - detailed breakdown) -->
+      <div id="lineitems-full-wrap" style="display:none">
+        <div class="section-label">Line Items</div>
+        <div class="line-items-box">
+          <div class="line-items-row">
+            <span class="li-label">Labor subtotal</span>
+            <span class="li-dots"></span>
+            <span class="li-value" id="li-labor-sub">$0.00</span>
+          </div>
+          <div class="line-items-row">
+            <span class="li-label">Materials subtotal</span>
+            <span class="li-dots"></span>
+            <span class="li-value" id="li-mat-sub">$0.00</span>
+          </div>
+          <div class="line-items-row">
+            <span class="li-label">Subtotal</span>
+            <span class="li-dots"></span>
+            <span class="li-value" id="li-subtotal-full">$0.00</span>
+          </div>
+          <div class="line-items-row">
+            <span class="li-label" id="li-markup-label">Overhead</span>
+            <span class="li-dots"></span>
+            <span class="li-value" id="li-markup-amt">$0.00</span>
+          </div>
+          <div class="line-items-row grand-total">
+            <span class="li-label">Total</span>
+            <span class="li-dots"></span>
+            <span class="li-value" id="li-total-full">$0.00</span>
+          </div>
+        </div>
       </div>
 
-      <!-- TOTALS (total-only mode - dramatic display) -->
-      <div class="totals total-only" id="totals-only" style="display:none">
-        <div class="total-only-display">
+      <!-- TOTAL ONLY MODE (dramatic) -->
+      <div id="totals-only-wrap" style="display:none">
+        <div class="totals-only">
           <div class="label">Your Estimate</div>
-          <div class="amount" id="grand-total-only">$0.00</div>
+          <div class="amount" id="totals-only-amount">$0.00</div>
           <div class="note">All-inclusive · No hidden fees</div>
         </div>
       </div>
 
-      <div class="actions" id="actions-row">
-        <button class="btn btn-decline" onclick="openDecline()">Decline</button>
-        <button class="btn btn-accept" onclick="openAccept()">Accept Estimate</button>
+      <!-- NOTES (customer's original description) -->
+      <div id="notes-wrap" style="display:none">
+        <div class="notes-box">
+          <div class="notes-label">Notes</div>
+          <div class="notes-body" id="notes-body"></div>
+        </div>
       </div>
 
+      <!-- ACTION BUTTONS -->
+      <div class="actions" id="actions-row">
+        <button class="btn" onclick="downloadQuote()">
+          <span class="btn-icon">⬇</span> Download
+        </button>
+        <button class="btn" onclick="openDecline()">
+          <span class="btn-icon">✎</span> Request Change
+        </button>
+        <button class="btn btn-accept" onclick="openAccept()">
+          <span class="btn-icon">✓</span> Approve
+        </button>
+      </div>
+
+      <!-- FOOTER -->
       <div class="footer">
         <strong>SANI BUILDING CORP</strong><br>
         Fully Insured · NYC Metro · 4.9 ★<br>
@@ -529,6 +769,7 @@ h1 {
     </div>
   </div>
 
+  <!-- SUCCESS STATE (after accept/decline) -->
   <div id="state-success" style="display:none">
     <div class="hero" style="border-radius:14px">
       <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
@@ -537,9 +778,9 @@ h1 {
     <div class="card" style="border-radius:0 0 14px 14px">
       <div class="success-screen">
         <div class="success-icon" id="success-icon">✓</div>
-        <h1 id="success-title">Estimate Accepted</h1>
+        <h1 id="success-title">Estimate Approved</h1>
         <p style="color:var(--ink-soft);font-size:15px;margin:16px 0 24px;max-width:420px;margin-left:auto;margin-right:auto" id="success-msg">Thanks! We'll be in touch shortly to schedule the start date and send over the invoice with deposit details.</p>
-        <p style="color:var(--ink-muted);font-size:13px">Questions? Call <a href="tel:+13322770990" style="color:#b8720a;text-decoration:none;font-weight:600">(332) 277-0990</a></p>
+        <p style="color:var(--ink-muted);font-size:13px">Questions? Call <a href="tel:+13322770990" style="color:var(--gold-2);text-decoration:none;font-weight:600">(332) 277-0990</a></p>
         <div class="back-link-wrap">
           <a href="https://www.sanibuildingcorp.com" class="back-link">
             <span class="back-link-arrow">←</span> Back to sanibuildingcorp.com
@@ -548,32 +789,33 @@ h1 {
       </div>
     </div>
   </div>
+
 </div>
 
-<!-- Accept modal -->
+<!-- ACCEPT MODAL -->
 <div id="accept-modal" class="modal-backdrop">
   <div class="modal">
-    <h3>ACCEPT ESTIMATE</h3>
+    <h3>APPROVE ESTIMATE</h3>
     <p>By typing your full name below, you accept this estimate and authorize Sani Building Corp to proceed with the work as described.</p>
     <label>Type your full name to sign</label>
     <input type="text" id="signature-input" placeholder="e.g. John Smith">
     <div class="modal-actions">
-      <button class="btn btn-decline" onclick="closeModals()">Cancel</button>
-      <button class="btn btn-accept" id="confirm-accept" onclick="submitAccept()">Accept &amp; Sign</button>
+      <button class="btn-cancel" onclick="closeModals()">Cancel</button>
+      <button class="btn-confirm" id="confirm-accept" onclick="submitAccept()">Approve &amp; Sign</button>
     </div>
   </div>
 </div>
 
-<!-- Decline modal -->
+<!-- DECLINE / REQUEST CHANGE MODAL -->
 <div id="decline-modal" class="modal-backdrop">
   <div class="modal">
-    <h3>DECLINE ESTIMATE</h3>
-    <p>No problem. Mind sharing why so we can improve? (Optional)</p>
-    <label>Reason (optional)</label>
-    <textarea id="decline-reason" rows="3" placeholder="e.g. Found a different contractor / Price too high / Changed plans"></textarea>
+    <h3>REQUEST CHANGE</h3>
+    <p>Want adjustments to this estimate? Let us know what you'd like changed and we'll get back to you quickly.</p>
+    <label>Your request or feedback</label>
+    <textarea id="decline-reason" rows="4" placeholder="e.g. Can we lower the scope? Different timeline? Price too high? Changed plans?"></textarea>
     <div class="modal-actions">
-      <button class="btn btn-decline" onclick="closeModals()">Back</button>
-      <button class="btn" style="background:#e74c3c;color:#fff" id="confirm-decline" onclick="submitDecline()">Send Decline</button>
+      <button class="btn-cancel" onclick="closeModals()">Back</button>
+      <button class="btn-decline-confirm" id="confirm-decline" onclick="submitDecline()">Send Request</button>
     </div>
   </div>
 </div>
@@ -587,13 +829,91 @@ function fmt(n) {
   return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function esc(s) { return String(s == null ? "" : s); }
+function escHtml(s) {
+  if (s == null) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function fmtDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("en-US", {
+      month: "long", day: "numeric", year: "numeric"
+    });
+  } catch (e) { return "—"; }
+}
 
 function calcTotal(est) {
-  const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const mat = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
+  const labor = (est.labor || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
+  const mat = (est.materials || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
   const sub = labor + mat;
   const markup = sub * ((Number(est.markupPct) || 0) / 100);
-  return { labor, mat, sub, markup, grand: sub + markup };
+  return { labor: labor, mat: mat, sub: sub, markup: markup, grand: sub + markup };
+}
+
+/**
+ * Parses scope-of-work text into categorized sections.
+ * Detection: lines ending with ":" become headers, subsequent bullet/numbered/plain lines become items.
+ * If no categories found, returns single "General Scope" section.
+ */
+function parseScope(scopeText) {
+  if (!scopeText || !scopeText.trim()) return [];
+  const lines = scopeText.split(/\r?\n/);
+  const categories = [];
+  let current = null;
+  let preCategoryItems = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+
+    // Check if this looks like a category header
+    // Heuristic: line ends with ":" AND is not too long AND doesn't look like a bullet item
+    const isHeader = /^[^•\-*\d].*:$/.test(trimmed) && trimmed.length < 80 && !trimmed.startsWith("•") && !trimmed.startsWith("-") && !trimmed.startsWith("*");
+
+    if (isHeader) {
+      // Save previous category
+      if (current && current.items.length) categories.push(current);
+      current = { name: trimmed.replace(/:$/, "").trim(), items: [] };
+    } else {
+      // It's an item — strip leading bullet/dash/number
+      const cleanedItem = trimmed.replace(/^[•\-*]\s*/, "").replace(/^\d+\.\s*/, "").trim();
+      if (!cleanedItem) continue;
+      if (current) {
+        current.items.push(cleanedItem);
+      } else {
+        preCategoryItems.push(cleanedItem);
+      }
+    }
+  }
+  if (current && current.items.length) categories.push(current);
+
+  // If there were items before any category, prepend them as "General Scope"
+  if (preCategoryItems.length) {
+    if (categories.length === 0) {
+      categories.push({ name: "Scope of Work", items: preCategoryItems });
+    } else {
+      categories.unshift({ name: "Scope of Work", items: preCategoryItems });
+    }
+  }
+  return categories;
+}
+
+/**
+ * Get status pill info based on record.status.
+ */
+function getStatusPill(status) {
+  switch (status) {
+    case "accepted": return { className: "approved", text: "Approved" };
+    case "declined": return { className: "declined", text: "Declined" };
+    case "opened": return { className: "viewed", text: "Viewed" };
+    case "sent": return { className: "pending", text: "Pending" };
+    default: return { className: "pending", text: "Pending" };
+  }
 }
 
 async function load() {
@@ -626,86 +946,105 @@ function render() {
 
   const est = record.estimate || {};
   const customer = record.customer || {};
-  // Determine display mode (default: "labor")
-  // Valid values: "total" | "labor" | "full"
-  const displayMode = ["total", "labor", "full"].includes(est.displayMode) ? est.displayMode : "labor";
+  const reqData = record.request || {};
+  // Default display mode: "labor"
+  const displayMode = ["total", "labor", "full"].indexOf(est.displayMode) >= 0 ? est.displayMode : "labor";
 
-  document.getElementById("project-title").textContent = est.projectTitle || (record.request && record.request.service) || "Your Project";
-  document.getElementById("ref-id").textContent = record.ref;
-  document.getElementById("customer-name").textContent = customer.name || "—";
+  // ===== INFO BOX =====
+  document.getElementById("est-ref").textContent = record.ref || "—";
+  document.getElementById("est-project").textContent = est.projectTitle || reqData.service || "Your Project";
+  document.getElementById("est-customer").textContent = customer.name || "—";
+  document.getElementById("est-issued").textContent = fmtDate(record.sentAt || record.submittedAt);
 
-  // Summary - shown in all modes
+  const t = calcTotal(est);
+  document.getElementById("est-total").textContent = fmt(t.grand);
+
+  // Status pill
+  const pillInfo = getStatusPill(record.status);
+  const pillEl = document.getElementById("status-pill");
+  pillEl.className = "status-pill " + pillInfo.className;
+  pillEl.textContent = pillInfo.text;
+
+  // ===== SUMMARY =====
   if (est.summary) {
-    document.getElementById("summary").textContent = est.summary;
-  } else {
-    document.getElementById("summary").style.display = "none";
+    document.getElementById("summary-wrap").style.display = "block";
+    document.getElementById("summary-text").textContent = est.summary;
   }
 
-  // Timeline - shown in all modes
+  // ===== TIMELINE =====
   if (est.timelineText) {
     document.getElementById("timeline-wrap").style.display = "block";
     document.getElementById("timeline-text").textContent = est.timelineText;
   }
 
-  // Scope of work - hidden in "total" mode, shown otherwise
+  // ===== PROJECT BREAKDOWN (categorized scope) =====
+  // Skip scope display in "total" mode
   if (est.scopeOfWork && displayMode !== "total") {
-    document.getElementById("scope-wrap").style.display = "block";
-    document.getElementById("scope-text").textContent = est.scopeOfWork;
+    const categories = parseScope(est.scopeOfWork);
+    if (categories.length > 0) {
+      document.getElementById("breakdown-wrap").style.display = "block";
+      const html = categories.map(function(cat) {
+        const itemsHtml = cat.items.map(function(item) {
+          return '<li>' + escHtml(item) + '</li>';
+        }).join("");
+        return '<div class="scope-category">' +
+          '<div class="scope-category-header">' + escHtml(cat.name) + '</div>' +
+          '<div class="scope-category-body"><ul>' + itemsHtml + '</ul></div>' +
+        '</div>';
+      }).join("");
+      document.getElementById("breakdown-body").innerHTML = html;
+    }
   }
 
-  // Calculate totals once
-  const t = calcTotal(est);
-
-  // ===== MODE-SPECIFIC RENDERING =====
+  // ===== MODE-SPECIFIC LINE ITEMS =====
   if (displayMode === "full") {
-    // FULL MODE: Show everything (current behavior)
+    // Labor table
     if (est.labor && est.labor.length) {
       document.getElementById("labor-wrap").style.display = "block";
       document.getElementById("labor-body").innerHTML = est.labor.map(function(i) {
         return '<tr>' +
-          '<td><div class="item-name">' + esc(i.item) + '</div></td>' +
-          '<td class="num qty-unit">' + esc(i.qty) + ' ' + esc(i.unit || "") + '</td>' +
+          '<td><div class="item-name">' + escHtml(i.item) + '</div></td>' +
+          '<td class="num qty-unit">' + escHtml(i.qty) + ' ' + escHtml(i.unit || "") + '</td>' +
           '<td class="num">' + fmt(i.rate) + '</td>' +
           '<td class="num">' + fmt((Number(i.qty) || 0) * (Number(i.rate) || 0)) + '</td>' +
         '</tr>';
       }).join("");
     }
+    // Materials table
     if (est.materials && est.materials.length) {
       document.getElementById("materials-wrap").style.display = "block";
       document.getElementById("materials-body").innerHTML = est.materials.map(function(i) {
         return '<tr>' +
-          '<td><div class="item-name">' + esc(i.item) + '</div></td>' +
-          '<td class="num qty-unit">' + esc(i.qty) + ' ' + esc(i.unit || "") + '</td>' +
+          '<td><div class="item-name">' + escHtml(i.item) + '</div></td>' +
+          '<td class="num qty-unit">' + escHtml(i.qty) + ' ' + escHtml(i.unit || "") + '</td>' +
           '<td class="num">' + fmt(i.rate) + '</td>' +
           '<td class="num">' + fmt((Number(i.qty) || 0) * (Number(i.rate) || 0)) + '</td>' +
         '</tr>';
       }).join("");
     }
-    document.getElementById("totals-full").style.display = "block";
-    document.getElementById("labor-sub").textContent = fmt(t.labor);
-    document.getElementById("mat-sub").textContent = fmt(t.mat);
-    document.getElementById("subtotal").textContent = fmt(t.sub);
-    document.getElementById("markup-label").textContent = "Overhead (" + (est.markupPct || 0) + "%)";
-    document.getElementById("markup-amt").textContent = fmt(t.markup);
-    document.getElementById("grand-total-full").textContent = fmt(t.grand);
+    // Line items breakdown
+    document.getElementById("lineitems-full-wrap").style.display = "block";
+    document.getElementById("li-labor-sub").textContent = fmt(t.labor);
+    document.getElementById("li-mat-sub").textContent = fmt(t.mat);
+    document.getElementById("li-subtotal-full").textContent = fmt(t.sub);
+    document.getElementById("li-markup-label").textContent = "Overhead (" + (est.markupPct || 0) + "%)";
+    document.getElementById("li-markup-amt").textContent = fmt(t.markup);
+    document.getElementById("li-total-full").textContent = fmt(t.grand);
   } else if (displayMode === "labor") {
-    // LABOR MODE: Show labor items as a simple list (no rates/totals), hide materials, show single total
-    if (est.labor && est.labor.length) {
-      document.getElementById("labor-simple-wrap").style.display = "block";
-      document.getElementById("labor-simple-body").innerHTML = est.labor.map(function(i) {
-        const qtyDisplay = (Number(i.qty) > 0) ? (esc(i.qty) + ' ' + esc(i.unit || '')) : '';
-        return '<li>' +
-          '<span class="scope-item-name">' + esc(i.item) + '</span>' +
-          (qtyDisplay ? '<span class="scope-item-qty">' + qtyDisplay + '</span>' : '') +
-        '</li>';
-      }).join("");
-    }
-    document.getElementById("totals-labor").style.display = "block";
-    document.getElementById("grand-total-labor").textContent = fmt(t.grand);
+    // Simple line items box
+    document.getElementById("lineitems-labor-wrap").style.display = "block";
+    document.getElementById("li-subtotal-labor").textContent = fmt(t.grand);
+    document.getElementById("li-total-labor").textContent = fmt(t.grand);
   } else {
-    // TOTAL ONLY MODE: Just the big number
-    document.getElementById("totals-only").style.display = "block";
-    document.getElementById("grand-total-only").textContent = fmt(t.grand);
+    // Total only mode
+    document.getElementById("totals-only-wrap").style.display = "block";
+    document.getElementById("totals-only-amount").textContent = fmt(t.grand);
+  }
+
+  // ===== NOTES (customer's original description) =====
+  if (reqData.description && displayMode !== "total") {
+    document.getElementById("notes-wrap").style.display = "block";
+    document.getElementById("notes-body").textContent = reqData.description;
   }
 
   document.getElementById("state-loading").style.display = "none";
@@ -718,11 +1057,15 @@ function showSuccess(kind) {
   document.getElementById("state-success").style.display = "block";
   if (kind === "declined") {
     document.getElementById("success-tag").textContent = "Response received";
-    document.getElementById("success-icon").textContent = "✕";
+    document.getElementById("success-icon").textContent = "✎";
     document.getElementById("success-icon").style.background = "#999";
-    document.getElementById("success-title").textContent = "Estimate Declined";
-    document.getElementById("success-msg").textContent = "Thanks for letting us know. If anything changes, feel free to reach out — we're always here.";
+    document.getElementById("success-title").textContent = "Change Request Received";
+    document.getElementById("success-msg").textContent = "Thanks for letting us know. We'll review your request and get back to you shortly with an updated estimate.";
   }
+}
+
+function downloadQuote() {
+  window.print();
 }
 
 function openAccept() { document.getElementById("accept-modal").classList.add("show"); }
@@ -747,7 +1090,7 @@ async function submitAccept() {
     showSuccess("accepted");
   } catch (e) {
     alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
-    btn.disabled = false; btn.textContent = "Accept & Sign";
+    btn.disabled = false; btn.textContent = "Approve & Sign";
   }
 }
 
@@ -765,7 +1108,7 @@ async function submitDecline() {
     showSuccess("declined");
   } catch (e) {
     alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
-    btn.disabled = false; btn.textContent = "Send Decline";
+    btn.disabled = false; btn.textContent = "Send Request";
   }
 }
 
