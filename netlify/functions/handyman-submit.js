@@ -1,5 +1,7 @@
 // netlify/functions/handyman-submit.js
-// Saves handyman booking to Supabase, uploads photos to Storage, and emails contractor + customer
+// FIXED VERSION - May 24, 2026
+// Bug fixed: Added missing "apikey" header to Supabase Storage uploads.
+// Also added detailed console logging so future bugs are easier to debug.
 //
 // Usage: POST {
 //   customer: { name, phone, email, address },
@@ -26,6 +28,11 @@ exports.handler = async function (event) {
     const body = JSON.parse(event.body || "{}");
     const { customer, service, serviceName, urgency, answers, description, photos, aiResult, preferredDate, preferredTime } = body;
 
+    console.log("=== handyman-submit START ===");
+    console.log("Customer:", customer && customer.name);
+    console.log("Service:", service);
+    console.log("Photos received from form:", Array.isArray(photos) ? photos.length : 0);
+
     if (!customer || !customer.name || !customer.phone || !customer.email) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing customer info" }) };
     }
@@ -38,21 +45,34 @@ exports.handler = async function (event) {
     if (!supabaseUrl || !supabaseKey) {
       return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "Supabase env vars not set" }) };
     }
+    console.log("Supabase URL:", supabaseUrl);
+    console.log("Supabase key length:", supabaseKey.length, "starts with:", supabaseKey.slice(0, 10));
 
     // Generate booking ref
     const ref = generateRef();
+    console.log("Generated ref:", ref);
 
     // 1. Upload photos to Supabase Storage
     const photoUrls = [];
     if (Array.isArray(photos) && photos.length > 0) {
+      console.log(`Uploading ${photos.length} photos to Supabase Storage...`);
       for (let i = 0; i < photos.length; i++) {
         try {
+          console.log(`  → Photo ${i + 1}/${photos.length} — base64 length: ${photos[i] ? photos[i].length : 0}`);
           const url = await uploadPhoto(supabaseUrl, supabaseKey, ref, i, photos[i]);
-          if (url) photoUrls.push(url);
+          if (url) {
+            console.log(`  ✓ Photo ${i + 1} uploaded: ${url}`);
+            photoUrls.push(url);
+          } else {
+            console.log(`  ✗ Photo ${i + 1} returned null URL`);
+          }
         } catch (e) {
-          console.error(`Photo ${i} upload failed:`, e.message);
+          console.error(`  ✗ Photo ${i + 1} upload FAILED:`, e.message);
         }
       }
+      console.log(`Photo upload summary: ${photoUrls.length}/${photos.length} succeeded`);
+    } else {
+      console.log("No photos to upload (photos array empty or missing)");
     }
 
     // 2. Build the booking record
@@ -102,7 +122,9 @@ exports.handler = async function (event) {
     };
 
     // 3. Save to Supabase
+    console.log("Saving booking to Supabase with photo_urls.length =", photoUrls.length);
     const saved = await supabaseRequest(supabaseUrl, supabaseKey, "POST", "/rest/v1/bookings", booking);
+    console.log("✓ Booking saved");
 
     // 4. Save raw AI response for debugging
     if (aiResult && aiResult.rawResponse) {
@@ -137,6 +159,8 @@ exports.handler = async function (event) {
       console.error("Customer email failed:", e.message);
     }
 
+    console.log("=== handyman-submit DONE ===");
+
     return {
       statusCode: 200,
       headers: cors(),
@@ -170,11 +194,22 @@ function generateRef() {
 
 // ════════════════════════════════════════════════════════════════════
 // HELPER: Upload photo to Supabase Storage
+// FIXED: Now sends BOTH "apikey" and "Authorization" headers.
+// The Supabase Storage REST API requires both, even with the new
+// sb_secret_ key format. Missing apikey caused silent 401 failures.
 // ════════════════════════════════════════════════════════════════════
 async function uploadPhoto(supabaseUrl, supabaseKey, ref, index, base64Data) {
-  // Strip data URI prefix if present
+  if (!base64Data) {
+    throw new Error("No base64 data provided");
+  }
+
+  // Strip data URI prefix if present (e.g. "data:image/jpeg;base64,...")
   const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
   const buffer = Buffer.from(cleanBase64, "base64");
+
+  if (buffer.length === 0) {
+    throw new Error("Buffer is empty after base64 decode");
+  }
 
   const path = `${ref}/photo-${index + 1}.jpg`;
   const uploadUrl = `${supabaseUrl}/storage/v1/object/handyman-photos/${path}`;
@@ -187,21 +222,25 @@ async function uploadPhoto(supabaseUrl, supabaseKey, ref, index, base64Data) {
       path: u.pathname + u.search,
       method: "POST",
       headers: {
+        // THE FIX: BOTH headers are required by Supabase Storage REST API
+        "apikey": supabaseKey,
         "Authorization": `Bearer ${supabaseKey}`,
         "Content-Type": "image/jpeg",
         "Content-Length": buffer.length,
-        "x-upsert": "true"
+        "x-upsert": "true",
+        "cache-control": "3600"
       }
     }, function(res) {
       const chunks = [];
       res.on("data", function(c) { chunks.push(c); });
       res.on("end", function() {
+        const respBody = Buffer.concat(chunks).toString("utf8");
         if (res.statusCode >= 200 && res.statusCode < 300) {
           // Public URL pattern
           const publicUrl = `${supabaseUrl}/storage/v1/object/public/handyman-photos/${path}`;
           resolve(publicUrl);
         } else {
-          reject(new Error(`Upload ${res.statusCode}: ${Buffer.concat(chunks).toString("utf8").slice(0, 200)}`));
+          reject(new Error(`Upload ${res.statusCode}: ${respBody.slice(0, 300)}`));
         }
       });
     });
