@@ -2,6 +2,7 @@
 // Sends an invoice email to the customer.
 // Supports: deposit / final / full / custom amounts.
 // Payment link is OPTIONAL — invoice can also be sent without one.
+// NEW: Email includes "View Online & Download" button linking to invoice.html page.
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
@@ -57,6 +58,9 @@ exports.handler = async function (event) {
     const invoiceCount = (record.invoices || []).length + 1;
     const invoiceNumber = `INV-${ref.replace("SBC-", "")}-${String(invoiceCount).padStart(2, "0")}`;
 
+    // URL to online invoice page
+    const invoiceUrl = `${siteUrl}/invoice.html?ref=${encodeURIComponent(ref)}&inv=${encodeURIComponent(invoiceNumber)}`;
+
     // Format due date
     const dueDateFormatted = dueDate
       ? new Date(dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
@@ -87,11 +91,11 @@ exports.handler = async function (event) {
       `;
     }
 
-    // Optional payment button
+    // Optional Pay Now button
     let payButtonHtml = "";
     if (includePaymentLink && paymentLink && paymentLink.trim()) {
       payButtonHtml = `
-        <div style="text-align:center;margin:28px 0">
+        <div style="text-align:center;margin:24px 0">
           <a href="${escapeHtml(paymentLink)}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 40px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">💳 Pay Now</a>
         </div>
       `;
@@ -161,6 +165,12 @@ exports.handler = async function (event) {
     ${payButtonHtml}
     ${paymentInstructionsHtml}
 
+    <!-- VIEW ONLINE & DOWNLOAD CTA -->
+    <div style="text-align:center;margin:28px 0;padding:22px;background:#faf8f4;border:1px solid #e8e2d9;border-radius:10px">
+      <div style="font-family:Arial,sans-serif;font-size:13px;color:#666;margin-bottom:14px;letter-spacing:0.5px">View this invoice online or download as a PDF</div>
+      <a href="${invoiceUrl}" style="display:inline-block;background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#c9a84c;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:1px">📄 VIEW ONLINE &amp; DOWNLOAD →</a>
+    </div>
+
     <p style="font-size:14px;color:#555;margin:24px 0 0">Questions about this invoice? Reply directly to this email or call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
 
     <!-- FOOTER -->
@@ -215,6 +225,7 @@ exports.handler = async function (event) {
       body: JSON.stringify({
         success: true,
         invoiceNumber,
+        invoiceUrl,
         sentTo: recipientEmail,
         forwardedToContractor: !canSendToCustomer,
       }),
