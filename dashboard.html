@@ -266,6 +266,421 @@ body {
 .badge.invoiced { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
 .badge.paid { background: var(--good-bg); color: var(--good); }
 
+/* ============ HANDYMAN BOOKING CARDS ============ */
+.handyman-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.handyman-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+.handyman-card .h-icon {
+  font-size: 36px;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-2);
+  border-radius: 12px;
+}
+.handyman-card .h-main {
+  flex: 1;
+  min-width: 0;
+}
+.handyman-card .h-title {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.handyman-card .h-meta {
+  font-size: 12px;
+  color: var(--ink-muted);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.handyman-card .h-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.handyman-card .h-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+.handyman-card .h-total {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.handyman-card .h-time {
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+/* Confidence badges */
+.badge.h-ready { background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+.badge.h-maybe { background: rgba(212, 160, 23, 0.15); color: #d4a017; border: 1px solid rgba(212,160,23,0.3); }
+.badge.h-inspection { background: rgba(231, 76, 60, 0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+.badge.h-new { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.badge.h-confirmed { background: rgba(46, 204, 113, 0.15); color: #2ecc71; }
+.badge.h-in-progress { background: rgba(212, 160, 23, 0.15); color: #d4a017; }
+.badge.h-completed { background: var(--good-bg); color: var(--good); }
+.badge.h-cancelled { background: rgba(120, 120, 120, 0.15); color: #888; }
+.badge.h-urgency-today { background: rgba(231, 76, 60, 0.15); color: #e74c3c; }
+.badge.h-urgency-this-week { background: rgba(212, 160, 23, 0.15); color: #d4a017; }
+
+/* ============ HANDYMAN DETAIL MODAL ============ */
+.h-modal-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  max-width: 880px;
+  margin: 20px auto;
+  padding: 28px 32px;
+  position: relative;
+}
+.h-section {
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.h-section:last-child { border-bottom: none; }
+.h-section-title {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.h-customer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 640px) { .h-customer-grid { grid-template-columns: 1fr; } }
+.h-customer-grid .field-mini {
+  background: var(--card-2);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line-soft);
+}
+.h-customer-grid .field-mini .fl {
+  font-size: 11px;
+  color: var(--ink-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.h-customer-grid .field-mini .fv {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 600;
+  word-break: break-word;
+}
+.h-customer-grid .field-mini .fv a {
+  color: var(--gold);
+  text-decoration: none;
+}
+
+/* Customer estimate box */
+.h-estimate-box {
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  border: 1px solid var(--gold-soft);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+@media (max-width: 640px) { .h-estimate-box { grid-template-columns: 1fr 1fr; } }
+.h-est-cell {
+  text-align: center;
+}
+.h-est-cell .label {
+  font-size: 10px;
+  color: var(--ink-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.h-est-cell .value {
+  font-family: var(--display);
+  font-size: 18px;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+/* Internal brief - the IMPORTANT one */
+.h-brief-box {
+  background: linear-gradient(135deg, #fff8e8, #fef3e2);
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  padding: 20px;
+}
+.h-brief-header {
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--gold-2);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.h-brief-summary {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  font-size: 13.5px;
+  color: #333;
+  line-height: 1.6;
+  border-left: 3px solid var(--gold);
+}
+.h-checklist-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 640px) { .h-checklist-grid { grid-template-columns: 1fr; } }
+.h-checklist-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+}
+.h-checklist-label {
+  font-size: 12px;
+  color: var(--gold-2);
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.h-checklist-item {
+  font-size: 13px;
+  color: #333;
+  padding: 4px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.h-checklist-item::before {
+  content: '☐';
+  color: var(--gold);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.h-checklist-empty {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+.h-special-order {
+  background: rgba(231, 76, 60, 0.08);
+  border: 1px solid #e74c3c;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+.h-special-order .so-title {
+  font-size: 12px;
+  color: #c0392b;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.h-special-order ul {
+  list-style: none;
+  padding: 0;
+}
+.h-special-order li {
+  font-size: 13px;
+  color: #555;
+  padding: 3px 0 3px 16px;
+  position: relative;
+}
+.h-special-order li::before {
+  content: '🚨';
+  position: absolute;
+  left: 0;
+}
+
+.h-warnings {
+  background: #fef3e0;
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+.h-warnings .w-title {
+  font-size: 12px;
+  color: #a07a14;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.h-warnings ul {
+  list-style: none;
+  padding: 0;
+}
+.h-warnings li {
+  font-size: 13px;
+  color: #555;
+  padding: 3px 0 3px 18px;
+  position: relative;
+  line-height: 1.5;
+}
+.h-warnings li::before {
+  content: '⚠';
+  position: absolute;
+  left: 0;
+  color: var(--warn);
+}
+
+/* Photos */
+.h-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+@media (max-width: 640px) { .h-photos-grid { grid-template-columns: repeat(3, 1fr); } }
+.h-photo {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #000;
+  transition: transform 0.2s;
+}
+.h-photo:hover { transform: scale(1.05); }
+.h-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Status selector */
+.h-status-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.h-status-btn {
+  padding: 10px 16px;
+  background: var(--card-2);
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--ink-soft);
+  font-family: inherit;
+  text-transform: uppercase;
+}
+.h-status-btn:hover { border-color: var(--gold); }
+.h-status-btn.active {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Customer answers display */
+.h-answers {
+  background: var(--card-2);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.h-answer-row {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+.h-answer-row:last-child { border-bottom: none; }
+.h-answer-row .ar-key {
+  color: var(--ink-muted);
+  min-width: 140px;
+  flex-shrink: 0;
+}
+.h-answer-row .ar-val { color: var(--ink); font-weight: 500; }
+
+/* Description box */
+.h-description {
+  background: var(--card-2);
+  border-left: 3px solid var(--gold);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Confidence display */
+.h-confidence {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.h-confidence-ring {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 4px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.h-confidence-ring.ready { border-color: var(--good); color: var(--good); }
+.h-confidence-ring.maybe { border-color: var(--warn); color: var(--warn); }
+.h-confidence-ring.inspection { border-color: var(--bad); color: var(--bad); }
+.h-confidence-text {
+  flex: 1;
+}
+.h-confidence-label {
+  font-family: var(--display);
+  font-size: 16px;
+  letter-spacing: 1px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.h-confidence-reasoning {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-top: 4px;
+  font-style: italic;
+}
+
 .est-right {
   display: flex;
   flex-direction: column;
@@ -1062,6 +1477,21 @@ body {
   </div>
 </div>
 
+<!-- HANDYMAN DETAIL MODAL -->
+<div id="handyman-modal" class="modal-backdrop">
+  <div class="h-modal-card" id="handyman-card">
+    <!-- filled by JS -->
+  </div>
+</div>
+
+<!-- LIGHTBOX for photos -->
+<div id="lightbox-modal" class="modal-backdrop" style="display:none">
+  <div style="max-width:90vw;max-height:90vh;position:relative">
+    <img id="lightbox-img" src="" style="max-width:100%;max-height:90vh;border-radius:12px;display:block">
+    <button onclick="closeLightbox()" style="position:absolute;top:-40px;right:0;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer">×</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
@@ -1076,7 +1506,10 @@ const TABS = [
   { id: "invoiced", label: "Invoiced" },
   { id: "paid", label: "Paid" },
   { id: "declined", label: "Declined" },
+  { id: "handyman", label: "🔧 Handyman" },
 ];
+
+let handymanBookings = [];
 
 let estimates = [];
 let activeTab = "all";
@@ -1204,6 +1637,7 @@ function renderTabs() {
   const counts = { all: estimates.length };
   TABS.forEach(function(t) { if (t.id !== "all") counts[t.id] = 0; });
   estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
+  counts.handyman = handymanBookings.length;
   document.getElementById("tabs-row").innerHTML = TABS.map(function(t) {
     return '<button class="tab ' + (activeTab === t.id ? "active" : "") + '" data-tab="' + t.id + '">' +
       '<span>' + t.label + '</span>' +
@@ -1223,10 +1657,21 @@ async function loadEstimates() {
   const host = document.getElementById("list-host");
   host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
   try {
-    const r = await fetch("/.netlify/functions/list-estimates");
-    if (!r.ok) throw new Error("Load failed");
-    const data = await r.json();
-    estimates = data.estimates || [];
+    // Load both renovation estimates AND handyman bookings in parallel
+    const [estimateRes, handymanRes] = await Promise.all([
+      fetch("/.netlify/functions/list-estimates").catch(function(e) { console.error("Estimates load failed:", e); return null; }),
+      fetch("/.netlify/functions/handyman-get").catch(function(e) { console.error("Handyman load failed:", e); return null; })
+    ]);
+
+    if (estimateRes && estimateRes.ok) {
+      const data = await estimateRes.json();
+      estimates = data.estimates || [];
+    }
+    if (handymanRes && handymanRes.ok) {
+      const data = await handymanRes.json();
+      handymanBookings = data.bookings || [];
+    }
+
     renderTabs();
     renderList();
   } catch (e) {
@@ -1237,6 +1682,13 @@ async function loadEstimates() {
 
 function renderList() {
   const host = document.getElementById("list-host");
+
+  // HANDYMAN TAB - completely different rendering
+  if (activeTab === "handyman") {
+    renderHandymanList();
+    return;
+  }
+
   const filtered = activeTab === "all"
     ? estimates
     : estimates.filter(function(e) { return e.status === activeTab; });
@@ -2020,6 +2472,322 @@ async function submitInvoice() {
     btn.textContent = "📨 Send Invoice";
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   HANDYMAN BOOKINGS — list + detail view
+   ════════════════════════════════════════════════════════════════════ */
+
+const SERVICE_ICONS = {
+  "general-repairs": "🔨",
+  "painting-touchups": "🎨",
+  "furniture-assembly": "🪑",
+  "leak-plumbing": "🚰",
+  "tile-grout": "🧱",
+  "light-electrical": "💡",
+  "full-handyman-day": "📅",
+  "property-manager": "🏢"
+};
+
+let currentHandymanBooking = null;
+
+function renderHandymanList() {
+  const host = document.getElementById("list-host");
+
+  if (handymanBookings.length === 0) {
+    host.innerHTML =
+      '<div class="empty">' +
+        '<div class="empty-icon">🔧</div>' +
+        '<h3>No handyman bookings yet</h3>' +
+        '<p>Customer bookings from handyman-estimate.html will appear here.</p>' +
+      '</div>';
+    return;
+  }
+
+  host.innerHTML =
+    '<div class="list-header">' +
+      '<div class="list-count">' + handymanBookings.length + ' handyman booking' + (handymanBookings.length === 1 ? '' : 's') + '</div>' +
+    '</div>' +
+    handymanBookings.map(function(b) {
+      const icon = SERVICE_ICONS[b.service_id] || "🔧";
+      const conf = (b.confidence_label || "maybe").toLowerCase();
+      const status = (b.status || "new").toLowerCase();
+      const urgency = (b.urgency || "flexible").toLowerCase();
+
+      const totalMin = (b.estimated_labor_min || 0) + (b.estimated_material_min || 0);
+      const totalMax = (b.estimated_labor_max || 0) + (b.estimated_material_max || 0);
+
+      const photoCount = (b.photo_urls || []).length;
+
+      return '<div class="handyman-card" data-ref="' + esc(b.ref) + '">' +
+        '<div class="h-icon">' + icon + '</div>' +
+        '<div class="h-main">' +
+          '<div class="h-title">' + esc(b.service_name || b.service_id) + '</div>' +
+          '<div class="h-meta">' +
+            '<span>' + esc(b.customer_name) + '</span>' +
+            '<span>·</span>' +
+            '<span>' + fmtDate(b.submitted_at) + '</span>' +
+            (photoCount > 0 ? '<span>·</span><span>📷 ' + photoCount + '</span>' : '') +
+            '<span>·</span>' +
+            '<span style="font-family:monospace;font-size:11px">' + esc(b.ref) + '</span>' +
+          '</div>' +
+          '<div class="h-badges">' +
+            '<span class="badge h-' + status + '">' + esc(status) + '</span>' +
+            '<span class="badge h-' + conf + '">' + (b.confidence_score || 0) + '% · ' + esc(conf) + '</span>' +
+            (urgency === "today" ? '<span class="badge h-urgency-today">⚡ TODAY</span>' :
+             urgency === "this-week" ? '<span class="badge h-urgency-this-week">📅 This Week</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="h-right">' +
+          '<div class="est-total-label">Estimate</div>' +
+          '<div class="h-total">$' + totalMin + '-$' + totalMax + '</div>' +
+          '<div class="h-time">' + (b.estimated_time_min || '?') + '-' + (b.estimated_time_max || '?') + ' hrs</div>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+
+  document.querySelectorAll(".handyman-card").forEach(function(card) {
+    card.addEventListener("click", function() { openHandymanDetail(card.dataset.ref); });
+  });
+}
+
+async function openHandymanDetail(ref) {
+  try {
+    const r = await fetch("/.netlify/functions/handyman-get?ref=" + encodeURIComponent(ref));
+    if (!r.ok) { toast("Could not load booking", true); return; }
+    const b = await r.json();
+    currentHandymanBooking = b;
+    renderHandymanModal(b);
+    document.getElementById("handyman-modal").classList.add("show");
+    document.body.style.overflow = "hidden";
+  } catch (e) {
+    toast("Load failed: " + e.message, true);
+  }
+}
+
+function closeHandymanModal() {
+  document.getElementById("handyman-modal").classList.remove("show");
+  document.body.style.overflow = "";
+  currentHandymanBooking = null;
+}
+
+function renderHandymanModal(b) {
+  const icon = SERVICE_ICONS[b.service_id] || "🔧";
+  const conf = (b.confidence_label || "maybe").toLowerCase();
+  const status = (b.status || "new").toLowerCase();
+  const photoUrls = b.photo_urls || [];
+  const toolsList = b.tools_checklist || [];
+  const materialsList = b.materials_checklist || [];
+  const warnings = b.warnings || [];
+  const specialOrderItems = b.special_order_items || [];
+  const answers = b.answers || {};
+
+  const totalMin = (b.estimated_labor_min || 0) + (b.estimated_material_min || 0);
+  const totalMax = (b.estimated_labor_max || 0) + (b.estimated_material_max || 0);
+
+  document.getElementById("handyman-card").innerHTML =
+    '<div class="modal-head">' +
+      '<div>' +
+        '<h2 style="display:flex;align-items:center;gap:10px">' + icon + ' ' + esc(b.service_name || b.service_id) + '</h2>' +
+        '<div class="ref-sub">' + esc(b.ref) + ' · ' + fmtDate(b.submitted_at) + '</div>' +
+      '</div>' +
+      '<button class="modal-close" onclick="closeHandymanModal()">×</button>' +
+    '</div>' +
+
+    // ───────── CONFIDENCE ─────────
+    '<div class="h-confidence">' +
+      '<div class="h-confidence-ring ' + conf + '">' + (b.confidence_score || 0) + '</div>' +
+      '<div class="h-confidence-text">' +
+        '<div class="h-confidence-label" style="color:var(--' + (conf==='ready'?'good':conf==='maybe'?'warn':'bad') + ')">' +
+          (conf === 'ready' ? '✓ READY TO BOOK' : conf === 'maybe' ? '⚠ REVIEW NEEDED' : '🔍 INSPECTION RECOMMENDED') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ───────── CUSTOMER ─────────
+    '<div class="h-section">' +
+      '<div class="h-section-title">👤 Customer</div>' +
+      '<div class="h-customer-grid">' +
+        '<div class="field-mini"><div class="fl">Name</div><div class="fv">' + esc(b.customer_name) + '</div></div>' +
+        '<div class="field-mini"><div class="fl">Phone</div><div class="fv"><a href="tel:' + esc(b.customer_phone) + '">📞 ' + esc(b.customer_phone) + '</a></div></div>' +
+        '<div class="field-mini"><div class="fl">Email</div><div class="fv"><a href="mailto:' + esc(b.customer_email) + '">✉️ ' + esc(b.customer_email) + '</a></div></div>' +
+        '<div class="field-mini"><div class="fl">Address</div><div class="fv">📍 ' + esc(b.customer_address) + '</div></div>' +
+        '<div class="field-mini"><div class="fl">Urgency</div><div class="fv">⏰ ' + esc(b.urgency || '—') + '</div></div>' +
+        '<div class="field-mini"><div class="fl">Preferred Time</div><div class="fv">' + esc((b.preferred_date ? fmtDate(b.preferred_date) + ' · ' : '') + (b.preferred_time || '—')) + '</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    // ───────── CUSTOMER ESTIMATE ─────────
+    '<div class="h-section">' +
+      '<div class="h-section-title">💰 Customer Estimate</div>' +
+      '<div class="h-estimate-box">' +
+        '<div class="h-est-cell"><div class="label">⏱ Time</div><div class="value">' + (b.estimated_time_min || '?') + '-' + (b.estimated_time_max || '?') + 'h</div></div>' +
+        '<div class="h-est-cell"><div class="label">💵 Labor</div><div class="value">$' + (b.estimated_labor_min || 0) + '-' + (b.estimated_labor_max || 0) + '</div></div>' +
+        '<div class="h-est-cell"><div class="label">🔧 Materials</div><div class="value">$' + (b.estimated_material_min || 0) + '-' + (b.estimated_material_max || 0) + '</div></div>' +
+        '<div class="h-est-cell"><div class="label">💳 Deposit</div><div class="value">$' + (b.deposit_amount || 0) + '</div></div>' +
+      '</div>' +
+      (b.customer_notes ? '<div style="margin-top:12px;font-size:13px;color:var(--ink-soft);font-style:italic">📝 ' + esc(b.customer_notes) + '</div>' : '') +
+    '</div>' +
+
+    // ───────── 🧠 INTERNAL BRIEF (THE IMPORTANT ONE!) ─────────
+    '<div class="h-section">' +
+      '<div class="h-section-title">🧠 Internal Brief — Tools & Materials</div>' +
+      '<div class="h-brief-box">' +
+        '<div class="h-brief-header">🎯 PRE-ARRIVAL CHECKLIST</div>' +
+
+        (b.job_summary ? '<div class="h-brief-summary"><strong>Job Summary:</strong> ' + esc(b.job_summary) + '</div>' : '') +
+
+        '<div class="h-checklist-grid">' +
+          '<div class="h-checklist-section">' +
+            '<div class="h-checklist-label">🧰 Tools to Bring</div>' +
+            (toolsList.length > 0
+              ? toolsList.map(function(t) { return '<div class="h-checklist-item">' + esc(t) + '</div>'; }).join('')
+              : '<div class="h-checklist-empty">No specific tools listed</div>') +
+          '</div>' +
+          '<div class="h-checklist-section">' +
+            '<div class="h-checklist-label">📦 Materials to Bring</div>' +
+            (materialsList.length > 0
+              ? materialsList.map(function(m) { return '<div class="h-checklist-item">' + esc(m) + '</div>'; }).join('')
+              : '<div class="h-checklist-empty">No specific materials listed</div>') +
+          '</div>' +
+        '</div>' +
+
+        (b.special_order_flag && specialOrderItems.length > 0 ? (
+          '<div class="h-special-order">' +
+            '<div class="so-title">🚨 SPECIAL ORDER REQUIRED</div>' +
+            '<ul>' + specialOrderItems.map(function(s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
+          '</div>'
+        ) : '') +
+
+        (warnings.length > 0 ? (
+          '<div class="h-warnings">' +
+            '<div class="w-title">⚠️ WARNINGS / NOTES</div>' +
+            '<ul>' + warnings.map(function(w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' +
+          '</div>'
+        ) : '') +
+
+      '</div>' +
+    '</div>' +
+
+    // ───────── PHOTOS ─────────
+    (photoUrls.length > 0 ? (
+      '<div class="h-section">' +
+        '<div class="h-section-title">📸 Customer Photos (' + photoUrls.length + ')</div>' +
+        '<div class="h-photos-grid">' +
+          photoUrls.map(function(url) {
+            return '<div class="h-photo" onclick="openLightbox(\'' + esc(url) + '\')"><img src="' + esc(url) + '" alt="Customer photo"></div>';
+          }).join('') +
+        '</div>' +
+      '</div>'
+    ) : '') +
+
+    // ───────── CUSTOMER DESCRIPTION ─────────
+    (b.customer_description ? (
+      '<div class="h-section">' +
+        '<div class="h-section-title">📝 Customer Description</div>' +
+        '<div class="h-description">' + esc(b.customer_description) + '</div>' +
+      '</div>'
+    ) : '') +
+
+    // ───────── CUSTOMER ANSWERS ─────────
+    (Object.keys(answers).length > 0 ? (
+      '<div class="h-section">' +
+        '<div class="h-section-title">📋 Customer Answers</div>' +
+        '<div class="h-answers">' +
+          Object.keys(answers).map(function(key) {
+            const val = Array.isArray(answers[key]) ? answers[key].join(", ") : answers[key];
+            if (!val || key === 'description') return '';
+            return '<div class="h-answer-row">' +
+              '<span class="ar-key">' + esc(humanizeKey(key)) + ':</span>' +
+              '<span class="ar-val">' + esc(val) + '</span>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>'
+    ) : '') +
+
+    // ───────── STATUS MANAGEMENT ─────────
+    '<div class="h-section">' +
+      '<div class="h-section-title">🎯 Status</div>' +
+      '<div class="h-status-row">' +
+        ['new','confirmed','in-progress','completed','cancelled'].map(function(s) {
+          return '<button class="h-status-btn ' + (status === s ? 'active' : '') + '" onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'' + s + '\')">' + s.replace('-', ' ') + '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+
+    // ───────── CONTRACTOR NOTES ─────────
+    '<div class="h-section">' +
+      '<div class="h-section-title">✏️ Your Notes (Internal)</div>' +
+      '<textarea id="h-contractor-notes" rows="3" placeholder="Add notes about this job..." style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;background:var(--card-2);color:var(--ink);resize:vertical">' + esc(b.contractor_notes || '') + '</textarea>' +
+      '<button onclick="saveContractorNotes(\'' + esc(b.ref) + '\')" style="margin-top:8px;padding:8px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">💾 Save Notes</button>' +
+    '</div>' +
+
+    // ───────── ACTIONS ─────────
+    '<div class="modal-actions">' +
+      '<button class="btn-secondary" onclick="closeHandymanModal()">Close</button>' +
+      '<div class="modal-actions-right">' +
+        '<a href="tel:' + esc(b.customer_phone) + '" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">📞 Call</a>' +
+        '<a href="mailto:' + esc(b.customer_email) + '" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">✉ Email</a>' +
+      '</div>' +
+    '</div>';
+}
+
+async function updateHandymanStatus(ref, newStatus) {
+  try {
+    const r = await fetch("/.netlify/functions/handyman-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: ref, updates: { status: newStatus } })
+    });
+    if (!r.ok) throw new Error("Update failed");
+    toast("✓ Status updated to " + newStatus);
+    // Reload
+    await loadEstimates();
+    // Reopen modal with fresh data
+    openHandymanDetail(ref);
+  } catch (e) {
+    toast("Update failed: " + e.message, true);
+  }
+}
+
+async function saveContractorNotes(ref) {
+  const notes = document.getElementById("h-contractor-notes").value;
+  try {
+    const r = await fetch("/.netlify/functions/handyman-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: ref, updates: { contractor_notes: notes } })
+    });
+    if (!r.ok) throw new Error("Save failed");
+    toast("✓ Notes saved");
+  } catch (e) {
+    toast("Save failed: " + e.message, true);
+  }
+}
+
+function openLightbox(url) {
+  document.getElementById("lightbox-img").src = url;
+  document.getElementById("lightbox-modal").style.display = "flex";
+  document.getElementById("lightbox-modal").classList.add("show");
+}
+
+function closeLightbox() {
+  document.getElementById("lightbox-modal").style.display = "none";
+  document.getElementById("lightbox-modal").classList.remove("show");
+}
+
+function humanizeKey(key) {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+}
+
+// Close handyman modal on backdrop click
+document.getElementById("handyman-modal").addEventListener("click", function(e) {
+  if (e.target.id === "handyman-modal") closeHandymanModal();
+});
+
+document.getElementById("lightbox-modal").addEventListener("click", function(e) {
+  if (e.target.id === "lightbox-modal") closeLightbox();
+});
 
 document.getElementById("invoice-modal").addEventListener("click", function(e) {
   if (e.target.id === "invoice-modal") closeInvoiceModal();
