@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service Agreement · Sani Building Corp</title>
+<meta name="description" content="Review and sign your handyman service agreement">
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700&family=DM+Sans:wght@300;400;500;600&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --navy:#0d1b2a;
+  --navy-2:#1a2d42;
+  --gold:#c9a84c;
+  --gold-2:#b8930a;
+  --gold-3:#f0a500;
+  --gold-soft:#f7f0e3;
+  --cream:#faf8f5;
+  --bg:#f5f0e8;
+  --card:#ffffff;
+  --ink:#1a1a1a;
+  --ink-soft:#555;
+  --ink-muted:#8a8a8a;
+  --line:#e8e2d9;
+  --good:#27ae60;
+  --warn:#d4a017;
+  --bad:#e74c3c;
+  --display:'Playfair Display',Georgia,serif;
+  --body:'DM Sans',-apple-system,sans-serif;
+  --script:'Dancing Script',cursive;
+}
+body {
+  font-family:var(--body);
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+  padding:0;
+}
+.wrap { max-width:760px; margin:0 auto; padding:20px 16px 60px; }
+
+/* HEADER */
+.hdr {
+  background:linear-gradient(135deg, var(--navy), var(--navy-2));
+  color:#fff;
+  padding:32px 28px;
+  border-radius:14px;
+  margin-bottom:18px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.hdr::before {
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg, var(--gold-3), var(--gold), var(--gold-2));
+}
+.brand {
+  font-family:var(--display);
+  font-size:22px;
+  letter-spacing:4px;
+  color:var(--gold);
+  font-weight:700;
+  margin-bottom:6px;
+}
+.tag {
+  font-size:11px;
+  letter-spacing:3px;
+  color:#aaa;
+  text-transform:uppercase;
+}
+.hdr h1 {
+  font-family:var(--display);
+  font-size:28px;
+  margin-top:18px;
+  font-weight:700;
+}
+.hdr h1 em { color:var(--gold); font-style:italic; }
+.hdr-sub { font-size:14px; color:rgba(255,255,255,0.7); margin-top:10px; }
+.ref-badge {
+  display:inline-block;
+  margin-top:12px;
+  padding:6px 14px;
+  background:rgba(201,168,76,0.15);
+  border:1px solid var(--gold);
+  border-radius:20px;
+  font-size:11px;
+  letter-spacing:2px;
+  color:var(--gold);
+  font-weight:600;
+}
+
+/* STATUS BANNER */
+.status-banner {
+  border-radius:12px;
+  padding:16px 22px;
+  margin-bottom:18px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:14px;
+  font-weight:600;
+}
+.status-banner.signed { background:linear-gradient(135deg,#d4edda,#c3e6cb); color:#155724; border:1px solid var(--good); }
+.status-banner.changes { background:#fff3cd; color:#856404; border:1px solid var(--warn); }
+.status-icon { font-size:24px; }
+
+/* CARD */
+.card {
+  background:var(--card);
+  border-radius:14px;
+  padding:28px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.06);
+  border:1px solid var(--line);
+  margin-bottom:18px;
+}
+@media (max-width: 540px) { .card { padding:22px 18px; } }
+
+.section-label {
+  font-size:11px;
+  letter-spacing:3px;
+  color:var(--gold-2);
+  text-transform:uppercase;
+  font-weight:700;
+  margin-bottom:10px;
+}
+.section-title {
+  font-family:var(--display);
+  font-size:20px;
+  color:var(--navy);
+  margin-bottom:14px;
+  font-weight:700;
+}
+
+/* APPOINTMENT GRID */
+.appt-grid {
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:14px;
+}
+@media (max-width: 540px) { .appt-grid { grid-template-columns:1fr; } }
+.appt-cell {
+  background:var(--cream);
+  border-radius:10px;
+  padding:14px 16px;
+}
+.appt-cell .ac-label {
+  font-size:10px;
+  letter-spacing:2px;
+  color:var(--ink-muted);
+  text-transform:uppercase;
+  margin-bottom:4px;
+}
+.appt-cell .ac-value {
+  font-size:15px;
+  font-weight:700;
+  color:var(--navy);
+}
+.appt-cell.featured {
+  background:linear-gradient(135deg, var(--navy), var(--navy-2));
+  color:#fff;
+  grid-column:span 2;
+  text-align:center;
+  padding:20px;
+}
+.appt-cell.featured .ac-label { color:var(--gold); font-size:11px; letter-spacing:3px; }
+.appt-cell.featured .ac-value { 
+  font-family:var(--display);
+  color:#fff;
+  font-size:24px;
+}
+@media (max-width: 540px) { .appt-cell.featured { grid-column:span 1; } }
+
+/* SCOPE */
+.scope-box {
+  background:var(--gold-soft);
+  border-left:4px solid var(--gold);
+  border-radius:0 8px 8px 0;
+  padding:18px 20px;
+  margin:14px 0;
+}
+.scope-text {
+  font-size:14px;
+  color:var(--ink-soft);
+  line-height:1.7;
+  white-space:pre-wrap;
+}
+.special-notes {
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid #e8d8a8;
+}
+.special-notes-label {
+  font-size:11px;
+  font-weight:700;
+  color:var(--gold-2);
+  margin-bottom:4px;
+}
+.special-notes-text {
+  font-size:13px;
+  color:var(--ink-soft);
+  line-height:1.6;
+}
+
+/* TERMS */
+.terms-list {
+  list-style:none;
+  padding:0;
+}
+.terms-list li {
+  padding:12px 0;
+  border-bottom:1px solid var(--line);
+  font-size:13.5px;
+  color:var(--ink-soft);
+  line-height:1.6;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+}
+.terms-list li:last-child { border-bottom:none; }
+.terms-list li::before {
+  content:'✓';
+  color:var(--gold);
+  font-weight:700;
+  font-size:16px;
+  flex-shrink:0;
+}
+
+/* PRICE HERO */
+.price-hero {
+  text-align:center;
+  padding:24px 20px;
+  background:linear-gradient(135deg, var(--navy), var(--navy-2));
+  border-radius:12px;
+  margin:8px 0 18px;
+  color:#fff;
+  position:relative;
+  overflow:hidden;
+}
+.price-hero::before {
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg, var(--gold-3), var(--gold), var(--gold-2));
+}
+.price-hero .ph-label {
+  font-size:11px;
+  letter-spacing:3px;
+  color:var(--gold);
+  margin-bottom:8px;
+  text-transform:uppercase;
+}
+.price-hero .ph-amount {
+  font-family:var(--display);
+  font-size:38px;
+  font-weight:700;
+  color:#fff;
+  line-height:1.1;
+}
+.price-hero .ph-note {
+  font-size:12px;
+  color:rgba(255,255,255,0.65);
+  margin-top:6px;
+  font-style:italic;
+}
+
+/* DEPOSIT BANNER */
+.deposit-banner {
+  background:linear-gradient(135deg,#e8f5e8,#d4edda);
+  border:1px solid var(--good);
+  border-radius:10px;
+  padding:18px;
+  text-align:center;
+  margin:14px 0;
+}
+.deposit-banner .db-label {
+  font-size:10px;
+  letter-spacing:2px;
+  color:var(--good);
+  text-transform:uppercase;
+  font-weight:700;
+}
+.deposit-banner .db-amount {
+  font-family:var(--display);
+  font-size:24px;
+  color:var(--good);
+  font-weight:700;
+  margin:4px 0;
+}
+.deposit-banner .db-note {
+  font-size:12px;
+  color:#666;
+}
+
+/* ACTION SECTION (sign or request changes) */
+.action-tabs {
+  display:flex;
+  gap:8px;
+  margin-bottom:18px;
+  background:var(--cream);
+  padding:4px;
+  border-radius:10px;
+}
+.action-tab {
+  flex:1;
+  padding:12px 16px;
+  border-radius:8px;
+  border:none;
+  background:transparent;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink-soft);
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.action-tab.active {
+  background:#fff;
+  color:var(--navy);
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.signature-mode-tabs {
+  display:flex;
+  gap:8px;
+  margin-bottom:14px;
+  background:var(--cream);
+  padding:4px;
+  border-radius:8px;
+}
+.sig-mode-tab {
+  flex:1;
+  padding:10px 14px;
+  border-radius:6px;
+  border:none;
+  background:transparent;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink-soft);
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.sig-mode-tab.active {
+  background:var(--gold-soft);
+  color:var(--gold-2);
+  box-shadow:0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* SIGNATURE PAD */
+.sig-pad-wrap {
+  border:2px dashed var(--line);
+  border-radius:10px;
+  background:#fff;
+  padding:8px;
+  position:relative;
+}
+.sig-pad {
+  width:100%;
+  height:180px;
+  display:block;
+  cursor:crosshair;
+  background:#fff;
+  border-radius:6px;
+  touch-action:none;
+}
+.sig-placeholder {
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%, -50%);
+  color:var(--ink-muted);
+  font-size:13px;
+  font-style:italic;
+  pointer-events:none;
+}
+.sig-clear {
+  position:absolute;
+  bottom:14px; right:14px;
+  background:rgba(0,0,0,0.05);
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  font-size:12px;
+  color:var(--ink-soft);
+  cursor:pointer;
+  font-family:inherit;
+}
+.sig-clear:hover { background:rgba(0,0,0,0.1); }
+
+/* TYPED SIGNATURE */
+.typed-sig-wrap { position:relative; }
+.typed-sig-input {
+  width:100%;
+  padding:24px 18px;
+  font-family:var(--script);
+  font-size:36px;
+  text-align:center;
+  border:2px dashed var(--line);
+  border-radius:10px;
+  background:#fff;
+  color:var(--navy);
+  outline:none;
+}
+.typed-sig-input:focus { border-color:var(--gold); }
+.typed-sig-hint {
+  text-align:center;
+  font-size:12px;
+  color:var(--ink-muted);
+  margin-top:8px;
+  font-style:italic;
+}
+
+/* AGREEMENT CHECKBOX */
+.agree-row {
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  padding:14px 16px;
+  background:var(--cream);
+  border-radius:10px;
+  margin:16px 0;
+  cursor:pointer;
+  user-select:none;
+}
+.agree-row input { 
+  width:20px; height:20px;
+  margin-top:2px;
+  accent-color:var(--gold);
+  cursor:pointer;
+}
+.agree-row .ar-text {
+  font-size:13px;
+  color:var(--ink-soft);
+  line-height:1.5;
+}
+
+/* CHANGES TEXTAREA */
+.changes-textarea {
+  width:100%;
+  padding:16px;
+  font-size:14px;
+  font-family:inherit;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  color:var(--ink);
+  outline:none;
+  resize:vertical;
+  min-height:140px;
+  line-height:1.6;
+}
+.changes-textarea:focus { border-color:var(--gold); }
+
+/* BUTTONS */
+.btn {
+  width:100%;
+  padding:16px 20px;
+  border-radius:12px;
+  font-family:inherit;
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  cursor:pointer;
+  border:2px solid transparent;
+  transition:all 0.2s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-top:14px;
+}
+.btn-primary {
+  background:linear-gradient(135deg, var(--gold), var(--gold-2));
+  color:var(--navy);
+}
+.btn-primary:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 20px rgba(201,168,76,0.35); }
+.btn-primary:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
+
+.btn-secondary {
+  background:#fff;
+  color:var(--ink-soft);
+  border-color:var(--line);
+  font-size:13px;
+}
+
+/* ERROR / SUCCESS */
+.alert {
+  padding:12px 16px;
+  border-radius:8px;
+  font-size:13px;
+  margin:12px 0;
+}
+.alert-error { background:#fee; border:1px solid var(--bad); color:#c0392b; }
+.alert-success { background:#e8f5e8; border:1px solid var(--good); color:#155724; }
+
+/* LOADING */
+.loading-state {
+  text-align:center;
+  padding:80px 20px;
+}
+.spinner {
+  width:50px;
+  height:50px;
+  border:4px solid var(--line);
+  border-top-color:var(--gold);
+  border-radius:50%;
+  margin:0 auto 20px;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ERROR STATE */
+.error-state {
+  text-align:center;
+  padding:60px 20px;
+}
+.error-state .es-icon { font-size:64px; margin-bottom:16px; }
+.error-state .es-title { font-family:var(--display); font-size:22px; color:var(--navy); margin-bottom:8px; }
+.error-state .es-msg { font-size:14px; color:var(--ink-soft); }
+
+/* FOOTER */
+.foot {
+  margin-top:30px;
+  text-align:center;
+  font-size:12px;
+  color:var(--ink-muted);
+  line-height:1.7;
+}
+.foot a { color:var(--gold-2); text-decoration:none; font-weight:600; }
+
+.divider {
+  height:1px;
+  background:var(--line);
+  margin:18px 0;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="brand">SANI BUILDING CORP</div>
+    <div class="tag">Service Agreement</div>
+    <h1>Your <em>Appointment</em> Awaits</h1>
+    <div class="hdr-sub">Review the details, then sign to confirm or request changes</div>
+    <div class="ref-badge" id="ref-badge">Loading...</div>
+  </div>
+
+  <!-- LOADING STATE -->
+  <div id="loading-state" class="loading-state">
+    <div class="spinner"></div>
+    <div style="font-family:var(--display);font-size:18px;color:var(--navy)">Loading your agreement...</div>
+  </div>
+
+  <!-- ERROR STATE -->
+  <div id="error-state" class="error-state" style="display:none">
+    <div class="es-icon">⚠️</div>
+    <div class="es-title">Agreement Not Found</div>
+    <div class="es-msg" id="error-msg">This link may be invalid or expired. Please contact us at (332) 277-0990.</div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="main-content" style="display:none">
+
+    <!-- STATUS BANNERS (shown if already signed/changes_requested) -->
+    <div id="signed-banner" class="status-banner signed" style="display:none">
+      <span class="status-icon">✅</span>
+      <div>
+        <strong>Agreement Signed</strong> on <span id="signed-date"></span>
+        <div style="font-size:12px;color:#155724;margin-top:2px;font-weight:400">A copy has been sent to your email</div>
+      </div>
+    </div>
+
+    <div id="changes-banner" class="status-banner changes" style="display:none">
+      <span class="status-icon">💬</span>
+      <div>
+        <strong>Changes Requested</strong>
+        <div style="font-size:12px;margin-top:2px;font-weight:400">We'll be in touch shortly to discuss</div>
+      </div>
+    </div>
+
+    <!-- APPOINTMENT DETAILS -->
+    <div class="card">
+      <div class="section-label">📅 Appointment Details</div>
+      <div class="section-title" id="service-title">—</div>
+
+      <div class="appt-grid">
+        <div class="appt-cell featured">
+          <div class="ac-label">When</div>
+          <div class="ac-value" id="appt-when">—</div>
+        </div>
+        <div class="appt-cell">
+          <div class="ac-label">Duration</div>
+          <div class="ac-value" id="appt-duration">—</div>
+        </div>
+        <div class="appt-cell">
+          <div class="ac-label">Customer</div>
+          <div class="ac-value" id="appt-customer">—</div>
+        </div>
+        <div class="appt-cell" style="grid-column:span 2">
+          <div class="ac-label">Location</div>
+          <div class="ac-value" id="appt-location">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICE -->
+    <div class="card">
+      <div class="section-label">💰 Pricing</div>
+      <div class="price-hero">
+        <div class="ph-label">Service Cost</div>
+        <div class="ph-amount" id="price-amount">—</div>
+        <div class="ph-note" id="price-note"></div>
+      </div>
+
+      <div id="deposit-block" style="display:none">
+        <div class="deposit-banner">
+          <div class="db-label" id="deposit-label">Deposit Required</div>
+          <div class="db-amount" id="deposit-amount">—</div>
+          <div class="db-note">Helps secure your appointment slot</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCOPE -->
+    <div class="card">
+      <div class="section-label">🔧 Scope of Work</div>
+      <div class="scope-box">
+        <div class="scope-text" id="scope-text">—</div>
+        <div class="special-notes" id="special-notes" style="display:none">
+          <div class="special-notes-label">Special Notes:</div>
+          <div class="special-notes-text" id="special-notes-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TERMS -->
+    <div class="card">
+      <div class="section-label">📋 Terms &amp; Conditions</div>
+      <div class="section-title">Standard Service Terms</div>
+      <ul class="terms-list">
+        <li><strong>Hourly Rate Work.</strong> Labor is billed at the agreed hourly rate; materials are charged at cost with no markup.</li>
+        <li><strong>Cancellation Policy.</strong> Please provide at least 24 hours notice for cancellations. Last-minute cancellations may incur a fee.</li>
+        <li><strong>Scope Changes.</strong> Final price may change if scope expands during the visit. Any change will be discussed and approved before continuing work.</li>
+        <li><strong>Payment Due on Completion.</strong> Payment is due once work is approved and completed, unless a deposit was paid in advance.</li>
+        <li><strong>30-Day Workmanship Warranty.</strong> All workmanship is warranted for 30 days from completion. We'll return to fix any issues at no cost.</li>
+        <li><strong>Access Required.</strong> Customer must provide property access on the appointment day. Failed appointments due to lack of access may be billed.</li>
+      </ul>
+    </div>
+
+    <!-- ACTION CARD -->
+    <div class="card" id="action-card">
+      <div class="section-label">✍️ Your Response</div>
+      <div class="section-title">Sign or Request Changes</div>
+
+      <div class="action-tabs">
+        <button class="action-tab active" data-action="sign" onclick="switchAction('sign')">✅ Accept &amp; Sign</button>
+        <button class="action-tab" data-action="changes" onclick="switchAction('changes')">💬 Request Changes</button>
+      </div>
+
+      <!-- SIGN VIEW -->
+      <div id="sign-view">
+        <div style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6">
+          By signing below, you agree to the scope, pricing, and terms above.
+        </div>
+
+        <div class="signature-mode-tabs">
+          <button class="sig-mode-tab active" data-mode="drawn" onclick="switchSigMode('drawn')">🖊️ Draw Signature</button>
+          <button class="sig-mode-tab" data-mode="typed" onclick="switchSigMode('typed')">⌨️ Type Name</button>
+        </div>
+
+        <!-- Drawn pad -->
+        <div id="drawn-pad" class="sig-pad-wrap">
+          <canvas id="sig-canvas" class="sig-pad"></canvas>
+          <div id="sig-placeholder" class="sig-placeholder">Sign here with your finger or mouse</div>
+          <button class="sig-clear" onclick="clearSignature()">Clear</button>
+        </div>
+
+        <!-- Typed -->
+        <div id="typed-pad" class="typed-sig-wrap" style="display:none">
+          <input type="text" id="typed-name" class="typed-sig-input" placeholder="Type your full name">
+          <div class="typed-sig-hint">This will count as your legal signature</div>
+        </div>
+
+        <label class="agree-row">
+          <input type="checkbox" id="agree-checkbox">
+          <div class="ar-text">
+            I have read and agree to the scope of work, pricing, and terms outlined above. I confirm that I am authorized to approve this service at the address provided.
+          </div>
+        </label>
+
+        <div id="sign-error"></div>
+
+        <button class="btn btn-primary" id="sign-btn" onclick="submitSignature()" disabled>
+          ✓ Confirm &amp; Sign Agreement
+        </button>
+      </div>
+
+      <!-- CHANGES VIEW -->
+      <div id="changes-view" style="display:none">
+        <div style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6">
+          Let us know what you'd like to change. We'll review and send you an updated agreement.
+        </div>
+
+        <textarea 
+          id="changes-text" 
+          class="changes-textarea" 
+          placeholder="Examples:&#10;• Can we move it to a different day?&#10;• I'd like to add another task while you're here&#10;• I have a question about pricing..."></textarea>
+
+        <div id="changes-error"></div>
+
+        <button class="btn btn-primary" onclick="submitChanges()">
+          💬 Send Change Request
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="foot">
+    <strong>Sani Building Corp</strong><br>
+    Fully Insured · 4.9 ★ · NYC Metro · 10+ Years<br>
+    <a href="tel:+13322770990">(332) 277-0990</a> · <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a>
+  </div>
+</div>
+
+<script>
+const STATE = {
+  token: null,
+  agreement: null,
+  signatureMode: 'drawn',
+  hasSigned: false,
+  drawing: {
+    isDrawing: false,
+    lastX: 0,
+    lastY: 0,
+    hasDrawn: false
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', async function() {
+  // Get token from URL
+  const params = new URLSearchParams(window.location.search);
+  STATE.token = params.get('token');
+  
+  if (!STATE.token) {
+    showError("No token in URL. Please use the link from your email.");
+    return;
+  }
+
+  await loadAgreement();
+});
+
+async function loadAgreement() {
+  try {
+    const r = await fetch('/.netlify/functions/handyman-agreement?token=' + encodeURIComponent(STATE.token));
+    if (!r.ok) {
+      const err = await r.json().catch(function() { return { error: "Failed to load" }; });
+      throw new Error(err.error || "Failed to load agreement");
+    }
+    const data = await r.json();
+    STATE.agreement = data.agreement;
+    renderAgreement();
+  } catch (e) {
+    console.error(e);
+    showError(e.message);
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('main-content').style.display = 'none';
+  document.getElementById('error-state').style.display = 'block';
+  document.getElementById('error-msg').textContent = msg || "Please contact us at (332) 277-0990";
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   RENDER
+   ════════════════════════════════════════════════════════════════════ */
+function renderAgreement() {
+  const a = STATE.agreement;
+
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+
+  // Ref
+  document.getElementById('ref-badge').textContent = a.booking_ref;
+
+  // Service title
+  document.getElementById('service-title').textContent = a.service_name || 'Handyman Service';
+
+  // Appointment
+  let whenDisplay = 'To be confirmed';
+  if (a.appointment_date) {
+    const d = new Date(a.appointment_date + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    whenDisplay = a.appointment_time ? dateStr + ' · ' + a.appointment_time : dateStr;
+  }
+  document.getElementById('appt-when').textContent = whenDisplay;
+  document.getElementById('appt-duration').textContent = a.duration_text || 'TBD';
+  document.getElementById('appt-customer').textContent = a.customer_name || '';
+  document.getElementById('appt-location').textContent = a.customer_address || '';
+
+  // Price
+  let priceText = '', priceNote = '';
+  if (a.pricing_mode === 'fixed') {
+    priceText = '$' + a.fixed_price;
+    priceNote = 'Fixed price · no surprises';
+  } else if (a.pricing_mode === 'capped') {
+    priceText = 'Up to $' + a.price_max;
+    priceNote = 'Maximum price guaranteed';
+  } else {
+    priceText = '$' + a.price_min + ' – $' + a.price_max;
+    priceNote = 'Final price within this range';
+  }
+  document.getElementById('price-amount').textContent = priceText;
+  document.getElementById('price-note').textContent = priceNote;
+
+  // Scope
+  document.getElementById('scope-text').textContent = a.scope_summary || '';
+  if (a.special_notes && a.special_notes.trim().length > 0) {
+    document.getElementById('special-notes').style.display = 'block';
+    document.getElementById('special-notes-text').textContent = a.special_notes;
+  }
+
+  // Deposit (if enabled)
+  if (a.pay_now_enabled && a.pay_now_amount > 0) {
+    document.getElementById('deposit-block').style.display = 'block';
+    document.getElementById('deposit-label').textContent = (a.pay_now_label || 'Deposit') + ' Required';
+    document.getElementById('deposit-amount').textContent = '$' + a.pay_now_amount;
+  }
+
+  // Status banners
+  if (a.status === 'signed') {
+    document.getElementById('signed-banner').style.display = 'flex';
+    if (a.signed_at) {
+      const dt = new Date(a.signed_at);
+      document.getElementById('signed-date').textContent = dt.toLocaleString('en-US', { 
+        month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' 
+      });
+    }
+    // Hide action card if already signed
+    document.getElementById('action-card').style.display = 'none';
+    STATE.hasSigned = true;
+  } else if (a.status === 'changes_requested') {
+    document.getElementById('changes-banner').style.display = 'flex';
+  }
+
+  // Init signature pad
+  setTimeout(initSignaturePad, 100);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ACTION TABS
+   ════════════════════════════════════════════════════════════════════ */
+function switchAction(action) {
+  document.querySelectorAll('.action-tab').forEach(function(t) { 
+    t.classList.toggle('active', t.dataset.action === action); 
+  });
+  document.getElementById('sign-view').style.display = action === 'sign' ? 'block' : 'none';
+  document.getElementById('changes-view').style.display = action === 'changes' ? 'block' : 'none';
+}
+
+function switchSigMode(mode) {
+  STATE.signatureMode = mode;
+  document.querySelectorAll('.sig-mode-tab').forEach(function(t) { 
+    t.classList.toggle('active', t.dataset.mode === mode); 
+  });
+  document.getElementById('drawn-pad').style.display = mode === 'drawn' ? 'block' : 'none';
+  document.getElementById('typed-pad').style.display = mode === 'typed' ? 'block' : 'none';
+  updateSignButton();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SIGNATURE PAD (canvas)
+   ════════════════════════════════════════════════════════════════════ */
+function initSignaturePad() {
+  const canvas = document.getElementById('sig-canvas');
+  if (!canvas) return;
+
+  // Set canvas size based on display size
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = 180;
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#0d1b2a';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches && e.touches[0]) {
+      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    const p = getPos(e);
+    STATE.drawing.isDrawing = true;
+    STATE.drawing.lastX = p.x;
+    STATE.drawing.lastY = p.y;
+  }
+
+  function moveDraw(e) {
+    if (!STATE.drawing.isDrawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    const ctx = canvas.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(STATE.drawing.lastX, STATE.drawing.lastY);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    STATE.drawing.lastX = p.x;
+    STATE.drawing.lastY = p.y;
+    STATE.drawing.hasDrawn = true;
+    document.getElementById('sig-placeholder').style.display = 'none';
+    updateSignButton();
+  }
+
+  function endDraw(e) {
+    e.preventDefault();
+    STATE.drawing.isDrawing = false;
+  }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', moveDraw);
+  canvas.addEventListener('mouseup', endDraw);
+  canvas.addEventListener('mouseout', endDraw);
+  canvas.addEventListener('touchstart', startDraw);
+  canvas.addEventListener('touchmove', moveDraw);
+  canvas.addEventListener('touchend', endDraw);
+
+  // Typed input listener
+  document.getElementById('typed-name').addEventListener('input', updateSignButton);
+  document.getElementById('agree-checkbox').addEventListener('change', updateSignButton);
+}
+
+function clearSignature() {
+  const canvas = document.getElementById('sig-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  STATE.drawing.hasDrawn = false;
+  document.getElementById('sig-placeholder').style.display = 'block';
+  updateSignButton();
+}
+
+function updateSignButton() {
+  const btn = document.getElementById('sign-btn');
+  const agreed = document.getElementById('agree-checkbox').checked;
+  let hasSig = false;
+  if (STATE.signatureMode === 'drawn') {
+    hasSig = STATE.drawing.hasDrawn;
+  } else {
+    hasSig = document.getElementById('typed-name').value.trim().length >= 2;
+  }
+  btn.disabled = !(agreed && hasSig);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SUBMIT
+   ════════════════════════════════════════════════════════════════════ */
+async function submitSignature() {
+  const btn = document.getElementById('sign-btn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Signing...';
+  document.getElementById('sign-error').innerHTML = '';
+
+  try {
+    let signatureData = null;
+    if (STATE.signatureMode === 'drawn') {
+      const canvas = document.getElementById('sig-canvas');
+      signatureData = canvas.toDataURL('image/png');
+    } else {
+      signatureData = document.getElementById('typed-name').value.trim();
+    }
+
+    const r = await fetch('/.netlify/functions/handyman-agreement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: STATE.token,
+        action: 'sign',
+        signatureType: STATE.signatureMode,
+        signatureData: signatureData
+      })
+    });
+
+    if (!r.ok) {
+      const err = await r.json().catch(function() { return { error: 'Submission failed' }; });
+      throw new Error(err.error || 'Submission failed');
+    }
+
+    // Reload to show signed state
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(function() { window.location.reload(); }, 500);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('sign-error').innerHTML = '<div class="alert alert-error">' + (e.message || 'Failed to sign. Please try again.') + '</div>';
+    btn.disabled = false;
+    btn.innerHTML = '✓ Confirm &amp; Sign Agreement';
+  }
+}
+
+async function submitChanges() {
+  const textEl = document.getElementById('changes-text');
+  const text = textEl.value.trim();
+  document.getElementById('changes-error').innerHTML = '';
+
+  if (text.length < 5) {
+    document.getElementById('changes-error').innerHTML = '<div class="alert alert-error">Please describe what you\'d like to change.</div>';
+    return;
+  }
+
+  const btn = document.querySelector('#changes-view .btn-primary');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Sending...';
+
+  try {
+    const r = await fetch('/.netlify/functions/handyman-agreement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: STATE.token,
+        action: 'request_changes',
+        changesText: text
+      })
+    });
+
+    if (!r.ok) {
+      const err = await r.json().catch(function() { return { error: 'Failed to send' }; });
+      throw new Error(err.error || 'Failed to send');
+    }
+
+    document.getElementById('changes-view').innerHTML = 
+      '<div class="alert alert-success" style="text-align:center;padding:24px">' +
+      '<div style="font-size:36px;margin-bottom:8px">💬</div>' +
+      '<div style="font-size:16px;font-weight:700;margin-bottom:6px">Thank you!</div>' +
+      '<div style="font-size:13px">We received your change request and will be in touch shortly.</div>' +
+      '</div>';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) {
+    console.error(e);
+    document.getElementById('changes-error').innerHTML = '<div class="alert alert-error">' + (e.message || 'Failed to send') + '</div>';
+    btn.disabled = false;
+    btn.innerHTML = '💬 Send Change Request';
+  }
+}
+</script>
+</body>
+</html>
