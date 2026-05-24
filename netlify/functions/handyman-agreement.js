@@ -71,7 +71,7 @@ exports.handler = async function (event) {
 
       // ════════ SIGN ════════
       if (action === "sign") {
-        const { signatureType, signatureData } = body;
+        const { signatureType, signatureData, depositPaidClaimed } = body;
         if (!signatureType || !signatureData) {
           return resp(400, { error: "Missing signature data" });
         }
@@ -102,7 +102,8 @@ exports.handler = async function (event) {
             signature_data: storedSignature,
             signed_at: new Date().toISOString(),
             signed_ip: ip.slice(0, 100),
-            signed_user_agent: userAgent.slice(0, 250)
+            signed_user_agent: userAgent.slice(0, 250),
+            deposit_paid_claimed: depositPaidClaimed === true
           }
         );
 
@@ -121,7 +122,8 @@ exports.handler = async function (event) {
             agreement: agreement,
             signatureType: signatureType,
             signatureData: storedSignature,
-            ip: ip
+            ip: ip,
+            depositPaidClaimed: depositPaidClaimed === true
           });
         } catch (e) {
           console.error("Contractor notification failed:", e.message);
@@ -223,7 +225,7 @@ async function uploadSignature(supabaseUrl, supabaseKey, path, base64Data) {
 // ════════════════════════════════════════════════════════════════════
 // HELPER: Notify contractor by email
 // ════════════════════════════════════════════════════════════════════
-async function notifyContractor({ type, agreement, signatureType, signatureData, changesText, ip }) {
+async function notifyContractor({ type, agreement, signatureType, signatureData, changesText, ip, depositPaidClaimed }) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) throw new Error("RESEND_API_KEY not set");
   const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
@@ -237,6 +239,26 @@ async function notifyContractor({ type, agreement, signatureType, signatureData,
       ? `<img src="${esc(signatureData)}" style="max-width:300px;border:1px solid #ddd;border-radius:6px;background:#fff;padding:8px">`
       : `<div style="font-family:'Brush Script MT',cursive;font-size:36px;color:#0d1b2a;border-bottom:2px solid #c9a84c;padding:8px 16px;display:inline-block">${esc(signatureData)}</div>`;
 
+    // Build deposit status banner
+    const depositAmt = agreement.pay_now_amount || 0;
+    const depositEnabled = agreement.pay_now_enabled && depositAmt > 0;
+    let depositBanner = "";
+    if (depositEnabled) {
+      if (depositPaidClaimed) {
+        depositBanner = `<div style="background:linear-gradient(135deg,#e8f5e8,#d4edda);border:2px solid #27ae60;border-radius:10px;padding:16px;margin:18px 0;text-align:center">
+          <div style="font-size:11px;letter-spacing:2px;color:#27ae60;text-transform:uppercase;font-weight:700;margin-bottom:4px">💸 Deposit Status</div>
+          <div style="font-family:Georgia,serif;font-size:18px;color:#27ae60;font-weight:700">Customer claims they sent $${depositAmt} via Zelle</div>
+          <div style="font-size:12px;color:#555;margin-top:6px">⚠️ Verify the payment landed in your Zelle (sanibuildingcorp@gmail.com) before the appointment.</div>
+        </div>`;
+      } else {
+        depositBanner = `<div style="background:#fef3e0;border:2px solid #d4a017;border-radius:10px;padding:16px;margin:18px 0;text-align:center">
+          <div style="font-size:11px;letter-spacing:2px;color:#b8930a;text-transform:uppercase;font-weight:700;margin-bottom:4px">💸 Deposit Status</div>
+          <div style="font-family:Georgia,serif;font-size:18px;color:#b8930a;font-weight:700">$${depositAmt} Deposit Not Yet Paid</div>
+          <div style="font-size:12px;color:#555;margin-top:6px">Customer signed but didn't mark deposit as paid. Follow up before the appointment.</div>
+        </div>`;
+      }
+    }
+
     html = `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#f5f0e8;font-family:Arial,sans-serif;color:#333">
 <div style="max-width:600px;margin:0 auto">
   <div style="background:linear-gradient(135deg,#27ae60,#2ecc71);color:#fff;padding:30px 24px;border-radius:12px 12px 0 0;text-align:center">
@@ -246,6 +268,8 @@ async function notifyContractor({ type, agreement, signatureType, signatureData,
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 18px"><strong>${esc(agreement.customer_name)}</strong> has signed the agreement for <strong>${esc(agreement.service_name)}</strong>.</p>
+
+    ${depositBanner}
 
     <div style="background:#faf8f4;border-radius:10px;padding:18px;margin:18px 0">
       <div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:10px">📋 Signed Details</div>
