@@ -3,8 +3,13 @@
 # Last updated: May 2026
 # ═══════════════════════════════════════════════════════════════════
 
+# ─── FORCE ALL NETLIFY URLs → REAL DOMAIN (PREVENTS DUPLICATE CONTENT) ───
+https://velvety-horse-2aa6e3.netlify.app/*  https://www.sanibuildingcorp.com/:splat  301!
+http://velvety-horse-2aa6e3.netlify.app/*   https://www.sanibuildingcorp.com/:splat  301!
+
 # ─── FORCE NON-WWW → WWW (CRITICAL FOR SEO) ───
 https://sanibuildingcorp.com/*  https://www.sanibuildingcorp.com/:splat  301!
+http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 
 # ─── OLD WIX URLs → NEW PAGES ───
 /water-damage-restoration                        /water-damage.html                       301
