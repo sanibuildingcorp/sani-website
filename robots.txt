@@ -1,4 +1,14 @@
 User-agent: *
 Allow: /
 
+# ─── Block private contractor & customer pages ───
+Disallow: /dashboard.html
+Disallow: /quote.html
+Disallow: /quote-response.html
+Disallow: /invoice.html
+Disallow: /agreement.html
+Disallow: /.netlify/
+Disallow: /netlify/functions/
+
+# ─── Sitemap ───
 Sitemap: https://www.sanibuildingcorp.com/sitemap.xml
