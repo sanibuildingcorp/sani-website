@@ -1,10 +1,29 @@
+# ═══════════════════════════════════════════════════════════════════
+# SANI BUILDING CORP — Netlify Configuration
+# ═══════════════════════════════════════════════════════════════════
+
 [build]
   publish = "."
   functions = "netlify/functions"
 
+# ─── SECURITY HEADERS (apply to all pages) ───
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# ─── BLOCK DEPLOY PREVIEWS FROM GOOGLE INDEXING ───
+# This prevents draft branches and PR previews from showing up in search.
+# Production (real domain) is unaffected.
+[[context.deploy-preview.headers]]
+  for = "/*"
+  [context.deploy-preview.headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[context.branch-deploy.headers]]
+  for = "/*"
+  [context.branch-deploy.headers.values]
+    X-Robots-Tag = "noindex, nofollow"
