@@ -681,6 +681,349 @@ body {
   font-style: italic;
 }
 
+/* ════════════════════════════════════════════════════════════
+   NEW DISPATCH-OPTIMIZED LAYOUT
+   ════════════════════════════════════════════════════════════ */
+
+/* TOP ALERT BAR */
+.h-alert-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #fff8e8, #fef3e2);
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.h-alert-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+.h-alert-conf-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 3px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.h-alert-conf-circle.ready { border-color: #27ae60; color: #27ae60; background:#fff; }
+.h-alert-conf-circle.maybe { border-color: #d4a017; color: #d4a017; background:#fff; }
+.h-alert-conf-circle.inspection { border-color: #e74c3c; color: #e74c3c; background:#fff; }
+.h-alert-text-label {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.h-alert-text-label.ready { color: #27ae60; }
+.h-alert-text-label.maybe { color: #b8930a; }
+.h-alert-text-label.inspection { color: #c0392b; }
+.h-alert-text-sub {
+  font-size: 12px;
+  color: #555;
+  margin-top: 3px;
+}
+.h-alert-urgency {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.h-alert-urgency.today {
+  background: #e74c3c;
+  color: #fff;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+.h-alert-urgency.this-week { background: #d4a017; color: #fff; }
+.h-alert-urgency.flexible { background: #95a5a6; color: #fff; }
+
+/* HERO GRID - Photos + AI Analysis side by side */
+.h-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+@media (max-width: 720px) { .h-hero-grid { grid-template-columns: 1fr; } }
+
+.h-hero-block {
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+.h-hero-block-title {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.h-hero-block-count {
+  font-size: 11px;
+  background: var(--gold);
+  color: var(--navy);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+/* Photo grid in hero */
+.h-hero-photos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.h-hero-photo {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #000;
+  transition: transform 0.2s;
+  border: 1px solid var(--line);
+}
+.h-hero-photo:hover { transform: scale(1.03); border-color: var(--gold); }
+.h-hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+.h-hero-photos-empty {
+  background: var(--card);
+  border: 2px dashed var(--line);
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+/* AI Analysis text */
+.h-ai-analysis {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+/* CHECKLIST GRID - Tools + Materials side by side */
+.h-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+@media (max-width: 720px) { .h-action-grid { grid-template-columns: 1fr; } }
+
+.h-action-block {
+  background: linear-gradient(135deg, #fff, #fffdf8);
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.h-action-block-title {
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  color: var(--gold-2);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.h-action-count {
+  font-size: 11px;
+  background: var(--gold-soft);
+  color: var(--gold-2);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.h-action-item {
+  font-size: 14px;
+  color: #333;
+  padding: 7px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.h-action-item:last-child { border-bottom: none; }
+.h-action-item::before {
+  content: '☐';
+  color: var(--gold);
+  font-size: 16px;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+.h-action-empty {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-style: italic;
+  padding: 10px 0;
+  text-align: center;
+}
+
+/* CUSTOMER COMPACT ROW */
+.h-customer-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  background: var(--card-2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+}
+@media (max-width: 720px) { .h-customer-row { grid-template-columns: 1fr 1fr; } }
+.h-cust-cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.h-cust-cell .ccl {
+  font-size: 10px;
+  color: var(--ink-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.h-cust-cell .ccv {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+  word-break: break-word;
+}
+.h-cust-cell .ccv a {
+  color: var(--gold);
+  text-decoration: none;
+}
+
+/* ESTIMATE COMPACT BAR */
+.h-estimate-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-2));
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+@media (max-width: 720px) { .h-estimate-bar { grid-template-columns: 1fr 1fr; } }
+.h-est-bar-cell {
+  text-align: center;
+  padding: 4px 0;
+}
+.h-est-bar-cell .ebl {
+  font-size: 10px;
+  color: var(--ink-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.h-est-bar-cell .ebv {
+  font-family: var(--display);
+  font-size: 17px;
+  color: var(--gold);
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* COLLAPSIBLE SECTIONS */
+.h-collapsible {
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.h-collapsible-header {
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.h-collapsible-header:hover { background: var(--card); }
+.h-collapsible-arrow {
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+.h-collapsible.expanded .h-collapsible-arrow {
+  transform: rotate(90deg);
+}
+.h-collapsible-body {
+  display: none;
+  padding: 0 16px 14px;
+}
+.h-collapsible.expanded .h-collapsible-body {
+  display: block;
+}
+
+/* PRINT BUTTON */
+.h-print-btn {
+  padding: 8px 14px;
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+.h-print-btn:hover { background: var(--gold-2); color: #fff; }
+
+/* PRINT STYLES — for printing the job brief */
+@media print {
+  body * { visibility: hidden; }
+  #handyman-modal, #handyman-modal * { visibility: visible; }
+  #handyman-modal {
+    position: absolute !important;
+    top: 0; left: 0; right: 0;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+  .h-modal-card {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .modal-close, .modal-actions, .h-collapsible-header[onclick] { display: none !important; }
+  .h-collapsible-body { display: block !important; }
+  .h-action-block { break-inside: avoid; }
+}
+
 .est-right {
   display: flex;
   flex-direction: column;
@@ -2574,6 +2917,7 @@ function renderHandymanModal(b) {
   const icon = SERVICE_ICONS[b.service_id] || "🔧";
   const conf = (b.confidence_label || "maybe").toLowerCase();
   const status = (b.status || "new").toLowerCase();
+  const urgency = (b.urgency || "flexible").toLowerCase().replace(/\s+/g, '-');
   const photoUrls = b.photo_urls || [];
   const toolsList = b.tools_checklist || [];
   const materialsList = b.materials_checklist || [];
@@ -2581,133 +2925,159 @@ function renderHandymanModal(b) {
   const specialOrderItems = b.special_order_items || [];
   const answers = b.answers || {};
 
-  const totalMin = (b.estimated_labor_min || 0) + (b.estimated_material_min || 0);
-  const totalMax = (b.estimated_labor_max || 0) + (b.estimated_material_max || 0);
+  const confLabel = conf === 'ready' ? 'READY TO BOOK'
+                  : conf === 'maybe' ? 'REVIEW NEEDED'
+                  : 'INSPECTION RECOMMENDED';
+  const confSub = conf === 'ready' ? 'AI is confident — arrive prepared with the checklist'
+                : conf === 'maybe' ? 'AI has some uncertainty — review photos & answers carefully'
+                : 'Recommend visiting first to inspect before quoting';
+
+  const urgencyLabel = urgency === 'today' ? '⚡ TODAY' :
+                       urgency === 'this-week' ? '📅 THIS WEEK' :
+                       urgency === 'emergency-today' ? '🚨 EMERGENCY' :
+                       '🗓 FLEXIBLE';
 
   document.getElementById("handyman-card").innerHTML =
+    // ═══════════ HEADER ═══════════
     '<div class="modal-head">' +
       '<div>' +
         '<h2 style="display:flex;align-items:center;gap:10px">' + icon + ' ' + esc(b.service_name || b.service_id) + '</h2>' +
-        '<div class="ref-sub">' + esc(b.ref) + ' · ' + fmtDate(b.submitted_at) + '</div>' +
+        '<div class="ref-sub">' + esc(b.ref) + ' · ' + fmtDate(b.submitted_at) + ' · <span class="badge h-' + status + '">' + esc(status) + '</span></div>' +
       '</div>' +
-      '<button class="modal-close" onclick="closeHandymanModal()">×</button>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        '<button class="h-print-btn" onclick="window.print()">🖨 Print Job Brief</button>' +
+        '<button class="modal-close" onclick="closeHandymanModal()">×</button>' +
+      '</div>' +
     '</div>' +
 
-    // ───────── CONFIDENCE ─────────
-    '<div class="h-confidence">' +
-      '<div class="h-confidence-ring ' + conf + '">' + (b.confidence_score || 0) + '</div>' +
-      '<div class="h-confidence-text">' +
-        '<div class="h-confidence-label" style="color:var(--' + (conf==='ready'?'good':conf==='maybe'?'warn':'bad') + ')">' +
-          (conf === 'ready' ? '✓ READY TO BOOK' : conf === 'maybe' ? '⚠ REVIEW NEEDED' : '🔍 INSPECTION RECOMMENDED') +
+    // ═══════════ TOP ALERT BAR (Confidence + Urgency) ═══════════
+    '<div class="h-alert-bar">' +
+      '<div class="h-alert-left">' +
+        '<div class="h-alert-conf-circle ' + conf + '">' + (b.confidence_score || 0) + '</div>' +
+        '<div>' +
+          '<div class="h-alert-text-label ' + conf + '">' + confLabel + '</div>' +
+          '<div class="h-alert-text-sub">' + confSub + '</div>' +
         '</div>' +
       '</div>' +
+      '<div class="h-alert-urgency ' + urgency + '">' + urgencyLabel + '</div>' +
     '</div>' +
 
-    // ───────── CUSTOMER ─────────
-    '<div class="h-section">' +
-      '<div class="h-section-title">👤 Customer</div>' +
-      '<div class="h-customer-grid">' +
-        '<div class="field-mini"><div class="fl">Name</div><div class="fv">' + esc(b.customer_name) + '</div></div>' +
-        '<div class="field-mini"><div class="fl">Phone</div><div class="fv"><a href="tel:' + esc(b.customer_phone) + '">📞 ' + esc(b.customer_phone) + '</a></div></div>' +
-        '<div class="field-mini"><div class="fl">Email</div><div class="fv"><a href="mailto:' + esc(b.customer_email) + '">✉️ ' + esc(b.customer_email) + '</a></div></div>' +
-        '<div class="field-mini"><div class="fl">Address</div><div class="fv">📍 ' + esc(b.customer_address) + '</div></div>' +
-        '<div class="field-mini"><div class="fl">Urgency</div><div class="fv">⏰ ' + esc(b.urgency || '—') + '</div></div>' +
-        '<div class="field-mini"><div class="fl">Preferred Time</div><div class="fv">' + esc((b.preferred_date ? fmtDate(b.preferred_date) + ' · ' : '') + (b.preferred_time || '—')) + '</div></div>' +
-      '</div>' +
-    '</div>' +
-
-    // ───────── CUSTOMER ESTIMATE ─────────
-    '<div class="h-section">' +
-      '<div class="h-section-title">💰 Customer Estimate</div>' +
-      '<div class="h-estimate-box">' +
-        '<div class="h-est-cell"><div class="label">⏱ Time</div><div class="value">' + (b.estimated_time_min || '?') + '-' + (b.estimated_time_max || '?') + 'h</div></div>' +
-        '<div class="h-est-cell"><div class="label">💵 Labor</div><div class="value">$' + (b.estimated_labor_min || 0) + '-' + (b.estimated_labor_max || 0) + '</div></div>' +
-        '<div class="h-est-cell"><div class="label">🔧 Materials</div><div class="value">$' + (b.estimated_material_min || 0) + '-' + (b.estimated_material_max || 0) + '</div></div>' +
-        '<div class="h-est-cell"><div class="label">💳 Deposit</div><div class="value">$' + (b.deposit_amount || 0) + '</div></div>' +
-      '</div>' +
-      (b.customer_notes ? '<div style="margin-top:12px;font-size:13px;color:var(--ink-soft);font-style:italic">📝 ' + esc(b.customer_notes) + '</div>' : '') +
-    '</div>' +
-
-    // ───────── 🧠 INTERNAL BRIEF (THE IMPORTANT ONE!) ─────────
-    '<div class="h-section">' +
-      '<div class="h-section-title">🧠 Internal Brief — Tools & Materials</div>' +
-      '<div class="h-brief-box">' +
-        '<div class="h-brief-header">🎯 PRE-ARRIVAL CHECKLIST</div>' +
-
-        (b.job_summary ? '<div class="h-brief-summary"><strong>Job Summary:</strong> ' + esc(b.job_summary) + '</div>' : '') +
-
-        '<div class="h-checklist-grid">' +
-          '<div class="h-checklist-section">' +
-            '<div class="h-checklist-label">🧰 Tools to Bring</div>' +
-            (toolsList.length > 0
-              ? toolsList.map(function(t) { return '<div class="h-checklist-item">' + esc(t) + '</div>'; }).join('')
-              : '<div class="h-checklist-empty">No specific tools listed</div>') +
-          '</div>' +
-          '<div class="h-checklist-section">' +
-            '<div class="h-checklist-label">📦 Materials to Bring</div>' +
-            (materialsList.length > 0
-              ? materialsList.map(function(m) { return '<div class="h-checklist-item">' + esc(m) + '</div>'; }).join('')
-              : '<div class="h-checklist-empty">No specific materials listed</div>') +
-          '</div>' +
+    // ═══════════ HERO: PHOTOS + AI ANALYSIS (the main dispatch view) ═══════════
+    '<div class="h-hero-grid">' +
+      // Photos
+      '<div class="h-hero-block">' +
+        '<div class="h-hero-block-title">' +
+          '<span>📸 Customer Photos</span>' +
+          '<span class="h-hero-block-count">' + photoUrls.length + '</span>' +
         '</div>' +
-
-        (b.special_order_flag && specialOrderItems.length > 0 ? (
-          '<div class="h-special-order">' +
-            '<div class="so-title">🚨 SPECIAL ORDER REQUIRED</div>' +
-            '<ul>' + specialOrderItems.map(function(s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
+        (photoUrls.length > 0
+          ? '<div class="h-hero-photos">' +
+              photoUrls.map(function(url) {
+                return '<div class="h-hero-photo" onclick="openLightbox(\'' + esc(url) + '\')"><img src="' + esc(url) + '" alt="Customer photo"></div>';
+              }).join('') +
+            '</div>'
+          : '<div class="h-hero-photos-empty">📷 No photos uploaded</div>'
+        ) +
+      '</div>' +
+      // AI Analysis
+      '<div class="h-hero-block">' +
+        '<div class="h-hero-block-title">🧠 AI Analysis</div>' +
+        '<div class="h-ai-analysis">' +
+          (b.job_summary ? esc(b.job_summary) : '<span style="color:var(--ink-muted);font-style:italic">AI did not generate a summary</span>') +
+        '</div>' +
+        (b.customer_description ? (
+          '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)">' +
+            '<div style="font-size:11px;color:var(--ink-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Customer Said:</div>' +
+            '<div style="font-size:13px;color:var(--ink-soft);font-style:italic;line-height:1.5">"' + esc(b.customer_description) + '"</div>' +
           '</div>'
         ) : '') +
-
-        (warnings.length > 0 ? (
-          '<div class="h-warnings">' +
-            '<div class="w-title">⚠️ WARNINGS / NOTES</div>' +
-            '<ul>' + warnings.map(function(w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' +
-          '</div>'
-        ) : '') +
-
       '</div>' +
     '</div>' +
 
-    // ───────── PHOTOS ─────────
-    (photoUrls.length > 0 ? (
-      '<div class="h-section">' +
-        '<div class="h-section-title">📸 Customer Photos (' + photoUrls.length + ')</div>' +
-        '<div class="h-photos-grid">' +
-          photoUrls.map(function(url) {
-            return '<div class="h-photo" onclick="openLightbox(\'' + esc(url) + '\')"><img src="' + esc(url) + '" alt="Customer photo"></div>';
-          }).join('') +
+    // ═══════════ TOOLS + MATERIALS (THE DISPATCH CHECKLIST) ═══════════
+    '<div class="h-action-grid">' +
+      // Tools
+      '<div class="h-action-block">' +
+        '<div class="h-action-block-title">' +
+          '<span>🧰 Tools to Bring</span>' +
+          '<span class="h-action-count">' + toolsList.length + '</span>' +
         '</div>' +
-      '</div>'
-    ) : '') +
-
-    // ───────── CUSTOMER DESCRIPTION ─────────
-    (b.customer_description ? (
-      '<div class="h-section">' +
-        '<div class="h-section-title">📝 Customer Description</div>' +
-        '<div class="h-description">' + esc(b.customer_description) + '</div>' +
-      '</div>'
-    ) : '') +
-
-    // ───────── CUSTOMER ANSWERS ─────────
-    (Object.keys(answers).length > 0 ? (
-      '<div class="h-section">' +
-        '<div class="h-section-title">📋 Customer Answers</div>' +
-        '<div class="h-answers">' +
-          Object.keys(answers).map(function(key) {
-            const val = Array.isArray(answers[key]) ? answers[key].join(", ") : answers[key];
-            if (!val || key === 'description') return '';
-            return '<div class="h-answer-row">' +
-              '<span class="ar-key">' + esc(humanizeKey(key)) + ':</span>' +
-              '<span class="ar-val">' + esc(val) + '</span>' +
-            '</div>';
-          }).join('') +
+        (toolsList.length > 0
+          ? toolsList.map(function(t) { return '<div class="h-action-item">' + esc(t) + '</div>'; }).join('')
+          : '<div class="h-action-empty">No specific tools listed</div>'
+        ) +
+      '</div>' +
+      // Materials
+      '<div class="h-action-block">' +
+        '<div class="h-action-block-title">' +
+          '<span>📦 Materials to Bring</span>' +
+          '<span class="h-action-count">' + materialsList.length + '</span>' +
         '</div>' +
+        (materialsList.length > 0
+          ? materialsList.map(function(m) { return '<div class="h-action-item">' + esc(m) + '</div>'; }).join('')
+          : '<div class="h-action-empty">No specific materials listed</div>'
+        ) +
+      '</div>' +
+    '</div>' +
+
+    // ═══════════ SPECIAL ORDER + WARNINGS (alerts) ═══════════
+    ((b.special_order_flag && specialOrderItems.length > 0) ? (
+      '<div class="h-special-order" style="margin-bottom:14px">' +
+        '<div class="so-title">🚨 SPECIAL ORDER REQUIRED — buy before arrival</div>' +
+        '<ul>' + specialOrderItems.map(function(s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
       '</div>'
     ) : '') +
 
-    // ───────── STATUS MANAGEMENT ─────────
-    '<div class="h-section">' +
-      '<div class="h-section-title">🎯 Status</div>' +
+    (warnings.length > 0 ? (
+      '<div class="h-warnings" style="margin-bottom:18px;margin-top:0">' +
+        '<div class="w-title">⚠️ Warnings & Notes</div>' +
+        '<ul>' + warnings.map(function(w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' +
+      '</div>'
+    ) : '') +
+
+    // ═══════════ CUSTOMER COMPACT ROW ═══════════
+    '<div class="h-customer-row">' +
+      '<div class="h-cust-cell">' +
+        '<span class="ccl">👤 Customer</span>' +
+        '<span class="ccv">' + esc(b.customer_name) + '</span>' +
+      '</div>' +
+      '<div class="h-cust-cell">' +
+        '<span class="ccl">📞 Phone</span>' +
+        '<span class="ccv"><a href="tel:' + esc(b.customer_phone) + '">' + esc(b.customer_phone) + '</a></span>' +
+      '</div>' +
+      '<div class="h-cust-cell">' +
+        '<span class="ccl">📍 Address</span>' +
+        '<span class="ccv">' + esc(b.customer_address) + '</span>' +
+      '</div>' +
+      '<div class="h-cust-cell">' +
+        '<span class="ccl">✉ Email</span>' +
+        '<span class="ccv"><a href="mailto:' + esc(b.customer_email) + '">' + esc(b.customer_email) + '</a></span>' +
+      '</div>' +
+    '</div>' +
+
+    // ═══════════ ESTIMATE COMPACT BAR ═══════════
+    '<div class="h-estimate-bar">' +
+      '<div class="h-est-bar-cell">' +
+        '<div class="ebl">⏱ Time</div>' +
+        '<div class="ebv">' + (b.estimated_time_min || '?') + '-' + (b.estimated_time_max || '?') + 'h</div>' +
+      '</div>' +
+      '<div class="h-est-bar-cell">' +
+        '<div class="ebl">💵 Labor</div>' +
+        '<div class="ebv">$' + (b.estimated_labor_min || 0) + '-' + (b.estimated_labor_max || 0) + '</div>' +
+      '</div>' +
+      '<div class="h-est-bar-cell">' +
+        '<div class="ebl">🔧 Materials</div>' +
+        '<div class="ebv">$' + (b.estimated_material_min || 0) + '-' + (b.estimated_material_max || 0) + '</div>' +
+      '</div>' +
+      '<div class="h-est-bar-cell">' +
+        '<div class="ebl">💳 Deposit</div>' +
+        '<div class="ebv">' + (b.deposit_amount > 0 ? '$' + b.deposit_amount : 'None') + '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ═══════════ STATUS MANAGEMENT ═══════════
+    '<div class="h-section" style="border-bottom:none;padding-bottom:0;margin-bottom:14px">' +
+      '<div class="h-section-title">🎯 Booking Status</div>' +
       '<div class="h-status-row">' +
         ['new','confirmed','in-progress','completed','cancelled'].map(function(s) {
           return '<button class="h-status-btn ' + (status === s ? 'active' : '') + '" onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'' + s + '\')">' + s.replace('-', ' ') + '</button>';
@@ -2715,21 +3085,52 @@ function renderHandymanModal(b) {
       '</div>' +
     '</div>' +
 
-    // ───────── CONTRACTOR NOTES ─────────
-    '<div class="h-section">' +
-      '<div class="h-section-title">✏️ Your Notes (Internal)</div>' +
-      '<textarea id="h-contractor-notes" rows="3" placeholder="Add notes about this job..." style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;background:var(--card-2);color:var(--ink);resize:vertical">' + esc(b.contractor_notes || '') + '</textarea>' +
-      '<button onclick="saveContractorNotes(\'' + esc(b.ref) + '\')" style="margin-top:8px;padding:8px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">💾 Save Notes</button>' +
+    // ═══════════ COLLAPSIBLE: CUSTOMER ANSWERS ═══════════
+    (Object.keys(answers).length > 0 ? (
+      '<div class="h-collapsible" id="collapse-answers">' +
+        '<div class="h-collapsible-header" onclick="toggleCollapse(\'collapse-answers\')">' +
+          '<span>📋 Customer Form Answers (' + Object.keys(answers).filter(function(k) { return k !== "description" && answers[k]; }).length + ')</span>' +
+          '<span class="h-collapsible-arrow">▸</span>' +
+        '</div>' +
+        '<div class="h-collapsible-body">' +
+          '<div class="h-answers">' +
+            Object.keys(answers).map(function(key) {
+              const val = Array.isArray(answers[key]) ? answers[key].join(", ") : answers[key];
+              if (!val || key === 'description') return '';
+              return '<div class="h-answer-row">' +
+                '<span class="ar-key">' + esc(humanizeKey(key)) + ':</span>' +
+                '<span class="ar-val">' + esc(val) + '</span>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    ) : '') +
+
+    // ═══════════ COLLAPSIBLE: CONTRACTOR NOTES ═══════════
+    '<div class="h-collapsible ' + (b.contractor_notes ? 'expanded' : '') + '" id="collapse-notes">' +
+      '<div class="h-collapsible-header" onclick="toggleCollapse(\'collapse-notes\')">' +
+        '<span>✏️ Your Private Notes' + (b.contractor_notes ? ' ●' : '') + '</span>' +
+        '<span class="h-collapsible-arrow">▸</span>' +
+      '</div>' +
+      '<div class="h-collapsible-body">' +
+        '<textarea id="h-contractor-notes" rows="3" placeholder="Add notes about this job (private, only you see this)..." style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;background:var(--card);color:var(--ink);resize:vertical">' + esc(b.contractor_notes || '') + '</textarea>' +
+        '<button onclick="saveContractorNotes(\'' + esc(b.ref) + '\')" style="margin-top:8px;padding:8px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">💾 Save Notes</button>' +
+      '</div>' +
     '</div>' +
 
-    // ───────── ACTIONS ─────────
-    '<div class="modal-actions">' +
+    // ═══════════ ACTIONS ═══════════
+    '<div class="modal-actions" style="margin-top:18px">' +
       '<button class="btn-secondary" onclick="closeHandymanModal()">Close</button>' +
       '<div class="modal-actions-right">' +
         '<a href="tel:' + esc(b.customer_phone) + '" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">📞 Call</a>' +
         '<a href="mailto:' + esc(b.customer_email) + '" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">✉ Email</a>' +
       '</div>' +
     '</div>';
+}
+
+function toggleCollapse(id) {
+  document.getElementById(id).classList.toggle('expanded');
 }
 
 async function updateHandymanStatus(ref, newStatus) {
