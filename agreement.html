@@ -295,6 +295,174 @@ body {
   color:#666;
 }
 
+/* ═══════════ ZELLE PAYMENT SECTION ═══════════ */
+.pay-section {
+  margin-top:14px;
+  border:2px solid var(--gold);
+  border-radius:12px;
+  padding:20px 22px;
+  background:linear-gradient(135deg, #fffdf6, #fff8e6);
+}
+.pay-section-label {
+  font-size:11px;
+  letter-spacing:2px;
+  color:var(--gold-2);
+  text-transform:uppercase;
+  font-weight:700;
+  margin-bottom:6px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.pay-section-title {
+  font-family:var(--display);
+  font-size:20px;
+  color:var(--navy);
+  font-weight:700;
+  margin-bottom:6px;
+}
+.pay-section-sub {
+  font-size:13px;
+  color:var(--ink-soft);
+  margin-bottom:16px;
+  line-height:1.5;
+}
+.zelle-btn {
+  display:block;
+  width:100%;
+  background:linear-gradient(135deg, #6d1ed4, #8a2be2);
+  color:#fff;
+  border:none;
+  border-radius:12px;
+  padding:18px 20px;
+  font-family:var(--body);
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+  text-decoration:none;
+  text-align:center;
+  transition:all 0.2s;
+  box-shadow:0 4px 14px rgba(109, 30, 212, 0.3);
+  margin-bottom:14px;
+}
+.zelle-btn:hover {
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(109, 30, 212, 0.4);
+}
+.zelle-btn .zb-top {
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:4px;
+  letter-spacing:0.5px;
+}
+.zelle-btn .zb-bottom {
+  font-size:12px;
+  opacity:0.9;
+  letter-spacing:0.5px;
+}
+.zelle-instructions {
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:14px 16px;
+  margin-bottom:14px;
+}
+.zelle-instructions-title {
+  font-size:11px;
+  letter-spacing:1.5px;
+  color:var(--ink-muted);
+  text-transform:uppercase;
+  font-weight:700;
+  margin-bottom:10px;
+}
+.zelle-detail-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 0;
+  border-bottom:1px dashed var(--line);
+  font-size:14px;
+}
+.zelle-detail-row:last-child { border-bottom:none; }
+.zelle-detail-label {
+  color:var(--ink-muted);
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.zelle-detail-value {
+  color:var(--navy);
+  font-weight:600;
+  font-family:monospace;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.copy-btn {
+  background:var(--gold-soft);
+  border:1px solid var(--gold);
+  color:var(--gold-2);
+  padding:4px 10px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+  font-family:var(--body);
+  transition:all 0.15s;
+}
+.copy-btn:hover {
+  background:var(--gold);
+  color:#fff;
+}
+.copy-btn.copied {
+  background:var(--good);
+  border-color:var(--good);
+  color:#fff;
+}
+.paid-checkbox {
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:12px 14px;
+  background:#fff;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  cursor:pointer;
+  transition:all 0.15s;
+}
+.paid-checkbox:hover { border-color:var(--gold); }
+.paid-checkbox.checked {
+  border-color:var(--good);
+  background:#f0faf2;
+}
+.paid-checkbox input[type="checkbox"] {
+  width:20px;
+  height:20px;
+  margin-top:1px;
+  accent-color:var(--good);
+  cursor:pointer;
+  flex-shrink:0;
+}
+.paid-checkbox-text {
+  font-size:13px;
+  color:var(--ink);
+  line-height:1.4;
+}
+.paid-checkbox.checked .paid-checkbox-text {
+  color:var(--good);
+  font-weight:600;
+}
+.pay-skip-note {
+  font-size:12px;
+  color:var(--ink-muted);
+  text-align:center;
+  margin-top:10px;
+  font-style:italic;
+}
+
 /* ACTION SECTION (sign or request changes) */
 .action-tabs {
   display:flex;
@@ -624,6 +792,56 @@ body {
           <div class="db-amount" id="deposit-amount">—</div>
           <div class="db-note">Helps secure your appointment slot</div>
         </div>
+
+        <!-- ZELLE PAYMENT SECTION -->
+        <div class="pay-section">
+          <div class="pay-section-label">💳 Pay Deposit (Optional)</div>
+          <div class="pay-section-title">Pay with Zelle</div>
+          <div class="pay-section-sub">
+            Send your deposit instantly using Zelle. Most major banks support it — no fees, money arrives in seconds.
+          </div>
+
+          <a href="#" class="zelle-btn" onclick="openZelle(event)">
+            <div class="zb-top">💸 OPEN ZELLE & PAY <span id="zelle-btn-amount">$50</span></div>
+            <div class="zb-bottom">Tap to open your banking app</div>
+          </a>
+
+          <div class="zelle-instructions">
+            <div class="zelle-instructions-title">Or send manually using these details:</div>
+            <div class="zelle-detail-row">
+              <span class="zelle-detail-label">Send to</span>
+              <span class="zelle-detail-value">
+                <span id="zelle-email">sanibuildingcorp@gmail.com</span>
+                <button class="copy-btn" onclick="copyZelle('zelle-email', this)">Copy</button>
+              </span>
+            </div>
+            <div class="zelle-detail-row">
+              <span class="zelle-detail-label">Amount</span>
+              <span class="zelle-detail-value">
+                <span id="zelle-amount-text">$50</span>
+                <button class="copy-btn" onclick="copyZelle('zelle-amount-text', this)">Copy</button>
+              </span>
+            </div>
+            <div class="zelle-detail-row">
+              <span class="zelle-detail-label">Memo</span>
+              <span class="zelle-detail-value">
+                <span id="zelle-memo">Deposit · <span id="zelle-ref">—</span></span>
+                <button class="copy-btn" onclick="copyZelle('zelle-memo', this)">Copy</button>
+              </span>
+            </div>
+          </div>
+
+          <label class="paid-checkbox" id="paid-checkbox-wrap">
+            <input type="checkbox" id="paid-checkbox" onchange="togglePaidCheckbox()">
+            <span class="paid-checkbox-text">
+              <strong>I've sent the deposit via Zelle.</strong> Sani Building Corp will confirm receipt before your appointment.
+            </span>
+          </label>
+
+          <div class="pay-skip-note">
+            💡 No rush — you can sign now and send the deposit later. Your appointment is reserved either way.
+          </div>
+        </div>
       </div>
     </div>
 
@@ -735,6 +953,7 @@ const STATE = {
   agreement: null,
   signatureMode: 'drawn',
   hasSigned: false,
+  depositPaidClaimed: false,
   drawing: {
     isDrawing: false,
     lastX: 0,
@@ -836,6 +1055,10 @@ function renderAgreement() {
     document.getElementById('deposit-block').style.display = 'block';
     document.getElementById('deposit-label').textContent = (a.pay_now_label || 'Deposit') + ' Required';
     document.getElementById('deposit-amount').textContent = '$' + a.pay_now_amount;
+    // Populate Zelle payment section
+    document.getElementById('zelle-btn-amount').textContent = '$' + a.pay_now_amount;
+    document.getElementById('zelle-amount-text').textContent = '$' + a.pay_now_amount;
+    document.getElementById('zelle-ref').textContent = a.booking_ref || a.ref || '';
   }
 
   // Status banners
@@ -972,6 +1195,78 @@ function updateSignButton() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   ZELLE PAYMENT HELPERS
+   ════════════════════════════════════════════════════════════════════ */
+function openZelle(e) {
+  if (e) e.preventDefault();
+  // Try to open Zelle app on mobile (most banks register zelle:// scheme via universal links)
+  // On desktop, this falls back to showing the manual details
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    // Try opening generic Zelle deep link — falls back to banking apps
+    window.location.href = 'https://www.zellepay.com/go';
+    setTimeout(function() {
+      // After 800ms, scroll to manual details in case the app didn't open
+      const inst = document.querySelector('.zelle-instructions');
+      if (inst) inst.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 800);
+  } else {
+    // Desktop — just scroll to manual instructions
+    const inst = document.querySelector('.zelle-instructions');
+    if (inst) inst.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function copyZelle(elementId, btn) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const text = el.textContent.trim();
+  
+  // Try modern clipboard API first
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showCopied(btn);
+    }).catch(function() {
+      fallbackCopy(text, btn);
+    });
+  } else {
+    fallbackCopy(text, btn);
+  }
+}
+
+function fallbackCopy(text, btn) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showCopied(btn); }
+  catch (e) { console.error('Copy failed', e); }
+  document.body.removeChild(ta);
+}
+
+function showCopied(btn) {
+  if (!btn) return;
+  const originalText = btn.textContent;
+  btn.textContent = '✓ Copied!';
+  btn.classList.add('copied');
+  setTimeout(function() {
+    btn.textContent = originalText;
+    btn.classList.remove('copied');
+  }, 1800);
+}
+
+function togglePaidCheckbox() {
+  const cb = document.getElementById('paid-checkbox');
+  const wrap = document.getElementById('paid-checkbox-wrap');
+  if (cb && wrap) {
+    wrap.classList.toggle('checked', cb.checked);
+    STATE.depositPaidClaimed = cb.checked;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
    SUBMIT
    ════════════════════════════════════════════════════════════════════ */
 async function submitSignature() {
@@ -996,7 +1291,8 @@ async function submitSignature() {
         token: STATE.token,
         action: 'sign',
         signatureType: STATE.signatureMode,
-        signatureData: signatureData
+        signatureData: signatureData,
+        depositPaidClaimed: STATE.depositPaidClaimed === true
       })
     });
 
