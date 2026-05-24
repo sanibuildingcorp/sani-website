@@ -1775,6 +1775,217 @@ body {
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 .toast.error { border-color: var(--bad); }
+
+/* ════════════════════════════════════════════════════════════════════
+   SEND CONFIRMATION FEATURE - May 2026
+   ════════════════════════════════════════════════════════════════════ */
+.confirm-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 9999;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+.confirm-overlay.active { display: flex; }
+.confirm-modal {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  max-width: 640px;
+  width: 100%;
+  padding: 0;
+  margin: 20px 0;
+  position: relative;
+  overflow: hidden;
+}
+.confirm-header {
+  background: linear-gradient(135deg, var(--navy-2), var(--navy-3));
+  color: var(--ink);
+  padding: 24px 28px;
+  border-bottom: 3px solid var(--gold);
+}
+.confirm-header h2 {
+  font-family: var(--display);
+  font-size: 22px;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--gold);
+}
+.confirm-header p {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-top: 6px;
+}
+.confirm-close-x {
+  position: absolute;
+  top: 18px; right: 18px;
+  background: rgba(212, 181, 114, 0.15);
+  border: 1px solid var(--line);
+  color: var(--gold);
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.confirm-body { padding: 24px 28px; }
+.confirm-section { margin-bottom: 22px; }
+.confirm-section-label {
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.pricing-mode-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--navy);
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.pm-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  text-align: center;
+}
+.pm-tab.active {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+.confirm-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 8px;
+  background: var(--navy);
+  color: var(--ink);
+  outline: none;
+}
+.confirm-input:focus { border-color: var(--gold); }
+.confirm-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 540px) { .confirm-row { grid-template-columns: 1fr; } }
+.confirm-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.5;
+  background: var(--navy);
+  color: var(--ink);
+}
+.confirm-textarea:focus { border-color: var(--gold); outline: none; }
+.confirm-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--navy);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.confirm-toggle input {
+  width: 18px; height: 18px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.confirm-warnings {
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--warn);
+  margin-bottom: 14px;
+  display: none;
+}
+.confirm-warnings.show { display: block; }
+.confirm-footer {
+  padding: 18px 28px;
+  border-top: 1px solid var(--line-soft);
+  background: var(--navy);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.confirm-btn {
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.confirm-btn-cancel {
+  background: transparent;
+  color: var(--ink-soft);
+  border-color: var(--line);
+}
+.confirm-btn-send {
+  background: var(--gold);
+  color: var(--navy);
+}
+.confirm-btn-send:hover:not(:disabled) { background: var(--gold-2); }
+.confirm-btn-send:disabled { opacity: 0.6; cursor: not-allowed; }
+.confirm-status {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-right: auto;
+  align-self: center;
+}
+.confirm-status a { color: var(--gold); text-decoration: none; }
+
+/* Send Confirmation button in handyman modal header */
+.h-send-conf-btn {
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: var(--navy);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  margin-right: 4px;
+}
+.h-send-conf-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212, 181, 114, 0.4); }
+/* END SEND CONFIRMATION FEATURE */
 </style>
 </head>
 <body>
@@ -1837,6 +2048,89 @@ body {
 
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SEND CONFIRMATION MODAL - May 2026
+     ════════════════════════════════════════════════════════════════ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-modal">
+    <div class="confirm-header">
+      <button class="confirm-close-x" onclick="closeConfirmationModal()">×</button>
+      <h2>📧 SEND CONFIRMATION</h2>
+      <p>Customer will receive a signable agreement by email</p>
+    </div>
+
+    <div class="confirm-body">
+      <div class="confirm-warnings" id="confirm-warnings"></div>
+
+      <!-- PRICING -->
+      <div class="confirm-section">
+        <div class="confirm-section-label">💰 Pricing Mode</div>
+        <div class="pricing-mode-tabs">
+          <button class="pm-tab active" data-mode="range" onclick="setPricingMode('range')">📊 Range</button>
+          <button class="pm-tab" data-mode="fixed" onclick="setPricingMode('fixed')">🎯 Fixed</button>
+          <button class="pm-tab" data-mode="capped" onclick="setPricingMode('capped')">🛡️ Capped Max</button>
+        </div>
+
+        <div id="price-fields-range" class="confirm-row">
+          <input type="number" class="confirm-input" id="price-min" placeholder="Min ($)">
+          <input type="number" class="confirm-input" id="price-max" placeholder="Max ($)">
+        </div>
+        <div id="price-fields-fixed" style="display:none">
+          <input type="number" class="confirm-input" id="price-fixed" placeholder="Fixed price ($)">
+        </div>
+        <div id="price-fields-capped" style="display:none">
+          <input type="number" class="confirm-input" id="price-cap" placeholder="Max won't exceed ($)">
+        </div>
+      </div>
+
+      <!-- APPOINTMENT -->
+      <div class="confirm-section">
+        <div class="confirm-section-label">📅 Appointment</div>
+        <div class="confirm-row">
+          <input type="date" class="confirm-input" id="appt-date">
+          <input type="text" class="confirm-input" id="appt-time" placeholder="e.g. 10:00 AM">
+        </div>
+        <input type="text" class="confirm-input" id="appt-duration" placeholder="Duration (e.g. 2-3 hours)" style="margin-top:8px">
+      </div>
+
+      <!-- SCOPE -->
+      <div class="confirm-section">
+        <div class="confirm-section-label">🔧 Scope of Work</div>
+        <textarea class="confirm-textarea" id="scope-summary" placeholder="What we'll do..."></textarea>
+      </div>
+
+      <!-- SPECIAL NOTES -->
+      <div class="confirm-section">
+        <div class="confirm-section-label">📝 Special Notes (Optional)</div>
+        <textarea class="confirm-textarea" id="special-notes" placeholder="Anything else the customer should know..." style="min-height:60px"></textarea>
+      </div>
+
+      <!-- DEPOSIT TOGGLE -->
+      <div class="confirm-section">
+        <div class="confirm-section-label">💳 Optional Deposit</div>
+        <label class="confirm-toggle">
+          <input type="checkbox" id="deposit-toggle" onchange="toggleDeposit()">
+          <span style="font-size:13px;color:var(--ink-soft)">Require deposit/payment with signing</span>
+        </label>
+        <div id="deposit-fields" style="display:none;margin-top:10px">
+          <div class="confirm-row">
+            <input type="number" class="confirm-input" id="deposit-amount" placeholder="Amount ($)">
+            <input type="text" class="confirm-input" id="deposit-label" placeholder="Label (e.g. Deposit)" value="Deposit">
+          </div>
+          <div style="font-size:11px;color:var(--ink-muted);margin-top:6px;font-style:italic">Note: Payment integration is placeholder for now. Wire up Stripe when ready.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="confirm-footer">
+      <div class="confirm-status" id="confirm-status"></div>
+      <button class="confirm-btn confirm-btn-cancel" onclick="closeConfirmationModal()">Cancel</button>
+      <button class="confirm-btn confirm-btn-send" id="confirm-send-btn" onclick="sendConfirmation()">📤 Send to Customer</button>
+    </div>
+  </div>
+</div>
+<!-- END SEND CONFIRMATION MODAL -->
 
 <script>
 const DASHBOARD_PASSWORD = "L0nd0n12@";
@@ -2945,6 +3239,7 @@ function renderHandymanModal(b) {
         '<div class="ref-sub">' + esc(b.ref) + ' · ' + fmtDate(b.submitted_at) + ' · <span class="badge h-' + status + '">' + esc(status) + '</span></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;align-items:center">' +
+        '<button class="h-send-conf-btn" onclick="openConfirmationModal()">📧 Send Confirmation</button>' +
         '<button class="h-print-btn" onclick="window.print()">🖨 Print Job Brief</button>' +
         '<button class="modal-close" onclick="closeHandymanModal()">×</button>' +
       '</div>' +
@@ -3197,6 +3492,164 @@ document.getElementById("invoice-modal").addEventListener("click", function(e) {
 document.getElementById("edit-modal").addEventListener("click", function(e) {
   if (e.target.id === "edit-modal") closeEdit();
 });
+
+/* ════════════════════════════════════════════════════════════════════
+   SEND CONFIRMATION FEATURE - May 2026
+   ════════════════════════════════════════════════════════════════════ */
+let CURRENT_PRICING_MODE = 'range';
+
+function openConfirmationModal() {
+  if (!currentHandymanBooking) {
+    toast('Could not load booking data. Please refresh and try again.', true);
+    return;
+  }
+  const b = currentHandymanBooking;
+
+  // Pre-fill from booking AI estimate
+  document.getElementById('price-min').value = b.estimated_labor_min || '';
+  document.getElementById('price-max').value = b.estimated_labor_max || '';
+  document.getElementById('price-fixed').value = '';
+  document.getElementById('price-cap').value = b.estimated_labor_max || '';
+  document.getElementById('appt-date').value = b.preferred_date || '';
+  document.getElementById('appt-time').value = '';
+  document.getElementById('appt-duration').value = 
+    (b.estimated_time_min && b.estimated_time_max) 
+      ? b.estimated_time_min + '-' + b.estimated_time_max + ' hours'
+      : '';
+  document.getElementById('scope-summary').value = b.job_summary || b.customer_description || '';
+  document.getElementById('special-notes').value = '';
+  document.getElementById('deposit-toggle').checked = b.deposit_required || false;
+  document.getElementById('deposit-amount').value = b.deposit_amount || '';
+  document.getElementById('deposit-label').value = 'Deposit';
+  document.getElementById('deposit-fields').style.display = b.deposit_required ? 'block' : 'none';
+  document.getElementById('confirm-status').innerHTML = '';
+  document.getElementById('confirm-send-btn').disabled = false;
+  document.getElementById('confirm-send-btn').innerHTML = '📤 Send to Customer';
+
+  setPricingMode('range');
+  validateConfirmForm();
+
+  document.getElementById('confirm-overlay').classList.add('active');
+}
+
+function closeConfirmationModal() {
+  document.getElementById('confirm-overlay').classList.remove('active');
+}
+
+function setPricingMode(mode) {
+  CURRENT_PRICING_MODE = mode;
+  document.querySelectorAll('.pm-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.mode === mode);
+  });
+  document.getElementById('price-fields-range').style.display = mode === 'range' ? 'grid' : 'none';
+  document.getElementById('price-fields-fixed').style.display = mode === 'fixed' ? 'block' : 'none';
+  document.getElementById('price-fields-capped').style.display = mode === 'capped' ? 'block' : 'none';
+  validateConfirmForm();
+}
+
+function toggleDeposit() {
+  const on = document.getElementById('deposit-toggle').checked;
+  document.getElementById('deposit-fields').style.display = on ? 'block' : 'none';
+}
+
+function validateConfirmForm() {
+  const warnings = [];
+  const date = document.getElementById('appt-date').value;
+  const time = document.getElementById('appt-time').value.trim();
+  if (!date) warnings.push('No appointment date set');
+  if (!time) warnings.push('No appointment time set');
+
+  if (CURRENT_PRICING_MODE === 'range') {
+    if (!document.getElementById('price-min').value || !document.getElementById('price-max').value) {
+      warnings.push('Price range missing');
+    }
+  } else if (CURRENT_PRICING_MODE === 'fixed') {
+    if (!document.getElementById('price-fixed').value) warnings.push('Fixed price missing');
+  } else if (CURRENT_PRICING_MODE === 'capped') {
+    if (!document.getElementById('price-cap').value) warnings.push('Max cap missing');
+  }
+
+  const warningsEl = document.getElementById('confirm-warnings');
+  if (warnings.length > 0) {
+    warningsEl.innerHTML = '⚠️ ' + warnings.join(' · ');
+    warningsEl.classList.add('show');
+  } else {
+    warningsEl.classList.remove('show');
+  }
+}
+
+// Live validation
+document.addEventListener('input', function(e) {
+  if (e.target.closest('#confirm-overlay')) validateConfirmForm();
+});
+
+// Close on backdrop click
+document.getElementById('confirm-overlay').addEventListener('click', function(e) {
+  if (e.target.id === 'confirm-overlay') closeConfirmationModal();
+});
+
+async function sendConfirmation() {
+  if (!currentHandymanBooking) return;
+
+  const btn = document.getElementById('confirm-send-btn');
+  const status = document.getElementById('confirm-status');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Sending...';
+  status.innerHTML = '';
+
+  const payload = {
+    bookingRef: currentHandymanBooking.ref,
+    pricingMode: CURRENT_PRICING_MODE,
+    fixedPrice: parseFloat(document.getElementById('price-fixed').value) || null,
+    priceMin: parseFloat(document.getElementById('price-min').value) || null,
+    priceMax: parseFloat(document.getElementById('price-max').value) || null,
+    priceCap: parseFloat(document.getElementById('price-cap').value) || null,
+    appointmentDate: document.getElementById('appt-date').value || null,
+    appointmentTime: document.getElementById('appt-time').value.trim(),
+    durationText: document.getElementById('appt-duration').value.trim(),
+    scopeSummary: document.getElementById('scope-summary').value.trim(),
+    specialNotes: document.getElementById('special-notes').value.trim(),
+    payNowEnabled: document.getElementById('deposit-toggle').checked,
+    payNowAmount: parseFloat(document.getElementById('deposit-amount').value) || 0,
+    payNowLabel: document.getElementById('deposit-label').value.trim() || 'Deposit'
+  };
+
+  if (!payload.scopeSummary || payload.scopeSummary.length < 5) {
+    status.innerHTML = '<span style="color:var(--bad)">❌ Scope of work is required</span>';
+    btn.disabled = false;
+    btn.innerHTML = '📤 Send to Customer';
+    return;
+  }
+
+  try {
+    const r = await fetch('/.netlify/functions/handyman-send-confirmation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!r.ok) {
+      const err = await r.json().catch(function() { return { error: 'Failed' }; });
+      throw new Error(err.error || 'Failed to send');
+    }
+
+    const data = await r.json();
+    status.innerHTML = '✅ Sent! <a href="' + data.url + '" target="_blank">View agreement</a>';
+    btn.innerHTML = '✓ Sent';
+    toast('✓ Confirmation sent to customer');
+
+    setTimeout(function() {
+      closeConfirmationModal();
+      loadEstimates();
+    }, 2500);
+  } catch (e) {
+    console.error(e);
+    status.innerHTML = '<span style="color:var(--bad)">❌ ' + (e.message || 'Failed') + '</span>';
+    btn.disabled = false;
+    btn.innerHTML = '📤 Send to Customer';
+  }
+}
+/* END SEND CONFIRMATION FEATURE */
 </script>
 </body>
 </html>
