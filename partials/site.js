@@ -1,12 +1,92 @@
 /* ═══════════════════════════════════════════════════════════
    SANI BUILDING CORP — SHARED SITE JAVASCRIPT
    Loads menu + footer partials, then initializes mobile menu.
+   Also: Google Analytics 4 tracking (G-QQF68GFQNX)
    ═══════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   GOOGLE ANALYTICS 4 — Loads on EVERY page automatically
+   ═══════════════════════════════════════════════════════════ */
+(function(){
+  // Load GA library
+  var gaScript = document.createElement('script');
+  gaScript.async = true;
+  gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-QQF68GFQNX';
+  document.head.appendChild(gaScript);
+
+  // Initialize GA
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function(){ dataLayer.push(arguments); };
+  gtag('js', new Date());
+  gtag('config', 'G-QQF68GFQNX', {
+    'anonymize_ip': true,
+    'cookie_flags': 'SameSite=None;Secure'
+  });
+})();
+
+/* ───── Conversion tracking helper (called after partials load) ───── */
+function setupGATracking(){
+  if(!window.gtag) return;
+
+  // Track phone clicks (e.g. 332-277-0990)
+  document.querySelectorAll('a[href^="tel:"]').forEach(function(link){
+    if(link.dataset.gaTracked) return;
+    link.dataset.gaTracked = '1';
+    link.addEventListener('click', function(){
+      gtag('event', 'phone_click', {
+        'event_category': 'engagement',
+        'event_label': link.getAttribute('href').replace('tel:', ''),
+        'value': 1
+      });
+    });
+  });
+
+  // Track email clicks
+  document.querySelectorAll('a[href^="mailto:"]').forEach(function(link){
+    if(link.dataset.gaTracked) return;
+    link.dataset.gaTracked = '1';
+    link.addEventListener('click', function(){
+      gtag('event', 'email_click', {
+        'event_category': 'engagement',
+        'event_label': link.getAttribute('href').replace('mailto:', ''),
+        'value': 1
+      });
+    });
+  });
+
+  // Track lead form submissions (estimate / handyman / contact)
+  document.querySelectorAll('form').forEach(function(form){
+    if(form.dataset.gaTracked) return;
+    var hint = ((form.id||'') + ' ' + (form.action||'') + ' ' + (form.className||'')).toLowerCase();
+    if(hint.indexOf('estimate')>-1 || hint.indexOf('handyman')>-1 || hint.indexOf('contact')>-1 || hint.indexOf('lead')>-1){
+      form.dataset.gaTracked = '1';
+      form.addEventListener('submit', function(){
+        gtag('event', 'lead_form_submit', {
+          'event_category': 'conversion',
+          'event_label': window.location.pathname,
+          'value': 10
+        });
+      });
+    }
+  });
+
+  // Track "Get Estimate" CTA clicks
+  document.querySelectorAll('a[href*="estimate"]').forEach(function(btn){
+    if(btn.dataset.gaTracked) return;
+    btn.dataset.gaTracked = '1';
+    btn.addEventListener('click', function(){
+      gtag('event', 'cta_click', {
+        'event_category': 'engagement',
+        'event_label': btn.textContent.trim().substring(0,50),
+        'value': 1
+      });
+    });
+  });
+}
 
 /* ───── Partial loader ───── */
 (function(){
   'use strict';
-
   function loadPartial(url, targetId){
     return fetch(url)
       .then(function(r){ return r.text(); })
@@ -16,20 +96,25 @@
       })
       .catch(function(err){ console.warn('Partial failed:', url, err); });
   }
-
   function loadAll(){
     return Promise.all([
       loadPartial('partials/menu.html', 'site-menu'),
       loadPartial('partials/footer.html', 'site-footer')
     ]).then(function(){
       document.body.classList.add('site-ready');
+      // ✅ Run GA tracking AFTER menu+footer loaded
+      // (so phone/email links inside them get tracked too)
+      setupGATracking();
     });
   }
-
   if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', loadAll);
+    document.addEventListener('DOMContentLoaded', function(){
+      loadAll();
+      setupGATracking(); // also track items on the main page body
+    });
   } else {
     loadAll();
+    setupGATracking();
   }
 })();
 
