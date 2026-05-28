@@ -1986,6 +1986,66 @@ body {
 }
 .h-send-conf-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212, 181, 114, 0.4); }
 /* END SEND CONFIRMATION FEATURE */
+
+/* ════════════════════════════════════════════════════════════════════
+   SEO BRAIN TAB STYLES - May 2026
+   ════════════════════════════════════════════════════════════════════ */
+.seo-wrap { max-width: 1000px; }
+.seo-topline { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+.seo-title { font-family:var(--display); font-size:24px; letter-spacing:2px; color:var(--gold); }
+.seo-daterange { font-size:12px; color:var(--ink-muted); margin-top:4px; letter-spacing:0.5px; }
+.seo-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+@media(max-width:640px){ .seo-stats{ grid-template-columns:1fr 1fr; } }
+.seo-stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+.seo-stat-label { font-size:10px; letter-spacing:1.5px; color:var(--ink-muted); text-transform:uppercase; }
+.seo-stat-val { font-family:var(--display); font-size:30px; color:var(--ink); margin-top:6px; letter-spacing:1px; }
+.seo-trend { display:inline-block; font-size:11px; margin-top:6px; font-weight:600; }
+.seo-trend.up { color:var(--good); }
+.seo-trend.down { color:var(--bad); }
+.seo-trend.flat { color:var(--ink-muted); }
+.seo-chart { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:24px; }
+.seo-chart-title { font-size:10px; letter-spacing:2px; color:var(--ink-muted); text-transform:uppercase; margin-bottom:16px; }
+.seo-chart-empty { background:var(--card); border:1px dashed var(--line); border-radius:12px; padding:30px; text-align:center; color:var(--ink-muted); font-size:13px; margin-bottom:24px; }
+.seo-bars { display:flex; align-items:flex-end; gap:8px; height:140px; }
+.seo-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; }
+.seo-bar-val { font-size:11px; color:var(--ink-soft); margin-bottom:4px; font-weight:600; }
+.seo-bar { width:70%; max-width:40px; background:linear-gradient(180deg,var(--gold),var(--gold-2)); border-radius:4px 4px 0 0; min-height:3px; transition:height .4s; }
+.seo-bar-label { font-size:9px; color:var(--ink-muted); margin-top:6px; white-space:nowrap; }
+.seo-section-head { display:flex; align-items:center; justify-content:space-between; margin:24px 0 14px; flex-wrap:wrap; gap:10px; }
+.seo-section-head h3 { font-family:var(--display); font-size:18px; letter-spacing:1.5px; color:var(--ink); }
+.seo-filter { display:flex; gap:4px; }
+.seo-filter-btn { padding:6px 12px; background:var(--card-2); border:1px solid var(--line-soft); color:var(--ink-muted); border-radius:6px; font-size:11px; font-weight:600; letter-spacing:0.5px; cursor:pointer; font-family:var(--body); }
+.seo-filter-btn.active { background:var(--gold-soft); border-color:var(--gold); color:var(--gold); }
+.seo-insight { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--gold); border-radius:0 12px 12px 0; padding:16px 20px; margin-bottom:12px; transition:opacity .2s; }
+.seo-insight.high { border-left-color:var(--bad); }
+.seo-insight.medium { border-left-color:var(--warn); }
+.seo-insight.low { border-left-color:var(--good); }
+.seo-insight.dismissed { opacity:0.45; }
+.seo-insight.done { opacity:0.7; border-left-color:var(--good); }
+.seo-insight-meta { font-size:10px; letter-spacing:1px; color:var(--ink-muted); text-transform:uppercase; margin-bottom:6px; }
+.seo-insight-title { font-size:16px; font-weight:600; color:var(--ink); margin-bottom:8px; }
+.seo-insight-desc { font-size:13.5px; color:var(--ink-soft); line-height:1.55; margin-bottom:10px; }
+.seo-insight-action { font-size:13px; background:var(--gold-soft); border:1px solid var(--line); padding:10px 14px; border-radius:8px; color:var(--ink-soft); }
+.seo-insight-action strong { color:var(--gold); }
+.seo-insight-impact { font-size:12px; color:var(--good); margin-top:8px; font-weight:600; }
+.seo-insight-rel { font-size:11px; color:var(--ink-muted); margin-top:8px; word-break:break-all; }
+.seo-insight-actions { display:flex; gap:8px; margin-top:12px; }
+.seo-mini-btn { padding:6px 12px; background:var(--card-2); border:1px solid var(--line-soft); color:var(--ink-soft); border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--body); letter-spacing:0.5px; }
+.seo-mini-btn:hover { border-color:var(--gold); }
+.seo-mini-btn.done:hover { color:var(--good); border-color:var(--good); }
+.seo-mini-btn.dismiss:hover { color:var(--bad); border-color:var(--bad); }
+.seo-table-wrap { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:8px; }
+.seo-table { width:100%; border-collapse:collapse; font-size:13px; }
+.seo-table th { text-align:left; font-size:10px; letter-spacing:1px; color:var(--ink-muted); text-transform:uppercase; padding:12px 14px; border-bottom:1px solid var(--line-soft); font-weight:600; }
+.seo-table th.num, .seo-table td.num { text-align:right; }
+.seo-table td { padding:10px 14px; border-bottom:1px solid var(--line-soft); color:var(--ink-soft); }
+.seo-table tr:last-child td { border-bottom:none; }
+.seo-table .seo-q { color:var(--ink); font-weight:500; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.seo-pos { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:700; font-size:12px; }
+.seo-pos.pos-good { background:var(--good-bg); color:var(--good); }
+.seo-pos.pos-mid { background:var(--warn-bg); color:var(--warn); }
+.seo-pos.pos-bad { background:var(--bad-bg); color:var(--bad); }
+/* END SEO BRAIN TAB STYLES */
 </style>
 </head>
 <body>
@@ -2144,6 +2204,7 @@ const TABS = [
   { id: "paid", label: "Paid" },
   { id: "declined", label: "Declined" },
   { id: "handyman", label: "🔧 Handyman" },
+  { id: "seo", label: "🧠 SEO Brain" },
 ];
 
 let handymanBookings = [];
@@ -2275,6 +2336,7 @@ function renderTabs() {
   TABS.forEach(function(t) { if (t.id !== "all") counts[t.id] = 0; });
   estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
   counts.handyman = handymanBookings.length;
+  counts.seo = seoInsightCount;
   document.getElementById("tabs-row").innerHTML = TABS.map(function(t) {
     return '<button class="tab ' + (activeTab === t.id ? "active" : "") + '" data-tab="' + t.id + '">' +
       '<span>' + t.label + '</span>' +
@@ -2323,6 +2385,12 @@ function renderList() {
   // HANDYMAN TAB - completely different rendering
   if (activeTab === "handyman") {
     renderHandymanList();
+    return;
+  }
+
+  // SEO BRAIN TAB
+  if (activeTab === "seo") {
+    renderSeoTab();
     return;
   }
 
@@ -3650,6 +3718,318 @@ async function sendConfirmation() {
   }
 }
 /* END SEND CONFIRMATION FEATURE */
+
+/* ════════════════════════════════════════════════════════════════════
+   SEO BRAIN TAB — May 2026
+   ════════════════════════════════════════════════════════════════════ */
+let seoData = null;
+let seoInsightCount = 0;
+let seoInsightFilter = "all";
+
+async function renderSeoTab() {
+  const host = document.getElementById("list-host");
+  host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading SEO data…</h3></div>';
+
+  try {
+    const r = await fetch("/.netlify/functions/seo-dashboard-data");
+    const data = await r.json();
+
+    if (!data.success) throw new Error(data.error || "Load failed");
+
+    if (!data.hasData) {
+      host.innerHTML =
+        '<div class="empty">' +
+          '<div class="empty-icon">🧠</div>' +
+          '<h3>No SEO data yet</h3>' +
+          '<p>' + esc(data.message || "Run the weekly fetch to collect data.") + '</p>' +
+          '<button class="topbar-btn" onclick="runSeoNow()" style="margin-top:12px">⚡ Run SEO Brain Now</button>' +
+        '</div>';
+      return;
+    }
+
+    seoData = data;
+    seoInsightCount = (data.insights || []).length;
+    renderTabs(); // update count badge
+    drawSeoDashboard();
+  } catch (e) {
+    host.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Could not load SEO data</h3><p>' + esc(e.message) + '</p><button class="topbar-btn" onclick="renderSeoTab()">Retry</button></div>';
+  }
+}
+
+function seoTrend(cur, prev, lowerIsBetter) {
+  if (prev == null) return '';
+  const diff = cur - prev;
+  if (diff === 0) return '<span class="seo-trend flat">— no change</span>';
+  let good = lowerIsBetter ? diff < 0 : diff > 0;
+  const arrow = diff > 0 ? '▲' : '▼';
+  const cls = good ? 'up' : 'down';
+  const absVal = Math.abs(diff);
+  const shown = absVal >= 1 ? Math.round(absVal).toLocaleString() : absVal.toFixed(2);
+  return '<span class="seo-trend ' + cls + '">' + arrow + ' ' + shown + ' vs last</span>';
+}
+
+function drawSeoDashboard() {
+  const host = document.getElementById("list-host");
+  const d = seoData;
+  const cur = d.latest;
+  const prev = d.previous;
+
+  // STAT CARDS
+  const statsHtml =
+    '<div class="seo-stats">' +
+      '<div class="seo-stat">' +
+        '<div class="seo-stat-label">Clicks</div>' +
+        '<div class="seo-stat-val">' + (cur.total_clicks || 0).toLocaleString() + '</div>' +
+        seoTrend(cur.total_clicks, prev ? prev.total_clicks : null, false) +
+      '</div>' +
+      '<div class="seo-stat">' +
+        '<div class="seo-stat-label">Impressions</div>' +
+        '<div class="seo-stat-val">' + (cur.total_impressions || 0).toLocaleString() + '</div>' +
+        seoTrend(cur.total_impressions, prev ? prev.total_impressions : null, false) +
+      '</div>' +
+      '<div class="seo-stat">' +
+        '<div class="seo-stat-label">Avg CTR</div>' +
+        '<div class="seo-stat-val">' + (cur.avg_ctr * 100).toFixed(2) + '%</div>' +
+        seoTrend(+(cur.avg_ctr*100).toFixed(2), prev ? +(prev.avg_ctr*100).toFixed(2) : null, false) +
+      '</div>' +
+      '<div class="seo-stat">' +
+        '<div class="seo-stat-label">Avg Position</div>' +
+        '<div class="seo-stat-val">' + Number(cur.avg_position).toFixed(1) + '</div>' +
+        seoTrend(+Number(cur.avg_position).toFixed(1), prev ? +Number(prev.avg_position).toFixed(1) : null, true) +
+      '</div>' +
+    '</div>';
+
+  // TREND CHART (simple SVG bars for clicks)
+  const chartHtml = drawSeoChart(d.history);
+
+  // INSIGHTS
+  const insights = d.insights || [];
+  const filtered = seoInsightFilter === "all"
+    ? insights
+    : insights.filter(function(i){ return i.priority === seoInsightFilter; });
+
+  const insightsHtml =
+    '<div class="seo-section-head">' +
+      '<h3>💎 AI Insights <span style="color:var(--ink-muted);font-size:13px;font-weight:400">(' + insights.length + ')</span></h3>' +
+      '<div class="seo-filter">' +
+        ['all','high','medium','low'].map(function(f){
+          return '<button class="seo-filter-btn ' + (seoInsightFilter===f?'active':'') + '" onclick="setSeoFilter(\'' + f + '\')">' + f.toUpperCase() + '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+    (filtered.length === 0
+      ? '<div style="color:var(--ink-muted);padding:20px;text-align:center;font-size:14px">No insights in this filter.</div>'
+      : filtered.map(seoInsightCard).join(''));
+
+  // KEYWORDS TABLE
+  const queries = (d.queries || []).slice(0, 25);
+  const keywordsHtml =
+    '<div class="seo-section-head"><h3>🔍 Top Keywords</h3></div>' +
+    '<div class="seo-table-wrap"><table class="seo-table">' +
+      '<thead><tr><th>Query</th><th class="num">Clicks</th><th class="num">Impr.</th><th class="num">Pos.</th><th class="num">CTR</th></tr></thead>' +
+      '<tbody>' +
+      queries.map(function(q){
+        const posClass = q.position <= 10 ? 'pos-good' : q.position <= 20 ? 'pos-mid' : 'pos-bad';
+        return '<tr>' +
+          '<td class="seo-q">' + esc(q.query) + '</td>' +
+          '<td class="num">' + q.clicks + '</td>' +
+          '<td class="num">' + q.impressions + '</td>' +
+          '<td class="num"><span class="seo-pos ' + posClass + '">' + Number(q.position).toFixed(1) + '</span></td>' +
+          '<td class="num">' + (q.ctr*100).toFixed(1) + '%</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody>' +
+    '</table></div>';
+
+  // PAGES TABLE
+  const pages = (d.pages || []).slice(0, 15);
+  const pagesHtml =
+    '<div class="seo-section-head"><h3>📄 Top Pages</h3></div>' +
+    '<div class="seo-table-wrap"><table class="seo-table">' +
+      '<thead><tr><th>Page</th><th class="num">Clicks</th><th class="num">Impr.</th><th class="num">Pos.</th></tr></thead>' +
+      '<tbody>' +
+      pages.map(function(p){
+        let path = p.page_url.replace(/^https?:\/\/[^/]+/, '') || '/';
+        const posClass = p.position <= 10 ? 'pos-good' : p.position <= 20 ? 'pos-mid' : 'pos-bad';
+        return '<tr>' +
+          '<td class="seo-q"><a href="' + esc(p.page_url) + '" target="_blank" style="color:var(--ink-soft);text-decoration:none">' + esc(path) + '</a></td>' +
+          '<td class="num">' + p.clicks + '</td>' +
+          '<td class="num">' + p.impressions + '</td>' +
+          '<td class="num"><span class="seo-pos ' + posClass + '">' + Number(p.position).toFixed(1) + '</span></td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody>' +
+    '</table></div>';
+
+  // SUMMARY + DATE
+  const summaryText = insights.length && d.latest ? '' : '';
+
+  host.innerHTML =
+    '<div class="seo-wrap">' +
+      '<div class="seo-topline">' +
+        '<div>' +
+          '<div class="seo-title">🧠 SEO Brain</div>' +
+          '<div class="seo-daterange">' + esc(cur.date_range_start) + ' → ' + esc(cur.date_range_end) + ' · last updated ' + fmtDate(cur.fetched_at) + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button class="topbar-btn" onclick="runSeoNow()">⚡ Run Now</button>' +
+        '</div>' +
+      '</div>' +
+      statsHtml +
+      chartHtml +
+      '<div class="seo-grid">' +
+        '<div class="seo-col-main">' + insightsHtml + '</div>' +
+      '</div>' +
+      keywordsHtml +
+      pagesHtml +
+    '</div>';
+}
+
+function seoInsightCard(ins) {
+  const typeEmoji = { opportunity:'💎', win:'🏆', warning:'⚠️', recommendation:'💡' };
+  const pr = ins.priority || 'medium';
+  const dismissed = ins.status === 'dismissed';
+  const done = ins.status === 'implemented';
+  return '<div class="seo-insight ' + pr + (dismissed?' dismissed':'') + (done?' done':'') + '">' +
+    '<div class="seo-insight-meta">' +
+      (typeEmoji[ins.insight_type]||'💡') + ' ' + (ins.insight_type||'recommendation').toUpperCase() +
+      ' · ' + pr.toUpperCase() + ' PRIORITY' +
+      (done ? ' · ✓ DONE' : '') + (dismissed ? ' · DISMISSED' : '') +
+    '</div>' +
+    '<div class="seo-insight-title">' + esc(ins.title||'') + '</div>' +
+    '<div class="seo-insight-desc">' + esc(ins.description||'') + '</div>' +
+    (ins.suggested_action ? '<div class="seo-insight-action"><strong>Action:</strong> ' + esc(ins.suggested_action) + '</div>' : '') +
+    (ins.estimated_impact ? '<div class="seo-insight-impact">📈 ' + esc(ins.estimated_impact) + '</div>' : '') +
+    (ins.related_query ? '<div class="seo-insight-rel">Related: "' + esc(ins.related_query) + '"' + (ins.related_page ? ' → ' + esc(ins.related_page.replace(/^https?:\/\/[^/]+/,'')) : '') + '</div>' : '') +
+    '<div class="seo-insight-actions">' +
+      (done
+        ? '<button class="seo-mini-btn" onclick="updateSeoInsight(' + ins.id + ',\'new\')">↺ Reopen</button>'
+        : '<button class="seo-mini-btn done" onclick="updateSeoInsight(' + ins.id + ',\'implemented\')">✓ Mark Done</button>') +
+      (dismissed
+        ? '<button class="seo-mini-btn" onclick="updateSeoInsight(' + ins.id + ',\'new\')">↺ Restore</button>'
+        : '<button class="seo-mini-btn dismiss" onclick="updateSeoInsight(' + ins.id + ',\'dismissed\')">✕ Dismiss</button>') +
+    '</div>' +
+  '</div>';
+}
+
+function drawSeoChart(history) {
+  if (!history || history.length < 2) {
+    return '<div class="seo-chart-empty">📈 Trend chart will appear after 2+ weekly snapshots</div>';
+  }
+  const maxClicks = Math.max.apply(null, history.map(function(h){ return h.total_clicks || 0; })) || 1;
+  const bars = history.map(function(h){
+    const pct = ((h.total_clicks||0) / maxClicks) * 100;
+    const label = new Date(h.fetched_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return '<div class="seo-bar-col">' +
+      '<div class="seo-bar-val">' + (h.total_clicks||0) + '</div>' +
+      '<div class="seo-bar" style="height:' + Math.max(pct,3) + '%"></div>' +
+      '<div class="seo-bar-label">' + label + '</div>' +
+    '</div>';
+  }).join('');
+  return '<div class="seo-chart"><div class="seo-chart-title">CLICKS OVER TIME</div><div class="seo-bars">' + bars + '</div></div>';
+}
+
+function setSeoFilter(f) {
+  seoInsightFilter = f;
+  drawSeoDashboard();
+}
+
+async function updateSeoInsight(id, status) {
+  try {
+    const r = await fetch("/.netlify/functions/seo-dashboard-data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "updateInsight", insightId: id, status: status })
+    });
+    if (!r.ok) throw new Error("Update failed");
+    // Update local state
+    const ins = (seoData.insights || []).find(function(i){ return i.id === id; });
+    if (ins) ins.status = status;
+    drawSeoDashboard();
+    toast("✓ Insight updated");
+  } catch (e) {
+    toast("Update failed: " + e.message, true);
+  }
+}
+
+async function runSeoNow() {
+  toast("⚡ Running SEO Brain… this takes ~15 sec");
+  try {
+    const r = await fetch("/.netlify/functions/seo-weekly-run");
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || "Run failed");
+    toast("✓ SEO Brain ran! Email sent. Refreshing…");
+    setTimeout(renderSeoTab, 1500);
+  } catch (e) {
+    toast("Run failed: " + e.message, true);
+  }
+}
+
+/* SEO TAB STYLES (injected) */
+(function injectSeoStyles(){
+  const css = `
+  .seo-wrap { max-width: 1000px; }
+  .seo-topline { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .seo-title { font-family:var(--display); font-size:24px; letter-spacing:2px; color:var(--gold); }
+  .seo-daterange { font-size:12px; color:var(--ink-muted); margin-top:4px; letter-spacing:0.5px; }
+  .seo-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  @media(max-width:640px){ .seo-stats{ grid-template-columns:1fr 1fr; } }
+  .seo-stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .seo-stat-label { font-size:10px; letter-spacing:1.5px; color:var(--ink-muted); text-transform:uppercase; }
+  .seo-stat-val { font-family:var(--display); font-size:30px; color:var(--ink); margin-top:6px; letter-spacing:1px; }
+  .seo-trend { display:inline-block; font-size:11px; margin-top:6px; font-weight:600; }
+  .seo-trend.up { color:var(--good); }
+  .seo-trend.down { color:var(--bad); }
+  .seo-trend.flat { color:var(--ink-muted); }
+  .seo-chart { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:24px; }
+  .seo-chart-title { font-size:10px; letter-spacing:2px; color:var(--ink-muted); text-transform:uppercase; margin-bottom:16px; }
+  .seo-chart-empty { background:var(--card); border:1px dashed var(--line); border-radius:12px; padding:30px; text-align:center; color:var(--ink-muted); font-size:13px; margin-bottom:24px; }
+  .seo-bars { display:flex; align-items:flex-end; gap:8px; height:140px; }
+  .seo-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; }
+  .seo-bar-val { font-size:11px; color:var(--ink-soft); margin-bottom:4px; font-weight:600; }
+  .seo-bar { width:70%; max-width:40px; background:linear-gradient(180deg,var(--gold),var(--gold-2)); border-radius:4px 4px 0 0; min-height:3px; transition:height .4s; }
+  .seo-bar-label { font-size:9px; color:var(--ink-muted); margin-top:6px; white-space:nowrap; }
+  .seo-section-head { display:flex; align-items:center; justify-content:space-between; margin:24px 0 14px; flex-wrap:wrap; gap:10px; }
+  .seo-section-head h3 { font-family:var(--display); font-size:18px; letter-spacing:1.5px; color:var(--ink); }
+  .seo-filter { display:flex; gap:4px; }
+  .seo-filter-btn { padding:6px 12px; background:var(--card-2); border:1px solid var(--line-soft); color:var(--ink-muted); border-radius:6px; font-size:11px; font-weight:600; letter-spacing:0.5px; cursor:pointer; font-family:var(--body); }
+  .seo-filter-btn.active { background:var(--gold-soft); border-color:var(--gold); color:var(--gold); }
+  .seo-insight { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--gold); border-radius:0 12px 12px 0; padding:16px 20px; margin-bottom:12px; transition:opacity .2s; }
+  .seo-insight.high { border-left-color:var(--bad); }
+  .seo-insight.medium { border-left-color:var(--warn); }
+  .seo-insight.low { border-left-color:var(--good); }
+  .seo-insight.dismissed { opacity:0.45; }
+  .seo-insight.done { opacity:0.7; border-left-color:var(--good); }
+  .seo-insight-meta { font-size:10px; letter-spacing:1px; color:var(--ink-muted); text-transform:uppercase; margin-bottom:6px; }
+  .seo-insight-title { font-size:16px; font-weight:600; color:var(--ink); margin-bottom:8px; }
+  .seo-insight-desc { font-size:13.5px; color:var(--ink-soft); line-height:1.55; margin-bottom:10px; }
+  .seo-insight-action { font-size:13px; background:var(--gold-soft); border:1px solid var(--line); padding:10px 14px; border-radius:8px; color:var(--ink-soft); }
+  .seo-insight-action strong { color:var(--gold); }
+  .seo-insight-impact { font-size:12px; color:var(--good); margin-top:8px; font-weight:600; }
+  .seo-insight-rel { font-size:11px; color:var(--ink-muted); margin-top:8px; word-break:break-all; }
+  .seo-insight-actions { display:flex; gap:8px; margin-top:12px; }
+  .seo-mini-btn { padding:6px 12px; background:var(--card-2); border:1px solid var(--line-soft); color:var(--ink-soft); border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--body); letter-spacing:0.5px; }
+  .seo-mini-btn:hover { border-color:var(--gold); }
+  .seo-mini-btn.done:hover { color:var(--good); border-color:var(--good); }
+  .seo-mini-btn.dismiss:hover { color:var(--bad); border-color:var(--bad); }
+  .seo-table-wrap { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:8px; }
+  .seo-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .seo-table th { text-align:left; font-size:10px; letter-spacing:1px; color:var(--ink-muted); text-transform:uppercase; padding:12px 14px; border-bottom:1px solid var(--line-soft); font-weight:600; }
+  .seo-table th.num, .seo-table td.num { text-align:right; }
+  .seo-table td { padding:10px 14px; border-bottom:1px solid var(--line-soft); color:var(--ink-soft); }
+  .seo-table tr:last-child td { border-bottom:none; }
+  .seo-table .seo-q { color:var(--ink); font-weight:500; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .seo-pos { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:700; font-size:12px; }
+  .seo-pos.pos-good { background:var(--good-bg); color:var(--good); }
+  .seo-pos.pos-mid { background:var(--warn-bg); color:var(--warn); }
+  .seo-pos.pos-bad { background:var(--bad-bg); color:var(--bad); }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
+/* END SEO BRAIN TAB */
+
 </script>
 </body>
 </html>
