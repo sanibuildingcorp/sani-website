@@ -1,6 +1,7 @@
 // netlify/functions/fetch-search-console.js
-// Fetches Google Search Console data using OAuth refresh token
+// Fetches Google Search Console data + auto-saves to Supabase
 // Returns: top queries, top pages, totals, by-date breakdown
+// Saves: snapshot + queries + pages + query/page combos to Supabase
 
 exports.handler = async function (event) {
   // CORS preflight
@@ -17,12 +18,13 @@ exports.handler = async function (event) {
   }
 
   try {
-    // --- 1. Get site URL from query string (default to www.sanibuildingcorp.com) ---
+    // --- 1. Get params from query string ---
     const params = event.queryStringParameters || {};
     const siteUrl = params.site || "https://www.sanibuildingcorp.com/";
     const daysBack = parseInt(params.days || "30", 10);
+    const skipSave = params.skipSave === "true"; // optional: skip saving to DB
 
-    // --- 2. Date range (default: last 30 days) ---
+    // --- 2. Date range ---
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - daysBack);
@@ -80,61 +82,184 @@ exports.handler = async function (event) {
 
     // --- 5. Run multiple queries in parallel ---
     const [totalsRes, queriesRes, pagesRes, dailyRes, queryPageRes] = await Promise.all([
-      querySearchConsole([], 1),                       // overall totals
-      querySearchConsole(["query"], 50),               // top 50 queries
-      querySearchConsole(["page"], 25),                // top 25 pages
-      querySearchConsole(["date"], 90),                // by date
-      querySearchConsole(["query", "page"], 100),      // query+page combos for opportunities
+      querySearchConsole([], 1),
+      querySearchConsole(["query"], 50),
+      querySearchConsole(["page"], 25),
+      querySearchConsole(["date"], 90),
+      querySearchConsole(["query", "page"], 100),
     ]);
 
-    // --- 6. Format response ---
+    // --- 6. Format response data ---
     const totals = totalsRes.rows?.[0] || { clicks: 0, impressions: 0, ctr: 0, position: 0 };
+
+    const topQueries = (queriesRes.rows || []).map((r) => ({
+      query: r.keys[0],
+      clicks: r.clicks,
+      impressions: r.impressions,
+      ctr: r.ctr,
+      position: r.position,
+    }));
+
+    const topPages = (pagesRes.rows || []).map((r) => ({
+      page: r.keys[0],
+      clicks: r.clicks,
+      impressions: r.impressions,
+      ctr: r.ctr,
+      position: r.position,
+    }));
+
+    const byDate = (dailyRes.rows || []).map((r) => ({
+      date: r.keys[0],
+      clicks: r.clicks,
+      impressions: r.impressions,
+      ctr: r.ctr,
+      position: r.position,
+    }));
+
+    const queryPageCombos = (queryPageRes.rows || []).map((r) => ({
+      query: r.keys[0],
+      page: r.keys[1],
+      clicks: r.clicks,
+      impressions: r.impressions,
+      ctr: r.ctr,
+      position: r.position,
+    }));
 
     const response = {
       success: true,
       site: siteUrl,
-      dateRange: {
-        start: fmtDate(startDate),
-        end: fmtDate(endDate),
-        days: daysBack,
-      },
+      dateRange: { start: fmtDate(startDate), end: fmtDate(endDate), days: daysBack },
       totals: {
         clicks: totals.clicks || 0,
         impressions: totals.impressions || 0,
         ctr: totals.ctr || 0,
         position: totals.position || 0,
       },
-      topQueries: (queriesRes.rows || []).map((r) => ({
-        query: r.keys[0],
-        clicks: r.clicks,
-        impressions: r.impressions,
-        ctr: r.ctr,
-        position: r.position,
-      })),
-      topPages: (pagesRes.rows || []).map((r) => ({
-        page: r.keys[0],
-        clicks: r.clicks,
-        impressions: r.impressions,
-        ctr: r.ctr,
-        position: r.position,
-      })),
-      byDate: (dailyRes.rows || []).map((r) => ({
-        date: r.keys[0],
-        clicks: r.clicks,
-        impressions: r.impressions,
-        ctr: r.ctr,
-        position: r.position,
-      })),
-      queryPageCombos: (queryPageRes.rows || []).map((r) => ({
-        query: r.keys[0],
-        page: r.keys[1],
-        clicks: r.clicks,
-        impressions: r.impressions,
-        ctr: r.ctr,
-        position: r.position,
-      })),
+      topQueries,
+      topPages,
+      byDate,
+      queryPageCombos,
       fetchedAt: new Date().toISOString(),
     };
+
+    // --- 7. SAVE TO SUPABASE (unless skipSave=true) ---
+    let savedSnapshotId = null;
+    let saveError = null;
+
+    if (!skipSave) {
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SECRET_KEY;
+
+        // Step 7a: Insert snapshot row
+        const snapshotRes = await fetch(`${supabaseUrl}/rest/v1/seo_snapshots`, {
+          method: "POST",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify({
+            site_url: siteUrl,
+            date_range_start: fmtDate(startDate),
+            date_range_end: fmtDate(endDate),
+            days_back: daysBack,
+            total_clicks: totals.clicks || 0,
+            total_impressions: totals.impressions || 0,
+            avg_ctr: totals.ctr || 0,
+            avg_position: totals.position || 0,
+            raw_data: { byDate: byDate },
+          }),
+        });
+
+        if (!snapshotRes.ok) {
+          const errText = await snapshotRes.text();
+          throw new Error(`Snapshot insert failed: ${errText}`);
+        }
+
+        const snapshotData = await snapshotRes.json();
+        savedSnapshotId = snapshotData[0]?.id;
+        console.log("Saved snapshot ID:", savedSnapshotId);
+
+        // Step 7b: Insert all queries (bulk)
+        if (topQueries.length > 0 && savedSnapshotId) {
+          const queriesPayload = topQueries.map((q) => ({
+            snapshot_id: savedSnapshotId,
+            query: q.query,
+            clicks: q.clicks,
+            impressions: q.impressions,
+            ctr: q.ctr,
+            position: q.position,
+          }));
+
+          await fetch(`${supabaseUrl}/rest/v1/seo_queries`, {
+            method: "POST",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(queriesPayload),
+          });
+        }
+
+        // Step 7c: Insert all pages (bulk)
+        if (topPages.length > 0 && savedSnapshotId) {
+          const pagesPayload = topPages.map((p) => ({
+            snapshot_id: savedSnapshotId,
+            page_url: p.page,
+            clicks: p.clicks,
+            impressions: p.impressions,
+            ctr: p.ctr,
+            position: p.position,
+          }));
+
+          await fetch(`${supabaseUrl}/rest/v1/seo_pages`, {
+            method: "POST",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(pagesPayload),
+          });
+        }
+
+        // Step 7d: Insert query/page combos (bulk)
+        if (queryPageCombos.length > 0 && savedSnapshotId) {
+          const combosPayload = queryPageCombos.map((c) => ({
+            snapshot_id: savedSnapshotId,
+            query: c.query,
+            page_url: c.page,
+            clicks: c.clicks,
+            impressions: c.impressions,
+            ctr: c.ctr,
+            position: c.position,
+          }));
+
+          await fetch(`${supabaseUrl}/rest/v1/seo_query_pages`, {
+            method: "POST",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(combosPayload),
+          });
+        }
+
+        console.log(`Saved snapshot ${savedSnapshotId} with ${topQueries.length} queries, ${topPages.length} pages, ${queryPageCombos.length} combos`);
+      } catch (err) {
+        console.error("Supabase save error:", err);
+        saveError = err.message;
+      }
+    }
+
+    // --- 8. Return response (with save info) ---
+    response.saved = !saveError && savedSnapshotId !== null;
+    response.snapshotId = savedSnapshotId;
+    if (saveError) response.saveError = saveError;
 
     return {
       statusCode: 200,
