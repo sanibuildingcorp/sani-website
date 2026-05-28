@@ -1,0 +1,161 @@
+// netlify/functions/fetch-search-console.js
+// Fetches Google Search Console data using OAuth refresh token
+// Returns: top queries, top pages, totals, by-date breakdown
+
+exports.handler = async function (event) {
+  // CORS preflight
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      },
+      body: "",
+    };
+  }
+
+  try {
+    // --- 1. Get site URL from query string (default to www.sanibuildingcorp.com) ---
+    const params = event.queryStringParameters || {};
+    const siteUrl = params.site || "https://www.sanibuildingcorp.com/";
+    const daysBack = parseInt(params.days || "30", 10);
+
+    // --- 2. Date range (default: last 30 days) ---
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - daysBack);
+    const fmtDate = (d) => d.toISOString().split("T")[0];
+
+    // --- 3. Exchange refresh_token for a fresh access_token ---
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error("Token exchange failed:", errText);
+      return {
+        statusCode: 500,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "Failed to refresh access token", detail: errText }),
+      };
+    }
+
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData.access_token;
+
+    // --- 4. Helper: query Search Console API ---
+    const querySearchConsole = async (dimensions, rowLimit = 25) => {
+      const url = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          startDate: fmtDate(startDate),
+          endDate: fmtDate(endDate),
+          dimensions: dimensions,
+          rowLimit: rowLimit,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Search Console API error (${res.status}): ${errText}`);
+      }
+
+      return res.json();
+    };
+
+    // --- 5. Run multiple queries in parallel ---
+    const [totalsRes, queriesRes, pagesRes, dailyRes, queryPageRes] = await Promise.all([
+      querySearchConsole([], 1),                       // overall totals
+      querySearchConsole(["query"], 50),               // top 50 queries
+      querySearchConsole(["page"], 25),                // top 25 pages
+      querySearchConsole(["date"], 90),                // by date
+      querySearchConsole(["query", "page"], 100),      // query+page combos for opportunities
+    ]);
+
+    // --- 6. Format response ---
+    const totals = totalsRes.rows?.[0] || { clicks: 0, impressions: 0, ctr: 0, position: 0 };
+
+    const response = {
+      success: true,
+      site: siteUrl,
+      dateRange: {
+        start: fmtDate(startDate),
+        end: fmtDate(endDate),
+        days: daysBack,
+      },
+      totals: {
+        clicks: totals.clicks || 0,
+        impressions: totals.impressions || 0,
+        ctr: totals.ctr || 0,
+        position: totals.position || 0,
+      },
+      topQueries: (queriesRes.rows || []).map((r) => ({
+        query: r.keys[0],
+        clicks: r.clicks,
+        impressions: r.impressions,
+        ctr: r.ctr,
+        position: r.position,
+      })),
+      topPages: (pagesRes.rows || []).map((r) => ({
+        page: r.keys[0],
+        clicks: r.clicks,
+        impressions: r.impressions,
+        ctr: r.ctr,
+        position: r.position,
+      })),
+      byDate: (dailyRes.rows || []).map((r) => ({
+        date: r.keys[0],
+        clicks: r.clicks,
+        impressions: r.impressions,
+        ctr: r.ctr,
+        position: r.position,
+      })),
+      queryPageCombos: (queryPageRes.rows || []).map((r) => ({
+        query: r.keys[0],
+        page: r.keys[1],
+        clicks: r.clicks,
+        impressions: r.impressions,
+        ctr: r.ctr,
+        position: r.position,
+      })),
+      fetchedAt: new Date().toISOString(),
+    };
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify(response, null, 2),
+    };
+  } catch (err) {
+    console.error("fetch-search-console error:", err);
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({
+        success: false,
+        error: err.message || "Unknown error",
+      }),
+    };
+  }
+};
