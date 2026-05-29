@@ -150,6 +150,7 @@ exports.handler = async function (event) {
       "You write content that ranks on Google AND converts visitors into phone calls. " +
       "You write in a confident, premium, trustworthy voice. Never keyword-stuff. " +
       "Always weave keywords naturally into helpful, specific content. " +
+      "IMPORTANT: Do NOT use the word 'luxury' or 'luxurious' anywhere. Instead use phrasing like 'high-quality', 'premium', 'high-end', 'top-quality', or 'professional'. " +
       "Return ONLY valid JSON, no markdown, no backticks, no preamble.";
 
     const userPrompt = `
@@ -222,6 +223,9 @@ Provide exactly 4 sections and 4 FAQ items. Keep each section body to 2-3 senten
     } catch (e) {
       return json(502, { error: "Could not parse AI response", raw: raw.slice(0, 600) });
     }
+
+    // Guaranteed safety net: strip the word "luxury" from all generated text
+    content = stripLuxury(content);
 
     // STEP 4 — save the draft (best-effort; don't fail the request if the table is missing)
     let saved = null;
@@ -384,4 +388,26 @@ function rewritePage(html, content) {
   const schema = buildFaqSchema(content);
   if (schema && /<\/head>/i.test(out)) { out = out.replace(/<\/head>/i, schema + "</head>"); changes.push("faq-schema"); }
   return { html: out, changes: changes };
+}
+
+// Replace "luxury"/"luxurious" anywhere in the content object with high-quality wording
+function stripLuxury(obj) {
+  function fix(str) {
+    return String(str)
+      .replace(/\bLuxurious\b/g, "High-End")
+      .replace(/\bluxurious\b/g, "high-end")
+      .replace(/\bLuxury\b/g, "High-Quality")
+      .replace(/\bluxury\b/g, "high-quality");
+  }
+  function walk(v) {
+    if (typeof v === "string") return fix(v);
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === "object") {
+      const out = {};
+      for (const k in v) out[k] = walk(v[k]);
+      return out;
+    }
+    return v;
+  }
+  return walk(obj);
 }
