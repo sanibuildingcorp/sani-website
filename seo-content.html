@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO Content Studio · Sani Building Corp</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0b1828; --navy-2:#122740; --navy-3:#1a3354;
+  --gold:#d4b572; --gold-2:#c9a84c; --gold-soft:rgba(212,181,114,0.12);
+  --ink:#e8edf5; --ink-soft:#b8c4d6; --ink-muted:#7a8aa3;
+  --line:rgba(212,181,114,0.18); --line-soft:rgba(255,255,255,0.06);
+  --bg:#06101e; --card:#0f1f33; --card-2:#142a44;
+  --good:#4ade80; --good-bg:rgba(74,222,128,0.12);
+  --bad:#f87171; --warn:#fbbf24;
+  --display:'Bebas Neue',Arial,sans-serif; --body:'Inter',-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh}
+
+/* login */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 30% 20%,var(--navy-2) 0%,var(--bg) 60%)}
+.login-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:44px 36px;max-width:400px;width:100%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.5)}
+.login-logo{font-family:var(--display);font-size:28px;letter-spacing:5px;color:var(--gold);margin-bottom:6px}
+.login-sub{font-size:12px;letter-spacing:3px;color:var(--ink-muted);margin-bottom:32px;text-transform:uppercase}
+.login-input{width:100%;padding:14px 16px;background:var(--navy);border:1.5px solid var(--line);color:var(--ink);font-family:var(--body);font-size:15px;border-radius:10px;margin-bottom:14px}
+.login-input:focus{outline:none;border-color:var(--gold)}
+.login-btn{width:100%;padding:14px;background:var(--gold);color:var(--navy);border:none;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:1.5px;cursor:pointer;font-family:var(--body);text-transform:uppercase}
+.login-error{color:var(--bad);font-size:13px;margin-top:10px;min-height:18px}
+
+.app{display:none}
+.app.show{display:block}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.brand-mark{font-family:var(--display);font-size:18px;letter-spacing:3px;color:var(--gold);flex:1}
+.brand-mark .sub{color:var(--ink-soft);letter-spacing:4px;margin-left:10px}
+.topbar-btn{padding:9px 16px;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold);border-radius:8px;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;font-family:var(--body);text-decoration:none;text-transform:uppercase}
+.topbar-btn:hover{background:var(--gold);color:var(--navy)}
+
+.wrap{max-width:1000px;margin:0 auto;padding:28px 24px 80px}
+.intro{margin-bottom:24px}
+.intro h1{font-family:var(--display);font-size:32px;letter-spacing:2px;color:var(--gold);margin-bottom:8px}
+.intro p{font-size:14px;color:var(--ink-soft);line-height:1.6;max-width:680px}
+
+.page-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:28px}
+@media(max-width:680px){.page-grid{grid-template-columns:1fr}}
+.page-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.page-card .pc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.page-card h3{font-family:var(--display);font-size:20px;letter-spacing:1px;color:var(--ink)}
+.page-card .pc-url{font-size:11px;color:var(--ink-muted);margin-top:2px;word-break:break-all}
+.pc-status{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:12px;font-weight:700;white-space:nowrap}
+.pc-status.none{background:var(--line-soft);color:var(--ink-muted)}
+.pc-status.has{background:var(--good-bg);color:var(--good)}
+.pc-gen{padding:11px;background:var(--gold);color:var(--navy);border:none;border-radius:9px;font-family:var(--body);font-weight:700;font-size:12px;letter-spacing:1.2px;cursor:pointer;text-transform:uppercase}
+.pc-gen:hover:not(:disabled){background:var(--gold-2)}
+.pc-gen:disabled{opacity:0.55;cursor:not-allowed}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(11,24,40,0.3);border-top-color:var(--navy);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* result */
+.result{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin-top:8px}
+.result.show{display:block}
+.result-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.result-head h2{font-family:var(--display);font-size:24px;letter-spacing:1.5px;color:var(--gold)}
+.result-actions{display:flex;gap:8px;flex-wrap:wrap}
+.r-btn{padding:9px 16px;border-radius:8px;font-family:var(--body);font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;border:1px solid var(--line);background:transparent;color:var(--ink-soft)}
+.r-btn:hover{border-color:var(--gold);color:var(--gold)}
+.r-btn.primary{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+
+.blk{margin-bottom:22px}
+.blk-label{font-family:var(--display);font-size:13px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.copy-mini{font-size:10px;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold);border-radius:6px;padding:3px 8px;cursor:pointer;letter-spacing:0.5px;font-family:var(--body)}
+.copy-mini:hover{background:var(--gold);color:var(--navy)}
+.field-box{background:var(--navy);border:1px solid var(--line-soft);border-radius:10px;padding:14px 16px;font-size:14px;color:var(--ink);line-height:1.6;white-space:pre-wrap}
+.field-box.mono{font-family:ui-monospace,monospace;font-size:13px}
+.kw-list{display:flex;flex-direction:column;gap:8px}
+.kw-item{background:var(--navy);border:1px solid var(--line-soft);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 14px}
+.kw-item .kw{font-size:14px;font-weight:600;color:var(--ink)}
+.kw-item .why{font-size:12px;color:var(--ink-muted);margin-top:3px}
+.sec{background:var(--navy);border:1px solid var(--line-soft);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.sec h4{font-size:15px;color:var(--gold-2);margin-bottom:6px}
+.sec p{font-size:13.5px;color:var(--ink-soft);line-height:1.6;white-space:pre-wrap}
+.faq{background:var(--navy);border:1px solid var(--line-soft);border-radius:10px;padding:12px 16px;margin-bottom:8px}
+.faq .q{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.faq .a{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.chip{display:inline-block;background:var(--gold-soft);border:1px solid var(--line);color:var(--ink-soft);font-size:12px;padding:5px 10px;border-radius:8px;margin:0 6px 6px 0}
+.notes{background:var(--good-bg);border:1px solid var(--good);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--good);line-height:1.5}
+.err{display:none;background:rgba(248,113,113,0.12);border:1px solid var(--bad);border-radius:10px;padding:14px 16px;color:var(--bad);font-size:13px;margin-top:12px}
+.err.show{display:block}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy-2);color:var(--ink);border:1px solid var(--gold);padding:14px 22px;border-radius:10px;font-size:14px;z-index:200;transition:transform 0.3s}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">SEO CONTENT STUDIO</div>
+    <div class="login-sub">Sani Building Corp</div>
+    <input type="password" id="pw-input" class="login-input" placeholder="Password" autofocus>
+    <button id="pw-btn" class="login-btn">UNLOCK</button>
+    <div id="pw-error" class="login-error"></div>
+  </div>
+</div>
+
+<div id="app" class="app">
+  <div class="topbar">
+    <div class="brand-mark">SANI <span class="sub">SEO CONTENT STUDIO</span></div>
+    <a href="/dashboard.html" class="topbar-btn">← Dashboard</a>
+    <button class="topbar-btn" onclick="loadPages()">⟳ Refresh</button>
+  </div>
+
+  <div class="wrap">
+    <div class="intro">
+      <h1>✍️ AI Page Content Writer</h1>
+      <p>For each service page, the AI reads your live page, pulls the real keywords your site already shows up for in Google, picks the best-value targets, and writes fully optimized, ready-to-publish content. Generate, review, copy into your page on GitHub.</p>
+    </div>
+
+    <div class="page-grid" id="page-grid"></div>
+
+    <div class="err" id="err"></div>
+    <div class="result" id="result"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const DASHBOARD_PASSWORD = "L0nd0n12@";
+let pages = [];
+let currentDraft = null;
+
+document.getElementById("pw-btn").addEventListener("click", tryLogin);
+document.getElementById("pw-input").addEventListener("keypress", function(e){ if(e.key==="Enter") tryLogin(); });
+function tryLogin(){
+  if(document.getElementById("pw-input").value === DASHBOARD_PASSWORD){
+    sessionStorage.setItem("sbc-auth","1"); showApp();
+  } else { document.getElementById("pw-error").textContent = "Incorrect password"; }
+}
+function showApp(){
+  document.getElementById("login-screen").style.display="none";
+  document.getElementById("app").classList.add("show");
+  loadPages();
+}
+if(sessionStorage.getItem("sbc-auth")==="1") showApp();
+
+function esc(s){ if(s==null) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},2600); }
+function fmtDate(iso){ if(!iso) return ""; return new Date(iso).toLocaleDateString("en-US",{month:"short",day:"numeric"}); }
+
+async function loadPages(){
+  const grid = document.getElementById("page-grid");
+  grid.innerHTML = '<div style="color:var(--ink-muted);font-size:13px">Loading…</div>';
+  try {
+    const r = await fetch("/.netlify/functions/seo-content-engine");
+    const data = await r.json();
+    pages = data.pages || [];
+    renderPages();
+  } catch(e){
+    grid.innerHTML = '<div style="color:var(--bad)">Could not load. Make sure seo-content-engine.js is uploaded to netlify/functions/</div>';
+  }
+}
+
+function renderPages(){
+  const grid = document.getElementById("page-grid");
+  grid.innerHTML = pages.map(function(p){
+    return '<div class="page-card">'+
+      '<div class="pc-top">'+
+        '<div>'+
+          '<h3>'+esc(p.service)+'</h3>'+
+          '<div class="pc-url">'+esc(p.path)+'</div>'+
+        '</div>'+
+        '<span class="pc-status '+(p.hasDraft?"has":"none")+'">'+(p.hasDraft?("✓ "+fmtDate(p.lastGenerated)):"No draft")+'</span>'+
+      '</div>'+
+      '<button class="pc-gen" data-slug="'+esc(p.slug)+'" onclick="generate(\''+esc(p.slug)+'\', this)">'+(p.hasDraft?"↻ Regenerate":"✨ Generate Content")+'</button>'+
+    '</div>';
+  }).join("");
+}
+
+async function generate(slug, btn){
+  const page = pages.find(function(p){ return p.slug===slug; });
+  if(!page) return;
+  document.getElementById("err").classList.remove("show");
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Reading page + writing…'; }
+  try {
+    const r = await fetch("/.netlify/functions/seo-content-engine",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ slug:slug, url:page.url, service:page.service })
+    });
+    const data = await r.json();
+    if(!r.ok){ throw new Error(data.error || "Generation failed"); }
+    currentDraft = data;
+    renderResult(data);
+    toast("✓ Content generated for "+page.service);
+    loadPages();
+    document.getElementById("result").scrollIntoView({behavior:"smooth"});
+  } catch(e){
+    const err=document.getElementById("err");
+    err.textContent="⚠️ "+e.message;
+    err.classList.add("show");
+  } finally {
+    if(btn){ btn.disabled=false; btn.innerHTML="↻ Regenerate"; }
+  }
+}
+
+function renderResult(data){
+  const c = data.content || {};
+  const res = document.getElementById("result");
+
+  const kw = (c.targetKeywords||[]).map(function(k){
+    return '<div class="kw-item"><div class="kw">'+esc(k.keyword)+'</div><div class="why">'+esc(k.reason)+'</div></div>';
+  }).join("") || '<div class="field-box">No keywords returned.</div>';
+
+  const sections = (c.sections||[]).map(function(s){
+    return '<div class="sec"><h4>'+esc(s.heading)+'</h4><p>'+esc(s.body)+'</p></div>';
+  }).join("");
+
+  const faq = (c.faq||[]).map(function(f){
+    return '<div class="faq"><div class="q">'+esc(f.question)+'</div><div class="a">'+esc(f.answer)+'</div></div>';
+  }).join("");
+
+  const links = (c.internalLinks||[]).map(function(l){ return '<span class="chip">'+esc(l)+'</span>'; }).join("");
+  const alts = (c.imageAltSuggestions||[]).map(function(a){ return '<span class="chip">'+esc(a)+'</span>'; }).join("");
+
+  res.innerHTML =
+    '<div class="result-head">'+
+      '<h2>'+esc(data.service)+'</h2>'+
+      '<div class="result-actions">'+
+        '<button class="r-btn" onclick="copyAll()">📋 Copy All</button>'+
+        '<button class="r-btn primary" onclick="downloadDraft()">⬇ Download .txt</button>'+
+      '</div>'+
+    '</div>'+
+    '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:18px">Analyzed '+(data.keywordsAnalyzed||0)+' real Google keywords · live page '+(data.currentTitle?"read ✓":"not read")+'</div>'+
+
+    block("🎯 Best Target Keywords", '<div class="kw-list">'+kw+'</div>', null)+
+    block("🏷️ Title Tag", '<div class="field-box mono">'+esc(c.title||"")+'</div>', c.title)+
+    block("📝 Meta Description", '<div class="field-box mono">'+esc(c.metaDescription||"")+'</div>', c.metaDescription)+
+    block("📰 H1 Headline", '<div class="field-box">'+esc(c.h1||"")+'</div>', c.h1)+
+    block("👋 Intro Paragraph", '<div class="field-box">'+esc(c.intro||"")+'</div>', c.intro)+
+    block("📄 Body Sections", sections||'<div class="field-box">None</div>', null)+
+    block("❓ FAQ", faq||'<div class="field-box">None</div>', null)+
+    (links?block("🔗 Internal Link Ideas", '<div>'+links+'</div>', null):"")+
+    (alts?block("🖼️ Image Alt Text Ideas", '<div>'+alts+'</div>', null):"")+
+    (c.notes?'<div class="blk"><div class="blk-label">💡 Strategy</div><div class="notes">'+esc(c.notes)+'</div></div>':"");
+
+  res.classList.add("show");
+}
+
+function block(label, inner, copyText){
+  const copyBtn = copyText ? '<button class="copy-mini" onclick="copyText(this)" data-copy="'+esc(copyText)+'">Copy</button>' : '';
+  return '<div class="blk"><div class="blk-label">'+label+copyBtn+'</div>'+inner+'</div>';
+}
+
+function copyText(btn){
+  const t = btn.getAttribute("data-copy");
+  navigator.clipboard.writeText(t).then(function(){ toast("Copied"); });
+}
+
+function copyAll(){
+  navigator.clipboard.writeText(buildPlainText()).then(function(){ toast("✓ All content copied"); });
+}
+
+function buildPlainText(){
+  if(!currentDraft) return "";
+  const c = currentDraft.content||{};
+  let out = "=== "+currentDraft.service+" — SEO OPTIMIZED CONTENT ===\n\n";
+  out += "TARGET KEYWORDS:\n"+(c.targetKeywords||[]).map(function(k){return "  • "+k.keyword+"  ("+k.reason+")";}).join("\n")+"\n\n";
+  out += "TITLE TAG:\n"+(c.title||"")+"\n\n";
+  out += "META DESCRIPTION:\n"+(c.metaDescription||"")+"\n\n";
+  out += "H1:\n"+(c.h1||"")+"\n\n";
+  out += "INTRO:\n"+(c.intro||"")+"\n\n";
+  out += "SECTIONS:\n"+(c.sections||[]).map(function(s){return "## "+s.heading+"\n"+s.body;}).join("\n\n")+"\n\n";
+  out += "FAQ:\n"+(c.faq||[]).map(function(f){return "Q: "+f.question+"\nA: "+f.answer;}).join("\n\n")+"\n\n";
+  if((c.internalLinks||[]).length) out += "INTERNAL LINKS:\n"+(c.internalLinks||[]).map(function(l){return "  • "+l;}).join("\n")+"\n\n";
+  if((c.imageAltSuggestions||[]).length) out += "IMAGE ALT TEXT:\n"+(c.imageAltSuggestions||[]).map(function(a){return "  • "+a;}).join("\n")+"\n\n";
+  if(c.notes) out += "STRATEGY:\n"+c.notes+"\n";
+  return out;
+}
+
+function downloadDraft(){
+  if(!currentDraft) return;
+  const blob = new Blob([buildPlainText()],{type:"text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = currentDraft.slug+"-seo-content.txt";
+  a.click();
+  toast("✓ Downloaded");
+}
+</script>
+</body>
+</html>
