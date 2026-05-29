@@ -2205,6 +2205,7 @@ const TABS = [
   { id: "declined", label: "Declined" },
   { id: "handyman", label: "🔧 Handyman" },
   { id: "seo", label: "🧠 SEO Brain" },
+  { id: "content", label: "✍️ Content" },
 ];
 
 let handymanBookings = [];
@@ -2391,6 +2392,12 @@ function renderList() {
   // SEO BRAIN TAB
   if (activeTab === "seo") {
     renderSeoTab();
+    return;
+  }
+
+  // CONTENT STUDIO TAB
+  if (activeTab === "content") {
+    renderContentStudio();
     return;
   }
 
@@ -3720,11 +3727,30 @@ async function sendConfirmation() {
 /* END SEND CONFIRMATION FEATURE */
 
 /* ════════════════════════════════════════════════════════════════════
+   CONTENT STUDIO TAB — embeds the AI Page Content Writer
+   ════════════════════════════════════════════════════════════════════ */
+function renderContentStudio() {
+  const host = document.getElementById("list-host");
+  // The studio (/seo-content.html) shares the same sessionStorage auth key,
+  // so it auto-unlocks inside the iframe — no second login.
+  host.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">' +
+      '<div>' +
+        '<div style="font-family:var(--display);font-size:22px;letter-spacing:1.5px;color:var(--gold)">✍️ AI PAGE CONTENT WRITER</div>' +
+        '<div style="font-size:12px;color:var(--ink-muted);margin-top:2px">Generate optimized content + full ready-to-upload HTML for each service page.</div>' +
+      '</div>' +
+      '<a href="/seo-content.html" target="_blank" class="topbar-btn" style="text-decoration:none">↗ Open Full Screen</a>' +
+    '</div>' +
+    '<iframe src="/seo-content.html" style="width:100%;height:78vh;border:1px solid var(--line);border-radius:14px;background:var(--bg)" title="SEO Content Studio"></iframe>';
+}
+/* END CONTENT STUDIO TAB */
+
+/* ════════════════════════════════════════════════════════════════════
    SEO BRAIN TAB — May 2026
    ════════════════════════════════════════════════════════════════════ */
-let seoData = null;
-let seoInsightCount = 0;
-let seoInsightFilter = "all";
+var seoData = null;
+var seoInsightCount = 0;
+var seoInsightFilter = "all";
 
 async function renderSeoTab() {
   const host = document.getElementById("list-host");
