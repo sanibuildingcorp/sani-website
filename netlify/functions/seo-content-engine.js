@@ -97,12 +97,13 @@ exports.handler = async function (event) {
     let pageText = "";
     let currentTitle = "";
     let currentMeta = "";
+    let rawHtml = "";
     try {
       const pageRes = await fetch(url, {
         headers: { "User-Agent": "SaniSEOBot/1.0" },
       });
       if (pageRes.ok) {
-        const rawHtml = await pageRes.text();
+        rawHtml = await pageRes.text();
         currentTitle = (rawHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || "";
         currentMeta = (rawHtml.match(/<meta[^>]*name=["']description["'][^>]*content=["']([\s\S]*?)["']/i) || [])[1] || "";
         pageText = extractText(rawHtml).slice(0, 6000);
@@ -244,6 +245,19 @@ Provide 4-6 sections and 4-6 FAQ items. Keep it specific to NYC and to ${service
       }
     } catch (e) { /* ignore save errors */ }
 
+    // STEP 5 — optionally build the full ready-to-upload HTML page
+    let fullHtml = null;
+    let fullHtmlChanges = null;
+    if (body.buildFullHtml && rawHtml) {
+      try {
+        const rewritten = rewritePage(rawHtml, content);
+        fullHtml = rewritten.html;
+        fullHtmlChanges = rewritten.changes;
+      } catch (e) {
+        fullHtmlChanges = ["error: " + e.message];
+      }
+    }
+
     return json(200, {
       slug,
       service,
@@ -253,6 +267,9 @@ Provide 4-6 sections and 4-6 FAQ items. Keep it specific to NYC and to ${service
       keywordsAnalyzed: queries.length,
       content,
       savedId: saved ? saved.id : null,
+      fullHtml: fullHtml,
+      fullHtmlChanges: fullHtmlChanges,
+      fullHtmlAvailable: !!fullHtml,
     });
   } catch (err) {
     return json(500, { error: err.message });
@@ -285,4 +302,86 @@ function extractText(html) {
     .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// ════════════════════════════════════════════════════════════
+// FULL-PAGE REWRITE — preserves design, swaps in optimized content
+// ════════════════════════════════════════════════════════════
+function escHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function attrHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function buildInjectedSection(content) {
+  const sections = (content.sections || []).map(function (s) {
+    return '<div style="margin-bottom:28px">' +
+      '<h3 style="font-family:\'Playfair Display\',serif;font-size:clamp(20px,2.4vw,26px);font-weight:700;color:var(--black);margin-bottom:10px">' + escHtml(s.heading) + '</h3>' +
+      '<p style="font-size:15px;color:var(--gray);line-height:1.85">' + escHtml(s.body) + '</p>' +
+      '</div>';
+  }).join("\n");
+  const faqItems = (content.faq || []).map(function (f) {
+    return '<div class="check-item" style="border-left:3px solid var(--gold)">' +
+      '<strong style="font-size:15px">' + escHtml(f.question) + '</strong>' +
+      '<span style="font-size:14px;line-height:1.7">' + escHtml(f.answer) + '</span>' +
+      '</div>';
+  }).join("\n");
+  const faqBlock = (content.faq && content.faq.length)
+    ? ('<div class="section-eyebrow" style="margin-top:56px"><div class="line"></div><span>Frequently Asked Questions</span></div>' +
+       '<div style="font-family:\'Playfair Display\',serif;font-size:clamp(24px,3vw,34px);font-weight:700;margin-bottom:24px">Common Questions, <em style="font-style:italic;color:var(--gold)">Answered</em></div>' +
+       '<div class="check-grid">' + faqItems + '</div>')
+    : "";
+  return '\n<!-- SEO-OPTIMIZED CONTENT (AI-generated) -->\n' +
+    '<section style="padding:80px 28px;background:var(--light)">\n' +
+    '  <div style="max-width:1100px;margin:0 auto">\n' +
+    '    <div class="section-eyebrow"><div class="line"></div><span>' + escHtml(content.eyebrow || "Expert NYC Service") + '</span></div>\n' +
+    '    <div style="font-family:\'Playfair Display\',serif;font-size:clamp(24px,3vw,36px);font-weight:700;margin-bottom:28px;max-width:760px">' + escHtml(content.sectionLead || content.h1 || "") + '</div>\n' +
+    sections + "\n" + faqBlock + "\n  </div>\n</section>\n<!-- END SEO-OPTIMIZED CONTENT -->\n";
+}
+function buildFaqSchema(content) {
+  if (!content.faq || !content.faq.length) return "";
+  const schema = {
+    "@context": "https://schema.org", "@type": "FAQPage",
+    mainEntity: content.faq.map(function (f) {
+      return { "@type": "Question", name: f.question, acceptedAnswer: { "@type": "Answer", text: f.answer } };
+    }),
+  };
+  return '\n<script type="application/ld+json">' + JSON.stringify(schema) + "</scr" + "ipt>\n";
+}
+function rewritePage(html, content) {
+  let out = html;
+  const changes = [];
+  if (content.title) {
+    const re = /<title[^>]*>[\s\S]*?<\/title>/i;
+    if (re.test(out)) { out = out.replace(re, "<title>" + attrHtml(content.title) + "</title>"); changes.push("title"); }
+  }
+  if (content.metaDescription) {
+    const re1 = /<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/i;
+    const re2 = /<meta\s+content=["'][\s\S]*?["']\s+name=["']description["']\s*\/?>/i;
+    const nm = '<meta name="description" content="' + attrHtml(content.metaDescription) + '">';
+    if (re1.test(out)) { out = out.replace(re1, nm); changes.push("meta"); }
+    else if (re2.test(out)) { out = out.replace(re2, nm); changes.push("meta"); }
+  }
+  if (content.h1) {
+    const re = /<h1([^>]*)>[\s\S]*?<\/h1>/i;
+    if (re.test(out)) {
+      const words = String(content.h1).trim().split(/\s+/);
+      let inner;
+      if (words.length > 1) { const last = words.pop(); inner = escHtml(words.join(" ")) + " <em>" + escHtml(last) + "</em>"; }
+      else { inner = escHtml(content.h1); }
+      out = out.replace(re, "<h1$1>" + inner + "</h1>"); changes.push("h1");
+    }
+  }
+  if (content.intro) {
+    const re = /<p style="max-width:600px">[\s\S]*?<\/p>/i;
+    if (re.test(out)) { out = out.replace(re, '<p style="max-width:600px">' + escHtml(content.intro) + "</p>"); changes.push("intro"); }
+  }
+  const injected = buildInjectedSection(content);
+  if (/<footer/i.test(out)) { out = out.replace(/<footer/i, injected + "<footer"); changes.push("section"); }
+  else { out = out.replace(/<\/body>/i, injected + "</body>"); changes.push("section-fallback"); }
+  const schema = buildFaqSchema(content);
+  if (schema && /<\/head>/i.test(out)) { out = out.replace(/<\/head>/i, schema + "</head>"); changes.push("faq-schema"); }
+  return { html: out, changes: changes };
 }
