@@ -1,413 +1,351 @@
-// netlify/functions/seo-content-engine.js
-// READS your actual website page + combines with Google Search Console keyword data,
-// then asks OpenAI to find the best-value keywords and write fully optimized page content.
-//
-// POST { slug: "bathroom-renovation", url: "https://www.sanibuildingcorp.com/bathroom-renovation.html", service: "Bathroom Renovation" }
-//   -> fetches the live page, pulls that page's GSC keywords from Supabase,
-//      asks OpenAI to produce optimized title/meta/H1/body/FAQ + target keywords,
-//      saves the draft to seo_content_drafts, returns it.
-//
-// GET  ?slug=bathroom-renovation        -> returns the latest saved draft for that slug
-// GET  (no slug)                         -> returns the list of service pages + whether a draft exists
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO Content Studio · Sani Building Corp</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0b1828; --navy-2:#122740; --navy-3:#1a3354;
+  --gold:#d4b572; --gold-2:#c9a84c; --gold-soft:rgba(212,181,114,0.12);
+  --ink:#e8edf5; --ink-soft:#b8c4d6; --ink-muted:#7a8aa3;
+  --line:rgba(212,181,114,0.18); --line-soft:rgba(255,255,255,0.06);
+  --bg:#06101e; --card:#0f1f33; --card-2:#142a44;
+  --good:#4ade80; --good-bg:rgba(74,222,128,0.12);
+  --bad:#f87171; --warn:#fbbf24;
+  --display:'Bebas Neue',Arial,sans-serif; --body:'Inter',-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh}
 
-const SERVICE_PAGES = [
-  { slug: "bathroom-renovation", service: "Bathroom Renovation", path: "/bathroom-renovation.html" },
-  { slug: "kitchen-renovation",  service: "Kitchen Renovation",  path: "/kitchen-renovation.html" },
-  { slug: "painting",            service: "Painting",            path: "/painting.html" },
-  { slug: "flooring",            service: "Flooring",            path: "/flooring.html" },
-  { slug: "carpentry",           service: "Carpentry",           path: "/carpentry.html" },
-  { slug: "handyman",            service: "Handyman Services",   path: "/handyman.html" },
-];
+/* login */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 30% 20%,var(--navy-2) 0%,var(--bg) 60%)}
+.login-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:44px 36px;max-width:400px;width:100%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.5)}
+.login-logo{font-family:var(--display);font-size:28px;letter-spacing:5px;color:var(--gold);margin-bottom:6px}
+.login-sub{font-size:12px;letter-spacing:3px;color:var(--ink-muted);margin-bottom:32px;text-transform:uppercase}
+.login-input{width:100%;padding:14px 16px;background:var(--navy);border:1.5px solid var(--line);color:var(--ink);font-family:var(--body);font-size:15px;border-radius:10px;margin-bottom:14px}
+.login-input:focus{outline:none;border-color:var(--gold)}
+.login-btn{width:100%;padding:14px;background:var(--gold);color:var(--navy);border:none;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:1.5px;cursor:pointer;font-family:var(--body);text-transform:uppercase}
+.login-error{color:var(--bad);font-size:13px;margin-top:10px;min-height:18px}
 
-const SITE_ORIGIN = "https://www.sanibuildingcorp.com";
+.app{display:none}
+.app.show{display:block}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.brand-mark{font-family:var(--display);font-size:18px;letter-spacing:3px;color:var(--gold);flex:1}
+.brand-mark .sub{color:var(--ink-soft);letter-spacing:4px;margin-left:10px}
+.topbar-btn{padding:9px 16px;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold);border-radius:8px;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;font-family:var(--body);text-decoration:none;text-transform:uppercase}
+.topbar-btn:hover{background:var(--gold);color:var(--navy)}
 
-exports.handler = async function (event) {
-  if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers: cors(),
-      body: "",
-    };
+.wrap{max-width:1000px;margin:0 auto;padding:28px 24px 80px}
+.intro{margin-bottom:24px}
+.intro h1{font-family:var(--display);font-size:32px;letter-spacing:2px;color:var(--gold);margin-bottom:8px}
+.intro p{font-size:14px;color:var(--ink-soft);line-height:1.6;max-width:680px}
+
+.page-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:28px}
+@media(max-width:680px){.page-grid{grid-template-columns:1fr}}
+.page-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.page-card .pc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.page-card h3{font-family:var(--display);font-size:20px;letter-spacing:1px;color:var(--ink)}
+.page-card .pc-url{font-size:11px;color:var(--ink-muted);margin-top:2px;word-break:break-all}
+.pc-status{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:12px;font-weight:700;white-space:nowrap}
+.pc-status.none{background:var(--line-soft);color:var(--ink-muted)}
+.pc-status.has{background:var(--good-bg);color:var(--good)}
+.pc-gen{padding:11px;background:var(--gold);color:var(--navy);border:none;border-radius:9px;font-family:var(--body);font-weight:700;font-size:12px;letter-spacing:1.2px;cursor:pointer;text-transform:uppercase}
+.pc-gen:hover:not(:disabled){background:var(--gold-2)}
+.pc-gen:disabled{opacity:0.55;cursor:not-allowed}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(11,24,40,0.3);border-top-color:var(--navy);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* result */
+.result{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin-top:8px}
+.result.show{display:block}
+.result-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.result-head h2{font-family:var(--display);font-size:24px;letter-spacing:1.5px;color:var(--gold)}
+.result-actions{display:flex;gap:8px;flex-wrap:wrap}
+.r-btn{padding:9px 16px;border-radius:8px;font-family:var(--body);font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;border:1px solid var(--line);background:transparent;color:var(--ink-soft)}
+.r-btn:hover{border-color:var(--gold);color:var(--gold)}
+.r-btn.primary{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.r-btn.publish{background:var(--good);color:#06210f;border-color:var(--good);font-weight:700}
+.r-btn.publish:hover{background:#3fcf6f}
+.r-btn.publish:disabled{opacity:0.6;cursor:not-allowed}
+
+.blk{margin-bottom:22px}
+.blk-label{font-family:var(--display);font-size:13px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.copy-mini{font-size:10px;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold);border-radius:6px;padding:3px 8px;cursor:pointer;letter-spacing:0.5px;font-family:var(--body)}
+.copy-mini:hover{background:var(--gold);color:var(--navy)}
+.field-box{background:var(--navy);border:1px solid var(--line-soft);border-radius:10px;padding:14px 16px;font-size:14px;color:var(--ink);line-height:1.6;white-space:pre-wrap}
+.field-box.mono{font-family:ui-monospace,monospace;font-size:13px}
+.kw-list{display:flex;flex-direction:column;gap:8px}
+.kw-item{background:var(--navy);border:1px solid var(--line-soft);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 14px}
+.kw-item .kw{font-size:14px;font-weight:600;color:var(--ink)}
+.kw-item .why{font-size:12px;color:var(--ink-muted);margin-top:3px}
+.sec{background:var(--navy);border:1px solid var(--line-soft);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.sec h4{font-size:15px;color:var(--gold-2);margin-bottom:6px}
+.sec p{font-size:13.5px;color:var(--ink-soft);line-height:1.6;white-space:pre-wrap}
+.faq{background:var(--navy);border:1px solid var(--line-soft);border-radius:10px;padding:12px 16px;margin-bottom:8px}
+.faq .q{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.faq .a{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.chip{display:inline-block;background:var(--gold-soft);border:1px solid var(--line);color:var(--ink-soft);font-size:12px;padding:5px 10px;border-radius:8px;margin:0 6px 6px 0}
+.notes{background:var(--good-bg);border:1px solid var(--good);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--good);line-height:1.5}
+.err{display:none;background:rgba(248,113,113,0.12);border:1px solid var(--bad);border-radius:10px;padding:14px 16px;color:var(--bad);font-size:13px;margin-top:12px}
+.err.show{display:block}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy-2);color:var(--ink);border:1px solid var(--gold);padding:14px 22px;border-radius:10px;font-size:14px;z-index:200;transition:transform 0.3s}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">SEO CONTENT STUDIO</div>
+    <div class="login-sub">Sani Building Corp</div>
+    <input type="password" id="pw-input" class="login-input" placeholder="Password" autofocus>
+    <button id="pw-btn" class="login-btn">UNLOCK</button>
+    <div id="pw-error" class="login-error"></div>
+  </div>
+</div>
+
+<div id="app" class="app">
+  <div class="topbar">
+    <div class="brand-mark">SANI <span class="sub">SEO CONTENT STUDIO</span></div>
+    <a href="/dashboard.html" class="topbar-btn">← Dashboard</a>
+    <button class="topbar-btn" onclick="loadPages()">⟳ Refresh</button>
+  </div>
+
+  <div class="wrap">
+    <div class="intro">
+      <h1>✍️ AI Page Content Writer</h1>
+      <p>For each service page, the AI reads your live page, pulls the real keywords your site already shows up for in Google, picks the best-value targets, and writes fully optimized, ready-to-publish content. Generate, review, copy into your page on GitHub.</p>
+    </div>
+
+    <div class="page-grid" id="page-grid"></div>
+
+    <div class="err" id="err"></div>
+    <div class="result" id="result"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const DASHBOARD_PASSWORD = "L0nd0n12@";
+let pages = [];
+let currentDraft = null;
+
+document.getElementById("pw-btn").addEventListener("click", tryLogin);
+document.getElementById("pw-input").addEventListener("keypress", function(e){ if(e.key==="Enter") tryLogin(); });
+function tryLogin(){
+  if(document.getElementById("pw-input").value === DASHBOARD_PASSWORD){
+    sessionStorage.setItem("sbc-auth","1"); showApp();
+  } else { document.getElementById("pw-error").textContent = "Incorrect password"; }
+}
+function showApp(){
+  document.getElementById("login-screen").style.display="none";
+  document.getElementById("app").classList.add("show");
+  loadPages();
+}
+if(sessionStorage.getItem("sbc-auth")==="1") showApp();
+
+function esc(s){ if(s==null) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},2600); }
+function fmtDate(iso){ if(!iso) return ""; return new Date(iso).toLocaleDateString("en-US",{month:"short",day:"numeric"}); }
+
+async function loadPages(){
+  const grid = document.getElementById("page-grid");
+  grid.innerHTML = '<div style="color:var(--ink-muted);font-size:13px">Loading…</div>';
+  try {
+    const r = await fetch("/.netlify/functions/seo-content-engine");
+    const data = await r.json();
+    pages = data.pages || [];
+    renderPages();
+  } catch(e){
+    grid.innerHTML = '<div style="color:var(--bad)">Could not load. Make sure seo-content-engine.js is uploaded to netlify/functions/</div>';
   }
+}
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SECRET_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
+function renderPages(){
+  const grid = document.getElementById("page-grid");
+  grid.innerHTML = pages.map(function(p){
+    return '<div class="page-card">'+
+      '<div class="pc-top">'+
+        '<div>'+
+          '<h3>'+esc(p.service)+'</h3>'+
+          '<div class="pc-url">'+esc(p.path)+'</div>'+
+        '</div>'+
+        '<span class="pc-status '+(p.hasDraft?"has":"none")+'">'+(p.hasDraft?("✓ "+fmtDate(p.lastGenerated)):"No draft")+'</span>'+
+      '</div>'+
+      '<button class="pc-gen" data-slug="'+esc(p.slug)+'" onclick="generate(\''+esc(p.slug)+'\', this)">'+(p.hasDraft?"↻ Regenerate":"✨ Generate Content")+'</button>'+
+    '</div>';
+  }).join("");
+}
 
-  const supabaseHeaders = {
-    apikey: supabaseKey,
-    Authorization: `Bearer ${supabaseKey}`,
-    "Content-Type": "application/json",
-  };
+async function generate(slug, btn, isRetry){
+  const page = pages.find(function(p){ return p.slug===slug; });
+  if(!page) return;
+  document.getElementById("err").classList.remove("show");
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>'+(isRetry?"Retrying…":"Reading page + writing…"); }
+  try {
+    const r = await fetch("/.netlify/functions/seo-content-engine",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ slug:slug, url:page.url, service:page.service, buildFullHtml:true })
+    });
+    const textBody = await r.text();
+    let data;
+    try {
+      data = JSON.parse(textBody);
+    } catch(parseErr){
+      // Server returned HTML (usually a timeout) instead of JSON
+      if(!isRetry){
+        if(btn){ btn.innerHTML='<span class="spin"></span>Retrying…'; }
+        return generate(slug, btn, true);
+      }
+      throw new Error("The AI is taking longer than usual right now. Please click Generate again in a moment — it usually works on the next try.");
+    }
+    if(!r.ok){ throw new Error(data.error || "Generation failed"); }
+    currentDraft = data;
+    renderResult(data);
+    toast("✓ Content generated for "+page.service);
+    loadPages();
+    document.getElementById("result").scrollIntoView({behavior:"smooth"});
+  } catch(e){
+    const err=document.getElementById("err");
+    err.textContent="⚠️ "+e.message;
+    err.classList.add("show");
+  } finally {
+    if(btn){ btn.disabled=false; btn.innerHTML="↻ Regenerate"; }
+  }
+}
+
+function renderResult(data){
+  const c = data.content || {};
+  const res = document.getElementById("result");
+
+  const kw = (c.targetKeywords||[]).map(function(k){
+    return '<div class="kw-item"><div class="kw">'+esc(k.keyword)+'</div><div class="why">'+esc(k.reason)+'</div></div>';
+  }).join("") || '<div class="field-box">No keywords returned.</div>';
+
+  const sections = (c.sections||[]).map(function(s){
+    return '<div class="sec"><h4>'+esc(s.heading)+'</h4><p>'+esc(s.body)+'</p></div>';
+  }).join("");
+
+  const faq = (c.faq||[]).map(function(f){
+    return '<div class="faq"><div class="q">'+esc(f.question)+'</div><div class="a">'+esc(f.answer)+'</div></div>';
+  }).join("");
+
+  const links = (c.internalLinks||[]).map(function(l){ return '<span class="chip">'+esc(l)+'</span>'; }).join("");
+  const alts = (c.imageAltSuggestions||[]).map(function(a){ return '<span class="chip">'+esc(a)+'</span>'; }).join("");
+
+  res.innerHTML =
+    '<div class="result-head">'+
+      '<h2>'+esc(data.service)+'</h2>'+
+      '<div class="result-actions">'+
+        '<button class="r-btn" onclick="copyAll()">📋 Copy All</button>'+
+        '<button class="r-btn" onclick="downloadDraft()">⬇ .txt</button>'+
+        (data.fullHtmlAvailable?'<button class="r-btn" onclick="downloadFullHtml()">⬇ Full HTML</button>':'')+
+        (data.fullHtmlAvailable?'<button class="r-btn publish" id="publish-btn" onclick="publishToGitHub()">✅ Approve &amp; Publish</button>':'')+
+      '</div>'+
+    '</div>'+
+    '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:18px">Analyzed '+(data.keywordsAnalyzed||0)+' real Google keywords · live page '+(data.currentTitle?"read ✓":"not read")+'</div>'+
+
+    block("🎯 Best Target Keywords", '<div class="kw-list">'+kw+'</div>', null)+
+    block("🏷️ Title Tag", '<div class="field-box mono">'+esc(c.title||"")+'</div>', c.title)+
+    block("📝 Meta Description", '<div class="field-box mono">'+esc(c.metaDescription||"")+'</div>', c.metaDescription)+
+    block("📰 H1 Headline", '<div class="field-box">'+esc(c.h1||"")+'</div>', c.h1)+
+    block("👋 Intro Paragraph", '<div class="field-box">'+esc(c.intro||"")+'</div>', c.intro)+
+    block("📄 Body Sections", sections||'<div class="field-box">None</div>', null)+
+    block("❓ FAQ", faq||'<div class="field-box">None</div>', null)+
+    (links?block("🔗 Internal Link Ideas", '<div>'+links+'</div>', null):"")+
+    (alts?block("🖼️ Image Alt Text Ideas", '<div>'+alts+'</div>', null):"")+
+    (c.notes?'<div class="blk"><div class="blk-label">💡 Strategy</div><div class="notes">'+esc(c.notes)+'</div></div>':"");
+
+  res.classList.add("show");
+}
+
+function block(label, inner, copyText){
+  const copyBtn = copyText ? '<button class="copy-mini" onclick="copyText(this)" data-copy="'+esc(copyText)+'">Copy</button>' : '';
+  return '<div class="blk"><div class="blk-label">'+label+copyBtn+'</div>'+inner+'</div>';
+}
+
+function copyText(btn){
+  const t = btn.getAttribute("data-copy");
+  navigator.clipboard.writeText(t).then(function(){ toast("Copied"); });
+}
+
+function copyAll(){
+  navigator.clipboard.writeText(buildPlainText()).then(function(){ toast("✓ All content copied"); });
+}
+
+function buildPlainText(){
+  if(!currentDraft) return "";
+  const c = currentDraft.content||{};
+  let out = "=== "+currentDraft.service+" — SEO OPTIMIZED CONTENT ===\n\n";
+  out += "TARGET KEYWORDS:\n"+(c.targetKeywords||[]).map(function(k){return "  • "+k.keyword+"  ("+k.reason+")";}).join("\n")+"\n\n";
+  out += "TITLE TAG:\n"+(c.title||"")+"\n\n";
+  out += "META DESCRIPTION:\n"+(c.metaDescription||"")+"\n\n";
+  out += "H1:\n"+(c.h1||"")+"\n\n";
+  out += "INTRO:\n"+(c.intro||"")+"\n\n";
+  out += "SECTIONS:\n"+(c.sections||[]).map(function(s){return "## "+s.heading+"\n"+s.body;}).join("\n\n")+"\n\n";
+  out += "FAQ:\n"+(c.faq||[]).map(function(f){return "Q: "+f.question+"\nA: "+f.answer;}).join("\n\n")+"\n\n";
+  if((c.internalLinks||[]).length) out += "INTERNAL LINKS:\n"+(c.internalLinks||[]).map(function(l){return "  • "+l;}).join("\n")+"\n\n";
+  if((c.imageAltSuggestions||[]).length) out += "IMAGE ALT TEXT:\n"+(c.imageAltSuggestions||[]).map(function(a){return "  • "+a;}).join("\n")+"\n\n";
+  if(c.notes) out += "STRATEGY:\n"+c.notes+"\n";
+  return out;
+}
+
+function downloadDraft(){
+  if(!currentDraft) return;
+  const blob = new Blob([buildPlainText()],{type:"text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = currentDraft.slug+"-seo-content.txt";
+  a.click();
+  toast("✓ Downloaded");
+}
+
+function downloadFullHtml(){
+  if(!currentDraft || !currentDraft.fullHtml){ toast("Full HTML not available"); return; }
+  const blob = new Blob([currentDraft.fullHtml],{type:"text/html"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = currentDraft.slug+".html";
+  a.click();
+  toast("✓ Downloaded "+currentDraft.slug+".html — upload to GitHub to replace your page");
+}
+
+async function publishToGitHub(){
+  if(!currentDraft || !currentDraft.fullHtml){ toast("Nothing to publish — generate content first"); return; }
+  if(!confirm("Publish this optimized page to your LIVE website?\n\nThis will update "+currentDraft.slug+".html on GitHub and your live page will refresh in about a minute.\n\nContinue?")) return;
+
+  const btn = document.getElementById("publish-btn");
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Publishing…'; }
+  document.getElementById("err").classList.remove("show");
 
   try {
-    // ─────────────────────────────────────────────
-    // GET — list service pages, or fetch a saved draft
-    // ─────────────────────────────────────────────
-    if (event.httpMethod === "GET") {
-      const slug = (event.queryStringParameters || {}).slug;
-
-      if (slug) {
-        // Return latest saved draft for this slug
-        const r = await fetch(
-          `${supabaseUrl}/rest/v1/seo_content_drafts?slug=eq.${encodeURIComponent(slug)}&order=created_at.desc&limit=1`,
-          { headers: supabaseHeaders }
-        );
-        const rows = r.ok ? await r.json() : [];
-        return json(200, { draft: rows[0] || null });
-      }
-
-      // No slug: list service pages + which ones already have a draft
-      let drafts = [];
-      try {
-        const r = await fetch(
-          `${supabaseUrl}/rest/v1/seo_content_drafts?select=slug,created_at,status&order=created_at.desc`,
-          { headers: supabaseHeaders }
-        );
-        if (r.ok) drafts = await r.json();
-      } catch (e) { /* table may not exist yet */ }
-
-      const pages = SERVICE_PAGES.map((p) => {
-        const d = drafts.find((x) => x.slug === p.slug);
-        return {
-          ...p,
-          url: SITE_ORIGIN + p.path,
-          hasDraft: !!d,
-          lastGenerated: d ? d.created_at : null,
-          draftStatus: d ? d.status : null,
-        };
-      });
-      return json(200, { pages });
-    }
-
-    // ─────────────────────────────────────────────
-    // POST — generate optimized content for one page
-    // ─────────────────────────────────────────────
-    const body = JSON.parse(event.body || "{}");
-    const slug = body.slug;
-    const known = SERVICE_PAGES.find((p) => p.slug === slug);
-    const service = body.service || (known && known.service) || slug;
-    const url = body.url || (known ? SITE_ORIGIN + known.path : null);
-
-    if (!slug || !url) {
-      return json(400, { error: "slug and url are required" });
-    }
-
-    // STEP 1 — read the live page
-    let pageText = "";
-    let currentTitle = "";
-    let currentMeta = "";
-    let rawHtml = "";
-    try {
-      const pageRes = await fetch(url, {
-        headers: { "User-Agent": "SaniSEOBot/1.0" },
-      });
-      if (pageRes.ok) {
-        rawHtml = await pageRes.text();
-        currentTitle = (rawHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || "";
-        currentMeta = (rawHtml.match(/<meta[^>]*name=["']description["'][^>]*content=["']([\s\S]*?)["']/i) || [])[1] || "";
-        pageText = extractText(rawHtml).slice(0, 6000);
-      }
-    } catch (e) {
-      // page fetch failed — continue with keyword data only
-    }
-
-    // STEP 2 — pull this site's GSC keyword data from Supabase
-    let queries = [];
-    let pageRow = null;
-    try {
-      const latestSnap = await fetch(
-        `${supabaseUrl}/rest/v1/seo_snapshots?order=snapshot_date.desc&limit=1`,
-        { headers: supabaseHeaders }
-      );
-      const snaps = latestSnap.ok ? await latestSnap.json() : [];
-      const snapId = snaps[0] && snaps[0].id;
-
-      if (snapId) {
-        const qRes = await fetch(
-          `${supabaseUrl}/rest/v1/seo_queries?snapshot_id=eq.${snapId}&order=impressions.desc&limit=60`,
-          { headers: supabaseHeaders }
-        );
-        queries = qRes.ok ? await qRes.json() : [];
-
-        const pRes = await fetch(
-          `${supabaseUrl}/rest/v1/seo_pages?snapshot_id=eq.${snapId}&order=impressions.desc&limit=60`,
-          { headers: supabaseHeaders }
-        );
-        const pages = pRes.ok ? await pRes.json() : [];
-        pageRow = pages.find((p) => (p.page || "").includes(slug)) || null;
-      }
-    } catch (e) { /* keyword data optional */ }
-
-    // Build a compact keyword table for the prompt
-    const keywordLines = queries
-      .map((q) => `- "${q.query}" | impressions: ${q.impressions} | clicks: ${q.clicks} | avg position: ${Number(q.position).toFixed(1)} | CTR: ${(Number(q.ctr) * 100 || 0).toFixed(1)}%`)
-      .join("\n");
-
-    // STEP 3 — ask OpenAI to find best keywords + write optimized content
-    const systemPrompt =
-      "You are an elite local-SEO copywriter for a New York City renovation contractor. " +
-      "You write content that ranks on Google AND converts visitors into phone calls. " +
-      "You write in a confident, premium, trustworthy voice. Never keyword-stuff. " +
-      "Always weave keywords naturally into helpful, specific content. " +
-      "IMPORTANT: Do NOT use the word 'luxury' or 'luxurious' anywhere. Instead use phrasing like 'high-quality', 'premium', 'high-end', 'top-quality', or 'professional'. " +
-      "Return ONLY valid JSON, no markdown, no backticks, no preamble.";
-
-    const userPrompt = `
-BUSINESS: Sani Building Corp — licensed NYC renovation contractor.
-Phone: 332-277-0990. Areas: Brooklyn, Manhattan, Queens, Bronx, Long Island. 10+ years, 4.9★ (62 reviews).
-
-SERVICE PAGE TO OPTIMIZE: ${service}
-URL: ${url}
-
-CURRENT TITLE: ${currentTitle || "(none found)"}
-CURRENT META DESCRIPTION: ${currentMeta || "(none found)"}
-
-CURRENT PAGE CONTENT (extracted text, may be truncated):
-"""
-${pageText || "(could not read live page — base your work on the keyword data and service type)"}
-"""
-
-GOOGLE SEARCH CONSOLE KEYWORD DATA (real searches this whole site already appears for — use this to pick the BEST-VALUE keywords for THIS service page; prioritize queries with high impressions but weak position or low CTR, and queries clearly relevant to "${service}"):
-${keywordLines || "(no keyword data available yet)"}
-${pageRow ? `\nThis page's own totals: impressions ${pageRow.impressions}, clicks ${pageRow.clicks}, avg position ${Number(pageRow.position).toFixed(1)}.` : ""}
-
-TASK:
-1. Choose the 6-10 best-value target keywords for THIS page (relevant to ${service} + local NYC intent). For each, say WHY in a few words (e.g. "92 impressions, position 36 — big upside").
-2. Write fully optimized, ready-to-publish page content that naturally targets those keywords and drives calls.
-
-Return ONLY this JSON shape:
-{
-  "targetKeywords": [ { "keyword": "", "reason": "" } ],
-  "title": "SEO title tag, <= 60 chars, includes top keyword + brand",
-  "metaDescription": "meta description, 150-160 chars, includes a keyword + a call to action + phone",
-  "h1": "main headline for the page",
-  "intro": "2-3 sentence opening paragraph",
-  "sections": [ { "heading": "H2 heading", "body": "1-2 paragraphs of helpful, keyword-aware content" } ],
-  "faq": [ { "question": "", "answer": "" } ],
-  "internalLinks": [ "suggested anchor text -> /target-page" ],
-  "imageAltSuggestions": [ "" ],
-  "notes": "1-2 sentences on the strategy and the single biggest opportunity"
-}
-Provide exactly 4 sections and 4 FAQ items. Keep each section body to 2-3 sentences. Be specific to NYC and to ${service}.`;
-
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.5,
-        max_tokens: 1700,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
+    const r = await fetch("/.netlify/functions/seo-publish",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ slug:currentDraft.slug, html:currentDraft.fullHtml })
     });
+    const textBody = await r.text();
+    let data;
+    try { data = JSON.parse(textBody); }
+    catch(e){ throw new Error("Server error while publishing. Please try again in a moment."); }
+    if(!r.ok){ throw new Error(data.error || "Publish failed"); }
 
-    if (!openaiRes.ok) {
-      const errText = await openaiRes.text();
-      return json(502, { error: "OpenAI request failed", detail: errText.slice(0, 400) });
-    }
-
-    const openaiData = await openaiRes.json();
-    let raw = (openaiData.choices && openaiData.choices[0] && openaiData.choices[0].message.content) || "";
-    raw = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
-
-    let content;
-    try {
-      content = JSON.parse(raw);
-    } catch (e) {
-      return json(502, { error: "Could not parse AI response", raw: raw.slice(0, 600) });
-    }
-
-    // Guaranteed safety net: strip the word "luxury" from all generated text
-    content = stripLuxury(content);
-
-    // STEP 4 — save the draft (best-effort; don't fail the request if the table is missing)
-    let saved = null;
-    try {
-      const insertRes = await fetch(`${supabaseUrl}/rest/v1/seo_content_drafts`, {
-        method: "POST",
-        headers: { ...supabaseHeaders, Prefer: "return=representation" },
-        body: JSON.stringify({
-          slug: slug,
-          service: service,
-          url: url,
-          current_title: currentTitle,
-          current_meta: currentMeta,
-          content: content,
-          status: "draft",
-        }),
-      });
-      if (insertRes.ok) {
-        const rows = await insertRes.json();
-        saved = rows[0] || null;
-      }
-    } catch (e) { /* ignore save errors */ }
-
-    // STEP 5 — optionally build the full ready-to-upload HTML page
-    let fullHtml = null;
-    let fullHtmlChanges = null;
-    if (body.buildFullHtml && rawHtml) {
-      try {
-        const rewritten = rewritePage(rawHtml, content);
-        fullHtml = rewritten.html;
-        fullHtmlChanges = rewritten.changes;
-      } catch (e) {
-        fullHtmlChanges = ["error: " + e.message];
-      }
-    }
-
-    return json(200, {
-      slug,
-      service,
-      url,
-      currentTitle,
-      currentMeta,
-      keywordsAnalyzed: queries.length,
-      content,
-      savedId: saved ? saved.id : null,
-      fullHtml: fullHtml,
-      fullHtmlChanges: fullHtmlChanges,
-      fullHtmlAvailable: !!fullHtml,
-    });
-  } catch (err) {
-    return json(500, { error: err.message });
+    toast("✅ Published! Live page updates in ~1 minute.");
+    if(btn){ btn.innerHTML="✅ Published"; btn.disabled=true; }
+  } catch(e){
+    const err=document.getElementById("err");
+    err.textContent="⚠️ "+e.message;
+    err.classList.add("show");
+    if(btn){ btn.disabled=false; btn.innerHTML="✅ Approve & Publish"; }
   }
-};
-
-// ── helpers ──
-function cors() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  };
 }
-function json(statusCode, obj) {
-  return {
-    statusCode,
-    headers: { "Content-Type": "application/json", ...cors() },
-    body: JSON.stringify(obj),
-  };
-}
-function extractText(html) {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<nav[\s\S]*?<\/nav>/gi, " ")
-    .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// ════════════════════════════════════════════════════════════
-// FULL-PAGE REWRITE — preserves design, swaps in optimized content
-// ════════════════════════════════════════════════════════════
-function escHtml(s) {
-  return String(s == null ? "" : s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-function attrHtml(s) {
-  return String(s == null ? "" : s)
-    .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-function buildInjectedSection(content) {
-  const sections = (content.sections || []).map(function (s) {
-    return '<div style="margin-bottom:28px">' +
-      '<h3 style="font-family:\'Playfair Display\',serif;font-size:clamp(20px,2.4vw,26px);font-weight:700;color:var(--black);margin-bottom:10px">' + escHtml(s.heading) + '</h3>' +
-      '<p style="font-size:15px;color:var(--gray);line-height:1.85">' + escHtml(s.body) + '</p>' +
-      '</div>';
-  }).join("\n");
-  const faqItems = (content.faq || []).map(function (f) {
-    return '<div class="check-item" style="border-left:3px solid var(--gold)">' +
-      '<strong style="font-size:15px">' + escHtml(f.question) + '</strong>' +
-      '<span style="font-size:14px;line-height:1.7">' + escHtml(f.answer) + '</span>' +
-      '</div>';
-  }).join("\n");
-  const faqBlock = (content.faq && content.faq.length)
-    ? ('<div class="section-eyebrow" style="margin-top:56px"><div class="line"></div><span>Frequently Asked Questions</span></div>' +
-       '<div style="font-family:\'Playfair Display\',serif;font-size:clamp(24px,3vw,34px);font-weight:700;margin-bottom:24px">Common Questions, <em style="font-style:italic;color:var(--gold)">Answered</em></div>' +
-       '<div class="check-grid">' + faqItems + '</div>')
-    : "";
-  return '\n<!-- SEO-OPTIMIZED CONTENT (AI-generated) -->\n' +
-    '<section style="padding:80px 28px;background:var(--light)">\n' +
-    '  <div style="max-width:1100px;margin:0 auto">\n' +
-    '    <div class="section-eyebrow"><div class="line"></div><span>' + escHtml(content.eyebrow || "Expert NYC Service") + '</span></div>\n' +
-    '    <div style="font-family:\'Playfair Display\',serif;font-size:clamp(24px,3vw,36px);font-weight:700;margin-bottom:28px;max-width:760px">' + escHtml(content.sectionLead || content.h1 || "") + '</div>\n' +
-    sections + "\n" + faqBlock + "\n  </div>\n</section>\n<!-- END SEO-OPTIMIZED CONTENT -->\n";
-}
-function buildFaqSchema(content) {
-  if (!content.faq || !content.faq.length) return "";
-  const schema = {
-    "@context": "https://schema.org", "@type": "FAQPage",
-    mainEntity: content.faq.map(function (f) {
-      return { "@type": "Question", name: f.question, acceptedAnswer: { "@type": "Answer", text: f.answer } };
-    }),
-  };
-  return '\n<script type="application/ld+json">' + JSON.stringify(schema) + "</scr" + "ipt>\n";
-}
-function rewritePage(html, content) {
-  let out = html;
-  const changes = [];
-  if (content.title) {
-    const re = /<title[^>]*>[\s\S]*?<\/title>/i;
-    if (re.test(out)) { out = out.replace(re, "<title>" + attrHtml(content.title) + "</title>"); changes.push("title"); }
-  }
-  if (content.metaDescription) {
-    const re1 = /<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/i;
-    const re2 = /<meta\s+content=["'][\s\S]*?["']\s+name=["']description["']\s*\/?>/i;
-    const nm = '<meta name="description" content="' + attrHtml(content.metaDescription) + '">';
-    if (re1.test(out)) { out = out.replace(re1, nm); changes.push("meta"); }
-    else if (re2.test(out)) { out = out.replace(re2, nm); changes.push("meta"); }
-  }
-  if (content.h1) {
-    const re = /<h1([^>]*)>[\s\S]*?<\/h1>/i;
-    if (re.test(out)) {
-      const words = String(content.h1).trim().split(/\s+/);
-      let inner;
-      if (words.length > 1) { const last = words.pop(); inner = escHtml(words.join(" ")) + " <em>" + escHtml(last) + "</em>"; }
-      else { inner = escHtml(content.h1); }
-      out = out.replace(re, "<h1$1>" + inner + "</h1>"); changes.push("h1");
-    }
-  }
-  if (content.intro) {
-    const re = /<p style="max-width:600px">[\s\S]*?<\/p>/i;
-    if (re.test(out)) { out = out.replace(re, '<p style="max-width:600px">' + escHtml(content.intro) + "</p>"); changes.push("intro"); }
-  }
-  const injected = buildInjectedSection(content);
-  if (/<footer/i.test(out)) { out = out.replace(/<footer/i, injected + "<footer"); changes.push("section"); }
-  else { out = out.replace(/<\/body>/i, injected + "</body>"); changes.push("section-fallback"); }
-  const schema = buildFaqSchema(content);
-  if (schema && /<\/head>/i.test(out)) { out = out.replace(/<\/head>/i, schema + "</head>"); changes.push("faq-schema"); }
-  return { html: out, changes: changes };
-}
-
-// Replace "luxury"/"luxurious" anywhere in the content object with high-quality wording
-function stripLuxury(obj) {
-  function fix(str) {
-    return String(str)
-      .replace(/\bLuxurious\b/g, "High-End")
-      .replace(/\bluxurious\b/g, "high-end")
-      .replace(/\bLuxury\b/g, "High-Quality")
-      .replace(/\bluxury\b/g, "high-quality");
-  }
-  function walk(v) {
-    if (typeof v === "string") return fix(v);
-    if (Array.isArray(v)) return v.map(walk);
-    if (v && typeof v === "object") {
-      const out = {};
-      for (const k in v) out[k] = walk(v[k]);
-      return out;
-    }
-    return v;
-  }
-  return walk(obj);
-}
+</script>
+</body>
+</html>
