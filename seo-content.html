@@ -189,7 +189,7 @@ async function generate(slug, btn){
     const r = await fetch("/.netlify/functions/seo-content-engine",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ slug:slug, url:page.url, service:page.service })
+      body:JSON.stringify({ slug:slug, url:page.url, service:page.service, buildFullHtml:true })
     });
     const data = await r.json();
     if(!r.ok){ throw new Error(data.error || "Generation failed"); }
@@ -231,7 +231,8 @@ function renderResult(data){
       '<h2>'+esc(data.service)+'</h2>'+
       '<div class="result-actions">'+
         '<button class="r-btn" onclick="copyAll()">📋 Copy All</button>'+
-        '<button class="r-btn primary" onclick="downloadDraft()">⬇ Download .txt</button>'+
+        '<button class="r-btn" onclick="downloadDraft()">⬇ .txt</button>'+
+        (data.fullHtmlAvailable?'<button class="r-btn primary" onclick="downloadFullHtml()">⬇ Full HTML Page</button>':'<button class="r-btn" disabled title="Live page could not be read" style="opacity:0.5">Full HTML unavailable</button>')+
       '</div>'+
     '</div>'+
     '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:18px">Analyzed '+(data.keywordsAnalyzed||0)+' real Google keywords · live page '+(data.currentTitle?"read ✓":"not read")+'</div>'+
@@ -289,6 +290,16 @@ function downloadDraft(){
   a.download = currentDraft.slug+"-seo-content.txt";
   a.click();
   toast("✓ Downloaded");
+}
+
+function downloadFullHtml(){
+  if(!currentDraft || !currentDraft.fullHtml){ toast("Full HTML not available"); return; }
+  const blob = new Blob([currentDraft.fullHtml],{type:"text/html"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = currentDraft.slug+".html";
+  a.click();
+  toast("✓ Downloaded "+currentDraft.slug+".html — upload to GitHub to replace your page");
 }
 </script>
 </body>
