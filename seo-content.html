@@ -180,18 +180,29 @@ function renderPages(){
   }).join("");
 }
 
-async function generate(slug, btn){
+async function generate(slug, btn, isRetry){
   const page = pages.find(function(p){ return p.slug===slug; });
   if(!page) return;
   document.getElementById("err").classList.remove("show");
-  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Reading page + writing…'; }
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>'+(isRetry?"Retrying…":"Reading page + writing…"); }
   try {
     const r = await fetch("/.netlify/functions/seo-content-engine",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({ slug:slug, url:page.url, service:page.service, buildFullHtml:true })
     });
-    const data = await r.json();
+    const textBody = await r.text();
+    let data;
+    try {
+      data = JSON.parse(textBody);
+    } catch(parseErr){
+      // Server returned HTML (usually a timeout) instead of JSON
+      if(!isRetry){
+        if(btn){ btn.innerHTML='<span class="spin"></span>Retrying…'; }
+        return generate(slug, btn, true);
+      }
+      throw new Error("The AI is taking longer than usual right now. Please click Generate again in a moment — it usually works on the next try.");
+    }
     if(!r.ok){ throw new Error(data.error || "Generation failed"); }
     currentDraft = data;
     renderResult(data);
