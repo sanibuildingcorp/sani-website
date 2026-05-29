@@ -254,7 +254,7 @@ Provide exactly 4 sections and 4 FAQ items. Keep each section body to 2-3 senten
     let fullHtmlChanges = null;
     if (body.buildFullHtml && rawHtml) {
       try {
-        const rewritten = rewritePage(rawHtml, content);
+        const rewritten = rewritePage(rawHtml, content, { mode: body.mode === "full" ? "full" : "meta" });
         fullHtml = rewritten.html;
         fullHtmlChanges = rewritten.changes;
       } catch (e) {
@@ -308,6 +308,60 @@ function extractText(html) {
     .trim();
 }
 
+// Strip HTML tags/entities from a small fragment to plain text (for schema)
+function plain(frag) {
+  return String(frag == null ? "" : frag)
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Parse the page's OWN visible FAQ (the <details class="faq-item"> blocks) so the
+// schema we generate always matches what visitors actually see — Google's rule.
+function extractVisibleFaq(html) {
+  const items = [];
+  const itemRe = /<details[^>]*class=["'][^"']*faq-item[^"']*["'][\s\S]*?<\/details>/gi;
+  let m;
+  while ((m = itemRe.exec(html)) !== null) {
+    const block = m[0];
+    const qMatch = block.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i);
+    const aMatch = block.match(/<div[^>]*class=["'][^"']*faq-a[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+    if (qMatch && aMatch) {
+      const q = plain(qMatch[1].replace(/<span[^>]*class=["'][^"']*faq-toggle[\s\S]*?<\/span>/i, ""));
+      const a = plain(aMatch[1]);
+      if (q && a) items.push({ question: q, answer: a });
+    }
+  }
+  return items;
+}
+
+// Remove EVERY existing FAQPage JSON-LD schema (and our old marked wrappers),
+// leaving non-FAQ schemas like Service untouched.
+function stripAllFaqSchemas(html) {
+  let out = html;
+  out = out.replace(/<!--\s*SEO-OPTIMIZED SCHEMA\s*-->/gi, "").replace(/<!--\s*END SEO-OPTIMIZED SCHEMA\s*-->/gi, "");
+  out = out.replace(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>\s*/gi, function (full, inner) {
+    return /"@type"\s*:\s*"FAQPage"/i.test(inner) ? "" : full;
+  });
+  return out;
+}
+
+function buildFaqSchemaFromItems(items) {
+  if (!items || !items.length) return "";
+  const schema = {
+    "@context": "https://schema.org", "@type": "FAQPage",
+    mainEntity: items.map(function (f) {
+      return { "@type": "Question", name: f.question, acceptedAnswer: { "@type": "Answer", text: f.answer } };
+    }),
+  };
+  return '\n<!-- SEO-OPTIMIZED SCHEMA -->\n<script type="application/ld+json">' + JSON.stringify(schema) + "</scr" + "ipt>\n<!-- END SEO-OPTIMIZED SCHEMA -->\n";
+}
+
 // ════════════════════════════════════════════════════════════
 // FULL-PAGE REWRITE — preserves design, swaps in optimized content
 // ════════════════════════════════════════════════════════════
@@ -354,7 +408,13 @@ function buildFaqSchema(content) {
   };
   return '\n<!-- SEO-OPTIMIZED SCHEMA -->\n<script type="application/ld+json">' + JSON.stringify(schema) + "</scr" + "ipt>\n<!-- END SEO-OPTIMIZED SCHEMA -->\n";
 }
-function rewritePage(html, content) {
+function rewritePage(html, content, opts) {
+  opts = opts || {};
+  // mode "meta" (default): optimize title + meta + H1 and ensure ONE FAQ schema that
+  //   matches the page's visible FAQ. No visible content block is injected — right for
+  //   pages that are already fully built. Self-heals any old injected junk.
+  // mode "full": additionally inject the AI content section (for thin pages).
+  const mode = opts.mode === "full" ? "full" : "meta";
   let out = html;
   const changes = [];
   if (content.title) {
@@ -382,39 +442,42 @@ function rewritePage(html, content) {
     const re = /<p style="max-width:600px">[\s\S]*?<\/p>/i;
     if (re.test(out)) { out = out.replace(re, '<p style="max-width:600px">' + escHtml(content.intro) + "</p>"); changes.push("intro"); }
   }
-  // --- SELF-CLEANING: remove any block this studio injected on a previous run ---
-  // Each injected section is wrapped in marker comments, so we can safely strip
-  // ALL prior copies before adding a fresh one. This prevents stacking duplicates
-  // every time the page is re-published.
+  // --- SELF-HEALING: always remove any visible block this studio injected before ---
   const priorBlocks = out.match(/<!-- SEO-OPTIMIZED CONTENT \(AI-generated\) -->[\s\S]*?<!-- END SEO-OPTIMIZED CONTENT -->/gi);
   if (priorBlocks && priorBlocks.length) {
     out = out.replace(/<!-- SEO-OPTIMIZED CONTENT \(AI-generated\) -->[\s\S]*?<!-- END SEO-OPTIMIZED CONTENT -->\s*/gi, "");
     changes.push("removed-" + priorBlocks.length + "-old-section" + (priorBlocks.length > 1 ? "s" : ""));
   }
-  // Remove any prior studio-injected FAQ schema (marked), leaving the page's own schema untouched.
-  out = out.replace(/<!-- SEO-OPTIMIZED SCHEMA -->[\s\S]*?<!-- END SEO-OPTIMIZED SCHEMA -->\s*/gi, "");
 
-  const injected = buildInjectedSection(content);
-  // Insert the SEO section ABOVE the footer. Footers vary: a <footer> element,
-  // or a <div>/<section> whose class or id contains "footer". Try each in turn,
-  // and only fall back to end-of-body if none is found.
-  const footerPatterns = [
-    /<footer[\s>]/i,
-    /<(?:div|section|aside)[^>]*(?:class|id)\s*=\s*["'][^"']*\bfooter/i
-  ];
-  let placed = false;
-  for (const fp of footerPatterns) {
-    const m = out.match(fp);
-    if (m) {
-      out = out.slice(0, m.index) + injected + out.slice(m.index);
-      changes.push("section");
-      placed = true;
-      break;
-    }
+  // --- FAQ SCHEMA: collapse to exactly ONE, matching the visible FAQ ---
+  // Count + remove every existing FAQPage schema (dedupes old leftovers), then add one.
+  const existingFaq = (out.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [])
+    .filter(function (s) { return /"@type"\s*:\s*"FAQPage"/i.test(s); }).length;
+  out = stripAllFaqSchemas(out);
+  if (existingFaq) changes.push("removed-" + existingFaq + "-faq-schema" + (existingFaq > 1 ? "s" : ""));
+  // Prefer the page's own visible FAQ; fall back to the AI-generated FAQ.
+  const visFaq = extractVisibleFaq(out);
+  const faqSource = (visFaq && visFaq.length) ? visFaq : (content.faq || []);
+  const schema = buildFaqSchemaFromItems(faqSource);
+  if (schema && /<\/head>/i.test(out)) {
+    out = out.replace(/<\/head>/i, schema + "</head>");
+    changes.push("faq-schema(" + faqSource.length + (visFaq.length ? ",from-page" : ",from-ai") + ")");
   }
-  if (!placed) { out = out.replace(/<\/body>/i, injected + "</body>"); changes.push("section-fallback"); }
-  const schema = buildFaqSchema(content);
-  if (schema && /<\/head>/i.test(out)) { out = out.replace(/<\/head>/i, schema + "</head>"); changes.push("faq-schema"); }
+
+  // --- VISIBLE CONTENT: only in "full" mode (thin pages) ---
+  if (mode === "full") {
+    const injected = buildInjectedSection(content);
+    const footerPatterns = [
+      /<footer[\s>]/i,
+      /<(?:div|section|aside)[^>]*(?:class|id)\s*=\s*["'][^"']*\bfooter/i
+    ];
+    let placed = false;
+    for (const fp of footerPatterns) {
+      const m = out.match(fp);
+      if (m) { out = out.slice(0, m.index) + injected + out.slice(m.index); changes.push("section"); placed = true; break; }
+    }
+    if (!placed) { out = out.replace(/<\/body>/i, injected + "</body>"); changes.push("section-fallback"); }
+  }
   return { html: out, changes: changes };
 }
 
