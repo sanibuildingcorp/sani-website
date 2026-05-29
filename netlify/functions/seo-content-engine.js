@@ -188,7 +188,7 @@ Return ONLY this JSON shape:
   "imageAltSuggestions": [ "" ],
   "notes": "1-2 sentences on the strategy and the single biggest opportunity"
 }
-Provide 4-6 sections and 4-6 FAQ items. Keep it specific to NYC and to ${service}.`;
+Provide exactly 4 sections and 4 FAQ items. Keep each section body to 2-3 sentences. Be specific to NYC and to ${service}.`;
 
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -198,8 +198,8 @@ Provide 4-6 sections and 4-6 FAQ items. Keep it specific to NYC and to ${service
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        temperature: 0.6,
-        max_tokens: 2600,
+        temperature: 0.5,
+        max_tokens: 1700,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
