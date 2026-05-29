@@ -352,7 +352,7 @@ function buildFaqSchema(content) {
       return { "@type": "Question", name: f.question, acceptedAnswer: { "@type": "Answer", text: f.answer } };
     }),
   };
-  return '\n<script type="application/ld+json">' + JSON.stringify(schema) + "</scr" + "ipt>\n";
+  return '\n<!-- SEO-OPTIMIZED SCHEMA -->\n<script type="application/ld+json">' + JSON.stringify(schema) + "</scr" + "ipt>\n<!-- END SEO-OPTIMIZED SCHEMA -->\n";
 }
 function rewritePage(html, content) {
   let out = html;
@@ -382,6 +382,18 @@ function rewritePage(html, content) {
     const re = /<p style="max-width:600px">[\s\S]*?<\/p>/i;
     if (re.test(out)) { out = out.replace(re, '<p style="max-width:600px">' + escHtml(content.intro) + "</p>"); changes.push("intro"); }
   }
+  // --- SELF-CLEANING: remove any block this studio injected on a previous run ---
+  // Each injected section is wrapped in marker comments, so we can safely strip
+  // ALL prior copies before adding a fresh one. This prevents stacking duplicates
+  // every time the page is re-published.
+  const priorBlocks = out.match(/<!-- SEO-OPTIMIZED CONTENT \(AI-generated\) -->[\s\S]*?<!-- END SEO-OPTIMIZED CONTENT -->/gi);
+  if (priorBlocks && priorBlocks.length) {
+    out = out.replace(/<!-- SEO-OPTIMIZED CONTENT \(AI-generated\) -->[\s\S]*?<!-- END SEO-OPTIMIZED CONTENT -->\s*/gi, "");
+    changes.push("removed-" + priorBlocks.length + "-old-section" + (priorBlocks.length > 1 ? "s" : ""));
+  }
+  // Remove any prior studio-injected FAQ schema (marked), leaving the page's own schema untouched.
+  out = out.replace(/<!-- SEO-OPTIMIZED SCHEMA -->[\s\S]*?<!-- END SEO-OPTIMIZED SCHEMA -->\s*/gi, "");
+
   const injected = buildInjectedSection(content);
   // Insert the SEO section ABOVE the footer. Footers vary: a <footer> element,
   // or a <div>/<section> whose class or id contains "footer". Try each in turn,
