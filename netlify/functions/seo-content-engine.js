@@ -117,7 +117,7 @@ exports.handler = async function (event) {
     let pageRow = null;
     try {
       const latestSnap = await fetch(
-        `${supabaseUrl}/rest/v1/seo_snapshots?order=snapshot_date.desc&limit=1`,
+        `${supabaseUrl}/rest/v1/seo_snapshots?order=fetched_at.desc&limit=1`,
         { headers: supabaseHeaders }
       );
       const snaps = latestSnap.ok ? await latestSnap.json() : [];
