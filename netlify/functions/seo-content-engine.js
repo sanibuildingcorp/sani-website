@@ -383,8 +383,24 @@ function rewritePage(html, content) {
     if (re.test(out)) { out = out.replace(re, '<p style="max-width:600px">' + escHtml(content.intro) + "</p>"); changes.push("intro"); }
   }
   const injected = buildInjectedSection(content);
-  if (/<footer/i.test(out)) { out = out.replace(/<footer/i, injected + "<footer"); changes.push("section"); }
-  else { out = out.replace(/<\/body>/i, injected + "</body>"); changes.push("section-fallback"); }
+  // Insert the SEO section ABOVE the footer. Footers vary: a <footer> element,
+  // or a <div>/<section> whose class or id contains "footer". Try each in turn,
+  // and only fall back to end-of-body if none is found.
+  const footerPatterns = [
+    /<footer[\s>]/i,
+    /<(?:div|section|aside)[^>]*(?:class|id)\s*=\s*["'][^"']*\bfooter/i
+  ];
+  let placed = false;
+  for (const fp of footerPatterns) {
+    const m = out.match(fp);
+    if (m) {
+      out = out.slice(0, m.index) + injected + out.slice(m.index);
+      changes.push("section");
+      placed = true;
+      break;
+    }
+  }
+  if (!placed) { out = out.replace(/<\/body>/i, injected + "</body>"); changes.push("section-fallback"); }
   const schema = buildFaqSchema(content);
   if (schema && /<\/head>/i.test(out)) { out = out.replace(/<\/head>/i, schema + "</head>"); changes.push("faq-schema"); }
   return { html: out, changes: changes };
