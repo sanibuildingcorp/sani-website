@@ -103,6 +103,10 @@
 .cta-section h2 em{font-style:italic;color:var(--gold-light)}
 .cta-section p{color:rgba(255,255,255,.5);font-size:15px;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;position:relative;z-index:1}
 .cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
+/* ===== SCROLL ANIMATIONS (subtle & professional) ===== */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .65s ease,transform .65s ease;will-change:opacity,transform}
+.reveal.show{opacity:1;transform:translateY(0)}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 @media(max-width:900px){.tile-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.tile-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero{padding-top:96px}.page-hero-content{padding:32px 20px 44px}}
 </style>
@@ -147,31 +151,31 @@
 
 <section class="section" style="background:var(--light)">
   <div class="section-inner">
-    <div class="section-eyebrow"><div class="line"></div><span>Tile Types We Install</span></div>
-    <h2 class="section-title">Every Tile Style for Every<br><em>NYC Bathroom</em></h2>
-    <p class="section-sub">From classic subway tile to large-format marble slabs — we install every tile type with precision craftsmanship.</p>
+    <div class="section-eyebrow reveal"><div class="line"></div><span>Tile Types We Install</span></div>
+    <h2 class="section-title reveal">Every Tile Style for Every<br><em>NYC Bathroom</em></h2>
+    <p class="section-sub reveal">From classic subway tile to large-format marble slabs — we install every tile type with precision craftsmanship.</p>
     <div class="tile-grid">
-      <div class="tile-card">
+      <div class="tile-card reveal">
         <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&q=80" alt="Porcelain floor tile bathroom NYC">
         <div class="tile-card-body"><div class="tile-card-title">Porcelain Tile</div><p class="tile-card-desc">Large-format porcelain, rectified edges, minimal grout lines. Perfect for modern NYC bathrooms. Durable, water-resistant & easy to maintain.</p></div>
       </div>
-      <div class="tile-card">
+      <div class="tile-card reveal">
         <img src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80" alt="Marble floor tile bathroom NYC Brooklyn">
         <div class="tile-card-body"><div class="tile-card-title">Marble & Natural Stone</div><p class="tile-card-desc">Carrara, Calacatta, travertine & slate tile installation. Expert cutting, pattern matching & proper sealing for luxury bathroom floors.</p></div>
       </div>
-      <div class="tile-card">
+      <div class="tile-card reveal">
         <img src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80" alt="Mosaic tile bathroom floor NYC">
         <div class="tile-card-body"><div class="tile-card-title">Mosaic & Penny Tile</div><p class="tile-card-desc">Glass mosaic, penny round, hex & encaustic tile installation. Detailed pattern work and custom layouts for unique bathroom floors.</p></div>
       </div>
-      <div class="tile-card">
+      <div class="tile-card reveal">
         <img src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80" alt="Subway tile bathroom floor NYC">
         <div class="tile-card-body"><div class="tile-card-title">Subway & Ceramic Tile</div><p class="tile-card-desc">Classic subway tile, ceramic floor tile & porcelain mosaic installation. Timeless looks that work in any NYC bathroom style.</p></div>
       </div>
-      <div class="tile-card">
+      <div class="tile-card reveal">
         <img src="https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=600&q=80" alt="Heated floor tile bathroom NYC">
         <div class="tile-card-body"><div class="tile-card-title">Heated Floor Systems</div><p class="tile-card-desc">Electric radiant heat mat installation under any tile. We install the heating system and tile together for a perfectly warm bathroom floor.</p></div>
       </div>
-      <div class="tile-card">
+      <div class="tile-card reveal">
         <img src="https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=600&q=80" alt="Tile removal replacement bathroom NYC">
         <div class="tile-card-body"><div class="tile-card-title">Tile Removal & Replacement</div><p class="tile-card-desc">Remove old, cracked or outdated tile and install new. Full subfloor inspection, waterproof membrane & proper tile installation every time.</p></div>
       </div>
@@ -182,16 +186,16 @@
 <section class="section">
   <div class="section-inner">
     <div class="why-grid">
-      <div class="why-img"><img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=900&q=80" alt="Expert tile installer NYC Sani Building Corp"></div>
+      <div class="why-img reveal"><img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=900&q=80" alt="Expert tile installer NYC Sani Building Corp"></div>
       <div>
-        <div class="section-eyebrow"><div class="line"></div><span>Why Choose Us</span></div>
-        <h2 class="section-title">Precision Tile Installation<br><em>Every Time</em></h2>
-        <p class="section-sub">Great tile work is 80% preparation. We waterproof, level, and prep every surface before the first tile is set.</p>
+        <div class="section-eyebrow reveal"><div class="line"></div><span>Why Choose Us</span></div>
+        <h2 class="section-title reveal">Precision Tile Installation<br><em>Every Time</em></h2>
+        <p class="section-sub reveal">Great tile work is 80% preparation. We waterproof, level, and prep every surface before the first tile is set.</p>
         <div class="why-features">
-          <div class="why-feat"><div class="why-feat-icon">💧</div><div><div class="why-feat-title">Proper Waterproofing</div><div class="why-feat-desc">Schluter or sheet membrane on every job</div></div></div>
-          <div class="why-feat"><div class="why-feat-icon">📐</div><div><div class="why-feat-title">Laser-Level Layout</div><div class="why-feat-desc">Perfectly straight, centered tile every time</div></div></div>
-          <div class="why-feat"><div class="why-feat-icon">🔲</div><div><div class="why-feat-title">All Tile Types</div><div class="why-feat-desc">Porcelain, marble, mosaic, heated & more</div></div></div>
-          <div class="why-feat"><div class="why-feat-icon">⭐</div><div><div class="why-feat-title">4.9★ Rated</div><div class="why-feat-desc">Trusted NYC tile installers since 2015</div></div></div>
+          <div class="why-feat reveal"><div class="why-feat-icon">💧</div><div><div class="why-feat-title">Proper Waterproofing</div><div class="why-feat-desc">Schluter or sheet membrane on every job</div></div></div>
+          <div class="why-feat reveal"><div class="why-feat-icon">📐</div><div><div class="why-feat-title">Laser-Level Layout</div><div class="why-feat-desc">Perfectly straight, centered tile every time</div></div></div>
+          <div class="why-feat reveal"><div class="why-feat-icon">🔲</div><div><div class="why-feat-title">All Tile Types</div><div class="why-feat-desc">Porcelain, marble, mosaic, heated & more</div></div></div>
+          <div class="why-feat reveal"><div class="why-feat-icon">⭐</div><div><div class="why-feat-title">4.9★ Rated</div><div class="why-feat-desc">Trusted NYC tile installers since 2015</div></div></div>
         </div>
         <div style="margin-top:24px"><a href="contact.html" class="btn-primary">Get Free Estimate</a></div>
       </div>
@@ -202,55 +206,55 @@
 <section class="process-section">
   <div class="section-inner">
     <div style="text-align:center">
-      <div class="section-eyebrow" style="justify-content:center"><div class="line"></div><span style="color:var(--gold)">Our Process</span><div class="line"></div></div>
-      <h2 class="section-title" style="color:#fff;text-align:center">How We Install Bathroom Floor Tile<br><em>Step by Step</em></h2>
+      <div class="section-eyebrow reveal" style="justify-content:center"><div class="line"></div><span style="color:var(--gold)">Our Process</span><div class="line"></div></div>
+      <h2 class="section-title reveal" style="color:#fff;text-align:center">How We Install Bathroom Floor Tile<br><em>Step by Step</em></h2>
     </div>
     <div class="process-steps">
-      <div class="process-step"><div class="step-num">01</div><div class="step-title">Free Estimate</div><p class="step-desc">On-site measurement, tile and pattern recommendations, plus detailed written estimate with all costs.</p></div>
-      <div class="process-step"><div class="step-num">02</div><div class="step-title">Old Tile Removal</div><p class="step-desc">Careful removal of existing tile and underlayment. Properly dispose of debris and protect surrounding areas.</p></div>
-      <div class="process-step"><div class="step-num">03</div><div class="step-title">Subfloor Inspection</div><p class="step-desc">Check subfloor for damage, rot, or moisture issues. Repair or replace damaged areas before tiling.</p></div>
-      <div class="process-step"><div class="step-num">04</div><div class="step-title">Waterproofing</div><p class="step-desc">Apply proper waterproof membrane to prevent water damage to subfloor and structure below.</p></div>
+      <div class="process-step reveal"><div class="step-num">01</div><div class="step-title">Free Estimate</div><p class="step-desc">On-site measurement, tile and pattern recommendations, plus detailed written estimate with all costs.</p></div>
+      <div class="process-step reveal"><div class="step-num">02</div><div class="step-title">Old Tile Removal</div><p class="step-desc">Careful removal of existing tile and underlayment. Properly dispose of debris and protect surrounding areas.</p></div>
+      <div class="process-step reveal"><div class="step-num">03</div><div class="step-title">Subfloor Inspection</div><p class="step-desc">Check subfloor for damage, rot, or moisture issues. Repair or replace damaged areas before tiling.</p></div>
+      <div class="process-step reveal"><div class="step-num">04</div><div class="step-title">Waterproofing</div><p class="step-desc">Apply proper waterproof membrane to prevent water damage to subfloor and structure below.</p></div>
     </div>
     <div class="process-steps" style="margin-top:32px">
-      <div class="process-step"><div class="step-num">05</div><div class="step-title">Heated Floor (Optional)</div><p class="step-desc">Install heated floor system before tiling for warm, comfortable bathroom floors year-round.</p></div>
-      <div class="process-step"><div class="step-num">06</div><div class="step-title">Tile Layout</div><p class="step-desc">Plan tile pattern, dry-lay tiles, and mark cut lines for clean edges and balanced visual appearance.</p></div>
-      <div class="process-step"><div class="step-num">07</div><div class="step-title">Tile Installation</div><p class="step-desc">Mix thinset properly, install each tile with precision spacing, and ensure level, square installation.</p></div>
-      <div class="process-step"><div class="step-num">08</div><div class="step-title">Grout & Seal</div><p class="step-desc">Apply grout, clean haze, and seal grout lines and tile for waterproof, easy-to-maintain finish.</p></div>
+      <div class="process-step reveal"><div class="step-num">05</div><div class="step-title">Heated Floor (Optional)</div><p class="step-desc">Install heated floor system before tiling for warm, comfortable bathroom floors year-round.</p></div>
+      <div class="process-step reveal"><div class="step-num">06</div><div class="step-title">Tile Layout</div><p class="step-desc">Plan tile pattern, dry-lay tiles, and mark cut lines for clean edges and balanced visual appearance.</p></div>
+      <div class="process-step reveal"><div class="step-num">07</div><div class="step-title">Tile Installation</div><p class="step-desc">Mix thinset properly, install each tile with precision spacing, and ensure level, square installation.</p></div>
+      <div class="process-step reveal"><div class="step-num">08</div><div class="step-title">Grout & Seal</div><p class="step-desc">Apply grout, clean haze, and seal grout lines and tile for waterproof, easy-to-maintain finish.</p></div>
     </div>
   </div>
 </section>
 
 <section class="reviews-section">
   <div class="section-inner">
-    <div class="section-eyebrow"><div class="line"></div><span>Customer Reviews</span></div>
-    <h2 class="section-title">What NYC Clients Say About<br><em>Our Tile Work</em></h2>
+    <div class="section-eyebrow reveal"><div class="line"></div><span>Customer Reviews</span></div>
+    <h2 class="section-title reveal">What NYC Clients Say About<br><em>Our Tile Work</em></h2>
     <div class="reviews-grid">
-      <div class="review-card">
+      <div class="review-card reveal">
         <div class="review-stars">★★★★★</div>
         <p class="review-text">"Sani Building Corp installed large-format marble tile in our Brooklyn bathroom — the layout planning was meticulous and the cuts around the toilet and vanity are perfect. Grout lines are razor straight. Stunning result."</p>
         <div class="review-author"><div class="review-avatar">O</div><div><div class="review-name">Olivia Svensson</div><div class="review-location">Brooklyn Heights, Brooklyn</div></div></div>
       </div>
-      <div class="review-card">
+      <div class="review-card reveal">
         <div class="review-stars">★★★★★</div>
         <p class="review-text">"Had them install heated floor tile in our Manhattan bathroom. They installed the Schluter heating mat, tiled over it perfectly, and the thermostat works flawlessly. Worth every penny — the warm floor in winter is amazing."</p>
         <div class="review-author"><div class="review-avatar">N</div><div><div class="review-name">Nathan Goldberg</div><div class="review-location">Upper West Side, Manhattan</div></div></div>
       </div>
-      <div class="review-card">
+      <div class="review-card reveal">
         <div class="review-stars">★★★★★</div>
         <p class="review-text">"They replaced old cracked tile in our Long Island City bathroom with beautiful hex mosaic floor tile. The pattern layout was perfect — they centered it exactly and the grout color they recommended looks gorgeous."</p>
         <div class="review-author"><div class="review-avatar">Y</div><div><div class="review-name">Yuki Tanaka</div><div class="review-location">Long Island City, Queens</div></div></div>
       </div>
-      <div class="review-card">
+      <div class="review-card reveal">
         <div class="review-stars">★★★★★</div>
         <p class="review-text">"Sani Building Corp tiled both our bathrooms in our Nassau County home — large format porcelain throughout. The diagonal layout in the master bath looks incredible. Clean work, no mess, and finished exactly on schedule."</p>
         <div class="review-author"><div class="review-avatar">B</div><div><div class="review-name">Barbara Levine</div><div class="review-location">Nassau County, Long Island</div></div></div>
       </div>
-      <div class="review-card">
+      <div class="review-card reveal">
         <div class="review-stars">★★★★★</div>
         <p class="review-text">"They found that our subfloor had some soft spots from an old leak before installing tile. Fixed everything properly first — new cement board, waterproof membrane, then perfect large-format tile. Exactly what you want from a contractor."</p>
         <div class="review-author"><div class="review-avatar">C</div><div><div class="review-name">Carlos Rivera</div><div class="review-location">Jackson Heights, Queens</div></div></div>
       </div>
-      <div class="review-card">
+      <div class="review-card reveal">
         <div class="review-stars">★★★★★</div>
         <p class="review-text">"We chose a complex Carrara marble pattern for our Brooklyn bathroom floor — book-matched tiles in a pinwheel pattern. Sani Building Corp's tile setter handled it perfectly. The precision on the pattern matching is extraordinary."</p>
         <div class="review-author"><div class="review-avatar">E</div><div><div class="review-name">Eleanor Mackenzie</div><div class="review-location">Park Slope, Brooklyn</div></div></div>
@@ -261,23 +265,23 @@
 
 <section class="faq-section" style="background:var(--light)">
   <div class="section-inner">
-    <div class="section-eyebrow"><div class="line"></div><span>Common Questions</span></div>
-    <h2 class="section-title">Bathroom Floor Tile <em>FAQs</em></h2>
+    <div class="section-eyebrow reveal"><div class="line"></div><span>Common Questions</span></div>
+    <h2 class="section-title reveal">Bathroom Floor Tile <em>FAQs</em></h2>
     <div class="faq-grid">
-      <div class="faq-item"><div class="faq-q">How much does bathroom floor tile installation cost in NYC?</div><div class="faq-a">Bathroom floor tile installation in NYC typically ranges from <strong>$15–$35 per square foot installed</strong> depending on tile type, complexity of pattern, and subfloor condition. We provide free detailed estimates after assessing your bathroom.</div></div>
-      <div class="faq-item"><div class="faq-q">How long does tile installation take?</div><div class="faq-a">A typical bathroom floor takes <strong>2–4 days</strong> including subfloor prep, waterproofing, tile setting, and grouting. The bathroom is generally usable after 24–48 hours of curing time.</div></div>
-      <div class="faq-item"><div class="faq-q">Do you install heated floor systems under tile?</div><div class="faq-a">Yes — we install <strong>electric radiant heating mats</strong> (Schluter DITRA-HEAT and similar) under all tile types. We handle the full installation including the heating element, thermostat wiring, and tile installation above.</div></div>
-      <div class="faq-item"><div class="faq-q">Do you waterproof before tiling?</div><div class="faq-a">Always. We use <strong>Schluter Kerdi, RedGard, or similar waterproofing membranes</strong> in all wet areas before any tile is set. Skipping waterproofing causes tile failures and water damage — we never cut corners on this step.</div></div>
-      <div class="faq-item"><div class="faq-q">Can you install large-format tile (24x24 or larger)?</div><div class="faq-a">Yes — large format tile is one of our specialties. We use <strong>back-buttering, large-format trowels, and flatness checking systems</strong> to ensure zero lippage on tiles up to 48 inches across.</div></div>
-      <div class="faq-item"><div class="faq-q">Do you supply the tile or do I need to buy it?</div><div class="faq-a">We can work either way. We can source tile for you at trade pricing, or you can purchase your own tile and we install it. We'll tell you exactly how much tile to order including waste factor for your specific pattern.</div></div>
-      <div class="faq-item"><div class="faq-q">Do you serve Long Island and Nassau County?</div><div class="faq-a">Yes — we install bathroom floor tile throughout <strong>Long Island, Nassau County, and Long Island City</strong> in addition to all 5 NYC boroughs at no extra travel charge.</div></div>
-      <div class="faq-item"><div class="faq-q">Can you just replace a few broken tiles?</div><div class="faq-a">Yes — we can replace <strong>individual cracked or damaged tiles</strong> if you have matching tile available. We also assess whether the surrounding tiles have a structural issue that caused the damage.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">How much does bathroom floor tile installation cost in NYC?</div><div class="faq-a">Bathroom floor tile installation in NYC typically ranges from <strong>$15–$35 per square foot installed</strong> depending on tile type, complexity of pattern, and subfloor condition. We provide free detailed estimates after assessing your bathroom.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">How long does tile installation take?</div><div class="faq-a">A typical bathroom floor takes <strong>2–4 days</strong> including subfloor prep, waterproofing, tile setting, and grouting. The bathroom is generally usable after 24–48 hours of curing time.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Do you install heated floor systems under tile?</div><div class="faq-a">Yes — we install <strong>electric radiant heating mats</strong> (Schluter DITRA-HEAT and similar) under all tile types. We handle the full installation including the heating element, thermostat wiring, and tile installation above.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Do you waterproof before tiling?</div><div class="faq-a">Always. We use <strong>Schluter Kerdi, RedGard, or similar waterproofing membranes</strong> in all wet areas before any tile is set. Skipping waterproofing causes tile failures and water damage — we never cut corners on this step.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Can you install large-format tile (24x24 or larger)?</div><div class="faq-a">Yes — large format tile is one of our specialties. We use <strong>back-buttering, large-format trowels, and flatness checking systems</strong> to ensure zero lippage on tiles up to 48 inches across.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Do you supply the tile or do I need to buy it?</div><div class="faq-a">We can work either way. We can source tile for you at trade pricing, or you can purchase your own tile and we install it. We'll tell you exactly how much tile to order including waste factor for your specific pattern.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Do you serve Long Island and Nassau County?</div><div class="faq-a">Yes — we install bathroom floor tile throughout <strong>Long Island, Nassau County, and Long Island City</strong> in addition to all 5 NYC boroughs at no extra travel charge.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Can you just replace a few broken tiles?</div><div class="faq-a">Yes — we can replace <strong>individual cracked or damaged tiles</strong> if you have matching tile available. We also assess whether the surrounding tiles have a structural issue that caused the damage.</div></div>
     </div>
   </div>
 </section>
 
 <section class="cta-section">
-  <h2>Ready for Beautiful New Tile?<br><em>Get a Free Installation Estimate</em></h2>
+  <h2 class="reveal">Ready for Beautiful New Tile?<br><em>Get a Free Installation Estimate</em></h2>
   <p>Serving Brooklyn, Manhattan, Queens, Long Island & Nassau County. Free estimates, fully insured.</p>
   <div class="cta-btns">
     <a href="contact.html" class="btn-primary">Get Free Estimate</a>
@@ -287,6 +291,26 @@
 
 <!-- Footer loaded from partials/footer.html via partials/site.js -->
 <div id="site-footer"></div>
+
+<!-- Scroll reveal animation -->
+<script>
+(function(){
+  var els=document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('show')});return;}
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var el=e.target;
+        var sibs=Array.prototype.slice.call(el.parentElement.children).filter(function(c){return c.classList.contains('reveal')});
+        var idx=sibs.indexOf(el);
+        setTimeout(function(){el.classList.add('show')}, idx>0?idx*70:0);
+        io.unobserve(el);
+      }
+    });
+  },{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+  els.forEach(function(e){io.observe(e)});
+})();
+</script>
 
 <!-- Loads menu/footer partials + mobile menu functions -->
 <script src="partials/site.js"></script>
