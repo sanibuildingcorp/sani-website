@@ -23,16 +23,20 @@
   --navy:#0a1628;
   --navy-2:#0d1f33;
   --navy-3:#13283f;
+  --dark:#0d1520;
   --gold:#c8860a;
   --gold-light:#f0a500;
   --gold-bright:#ffb627;
   --white:#fff;
-  --gray:#8a96a8;
+  --light:#f5f3ee;
+  --black:#13283f;
+  --gray:#5f5e5a;
+  --border:rgba(0,0,0,.08);
   --light-text:rgba(255,255,255,.72);
   --border-dark:rgba(240,165,0,.18);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:"DM Sans",sans-serif;background:var(--navy);color:#fff;line-height:1.6;overflow-x:hidden}
+body{font-family:"DM Sans",sans-serif;background:var(--light);color:var(--black);line-height:1.6;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
 img{max-width:100%;display:block}
 
@@ -43,8 +47,11 @@ img{max-width:100%;display:block}
 .btn-primary:hover .arrow{transform:translateX(4px)}
 .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-size:13px;font-weight:500;text-decoration:none;border:1px solid rgba(255,255,255,.25);padding:15px 28px;transition:all .25s;border-radius:6px;background:transparent;letter-spacing:1.5px;text-transform:uppercase}
 .btn-outline:hover{border-color:var(--gold);color:var(--gold-light)}
+/* outline button on LIGHT sections */
+.btn-outline-dark{display:inline-flex;align-items:center;justify-content:center;gap:8px;color:var(--black);font-size:13px;font-weight:500;text-decoration:none;border:1px solid rgba(0,0,0,.18);padding:15px 28px;transition:all .25s;border-radius:6px;background:transparent;letter-spacing:1.5px;text-transform:uppercase}
+.btn-outline-dark:hover{border-color:var(--gold);color:var(--gold)}
 
-/* ============ HERO ============ */
+/* ============ HERO (kept dark, matches floor-tile dark hero) ============ */
 .page-hero{position:relative;background:var(--navy);overflow:hidden;padding:88px 0 0 0}
 .page-hero-bg-blur{position:absolute;inset:0;z-index:0;overflow:hidden}
 .page-hero-bg-blur img{width:100%;height:100%;object-fit:cover;filter:blur(20px) brightness(0.35);transform:scale(1.1);opacity:0.5}
@@ -65,21 +72,21 @@ img{max-width:100%;display:block}
 .page-hero-photo{position:relative;border-radius:12px;overflow:hidden;height:520px;cursor:zoom-in;box-shadow:0 20px 60px rgba(0,0,0,.45)}
 .page-hero-photo img{width:100%;height:100%;object-fit:cover}
 
-/* ============ STATS BAR ============ */
-.stats-bar{background:var(--navy-2);padding:48px 28px;border-top:1px solid var(--border-dark);border-bottom:1px solid var(--border-dark)}
+/* ============ STATS BAR (now light) ============ */
+.stats-bar{background:var(--white);padding:48px 28px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .stats-bar-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center}
 .stat-card{padding:8px}
-.stat-icon{color:var(--gold-light);font-size:28px;margin-bottom:10px}
-.stat-value{font-family:"Playfair Display",serif;font-size:42px;font-weight:700;color:var(--gold-light);line-height:1;margin-bottom:8px}
-.stat-label{font-size:13px;font-weight:600;color:#fff;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.stat-icon{color:var(--gold);font-size:28px;margin-bottom:10px}
+.stat-value{font-family:"Playfair Display",serif;font-size:42px;font-weight:700;color:var(--gold);line-height:1;margin-bottom:8px}
+.stat-label{font-size:13px;font-weight:600;color:var(--black);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
 .stat-sublabel{font-size:11px;color:var(--gray);letter-spacing:1px;text-transform:uppercase}
 
-/* ============ BEFORE/AFTER SLIDER ============ */
-.ba-section{padding:80px 28px;background:var(--navy)}
+/* ============ BEFORE/AFTER SLIDER (now light) ============ */
+.ba-section{padding:80px 28px;background:var(--light)}
 .ba-inner{max-width:1280px;margin:0 auto}
-.ba-eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold-light);font-weight:600;text-transform:uppercase;margin-bottom:10px}
-.ba-title{font-family:"Playfair Display",serif;font-size:clamp(28px,3.5vw,42px);font-weight:700;color:#fff;margin-bottom:36px}
-.ba-slider{position:relative;width:100%;height:520px;border-radius:14px;overflow:hidden;cursor:ew-resize;user-select:none;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.ba-eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:600;text-transform:uppercase;margin-bottom:10px}
+.ba-title{font-family:"Playfair Display",serif;font-size:clamp(28px,3.5vw,42px);font-weight:700;color:var(--black);margin-bottom:36px}
+.ba-slider{position:relative;width:100%;height:520px;border-radius:14px;overflow:hidden;cursor:ew-resize;user-select:none;box-shadow:0 20px 60px rgba(0,0,0,.18)}
 .ba-img-wrap{position:absolute;inset:0}
 .ba-img-wrap img{width:100%;height:100%;object-fit:cover}
 .ba-after{position:absolute;inset:0;overflow:hidden}
@@ -92,28 +99,28 @@ img{max-width:100%;display:block}
 .ba-label-after{right:20px}
 .ba-caption{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 22px;background:rgba(10,22,40,.85);border:1px solid var(--gold);color:var(--gold-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;border-radius:30px;pointer-events:none;white-space:nowrap}
 
-/* ============ EVERYTHING YOU NEED ============ */
-.eyn-section{padding:80px 28px;background:var(--navy-2)}
+/* ============ EVERYTHING YOU NEED (now light) ============ */
+.eyn-section{padding:80px 28px;background:var(--white)}
 .eyn-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 2fr;gap:60px;align-items:flex-start}
-.eyn-left .eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold-light);font-weight:600;text-transform:uppercase;margin-bottom:10px}
-.eyn-left h2{font-family:"Playfair Display",serif;font-size:clamp(28px,3vw,38px);font-weight:700;color:#fff;margin-bottom:24px;line-height:1.15}
+.eyn-left .eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:600;text-transform:uppercase;margin-bottom:10px}
+.eyn-left h2{font-family:"Playfair Display",serif;font-size:clamp(28px,3vw,38px);font-weight:700;color:var(--black);margin-bottom:24px;line-height:1.15}
 .eyn-checklist{list-style:none;display:flex;flex-direction:column;gap:12px}
-.eyn-checklist li{display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,.85)}
-.eyn-checklist li::before{content:"✓";display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:transparent;border:1.5px solid var(--gold);color:var(--gold-light);font-weight:700;font-size:12px;border-radius:50%;flex-shrink:0}
+.eyn-checklist li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--black)}
+.eyn-checklist li::before{content:"✓";display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:transparent;border:1.5px solid var(--gold);color:var(--gold);font-weight:700;font-size:12px;border-radius:50%;flex-shrink:0}
 .eyn-features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.eyn-feat{position:relative;border-radius:12px;overflow:hidden;transition:all .3s;cursor:pointer;min-height:240px;display:flex;flex-direction:column;justify-content:flex-end;background:var(--navy-3);border:1px solid var(--border-dark)}
+.eyn-feat{position:relative;border-radius:12px;overflow:hidden;transition:all .3s;cursor:pointer;min-height:240px;display:flex;flex-direction:column;justify-content:flex-end;background:var(--navy-3);border:1px solid var(--border)}
 .eyn-feat-bg{position:absolute;inset:0;z-index:0}
 .eyn-feat-bg img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
 .eyn-feat:hover .eyn-feat-bg img{transform:scale(1.08)}
 .eyn-feat-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,40,0.3) 0%,rgba(10,22,40,0.65) 55%,rgba(10,22,40,0.95) 100%);transition:background .3s}
 .eyn-feat:hover .eyn-feat-bg::after{background:linear-gradient(180deg,rgba(10,22,40,0.4) 0%,rgba(10,22,40,0.75) 50%,rgba(10,22,40,0.98) 100%)}
 .eyn-feat-content{position:relative;z-index:1;padding:22px}
-.eyn-feat:hover{transform:translateY(-4px);border-color:var(--gold);box-shadow:0 12px 36px rgba(0,0,0,.4)}
+.eyn-feat:hover{transform:translateY(-4px);border-color:var(--gold);box-shadow:0 12px 36px rgba(0,0,0,.18)}
 .eyn-feat-icon{color:var(--gold-light);font-size:26px;margin-bottom:12px;text-shadow:0 2px 8px rgba(0,0,0,0.5)}
 .eyn-feat-title{font-family:"Playfair Display",serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;text-shadow:0 1px 4px rgba(0,0,0,0.6)}
 .eyn-feat-desc{font-size:13px;color:rgba(255,255,255,0.92);line-height:1.6;text-shadow:0 1px 3px rgba(0,0,0,0.7)}
 
-/* ============ PROCESS TIMELINE ============ */
+/* ============ PROCESS TIMELINE (kept dark, matches floor-tile dark process) ============ */
 .process-section{padding:80px 28px;background:var(--navy)}
 .process-inner{max-width:1280px;margin:0 auto;text-align:center}
 .process-eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold-light);font-weight:600;text-transform:uppercase;margin-bottom:10px}
@@ -124,15 +131,15 @@ img{max-width:100%;display:block}
 .process-step-num{width:52px;height:52px;border-radius:50%;background:var(--navy);border:2px solid var(--gold);color:var(--gold-light);font-family:"Playfair Display",serif;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
 .process-step-icon{color:var(--gold-light);font-size:22px;margin-bottom:8px;height:24px;display:flex;align-items:center;justify-content:center}
 .process-step-title{font-size:12px;font-weight:700;color:#fff;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
-.process-step-desc{font-size:11.5px;color:var(--gray);line-height:1.55;padding:0 6px}
+.process-step-desc{font-size:11.5px;color:rgba(255,255,255,.6);line-height:1.55;padding:0 6px}
 
-/* ============ RECENT PROJECTS ============ */
-.projects-section{padding:80px 28px;background:var(--navy-2)}
+/* ============ RECENT PROJECTS (now light) ============ */
+.projects-section{padding:80px 28px;background:var(--light)}
 .projects-inner{max-width:1280px;margin:0 auto}
 .projects-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px;flex-wrap:wrap;gap:16px}
-.projects-head-left .eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold-light);font-weight:600;text-transform:uppercase;margin-bottom:10px}
-.projects-head-left h2{font-family:"Playfair Display",serif;font-size:clamp(28px,3.5vw,42px);font-weight:700;color:#fff;line-height:1.1}
-.projects-viewall{color:var(--gold-light);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;transition:gap .25s}
+.projects-head-left .eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:600;text-transform:uppercase;margin-bottom:10px}
+.projects-head-left h2{font-family:"Playfair Display",serif;font-size:clamp(28px,3.5vw,42px);font-weight:700;color:var(--black);line-height:1.1}
+.projects-viewall{color:var(--gold);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;transition:gap .25s}
 .projects-viewall:hover{gap:14px}
 .projects-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
 .project-thumb{aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:zoom-in;background:var(--navy-3);position:relative;transition:transform .3s}
@@ -140,42 +147,43 @@ img{max-width:100%;display:block}
 .project-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
 .project-thumb:hover img{transform:scale(1.08)}
 
-/* ============ TESTIMONIAL ============ */
-.testi-section{padding:80px 28px;background:var(--navy)}
-.testi-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 2fr;gap:40px;align-items:center;background:var(--navy-2);border:1px solid var(--border-dark);border-radius:14px;padding:36px}
+/* ============ TESTIMONIAL (now light) ============ */
+.testi-section{padding:80px 28px;background:var(--white)}
+.testi-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 2fr;gap:40px;align-items:center;background:var(--light);border:1px solid var(--border);border-radius:14px;padding:36px}
 .testi-photo{border-radius:10px;overflow:hidden;height:240px;cursor:zoom-in}
 .testi-photo img{width:100%;height:100%;object-fit:cover}
 .testi-content{position:relative}
 .testi-quote-mark{position:absolute;left:-8px;top:-12px;color:var(--gold);font-family:"Playfair Display",serif;font-size:48px;line-height:1;font-weight:700;opacity:.4}
-.testi-text{font-size:16px;color:rgba(255,255,255,.85);line-height:1.7;margin-bottom:20px;padding-left:24px;font-style:italic}
+.testi-text{font-size:16px;color:var(--black);line-height:1.7;margin-bottom:20px;padding-left:24px;font-style:italic}
 .testi-author{padding-left:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.testi-name{font-size:14px;color:#fff;font-weight:600}
-.testi-stars{color:var(--gold-light);letter-spacing:2px;font-size:13px}
+.testi-name{font-size:14px;color:var(--black);font-weight:600}
+.testi-stars{color:var(--gold);letter-spacing:2px;font-size:13px}
 .testi-dots{display:flex;justify-content:center;gap:8px;margin-top:24px}
-.testi-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2)}
-.testi-dot.active{background:var(--gold-light)}
+.testi-dot{width:8px;height:8px;border-radius:50%;background:rgba(0,0,0,.15)}
+.testi-dot.active{background:var(--gold)}
 
-/* ============ FAQ ============ */
-.faq-section{padding:80px 28px;background:var(--navy-2)}
+/* ============ FAQ (now light) ============ */
+.faq-section{padding:80px 28px;background:var(--light)}
 .faq-inner{max-width:900px;margin:0 auto}
-.faq-eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold-light);font-weight:600;text-transform:uppercase;margin-bottom:10px}
-.faq-title{font-family:"Playfair Display",serif;font-size:clamp(28px,3.5vw,42px);font-weight:700;color:#fff;margin-bottom:36px;line-height:1.1}
+.faq-eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:600;text-transform:uppercase;margin-bottom:10px}
+.faq-title{font-family:"Playfair Display",serif;font-size:clamp(28px,3.5vw,42px);font-weight:700;color:var(--black);margin-bottom:36px;line-height:1.1}
 .faq-list{display:flex;flex-direction:column;gap:12px}
-.faq-item{background:var(--navy-3);border:1px solid var(--border-dark);border-radius:10px;overflow:hidden;transition:all .25s}
+.faq-item{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:all .25s}
 .faq-item:hover{border-color:var(--gold)}
-.faq-q{padding:18px 22px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;color:#fff;font-size:14.5px;font-weight:500;list-style:none}
+.faq-q{padding:18px 22px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;color:var(--black);font-size:14.5px;font-weight:500;list-style:none}
 .faq-q::-webkit-details-marker{display:none}
-.faq-toggle{width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:var(--gold-light);font-size:18px;font-weight:300;flex-shrink:0;transition:transform .25s}
+.faq-toggle{width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:18px;font-weight:300;flex-shrink:0;transition:transform .25s}
 .faq-item[open] .faq-toggle{transform:rotate(45deg)}
 .faq-a{padding:0 22px 20px;color:var(--gray);font-size:13.5px;line-height:1.7}
+.faq-a strong{color:var(--black)}
 
-/* ============ BOTTOM CTA ============ */
+/* ============ BOTTOM CTA (kept dark, matches floor-tile dark cta) ============ */
 .cta-section{padding:80px 28px;background:var(--navy);text-align:center}
 .cta-inner{max-width:700px;margin:0 auto}
 .cta-eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold-light);font-weight:600;text-transform:uppercase;margin-bottom:10px}
 .cta-title{font-family:"Playfair Display",serif;font-size:clamp(28px,3.5vw,42px);font-weight:700;color:#fff;margin-bottom:14px;line-height:1.15}
 .cta-title em{font-style:italic;color:var(--gold-light)}
-.cta-subtitle{font-size:15px;color:var(--gray);margin-bottom:32px}
+.cta-subtitle{font-size:15px;color:rgba(255,255,255,.6);margin-bottom:32px}
 .cta-buttons{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:30px}
 .cta-trust{display:flex;justify-content:center;gap:30px;flex-wrap:wrap}
 .cta-trust-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.6);font-size:12px}
@@ -200,6 +208,11 @@ img{max-width:100%;display:block}
 .lightbox-next{right:24px}
 .lightbox-caption{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.85);font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:8px 18px;background:rgba(0,0,0,.4);border-radius:30px;border:1px solid rgba(255,255,255,.1)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ============ SCROLL ANIMATIONS (subtle) ============ */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .65s ease,transform .65s ease;will-change:opacity,transform}
+.reveal.show{opacity:1;transform:translateY(0)}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 
 /* ============ RESPONSIVE ============ */
 @media(max-width:1024px){
@@ -325,9 +338,9 @@ img{max-width:100%;display:block}
 <!-- ============ BEFORE/AFTER SLIDER ============ -->
 <section class="ba-section">
   <div class="ba-inner">
-    <div class="ba-eyebrow">Before & After</div>
-    <h2 class="ba-title">Real Transformations</h2>
-    <div class="ba-slider" id="baSlider">
+    <div class="ba-eyebrow reveal">Before & After</div>
+    <h2 class="ba-title reveal">Real Transformations</h2>
+    <div class="ba-slider reveal" id="baSlider">
       <div class="ba-img-wrap">
         <img src="images/service-pages/bathroom-renovation/before.jpg" alt="Bathroom before renovation">
       </div>
@@ -348,9 +361,9 @@ img{max-width:100%;display:block}
 <section class="eyn-section">
   <div class="eyn-inner">
     <div class="eyn-left">
-      <div class="eyebrow">What's Included</div>
-      <h2>Everything You Need, Done Right</h2>
-      <ul class="eyn-checklist">
+      <div class="eyebrow reveal">What's Included</div>
+      <h2 class="reveal">Everything You Need, Done Right</h2>
+      <ul class="eyn-checklist reveal">
         <li>Demolition & Removal</li>
         <li>Waterproofing & Prep</li>
         <li>Tile Installation</li>
@@ -362,7 +375,7 @@ img{max-width:100%;display:block}
       </ul>
     </div>
     <div class="eyn-features">
-      <div class="eyn-feat" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Tile Work - Sani Building Corp')">
+      <div class="eyn-feat reveal" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Tile Work - Sani Building Corp')">
         <div class="eyn-feat-bg"><img src="images/service-pages/bathroom-renovation/feat-tile.jpg" alt="Tile Work bathroom service NYC"></div>
         <div class="eyn-feat-content">
           <div class="eyn-feat-icon">🏛️</div>
@@ -370,7 +383,7 @@ img{max-width:100%;display:block}
           <div class="eyn-feat-desc">Luxury tile installation for floors, walls, niches & backsplashes.</div>
         </div>
       </div>
-      <div class="eyn-feat" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Walk-In Showers - Sani Building Corp')">
+      <div class="eyn-feat reveal" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Walk-In Showers - Sani Building Corp')">
         <div class="eyn-feat-bg"><img src="images/service-pages/bathroom-renovation/feat-shower.jpg" alt="Walk-In Showers bathroom service NYC"></div>
         <div class="eyn-feat-content">
           <div class="eyn-feat-icon">🚿</div>
@@ -378,7 +391,7 @@ img{max-width:100%;display:block}
           <div class="eyn-feat-desc">Curbless design, rain showers, glass enclosures & seamless finishes.</div>
         </div>
       </div>
-      <div class="eyn-feat" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Waterproofing - Sani Building Corp')">
+      <div class="eyn-feat reveal" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Waterproofing - Sani Building Corp')">
         <div class="eyn-feat-bg"><img src="images/service-pages/bathroom-renovation/feat-waterproofing.jpg" alt="Waterproofing bathroom service NYC"></div>
         <div class="eyn-feat-content">
           <div class="eyn-feat-icon">💧</div>
@@ -386,7 +399,7 @@ img{max-width:100%;display:block}
           <div class="eyn-feat-desc">Industry-leading waterproofing for long-lasting protection.</div>
         </div>
       </div>
-      <div class="eyn-feat" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Custom Vanities - Sani Building Corp')">
+      <div class="eyn-feat reveal" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Custom Vanities - Sani Building Corp')">
         <div class="eyn-feat-bg"><img src="images/service-pages/bathroom-renovation/feat-vanity.jpg" alt="Custom Vanities bathroom service NYC"></div>
         <div class="eyn-feat-content">
           <div class="eyn-feat-icon">🪞</div>
@@ -394,7 +407,7 @@ img{max-width:100%;display:block}
           <div class="eyn-feat-desc">Beautiful custom vanities & storage solutions.</div>
         </div>
       </div>
-      <div class="eyn-feat" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Plumbing Fixtures - Sani Building Corp')">
+      <div class="eyn-feat reveal" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Plumbing Fixtures - Sani Building Corp')">
         <div class="eyn-feat-bg"><img src="images/service-pages/bathroom-renovation/feat-plumbing.jpg" alt="Plumbing Fixtures bathroom service NYC"></div>
         <div class="eyn-feat-content">
           <div class="eyn-feat-icon">🚰</div>
@@ -402,7 +415,7 @@ img{max-width:100%;display:block}
           <div class="eyn-feat-desc">High-end fixtures installed with precision & care.</div>
         </div>
       </div>
-      <div class="eyn-feat" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Complete Remodel - Sani Building Corp')">
+      <div class="eyn-feat reveal" onclick="openLightbox(this.querySelector('.eyn-feat-bg img').src, 'Complete Remodel - Sani Building Corp')">
         <div class="eyn-feat-bg"><img src="images/service-pages/bathroom-renovation/feat-remodel.jpg" alt="Complete Remodel bathroom service NYC"></div>
         <div class="eyn-feat-content">
           <div class="eyn-feat-icon">🛁</div>
@@ -417,40 +430,40 @@ img{max-width:100%;display:block}
 <!-- ============ PROCESS TIMELINE ============ -->
 <section class="process-section">
   <div class="process-inner">
-    <div class="process-eyebrow">Our Renovation Process</div>
-    <h2 class="process-title">A Smooth, Transparent Process</h2>
+    <div class="process-eyebrow reveal">Our Renovation Process</div>
+    <h2 class="process-title reveal">A Smooth, Transparent Process</h2>
     <div class="process-steps">
-      <div class="process-step">
+      <div class="process-step reveal">
         <div class="process-step-num">1</div>
         <div class="process-step-icon">💬</div>
         <div class="process-step-title">Consultation</div>
         <p class="process-step-desc">We discuss your vision, budget & timeline.</p>
       </div>
-      <div class="process-step">
+      <div class="process-step reveal">
         <div class="process-step-num">2</div>
         <div class="process-step-icon">📋</div>
         <div class="process-step-title">Design & Plan</div>
         <p class="process-step-desc">We create a design & material selection plan.</p>
       </div>
-      <div class="process-step">
+      <div class="process-step reveal">
         <div class="process-step-num">3</div>
         <div class="process-step-icon">🔨</div>
         <div class="process-step-title">Demo & Prep</div>
         <p class="process-step-desc">Safe demolition & site preparation.</p>
       </div>
-      <div class="process-step">
+      <div class="process-step reveal">
         <div class="process-step-num">4</div>
         <div class="process-step-icon">💧</div>
         <div class="process-step-title">Waterproofing</div>
         <p class="process-step-desc">Professional waterproofing installation.</p>
       </div>
-      <div class="process-step">
+      <div class="process-step reveal">
         <div class="process-step-num">5</div>
         <div class="process-step-icon">🔲</div>
         <div class="process-step-title">Tile Installation</div>
         <p class="process-step-desc">Expert tile work with attention to every detail.</p>
       </div>
-      <div class="process-step">
+      <div class="process-step reveal">
         <div class="process-step-num">6</div>
         <div class="process-step-icon">✅</div>
         <div class="process-step-title">Final Walkthrough</div>
@@ -465,28 +478,28 @@ img{max-width:100%;display:block}
   <div class="projects-inner">
     <div class="projects-head">
       <div class="projects-head-left">
-        <div class="eyebrow">Recent Projects</div>
-        <h2>Real Bathrooms. Real Results.</h2>
+        <div class="eyebrow reveal">Recent Projects</div>
+        <h2 class="reveal">Real Bathrooms. Real Results.</h2>
       </div>
-      <a class='projects-viewall' href='/gallery'>View All Projects →</a>
+      <a class='projects-viewall reveal' href='/gallery'>View All Projects →</a>
     </div>
     <div class="projects-grid">
-      <div class="project-thumb" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
+      <div class="project-thumb reveal" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
         <img src="images/service-pages/bathroom-renovation/project-1.jpg" alt="Bathroom renovation project 1">
       </div>
-      <div class="project-thumb" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
+      <div class="project-thumb reveal" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
         <img src="images/service-pages/bathroom-renovation/project-2.jpg" alt="Bathroom renovation project 2">
       </div>
-      <div class="project-thumb" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
+      <div class="project-thumb reveal" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
         <img src="images/service-pages/bathroom-renovation/project-3.jpg" alt="Bathroom renovation project 3">
       </div>
-      <div class="project-thumb" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
+      <div class="project-thumb reveal" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
         <img src="images/service-pages/bathroom-renovation/project-4.jpg" alt="Bathroom renovation project 4">
       </div>
-      <div class="project-thumb" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
+      <div class="project-thumb reveal" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
         <img src="images/service-pages/bathroom-renovation/project-5.jpg" alt="Bathroom renovation project 5">
       </div>
-      <div class="project-thumb" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
+      <div class="project-thumb reveal" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
         <img src="images/service-pages/bathroom-renovation/project-6.jpg" alt="Bathroom renovation project 6">
       </div>
     </div>
@@ -495,7 +508,7 @@ img{max-width:100%;display:block}
 
 <!-- ============ TESTIMONIAL ============ -->
 <section class="testi-section">
-  <div class="testi-inner">
+  <div class="testi-inner reveal">
     <div class="testi-photo" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
       <img src="images/service-pages/bathroom-renovation/testimonial-photo.jpg" alt="Sani Building Corp completed bathroom">
     </div>
@@ -513,26 +526,26 @@ img{max-width:100%;display:block}
 <!-- ============ FAQ ============ -->
 <section class="faq-section">
   <div class="faq-inner">
-    <div class="faq-eyebrow">FAQ</div>
-    <h2 class="faq-title">Frequently Asked Questions</h2>
+    <div class="faq-eyebrow reveal">FAQ</div>
+    <h2 class="faq-title reveal">Frequently Asked Questions</h2>
     <div class="faq-list">
-      <details class="faq-item">
+      <details class="faq-item reveal">
         <summary class="faq-q">How long does a bathroom renovation take?<span class="faq-toggle">+</span></summary>
         <div class="faq-a">A typical NYC bathroom renovation takes <strong>2-4 weeks</strong> from demo to completion. Full gut renovations can take 4-6 weeks. Timeline depends on scope, material delivery, and permit requirements.</div>
       </details>
-      <details class="faq-item">
+      <details class="faq-item reveal">
         <summary class="faq-q">Do you provide design services?<span class="faq-toggle">+</span></summary>
         <div class="faq-a">Yes — we offer <strong>free design consultations</strong>. Our team helps you plan layouts, choose materials, fixtures and finishes, and visualize your space before any work begins.</div>
       </details>
-      <details class="faq-item">
+      <details class="faq-item reveal">
         <summary class="faq-q">Are you licensed and insured?<span class="faq-toggle">+</span></summary>
         <div class="faq-a">Yes — Sani Building Corp is <strong>fully licensed and insured</strong> to operate throughout NYC and Long Island. We provide certificates on request.</div>
       </details>
-      <details class="faq-item">
+      <details class="faq-item reveal">
         <summary class="faq-q">Do you handle permits?<span class="faq-toggle">+</span></summary>
         <div class="faq-a">Yes — we handle all <strong>NYC Department of Buildings permits</strong> required for your renovation project, including co-op and condo board paperwork.</div>
       </details>
-      <details class="faq-item">
+      <details class="faq-item reveal">
         <summary class="faq-q">What areas do you serve?<span class="faq-toggle">+</span></summary>
         <div class="faq-a">We serve all <strong>5 NYC boroughs</strong> — Brooklyn, Manhattan, Queens, Bronx, and Staten Island — plus <strong>Long Island and Nassau County</strong>.</div>
       </details>
@@ -598,6 +611,24 @@ img{max-width:100%;display:block}
   slider.addEventListener('touchstart',e=>{dragging=true;setPos(e.touches[0].clientX)},{passive:true});
   window.addEventListener('touchmove',e=>{if(dragging)setPos(e.touches[0].clientX)},{passive:true});
   window.addEventListener('touchend',()=>dragging=false);
+})();
+
+/* ============ SCROLL REVEAL ============ */
+(function(){
+  var els=document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('show')});return;}
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var el=e.target;
+        var sibs=Array.prototype.slice.call(el.parentElement.children).filter(function(c){return c.classList.contains('reveal')});
+        var idx=sibs.indexOf(el);
+        setTimeout(function(){el.classList.add('show')}, idx>0?idx*70:0);
+        io.unobserve(el);
+      }
+    });
+  },{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+  els.forEach(function(e){io.observe(e)});
 })();
 
 /* ============ LIGHTBOX ============ */
