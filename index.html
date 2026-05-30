@@ -45,7 +45,14 @@
 <meta name="format-detection" content="telephone=yes">
 
 <link rel="canonical" href="https://www.sanibuildingcorp.com/">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Preload the hero image so it's discovered & painted faster (improves LCP) -->
+<link rel="preload" as="image" href="images/hero/home-hero.PNG" fetchpriority="high">
+<!-- Load Google Fonts without blocking the first paint -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"GeneralContractor","name":"Sani Building Corp","telephone":"332-277-0990","email":"contact@sanibuildingcorp.com","url":"https://www.sanibuildingcorp.com","image":"https://www.sanibuildingcorp.com/images/og/og-image.jpg","priceRange":"$$","address":{"@type":"PostalAddress","streetAddress":"2954 Brighton 12th Street","addressLocality":"Brooklyn","addressRegion":"NY","postalCode":"11235","addressCountry":"US"},"geo":{"@type":"GeoCoordinates","latitude":40.5795,"longitude":-73.9707},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"62"},"areaServed":["Brooklyn","Manhattan","Queens","Bronx","Staten Island","Nassau County","Suffolk County","Long Island"],"foundingDate":"2020","sameAs":["https://www.facebook.com/sanibuildingcorp","https://www.instagram.com/sanibuildingcorp"],"hasOfferCatalog":{"@type":"OfferCatalog","name":"Renovation Services","itemListElement":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Kitchen Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Bathroom Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Interior Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Exterior Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Painting Services"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Flooring Installation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Carpentry Services"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Water Damage Repair"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Handyman Services"}}]},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"08:00","closes":"18:00"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Saturday","opens":"08:00","closes":"16:00"}]}</script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -1633,35 +1640,35 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
       <form class="contact-form" action="#" method="POST" onsubmit="event.preventDefault();alert('Thanks! We\u2019ll be in touch within 24 hours.');">
 
         <div class="cf-field">
-          <label>First Name <span class="req">*</span></label>
-          <input type="text" name="first_name" placeholder="First Name" required>
+          <label for="cf-first-name">First Name <span class="req">*</span></label>
+          <input id="cf-first-name" type="text" name="first_name" placeholder="First Name" required>
         </div>
         <div class="cf-field">
-          <label>Last Name <span class="req">*</span></label>
-          <input type="text" name="last_name" placeholder="Last Name" required>
-        </div>
-
-        <div class="cf-field">
-          <label>Phone <span class="req">*</span></label>
-          <input type="tel" name="phone" placeholder="(347) 555-0199" required>
-        </div>
-        <div class="cf-field">
-          <label>Email <span class="req">*</span></label>
-          <input type="email" name="email" placeholder="you@email.com" required>
+          <label for="cf-last-name">Last Name <span class="req">*</span></label>
+          <input id="cf-last-name" type="text" name="last_name" placeholder="Last Name" required>
         </div>
 
         <div class="cf-field">
-          <label>Address <span class="req">*</span></label>
-          <input type="text" name="address" placeholder="Street, Borough" required>
+          <label for="cf-phone">Phone <span class="req">*</span></label>
+          <input id="cf-phone" type="tel" name="phone" placeholder="(347) 555-0199" required>
         </div>
         <div class="cf-field">
-          <label>Estimated Start Date</label>
-          <input type="date" name="start_date">
+          <label for="cf-email">Email <span class="req">*</span></label>
+          <input id="cf-email" type="email" name="email" placeholder="you@email.com" required>
         </div>
 
         <div class="cf-field">
-          <label>Type of Home <span class="req">*</span></label>
-          <select name="home_type" required>
+          <label for="cf-address">Address <span class="req">*</span></label>
+          <input id="cf-address" type="text" name="address" placeholder="Street, Borough" required>
+        </div>
+        <div class="cf-field">
+          <label for="cf-start-date">Estimated Start Date</label>
+          <input id="cf-start-date" type="date" name="start_date">
+        </div>
+
+        <div class="cf-field">
+          <label for="cf-home-type">Type of Home <span class="req">*</span></label>
+          <select id="cf-home-type" name="home_type" required>
             <option value="">Select one…</option>
             <option>Private Home</option>
             <option>Co-Op</option>
@@ -1672,8 +1679,8 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
           </select>
         </div>
         <div class="cf-field">
-          <label>Approx. Sq. Footage</label>
-          <input type="text" name="sqft" placeholder="e.g. 850 sq ft">
+          <label for="cf-sqft">Approx. Sq. Footage</label>
+          <input id="cf-sqft" type="text" name="sqft" placeholder="e.g. 850 sq ft">
         </div>
 
         <div class="scope-section">
@@ -1691,13 +1698,13 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         </div>
 
         <div class="cf-field full">
-          <label>Budget (optional)</label>
-          <input type="text" name="budget" placeholder="e.g. $20,000">
+          <label for="cf-budget">Budget (optional)</label>
+          <input id="cf-budget" type="text" name="budget" placeholder="e.g. $20,000">
         </div>
 
         <div class="cf-field full">
-          <label>Project Details (optional)</label>
-          <textarea name="details" rows="4" placeholder="Tell us more about your project, timeline, or any specific needs…"></textarea>
+          <label for="cf-details">Project Details (optional)</label>
+          <textarea id="cf-details" name="details" rows="4" placeholder="Tell us more about your project, timeline, or any specific needs…"></textarea>
         </div>
 
         <div class="cf-submit">
