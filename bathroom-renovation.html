@@ -118,6 +118,15 @@ img{max-width:100%;display:block}
 .eyn-feat-icon{color:var(--gold-light);font-size:26px;margin-bottom:12px;text-shadow:0 2px 6px rgba(0,0,0,1),0 0 14px rgba(0,0,0,0.9)}
 .eyn-feat-title{font-family:"Playfair Display",serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;text-shadow:0 2px 6px rgba(0,0,0,1),0 1px 2px rgba(0,0,0,1),0 0 14px rgba(0,0,0,0.85)}
 .eyn-feat-desc{font-size:13px;color:#fff;line-height:1.6;text-shadow:0 2px 6px rgba(0,0,0,1),0 1px 2px rgba(0,0,0,1),0 0 12px rgba(0,0,0,0.85)}
+.related-service{grid-column:1/-1;margin-top:28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;background:var(--navy);border:1px solid var(--gold);border-radius:14px;padding:28px 32px}
+.related-service-eyebrow{display:inline-block;color:var(--gold-light);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.related-service h3{font-family:"Playfair Display",serif;font-size:22px;color:#fff;margin-bottom:8px}
+.related-service p{font-size:14px;color:rgba(255,255,255,.85);line-height:1.6;max-width:560px}
+.related-service p strong{color:var(--gold-light)}
+.related-service-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:10px;background:var(--gold);color:var(--navy);font-weight:700;font-size:14px;letter-spacing:.5px;padding:15px 26px;border-radius:8px;text-decoration:none;transition:all .25s;white-space:nowrap}
+.related-service-btn:hover{background:var(--gold-light);transform:translateY(-2px);box-shadow:0 10px 28px rgba(200,134,10,.35)}
+.related-service-btn .arrow{transition:transform .25s}
+.related-service-btn:hover .arrow{transform:translateX(4px)}
 
 /* ============ PROCESS TIMELINE (kept dark, matches floor-tile dark process) ============ */
 .process-section{padding:80px 28px;background:var(--navy)}
@@ -238,6 +247,8 @@ img{max-width:100%;display:block}
   .ba-slider{height:340px}
   .ba-label,.ba-caption{font-size:9px;padding:6px 12px}
   .eyn-features{grid-template-columns:1fr}
+  .related-service{flex-direction:column;align-items:flex-start;padding:24px 22px;text-align:left}
+  .related-service-btn{width:100%;justify-content:center}
   .process-steps{grid-template-columns:1fr;gap:24px}
   .projects-grid{grid-template-columns:repeat(2,1fr)}
   .testi-inner{padding:24px}
@@ -419,8 +430,14 @@ img{max-width:100%;display:block}
         </div>
       </div>
     </div>
-  </div>
-</section>
+    <div class="related-service reveal">
+      <div class="related-service-text">
+        <span class="related-service-eyebrow">Specialized Service</span>
+        <h3>Looking just for floor tile?</h3>
+        <p>We also offer dedicated <strong>bathroom floor tile installation</strong> — precision layout, waterproof prep & flawless grout work.</p>
+      </div>
+      <a class="related-service-btn" href="/bathroom-floor-tile-installation">View Floor Tile Installation <span class="arrow">→</span></a>
+    </div>
 
 <!-- ============ PROCESS TIMELINE ============ -->
 <section class="process-section">
