@@ -30,21 +30,27 @@
 .sub-services-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);white-space:nowrap}
 .sub-svc-link{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border:1px solid rgba(240,165,0,.25);color:rgba(255,255,255,.65);text-decoration:none;font-size:12px;border-radius:4px;transition:all .2s}
 .sub-svc-link:hover,.sub-svc-link.active{border-color:var(--gold);color:var(--gold-light);background:rgba(200,134,10,.08)}
-.page-hero{min-height:70vh;display:flex;align-items:flex-end;background:#0d1520;position:relative;overflow:hidden;padding-top:68px}
+
+/* ===== HERO — BRIGHT PHOTO, SHADOW ONLY BEHIND TEXT ===== */
+.page-hero{min-height:70vh;display:flex;align-items:flex-end;background:#0d1520;position:relative;overflow:hidden;padding-top:110px}
 .page-hero-bg{position:absolute;inset:0}
-.page-hero-bg img{width:100%;height:100%;object-fit:cover;opacity:.35}
-.page-hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,10,18,0.95) 0%,rgba(10,10,18,0.5) 60%,rgba(10,10,18,0.2) 100%)}
-.page-hero-grid{position:absolute;inset:0;background-image:none;background-size:44px 44px}
+.page-hero-bg img{width:100%;height:100%;object-fit:cover;opacity:1}
+/* soft shadow ONLY along the bottom-left where the text sits, so the photo stays bright */
+.page-hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,12,20,0.72) 0%,rgba(10,12,20,0.45) 30%,rgba(10,12,20,0.12) 55%,rgba(10,12,20,0) 75%)}
+.page-hero-grid{display:none}
 .page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
-.page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 28px 56px;width:100%}
-.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:20px;text-transform:uppercase}
+.page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:48px 28px 56px;width:100%}
+/* extra text shadow so words stay crisp on a bright image */
+.page-hero-content h1,.page-hero-content p,.breadcrumb{text-shadow:0 2px 14px rgba(0,0,0,0.55)}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.75);margin-bottom:20px;text-transform:uppercase}
 .breadcrumb a{color:var(--gold-light);text-decoration:none}
 .page-hero h1{font-family:"Playfair Display",serif;font-size:clamp(32px,5vw,60px);font-weight:700;color:#fff;line-height:1.05;margin-bottom:16px}
 .page-hero h1 em{font-style:italic;color:var(--gold-light)}
-.page-hero p{font-size:16px;color:rgba(255,255,255,.6);max-width:560px;line-height:1.7;margin-bottom:28px}
+.page-hero p{font-size:16px;color:rgba(255,255,255,.92);max-width:560px;line-height:1.7;margin-bottom:28px}
 .hero-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
-.hero-badge{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;padding:6px 12px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65)}
-.hero-badge.gold{border-color:var(--gold);color:var(--gold);background:rgba(200,134,10,.08)}
+.hero-badge{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;padding:6px 12px;border:1px solid rgba(255,255,255,.3);color:#fff;background:rgba(10,12,20,0.35);backdrop-filter:blur(2px)}
+.hero-badge.gold{border-color:var(--gold);color:var(--gold-light);background:rgba(200,134,10,.18)}
+
 .section{padding:80px 28px}
 .section-inner{max-width:1100px;margin:0 auto}
 .section-eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:14px}
@@ -99,7 +105,7 @@
 .cta-section p{color:rgba(255,255,255,.5);font-size:15px;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;position:relative;z-index:1}
 .cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
 @media(max-width:900px){.tile-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.tile-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:40px 20px 44px}}
+@media(max-width:600px){.tile-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero{padding-top:96px}.page-hero-content{padding:32px 20px 44px}}
 </style>
 <link rel="stylesheet" href="partials/site.css">
 </head>
