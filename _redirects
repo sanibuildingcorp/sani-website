@@ -11,28 +11,77 @@ http://velvety-horse-2aa6e3.netlify.app/*   https://www.sanibuildingcorp.com/:sp
 https://sanibuildingcorp.com/*  https://www.sanibuildingcorp.com/:splat  301!
 http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 
-# ─── OLD WIX URLs → NEW PAGES ───
-/water-damage-restoration                        /water-damage.html                       301
-/about-nyc-renovation-contractor                 /about.html                              301
-/contact-nyc-renovation-contractor               /contact.html                            301
-/bathroom-renovation/tile-installation-brooklyn  /bathroom-floor-tile-installation.html   301
-/lobby-restoration                               /services.html                           301
+# ─── OLD WIX URLs → NEW PAGES (keep — these catch indexed Google traffic) ───
+/water-damage-restoration                        /water-damage                       301
+/about-nyc-renovation-contractor                 /about                              301
+/contact-nyc-renovation-contractor               /contact                            301
+/bathroom-renovation/tile-installation-brooklyn  /bathroom-floor-tile-installation   301
+/lobby-restoration                               /services                           301
 
 # ─── COMMON HOMEPAGE VARIANTS → / ───
 /home              /             301
 /index             /             301
-/index.html        /             301
+/index.html        /             301!
 
 # ─── OLD WIX BLOG/PORTFOLIO PATHS ───
 /blog/*            /             301
-/portfolio         /gallery.html      301
-/projects          /gallery.html      301
+/portfolio         /gallery      301
+/projects          /gallery      301
 
-# ─── ESTIMATE-RELATED ALIASES (these are MARKETING URLs, not real pages) ───
-/get-quote         /estimate.html     301
-/free-estimate     /estimate.html     301
-/get-estimate      /estimate.html     301
-/request-estimate  /estimate.html     301
+# ─── ESTIMATE-RELATED ALIASES (marketing URLs, not real pages) ───
+/get-quote         /estimate     301
+/free-estimate     /estimate     301
+/get-estimate      /estimate     301
+/request-estimate  /estimate     301
+
+# ═══════════════════════════════════════════════════════════════════
+# CLEAN URLs — strip .html so the address bar shows /page not /page.html
+# The "!" forces the redirect even though the .html file exists on disk.
+# Public pages only. Tool pages (dashboard, quote, invoice, etc.) are
+# intentionally NOT here so they keep working untouched.
+# ═══════════════════════════════════════════════════════════════════
+
+# Main service & info pages
+/about.html                              /about                              301!
+/contact.html                            /contact                            301!
+/services.html                           /services                           301!
+/gallery.html                            /gallery                            301!
+/handyman.html                           /handyman                           301!
+/painting.html                           /painting                           301!
+/flooring.html                           /flooring                           301!
+/carpentry.html                          /carpentry                          301!
+/water-damage.html                       /water-damage                       301!
+/kitchen-renovation.html                 /kitchen-renovation                 301!
+/bathroom-renovation.html                /bathroom-renovation                301!
+
+# Bathroom SEO pages
+/bathroom-floor-tile-installation.html   /bathroom-floor-tile-installation   301!
+/bathroom-renovation-brooklyn.html       /bathroom-renovation-brooklyn       301!
+/bathroom-renovation-manhattan.html      /bathroom-renovation-manhattan      301!
+/bathroom-renovation-queens.html         /bathroom-renovation-queens         301!
+
+# Painting SEO pages
+/painting-brooklyn.html                  /painting-brooklyn                  301!
+/painting-manhattan.html                 /painting-manhattan                 301!
+
+# Carpentry / deck / stair pages
+/exterior-carpentry.html                 /exterior-carpentry                 301!
+/deck-building.html                      /deck-building                      301!
+/deck-renovation.html                    /deck-renovation                    301!
+/stair-building.html                     /stair-building                     301!
+/stair-renovation.html                   /stair-renovation                   301!
+/stair-restoration.html                  /stair-restoration                  301!
+/stair-upgrade.html                      /stair-upgrade                      301!
+
+# Renovation-contractor location pages
+/renovation-contractor-bronx.html          /renovation-contractor-bronx          301!
+/renovation-contractor-brooklyn.html       /renovation-contractor-brooklyn       301!
+/renovation-contractor-long-island.html    /renovation-contractor-long-island    301!
+/renovation-contractor-manhattan.html      /renovation-contractor-manhattan      301!
+/renovation-contractor-nassau-county.html  /renovation-contractor-nassau-county  301!
+/renovation-contractor-queens.html         /renovation-contractor-queens         301!
+/renovation-contractor-staten-island.html  /renovation-contractor-staten-island  301!
+/renovation-contractor-suffolk-county.html /renovation-contractor-suffolk-county 301!
 
 # ─── 404 FALLBACK (MUST BE THE LAST RULE) ───
 /*                 /404.html     404
