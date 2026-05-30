@@ -2206,10 +2206,11 @@ const TABS = [
   { id: "handyman", label: "🔧 Handyman" },
   { id: "seo", label: "🧠 SEO Brain" },
   { id: "content", label: "✍️ Content" },
+  { id: "visitors", label: "👁 Live Visitors" },
 ];
 
 let handymanBookings = [];
-
+let visitorsLiveCount = 0;
 let estimates = [];
 let activeTab = "all";
 let currentRecord = null;
@@ -2338,6 +2339,7 @@ function renderTabs() {
   estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
   counts.handyman = handymanBookings.length;
   counts.seo = seoInsightCount;
+counts.visitors = visitorsLiveCount;
   document.getElementById("tabs-row").innerHTML = TABS.map(function(t) {
     return '<button class="tab ' + (activeTab === t.id ? "active" : "") + '" data-tab="' + t.id + '">' +
       '<span>' + t.label + '</span>' +
@@ -4056,6 +4058,215 @@ async function runSeoNow() {
 })();
 /* END SEO BRAIN TAB */
 
+/* ════════════════════════════════════════════════════════════════════
+   LIVE VISITORS TAB  —  added May 2026
+   Auth reuses the dashboard password. In Netlify set env var
+   VISITS_KEY equal to the dashboard password, then redeploy.
+   ════════════════════════════════════════════════════════════════════ */
+var VISITS_KEY = DASHBOARD_PASSWORD;   // must match the Netlify VISITS_KEY env var
+var visitorsTimer = null;
+
+var VISIT_PAGE_NAMES = {
+  "/":"Home","/services":"Services","/about":"About","/contact":"Contact","/gallery":"Gallery",
+  "/bathroom-renovation":"Bathroom Renovation","/kitchen-renovation":"Kitchen Renovation",
+  "/painting":"Painting","/flooring":"Flooring","/carpentry":"Carpentry","/water-damage":"Water Damage",
+  "/handyman":"Handyman","/estimate":"AI Estimate","/handyman-estimate":"Handyman Estimate",
+  "/bathroom-floor-tile-installation":"Bathroom Floor Tile",
+  "/bathroom-renovation-brooklyn":"Bathroom · Brooklyn","/bathroom-renovation-manhattan":"Bathroom · Manhattan","/bathroom-renovation-queens":"Bathroom · Queens",
+  "/kitchen-renovation-brooklyn":"Kitchen · Brooklyn","/kitchen-renovation-manhattan":"Kitchen · Manhattan","/kitchen-renovation-queens":"Kitchen · Queens",
+  "/painting-brooklyn":"Painting · Brooklyn","/painting-manhattan":"Painting · Manhattan",
+  "/renovation-contractor-brooklyn":"Contractor · Brooklyn","/renovation-contractor-manhattan":"Contractor · Manhattan",
+  "/renovation-contractor-queens":"Contractor · Queens","/renovation-contractor-long-island":"Contractor · Long Island"
+};
+function visPageName(p){ if(!p) return "Unknown"; var c=p.replace(/\/$/,"")||"/"; return VISIT_PAGE_NAMES[c]||VISIT_PAGE_NAMES[p]||p; }
+function visDevIcon(d){ return d==="mobile"?"📱":(d==="tablet"?"▦":"💻"); }
+var VISIT_SOURCE_ICON={"Google":"🔍","Google Ads":"🔍","Google Maps":"📍","Google Business":"🏢","Bing":"🔍","Yahoo":"🔍","DuckDuckGo":"🔍","Ecosia":"🔍","Facebook":"📘","Instagram":"📸","X / Twitter":"✕","LinkedIn":"in","YouTube":"▶","Yelp":"★","Nextdoor":"🏡","Reddit":"👽","Pinterest":"📌","TikTok":"♪","Email":"✉","Direct":"➦","Internal":"↻","Other":"🌐"};
+function visSrcIcon(s){ return VISIT_SOURCE_ICON[s]||"🌐"; }
+function visHostOf(u){ try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return ""; } }
+function visSourceLabel(v){
+  var s=v.source||"Direct";
+  if(s==="Other"){ var h=visHostOf(v.referrer); return h?("from "+h):"from another site"; }
+  if(s==="Direct") return "Direct / typed in";
+  if(s==="Internal") return "within your site";
+  return "from "+s;
+}
+function visLoc(v){
+  var parts=[]; if(v.city)parts.push(v.city); if(v.region&&v.region!==v.city)parts.push(v.region);
+  var place=parts.join(", "); var c=v.country||"";
+  if(place&&c) return place+" · "+c; return place||c||"Unknown location";
+}
+function visAgo(iso){ if(!iso) return ""; var s=Math.max(0,Math.round((Date.now()-new Date(iso).getTime())/1000));
+  if(s<60) return s+"s ago"; var m=Math.round(s/60); if(m<60) return m+"m ago"; return Math.round(m/60)+"h ago"; }
+function visDur(a,b){ if(!a||!b) return ""; var s=Math.max(0,Math.round((new Date(b).getTime()-new Date(a).getTime())/1000));
+  if(s<60) return s+"s"; var m=Math.round(s/60); if(m<60) return m+" min"; return Math.round(m/60)+"h"; }
+
+function stopVisitorsPolling(){ if(visitorsTimer){ clearInterval(visitorsTimer); visitorsTimer=null; } }
+
+function renderVisitorsTab(){
+  document.getElementById("list-host").innerHTML =
+    '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading live visitors…</h3></div>';
+  stopVisitorsPolling();
+  loadVisitors();
+  visitorsTimer = setInterval(function(){
+    if(activeTab==="visitors") loadVisitors(); else stopVisitorsPolling();
+  }, 12000);
+}
+
+async function loadVisitors(){
+  try{
+    const r = await fetch("/.netlify/functions/get-visits?key=" + encodeURIComponent(VISITS_KEY));
+    if(r.status===401){
+      visitorsError("Tracking key not set yet. In Netlify → Site settings → Environment variables, add <b>VISITS_KEY</b> set to your dashboard password (<b>"+esc(DASHBOARD_PASSWORD)+"</b>), then redeploy the site.");
+      return;
+    }
+    if(!r.ok) throw new Error("Could not load (status "+r.status+"). Make sure the get-visits function is deployed.");
+    const d = await r.json();
+    visitorsLiveCount = d.liveCount||0;
+    var badge = document.querySelector('.tab[data-tab="visitors"] .tab-count');
+    if(badge) badge.textContent = visitorsLiveCount;
+    drawVisitors(d);
+  }catch(e){ visitorsError(esc(e.message)); }
+}
+
+function visitorsError(msg){
+  if(activeTab!=="visitors") return;
+  document.getElementById("list-host").innerHTML =
+    '<div class="empty"><div class="empty-icon">👁</div><h3>Live Visitors</h3>'+
+    '<p style="max-width:540px;margin:0 auto 16px;line-height:1.6">'+msg+'</p>'+
+    '<button class="topbar-btn" onclick="renderVisitorsTab()">Retry</button></div>';
+}
+
+function drawVisitors(d){
+  if(activeTab!=="visitors") return;
+  var dv = d.devices24||{mobile:0,desktop:0,tablet:0};
+  var devTot = (dv.mobile+dv.desktop+dv.tablet)||1;
+  var mobilePct = Math.round(dv.mobile/devTot*100);
+
+  var stats =
+    '<div class="seo-stats">'+
+      '<div class="seo-stat"><div class="seo-stat-label">On site now</div><div class="seo-stat-val" style="color:var(--good)">'+(d.liveCount||0)+'</div></div>'+
+      '<div class="seo-stat"><div class="seo-stat-label">Visitors · 24h</div><div class="seo-stat-val">'+(d.sessions24||0)+'</div></div>'+
+      '<div class="seo-stat"><div class="seo-stat-label">Page views · 24h</div><div class="seo-stat-val">'+(d.pageviews24||0)+'</div></div>'+
+      '<div class="seo-stat"><div class="seo-stat-label">On mobile · 24h</div><div class="seo-stat-val">'+mobilePct+'%</div></div>'+
+    '</div>';
+
+  var liveRows;
+  if(!d.live||!d.live.length){
+    liveRows = '<div class="vis-empty">No one on the site right now.</div>';
+  } else {
+    liveRows = d.live.map(function(v){
+      return '<div class="vis-row">'+
+        '<div class="vis-ico">'+visDevIcon(v.device)+'</div>'+
+        '<div class="vis-main">'+
+          '<div class="vis-page">'+esc(visPageName(v.path))+'</div>'+
+          '<div class="vis-meta"><b>'+esc(visLoc(v))+'</b> · '+esc(v.device||"desktop")+' · '+esc(visSourceLabel(v))+'</div>'+
+        '</div>'+
+        '<div class="vis-right"><div class="vis-on">'+visAgo(v.lastSeen)+'</div><div>on site '+visDur(v.firstSeen,v.lastSeen)+'</div></div>'+
+      '</div>';
+    }).join("");
+  }
+  var livePanel =
+    '<div class="vis-panel"><div class="vis-panel-h">On the site right now</div>'+
+    '<div class="vis-panel-sub">Active in the last 5 minutes — where they are, what they\'re viewing.</div>'+
+    liveRows+'</div>';
+
+  var srcPanel;
+  if(!d.sources||!d.sources.length){
+    srcPanel = '<div class="vis-panel"><div class="vis-panel-h">Where visitors come from · 24h</div><div class="vis-empty">No visits yet.</div></div>';
+  } else {
+    var maxS = d.sources[0].count||1;
+    var srcRows = d.sources.map(function(s){
+      var pct=Math.round(s.count/maxS*100);
+      return '<div class="vis-src">'+
+        '<div class="vis-src-main"><div class="vis-src-name">'+visSrcIcon(s.source)+' '+esc(s.source)+'</div>'+
+        '<div class="vis-src-bar"><i style="width:'+pct+'%"></i></div></div>'+
+        '<div class="vis-src-count">'+s.count+'</div></div>';
+    }).join("");
+    srcPanel = '<div class="vis-panel"><div class="vis-panel-h">Where visitors come from · 24h</div>'+
+      '<div class="vis-panel-sub">Google, social, direct, referrals and your tagged campaign links.</div>'+srcRows+'</div>';
+  }
+
+  var devPanel =
+    '<div class="vis-panel"><div class="vis-panel-h">Devices · 24h</div>'+
+      '<div class="vis-devbar">'+
+        '<i style="width:'+(dv.mobile/devTot*100)+'%;background:var(--gold)"></i>'+
+        '<i style="width:'+(dv.desktop/devTot*100)+'%;background:#4a90d9"></i>'+
+        '<i style="width:'+(dv.tablet/devTot*100)+'%;background:var(--good)"></i>'+
+      '</div>'+
+      '<div class="vis-legend">'+
+        '<span><i style="background:var(--gold)"></i> Mobile '+dv.mobile+'</span>'+
+        '<span><i style="background:#4a90d9"></i> Desktop '+dv.desktop+'</span>'+
+        '<span><i style="background:var(--good)"></i> Tablet '+dv.tablet+'</span>'+
+      '</div>'+
+    '</div>';
+
+  var pagesPanel;
+  if(!d.topPages||!d.topPages.length){
+    pagesPanel = '<div class="vis-panel"><div class="vis-panel-h">Most-viewed pages · 24h</div><div class="vis-empty">No page views yet.</div></div>';
+  } else {
+    pagesPanel = '<div class="seo-section-head"><h3>Most-viewed pages · 24h</h3></div>'+
+      '<div class="seo-table-wrap"><table class="seo-table">'+
+      '<thead><tr><th>Page</th><th>Path</th><th class="num">Views</th></tr></thead><tbody>'+
+      d.topPages.map(function(p){
+        return '<tr><td class="seo-q">'+esc(visPageName(p.path))+'</td><td style="color:var(--ink-muted)">'+esc(p.path)+'</td><td class="num">'+p.count+'</td></tr>';
+      }).join("")+
+      '</tbody></table></div>';
+  }
+
+  document.getElementById("list-host").innerHTML =
+    '<div class="seo-wrap">'+
+      '<div class="seo-topline"><div>'+
+        '<div class="seo-title">👁 Live Visitors</div>'+
+        '<div class="seo-daterange">Updated '+new Date().toLocaleTimeString()+' · refreshes every 12s · runs alongside GA4</div>'+
+      '</div>'+
+        '<div class="vis-livepill"><span class="vis-dot"></span> '+(d.liveCount||0)+' live</div>'+
+      '</div>'+
+      stats + livePanel + srcPanel + devPanel + pagesPanel +
+    '</div>';
+}
+
+/* Route to the tab WITHOUT editing renderList — wrap the existing one. */
+if (typeof renderList === "function") {
+  var _sbcOrigRenderList = renderList;
+  renderList = function(){
+    if (activeTab === "visitors") { renderVisitorsTab(); return; }
+    stopVisitorsPolling();
+    return _sbcOrigRenderList.apply(this, arguments);
+  };
+}
+
+/* Styles for the Live Visitors tab (matches your dashboard look). */
+(function injectVisitorStyles(){
+  var css =
+  '.vis-livepill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--gold-soft);padding:7px 14px;border-radius:30px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}'+
+  '.vis-dot{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(74,222,128,.6);animation:visPulse 1.8s infinite}'+
+  '@keyframes visPulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.55)}70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}'+
+  '.vis-panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}'+
+  '.vis-panel-h{font-family:var(--display);font-size:16px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase}'+
+  '.vis-panel-sub{font-size:12px;color:var(--ink-muted);margin:4px 0 14px}'+
+  '.vis-empty{text-align:center;color:var(--ink-muted);font-size:13px;padding:24px 0}'+
+  '.vis-row{display:grid;grid-template-columns:42px 1fr auto;gap:14px;align-items:center;padding:13px 0;border-top:1px solid var(--line-soft)}'+
+  '.vis-row:first-of-type{border-top:none}'+
+  '.vis-ico{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--gold-soft);border:1px solid var(--line)}'+
+  '.vis-page{font-size:15px;font-weight:600;color:var(--ink)}'+
+  '.vis-meta{font-size:12.5px;color:var(--ink-muted);margin-top:3px}'+
+  '.vis-meta b{color:var(--gold);font-weight:600}'+
+  '.vis-right{text-align:right;font-size:12px;color:var(--ink-muted);white-space:nowrap}'+
+  '.vis-on{color:var(--good);font-weight:600}'+
+  '.vis-src{display:flex;align-items:center;gap:14px;padding:9px 0}'+
+  '.vis-src-main{flex:1;min-width:0}'+
+  '.vis-src-name{font-size:14px;color:var(--ink)}'+
+  '.vis-src-bar{height:8px;border-radius:6px;background:var(--line-soft);margin-top:6px;overflow:hidden}'+
+  '.vis-src-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-2))}'+
+  '.vis-src-count{font-family:var(--display);font-size:17px;color:var(--gold);font-weight:700;min-width:30px;text-align:right}'+
+  '.vis-devbar{display:flex;height:12px;border-radius:8px;overflow:hidden;background:var(--line-soft);margin:6px 0 12px}'+
+  '.vis-devbar i{display:block;height:100%}'+
+  '.vis-legend{display:flex;gap:18px;font-size:12.5px;color:var(--ink-muted);flex-wrap:wrap}'+
+  '.vis-legend span{display:inline-flex;align-items:center;gap:7px}'+
+  '.vis-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}';
+  var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
+})();
+/* END LIVE VISITORS TAB */
 </script>
 </body>
 </html>
