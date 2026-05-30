@@ -40,10 +40,9 @@
 .page-hero-grid{display:none}
 .page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
 .page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:48px 28px 56px;width:100%}
-/* extra text shadow so words stay crisp on a bright image */
-.page-hero-content h1,.page-hero-content p,.breadcrumb{text-shadow:0 2px 14px rgba(0,0,0,0.55)}
-.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.75);margin-bottom:20px;text-transform:uppercase}
-.breadcrumb a{color:var(--gold-light);text-decoration:none}
+/* darker readable panel behind the text block + strong text shadow so words pop on a bright photo */
+.page-hero-content .hero-text-panel{display:inline-block;max-width:680px;background:linear-gradient(135deg,rgba(8,12,20,0.62),rgba(8,12,20,0.42));padding:28px 32px;border-radius:14px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.page-hero-content h1,.page-hero-content p{text-shadow:0 2px 18px rgba(0,0,0,0.85),0 1px 4px rgba(0,0,0,0.9)}
 .page-hero h1{font-family:"Playfair Display",serif;font-size:clamp(32px,5vw,60px);font-weight:700;color:#fff;line-height:1.05;margin-bottom:16px}
 .page-hero h1 em{font-style:italic;color:var(--gold-light)}
 .page-hero p{font-size:16px;color:rgba(255,255,255,.92);max-width:560px;line-height:1.7;margin-bottom:28px}
@@ -120,7 +119,7 @@
   <div class="page-hero-overlay"></div>
   <div class="page-hero-accent"></div>
   <div class="page-hero-content">
-    <div class="breadcrumb"><a href="index.html">Home</a> <span>›</span> <a href="services.html">Services</a> <span>›</span> <a href="bathroom-renovation.html">Bathroom Renovation</a> <span>›</span> <span>Floor Tile Installation</span></div>
+    <div class="hero-text-panel">
     <h1>Bathroom Floor Tile<br><em>Installation NYC</em></h1>
     <p>Porcelain, marble, mosaic & heated floor tile installation for bathrooms across Brooklyn, Manhattan, Queens, Long Island & Nassau County.</p>
     <div class="hero-badges">
@@ -132,6 +131,7 @@
     <div style="display:flex;gap:12px;flex-wrap:wrap">
       <a href="contact.html" class="btn-primary">Get Free Estimate</a>
       <a href="tel:3322770990" class="btn-secondary">📞 332-277-0990</a>
+    </div>
     </div>
   </div>
 </section>
