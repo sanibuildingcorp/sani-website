@@ -2806,8 +2806,24 @@ async function generateRender() {
   try {
     const req = currentRecord.request || {};
     const est = currentRecord.estimate || {};
-    const photoToUse = selectedRenderPhotoData ||
+    let photoToUse = selectedRenderPhotoData ||
       ((req.photos && req.photos.length > 0) ? req.photos[0].data : null);
+    // Shrink photo so the request stays under Netlify's 256KB background limit
+    if (photoToUse) {
+      photoToUse = await new Promise(function (resolve) {
+        var img = new Image();
+        img.onload = function () {
+          var w = img.width, h = img.height, MAX = 512;
+          if (w > MAX) { h = Math.round(h * (MAX / w)); w = MAX; }
+          var c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          c.getContext("2d").drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL("image/jpeg", 0.6));
+        };
+        img.onerror = function () { resolve(null); };
+        img.src = photoToUse;
+      });
+    }
     const customPromptEl = document.getElementById("render-custom-prompt");
     const customPrompt = customPromptEl ? customPromptEl.value.trim() : "";
 
