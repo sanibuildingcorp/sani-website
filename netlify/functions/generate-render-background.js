@@ -76,17 +76,17 @@ exports.handler = async function (event) {
 
     console.log("Prompt:", finalPrompt.slice(0, 200));
 
-    // STEP 3: DALL-E 3 generation
+    // STEP 3: Image generation (gpt-image-1)
     const dalleRaw = await openaiPost(openaiKey, "/v1/images/generations", JSON.stringify({
-      model: "dall-e-3",
+      model: "gpt-image-1",
       prompt: finalPrompt,
       n: 1,
       size: "1024x1024",
-      quality: "standard"
+      quality: "medium"
     }));
 
     const dalleData = JSON.parse(dalleRaw);
-    if (dalleData.error) throw new Error("DALL-E: " + (dalleData.error.message || JSON.stringify(dalleData.error)));
+    if (dalleData.error) throw new Error("Image API: " + (dalleData.error.message || JSON.stringify(dalleData.error)));
 
     const d0 = dalleData.data && dalleData.data[0];
     const revisedPrompt = (d0 && d0.revised_prompt) || "";
