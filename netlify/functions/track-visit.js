@@ -16,22 +16,45 @@ const H = {
 };
 
 // Approximate location from IP (free, no key). Best-effort — never blocks.
+// Tries ipwho.is first (reliable from server IPs), falls back to ip-api.com.
 async function geoLookup(ip) {
   if (!ip) return {};
+
+  // Provider 1: ipwho.is  (free, no key, https, generous limits)
   try {
-    const r = await fetch('https://ipapi.co/' + encodeURIComponent(ip) + '/json/');
-    if (!r.ok) return {};
-    const d = await r.json();
-    return {
-      country: d.country_name || null,
-      region: d.region || null,
-      city: d.city || null,
-      lat: typeof d.latitude === 'number' ? d.latitude : null,
-      lng: typeof d.longitude === 'number' ? d.longitude : null
-    };
-  } catch (e) {
-    return {};
-  }
+    const r = await fetch('https://ipwho.is/' + encodeURIComponent(ip));
+    if (r.ok) {
+      const d = await r.json();
+      if (d && d.success !== false && (d.city || d.region || d.country)) {
+        return {
+          country: d.country || null,
+          region: d.region || null,
+          city: d.city || null,
+          lat: typeof d.latitude === 'number' ? d.latitude : null,
+          lng: typeof d.longitude === 'number' ? d.longitude : null
+        };
+      }
+    }
+  } catch (e) { /* fall through to provider 2 */ }
+
+  // Provider 2: ip-api.com  (free for non-commercial; http only)
+  try {
+    const r2 = await fetch('http://ip-api.com/json/' + encodeURIComponent(ip) + '?fields=status,country,regionName,city,lat,lon');
+    if (r2.ok) {
+      const d2 = await r2.json();
+      if (d2 && d2.status === 'success') {
+        return {
+          country: d2.country || null,
+          region: d2.regionName || null,
+          city: d2.city || null,
+          lat: typeof d2.lat === 'number' ? d2.lat : null,
+          lng: typeof d2.lon === 'number' ? d2.lon : null
+        };
+      }
+    }
+  } catch (e) { /* give up gracefully */ }
+
+  return {};
 }
 
 // Work out where the visit came from, using UTM tags first, then the referrer.
@@ -93,6 +116,8 @@ exports.handler = async (event) => {
 
   const hdrs = event.headers || {};
   const ip = (hdrs['x-nf-client-connection-ip'] || (hdrs['x-forwarded-for'] || '').split(',')[0] || '').trim();
+  // Don't bother looking up private/local addresses — they never resolve.
+  const isPrivateIp = !ip || /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1|fc|fd)/i.test(ip);
 
   try {
     if (type === 'heartbeat') {
@@ -107,7 +132,7 @@ exports.handler = async (event) => {
 
     // PAGEVIEW — look up location only on the first hit of a session
     let geo = {};
-    if (b.first === true) geo = await geoLookup(ip);
+    if (b.first === true && !isPrivateIp) geo = await geoLookup(ip);
 
     const sessionRow = {
       session_id: sid,
