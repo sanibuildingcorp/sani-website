@@ -82,18 +82,22 @@ exports.handler = async function (event) {
       prompt: finalPrompt,
       n: 1,
       size: "1024x1024",
-      quality: "standard",
-      response_format: "b64_json"
+      quality: "standard"
     }));
 
     const dalleData = JSON.parse(dalleRaw);
     if (dalleData.error) throw new Error("DALL-E: " + (dalleData.error.message || JSON.stringify(dalleData.error)));
 
-    const b64 = dalleData.data && dalleData.data[0] && dalleData.data[0].b64_json;
-    const revisedPrompt = (dalleData.data && dalleData.data[0] && dalleData.data[0].revised_prompt) || "";
-    if (!b64) throw new Error("No image data returned from DALL-E. Response: " + JSON.stringify(dalleData).slice(0, 200));
-
-    const imageBase64 = "data:image/png;base64," + b64;
+    const d0 = dalleData.data && dalleData.data[0];
+    const revisedPrompt = (d0 && d0.revised_prompt) || "";
+    let imageBase64;
+    if (d0 && d0.b64_json) {
+      imageBase64 = "data:image/png;base64," + d0.b64_json;
+    } else if (d0 && d0.url) {
+      imageBase64 = await fetchImageAsDataUrl(d0.url);
+    } else {
+      throw new Error("No image returned from DALL-E. Response: " + JSON.stringify(dalleData).slice(0, 200));
+    }
 
     // STEP 4: Save result to Supabase
     await saveJob(jobId, {
@@ -114,6 +118,20 @@ exports.handler = async function (event) {
     }
   }
 };
+
+function fetchImageAsDataUrl(url) {
+  return new Promise(function (resolve, reject) {
+    https.get(url, function (res) {
+      const chunks = [];
+      res.on("data", function (c) { chunks.push(c); });
+      res.on("end", function () {
+        const buf = Buffer.concat(chunks);
+        const ct = res.headers["content-type"] || "image/png";
+        resolve("data:" + ct + ";base64," + buf.toString("base64"));
+      });
+    }).on("error", reject);
+  });
+}
 
 function openaiPost(apiKey, path, bodyStr) {
   return new Promise((resolve, reject) => {
