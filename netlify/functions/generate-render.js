@@ -69,7 +69,7 @@ exports.handler = async function (event) {
       n: 1,
       size: "1792x1024",
       quality: "hd",
-      style: "natural",
+
       response_format: "url"
     });
 
