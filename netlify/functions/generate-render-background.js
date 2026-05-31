@@ -1,26 +1,44 @@
 // netlify/functions/generate-render-background.js
-// Background function — Netlify returns 202 immediately, this runs up to 15 min
-// Stores result in Netlify Blobs so the dashboard can poll for it (auto-configured)
+// Background function — Netlify returns 202 immediately, this runs up to 15 min.
+// Saves the result to Supabase (render_jobs table) so the dashboard can poll for it.
 
 const https = require("https");
-const { getStore } = require("@netlify/blobs");
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY;
+
+// Upsert a job row in Supabase (insert or update by primary key "id")
+async function saveJob(id, fields) {
+  const res = await fetch(SUPABASE_URL + "/rest/v1/render_jobs", {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer " + SUPABASE_KEY,
+      "Content-Type": "application/json",
+      "Prefer": "resolution=merge-duplicates,return=minimal"
+    },
+    body: JSON.stringify(Object.assign({ id: id }, fields))
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    console.error("Supabase saveJob failed:", res.status, txt.slice(0, 200));
+  }
+}
 
 exports.handler = async function (event) {
   const body = JSON.parse(event.body || "{}");
   const { jobId, service, projectTitle, scopeOfWork, photoBase64, customPrompt } = body;
 
   if (!jobId) return;
-
-  const store = getStore("render-jobs");
-
-  // Mark as in-progress immediately
-  await store.setJSON(jobId, { status: "processing" });
+  console.log("Render job invoked:", jobId);
 
   try {
+    await saveJob(jobId, { status: "processing" });
+
     const openaiKey = process.env.OPENAI_API_KEY;
     if (!openaiKey) throw new Error("OPENAI_API_KEY not set");
 
-    // ── STEP 1: Analyze photo with GPT-4o-mini ─────────────────────────────────
+    // STEP 1: Analyze photo with GPT-4o-mini
     let spaceDescription = "";
     if (photoBase64 && photoBase64.startsWith("data:image") && !customPrompt) {
       try {
@@ -42,23 +60,23 @@ exports.handler = async function (event) {
       }
     }
 
-    // ── STEP 2: Build prompt ────────────────────────────────────────────────────
+    // STEP 2: Build prompt
     let finalPrompt;
     if (customPrompt && customPrompt.trim()) {
       finalPrompt = customPrompt.trim() + ". Photorealistic architectural interior render, professional lighting, high quality, no people.";
     } else {
       const serviceType = (service || projectTitle || "interior space").toLowerCase();
-      const spaceCtx = spaceDescription ? `The space is: ${spaceDescription.trim()}. ` : "";
+      const spaceCtx = spaceDescription ? "The space is: " + spaceDescription.trim() + ". " : "";
       const scopeShort = scopeOfWork
-        ? scopeOfWork.replace(/^[A-Z\s]+:/gm, "").replace(/[-•\n]+/g, " ").trim().slice(0, 200)
+        ? scopeOfWork.replace(/^[A-Z\s]+:/gm, "").replace(/[-\u2022\n]+/g, " ").trim().slice(0, 200)
         : "";
-      const scopeCtx = scopeShort ? `Renovation includes: ${scopeShort}. ` : "";
-      finalPrompt = `Photorealistic interior design render of a beautifully renovated ${serviceType} in a New York City apartment. ${spaceCtx}${scopeCtx}Modern high-quality finishes, bright natural lighting, clean professional workmanship. Wide-angle architectural photography style. Ultra detailed.`;
+      const scopeCtx = scopeShort ? "Renovation includes: " + scopeShort + ". " : "";
+      finalPrompt = "Photorealistic interior design render of a beautifully renovated " + serviceType + " in a New York City apartment. " + spaceCtx + scopeCtx + "Modern high-quality finishes, bright natural lighting, clean professional workmanship. Wide-angle architectural photography style. Ultra detailed.";
     }
 
     console.log("Prompt:", finalPrompt.slice(0, 200));
 
-    // ── STEP 3: DALL-E 3 generation ────────────────────────────────────────────
+    // STEP 3: DALL-E 3 generation
     const dalleRaw = await openaiPost(openaiKey, "/v1/images/generations", JSON.stringify({
       model: "dall-e-3",
       prompt: finalPrompt,
@@ -71,25 +89,29 @@ exports.handler = async function (event) {
     const dalleData = JSON.parse(dalleRaw);
     if (dalleData.error) throw new Error("DALL-E: " + (dalleData.error.message || JSON.stringify(dalleData.error)));
 
-    const b64 = dalleData.data?.[0]?.b64_json;
-    const revisedPrompt = dalleData.data?.[0]?.revised_prompt || "";
+    const b64 = dalleData.data && dalleData.data[0] && dalleData.data[0].b64_json;
+    const revisedPrompt = (dalleData.data && dalleData.data[0] && dalleData.data[0].revised_prompt) || "";
     if (!b64) throw new Error("No image data returned from DALL-E. Response: " + JSON.stringify(dalleData).slice(0, 200));
 
     const imageBase64 = "data:image/png;base64," + b64;
 
-    // ── STEP 4: Save result to Blobs ───────────────────────────────────────────
-    await store.setJSON(jobId, {
+    // STEP 4: Save result to Supabase
+    await saveJob(jobId, {
       status: "done",
-      imageBase64,
-      spaceDescription,
-      revisedPrompt
+      image_base64: imageBase64,
+      space_description: spaceDescription,
+      revised_prompt: revisedPrompt
     });
 
     console.log("Render job done:", jobId);
 
   } catch (err) {
     console.error("Render job failed:", jobId, err.message);
-    await store.setJSON(jobId, { status: "error", error: err.message });
+    try {
+      await saveJob(jobId, { status: "error", error: err.message });
+    } catch (e) {
+      console.error("Could not save error status:", e.message);
+    }
   }
 };
 
@@ -98,7 +120,7 @@ function openaiPost(apiKey, path, bodyStr) {
     const options = {
       hostname: "api.openai.com",
       port: 443,
-      path,
+      path: path,
       method: "POST",
       headers: {
         "Authorization": "Bearer " + apiKey,
@@ -106,10 +128,10 @@ function openaiPost(apiKey, path, bodyStr) {
         "Content-Length": Buffer.byteLength(bodyStr)
       }
     };
-    const req = https.request(options, res => {
+    const req = https.request(options, function (res) {
       let data = "";
-      res.on("data", c => { data += c; });
-      res.on("end", () => resolve(data));
+      res.on("data", function (c) { data += c; });
+      res.on("end", function () { resolve(data); });
     });
     req.on("error", reject);
     req.write(bodyStr);
