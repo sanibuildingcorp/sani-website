@@ -2842,11 +2842,12 @@ function recalc() {
   syncLines();
   currentRecord.estimate.markupPct = parseFloat(document.getElementById("f-markup").value) || 0;
   const t = calcTotal(currentRecord.estimate);
+  const cv = calcCustomerView(currentRecord.estimate);
   document.getElementById("tot-labor").textContent = fmt(t.labor);
   document.getElementById("tot-mat").textContent = fmt(t.mat);
   document.getElementById("tot-sub").textContent = fmt(t.sub);
   document.getElementById("tot-markup").textContent = fmt(t.markup);
-  document.getElementById("tot-grand").textContent = fmt(t.grand);
+  document.getElementById("tot-grand").textContent = fmt(cv.customerTotal);
   document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(function(row) {
     const totEl = row.querySelector(".line-total");
     if (!totEl) return;
