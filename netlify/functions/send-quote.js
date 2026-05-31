@@ -209,7 +209,7 @@ exports.handler = async function (event) {
     // your own domain, e.g.  "Sani Building Corp <estimates@sanibuildingcorp.com>"
     // Until then, onboarding@resend.dev only sends to your own Resend account email.
     await sendResend(resendKey, {
-      from: "Sani Building Corp <onboarding@resend.dev>",
+      from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
       to: [recipientEmail],
       reply_to: contractorEmail,
       subject: `Your Estimate from Sani Building Corp — ${est.projectTitle || reqData.service || "Project"} (${ref})`,
