@@ -2796,28 +2796,30 @@ async function generateRender() {
   imageWrap.style.display = "none";
   currentRenderBase64 = null;
 
-  const messages = ["Analyzing photo…", "Crafting render prompt…", "Generating with DALL-E 3…", "Adding finishing touches…"];
+  const messages = ["Analyzing photo…", "Crafting render prompt…", "Generating with DALL-E 3…", "Almost done…"];
   let msgIdx = 0;
   const msgTimer = setInterval(function() {
     msgIdx = (msgIdx + 1) % messages.length;
     if (status) status.textContent = messages[msgIdx];
-  }, 5000);
+  }, 7000);
 
   try {
     const req = currentRecord.request || {};
     const est = currentRecord.estimate || {};
-
-    // Use selected photo, or fall back to first customer photo
     const photoToUse = selectedRenderPhotoData ||
       ((req.photos && req.photos.length > 0) ? req.photos[0].data : null);
-
     const customPromptEl = document.getElementById("render-custom-prompt");
     const customPrompt = customPromptEl ? customPromptEl.value.trim() : "";
 
-    const res = await fetch("/.netlify/functions/generate-render", {
+    // Generate unique job ID
+    const jobId = "render-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+
+    // Start background job (returns 202 immediately — no timeout issue)
+    await fetch("/.netlify/functions/generate-render-background", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        jobId,
         service: req.service || est.projectTitle || "room",
         projectTitle: est.projectTitle || req.service || "",
         scopeOfWork: est.scopeOfWork || "",
@@ -2827,13 +2829,26 @@ async function generateRender() {
       })
     });
 
+    // Poll for result (max 90 seconds, check every 4 seconds)
+    const data = await new Promise(function(resolve, reject) {
+      let attempts = 0;
+      const maxAttempts = 22; // 22 × 4s = 88s max
+      function poll() {
+        attempts++;
+        if (attempts > maxAttempts) { reject(new Error("Render timed out — DALL-E took too long. Try a shorter prompt.")); return; }
+        fetch("/.netlify/functions/get-render-status?jobId=" + encodeURIComponent(jobId))
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.status === "done") { resolve(d); }
+            else if (d.status === "error") { reject(new Error(d.error || "Render failed")); }
+            else { setTimeout(poll, 4000); }
+          })
+          .catch(function() { setTimeout(poll, 4000); });
+      }
+      setTimeout(poll, 5000); // First check after 5 seconds
+    });
+
     clearInterval(msgTimer);
-    const data = await res.json();
-
-    if (!res.ok || !data.imageBase64) {
-      throw new Error(data.error || "Render generation failed");
-    }
-
     currentRenderBase64 = data.imageBase64;
     document.getElementById("render-image").src = data.imageBase64;
     loading.style.display = "none";
@@ -2843,7 +2858,6 @@ async function generateRender() {
       const descEl = document.getElementById("render-space-desc");
       if (descEl) { descEl.textContent = "AI saw: " + data.spaceDescription; descEl.style.display = "block"; }
     }
-
     toast("✨ AI render generated!");
   } catch (e) {
     clearInterval(msgTimer);
