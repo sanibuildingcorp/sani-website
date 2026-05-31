@@ -2623,10 +2623,15 @@ function renderEdit() {
         '</div></div>'
         : '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--line-soft)">📷 No customer photos — render will be based on the project scope only</div>'
       ) +
+      '<div style="margin-bottom:12px">' +
+        '<div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:6px">Custom prompt (optional)</div>' +
+        '<textarea id="render-custom-prompt" placeholder="e.g. Modern bathroom with white marble tiles, gold fixtures, rainfall shower. Bright and luxurious." rows="3" style="width:100%;background:rgba(255,255,255,.05);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;color:var(--ink);resize:vertical;line-height:1.5" onfocus="this.style.borderColor=\'var(--gold)\'" onblur="this.style.borderColor=\'var(--line)\'"></textarea>' +
+        '<div style="font-size:11px;color:var(--ink-muted);margin-top:4px">Leave blank to auto-generate from project scope + selected photo</div>' +
+      '</div>' +
       '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
         '<button class="btn-ai" id="render-btn" onclick="generateRender()" style="white-space:nowrap">✨ Generate Render</button>' +
         '<div style="font-size:11px;color:var(--ink-muted)" id="render-photo-hint">' +
-          (req.photos && req.photos.length > 0 ? 'Select a photo above first (optional)' : '') +
+          (req.photos && req.photos.length > 0 ? 'Click a photo above to select it for analysis' : '') +
         '</div>' +
       '</div>' +
       '<div id="render-result" style="margin-top:16px;display:none">' +
@@ -2806,6 +2811,9 @@ async function generateRender() {
     const photoToUse = selectedRenderPhotoData ||
       ((req.photos && req.photos.length > 0) ? req.photos[0].data : null);
 
+    const customPromptEl = document.getElementById("render-custom-prompt");
+    const customPrompt = customPromptEl ? customPromptEl.value.trim() : "";
+
     const res = await fetch("/.netlify/functions/generate-render", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2814,7 +2822,8 @@ async function generateRender() {
         projectTitle: est.projectTitle || req.service || "",
         scopeOfWork: est.scopeOfWork || "",
         serviceAnswers: req.serviceAnswers || {},
-        photoBase64: photoToUse || null
+        photoBase64: photoToUse || null,
+        customPrompt: customPrompt || ""
       })
     });
 
