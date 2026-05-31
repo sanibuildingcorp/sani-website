@@ -1,6 +1,6 @@
 // netlify/functions/generate-render-background.js
 // Background function — Netlify returns 202 immediately, this runs up to 15 min
-// Stores result in Netlify Blobs so the dashboard can poll for it
+// Stores result in Netlify Blobs so the dashboard can poll for it (auto-configured)
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
@@ -11,11 +11,7 @@ exports.handler = async function (event) {
 
   if (!jobId) return;
 
-  const store = getStore({
-    name: "render-jobs",
-    siteID: process.env.MY_SITE_ID,
-    token: process.env.MY_BLOBS_TOKEN
-  });
+  const store = getStore("render-jobs");
 
   // Mark as in-progress immediately
   await store.setJSON(jobId, { status: "processing" });
