@@ -59,6 +59,18 @@ exports.handler = async function (event) {
     const quoteUrl = `${siteUrl}/quote.html?ref=${encodeURIComponent(ref)}`;
     const firstName = (customer.name || "there").split(" ")[0];
 
+    // Build photos section (customer photos + contractor quote photos)
+    const customerPhotos = (reqData.photos || []).slice(0, 4);
+    const quotePhotos = (est.quotePhotos || []).slice(0, 6);
+    const allPhotos = [...customerPhotos, ...quotePhotos].slice(0, 8);
+    const photosHtml = allPhotos.length > 0 ? `
+    <div style="margin:24px 0">
+      <div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:12px;font-family:Arial,sans-serif">Project Photos</div>
+      <div style="display:grid;grid-template-columns:repeat(${Math.min(allPhotos.length, 4)},1fr);gap:8px">
+        ${allPhotos.map(p => `<img src="${p.data}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid #e8e2d9" alt="project photo">`).join("")}
+      </div>
+    </div>` : "";
+
     // Build categorized scope HTML (if scope has CATEGORY: headers)
     const categories = parseScope(est.scopeOfWork || "");
     const breakdownHtml = categories.length > 0
@@ -188,6 +200,7 @@ exports.handler = async function (event) {
 
     ${lineItemsHtml}
     ${includedNoteHtml}
+    ${photosHtml}
 
     <div style="text-align:center;margin:28px 0">
       <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">View Full Estimate &amp; Approve →</a>
