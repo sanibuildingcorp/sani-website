@@ -1,10 +1,6 @@
 [build]
   functions = "netlify/functions"
 
-# Function timeout (26s max — needed for DALL-E render generation)
-[functions]
-  timeout = 26
-
 # Security headers (apply to all pages)
 [[headers]]
   for = "/*"
