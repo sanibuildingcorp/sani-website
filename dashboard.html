@@ -2608,6 +2608,31 @@ function renderEdit() {
       '<div id="quote-photo-preview" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px"></div>' +
       '</div>' +
     '</div>' +
+    '<div style="background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.03));border:1.5px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:22px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">' +
+        '<div>' +
+          '<div style="font-family:var(--display);font-size:15px;letter-spacing:2px;color:var(--gold)">✨ AI RENOVATION RENDER</div>' +
+          '<div style="font-size:12px;color:var(--ink-muted);margin-top:3px">Generate a photorealistic visualization of the finished renovation to include in the quote</div>' +
+        '</div>' +
+        '<button class="btn-ai" id="render-btn" onclick="generateRender()" style="white-space:nowrap;flex-shrink:0">✨ Generate Render</button>' +
+      '</div>' +
+      '<div id="render-result" style="margin-top:16px;display:none">' +
+        '<div id="render-loading" style="text-align:center;padding:32px;display:none">' +
+          '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px"><div class="loading-dot" style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite"></div><div class="loading-dot" style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.15s"></div><div class="loading-dot" style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.3s"></div></div>' +
+          '<div style="font-family:var(--display);font-size:13px;letter-spacing:2px;color:var(--gold)" id="render-status">Analyzing space...</div>' +
+          '<div style="font-size:11px;color:var(--ink-muted);margin-top:6px">This takes about 15–20 seconds</div>' +
+        '</div>' +
+        '<div id="render-image-wrap" style="display:none">' +
+          '<img id="render-image" src="" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" alt="AI Renovation Render">' +
+          '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+            '<button onclick="addRenderToQuote()" style="padding:9px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">+ Add to Quote Photos</button>' +
+            '<button onclick="generateRender()" style="padding:9px 16px;background:var(--card-2);border:1px solid var(--line);color:var(--ink-soft);border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">↻ Regenerate</button>' +
+            '<button onclick="openLightbox(document.getElementById(\'render-image\').src)" style="padding:9px 16px;background:var(--card-2);border:1px solid var(--line);color:var(--ink-soft);border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">⛶ Fullscreen</button>' +
+          '</div>' +
+          '<div id="render-space-desc" style="font-size:11px;color:var(--ink-muted);margin-top:8px;font-style:italic;display:none"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
     '<div class="cv-panel">' +
       '<h3>👁 CUSTOMER VIEW MODE</h3>' +
       '<div class="cv-helper">Choose what costs to show on the customer\'s quote. The total they see equals only what you check. Markup still applies internally.</div>' +
@@ -2715,6 +2740,91 @@ function removeQuotePhoto(idx) {
   if (!currentRecord || !currentRecord.estimate || !currentRecord.estimate.quotePhotos) return;
   currentRecord.estimate.quotePhotos.splice(idx, 1);
   renderQuotePhotoPreview();
+}
+
+/* ===== AI RENOVATION RENDER ===== */
+let currentRenderBase64 = null;
+
+async function generateRender() {
+  if (!currentRecord) return;
+  const btn = document.getElementById("render-btn");
+  const result = document.getElementById("render-result");
+  const loading = document.getElementById("render-loading");
+  const imageWrap = document.getElementById("render-image-wrap");
+  const status = document.getElementById("render-status");
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ai-spin"></span> Generating…';
+  result.style.display = "block";
+  loading.style.display = "block";
+  imageWrap.style.display = "none";
+  currentRenderBase64 = null;
+
+  // Animate status messages
+  const messages = ["Analyzing space…", "Crafting render prompt…", "Generating render…", "Adding finishing touches…"];
+  let msgIdx = 0;
+  const msgTimer = setInterval(function() {
+    msgIdx = (msgIdx + 1) % messages.length;
+    if (status) status.textContent = messages[msgIdx];
+  }, 4000);
+
+  try {
+    const req = currentRecord.request || {};
+    const est = currentRecord.estimate || {};
+    const firstPhoto = (req.photos || []).slice(0, 1)[0] || null;
+
+    const res = await fetch("/.netlify/functions/generate-render", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service: req.service || est.projectTitle || "room",
+        projectTitle: est.projectTitle || req.service || "",
+        scopeOfWork: est.scopeOfWork || "",
+        serviceAnswers: req.serviceAnswers || {},
+        photoBase64: firstPhoto ? firstPhoto.data : null
+      })
+    });
+
+    clearInterval(msgTimer);
+    const data = await res.json();
+
+    if (!res.ok || !data.imageBase64) {
+      throw new Error(data.error || "Render generation failed");
+    }
+
+    currentRenderBase64 = data.imageBase64;
+    document.getElementById("render-image").src = data.imageBase64;
+    loading.style.display = "none";
+    imageWrap.style.display = "block";
+
+    if (data.spaceDescription) {
+      const descEl = document.getElementById("render-space-desc");
+      descEl.textContent = "AI saw: " + data.spaceDescription;
+      descEl.style.display = "block";
+    }
+
+    toast("✨ AI render generated!");
+  } catch (e) {
+    clearInterval(msgTimer);
+    loading.style.display = "none";
+    result.style.display = "none";
+    toast("Render failed: " + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "✨ Generate Render";
+  }
+}
+
+function addRenderToQuote() {
+  if (!currentRenderBase64 || !currentRecord || !currentRecord.estimate) return;
+  if (!currentRecord.estimate.quotePhotos) currentRecord.estimate.quotePhotos = [];
+  if (currentRecord.estimate.quotePhotos.length >= 6) {
+    toast("Max 6 quote photos. Remove one first.", true);
+    return;
+  }
+  currentRecord.estimate.quotePhotos.push({ name: "ai-render.png", data: currentRenderBase64 });
+  renderQuotePhotoPreview();
+  toast("✓ Render added to quote photos");
 }
 
 /* ===== CHECKBOX TOGGLE ===== */
