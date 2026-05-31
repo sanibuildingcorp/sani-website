@@ -2609,17 +2609,30 @@ function renderEdit() {
       '</div>' +
     '</div>' +
     '<div style="background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.03));border:1.5px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:22px">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">' +
-        '<div>' +
-          '<div style="font-family:var(--display);font-size:15px;letter-spacing:2px;color:var(--gold)">✨ AI RENOVATION RENDER</div>' +
-          '<div style="font-size:12px;color:var(--ink-muted);margin-top:3px">Generate a photorealistic visualization of the finished renovation to include in the quote</div>' +
+      '<div style="font-family:var(--display);font-size:15px;letter-spacing:2px;color:var(--gold);margin-bottom:4px">✨ AI RENOVATION RENDER</div>' +
+      '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:14px">Select a photo, then generate a photorealistic visualization of the finished renovation</div>' +
+      // Photo selector
+      ((req.photos && req.photos.length > 0) ?
+        '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Select a photo to render from:</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap" id="render-photo-selector">' +
+          (req.photos || []).slice(0, 6).map(function(p, i) {
+            return '<div onclick="selectRenderPhoto(' + i + ',this)" data-idx="' + i + '" style="width:72px;height:72px;border-radius:8px;overflow:hidden;border:2.5px solid var(--line);cursor:pointer;transition:all .2s;flex-shrink:0" onmouseover="this.style.borderColor=\'var(--gold)\'" onmouseout="if(!this.classList.contains(\'rp-selected\'))this.style.borderColor=\'var(--line)\'">' +
+              '<img src="' + esc(p.data) + '" style="width:100%;height:100%;object-fit:cover">' +
+            '</div>';
+          }).join('') +
+        '</div></div>'
+        : '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--line-soft)">📷 No customer photos — render will be based on the project scope only</div>'
+      ) +
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+        '<button class="btn-ai" id="render-btn" onclick="generateRender()" style="white-space:nowrap">✨ Generate Render</button>' +
+        '<div style="font-size:11px;color:var(--ink-muted)" id="render-photo-hint">' +
+          (req.photos && req.photos.length > 0 ? 'Select a photo above first (optional)' : '') +
         '</div>' +
-        '<button class="btn-ai" id="render-btn" onclick="generateRender()" style="white-space:nowrap;flex-shrink:0">✨ Generate Render</button>' +
       '</div>' +
       '<div id="render-result" style="margin-top:16px;display:none">' +
         '<div id="render-loading" style="text-align:center;padding:32px;display:none">' +
-          '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px"><div class="loading-dot" style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite"></div><div class="loading-dot" style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.15s"></div><div class="loading-dot" style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.3s"></div></div>' +
-          '<div style="font-family:var(--display);font-size:13px;letter-spacing:2px;color:var(--gold)" id="render-status">Analyzing space...</div>' +
+          '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px"><div style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite"></div><div style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.15s"></div><div style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.3s"></div></div>' +
+          '<div style="font-family:var(--display);font-size:13px;letter-spacing:2px;color:var(--gold)" id="render-status">Analyzing photo...</div>' +
           '<div style="font-size:11px;color:var(--ink-muted);margin-top:6px">This takes about 15–20 seconds</div>' +
         '</div>' +
         '<div id="render-image-wrap" style="display:none">' +
@@ -2687,6 +2700,8 @@ function renderEdit() {
   document.getElementById("f-markup").addEventListener("input", recalc);
   // Initialize quote photo preview
   renderQuotePhotoPreview();
+  selectedRenderPhotoData = null;
+  currentRenderBase64 = null;
   recalc();
 }
 
@@ -2744,6 +2759,22 @@ function removeQuotePhoto(idx) {
 
 /* ===== AI RENOVATION RENDER ===== */
 let currentRenderBase64 = null;
+let selectedRenderPhotoData = null;
+
+function selectRenderPhoto(idx, el) {
+  // Deselect all
+  document.querySelectorAll("#render-photo-selector > div").forEach(function(d) {
+    d.style.borderColor = "var(--line)";
+    d.classList.remove("rp-selected");
+  });
+  // Select clicked
+  el.style.borderColor = "var(--gold)";
+  el.classList.add("rp-selected");
+  const photos = (currentRecord && currentRecord.request && currentRecord.request.photos) || [];
+  selectedRenderPhotoData = photos[idx] ? photos[idx].data : null;
+  const hint = document.getElementById("render-photo-hint");
+  if (hint) hint.textContent = "✓ Photo selected — ready to generate";
+}
 
 async function generateRender() {
   if (!currentRecord) return;
@@ -2760,18 +2791,20 @@ async function generateRender() {
   imageWrap.style.display = "none";
   currentRenderBase64 = null;
 
-  // Animate status messages
-  const messages = ["Analyzing space…", "Crafting render prompt…", "Generating render…", "Adding finishing touches…"];
+  const messages = ["Analyzing photo…", "Crafting render prompt…", "Generating with DALL-E 3…", "Adding finishing touches…"];
   let msgIdx = 0;
   const msgTimer = setInterval(function() {
     msgIdx = (msgIdx + 1) % messages.length;
     if (status) status.textContent = messages[msgIdx];
-  }, 4000);
+  }, 5000);
 
   try {
     const req = currentRecord.request || {};
     const est = currentRecord.estimate || {};
-    const firstPhoto = (req.photos || []).slice(0, 1)[0] || null;
+
+    // Use selected photo, or fall back to first customer photo
+    const photoToUse = selectedRenderPhotoData ||
+      ((req.photos && req.photos.length > 0) ? req.photos[0].data : null);
 
     const res = await fetch("/.netlify/functions/generate-render", {
       method: "POST",
@@ -2781,7 +2814,7 @@ async function generateRender() {
         projectTitle: est.projectTitle || req.service || "",
         scopeOfWork: est.scopeOfWork || "",
         serviceAnswers: req.serviceAnswers || {},
-        photoBase64: firstPhoto ? firstPhoto.data : null
+        photoBase64: photoToUse || null
       })
     });
 
@@ -2799,8 +2832,7 @@ async function generateRender() {
 
     if (data.spaceDescription) {
       const descEl = document.getElementById("render-space-desc");
-      descEl.textContent = "AI saw: " + data.spaceDescription;
-      descEl.style.display = "block";
+      if (descEl) { descEl.textContent = "AI saw: " + data.spaceDescription; descEl.style.display = "block"; }
     }
 
     toast("✨ AI render generated!");
