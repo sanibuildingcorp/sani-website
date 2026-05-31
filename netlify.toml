@@ -6,6 +6,10 @@
   publish = "."
   functions = "netlify/functions"
 
+# ─── FUNCTION TIMEOUT (26s max — needed for DALL-E 3 render generation) ───
+[functions]
+  timeout = 26
+
 # ─── SECURITY HEADERS (apply to all pages) ───
 [[headers]]
   for = "/*"
@@ -16,8 +20,6 @@
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
 
 # ─── BLOCK DEPLOY PREVIEWS FROM GOOGLE INDEXING ───
-# This prevents draft branches and PR previews from showing up in search.
-# Production (real domain) is unaffected.
 [[context.deploy-preview.headers]]
   for = "/*"
   [context.deploy-preview.headers.values]
