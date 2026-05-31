@@ -2495,7 +2495,7 @@ function renderEdit() {
     }).join("");
 
   const photosHtml = (req.photos || []).slice(0, 10).map(function(p) {
-    return '<img src="' + esc(p.data) + '" alt="customer photo">';
+    return '<img src="' + esc(p.data) + '" alt="customer photo" onclick="openLightbox(\'' + esc(p.data) + '\')" style="cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">';
   }).join("");
 
   const showAiBar = !est.scopeOfWork && (!est.labor || est.labor.length === 0);
