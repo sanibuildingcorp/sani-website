@@ -2597,6 +2597,17 @@ function renderEdit() {
         '<input type="text" id="f-notes" value="' + esc(est.notes || "") + '" placeholder="Reminders, assumptions, things to verify">' +
       '</div>' +
     '</div>' +
+    '<div class="form-section">' +
+      '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
+      ((req.photos && req.photos.length > 0) ?
+        '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Customer Uploaded</div><div class="cust-photos" id="customer-photos-strip">' + photosHtml + '</div></div>'
+        : '') +
+      '<div><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Your Additional Photos</div>' +
+      '<label for="quote-photo-input" style="display:block;border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;font-size:13px;color:var(--ink-muted);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.color=\'var(--gold)\'" onmouseout="this.style.borderColor=\'var(--line)\';this.style.color=\'var(--ink-muted)\'">📸 Add photos to include in the quote (up to 6)</label>' +
+      '<input type="file" id="quote-photo-input" accept="image/*" multiple style="display:none" onchange="handleQuotePhotos(event)">' +
+      '<div id="quote-photo-preview" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px"></div>' +
+      '</div>' +
+    '</div>' +
     '<div class="cv-panel">' +
       '<h3>👁 CUSTOMER VIEW MODE</h3>' +
       '<div class="cv-helper">Choose what costs to show on the customer\'s quote. The total they see equals only what you check. Markup still applies internally.</div>' +
@@ -2649,7 +2660,61 @@ function renderEdit() {
   renderLines("materials", est.materials || []);
   attachLineListeners();
   document.getElementById("f-markup").addEventListener("input", recalc);
+  // Initialize quote photo preview
+  renderQuotePhotoPreview();
   recalc();
+}
+
+/* ===== QUOTE PHOTOS ===== */
+async function handleQuotePhotos(e) {
+  if (!currentRecord || !currentRecord.estimate) return;
+  const existing = currentRecord.estimate.quotePhotos || [];
+  const files = Array.from(e.target.files).slice(0, 6 - existing.length);
+  for (const file of files) {
+    try {
+      const compressed = await new Promise(function(resolve, reject) {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = function(ev) {
+          const img = new Image();
+          img.onerror = reject;
+          img.onload = function() {
+            let w = img.width, h = img.height;
+            if (w > 1200) { h = Math.round(h * (1200 / w)); w = 1200; }
+            const canvas = document.createElement("canvas");
+            canvas.width = w; canvas.height = h;
+            canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL("image/jpeg", 0.82));
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+      existing.push({ name: file.name, data: compressed });
+    } catch(err) { console.error("Quote photo compress failed:", err); }
+  }
+  currentRecord.estimate.quotePhotos = existing;
+  renderQuotePhotoPreview();
+  e.target.value = "";
+}
+
+function renderQuotePhotoPreview() {
+  const el = document.getElementById("quote-photo-preview");
+  if (!el) return;
+  const photos = (currentRecord && currentRecord.estimate && currentRecord.estimate.quotePhotos) || [];
+  if (!photos.length) { el.innerHTML = ""; return; }
+  el.innerHTML = photos.map(function(p, i) {
+    return '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--line)">' +
+      '<img src="' + esc(p.data) + '" style="width:100%;height:100%;object-fit:cover;cursor:pointer" onclick="openLightbox(\'' + esc(p.data) + '\')">' +
+      '<button onclick="removeQuotePhoto(' + i + ')" style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;border:none;cursor:pointer;font-size:13px;line-height:1">×</button>' +
+    '</div>';
+  }).join("");
+}
+
+function removeQuotePhoto(idx) {
+  if (!currentRecord || !currentRecord.estimate || !currentRecord.estimate.quotePhotos) return;
+  currentRecord.estimate.quotePhotos.splice(idx, 1);
+  renderQuotePhotoPreview();
 }
 
 /* ===== CHECKBOX TOGGLE ===== */
@@ -2840,6 +2905,7 @@ function gatherForm() {
     showMaterialsCost: currentRecord.estimate.showMaterialsCost === true,
     labor: currentRecord.estimate.labor || [],
     materials: currentRecord.estimate.materials || [],
+    quotePhotos: currentRecord.estimate.quotePhotos || [],
   };
 }
 
