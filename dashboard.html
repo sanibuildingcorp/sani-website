@@ -2733,7 +2733,7 @@ function toggleCv(kind) {
     : currentRecord.estimate.showMaterialsCost === true;
   el.classList.toggle("checked", isChecked);
   if (checkbox) checkbox.checked = isChecked;
-  updateCvPreview();
+  recalc();
 }
 
 function updateCvPreview() {
