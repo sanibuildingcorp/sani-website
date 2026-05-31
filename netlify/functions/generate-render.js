@@ -1,5 +1,7 @@
 // netlify/functions/generate-render.js
 // Generates a photorealistic AI renovation render using DALL-E 3
+// Uses b64_json response to avoid second download request
+// Timeout: 26s (set in netlify.toml)
 
 const https = require("https");
 
@@ -12,119 +14,101 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { service, projectTitle, scopeOfWork, photoBase64, serviceAnswers } = JSON.parse(event.body);
+    const body = JSON.parse(event.body || "{}");
+    const { service, projectTitle, scopeOfWork, photoBase64, customPrompt } = body;
+
     const openaiKey = process.env.OPENAI_API_KEY;
     if (!openaiKey) {
-      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "OPENAI_API_KEY not set" }) };
+      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "OPENAI_API_KEY not set in Netlify environment variables" }) };
     }
 
-    // ── STEP 1: Analyze the customer photo with GPT-4o-mini vision ─────────────
+    // ── STEP 1: Analyze photo with GPT-4o-mini (only if photo provided) ────────
     let spaceDescription = "";
-    if (photoBase64 && photoBase64.startsWith("data:image")) {
+    if (photoBase64 && photoBase64.startsWith("data:image") && !customPrompt) {
       try {
-        const visionBody = JSON.stringify({
+        const visionRaw = await openaiPost(openaiKey, "/v1/chat/completions", JSON.stringify({
           model: "gpt-4o-mini",
-          max_tokens: 150,
+          max_tokens: 120,
           messages: [{
             role: "user",
             content: [
               { type: "image_url", image_url: { url: photoBase64, detail: "low" } },
-              { type: "text", text: "Describe this room briefly for a renovation render: room type, approximate size, current wall/floor materials, key structural features (windows, doors). 2 sentences max." }
+              { type: "text", text: "Describe this room in 1-2 sentences for a renovation render: room type, current walls/floors, key structural features. Be brief and factual." }
             ]
           }]
-        });
-        const visionRaw = await openaiPost(openaiKey, "/v1/chat/completions", visionBody);
-        const visionData = JSON.parse(visionRaw);
-        spaceDescription = visionData.choices?.[0]?.message?.content || "";
+        }));
+        const vd = JSON.parse(visionRaw);
+        spaceDescription = vd.choices?.[0]?.message?.content || "";
+        console.log("Space description:", spaceDescription);
       } catch (e) {
-        console.log("Vision step skipped:", e.message);
+        console.log("Vision skipped:", e.message);
       }
     }
 
-    // ── STEP 2: Build a clean, DALL-E-safe render prompt ─────────────────────
-    const serviceType = (service || projectTitle || "interior space").toLowerCase();
+    // ── STEP 2: Build the final prompt ─────────────────────────────────────────
+    let finalPrompt;
 
-    // Strip scope to key items, keep it short
-    let scopeShort = "";
-    if (scopeOfWork) {
-      scopeShort = scopeOfWork
-        .replace(/^[A-Z\s]+:/gm, "")
-        .replace(/[-•]\s*/g, "")
-        .replace(/\n+/g, " ")
-        .trim()
-        .slice(0, 200);
+    if (customPrompt && customPrompt.trim()) {
+      // User wrote their own prompt — just append safety suffix
+      finalPrompt = customPrompt.trim() + ". Photorealistic architectural interior render, professional photography, high quality, no people.";
+    } else {
+      // Auto-build from project data
+      const serviceType = (service || projectTitle || "interior space").toLowerCase();
+      const spaceCtx = spaceDescription ? `The space is: ${spaceDescription.trim()}. ` : "";
+      let scopeShort = "";
+      if (scopeOfWork) {
+        scopeShort = scopeOfWork
+          .replace(/^[A-Z\s]+:/gm, "")
+          .replace(/[-•\n]+/g, " ")
+          .trim()
+          .slice(0, 180);
+      }
+      const scopeCtx = scopeShort ? `Renovation includes: ${scopeShort}. ` : "";
+      finalPrompt = `Photorealistic interior design render of a beautifully renovated ${serviceType} in a New York City apartment. ${spaceCtx}${scopeCtx}Modern high-quality finishes, bright natural lighting, clean professional workmanship. Wide-angle architectural photography. Ultra detailed.`;
     }
 
-    const spaceCtx = spaceDescription ? `The space is: ${spaceDescription.trim()}. ` : "";
-    const scopeCtx = scopeShort ? `Renovation includes: ${scopeShort}. ` : "";
+    console.log("Final prompt:", finalPrompt.slice(0, 150));
 
-    const prompt = `Photorealistic interior design render of a beautifully renovated ${serviceType} in a New York City apartment. ${spaceCtx}${scopeCtx}Show the completed renovation with modern high-quality finishes, bright natural lighting, clean professional workmanship. Wide-angle architectural photography style. Ultra detailed, 8K quality. Shot for a luxury real estate listing.`;
-
-    console.log("DALL-E prompt:", prompt.slice(0, 200));
-
-    // ── STEP 3: Call DALL-E 3 ─────────────────────────────────────────────────
-    const dalleBody = JSON.stringify({
+    // ── STEP 3: Call DALL-E 3 — standard quality + 1024x1024 for speed ─────────
+    const dalleRaw = await openaiPost(openaiKey, "/v1/images/generations", JSON.stringify({
       model: "dall-e-3",
-      prompt: prompt,
+      prompt: finalPrompt,
       n: 1,
-      size: "1792x1024",
-      quality: "hd",
+      size: "1024x1024",
+      quality: "standard",
+      response_format: "b64_json"
+    }));
 
-      response_format: "url"
-    });
-
-    const dalleRaw = await openaiPost(openaiKey, "/v1/images/generations", dalleBody);
     const dalleData = JSON.parse(dalleRaw);
-
-    // Log full response for debugging
     console.log("DALL-E response keys:", Object.keys(dalleData));
+
     if (dalleData.error) {
-      console.error("DALL-E error:", JSON.stringify(dalleData.error));
-      return {
-        statusCode: 500,
-        headers: cors(),
-        body: JSON.stringify({ error: "DALL-E error: " + (dalleData.error.message || JSON.stringify(dalleData.error)) })
-      };
+      const errMsg = dalleData.error.message || JSON.stringify(dalleData.error);
+      console.error("DALL-E API error:", errMsg);
+      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "DALL-E error: " + errMsg }) };
     }
 
-    const imageUrl = dalleData.data?.[0]?.url;
+    const b64 = dalleData.data?.[0]?.b64_json;
     const revisedPrompt = dalleData.data?.[0]?.revised_prompt || "";
 
-    if (!imageUrl) {
-      console.error("No URL in response:", JSON.stringify(dalleData).slice(0, 500));
-      return {
-        statusCode: 500,
-        headers: cors(),
-        body: JSON.stringify({ error: "No image URL returned. Response: " + JSON.stringify(dalleData).slice(0, 200) })
-      };
+    if (!b64) {
+      console.error("No b64_json in response:", JSON.stringify(dalleData).slice(0, 400));
+      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "No image data returned. Response: " + JSON.stringify(dalleData).slice(0, 200) }) };
     }
 
-    // ── STEP 4: Download image → base64 (so it can be saved with the estimate) ─
-    const imageBase64 = await downloadAsBase64(imageUrl);
+    const imageBase64 = "data:image/png;base64," + b64;
 
     return {
       statusCode: 200,
       headers: cors(),
-      body: JSON.stringify({
-        success: true,
-        imageBase64,
-        imageUrl,
-        spaceDescription,
-        revisedPrompt
-      })
+      body: JSON.stringify({ success: true, imageBase64, spaceDescription, revisedPrompt })
     };
 
   } catch (err) {
-    console.error("generate-render error:", err.message, err.stack);
-    return {
-      statusCode: 500,
-      headers: cors(),
-      body: JSON.stringify({ error: err.message || "Render generation failed" })
-    };
+    console.error("generate-render error:", err.message);
+    return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message || "Render generation failed" }) };
   }
 };
-
-// ── HTTP helpers ───────────────────────────────────────────────────────────────
 
 function openaiPost(apiKey, path, bodyStr) {
   return new Promise((resolve, reject) => {
@@ -147,20 +131,6 @@ function openaiPost(apiKey, path, bodyStr) {
     req.on("error", reject);
     req.write(bodyStr);
     req.end();
-  });
-}
-
-function downloadAsBase64(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, res => {
-      const chunks = [];
-      res.on("data", chunk => chunks.push(chunk));
-      res.on("end", () => {
-        const buf = Buffer.concat(chunks);
-        resolve("data:image/png;base64," + buf.toString("base64"));
-      });
-      res.on("error", reject);
-    }).on("error", reject);
   });
 }
 
