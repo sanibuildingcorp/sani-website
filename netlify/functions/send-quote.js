@@ -1,9 +1,14 @@
 // netlify/functions/send-quote.js
-// Sends customer email with link to their quote page.
+// Sends the estimate email DIRECTLY to the customer.
 // Email format adapts to estimate.showLaborCost / estimate.showMaterialsCost checkboxes.
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
+
+// Basic email sanity check.
+function isValidEmail(e) {
+  return typeof e === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+}
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -36,13 +41,23 @@ exports.handler = async function (event) {
     const customer = record.customer || {};
     const est = record.estimate || {};
     const reqData = record.request || {};
+
+    // ── ALWAYS send to the customer. Validate first. ──────────────────────────
+    const recipientEmail = (customer.email || "").trim();
+    if (!isValidEmail(recipientEmail)) {
+      return {
+        statusCode: 400,
+        headers: cors(),
+        body: JSON.stringify({
+          error: "Customer email is missing or invalid. Cannot send the estimate.",
+          field: "customer.email",
+        }),
+      };
+    }
+
     const calc = calcAll(est);
     const quoteUrl = `${siteUrl}/quote.html?ref=${encodeURIComponent(ref)}`;
-
-    const canSendToCustomer = customer.email && customer.email.toLowerCase() === contractorEmail.toLowerCase();
-    const recipientEmail = canSendToCustomer ? customer.email : contractorEmail;
     const firstName = (customer.name || "there").split(" ")[0];
-    const subjectPrefix = canSendToCustomer ? "" : `[FORWARD TO ${customer.email}] `;
 
     // Build categorized scope HTML (if scope has CATEGORY: headers)
     const categories = parseScope(est.scopeOfWork || "");
@@ -71,7 +86,6 @@ exports.handler = async function (event) {
     let includedNoteHtml = "";
 
     if (calc.bothHidden) {
-      // Dramatic total only
       lineItemsHtml = `
         <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:42px 24px;border-radius:14px;margin:24px 0;text-align:center">
           <div style="font-size:12px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;margin-bottom:10px">Your Estimate</div>
@@ -80,7 +94,6 @@ exports.handler = async function (event) {
         </div>
       `;
     } else {
-      // Box with dotted leader rows
       let rowsHtml = "";
       if (calc.showLabor) {
         rowsHtml += `
@@ -110,7 +123,6 @@ exports.handler = async function (event) {
           </div>
         </div>
       `;
-      // Note when one side hidden
       if (calc.showLabor && !calc.showMaterials && calc.hasMaterials) {
         includedNoteHtml = `
           <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:11px 16px;font-size:13px;color:#555;border-radius:0 6px 6px 0;margin:-12px 0 24px">
@@ -126,7 +138,6 @@ exports.handler = async function (event) {
       }
     }
 
-    // Issued date
     const issuedDate = new Date(record.sentAt || record.submittedAt || Date.now()).toLocaleDateString("en-US", {
       month: "long", day: "numeric", year: "numeric"
     });
@@ -134,7 +145,6 @@ exports.handler = async function (event) {
     const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
 <div style="max-width:640px;margin:0 auto;padding:20px">
 
-  <!-- HEADER -->
   <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:32px 24px;border-radius:12px 12px 0 0;text-align:center">
     <a href="https://www.sanibuildingcorp.com" style="text-decoration:none;color:inherit">
       <div style="font-family:Arial,sans-serif;font-size:24px;letter-spacing:4px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>
@@ -142,7 +152,6 @@ exports.handler = async function (event) {
     <div style="font-size:11px;letter-spacing:2.5px;color:#aaa;margin-top:8px;text-transform:uppercase">YOUR ESTIMATE IS READY</div>
   </div>
 
-  <!-- BODY -->
   <div style="background:#fff;padding:30px 28px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 12px 12px">
 
     <h1 style="color:#0d1b2a;font-size:23px;margin:0 0 14px">Hi ${escapeHtml(firstName)},</h1>
@@ -150,7 +159,6 @@ exports.handler = async function (event) {
 
     ${est.summary ? `<div style="background:#f7f0e3;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:14px;color:#444;border-radius:0 6px 6px 0">${escapeHtml(est.summary)}</div>` : ""}
 
-    <!-- ESTIMATE INFO BOX -->
     <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden;margin:20px 0">
       <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:13px 18px;font-family:Arial,sans-serif;font-size:15px;letter-spacing:2px;font-weight:700">
         ESTIMATE <span style="color:#c9a84c">#${escapeHtml(ref)}</span>
@@ -181,14 +189,12 @@ exports.handler = async function (event) {
     ${lineItemsHtml}
     ${includedNoteHtml}
 
-    <!-- CTA BUTTON -->
     <div style="text-align:center;margin:28px 0">
       <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">View Full Estimate &amp; Approve →</a>
     </div>
 
     <p style="font-size:14px;color:#555;margin:24px 0 0">Click the button above to view your estimate, approve it online, or request changes. You can also reply directly to this email or call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
 
-    <!-- FOOTER -->
     <div style="margin-top:32px;padding-top:24px;border-top:1px solid #eee;text-align:center">
       <div style="color:#888;font-size:11px;letter-spacing:2px;text-transform:uppercase">Sani Building Corp</div>
       <div style="font-size:12px;color:#888;margin-top:4px">Fully Insured · 4.9 ★ · NYC Metro</div>
@@ -198,11 +204,15 @@ exports.handler = async function (event) {
 </div>
 </body></html>`;
 
+    // ── SEND ──────────────────────────────────────────────────────────────────
+    // After your domain verifies in Resend, change the "from" address below to
+    // your own domain, e.g.  "Sani Building Corp <estimates@sanibuildingcorp.com>"
+    // Until then, onboarding@resend.dev only sends to your own Resend account email.
     await sendResend(resendKey, {
       from: "Sani Building Corp <onboarding@resend.dev>",
       to: [recipientEmail],
       reply_to: contractorEmail,
-      subject: `${subjectPrefix}Your Estimate from Sani Building Corp — ${est.projectTitle || reqData.service || "Project"} (${ref})`,
+      subject: `Your Estimate from Sani Building Corp — ${est.projectTitle || reqData.service || "Project"} (${ref})`,
       html,
     });
 
@@ -215,7 +225,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: cors(),
-      body: JSON.stringify({ success: true, quoteUrl, sentTo: recipientEmail, forwardedToContractor: !canSendToCustomer }),
+      body: JSON.stringify({ success: true, quoteUrl, sentTo: recipientEmail }),
     };
   } catch (err) {
     console.error("send-quote error:", err.message);
@@ -223,10 +233,6 @@ exports.handler = async function (event) {
   }
 };
 
-/**
- * Calculate customer-facing totals based on showLaborCost / showMaterialsCost.
- * MUST match the logic in quote.html exactly.
- */
 function calcAll(est) {
   if (!est) return { customerTotal: 0, shownLabor: 0, shownMaterials: 0, hasLabor: false, hasMaterials: false, showLabor: false, showMaterials: false, bothHidden: true };
   const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
@@ -244,7 +250,7 @@ function calcAll(est) {
   } else if (est.displayMode === "full") {
     showLabor = true; showMaterials = true;
   } else {
-    showLabor = true; showMaterials = false; // default
+    showLabor = true; showMaterials = false;
   }
 
   const bothHidden = !showLabor && !showMaterials;
@@ -265,9 +271,6 @@ function calcAll(est) {
   };
 }
 
-/**
- * Parse scope text into categorized sections (same logic as quote.html).
- */
 function parseScope(scopeText) {
   if (!scopeText || !scopeText.trim()) return [];
   const lines = scopeText.split(/\r?\n/);
