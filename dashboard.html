@@ -2512,8 +2512,10 @@ body {
 <!-- APP -->
 <div id="app" class="app">
   <div class="topbar">
-    <button class="hamburger" onclick="openDrawer()" aria-label="Menu">
-      <span></span><span></span><span></span>
+    <button id="hamburger-btn" aria-label="Menu" style="background:none;border:none;cursor:pointer;padding:8px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;z-index:999;position:relative">
+      <span style="display:block;width:24px;height:3px;background:#d4b572;border-radius:2px"></span>
+      <span style="display:block;width:24px;height:3px;background:#d4b572;border-radius:2px"></span>
+      <span style="display:block;width:24px;height:3px;background:#d4b572;border-radius:2px"></span>
     </button>
     <div class="brand-mark">SANI <span class="sep">·</span><span class="sub">DASHBOARD</span></div>
     <span class="active-tab-label" id="active-tab-label"></span>
@@ -5105,6 +5107,116 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }, 300);
 });
+</script>
+
+
+<script>
+// Hamburger — attach after full page load, no dependency on other JS
+(function() {
+  function attachHamburger() {
+    var btn = document.getElementById('hamburger-btn');
+    var drawer = document.getElementById('drawer');
+    var overlay = document.getElementById('drawer-overlay');
+    var nav = document.getElementById('drawer-nav');
+
+    if (!btn || !drawer) {
+      setTimeout(attachHamburger, 200);
+      return;
+    }
+
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      // Build nav items directly
+      var items = [
+        {id:'all', icon:'📋', label:'All'},
+        {id:'new', icon:'🆕', label:'New'},
+        {id:'drafted', icon:'✏️', label:'Drafts'},
+        {id:'sent', icon:'📨', label:'Sent'},
+        {id:'accepted', icon:'✅', label:'Accepted'},
+        {id:'invoiced', icon:'💳', label:'Invoiced'},
+        {id:'paid', icon:'💰', label:'Paid'},
+        {id:'declined', icon:'❌', label:'Declined'},
+        null, // divider
+        {id:'handyman', icon:'🔧', label:'🔧 Handyman'},
+        {id:'seo', icon:'🧠', label:'🧠 SEO Brain'},
+        {id:'content', icon:'✍️', label:'✍️ Content'},
+        {id:'visitors', icon:'👁', label:'👁 Live Visitors'},
+      ];
+
+      var html = '';
+      items.forEach(function(item) {
+        if (!item) { html += '<div style="height:1px;background:rgba(255,255,255,0.06);margin:8px 20px"></div>'; return; }
+        var isActive = typeof activeTab !== 'undefined' && activeTab === item.id;
+        html += '<button data-tabid="' + item.id + '" style="'
+          + 'display:flex;align-items:center;gap:14px;padding:14px 20px;'
+          + 'background:' + (isActive ? 'rgba(212,181,114,0.12)' : 'none') + ';'
+          + 'color:' + (isActive ? '#d4b572' : '#b8c4d6') + ';'
+          + 'font-weight:' + (isActive ? '700' : '500') + ';'
+          + 'border:none;width:100%;text-align:left;cursor:pointer;font-size:14px;'
+          + 'font-family:Inter,sans-serif;border-radius:0 30px 30px 0;margin-right:12px;'
+          + 'width:calc(100% - 12px)'
+          + '">'
+          + '<span style="font-size:18px;width:24px;text-align:center">' + item.icon + '</span>'
+          + '<span style="flex:1">' + item.label + '</span>'
+          + '</button>';
+      });
+
+      if (nav) nav.innerHTML = html;
+
+      // Attach click handlers to nav items
+      if (nav) {
+        nav.querySelectorAll('button[data-tabid]').forEach(function(b) {
+          b.addEventListener('click', function() {
+            var id = this.getAttribute('data-tabid');
+            if (typeof activeTab !== 'undefined') activeTab = id;
+            // Close drawer
+            drawer.style.transform = 'translateX(-100%)';
+            drawer.style.visibility = 'hidden';
+            if (overlay) { overlay.style.opacity = '0'; overlay.style.pointerEvents = 'none'; }
+            document.body.style.overflow = '';
+            // Navigate
+            if (typeof renderTabs === 'function') renderTabs();
+            if (typeof renderList === 'function') renderList();
+          });
+        });
+      }
+
+      // Open drawer
+      drawer.style.transform = 'translateX(0)';
+      drawer.style.visibility = 'visible';
+      if (overlay) { overlay.style.opacity = '1'; overlay.style.pointerEvents = 'all'; }
+      document.body.style.overflow = 'hidden';
+    });
+
+    // Close on overlay click
+    if (overlay) {
+      overlay.addEventListener('click', function() {
+        drawer.style.transform = 'translateX(-100%)';
+        drawer.style.visibility = 'hidden';
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+        document.body.style.overflow = '';
+      });
+    }
+
+    // Close button inside drawer
+    var closeBtn = drawer.querySelector('.drawer-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        drawer.style.transform = 'translateX(-100%)';
+        drawer.style.visibility = 'hidden';
+        if (overlay) { overlay.style.opacity = '0'; overlay.style.pointerEvents = 'none'; }
+        document.body.style.overflow = '';
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachHamburger);
+  } else {
+    attachHamburger();
+  }
+})();
 </script>
 
 </body>
