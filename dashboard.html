@@ -2455,7 +2455,11 @@ body {
 <!-- APP -->
 <div id="app" class="app">
   <div class="topbar">
-    <button id="sbc-menu-btn" style="background:none;border:none;cursor:pointer;padding:10px 12px 10px 0;flex-shrink:0;-webkit-tap-highlight-color:transparent">&#9776;</button>
+    <button id="sbc-menu-btn" style="background:none;border:none;cursor:pointer;padding:10px 14px 10px 4px;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;gap:5px;min-width:44px;min-height:44px;align-items:center;justify-content:center">
+  <span style="display:block;width:22px;height:2.5px;background:#d4b572;border-radius:2px"></span>
+  <span style="display:block;width:22px;height:2.5px;background:#d4b572;border-radius:2px"></span>
+  <span style="display:block;width:22px;height:2.5px;background:#d4b572;border-radius:2px"></span>
+</button>
     <div class="brand-mark">SANI <span class="sep">·</span><span class="sub">DASHBOARD</span></div>
     
     <a href="/estimate" target="_blank" class="topbar-btn">↗ Customer Form</a>
@@ -4985,15 +4989,17 @@ function sbcOpenDrawer() {
   if (!drawer) return;
 
   // Build nav
-  // Calculate counts
-  var counts = {};
-  if (typeof estimates !== 'undefined') {
-    counts.all = estimates.length;
-    estimates.forEach(function(e) { counts[e.status] = (counts[e.status]||0) + 1; });
-  }
-  if (typeof handymanBookings !== 'undefined') counts.handyman = handymanBookings.length;
-  if (typeof seoInsightCount !== 'undefined') counts.seo = seoInsightCount;
-  if (typeof visitorsLiveCount !== 'undefined') counts.visitors = visitorsLiveCount;
+  // Calculate counts from live data
+  var counts = {all:0,new:0,drafted:0,sent:0,accepted:0,invoiced:0,paid:0,declined:0,handyman:0,seo:0,content:0,visitors:0};
+  try {
+    if (typeof estimates !== 'undefined' && estimates) {
+      counts.all = estimates.length;
+      estimates.forEach(function(e) { if (e.status && counts[e.status] !== undefined) counts[e.status]++; });
+    }
+    if (typeof handymanBookings !== 'undefined' && handymanBookings) counts.handyman = handymanBookings.length;
+    if (typeof seoInsightCount !== 'undefined') counts.seo = seoInsightCount || 0;
+    if (typeof visitorsLiveCount !== 'undefined') counts.visitors = visitorsLiveCount || 0;
+  } catch(e) {}
 
   var html = '';
   var cur = (typeof activeTab !== 'undefined') ? activeTab : 'all';
