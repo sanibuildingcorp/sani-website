@@ -2366,47 +2366,10 @@ body {
   flex: 1;
   padding: 12px 0;
 }
-.drawer-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 20px;
-  cursor: pointer;
-  transition: background 0.15s;
-  border-radius: 0 30px 30px 0;
-  margin-right: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ink-soft);
-  border: none;
-  background: none;
-  width: calc(100% - 12px);
-  text-align: left;
-  font-family: var(--body);
-  letter-spacing: 0.3px;
-}
-.drawer-item:hover { background: var(--gold-soft); color: var(--ink); }
-.drawer-item.active {
-  background: var(--gold-soft);
-  color: var(--gold);
-  font-weight: 700;
-}
-.drawer-item .d-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
-.drawer-item .d-label { flex: 1; }
-.drawer-item .d-count {
-  background: var(--gold-soft);
-  color: var(--gold);
-  padding: 2px 9px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 700;
-  min-width: 22px;
-  text-align: center;
-}
-.drawer-item.active .d-count {
-  background: var(--gold);
-  color: var(--navy);
-}
+
+
+
+
 .drawer-divider {
   height: 1px;
   background: var(--line-soft);
@@ -5022,6 +4985,16 @@ function sbcOpenDrawer() {
   if (!drawer) return;
 
   // Build nav
+  // Calculate counts
+  var counts = {};
+  if (typeof estimates !== 'undefined') {
+    counts.all = estimates.length;
+    estimates.forEach(function(e) { counts[e.status] = (counts[e.status]||0) + 1; });
+  }
+  if (typeof handymanBookings !== 'undefined') counts.handyman = handymanBookings.length;
+  if (typeof seoInsightCount !== 'undefined') counts.seo = seoInsightCount;
+  if (typeof visitorsLiveCount !== 'undefined') counts.visitors = visitorsLiveCount;
+
   var html = '';
   var cur = (typeof activeTab !== 'undefined') ? activeTab : 'all';
   SBC_TABS.forEach(function(t) {
@@ -5030,6 +5003,7 @@ function sbcOpenDrawer() {
       return;
     }
     var active = cur === t.id;
+    var count = counts[t.id] || 0;
     html += '<button data-tid="' + t.id + '" style="'
       + 'display:flex;align-items:center;gap:14px;'
       + 'width:calc(100% - 12px);margin-right:12px;'
@@ -5042,6 +5016,10 @@ function sbcOpenDrawer() {
       + '">'
       + '<span style="font-size:18px;width:24px;text-align:center">' + t.icon + '</span>'
       + '<span style="flex:1">' + t.label + '</span>'
+      + '<span style="background:' + (active ? '#d4b572' : 'rgba(212,181,114,0.15)') + ';'
+      + 'color:' + (active ? '#0f1f33' : '#d4b572') + ';'
+      + 'padding:2px 9px;border-radius:10px;font-size:12px;font-weight:700;min-width:22px;text-align:center">'
+      + count + '</span>'
       + '</button>';
   });
   nav.innerHTML = html;
