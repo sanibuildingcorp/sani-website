@@ -2290,29 +2290,9 @@ body {
 }
 
 
-/* ═══════════════════════════════════════════════════════
-   HAMBURGER SLIDE-OUT MENU (Gmail style)
-   ═══════════════════════════════════════════════════════ */
-.hamburger {
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  flex-direction: column;
-  gap: 5px;
-  flex-shrink: 0;
-  z-index: 10;
-  position: relative;
-}
-.hamburger span {
-  display: block;
-  width: 22px;
-  height: 2px;
-  background: var(--gold);
-  border-radius: 2px;
-  transition: all 0.3s;
-}
+
+
+
 
 /* Drawer overlay */
 .drawer-overlay {
@@ -2464,7 +2444,7 @@ body {
 }
 
 @media (max-width: 640px) {
-  .hamburger { display: flex; }
+  
   .tabs-row { display: none; } /* hide old tab bar on mobile */
   /* Show active tab name in topbar */
   .active-tab-label {
@@ -2512,13 +2492,9 @@ body {
 <!-- APP -->
 <div id="app" class="app">
   <div class="topbar">
-    <button id="hamburger-btn" aria-label="Menu" style="background:none;border:none;cursor:pointer;padding:8px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;z-index:999;position:relative">
-      <span style="display:block;width:24px;height:3px;background:#d4b572;border-radius:2px"></span>
-      <span style="display:block;width:24px;height:3px;background:#d4b572;border-radius:2px"></span>
-      <span style="display:block;width:24px;height:3px;background:#d4b572;border-radius:2px"></span>
-    </button>
+    <button id="sbc-menu-btn" style="background:none;border:none;cursor:pointer;padding:10px 12px 10px 0;flex-shrink:0;-webkit-tap-highlight-color:transparent">&#9776;</button>
     <div class="brand-mark">SANI <span class="sep">·</span><span class="sub">DASHBOARD</span></div>
-    <span class="active-tab-label" id="active-tab-label"></span>
+    
     <a href="/estimate" target="_blank" class="topbar-btn">↗ Customer Form</a>
     <button class="topbar-btn" onclick="loadEstimates()">⟳ Refresh</button>
     <button class="topbar-btn" onclick="logout()">Logout</button>
@@ -4982,14 +4958,6 @@ window.addEventListener('load', function() {
 </script>
 
 
-<!-- DRAWER OVERLAY -->
-<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
-
-<!-- SLIDE-OUT DRAWER -->
-<div class="drawer" id="drawer">
-  <div class="drawer-header">
-    <button class="drawer-close" onclick="closeDrawer()">×</button>
-    <div class="drawer-logo">SANI</div>
     <div class="drawer-sub">Dashboard</div>
   </div>
   <nav class="drawer-nav" id="drawer-nav">
@@ -5005,218 +4973,123 @@ window.addEventListener('load', function() {
 
 
 
+
+
+
+
+
+
+<!-- ===== MOBILE DRAWER ===== -->
+<div id="sbc-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9000"></div>
+<div id="sbc-drawer" style="display:none;position:fixed;top:0;left:0;width:280px;height:100%;background:#0f1f33;z-index:9001;flex-direction:column;overflow-y:auto;box-shadow:4px 0 20px rgba(0,0,0,0.5)">
+  <div style="padding:24px 20px 16px;background:#122740;border-bottom:1px solid rgba(212,181,114,0.18)">
+    <div style="font-size:22px;letter-spacing:4px;color:#d4b572;font-family:Arial,sans-serif;font-weight:bold">SANI</div>
+    <div style="font-size:11px;letter-spacing:2px;color:#7a8aa3;text-transform:uppercase;margin-top:2px">Dashboard</div>
+    <button id="sbc-close-btn" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#7a8aa3;font-size:24px;cursor:pointer;padding:4px 8px;-webkit-tap-highlight-color:transparent">×</button>
+  </div>
+  <div id="sbc-nav" style="flex:1;padding:8px 0"></div>
+  <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06)">
+    <a href="/estimate" target="_blank" style="display:block;padding:12px 14px;background:#142a44;border-radius:10px;color:#b8c4d6;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">↗ Customer Form</a>
+    <button onclick="loadEstimates()" style="display:block;width:100%;padding:12px 14px;background:#142a44;border-radius:10px;color:#b8c4d6;font-size:13px;border:none;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">⟳ Refresh</button>
+    <button onclick="logout()" style="display:block;width:100%;padding:12px 14px;background:#142a44;border-radius:10px;color:#b8c4d6;font-size:13px;border:none;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">⎋ Logout</button>
+  </div>
+</div>
+<!-- ===== END MOBILE DRAWER ===== -->
+
+
 <script>
-/* ═══════ DRAWER MENU — clean rewrite ═══════ */
+// ===== SBC MOBILE DRAWER =====
+var SBC_TABS = [
+  {id:'all',      icon:'📋', label:'All'},
+  {id:'new',      icon:'🔔', label:'New'},
+  {id:'drafted',  icon:'✏️',  label:'Drafts'},
+  {id:'sent',     icon:'📨', label:'Sent'},
+  {id:'accepted', icon:'✅', label:'Accepted'},
+  {id:'invoiced', icon:'💳', label:'Invoiced'},
+  {id:'paid',     icon:'💰', label:'Paid'},
+  {id:'declined', icon:'❌', label:'Declined'},
+  null,
+  {id:'handyman', icon:'🔧', label:'Handyman'},
+  {id:'seo',      icon:'🧠', label:'SEO Brain'},
+  {id:'content',  icon:'✍️',  label:'Content'},
+  {id:'visitors', icon:'👁',  label:'Live Visitors'},
+];
 
-var DRAWER_ICONS = {
-  all:'📋', new:'🆕', drafted:'✏️', sent:'📨',
-  accepted:'✅', invoiced:'💳', paid:'💰', declined:'❌',
-  handyman:'🔧', seo:'🧠', content:'✍️', visitors:'👁'
-};
+function sbcOpenDrawer() {
+  var drawer  = document.getElementById('sbc-drawer');
+  var overlay = document.getElementById('sbc-overlay');
+  var nav     = document.getElementById('sbc-nav');
+  if (!drawer) return;
 
-function openDrawer() {
-  var drawer = document.getElementById('drawer');
-  var overlay = document.getElementById('drawer-overlay');
-  if (!drawer || !overlay) { alert('Drawer not found'); return; }
-  renderDrawerNav();
-  drawer.classList.add('open');
-  overlay.classList.add('open');
+  // Build nav
+  var html = '';
+  var cur = (typeof activeTab !== 'undefined') ? activeTab : 'all';
+  SBC_TABS.forEach(function(t) {
+    if (!t) {
+      html += '<div style="height:1px;background:rgba(255,255,255,0.06);margin:6px 16px"></div>';
+      return;
+    }
+    var active = cur === t.id;
+    html += '<button data-tid="' + t.id + '" style="'
+      + 'display:flex;align-items:center;gap:14px;'
+      + 'width:calc(100% - 12px);margin-right:12px;'
+      + 'padding:14px 20px;border:none;cursor:pointer;'
+      + 'background:' + (active ? 'rgba(212,181,114,0.15)' : 'transparent') + ';'
+      + 'color:' + (active ? '#d4b572' : '#b8c4d6') + ';'
+      + 'font-size:14px;font-family:Inter,sans-serif;font-weight:' + (active ? '700' : '500') + ';'
+      + 'text-align:left;border-radius:0 30px 30px 0;'
+      + '-webkit-tap-highlight-color:transparent'
+      + '">'
+      + '<span style="font-size:18px;width:24px;text-align:center">' + t.icon + '</span>'
+      + '<span style="flex:1">' + t.label + '</span>'
+      + '</button>';
+  });
+  nav.innerHTML = html;
+
+  // Tab click handlers
+  nav.querySelectorAll('button[data-tid]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = this.getAttribute('data-tid');
+      sbcCloseDrawer();
+      if (typeof activeTab !== 'undefined') activeTab = id;
+      if (typeof renderTabs === 'function') renderTabs();
+      if (typeof renderList === 'function') renderList();
+    });
+  });
+
+  // Show
+  drawer.style.display  = 'flex';
+  overlay.style.display = 'block';
   document.body.style.overflow = 'hidden';
 }
 
-function closeDrawer() {
-  var drawer = document.getElementById('drawer');
-  var overlay = document.getElementById('drawer-overlay');
-  if (drawer) drawer.classList.remove('open');
-  if (overlay) overlay.classList.remove('open');
+function sbcCloseDrawer() {
+  var drawer  = document.getElementById('sbc-drawer');
+  var overlay = document.getElementById('sbc-overlay');
+  if (drawer)  drawer.style.display  = 'none';
+  if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
 }
 
-function renderDrawerNav() {
-  var nav = document.getElementById('drawer-nav');
-  if (!nav) return;
+// Wire up after DOM ready
+function sbcInitDrawer() {
+  var menuBtn  = document.getElementById('sbc-menu-btn');
+  var closeBtn = document.getElementById('sbc-close-btn');
+  var overlay  = document.getElementById('sbc-overlay');
 
-  var counts = { all: estimates.length };
-  TABS.forEach(function(t) { if (t.id !== 'all') counts[t.id] = 0; });
-  estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
-  counts.handyman = handymanBookings.length;
-  counts.seo = seoInsightCount || 0;
-  counts.visitors = visitorsLiveCount || 0;
+  if (!menuBtn) { setTimeout(sbcInitDrawer, 300); return; }
 
-  var mainTabs = ['all','new','drafted','sent','accepted','invoiced','paid','declined'];
-  var toolTabs  = ['handyman','seo','content','visitors'];
-
-  function makeItem(id) {
-    var t = TABS.find(function(x){ return x.id === id; });
-    if (!t) return '';
-    var active = activeTab === id ? ' active' : '';
-    var icon = DRAWER_ICONS[id] || '📋';
-    var count = counts[id] || 0;
-    return '<button class="drawer-item' + active + '" data-tab="' + id + '">'
-      + '<span class="d-icon">' + icon + '</span>'
-      + '<span class="d-label">' + t.label + '</span>'
-      + '<span class="d-count">' + count + '</span>'
-      + '</button>';
-  });
-    if (!t) return '';
-    var active = activeTab === id ? ' active' : '';
-    var icon = DRAWER_ICONS[id] || '📋';
-    var count = counts[id] || 0;
-    return '<button class="drawer-item' + active + '" onclick="selectDrawerTab('' + id + '')">'
-      + '<span class="d-icon">' + icon + '</span>'
-      + '<span class="d-label">' + t.label + '</span>'
-      + '<span class="d-count">' + count + '</span>'
-      + '</button>';
-  }
-
-  var html = mainTabs.map(makeItem).join('');
-  html += '<div class="drawer-divider"></div>';
-  html += toolTabs.map(makeItem).join('');
-  nav.innerHTML = html;
-  // Add click listeners via delegation
-  nav.querySelectorAll('.drawer-item').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      selectDrawerTab(this.dataset.tab);
-    });
-  });
+  menuBtn.addEventListener('click',  sbcOpenDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', sbcCloseDrawer);
+  if (overlay)  overlay.addEventListener('click',  sbcCloseDrawer);
 }
 
-function selectDrawerTab(id) {
-  activeTab = id;
-  closeDrawer();
-  renderTabs();
-  renderList();
-  // Update topbar label
-  var el = document.getElementById('active-tab-label');
-  var t = TABS.find(function(x){ return x.id === id; });
-  if (el && t) el.textContent = t.label;
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', sbcInitDrawer);
+} else {
+  sbcInitDrawer();
 }
-
-// Update topbar label when tabs render
-var _sbcOrigRT2 = null;
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function() {
-    if (typeof renderTabs === 'function' && !_sbcOrigRT2) {
-      _sbcOrigRT2 = renderTabs;
-      renderTabs = function() {
-        _sbcOrigRT2.apply(this, arguments);
-        var el = document.getElementById('active-tab-label');
-        var t = TABS.find(function(x){ return x.id === activeTab; });
-        if (el && t) el.textContent = t.label;
-      };
-    }
-  }, 300);
-});
-</script>
-
-
-<script>
-// Hamburger — attach after full page load, no dependency on other JS
-(function() {
-  function attachHamburger() {
-    var btn = document.getElementById('hamburger-btn');
-    var drawer = document.getElementById('drawer');
-    var overlay = document.getElementById('drawer-overlay');
-    var nav = document.getElementById('drawer-nav');
-
-    if (!btn || !drawer) {
-      setTimeout(attachHamburger, 200);
-      return;
-    }
-
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      // Build nav items directly
-      var items = [
-        {id:'all', icon:'📋', label:'All'},
-        {id:'new', icon:'🆕', label:'New'},
-        {id:'drafted', icon:'✏️', label:'Drafts'},
-        {id:'sent', icon:'📨', label:'Sent'},
-        {id:'accepted', icon:'✅', label:'Accepted'},
-        {id:'invoiced', icon:'💳', label:'Invoiced'},
-        {id:'paid', icon:'💰', label:'Paid'},
-        {id:'declined', icon:'❌', label:'Declined'},
-        null, // divider
-        {id:'handyman', icon:'🔧', label:'🔧 Handyman'},
-        {id:'seo', icon:'🧠', label:'🧠 SEO Brain'},
-        {id:'content', icon:'✍️', label:'✍️ Content'},
-        {id:'visitors', icon:'👁', label:'👁 Live Visitors'},
-      ];
-
-      var html = '';
-      items.forEach(function(item) {
-        if (!item) { html += '<div style="height:1px;background:rgba(255,255,255,0.06);margin:8px 20px"></div>'; return; }
-        var isActive = typeof activeTab !== 'undefined' && activeTab === item.id;
-        html += '<button data-tabid="' + item.id + '" style="'
-          + 'display:flex;align-items:center;gap:14px;padding:14px 20px;'
-          + 'background:' + (isActive ? 'rgba(212,181,114,0.12)' : 'none') + ';'
-          + 'color:' + (isActive ? '#d4b572' : '#b8c4d6') + ';'
-          + 'font-weight:' + (isActive ? '700' : '500') + ';'
-          + 'border:none;width:100%;text-align:left;cursor:pointer;font-size:14px;'
-          + 'font-family:Inter,sans-serif;border-radius:0 30px 30px 0;margin-right:12px;'
-          + 'width:calc(100% - 12px)'
-          + '">'
-          + '<span style="font-size:18px;width:24px;text-align:center">' + item.icon + '</span>'
-          + '<span style="flex:1">' + item.label + '</span>'
-          + '</button>';
-      });
-
-      if (nav) nav.innerHTML = html;
-
-      // Attach click handlers to nav items
-      if (nav) {
-        nav.querySelectorAll('button[data-tabid]').forEach(function(b) {
-          b.addEventListener('click', function() {
-            var id = this.getAttribute('data-tabid');
-            if (typeof activeTab !== 'undefined') activeTab = id;
-            // Close drawer
-            drawer.style.transform = 'translateX(-100%)';
-            drawer.style.visibility = 'hidden';
-            if (overlay) { overlay.style.opacity = '0'; overlay.style.pointerEvents = 'none'; }
-            document.body.style.overflow = '';
-            // Navigate
-            if (typeof renderTabs === 'function') renderTabs();
-            if (typeof renderList === 'function') renderList();
-          });
-        });
-      }
-
-      // Open drawer
-      drawer.style.transform = 'translateX(0)';
-      drawer.style.visibility = 'visible';
-      if (overlay) { overlay.style.opacity = '1'; overlay.style.pointerEvents = 'all'; }
-      document.body.style.overflow = 'hidden';
-    });
-
-    // Close on overlay click
-    if (overlay) {
-      overlay.addEventListener('click', function() {
-        drawer.style.transform = 'translateX(-100%)';
-        drawer.style.visibility = 'hidden';
-        overlay.style.opacity = '0';
-        overlay.style.pointerEvents = 'none';
-        document.body.style.overflow = '';
-      });
-    }
-
-    // Close button inside drawer
-    var closeBtn = drawer.querySelector('.drawer-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', function() {
-        drawer.style.transform = 'translateX(-100%)';
-        drawer.style.visibility = 'hidden';
-        if (overlay) { overlay.style.opacity = '0'; overlay.style.pointerEvents = 'none'; }
-        document.body.style.overflow = '';
-      });
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attachHamburger);
-  } else {
-    attachHamburger();
-  }
-})();
+// ===== END SBC MOBILE DRAWER =====
 </script>
 
 </body>
