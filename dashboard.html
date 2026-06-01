@@ -2065,16 +2065,16 @@ body {
 :root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
 
 @media (max-width: 640px) {
-  /* Topbar — compact on mobile */
+  /* Topbar — hide buttons on mobile, use drawer instead */
   .topbar {
     padding: 12px 16px;
-    gap: 8px;
+    gap: 10px;
   }
-  .brand-mark { font-size: 15px; letter-spacing: 2px; }
-  .topbar-btn {
-    padding: 8px 10px;
-    font-size: 11px;
-    letter-spacing: 0.5px;
+  .brand-mark { font-size: 15px; letter-spacing: 2px; flex: 1; }
+  /* Hide topbar buttons on mobile — they live in the drawer */
+  .topbar > a.topbar-btn,
+  .topbar > button.topbar-btn {
+    display: none;
   }
 
   /* Tabs — full-width scrollable, bigger tap targets */
@@ -2297,6 +2297,8 @@ body {
   flex-direction: column;
   gap: 5px;
   flex-shrink: 0;
+  z-index: 10;
+  position: relative;
 }
 .hamburger span {
   display: block;
@@ -5069,7 +5071,19 @@ renderTabs = function() {
 };
 
 // Init label on load
-window.addEventListener('load', function() { setTimeout(updateActiveTabLabel, 500); });
+window.addEventListener('load', function() { setTimeout(updateActiveTabLabel, 800); });
+
+// Patch renderTabs to also update label
+var _drawerRenderTabsPatch = setInterval(function() {
+  if (typeof renderTabs === 'function') {
+    clearInterval(_drawerRenderTabsPatch);
+    var _origRT = renderTabs;
+    renderTabs = function() {
+      _origRT.apply(this, arguments);
+      updateActiveTabLabel();
+    };
+  }
+}, 100);
 </script>
 
 </body>
