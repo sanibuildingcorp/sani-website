@@ -2316,35 +2316,40 @@ body {
 
 /* Drawer overlay */
 .drawer-overlay {
-  display: none;
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.6);
   z-index: 300;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.25s;
 }
 .drawer-overlay.open {
-  display: block;
   opacity: 1;
+  pointer-events: all;
 }
 
 /* Slide-out drawer */
 .drawer {
   position: fixed;
   top: 0;
-  left: -280px;
+  left: 0;
   width: 280px;
   height: 100vh;
   background: var(--card);
   z-index: 301;
-  transition: left 0.25s ease;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  visibility: hidden;
 }
-.drawer.open { left: 0; }
+.drawer.open {
+  transform: translateX(0);
+  visibility: visible;
+}
 
 .drawer-header {
   padding: 20px 20px 16px;
@@ -2475,7 +2480,8 @@ body {
   }
 }
 @media (min-width: 641px) {
-  .drawer-overlay, .drawer { display: none !important; }
+  /* drawer hidden via transform on desktop — no need to force display:none */
+  .drawer-overlay { pointer-events: none !important; opacity: 0 !important; }
   .active-tab-label { display: none; }
 }
 
