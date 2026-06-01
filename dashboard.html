@@ -2284,6 +2284,194 @@ body {
   flex-shrink: 0;
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   HAMBURGER SLIDE-OUT MENU (Gmail style)
+   ═══════════════════════════════════════════════════════ */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--gold);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+/* Drawer overlay */
+.drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.drawer-overlay.open {
+  display: block;
+  opacity: 1;
+}
+
+/* Slide-out drawer */
+.drawer {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
+  background: var(--card);
+  z-index: 301;
+  transition: left 0.25s ease;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+.drawer.open { left: 0; }
+
+.drawer-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(135deg, var(--navy-2), var(--navy));
+}
+.drawer-logo {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: var(--gold);
+  margin-bottom: 2px;
+}
+.drawer-sub {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+}
+.drawer-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px;
+}
+.drawer-close:hover { color: var(--gold); }
+
+.drawer-nav {
+  flex: 1;
+  padding: 12px 0;
+}
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 0 30px 30px 0;
+  margin-right: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  border: none;
+  background: none;
+  width: calc(100% - 12px);
+  text-align: left;
+  font-family: var(--body);
+  letter-spacing: 0.3px;
+}
+.drawer-item:hover { background: var(--gold-soft); color: var(--ink); }
+.drawer-item.active {
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-weight: 700;
+}
+.drawer-item .d-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+.drawer-item .d-label { flex: 1; }
+.drawer-item .d-count {
+  background: var(--gold-soft);
+  color: var(--gold);
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 22px;
+  text-align: center;
+}
+.drawer-item.active .d-count {
+  background: var(--gold);
+  color: var(--navy);
+}
+.drawer-divider {
+  height: 1px;
+  background: var(--line-soft);
+  margin: 8px 20px;
+}
+
+.drawer-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.drawer-footer a, .drawer-footer button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  background: var(--card-2);
+  border: 1px solid var(--line-soft);
+  cursor: pointer;
+  font-family: var(--body);
+  font-weight: 500;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: left;
+}
+.drawer-footer a:hover, .drawer-footer button:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+@media (max-width: 640px) {
+  .hamburger { display: flex; }
+  .tabs-row { display: none; } /* hide old tab bar on mobile */
+  /* Show active tab name in topbar */
+  .active-tab-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--display);
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--ink-soft);
+    flex: 1;
+    overflow: hidden;
+  }
+}
+@media (min-width: 641px) {
+  .drawer-overlay, .drawer { display: none !important; }
+  .active-tab-label { display: none; }
+}
+
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -2311,7 +2499,11 @@ body {
 <!-- APP -->
 <div id="app" class="app">
   <div class="topbar">
+    <button class="hamburger" onclick="openDrawer()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <div class="brand-mark">SANI <span class="sep">·</span><span class="sub">DASHBOARD</span></div>
+    <span class="active-tab-label" id="active-tab-label"></span>
     <a href="/estimate" target="_blank" class="topbar-btn">↗ Customer Form</a>
     <button class="topbar-btn" onclick="loadEstimates()">⟳ Refresh</button>
     <button class="topbar-btn" onclick="logout()">Logout</button>
@@ -4772,6 +4964,112 @@ window.addEventListener('load', function() {
     }
   }
 });
+</script>
+
+
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- SLIDE-OUT DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <button class="drawer-close" onclick="closeDrawer()">×</button>
+    <div class="drawer-logo">SANI</div>
+    <div class="drawer-sub">Dashboard</div>
+  </div>
+  <nav class="drawer-nav" id="drawer-nav">
+    <!-- filled by JS -->
+  </nav>
+  <div class="drawer-footer">
+    <a href="/estimate" target="_blank">↗ Customer Form</a>
+    <button onclick="loadEstimates(); closeDrawer();">⟳ Refresh Data</button>
+    <button onclick="logout()">⎋ Logout</button>
+  </div>
+</div>
+
+
+<script>
+/* ═══════ DRAWER MENU ═══════ */
+var DRAWER_ICONS = {
+  all: '📋', new: '🆕', drafted: '✏️', sent: '📨',
+  accepted: '✅', invoiced: '💳', paid: '💰', declined: '❌',
+  handyman: '🔧', seo: '🧠', content: '✍️', visitors: '👁'
+};
+
+function openDrawer() {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderDrawerNav();
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderDrawerNav() {
+  var counts = { all: estimates.length };
+  TABS.forEach(function(t) { if (t.id !== 'all') counts[t.id] = 0; });
+  estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
+  counts.handyman = handymanBookings.length;
+  counts.seo = seoInsightCount;
+  counts.visitors = visitorsLiveCount;
+
+  // Split into main tabs and tool tabs
+  var mainTabs = ['all','new','drafted','sent','accepted','invoiced','paid','declined'];
+  var toolTabs = ['handyman','seo','content','visitors'];
+
+  var html = mainTabs.map(function(id) {
+    var t = TABS.find(function(x){ return x.id === id; });
+    if (!t) return '';
+    return '<button class="drawer-item ' + (activeTab === id ? 'active' : '') + '" onclick="selectDrawerTab('' + id + '')">' +
+      '<span class="d-icon">' + (DRAWER_ICONS[id]||'📋') + '</span>' +
+      '<span class="d-label">' + t.label + '</span>' +
+      '<span class="d-count">' + (counts[id]||0) + '</span>' +
+    '</button>';
+  }).join('');
+
+  html += '<div class="drawer-divider"></div>';
+
+  html += toolTabs.map(function(id) {
+    var t = TABS.find(function(x){ return x.id === id; });
+    if (!t) return '';
+    return '<button class="drawer-item ' + (activeTab === id ? 'active' : '') + '" onclick="selectDrawerTab('' + id + '')">' +
+      '<span class="d-icon">' + (DRAWER_ICONS[id]||'🔧') + '</span>' +
+      '<span class="d-label">' + t.label + '</span>' +
+      '<span class="d-count">' + (counts[id]||0) + '</span>' +
+    '</button>';
+  }).join('');
+
+  document.getElementById('drawer-nav').innerHTML = html;
+}
+
+function selectDrawerTab(id) {
+  activeTab = id;
+  closeDrawer();
+  renderTabs();
+  renderList();
+  updateActiveTabLabel();
+}
+
+function updateActiveTabLabel() {
+  var el = document.getElementById('active-tab-label');
+  if (!el) return;
+  var t = TABS.find(function(x){ return x.id === activeTab; });
+  if (t) el.textContent = t.label;
+}
+
+// Update label whenever tabs render
+var _origRenderTabs = renderTabs;
+renderTabs = function() {
+  _origRenderTabs.apply(this, arguments);
+  updateActiveTabLabel();
+};
+
+// Init label on load
+window.addEventListener('load', function() { setTimeout(updateActiveTabLabel, 500); });
 </script>
 
 </body>
