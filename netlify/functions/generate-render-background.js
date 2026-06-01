@@ -1,11 +1,14 @@
 // netlify/functions/generate-render-background.js
-// Background function — Netlify returns 202 immediately, this runs up to 15 min.
-// Saves the result to Supabase (render_jobs table) so the dashboard can poll for it.
+// Background function — generates a renovation render with Google Gemini ("Nano Banana").
+// Edits the customer's actual photo so the real room is preserved.
+// Saves the result to Supabase (render_jobs table) for the dashboard to poll.
 
 const https = require("https");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY;
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = "gemini-2.5-flash-image";
 
 // Upsert a job row in Supabase (insert or update by primary key "id")
 async function saveJob(id, fields) {
@@ -34,77 +37,68 @@ exports.handler = async function (event) {
 
   try {
     await saveJob(jobId, { status: "processing" });
+    if (!GEMINI_KEY) throw new Error("GEMINI_API_KEY not set");
 
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (!openaiKey) throw new Error("OPENAI_API_KEY not set");
-
-    // STEP 1: Analyze photo with GPT-4o-mini
-    let spaceDescription = "";
-    if (photoBase64 && photoBase64.startsWith("data:image") && !customPrompt) {
-      try {
-        const vd = JSON.parse(await openaiPost(openaiKey, "/v1/chat/completions", JSON.stringify({
-          model: "gpt-4o-mini",
-          max_tokens: 120,
-          messages: [{
-            role: "user",
-            content: [
-              { type: "image_url", image_url: { url: photoBase64, detail: "low" } },
-              { type: "text", text: "Describe this room in 1-2 sentences for a renovation render: room type, current walls/floors, key structural features. Be brief." }
-            ]
-          }]
-        })));
-        spaceDescription = vd.choices?.[0]?.message?.content || "";
-        console.log("Space description:", spaceDescription);
-      } catch (e) {
-        console.log("Vision skipped:", e.message);
-      }
-    }
-
-    // STEP 2: Build prompt
-    let finalPrompt;
+    // Build the renovation instruction
+    const serviceType = service || projectTitle || "interior space";
+    const scopeShort = scopeOfWork
+      ? scopeOfWork.replace(/^[A-Z\s]+:/gm, "").replace(/[-\u2022\n]+/g, " ").trim().slice(0, 300)
+      : "";
+    let instruction;
     if (customPrompt && customPrompt.trim()) {
-      finalPrompt = customPrompt.trim() + ". Photorealistic architectural interior render, professional lighting, high quality, no people.";
+      instruction = customPrompt.trim();
     } else {
-      const serviceType = (service || projectTitle || "interior space").toLowerCase();
-      const spaceCtx = spaceDescription ? "The space is: " + spaceDescription.trim() + ". " : "";
-      const scopeShort = scopeOfWork
-        ? scopeOfWork.replace(/^[A-Z\s]+:/gm, "").replace(/[-\u2022\n]+/g, " ").trim().slice(0, 200)
-        : "";
-      const scopeCtx = scopeShort ? "Renovation includes: " + scopeShort + ". " : "";
-      finalPrompt = "Photorealistic interior design render of a beautifully renovated " + serviceType + " in a New York City apartment. " + spaceCtx + scopeCtx + "Modern high-quality finishes, bright natural lighting, clean professional workmanship. Wide-angle architectural photography style. Ultra detailed.";
+      instruction = "Renovate this " + serviceType + " with modern, high-quality finishes."
+        + (scopeShort ? " Work includes: " + scopeShort + "." : "");
     }
 
-    console.log("Prompt:", finalPrompt.slice(0, 200));
+    const hasPhoto = photoBase64 && photoBase64.indexOf("base64,") !== -1;
+    let promptText;
+    let parts;
 
-    // STEP 3: Image generation (gpt-image-1)
-    const dalleRaw = await openaiPost(openaiKey, "/v1/images/generations", JSON.stringify({
-      model: "gpt-image-1",
-      prompt: finalPrompt,
-      n: 1,
-      size: "1024x1024",
-      quality: "medium"
-    }));
-
-    const dalleData = JSON.parse(dalleRaw);
-    if (dalleData.error) throw new Error("Image API: " + (dalleData.error.message || JSON.stringify(dalleData.error)));
-
-    const d0 = dalleData.data && dalleData.data[0];
-    const revisedPrompt = (d0 && d0.revised_prompt) || "";
-    let imageBase64;
-    if (d0 && d0.b64_json) {
-      imageBase64 = "data:image/png;base64," + d0.b64_json;
-    } else if (d0 && d0.url) {
-      imageBase64 = await fetchImageAsDataUrl(d0.url);
+    if (hasPhoto) {
+      promptText = "Edit this photo to show the finished renovation. " + instruction
+        + " Keep the same room layout, dimensions, window and door positions, and camera viewpoint. "
+        + "Photorealistic, professional lighting, clean finished workmanship, no people, no text or watermarks.";
+      const idx = photoBase64.indexOf("base64,");
+      const meta = photoBase64.slice(5, idx);            // e.g. "image/jpeg;"
+      const mime = (meta.split(";")[0]) || "image/jpeg";
+      const b64 = photoBase64.slice(idx + 7);
+      parts = [
+        { text: promptText },
+        { inlineData: { mimeType: mime, data: b64 } }
+      ];
     } else {
-      throw new Error("No image returned from DALL-E. Response: " + JSON.stringify(dalleData).slice(0, 200));
+      promptText = "Generate a photorealistic interior render of a beautifully renovated "
+        + serviceType + " in a New York City apartment. " + instruction
+        + " Bright natural lighting, modern high-quality finishes, wide-angle architectural photo, no people, no text.";
+      parts = [ { text: promptText } ];
     }
 
-    // STEP 4: Save result to Supabase
+    console.log("Gemini prompt:", promptText.slice(0, 180), "| photo:", hasPhoto);
+
+    const reqBody = JSON.stringify({ contents: [ { parts: parts } ] });
+    const raw = await geminiPost(GEMINI_MODEL, reqBody);
+    const data = JSON.parse(raw);
+    if (data.error) throw new Error("Gemini: " + (data.error.message || JSON.stringify(data.error)));
+
+    // Find the image part (handle camelCase and snake_case responses)
+    const cand = data.candidates && data.candidates[0];
+    const outParts = (cand && cand.content && cand.content.parts) || [];
+    let imgB64 = null, imgMime = "image/png";
+    for (let i = 0; i < outParts.length; i++) {
+      const inl = outParts[i].inlineData || outParts[i].inline_data;
+      if (inl && inl.data) { imgB64 = inl.data; imgMime = inl.mimeType || inl.mime_type || "image/png"; break; }
+    }
+    if (!imgB64) throw new Error("No image returned from Gemini. Response: " + JSON.stringify(data).slice(0, 300));
+
+    const imageBase64 = "data:" + imgMime + ";base64," + imgB64;
+
     await saveJob(jobId, {
       status: "done",
       image_base64: imageBase64,
-      space_description: spaceDescription,
-      revised_prompt: revisedPrompt
+      space_description: "",
+      revised_prompt: promptText.slice(0, 500)
     });
 
     console.log("Render job done:", jobId);
@@ -119,29 +113,15 @@ exports.handler = async function (event) {
   }
 };
 
-function fetchImageAsDataUrl(url) {
+function geminiPost(model, bodyStr) {
   return new Promise(function (resolve, reject) {
-    https.get(url, function (res) {
-      const chunks = [];
-      res.on("data", function (c) { chunks.push(c); });
-      res.on("end", function () {
-        const buf = Buffer.concat(chunks);
-        const ct = res.headers["content-type"] || "image/png";
-        resolve("data:" + ct + ";base64," + buf.toString("base64"));
-      });
-    }).on("error", reject);
-  });
-}
-
-function openaiPost(apiKey, path, bodyStr) {
-  return new Promise((resolve, reject) => {
     const options = {
-      hostname: "api.openai.com",
+      hostname: "generativelanguage.googleapis.com",
       port: 443,
-      path: path,
+      path: "/v1beta/models/" + model + ":generateContent",
       method: "POST",
       headers: {
-        "Authorization": "Bearer " + apiKey,
+        "x-goog-api-key": GEMINI_KEY,
         "Content-Type": "application/json",
         "Content-Length": Buffer.byteLength(bodyStr)
       }
