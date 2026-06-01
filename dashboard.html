@@ -5165,27 +5165,54 @@ if (document.readyState === 'loading') {
 
       <!-- Buttons -->
       <div style="display:flex;flex-direction:column;gap:10px">
-        <button id="sl-sms-btn" onclick="sendEstimateBySMS()" style="
+        <button id="sl-sms-btn" style="
           padding:14px;background:linear-gradient(135deg,#d4b572,#c9a84c);color:#0b1828;
           border:none;border-radius:10px;font-family:Inter,sans-serif;font-size:13px;
           font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;
           display:flex;align-items:center;justify-content:center;gap:8px;
-          -webkit-tap-highlight-color:transparent;
+          -webkit-tap-highlight-color:transparent;width:100%;
+        " onclick="
+          var p=document.getElementById('sl-phone').value.replace(/[^0-9]/g,'');
+          var n=document.getElementById('sl-name').value.trim();
+          var first=n?n.split(' ')[0]:'';
+          var gr=first?'Hi '+first+'! ':'Hi! ';
+          var msg=gr+'It\'s Sani Building Corp. Click below for your free estimate — takes 2 min!\n\nhttps://www.sanibuildingcorp.com/estimate\n\nQuestions? Call (332) 277-0990';
+          if(!p){alert('Please enter a phone number');return;}
+          window.location.href='sms:+1'+p+(navigator.userAgent.indexOf('iPhone')>-1?'&':'?')+'body='+encodeURIComponent(msg);
         ">📱 Send via Text Message</button>
 
-        <button id="sl-email-btn" onclick="sendEstimateByEmail()" style="
+        <button id="sl-email-btn" style="
           padding:14px;background:transparent;color:#d4b572;
           border:2px solid #d4b572;border-radius:10px;font-family:Inter,sans-serif;font-size:13px;
           font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;
           display:flex;align-items:center;justify-content:center;gap:8px;
-          -webkit-tap-highlight-color:transparent;
+          -webkit-tap-highlight-color:transparent;width:100%;
+        " onclick="
+          var e=document.getElementById('sl-email').value.trim();
+          var n=document.getElementById('sl-name').value.trim();
+          var first=n?n.split(' ')[0]:'';
+          var gr=first?'Hi '+first+',':'Hi,';
+          var subj='Your Free Renovation Estimate — Sani Building Corp';
+          var body=gr+'\n\nHere is your link to request a free estimate from Sani Building Corp:\n\nhttps://www.sanibuildingcorp.com/estimate\n\nTakes about 2 minutes to fill out. I will review and send your estimate within 24 hours.\n\nQuestions? Call or text (332) 277-0990\n\nBest,\nSani Building Corp';
+          if(!e){alert('Please enter an email address');return;}
+          window.location.href='mailto:'+e+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
         ">✉️ Send via Email</button>
 
-        <button onclick="copyEstimateLink()" style="
+        <button style="
           padding:12px;background:rgba(212,181,114,0.08);color:#7a8aa3;
           border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-family:Inter,sans-serif;
           font-size:12px;font-weight:600;cursor:pointer;
-          -webkit-tap-highlight-color:transparent;
+          -webkit-tap-highlight-color:transparent;width:100%;
+        " onclick="
+          var url='https://www.sanibuildingcorp.com/estimate';
+          if(navigator.clipboard){
+            navigator.clipboard.writeText(url).then(function(){alert('Link copied!');});
+          } else {
+            var t=document.createElement('textarea');
+            t.value=url;document.body.appendChild(t);t.select();
+            document.execCommand('copy');document.body.removeChild(t);
+            alert('Link copied!');
+          }
         ">🔗 Copy Link Only</button>
       </div>
 
