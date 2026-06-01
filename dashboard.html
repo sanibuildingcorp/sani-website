@@ -4996,62 +4996,82 @@ window.addEventListener('load', function() {
 </div>
 
 
+
+
 <script>
-/* ═══════ DRAWER MENU ═══════ */
+/* ═══════ DRAWER MENU — clean rewrite ═══════ */
+
 var DRAWER_ICONS = {
-  all: '📋', new: '🆕', drafted: '✏️', sent: '📨',
-  accepted: '✅', invoiced: '💳', paid: '💰', declined: '❌',
-  handyman: '🔧', seo: '🧠', content: '✍️', visitors: '👁'
+  all:'📋', new:'🆕', drafted:'✏️', sent:'📨',
+  accepted:'✅', invoiced:'💳', paid:'💰', declined:'❌',
+  handyman:'🔧', seo:'🧠', content:'✍️', visitors:'👁'
 };
 
 function openDrawer() {
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('drawer-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  var drawer = document.getElementById('drawer');
+  var overlay = document.getElementById('drawer-overlay');
+  if (!drawer || !overlay) { alert('Drawer not found'); return; }
   renderDrawerNav();
+  drawer.classList.add('open');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeDrawer() {
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('drawer-overlay').classList.remove('open');
+  var drawer = document.getElementById('drawer');
+  var overlay = document.getElementById('drawer-overlay');
+  if (drawer) drawer.classList.remove('open');
+  if (overlay) overlay.classList.remove('open');
   document.body.style.overflow = '';
 }
 
 function renderDrawerNav() {
+  var nav = document.getElementById('drawer-nav');
+  if (!nav) return;
+
   var counts = { all: estimates.length };
   TABS.forEach(function(t) { if (t.id !== 'all') counts[t.id] = 0; });
   estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
   counts.handyman = handymanBookings.length;
-  counts.seo = seoInsightCount;
-  counts.visitors = visitorsLiveCount;
+  counts.seo = seoInsightCount || 0;
+  counts.visitors = visitorsLiveCount || 0;
 
-  // Split into main tabs and tool tabs
   var mainTabs = ['all','new','drafted','sent','accepted','invoiced','paid','declined'];
-  var toolTabs = ['handyman','seo','content','visitors'];
+  var toolTabs  = ['handyman','seo','content','visitors'];
 
-  var html = mainTabs.map(function(id) {
+  function makeItem(id) {
     var t = TABS.find(function(x){ return x.id === id; });
     if (!t) return '';
-    return '<button class="drawer-item ' + (activeTab === id ? 'active' : '') + '" onclick="selectDrawerTab(\'' + id + '\')">' +
-      '<span class="d-icon">' + (DRAWER_ICONS[id]||'📋') + '</span>' +
-      '<span class="d-label">' + t.label + '</span>' +
-      '<span class="d-count">' + (counts[id]||0) + '</span>' +
-    '</button>';
-  }).join('');
+    var active = activeTab === id ? ' active' : '';
+    var icon = DRAWER_ICONS[id] || '📋';
+    var count = counts[id] || 0;
+    return '<button class="drawer-item' + active + '" data-tab="' + id + '">'
+      + '<span class="d-icon">' + icon + '</span>'
+      + '<span class="d-label">' + t.label + '</span>'
+      + '<span class="d-count">' + count + '</span>'
+      + '</button>';
+  });
+    if (!t) return '';
+    var active = activeTab === id ? ' active' : '';
+    var icon = DRAWER_ICONS[id] || '📋';
+    var count = counts[id] || 0;
+    return '<button class="drawer-item' + active + '" onclick="selectDrawerTab('' + id + '')">'
+      + '<span class="d-icon">' + icon + '</span>'
+      + '<span class="d-label">' + t.label + '</span>'
+      + '<span class="d-count">' + count + '</span>'
+      + '</button>';
+  }
 
+  var html = mainTabs.map(makeItem).join('');
   html += '<div class="drawer-divider"></div>';
-
-  html += toolTabs.map(function(id) {
-    var t = TABS.find(function(x){ return x.id === id; });
-    if (!t) return '';
-    return '<button class="drawer-item ' + (activeTab === id ? 'active' : '') + '" onclick="selectDrawerTab(\'' + id + '\')">' +
-      '<span class="d-icon">' + (DRAWER_ICONS[id]||'🔧') + '</span>' +
-      '<span class="d-label">' + t.label + '</span>' +
-      '<span class="d-count">' + (counts[id]||0) + '</span>' +
-    '</button>';
-  }).join('');
-
-  document.getElementById('drawer-nav').innerHTML = html;
+  html += toolTabs.map(makeItem).join('');
+  nav.innerHTML = html;
+  // Add click listeners via delegation
+  nav.querySelectorAll('.drawer-item').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      selectDrawerTab(this.dataset.tab);
+    });
+  });
 }
 
 function selectDrawerTab(id) {
@@ -5059,37 +5079,27 @@ function selectDrawerTab(id) {
   closeDrawer();
   renderTabs();
   renderList();
-  updateActiveTabLabel();
-}
-
-function updateActiveTabLabel() {
+  // Update topbar label
   var el = document.getElementById('active-tab-label');
-  if (!el) return;
-  var t = TABS.find(function(x){ return x.id === activeTab; });
-  if (t) el.textContent = t.label;
+  var t = TABS.find(function(x){ return x.id === id; });
+  if (el && t) el.textContent = t.label;
 }
 
-// Update label whenever tabs render
-var _origRenderTabs = renderTabs;
-renderTabs = function() {
-  _origRenderTabs.apply(this, arguments);
-  updateActiveTabLabel();
-};
-
-// Init label on load
-window.addEventListener('load', function() { setTimeout(updateActiveTabLabel, 800); });
-
-// Patch renderTabs to also update label
-var _drawerRenderTabsPatch = setInterval(function() {
-  if (typeof renderTabs === 'function') {
-    clearInterval(_drawerRenderTabsPatch);
-    var _origRT = renderTabs;
-    renderTabs = function() {
-      _origRT.apply(this, arguments);
-      updateActiveTabLabel();
-    };
-  }
-}, 100);
+// Update topbar label when tabs render
+var _sbcOrigRT2 = null;
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof renderTabs === 'function' && !_sbcOrigRT2) {
+      _sbcOrigRT2 = renderTabs;
+      renderTabs = function() {
+        _sbcOrigRT2.apply(this, arguments);
+        var el = document.getElementById('active-tab-label');
+        var t = TABS.find(function(x){ return x.id === activeTab; });
+        if (el && t) el.textContent = t.label;
+      };
+    }
+  }, 300);
+});
 </script>
 
 </body>
