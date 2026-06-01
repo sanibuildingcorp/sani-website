@@ -2632,6 +2632,8 @@ function logout() {
 function showApp() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").classList.add("show");
+  var fab = document.getElementById("send-link-fab");
+  if (fab) fab.style.display = "flex";
   renderTabs();
   loadEstimates();
 }
@@ -5081,6 +5083,7 @@ if (document.readyState === 'loading') {
 
 <!-- Floating Button -->
 <button id="send-link-fab" onclick="openSendLinkModal()" style="
+  display:none;
   position:fixed;
   bottom:calc(24px + env(safe-area-inset-bottom, 0px));
   right:20px;
@@ -5215,9 +5218,12 @@ function closeSendLinkModal() {
 }
 
 // Close on overlay click
-document.getElementById('send-link-overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeSendLinkModal();
-});
+(function() {
+  var ov = document.getElementById('send-link-overlay');
+  if (ov) ov.addEventListener('click', function(e) {
+    if (e.target === this) closeSendLinkModal();
+  });
+})();
 
 function getSMSMessage(name) {
   var first = name ? name.split(' ')[0] : '';
