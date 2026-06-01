@@ -1,0 +1,38 @@
+{
+  "name": "Sani Building Corp",
+  "short_name": "SBC Dashboard",
+  "description": "Contractor dashboard — estimates, handyman bookings, SEO",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#06101e",
+  "theme_color": "#0f1f33",
+  "icons": [
+    {
+      "src": "/images/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Handyman Bookings",
+      "url": "/dashboard#handyman",
+      "description": "View handyman bookings"
+    },
+    {
+      "name": "New Estimates",
+      "url": "/dashboard#new",
+      "description": "View new estimate requests"
+    }
+  ]
+}
