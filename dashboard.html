@@ -7,6 +7,13 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
 
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SBC Dashboard">
+<meta name="theme-color" content="#0f1f33">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/images/pwa-icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -2046,6 +2053,234 @@ body {
 .seo-pos.pos-mid { background:var(--warn-bg); color:var(--warn); }
 .seo-pos.pos-bad { background:var(--bad-bg); color:var(--bad); }
 /* END SEO BRAIN TAB STYLES */
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE / PWA OVERHAUL
+   ═══════════════════════════════════════════════════════ */
+
+/* Safe area for notch/home-bar */
+:root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
+
+@media (max-width: 640px) {
+  /* Topbar — compact on mobile */
+  .topbar {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+  .brand-mark { font-size: 15px; letter-spacing: 2px; }
+  .topbar-btn {
+    padding: 8px 10px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Tabs — full-width scrollable, bigger tap targets */
+  .tabs-row {
+    padding: 0;
+    gap: 0;
+  }
+  .tab {
+    padding: 14px 14px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 72px;
+  }
+  .tab-count {
+    font-size: 10px;
+    padding: 1px 7px;
+  }
+
+  /* List padding */
+  .list-section { padding: 14px; }
+
+  /* Cards — better mobile spacing */
+  .est-card { padding: 14px 16px; gap: 12px; }
+  .est-title { font-size: 15px; }
+  .est-meta { font-size: 12px; gap: 8px; }
+  .est-total { font-size: 18px; }
+  .handyman-card { padding: 12px 14px; gap: 12px; }
+  .handyman-card .h-icon { width: 44px; height: 44px; font-size: 24px; border-radius: 10px; }
+  .handyman-card .h-total { font-size: 15px; }
+
+  /* Edit modal — full screen on mobile */
+  .modal-backdrop { padding: 0; }
+  .modal-card {
+    margin: 0;
+    border-radius: 0;
+    min-height: 100vh;
+    padding: 16px;
+    border: none;
+  }
+  .invoice-modal-card {
+    margin: 0;
+    border-radius: 0;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  .h-modal-card {
+    margin: 0;
+    border-radius: 0;
+    min-height: 100vh;
+    padding: 16px 14px;
+    border: none;
+  }
+
+  /* Modal header */
+  .modal-head { margin-bottom: 14px; padding-bottom: 12px; }
+  .modal-head h2 { font-size: 18px; letter-spacing: 1.5px; }
+  .modal-head .ref-sub { font-size: 10px; }
+
+  /* Handyman modal header — stack on mobile */
+  .modal-head > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+  }
+  .h-send-conf-btn { font-size: 11px; padding: 7px 10px; }
+  .h-print-btn { font-size: 11px; padding: 7px 10px; }
+
+  /* Alert bar — stack on mobile */
+  .h-alert-bar { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 14px; }
+  .h-alert-urgency { align-self: flex-start; }
+
+  /* Hero grid — already stacks, just tighten */
+  .h-hero-grid { gap: 10px; margin-bottom: 12px; }
+  .h-hero-block { padding: 12px; }
+
+  /* Action grid (tools/materials) */
+  .h-action-grid { gap: 10px; margin-bottom: 12px; }
+  .h-action-block { padding: 12px 14px; }
+  .h-action-item { font-size: 13px; }
+
+  /* Customer row — 2 col on mobile */
+  .h-customer-row { gap: 8px; padding: 10px 12px; margin-bottom: 12px; }
+
+  /* Estimate bar — 2 col on mobile */
+  .h-estimate-bar { gap: 8px; padding: 10px 12px; margin-bottom: 12px; }
+  .h-est-bar-cell .ebv { font-size: 14px; }
+
+  /* Status buttons — wrap and bigger */
+  .h-status-row { gap: 6px; }
+  .h-status-btn { padding: 10px 12px; font-size: 11px; flex: 1; text-align: center; }
+
+  /* Form fields — bigger tap targets */
+  .field input, .field textarea, .field select {
+    padding: 14px;
+    font-size: 16px; /* prevents iOS zoom */
+  }
+  .field label { font-size: 10px; }
+
+  /* Totals box */
+  .totals-box { padding: 14px; }
+  .tot-line { font-size: 13px; }
+  .tot-line.grand { font-size: 18px; }
+
+  /* Modal actions — stack */
+  .modal-actions { flex-direction: column-reverse; gap: 8px; padding-top: 16px; margin-top: 20px; }
+  .modal-actions-right { flex-direction: column; width: 100%; }
+  .btn-primary, .btn-secondary, .btn-danger {
+    width: 100%;
+    padding: 14px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  /* CV panel */
+  .cv-panel { padding: 14px 16px; }
+
+  /* Line items table — compress on mobile */
+  .lines-table th.col-unit,
+  .lines-table td:nth-child(3) { display: none; }
+  .lines-table input { padding: 6px 8px; font-size: 13px; }
+
+  /* Invoice modal */
+  .inv-type-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Confirm modal */
+  .confirm-modal { border-radius: 14px 14px 0 0; margin-top: auto; }
+  .confirm-overlay { align-items: flex-end; padding: 0; }
+  .confirm-body { padding: 18px 20px; }
+  .confirm-footer { padding: 14px 20px; }
+
+  /* SEO table — hide less important cols */
+  .seo-table th:nth-child(4),
+  .seo-table td:nth-child(4) { display: none; }
+
+  /* Bottom padding so content clears the safe area */
+  .list-section { padding-bottom: calc(20px + var(--safe-bottom)); }
+}
+
+/* PWA Install Banner */
+#pwa-banner {
+  display: none;
+  position: fixed;
+  bottom: calc(16px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  border: 1px solid var(--gold);
+  border-radius: 14px;
+  padding: 14px 18px;
+  width: calc(100vw - 32px);
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 999;
+  display: none;
+  align-items: center;
+  gap: 14px;
+}
+#pwa-banner.visible { display: flex; }
+#pwa-banner .pwa-icon {
+  width: 48px; height: 48px;
+  background: var(--navy);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+}
+#pwa-banner .pwa-text { flex: 1; }
+#pwa-banner .pwa-text strong {
+  display: block;
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+#pwa-banner .pwa-text span {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+#pwa-banner .pwa-install {
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  font-family: var(--body);
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#pwa-banner .pwa-dismiss {
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -4455,5 +4690,78 @@ if (typeof renderList === "function") {
   document.head.appendChild(st);
 })();
 </script>
+
+<!-- PWA Install Banner -->
+<div id="pwa-banner">
+  <div class="pwa-icon">🏗️</div>
+  <div class="pwa-text">
+    <strong>Add to Home Screen</strong>
+    <span>Install SBC Dashboard as an app</span>
+  </div>
+  <button class="pwa-install" id="pwa-install-btn">Install</button>
+  <button class="pwa-dismiss" onclick="dismissPwaBanner()">×</button>
+</div>
+
+
+<script>
+/* ═══════ PWA: Service Worker + Install Prompt ═══════ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').then(function(reg) {
+      console.log('SW registered:', reg.scope);
+    }).catch(function(err) {
+      console.log('SW failed:', err);
+    });
+  });
+}
+
+var deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Only show if not already installed and not dismissed recently
+  var dismissed = localStorage.getItem('pwa-banner-dismissed');
+  var oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+  if (!dismissed || Number(dismissed) < oneDayAgo) {
+    setTimeout(function() {
+      document.getElementById('pwa-banner').classList.add('visible');
+    }, 3000);
+  }
+});
+
+document.getElementById('pwa-install-btn').addEventListener('click', function() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(choice) {
+    if (choice.outcome === 'accepted') {
+      document.getElementById('pwa-banner').classList.remove('visible');
+    }
+    deferredPrompt = null;
+  });
+});
+
+function dismissPwaBanner() {
+  document.getElementById('pwa-banner').classList.remove('visible');
+  localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
+}
+
+window.addEventListener('appinstalled', function() {
+  document.getElementById('pwa-banner').classList.remove('visible');
+  deferredPrompt = null;
+});
+
+/* Deep-link tab from URL hash on load */
+window.addEventListener('load', function() {
+  if (location.hash) {
+    var tabId = location.hash.replace('#', '');
+    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','declined','handyman','seo','content','visitors'];
+    if (validTabs.includes(tabId)) {
+      activeTab = tabId;
+    }
+  }
+});
+</script>
+
 </body>
 </html>
