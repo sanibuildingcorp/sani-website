@@ -3,696 +3,602 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Get Your Free Estimate — Sani Building Corp</title>
-<meta name="description" content="Get a free renovation estimate from Sani Building Corp — Brooklyn's top-rated contractor. Takes 2 minutes. 4.9★ rated with 62 reviews.">
-
-<!-- Open Graph (iMessage, WhatsApp, Facebook previews) -->
-<meta property="og:type"        content="website">
-<meta property="og:url"         content="https://www.sanibuildingcorp.com/estimate">
-<meta property="og:title"       content="Get Your Free Renovation Estimate 🏗️">
-<meta property="og:description" content="Brooklyn's top-rated contractor · 4.9★ · 62 reviews · Takes 2 minutes to fill out">
-<meta property="og:image"       content="https://www.sanibuildingcorp.com/images/og/estimate-preview.png">
-<meta property="og:image:width"  content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:site_name"   content="Sani Building Corp">
-
-<!-- Twitter Card -->
-<meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="Get Your Free Renovation Estimate 🏗️">
-<meta name="twitter:description" content="Brooklyn's top-rated contractor · 4.9★ · Takes 2 minutes">
-<meta name="twitter:image"       content="https://www.sanibuildingcorp.com/images/og/estimate-preview.png">
-
-<!-- iMessage uses og:image — Apple also checks apple-touch-icon -->
-<link rel="apple-touch-icon" href="/images/pwa-icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Get Your Free Estimate | Sani Building Corp</title>
+<meta name="description" content="Get a personalized renovation estimate from Sani Building Corp. NYC's trusted contractor.">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#c9a84c">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --navy: #0d1b2a;
-    --navy2: #1a2d42;
-    --gold: #c9a84c;
-    --gold-light: #e8c97a;
-    --cream: #f5f0e8;
-    --gray: #8a9bb0;
-    --border: rgba(201,168,76,0.2);
-    --error: #e74c3c;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--navy);
-    color: var(--cream);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(ellipse at 15% 50%, rgba(201,168,76,0.07) 0%, transparent 55%),
-      radial-gradient(ellipse at 85% 15%, rgba(201,168,76,0.05) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .wrap {
-    position: relative;
-    z-index: 1;
-    max-width: 820px;
-    margin: 0 auto;
-    padding: 44px 20px 90px;
-  }
-
-  /* ── Header ── */
-  header { text-align: center; margin-bottom: 44px; animation: fadeDown .6s ease both; }
-
-  .logo-bar {
-    display: flex; align-items: center; justify-content: center; gap: 11px; margin-bottom: 18px;
-  }
-  .logo-icon {
-    width: 42px; height: 42px; background: var(--gold); border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; font-size: 21px;
-  }
-  .company { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; color: var(--gold); }
-
-  h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(38px, 9vw, 66px);
-    letter-spacing: 2px; line-height: 1; color: #fff; margin-bottom: 10px;
-  }
-  h1 span { color: var(--gold); }
-
-  .divider { width: 56px; height: 2px; background: var(--gold); margin: 16px auto; border-radius: 2px; }
-  .sub { color: var(--gray); font-size: 14px; font-weight: 300; letter-spacing: .3px; }
-
-  /* ── Card ── */
-  .card {
-    background: var(--navy2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 34px 30px;
-    margin-bottom: 22px;
-    animation: fadeUp .55s ease both;
-  }
-
-  .card-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 20px; letter-spacing: 2px; color: var(--gold);
-    margin-bottom: 22px; display: flex; align-items: center; gap: 9px;
-  }
-  .card-title::before {
-    content: ''; display: inline-block;
-    width: 4px; height: 20px; background: var(--gold); border-radius: 2px;
-  }
-
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .full { grid-column: 1 / -1; }
-
-  .fg { display: flex; flex-direction: column; gap: 7px; }
-
-  label {
-    font-size: 11px; font-weight: 600; letter-spacing: 1.8px;
-    text-transform: uppercase; color: var(--gray);
-  }
-
-  input, select, textarea {
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(201,168,76,.25);
-    border-radius: 10px;
-    color: var(--cream);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    padding: 12px 15px;
-    transition: border-color .2s, background .2s;
-    outline: none;
-    width: 100%;
-    appearance: none;
-  }
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--gold);
-    background: rgba(201,168,76,.06);
-  }
-  select option { background: #1a2d42; color: var(--cream); }
-  textarea { resize: vertical; min-height: 88px; }
-  input::placeholder, textarea::placeholder { color: rgba(138,155,176,.45); }
-
-  /* ── Button ── */
-  .btn-gen {
-    width: 100%; padding: 17px; margin-top: 8px;
-    background: var(--gold); color: var(--navy);
-    border: none; border-radius: 12px; cursor: pointer;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 21px; letter-spacing: 3px;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    transition: background .2s, transform .1s;
-  }
-  .btn-gen:hover:not(:disabled) { background: var(--gold-light); transform: translateY(-1px); }
-  .btn-gen:active { transform: translateY(0); }
-  .btn-gen:disabled { opacity: .5; cursor: not-allowed; }
-
-  /* ── Spinner ── */
-  .spinner {
-    width: 22px; height: 22px;
-    border: 3px solid rgba(13,27,42,.3);
-    border-top-color: #0d1b2a;
-    border-radius: 50%;
-    animation: spin .75s linear infinite;
-  }
-
-  /* ── Error ── */
-  .err {
-    display: none; margin-top: 13px;
-    background: rgba(231,76,60,.1); border: 1px solid rgba(231,76,60,.35);
-    border-radius: 10px; padding: 13px 16px;
-    color: var(--error); font-size: 14px;
-  }
-  .err.show { display: block; }
-
-  /* ── Result ── */
-  #result { display: none; }
-  #result.show { display: block; animation: fadeUp .5s ease both; }
-
-  .est-head {
-    background: linear-gradient(135deg, #c9a84c 0%, #9a6f2a 100%);
-    border-radius: 16px 16px 0 0;
-    padding: 26px 32px;
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 14px;
-  }
-  .est-total-label {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 11px; letter-spacing: 3px; color: rgba(13,27,42,.65); margin-bottom: 3px;
-  }
-  .est-total {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 52px; color: #0d1b2a; letter-spacing: 1px; line-height: 1;
-  }
-  .est-badges { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-  .badge {
-    background: rgba(13,27,42,.15); border-radius: 8px; padding: 8px 14px; text-align: center;
-  }
-  .badge-lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: rgba(13,27,42,.6); font-weight: 600; }
-  .badge-val { font-family: 'DM Mono', monospace; font-size: 13px; color: #0d1b2a; font-weight: 500; margin-top: 2px; }
-
-  .est-body {
-    background: var(--navy2); border: 1px solid var(--border);
-    border-top: none; border-radius: 0 0 16px 16px;
-  }
-
-  .sec-head {
-    padding: 16px 32px 12px; border-bottom: 1px solid var(--border);
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .sec-name { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; }
-  .sec-total { font-family: 'DM Mono', monospace; font-size: 15px; color: var(--gold); font-weight: 500; }
-
-  .items { padding: 8px 32px; }
-
-  .cat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 3px; }
-  .cat-lbl { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); font-weight: 600; }
-  .cat-amt { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--gold); }
-
-  .item-row { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(201,168,76,.08); }
-  .item-name { font-size: 14px; color: var(--cream); flex: 1; }
-  .item-detail { font-size: 12px; color: var(--gray); font-family: 'DM Mono', monospace; margin: 0 12px; white-space: nowrap; }
-  .item-cost { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--cream); font-weight: 500; min-width: 72px; text-align: right; }
-
-  .totals { margin: 14px 32px 0; border-top: 1px solid var(--border); padding-top: 14px; }
-  .t-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; color: var(--gray); }
-  .t-grand {
-    display: flex; justify-content: space-between;
-    font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--gold);
-    border-top: 1px solid var(--border); margin-top: 10px; padding-top: 14px;
-  }
-  .est-note { margin: 10px 0 0; font-size: 13px; color: var(--gray); font-style: italic; }
-
-  .disclaimer {
-    margin: 14px 32px 24px;
-    background: rgba(201,168,76,.06);
-    border-left: 3px solid var(--gold);
-    border-radius: 0 8px 8px 0;
-    padding: 11px 14px; font-size: 12px; color: var(--gray); line-height: 1.65;
-  }
-
-  /* ── Action row ── */
-  .actions { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
-  .btn-sec {
-    flex: 1; min-width: 110px; padding: 13px;
-    background: transparent; border: 1px solid var(--border); border-radius: 10px;
-    color: var(--gold); cursor: pointer;
-    font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 2px;
-    transition: background .2s, border-color .2s;
-  }
-  .btn-sec:hover { background: rgba(201,168,76,.08); border-color: var(--gold); }
-  .btn-pri {
-    flex: 2; min-width: 150px; padding: 13px;
-    background: var(--gold); border: none; border-radius: 10px;
-    color: var(--navy); cursor: pointer;
-    font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 2px;
-    transition: background .2s;
-  }
-  .btn-pri:hover { background: var(--gold-light); }
-
-  /* ── Animations ── */
-  @keyframes fadeDown { from { opacity:0; transform:translateY(-18px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes fadeUp   { from { opacity:0; transform:translateY(16px);  } to { opacity:1; transform:translateY(0); } }
-  @keyframes spin     { to { transform:rotate(360deg); } }
-
-  /* ── Responsive ── */
-  @media (max-width: 580px) {
-    .grid { grid-template-columns: 1fr; }
-    .full { grid-column: 1; }
-    .card { padding: 22px 18px; }
-    .est-head { padding: 20px; }
-    .items, .sec-head, .totals, .disclaimer { padding-left: 18px; padding-right: 18px; }
-    .actions { flex-direction: column; }
-  }
-
-  @media print {
-    body { background: #fff; color: #000; }
-    header, #form-card, .actions { display: none !important; }
-    .est-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-
-  /* ── WELCOME SPLASH ── */
-  #welcome-splash {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 24px;
-    text-align: center;
-    animation: fadeUp 0.6s ease both;
-  }
-  .splash-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(201,168,76,0.12);
-    border: 1px solid rgba(201,168,76,0.3);
-    border-radius: 30px;
-    padding: 6px 16px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    color: var(--gold);
-    text-transform: uppercase;
-    margin-bottom: 28px;
-  }
-  .splash-logo {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, var(--navy2), #243d57);
-    border: 2px solid rgba(201,168,76,0.4);
-    border-radius: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-    margin: 0 auto 24px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  }
-  .splash-company {
-    font-family: 'Bebas Neue', Arial, sans-serif;
-    font-size: 13px;
-    letter-spacing: 4px;
-    color: var(--gold);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .splash-title {
-    font-family: 'Bebas Neue', Arial, sans-serif;
-    font-size: clamp(32px, 8vw, 48px);
-    letter-spacing: 2px;
-    color: var(--cream);
-    line-height: 1.1;
-    margin-bottom: 16px;
-  }
-  .splash-title span { color: var(--gold); }
-  .splash-subtitle {
-    font-size: 16px;
-    color: var(--gray);
-    line-height: 1.6;
-    max-width: 340px;
-    margin: 0 auto 32px;
-  }
-  .splash-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-width: 320px;
-    margin: 0 auto 36px;
-    text-align: left;
-  }
-  .splash-step {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-  }
-  .splash-step-num {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--gold);
-    color: var(--navy);
-    font-weight: 800;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .splash-step-text {
-    font-size: 14px;
-    color: var(--cream);
-    font-weight: 500;
-  }
-  .splash-step-text span {
-    display: block;
-    font-size: 12px;
-    color: var(--gray);
-    margin-top: 2px;
-    font-weight: 400;
-  }
-  .splash-stars {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    margin-bottom: 28px;
-    font-size: 13px;
-    color: var(--gray);
-  }
-  .splash-stars .stars { color: #fbbf24; letter-spacing: 2px; }
-  .splash-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    background: linear-gradient(135deg, var(--gold), #b8922e);
-    color: var(--navy);
-    border: none;
-    border-radius: 14px;
-    padding: 18px 40px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    box-shadow: 0 8px 28px rgba(201,168,76,0.35);
-    transition: transform .15s, box-shadow .15s;
-    -webkit-tap-highlight-color: transparent;
-    width: 100%;
-    max-width: 320px;
-    justify-content: center;
-  }
-  .splash-cta:hover, .splash-cta:active {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 36px rgba(201,168,76,0.45);
-  }
-  .splash-fine {
-    font-size: 11px;
-    color: var(--gray);
-    margin-top: 14px;
-    opacity: 0.7;
-  }
-
+:root{--navy:#0d1b2a;--navy2:#1a2d42;--gold:#c9a84c;--gold-dark:#9a6f2a;--cream:#f5f0e8;--gray:#8a9bb0;--border:rgba(201,168,76,0.2);--success:#2ecc71}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--cream);min-height:100vh;-webkit-font-smoothing:antialiased}
+.topbar{padding:18px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(13,27,42,.9);position:sticky;top:0;z-index:50}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--gold);text-decoration:none}
+.logo span{color:var(--cream)}
+.help{font-size:13px;color:var(--cream);text-decoration:none;opacity:.85}
+.help:hover{opacity:1;color:var(--gold)}
+#site-menu-wrap{transition:max-height .35s ease,opacity .25s ease;overflow:hidden;max-height:200px;opacity:1}
+#site-menu-wrap.hidden{max-height:0;opacity:0;pointer-events:none}
+#site-menu-wrap nav{position:relative!important;top:auto!important}
+.wrap{max-width:640px;margin:0 auto;padding:24px 20px 60px}
+.progress{margin-bottom:20px}
+.progress-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.progress-step{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:3px;color:var(--gold);text-transform:uppercase}
+.progress-count{font-size:12px;color:var(--gray);font-variant-numeric:tabular-nums}
+.progress-track{height:3px;background:rgba(201,168,76,.15);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-dark));border-radius:2px;transition:width .5s cubic-bezier(.4,0,.2,1);width:12.5%}
+.card{background:var(--navy2);border:1px solid var(--border);border-radius:18px;padding:34px 30px;box-shadow:0 12px 40px rgba(0,0,0,.25);min-height:440px;display:flex;flex-direction:column}
+.step{display:none;flex-direction:column;flex:1;animation:fadeIn .4s cubic-bezier(.16,1,.3,1)}
+.step.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.eyebrow{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
+h1.title{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1.5px;line-height:1.15;color:var(--cream);margin-bottom:10px}
+p.subtitle{font-size:14px;color:var(--gray);line-height:1.6;margin-bottom:24px;max-width:520px}
+.service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.service-btn{background:rgba(255,255,255,.04);border:1.5px solid var(--border);border-radius:12px;padding:18px 10px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;font-family:inherit;color:var(--cream);min-height:100px;position:relative;overflow:hidden}
+.service-btn:hover{border-color:var(--gold);transform:translateY(-2px)}
+.service-btn.selected{border-color:var(--gold);background:rgba(201,168,76,.15);transform:translateY(-2px);box-shadow:0 4px 16px rgba(201,168,76,.18)}
+.service-icon{width:26px;height:26px;color:var(--gold);flex-shrink:0}
+.service-label{font-size:12px;font-weight:600;line-height:1.25}
+.multi-hint{font-size:11px;color:var(--gray);margin-bottom:14px;font-style:italic}
+.option-stack{display:flex;flex-direction:column;gap:9px}
+.option-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.option-btn{background:rgba(255,255,255,.04);border:1.5px solid var(--border);border-radius:10px;padding:16px 18px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;color:var(--cream);text-align:left;transition:all .18s;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.option-btn:hover{border-color:var(--gold);background:rgba(201,168,76,.06)}
+.option-btn.selected{border-color:var(--gold);background:rgba(201,168,76,.18)}
+.option-check{width:18px;height:18px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;opacity:0;flex-shrink:0}
+.option-check svg{width:10px;height:10px;color:var(--navy)}
+.option-btn.selected .option-check{opacity:1}
+.input-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.input-label{font-size:12px;font-weight:600;color:var(--cream);letter-spacing:.5px;text-transform:uppercase}
+.input-label .req{color:var(--gold)}
+.input-field,.textarea-field{background:rgba(255,255,255,.05);border:1.5px solid var(--border);border-radius:8px;padding:13px 14px;font-family:inherit;font-size:14px;color:var(--cream);width:100%;transition:all .18s}
+.input-field:focus,.textarea-field:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.08)}
+.textarea-field{min-height:130px;resize:vertical;line-height:1.5}
+.input-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.input-field::placeholder,.textarea-field::placeholder{color:rgba(245,240,232,.35)}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:30px 20px;text-align:center;background:rgba(255,255,255,.02);cursor:pointer;transition:all .2s}
+.upload-zone:hover{border-color:var(--gold);background:rgba(201,168,76,.05)}
+.upload-icon{width:38px;height:38px;color:var(--gold);margin:0 auto 10px}
+.upload-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--cream)}
+.upload-hint{font-size:12px;color:var(--gray);margin-top:4px}
+#photo-input{display:none}
+.photo-preview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.photo-thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:rgba(0,0,0,.3)}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-remove{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;border:none;cursor:pointer;font-size:14px;line-height:1}
+.skip-link{display:inline-block;margin-top:12px;font-size:12px;color:var(--gray);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:inherit}
+.skip-link:hover{color:var(--gold)}
+.review-block{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:10px}
+.review-row{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:7px 0;font-size:13px}
+.review-row + .review-row{border-top:1px solid rgba(201,168,76,.1)}
+.review-label{color:var(--gray);text-transform:uppercase;letter-spacing:.5px;font-size:11px;font-weight:600;flex-shrink:0;padding-top:2px}
+.review-value{color:var(--cream);text-align:right;font-weight:500;line-height:1.5;word-break:break-word}
+.step-nav{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:28px;gap:12px}
+.btn-back{background:none;border:none;color:var(--gray);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;padding:10px 4px;transition:color .18s}
+.btn-back:hover{color:var(--cream)}
+.btn-back:disabled{opacity:0;pointer-events:none}
+.btn-continue{background:var(--gold);color:var(--navy);border:none;padding:14px 30px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s;text-transform:uppercase}
+.btn-continue:hover:not(:disabled){background:var(--gold-dark);color:var(--cream);transform:translateY(-1px);box-shadow:0 6px 18px rgba(201,168,76,.3)}
+.btn-continue:disabled{opacity:.35;cursor:not-allowed}
+.btn-continue.submit{padding:15px 36px}
+.success-screen{text-align:center;padding:30px 16px}
+.success-icon{width:70px;height:70px;background:rgba(46,204,113,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;position:relative}
+.success-icon svg{width:34px;height:34px;color:var(--success)}
+.success-icon::after{content:'';position:absolute;inset:-8px;border:1px solid rgba(46,204,113,.3);border-radius:50%}
+.success-title{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:2px;margin-bottom:12px}
+.success-body{font-size:14px;line-height:1.6;color:var(--gray);max-width:440px;margin:0 auto 26px}
+.success-meta{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:18px 22px;max-width:360px;margin:0 auto;text-align:left}
+.success-meta-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0}
+.success-meta-label{color:var(--gray)}
+.success-meta-value{color:var(--gold);font-weight:600}
+.ai-loading{display:flex;align-items:center;justify-content:center;flex-direction:column;padding:60px 20px;flex:1}
+.loading-dots{display:flex;gap:8px;margin-bottom:18px}
+.loading-dot{width:9px;height:9px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite}
+.loading-dot:nth-child(2){animation-delay:.15s}
+.loading-dot:nth-child(3){animation-delay:.3s}
+@keyframes pulse{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+.loading-text{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--gray)}
+.estimate-footer{text-align:center;padding:22px 24px 16px;font-size:12px;color:var(--gray);max-width:640px;margin:0 auto}
+.trust-row{display:flex;justify-content:center;gap:22px;margin-bottom:10px;flex-wrap:wrap}
+.trust-item{display:flex;align-items:center;gap:5px;font-size:12px}
+.estimate-footer a{color:var(--gold);text-decoration:none}
+@media(max-width:640px){
+.topbar{padding:14px 18px}.logo{font-size:17px}.wrap{padding:18px 14px 50px}.card{padding:26px 20px;min-height:400px}
+h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-grid{grid-template-columns:repeat(2,1fr);gap:9px}
+.service-btn{min-height:92px;padding:14px 8px}.option-grid-2{grid-template-columns:1fr}.input-grid-2{grid-template-columns:1fr}
+.photo-preview-grid{grid-template-columns:repeat(3,1fr)}.btn-continue{padding:12px 22px;font-size:13px}
+.review-row{flex-direction:column;gap:4px}.review-value{text-align:left}.help{display:none}
+}
+.hero-banner{background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.02));border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px}
+.hero-banner-icon{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+.hero-banner-text{flex:1}.hero-banner-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--cream);margin-bottom:2px}
+.hero-banner-sub{font-size:11px;color:var(--gray);line-height:1.4}
+.scan-stage{position:relative;width:240px;height:240px;margin:14px auto 18px}
+.scan-photo{position:absolute;inset:30px;border-radius:16px;overflow:hidden;border:2px solid rgba(201,168,76,.4);box-shadow:0 0 40px rgba(201,168,76,.2);background:rgba(0,0,0,.4)}
+.scan-photo img{width:100%;height:100%;object-fit:cover}
+.scan-ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;border-top-color:var(--gold);border-right-color:var(--gold);animation:scanSpin 1.4s linear infinite}
+.scan-ring-2{position:absolute;inset:10px;border-radius:50%;border:1px solid transparent;border-bottom-color:rgba(201,168,76,.5);border-left-color:rgba(201,168,76,.5);animation:scanSpin 2s linear infinite reverse}
+.scan-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold);animation:scanParticle 2s ease-in-out infinite}
+.scan-particle:nth-child(1){top:10%;left:50%;animation-delay:0s}.scan-particle:nth-child(2){top:50%;right:8%;animation-delay:.4s}
+.scan-particle:nth-child(3){bottom:14%;left:45%;animation-delay:.8s}.scan-particle:nth-child(4){top:48%;left:8%;animation-delay:1.2s}
+.scan-particle:nth-child(5){top:24%;right:22%;animation-delay:1.6s}
+@keyframes scanSpin{to{transform:rotate(360deg)}}
+@keyframes scanParticle{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1.4)}}
+.scan-label{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-top:10px}
+.scan-progress{font-size:11px;color:var(--gray);text-align:center;margin-top:6px;font-variant-numeric:tabular-nums}
+.analysis-stack{display:flex;flex-direction:column;gap:12px;margin-bottom:8px;max-height:420px;overflow-y:auto;padding-right:4px}
+.analysis-stack::-webkit-scrollbar{width:5px}.analysis-stack::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:3px}
+.analysis-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:16px 18px;animation:fadeIn .5s ease}
+.analysis-card.safety{border-color:rgba(231,76,60,.5);background:rgba(231,76,60,.06)}
+.analysis-card-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.analysis-photo-thumb{width:50px;height:50px;border-radius:10px;overflow:hidden;flex-shrink:0;border:1px solid var(--border)}
+.analysis-photo-thumb img{width:100%;height:100%;object-fit:cover}
+.analysis-card-title{flex:1;min-width:0}
+.analysis-eyebrow{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:3px}
+.analysis-detected{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.5px;color:var(--cream);line-height:1.2}
+.confidence-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+.confidence-pill.high{background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3)}
+.confidence-pill.medium{background:rgba(241,196,15,.15);color:#f1c40f;border:1px solid rgba(241,196,15,.3)}
+.confidence-pill.low{background:rgba(149,165,166,.15);color:#95a5a6;border:1px solid rgba(149,165,166,.3)}
+.confidence-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.analysis-row{padding:8px 0;border-top:1px solid rgba(201,168,76,.1);display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.analysis-row-label{font-size:10px;letter-spacing:1.5px;color:var(--gray);text-transform:uppercase;font-weight:600;flex-shrink:0;padding-top:2px;min-width:88px}
+.analysis-row-value{font-size:13px;color:var(--cream);line-height:1.5;text-align:right;flex:1}
+.analysis-row-value.action{color:var(--gold);font-weight:500}
+.safety-banner{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);border-radius:10px;padding:11px 13px;margin-top:10px;display:flex;gap:10px;align-items:flex-start}
+.safety-banner-icon{font-size:18px;flex-shrink:0;line-height:1.2}
+.safety-banner-text{font-size:12px;color:#ff8a7a;line-height:1.5}
+.safety-banner-text strong{color:#ff5c47;font-weight:600}
+.disclaimer-note{font-size:11px;color:var(--gray);line-height:1.5;padding:10px 12px;background:rgba(255,255,255,.02);border-radius:8px;margin-top:10px;border-left:2px solid var(--gold)}
+.no-photos-state{text-align:center;padding:30px 16px}
+.no-photos-icon{font-size:40px;margin-bottom:12px;opacity:.4}
+.no-photos-text{font-size:13px;color:var(--gray);line-height:1.6;max-width:280px;margin:0 auto}
+.no-photos-text strong{color:var(--cream)}
+@media(max-width:640px){.scan-stage{width:200px;height:200px}.scan-photo{inset:24px}.analysis-row{flex-direction:column;gap:4px}.analysis-row-value{text-align:left}.analysis-row-label{min-width:0}}
 </style>
+<link rel="stylesheet" href="partials/site.css">
 </head>
 <body>
+<header class="topbar">
+  <a href="/" class="logo">SANI <span>BUILDING CORP</span></a>
+  <a href="tel:+13322770990" class="help">📞 (332) 277-0990</a>
+</header>
+<div id="site-menu-wrap"><div id="site-menu"></div></div>
 <div class="wrap">
+  <div class="progress">
+    <div class="progress-meta">
+      <div class="progress-step" id="step-label">Project Type</div>
+      <div class="progress-count"><span id="step-num">1</span> of 9</div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+  <div class="card">
 
-
-  <!-- ═══ WELCOME SPLASH ═══ -->
-  <div id="welcome-splash">
-    <div class="splash-badge">✦ Free · No Obligation</div>
-    <div class="splash-logo">🏗️</div>
-    <div class="splash-company">Sani Building Corp</div>
-    <h1 class="splash-title">Get Your<br><span>Free Estimate</span></h1>
-    <p class="splash-subtitle">Tell us about your project and we'll send you a detailed cost estimate within 24 hours.</p>
-
-    <div class="splash-stars">
-      <span class="stars">★★★★★</span>
-      <span>4.9 rated · 62 reviews · Brooklyn, NYC</span>
+    <!-- STEP 1: Service Selection — MULTI-SELECT -->
+    <div class="step active" data-step="1">
+      <div class="eyebrow">Step 1</div>
+      <h1 class="title">What kind of project?</h1>
+      <p class="subtitle">Select all that apply — we'll tailor the rest from there.</p>
+      <div class="multi-hint">You can select more than one</div>
+      <div class="service-grid" id="service-grid"></div>
+      <div class="step-nav">
+        <button class="btn-back" disabled>Back</button>
+        <button class="btn-continue" id="continue-1" disabled onclick="startStep2()">Continue →</button>
+      </div>
     </div>
 
-    <div class="splash-steps">
-      <div class="splash-step">
-        <div class="splash-step-num">1</div>
-        <div class="splash-step-text">Describe your project
-          <span>Takes about 2 minutes</span>
+    <!-- STEP 2: AI Questions -->
+    <div class="step" data-step="2">
+      <div class="eyebrow" id="step2-eyebrow">Step 2 · Project Details</div>
+      <h1 class="title" id="step2-title">A few quick questions</h1>
+      <p class="subtitle">Just enough so we can give you real numbers.</p>
+      <div id="ai-question-container"></div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="goToStep(1)">← Back</button>
+        <button class="btn-continue" id="continue-2" disabled onclick="answerAIQuestion()">Continue →</button>
+      </div>
+    </div>
+
+    <!-- AI LOADING -->
+    <div class="step" data-step="ai-loading">
+      <div class="ai-loading">
+        <div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>
+        <div class="loading-text">Preparing next question...</div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Property Type -->
+    <div class="step" data-step="3">
+      <div class="eyebrow">Step 3</div>
+      <h1 class="title">What type of property?</h1>
+      <p class="subtitle">Different buildings have different rules.</p>
+      <div class="option-stack">
+        <button class="option-btn" data-value="Apartment / Co-op" onclick="selectOption(this,'propertyType')"><span>Apartment or Co-op</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+        <button class="option-btn" data-value="Condo" onclick="selectOption(this,'propertyType')"><span>Condo</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+        <button class="option-btn" data-value="Brownstone / Townhouse" onclick="selectOption(this,'propertyType')"><span>Brownstone or Townhouse</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+        <button class="option-btn" data-value="Single-family home" onclick="selectOption(this,'propertyType')"><span>Single-family home</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+        <button class="option-btn" data-value="Commercial space" onclick="selectOption(this,'propertyType')"><span>Commercial space</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+        <button class="option-btn" data-value="Rental / Investment property" onclick="selectOption(this,'propertyType')"><span>Rental or Investment property</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="goBackToAI()">← Back</button>
+        <button class="btn-continue" id="continue-3" disabled onclick="goToStep(4)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Description -->
+    <div class="step" data-step="4">
+      <div class="eyebrow">Step 4</div>
+      <h1 class="title">Anything else we should know?</h1>
+      <p class="subtitle">Style preferences, deadlines, special requirements — whatever helps.</p>
+      <div class="input-group">
+        <label class="input-label" for="description-field">In your own words</label>
+        <textarea class="textarea-field" id="description-field" placeholder="For example: 'Looking for modern minimal look. Building requires weekday work 9–5 only.'"></textarea>
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="goToStep(3)">← Back</button>
+        <button class="btn-continue" onclick="goToStep(5)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Photos -->
+    <div class="step" data-step="5">
+      <div class="eyebrow">Step 5 · Optional</div>
+      <h1 class="title">Got any photos?</h1>
+      <p class="subtitle">Photos help us spot details and price it right.</p>
+      <label for="photo-input" class="upload-zone">
+        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <div class="upload-title">Tap to add photos</div>
+        <div class="upload-hint">Up to 8 photos</div>
+      </label>
+      <input type="file" id="photo-input" accept="image/*" multiple onchange="handlePhotos(event)">
+      <div class="photo-preview-grid" id="photo-preview"></div>
+      <button class="skip-link" onclick="formData.photos=[];renderPhotoPreview();goToStep(7)">No photos right now — continue</button>
+      <div class="step-nav">
+        <button class="btn-back" onclick="goToStep(4)">← Back</button>
+        <button class="btn-continue" onclick="proceedFromPhotos()">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 6: AI Photo Analysis -->
+    <div class="step" data-step="6">
+      <div class="eyebrow">Step 6 · AI Analysis</div>
+      <h1 class="title" id="analysis-title">Analyzing your photos...</h1>
+      <p class="subtitle" id="analysis-subtitle">Our AI is reviewing each photo to identify the issue and suggest next steps.</p>
+      <div id="analysis-scanning">
+        <div class="scan-stage">
+          <div class="scan-ring"></div><div class="scan-ring-2"></div>
+          <div class="scan-photo"><img id="scan-photo-img" src="" alt=""></div>
+          <div class="scan-particle"></div><div class="scan-particle"></div><div class="scan-particle"></div><div class="scan-particle"></div><div class="scan-particle"></div>
+        </div>
+        <div class="scan-label" id="scan-label">Analyzing...</div>
+        <div class="scan-progress" id="scan-progress">Photo 1 of 1</div>
+      </div>
+      <div id="analysis-results" style="display:none">
+        <div class="hero-banner">
+          <div class="hero-banner-icon">🤖</div>
+          <div class="hero-banner-text">
+            <div class="hero-banner-title">AI Analysis Complete</div>
+            <div class="hero-banner-sub">Preliminary diagnosis · Final inspection always confirms scope &amp; pricing</div>
+          </div>
+        </div>
+        <div class="analysis-stack" id="analysis-cards"></div>
+        <div class="disclaimer-note">⚠️ <strong>This is a preliminary AI analysis</strong> — not a final diagnosis. Our licensed contractor will confirm scope, pricing, and any safety considerations during the on-site visit before any work begins.</div>
+      </div>
+      <div id="analysis-no-photos" style="display:none">
+        <div class="no-photos-state">
+          <div class="no-photos-icon">📸</div>
+          <div class="no-photos-text"><strong>No photos to analyze.</strong><br>That's totally fine — we'll get the details during your on-site visit.</div>
         </div>
       </div>
-      <div class="splash-step">
-        <div class="splash-step-num">2</div>
-        <div class="splash-step-text">We review & prepare your estimate
-          <span>Usually within 24 hours</span>
+      <div class="step-nav">
+        <button class="btn-back" onclick="goToStep(5)">← Back</button>
+        <button class="btn-continue" id="continue-6" onclick="goToStep(7)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 7: Timeline -->
+    <div class="step" data-step="7">
+      <div class="eyebrow">Step 7</div>
+      <h1 class="title">When would you like this done?</h1>
+      <p class="subtitle">No pressure — we'll let you know what's realistic.</p>
+      <div class="option-stack">
+        <button class="option-btn" data-value="ASAP — emergency or urgent" onclick="selectOption(this,'timeline')"><span>ASAP — urgent</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+        <button class="option-btn" data-value="Within 2 weeks" onclick="selectOption(this,'timeline')"><span>Within 2 weeks</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+        <button class="option-btn" data-value="Within a month" onclick="selectOption(this,'timeline')"><span>Within a month</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+        <button class="option-btn" data-value="1–3 months out" onclick="selectOption(this,'timeline')"><span>1–3 months out</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+        <button class="option-btn" data-value="Just exploring — no rush" onclick="selectOption(this,'timeline')"><span>Just exploring</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="goToStep(5)">← Back</button>
+        <button class="btn-continue" id="continue-7" disabled onclick="goToStep(8)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 8: Contact -->
+    <div class="step" data-step="8">
+      <div class="eyebrow">Step 8 · Almost done</div>
+      <h1 class="title">Where should we send your estimate?</h1>
+      <p class="subtitle">We'll respond within one business day.</p>
+      <div class="input-group">
+        <label class="input-label" for="name-field">Your name <span class="req">*</span></label>
+        <input type="text" class="input-field" id="name-field" placeholder="First and last" oninput="updateContact()" autocomplete="name">
+      </div>
+      <div class="input-grid-2">
+        <div class="input-group">
+          <label class="input-label" for="phone-field">Phone <span class="req">*</span></label>
+          <input type="tel" class="input-field" id="phone-field" placeholder="(212) 555-0188" oninput="updateContact()" autocomplete="tel">
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="email-field">Email <span class="req">*</span></label>
+          <input type="email" class="input-field" id="email-field" placeholder="you@example.com" oninput="updateContact()" autocomplete="email">
         </div>
       </div>
-      <div class="splash-step">
-        <div class="splash-step-num">3</div>
-        <div class="splash-step-text">You receive a detailed quote
-          <span>No obligation, completely free</span>
+      <div class="input-group">
+        <label class="input-label" for="address-field">Project address</label>
+        <input type="text" class="input-field" id="address-field" placeholder="e.g. Park Slope, Brooklyn" autocomplete="street-address">
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="goToStep(7)">← Back</button>
+        <button class="btn-continue" id="continue-8" disabled onclick="goToStep(9)">Review →</button>
+      </div>
+    </div>
+
+    <!-- STEP 9: Review -->
+    <div class="step" data-step="9">
+      <div class="eyebrow">Step 9 · One last look</div>
+      <h1 class="title">Does this look right?</h1>
+      <p class="subtitle">When you're ready, send it over.</p>
+      <div id="review-content"></div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="goToStep(8)">← Back</button>
+        <button class="btn-continue submit" id="submit-btn" onclick="submitForm()">Send My Project →</button>
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="step" data-step="success">
+      <div class="success-screen">
+        <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <h1 class="success-title">Got it — thank you.</h1>
+        <p class="success-body">Your project is in our hands. We're reviewing the details now and will reach out personally within one business day with your detailed estimate.</p>
+        <div class="success-meta">
+          <div class="success-meta-row"><span class="success-meta-label">Reference</span><span class="success-meta-value" id="ref-number">—</span></div>
+          <div class="success-meta-row"><span class="success-meta-label">Confirmation to</span><span class="success-meta-value" id="ref-email">—</span></div>
+          <div class="success-meta-row"><span class="success-meta-label">Response by</span><span class="success-meta-value" id="ref-date">—</span></div>
         </div>
+        <a href="/" class="btn-continue" style="display:inline-flex;text-decoration:none;margin:24px auto 0;padding:13px 28px">← Back to Home</a>
       </div>
     </div>
 
-    <button class="splash-cta" onclick="startEstimate()">
-      Start My Free Estimate →
-    </button>
-    <div class="splash-fine">No account needed · Takes ~2 minutes</div>
   </div>
-  <!-- ═══ END WELCOME SPLASH ═══ -->
-
-  <!-- Header (hidden until splash dismissed) -->
-  <header id="main-header" style="display:none">
-    <div class="logo-bar">
-      <div class="logo-icon">🏗️</div>
-      <span class="company">Sani Building Corp</span>
-    </div>
-    <h1>Instant <span>AI</span> Estimate</h1>
-    <div class="divider"></div>
-    <p class="sub">Describe your project — get a professional cost breakdown in seconds</p>
-  </header>
-
-  <!-- Form -->
-  <div class="card" id="form-card" style="display:none">
-    <div class="card-title">Project Details</div>
-    <div class="grid">
-      <div class="fg full">
-        <label>Project Description *</label>
-        <textarea id="desc" placeholder="e.g. Install pull-down attic stairs in garage, paint 3 bedrooms, replace kitchen countertops..."></textarea>
-      </div>
-      <div class="fg">
-        <label>Project Type</label>
-        <select id="type">
-          <option value="">Select type...</option>
-          <option>Carpentry &amp; Framing</option>
-          <option>Painting &amp; Finishing</option>
-          <option>Flooring</option>
-          <option>Kitchen Renovation</option>
-          <option>Bathroom Renovation</option>
-          <option>Roofing</option>
-          <option>Electrical</option>
-          <option>Plumbing</option>
-          <option>HVAC</option>
-          <option>Drywall</option>
-          <option>Landscaping</option>
-          <option>General Contracting</option>
-          <option>Other</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label>Approximate Size / Area</label>
-        <input id="size" type="text" placeholder="e.g. 200 sq ft, 3 rooms">
-      </div>
-      <div class="fg">
-        <label>Location (City / State)</label>
-        <input id="location" type="text" placeholder="e.g. Brooklyn, NY">
-      </div>
-      <div class="fg">
-        <label>Timeline</label>
-        <select id="timeline">
-          <option value="">Select...</option>
-          <option>ASAP / Urgent</option>
-          <option>Within 1 week</option>
-          <option>Within 1 month</option>
-          <option>Flexible</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label>Include in Estimate</label>
-        <select id="include">
-          <option value="Both material and labor">Both Material &amp; Labor</option>
-          <option value="Labor only">Labor Only</option>
-          <option value="Material only">Material Only</option>
-        </select>
-      </div>
-      <div class="fg full">
-        <label>Additional Notes (optional)</label>
-        <input id="notes" type="text" placeholder="e.g. existing structure needs removal, customer provides materials...">
-      </div>
-    </div>
-
-    <button class="btn-gen" id="genBtn" onclick="generate()">
-      ⚡ GENERATE AI ESTIMATE
-    </button>
-    <div class="err" id="errBox"></div>
-  </div>
-
-  <!-- Result -->
-  <div id="result">
-    <div class="est-head">
-      <div>
-        <div class="est-total-label">ESTIMATE TOTAL</div>
-        <div class="est-total" id="rTotal">$0.00</div>
-      </div>
-      <div class="est-badges">
-        <div class="badge"><div class="badge-lbl">Date</div><div class="badge-val" id="rDate"></div></div>
-        <div class="badge"><div class="badge-lbl">Ref #</div><div class="badge-val" id="rRef"></div></div>
-      </div>
-    </div>
-    <div class="est-body">
-      <div class="sec-head">
-        <span class="sec-name" id="rTitle">PROJECT</span>
-        <span class="sec-total" id="rSubtotal">$0.00</span>
-      </div>
-      <div class="items" id="rItems"></div>
-      <div class="totals" id="rTotals"></div>
-      <div class="disclaimer">
-        ⚠️ This is an AI-generated estimate for budgeting purposes only. Final pricing may vary based on site conditions, material availability, and scope changes. Contact Sani Building Corp for a detailed on-site quote.
-      </div>
-    </div>
-    <div class="actions">
-      <button class="btn-sec" onclick="reset()">← New Estimate</button>
-      <button class="btn-sec" onclick="window.print()">🖨 Print</button>
-      <button class="btn-pri" onclick="sendEstimate()">📩 Send to Client</button>
-    </div>
-  </div>
-
 </div>
 
+<footer class="estimate-footer">
+  <div class="trust-row">
+    <div class="trust-item">🛡 Fully Insured</div>
+    <div class="trust-item">⭐ 4.9 · 62 reviews</div>
+    <div class="trust-item">📍 NYC Metro</div>
+  </div>
+  <p>Questions? <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a></p>
+</footer>
+
+<script src="partials/site.js"></script>
 <script>
-  const fmt = n => '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const formData={service:null,serviceLabel:null,serviceAnswers:{},propertyType:null,description:'',photos:[],photoAnalysis:[],timeline:null,name:'',phone:'',email:'',address:''};
+let currentStep=1,currentAIQuestion=null,aiQuestionCount=0;
+const TOTAL_STEPS=9;
+const STEP_LABELS={1:'Project Type',2:'Project Details',3:'Property',4:'About the Job',5:'Photos',6:'AI Analysis',7:'Timeline',8:'Contact',9:'Review'};
+const SERVICES=[{id:'bathroom',label:'Bathroom'},{id:'painting',label:'Painting'},{id:'flooring',label:'Flooring'},{id:'carpentry',label:'Carpentry'},{id:'water-damage',label:'Water Damage'},{id:'handyman',label:'Handyman'},{id:'deck',label:'Deck'},{id:'stair',label:'Stairs'},{id:'tv-wall',label:'TV Wall'},{id:'restoration',label:'Restoration'},{id:'general',label:'General Renovation'},{id:'other',label:'Other / Not Listed'}];
+const ICONS={
+'bathroom':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-2.5 1V13h17"/><path d="M21 13v4a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-4"/><path d="m6 20-1 2M18 20l1 2"/></svg>',
+'painting':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11h2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9h2"/><rect x="8" y="2" width="8" height="9" rx="1"/><path d="M12 16v6"/></svg>',
+'flooring':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+'carpentry':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12 7 4l-3 3 8 8"/><path d="m13 14 7 7"/></svg>',
+'water-damage':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69 5.5 9a7 7 0 1 0 13 0L12 2.69z"/></svg>',
+'handyman':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+'deck':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="3"/><path d="M5 14v8M9 14v8M15 14v8M19 14v8M3 7h18M3 4h18"/></svg>',
+'stair':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4v-4h4v-4h4V8h4V4"/></svg>',
+'tv-wall':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 8h18M8 3v18M16 3v18"/></svg>',
+'restoration':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+'general':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></svg>',
+'other':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></svg>'
+};
 
-  async function generate() {
-    const desc = document.getElementById('desc').value.trim();
-    if (!desc) { showErr('Please describe your project first.'); return; }
+function hideSiteMenu(){const w=document.getElementById('site-menu-wrap');if(w)w.classList.add('hidden')}
+function showSiteMenu(){const w=document.getElementById('site-menu-wrap');if(w)w.classList.remove('hidden')}
 
-    hideErr();
-    const btn = document.getElementById('genBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div> GENERATING ESTIMATE...';
-    document.getElementById('result').classList.remove('show');
-
-    try {
-      const res = await fetch('/.netlify/functions/estimate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          desc,
-          type: document.getElementById('type').value,
-          size: document.getElementById('size').value,
-          location: document.getElementById('location').value,
-          timeline: document.getElementById('timeline').value,
-          include: document.getElementById('include').value,
-          notes: document.getElementById('notes').value,
-        })
-      });
-
-      if (!res.ok) throw new Error('Server error');
-      const e = await res.json();
-      renderEstimate(e);
-    } catch (err) {
-      showErr('Failed to generate estimate. Please try again.');
-      console.error(err);
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '⚡ GENERATE AI ESTIMATE';
-    }
-  }
-
-  function renderEstimate(e) {
-    document.getElementById('rTotal').textContent = fmt(e.grandTotal);
-    document.getElementById('rDate').textContent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    document.getElementById('rRef').textContent = 'SBC-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-    document.getElementById('rTitle').textContent = (e.projectTitle || 'PROJECT').toUpperCase();
-    document.getElementById('rSubtotal').textContent = fmt(e.subtotal);
-
-    let html = '';
-
-    if (e.laborItems?.length) {
-      const laborTotal = e.laborItems.reduce((s, i) => s + i.total, 0);
-      html += `<div class="cat-row"><div class="cat-lbl">Labor</div><div class="cat-amt">${fmt(laborTotal)}</div></div>`;
-      e.laborItems.forEach(i => {
-        html += `<div class="item-row"><div class="item-name">${i.name}</div><div class="item-detail">${i.qty} ${i.unit} × ${fmt(i.rate)}</div><div class="item-cost">${fmt(i.total)}</div></div>`;
-      });
-    }
-
-    if (e.materialItems?.length) {
-      const matTotal = e.materialItems.reduce((s, i) => s + i.total, 0);
-      html += `<div class="cat-row" style="margin-top:8px"><div class="cat-lbl">Materials</div><div class="cat-amt">${fmt(matTotal)}</div></div>`;
-      e.materialItems.forEach(i => {
-        html += `<div class="item-row"><div class="item-name">${i.name}</div><div class="item-detail">${i.qty} ${i.unit} × ${fmt(i.rate)}</div><div class="item-cost">${fmt(i.total)}</div></div>`;
-      });
-    }
-
-    document.getElementById('rItems').innerHTML = html;
-    document.getElementById('rTotals').innerHTML = `
-      <div class="t-row"><span>Subtotal</span><span>${fmt(e.subtotal)}</span></div>
-      <div class="t-row"><span>Markup (${e.markupPct || 25}%)</span><span>${fmt(e.markup)}</span></div>
-      <div class="t-row"><span>Tax (${e.taxPct || 0}%)</span><span>${fmt(e.tax)}</span></div>
-      <div class="t-grand"><span>TOTAL</span><span>${fmt(e.grandTotal)}</span></div>
-      ${e.notes ? `<div class="est-note">${e.notes}</div>` : ''}
-    `;
-
-    document.getElementById('result').classList.add('show');
-    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
-  }
-
-  function reset() {
-    document.getElementById('result').classList.remove('show');
-    document.getElementById('desc').value = '';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function sendEstimate() {
-    alert('Connect this button to your email or CRM system.');
-  }
-
-  function showErr(msg) {
-    const el = document.getElementById('errBox');
-    el.textContent = '⚠️ ' + msg;
-    el.classList.add('show');
-  }
-
-  function hideErr() {
-    document.getElementById('errBox').classList.remove('show');
-  }
-</script>
-
-<script>
-function startEstimate() {
-  // Hide splash with fade
-  var splash = document.getElementById('welcome-splash');
-  var header = document.getElementById('main-header');
-  var form   = document.getElementById('form-card');
-  splash.style.transition = 'opacity 0.4s ease';
-  splash.style.opacity = '0';
-  setTimeout(function() {
-    splash.style.display = 'none';
-    if (header) { header.style.display = ''; header.style.animation = 'fadeUp 0.5s ease both'; }
-    if (form)   { form.style.display = '';   form.style.animation   = 'fadeUp 0.5s ease 0.1s both'; }
-    window.scrollTo(0, 0);
-  }, 400);
+// ===== MULTI-SELECT service grid =====
+function renderServices(){
+  document.getElementById('service-grid').innerHTML=SERVICES.map(s=>
+    `<button class="service-btn" data-id="${s.id}" data-label="${s.label}" onclick="selectService(this)">${ICONS[s.id]||ICONS.other}<span class="service-label">${s.label}</span></button>`
+  ).join('');
 }
-</script>
+function selectService(el){
+  el.classList.toggle('selected');
+  const sel=Array.from(document.querySelectorAll('.service-btn.selected'));
+  formData.service=sel.map(b=>b.dataset.id).join(',');
+  formData.serviceLabel=sel.map(b=>b.dataset.label).join(', ');
+  document.getElementById('continue-1').disabled=sel.length===0;
+}
 
+// ===== AI Step 2 =====
+async function startStep2(){
+  formData.serviceAnswers={};aiQuestionCount=0;currentStep=2;hideSiteMenu();
+  document.getElementById('progress-fill').style.width='25%';
+  document.getElementById('step-num').textContent='2';
+  document.getElementById('step-label').textContent='Project Details';
+  document.getElementById('step2-eyebrow').textContent='Step 2 · '+formData.serviceLabel;
+  await loadNextAIQuestion();
+}
+async function loadNextAIQuestion(){
+  showStep('ai-loading');
+  try{
+    const res=await fetch('/.netlify/functions/estimate-ai-question',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:formData.service,serviceLabel:formData.serviceLabel,answers:formData.serviceAnswers,questionCount:aiQuestionCount})});
+    const data=await res.json();
+    if(data.done||data.fallback){goToStep(3);return;}
+    currentAIQuestion=data;renderAIQuestion(data);showStep(2);
+  }catch(e){console.error(e);goToStep(3);}
+}
+function renderAIQuestion(q){
+  document.getElementById('step2-title').textContent=q.label;
+  const c=document.getElementById('ai-question-container');
+  document.getElementById('continue-2').disabled=true;
+  if(q.type==='text'){
+    c.innerHTML=`<div class="input-group"><label class="input-label">${esc(q.label)}</label><input type="text" class="input-field" id="ai-text-input" placeholder="${esc(q.placeholder||'')}" oninput="aiTextChanged(this.value)"></div>`;
+    setTimeout(()=>{const el=document.getElementById('ai-text-input');if(el)el.focus();},100);
+  }else{
+    const cls=q.type==='options-grid'?'option-grid-2':'option-stack';
+    c.innerHTML=`<div class="${cls}">${(q.options||[]).map(opt=>`<button class="option-btn" data-value="${esc(opt)}" onclick="selectAIOption(this)"><span>${esc(opt)}</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>`).join('')}</div>`;
+  }
+}
+function selectAIOption(el){
+  el.parentElement.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  formData.serviceAnswers[currentAIQuestion.questionId]=el.dataset.value;
+  document.getElementById('continue-2').disabled=false;
+}
+function aiTextChanged(v){
+  if(v&&v.trim()){formData.serviceAnswers[currentAIQuestion.questionId]=v.trim();document.getElementById('continue-2').disabled=false;}
+  else{document.getElementById('continue-2').disabled=true;}
+}
+async function answerAIQuestion(){aiQuestionCount++;await loadNextAIQuestion();}
+function goBackToAI(){startStep2();}
+
+function selectOption(el,field){
+  el.parentElement.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');formData[field]=el.dataset.value;
+  if(field==='propertyType')document.getElementById('continue-3').disabled=false;
+  if(field==='timeline')document.getElementById('continue-7').disabled=false;
+}
+function updateContact(){
+  formData.name=document.getElementById('name-field').value.trim();
+  formData.phone=document.getElementById('phone-field').value.trim();
+  formData.email=document.getElementById('email-field').value.trim();
+  formData.address=document.getElementById('address-field').value.trim();
+  const ve=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+  const vp=formData.phone.replace(/\D/g,'').length>=10;
+  document.getElementById('continue-8').disabled=!(formData.name.length>1&&ve&&vp);
+}
+async function compressImage(file,maxWidth,quality){
+  maxWidth=maxWidth||1200;quality=quality||0.85;
+  return new Promise(function(resolve,reject){
+    const reader=new FileReader();reader.onerror=reject;
+    reader.onload=function(e){
+      const img=new Image();img.onerror=reject;
+      img.onload=function(){
+        let w=img.width,h=img.height;
+        if(w>maxWidth){h=Math.round(h*(maxWidth/w));w=maxWidth;}
+        const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };img.src=e.target.result;
+    };reader.readAsDataURL(file);
+  });
+}
+async function handlePhotos(e){
+  const files=Array.from(e.target.files).slice(0,8-formData.photos.length);
+  const uz=document.querySelector('.upload-title');const ot=uz?uz.textContent:'';
+  if(uz)uz.textContent='Processing photos...';
+  for(const file of files){
+    try{const c=await compressImage(file,1200,0.85);formData.photos.push({name:file.name,data:c});renderPhotoPreview();}
+    catch(err){const r=new FileReader();r.onload=function(ev){formData.photos.push({name:file.name,data:ev.target.result});renderPhotoPreview();};r.readAsDataURL(file);}
+  }
+  if(uz)uz.textContent=ot;e.target.value='';
+}
+function renderPhotoPreview(){
+  document.getElementById('photo-preview').innerHTML=formData.photos.map((p,i)=>`<div class="photo-thumb"><img src="${p.data}" alt=""><button class="photo-remove" onclick="formData.photos.splice(${i},1);renderPhotoPreview()">×</button></div>`).join('');
+}
+function showStep(s){document.querySelectorAll('.step').forEach(x=>x.classList.remove('active'));document.querySelector(`[data-step="${s}"]`).classList.add('active');}
+function goToStep(s){
+  showStep(s);
+  if(s===9)renderReview();
+  if(s===1)showSiteMenu();else hideSiteMenu();
+  if(s==='success')document.querySelector('.progress').style.display='none';
+  if(typeof s==='number'){
+    currentStep=s;
+    document.getElementById('progress-fill').style.width=(s/TOTAL_STEPS*100)+'%';
+    document.getElementById('step-num').textContent=s;
+    document.getElementById('step-label').textContent=STEP_LABELS[s]||'';
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function renderReview(){
+  const sa=Object.values(formData.serviceAnswers).filter(Boolean).join(' · ');
+  document.getElementById('review-content').innerHTML=`
+    <div class="review-block">
+      <div class="review-row"><span class="review-label">Project</span><span class="review-value">${esc(formData.serviceLabel)||'—'}</span></div>
+      ${sa?`<div class="review-row"><span class="review-label">Details</span><span class="review-value">${esc(sa)}</span></div>`:''}
+      <div class="review-row"><span class="review-label">Property</span><span class="review-value">${esc(formData.propertyType)||'—'}</span></div>
+      ${formData.description?`<div class="review-row"><span class="review-label">Notes</span><span class="review-value">${esc(formData.description)}</span></div>`:''}
+      ${formData.photos.length?`<div class="review-row"><span class="review-label">Photos</span><span class="review-value">${formData.photos.length} attached</span></div>`:''}
+      ${formData.photoAnalysis.length?`<div class="review-row"><span class="review-label">AI Analysis</span><span class="review-value">${formData.photoAnalysis.map(a=>esc(a.detected||'—')).join(' · ')}</span></div>`:''}
+      <div class="review-row"><span class="review-label">Timeline</span><span class="review-value">${esc(formData.timeline)||'—'}</span></div>
+    </div>
+    <div class="review-block">
+      <div class="review-row"><span class="review-label">Name</span><span class="review-value">${esc(formData.name)||'—'}</span></div>
+      <div class="review-row"><span class="review-label">Phone</span><span class="review-value">${esc(formData.phone)||'—'}</span></div>
+      <div class="review-row"><span class="review-label">Email</span><span class="review-value">${esc(formData.email)||'—'}</span></div>
+      ${formData.address?`<div class="review-row"><span class="review-label">Address</span><span class="review-value">${esc(formData.address)}</span></div>`:''}
+    </div>`;
+}
+function esc(s){if(!s)return'';return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function generateRef(){const d=new Date();return 'SBC-'+d.getFullYear().toString().slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+Math.random().toString(36).slice(2,6).toUpperCase();}
+async function submitForm(){
+  const btn=document.getElementById('submit-btn');btn.disabled=true;btn.textContent='Sending...';
+  const ref=generateRef();
+  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:formData.photos.length,photos:formData.photos,photoAnalysis:formData.photoAnalysis,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
+  try{
+    const res=await fetch('/.netlify/functions/estimate-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!res.ok){let m='Server error '+res.status;if(res.status===413)m='Photos too large.';btn.disabled=false;btn.textContent='Try Again';alert('Something went wrong: '+m+'\n\nRef: '+ref+'. Call (332) 277-0990.');return;}
+  }catch(e){btn.disabled=false;btn.textContent='Try Again';alert('Connection issue. Try again or call (332) 277-0990.');return;}
+  showSuccess(ref);
+}
+function showSuccess(ref){
+  document.getElementById('ref-number').textContent=ref;
+  document.getElementById('ref-email').textContent=formData.email;
+  const next=new Date();next.setDate(next.getDate()+1);
+  document.getElementById('ref-date').textContent=next.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  goToStep('success');
+}
+const MAX_PHOTOS_TO_ANALYZE=4;
+function proceedFromPhotos(){if(formData.photos.length===0){goToStep(7);return;}goToStep(6);startPhotoAnalysis();}
+async function startPhotoAnalysis(){
+  formData.photoAnalysis=[];
+  document.getElementById('analysis-scanning').style.display='block';
+  document.getElementById('analysis-results').style.display='none';
+  document.getElementById('analysis-no-photos').style.display='none';
+  document.getElementById('continue-6').disabled=true;
+  document.getElementById('continue-6').textContent='Analyzing...';
+  const photos=formData.photos.slice(0,MAX_PHOTOS_TO_ANALYZE);const total=photos.length;
+  document.getElementById('analysis-cards').innerHTML='';
+  if(total>1)document.getElementById('analysis-title').textContent='Analyzing your '+total+' photos...';
+  for(let i=0;i<total;i++){
+    const p=photos[i];
+    document.getElementById('scan-photo-img').src=p.data;
+    document.getElementById('scan-label').textContent='Analyzing photo '+(i+1);
+    document.getElementById('scan-progress').textContent='Photo '+(i+1)+' of '+total;
+    try{
+      const res=await fetch('/.netlify/functions/estimate-analyze-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoBase64:p.data,service:formData.service,serviceLabel:formData.serviceLabel,photoIndex:i+1,photoCount:total})});
+      if(!res.ok)throw new Error(''+res.status);
+      const r=await res.json();r._photoThumb=p.data;formData.photoAnalysis.push(r);
+    }catch(err){formData.photoAnalysis.push({detected:'Analysis unavailable',category:'other',confidence:'low',description:'Our team will review this photo personally.',recommendedAction:'Manual review by contractor',safetyFlag:false,needsInspection:true,suggestedQuestions:[],disclaimerNote:'AI was unavailable.',_photoThumb:p.data,fallback:true});}
+  }
+  document.getElementById('analysis-scanning').style.display='none';
+  document.getElementById('analysis-results').style.display='block';
+  document.getElementById('analysis-cards').innerHTML=formData.photoAnalysis.map(renderAnalysisCard).join('');
+  document.getElementById('analysis-title').textContent="Here's what we found";
+  document.getElementById('analysis-subtitle').textContent='AI-detected issues from your photos.';
+  document.getElementById('continue-6').disabled=false;document.getElementById('continue-6').textContent='Continue →';
+}
+function renderAnalysisCard(a,idx){
+  const cl=(a.confidence||'low').toUpperCase();const sc=a.safetyFlag?' safety':'';
+  const sb=a.safetyFlag?'<div class="safety-banner"><div class="safety-banner-icon">⚠️</div><div class="safety-banner-text"><strong>Safety note:</strong> This requires in-person inspection by a licensed professional before any work can be quoted or performed.</div></div>':'';
+  return '<div class="analysis-card'+sc+'"><div class="analysis-card-header">'+(a._photoThumb?'<div class="analysis-photo-thumb"><img src="'+esc(a._photoThumb)+'" alt=""></div>':'')+'<div class="analysis-card-title"><div class="analysis-eyebrow">Photo '+(idx+1)+' · Detected</div><div class="analysis-detected">'+esc(a.detected||'—')+'</div><span class="confidence-pill '+(a.confidence||'low')+'"><span class="confidence-dot"></span>'+cl+' Confidence</span></div></div>'+(a.description?'<div class="analysis-row"><span class="analysis-row-label">What we see</span><span class="analysis-row-value">'+esc(a.description)+'</span></div>':'')+(a.recommendedAction?'<div class="analysis-row"><span class="analysis-row-label">Recommended</span><span class="analysis-row-value action">'+esc(a.recommendedAction)+'</span></div>':'')+(a.estimatedComplexity?'<div class="analysis-row"><span class="analysis-row-label">Complexity</span><span class="analysis-row-value">'+esc(a.estimatedComplexity.charAt(0).toUpperCase()+a.estimatedComplexity.slice(1))+'</span></div>':'')+sb+'</div>';
+}
+renderServices();
+</script>
 </body>
 </html>
