@@ -5170,7 +5170,7 @@ if (document.readyState === 'loading') {
           border:none;border-radius:10px;font-family:Inter,sans-serif;font-size:13px;
           font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;
           display:flex;align-items:center;justify-content:center;gap:8px;
-          -webkit-tap-highlight-color:transparent;opacity:0.4;
+          -webkit-tap-highlight-color:transparent;
         ">📱 Send via Text Message</button>
 
         <button id="sl-email-btn" onclick="sendEstimateByEmail()" style="
@@ -5178,7 +5178,7 @@ if (document.readyState === 'loading') {
           border:2px solid #d4b572;border-radius:10px;font-family:Inter,sans-serif;font-size:13px;
           font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;
           display:flex;align-items:center;justify-content:center;gap:8px;
-          -webkit-tap-highlight-color:transparent;opacity:0.4;
+          -webkit-tap-highlight-color:transparent;
         ">✉️ Send via Email</button>
 
         <button onclick="copyEstimateLink()" style="
@@ -5313,24 +5313,28 @@ if (document.readyState === 'loading') {
 }
 
 function sendEstimateBySMS() {
-  var phone = document.getElementById('sl-phone').value.trim();
-  if (!phone) { showSendLinkError('Please enter a phone number to send via text.'); return; }
-  var name = document.getElementById('sl-name').value.trim();
-  var msg  = getSMSMessage(name);
-  // Open native Messages app
-  var clean = phone.replace(/\D/g, '');
-  window.open('sms:' + clean + '&body=' + encodeURIComponent(msg), '_blank');
-  showSendLinkSuccess('Messages app opened with text pre-filled!');
+  var phoneEl = document.getElementById('sl-phone');
+  var nameEl  = document.getElementById('sl-name');
+  var phone = phoneEl ? phoneEl.value.trim() : '';
+  var name  = nameEl  ? nameEl.value.trim()  : '';
+  if (!phone) { showSendLinkError('Please enter a phone number first.'); return; }
+  var msg   = getSMSMessage(name);
+  var clean = phone.replace(/[^0-9]/g, '');
+  var smsUrl = 'sms:+1' + clean + (navigator.userAgent.match(/iPhone|iPad/) ? '&' : '?') + 'body=' + encodeURIComponent(msg);
+  window.location.href = smsUrl;
+  setTimeout(function() { showSendLinkSuccess('Messages app opened!'); }, 500);
 }
 
 function sendEstimateByEmail() {
-  var email = document.getElementById('sl-email').value.trim();
-  if (!email) { showSendLinkError('Please enter an email address to send via email.'); return; }
-  var name    = document.getElementById('sl-name').value.trim();
+  var emailEl = document.getElementById('sl-email');
+  var nameEl  = document.getElementById('sl-name');
+  var email = emailEl ? emailEl.value.trim() : '';
+  var name  = nameEl  ? nameEl.value.trim()  : '';
+  if (!email) { showSendLinkError('Please enter an email address first.'); return; }
   var subject = getEmailSubject(name);
   var body    = getEmailBody(name);
-  window.open('mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body), '_blank');
-  showSendLinkSuccess('Mail app opened with email pre-filled!');
+  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  setTimeout(function() { showSendLinkSuccess('Mail app opened!'); }, 500);
 }
 
 function copyEstimateLink() {
