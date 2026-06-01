@@ -157,27 +157,26 @@ body {
 
 /* ============ TABS ============ */
 .tabs-row {
-  padding: 0 24px;
+  padding: 0 16px;
   display: flex;
   gap: 0;
   overflow-x: auto;
   border-bottom: 1px solid var(--line-soft);
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) transparent;
 }
-.tabs-row::-webkit-scrollbar { display: none; }
+.tabs-row::-webkit-scrollbar { height: 3px; }
+.tabs-row::-webkit-scrollbar-track { background: transparent; }
+.tabs-row::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
 .tab {
-  padding: 14px 14px;
-  flex-shrink: 0;
-}
-.tab {
-  padding: 12px 14px;
+  padding: 12px 12px;
   background: none;
   border: none;
   color: var(--ink-muted);
   font-family: var(--body);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.5px;
   cursor: pointer;
@@ -185,7 +184,7 @@ body {
   border-bottom: 2px solid transparent;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   white-space: nowrap;
   flex-shrink: 0;
 }
