@@ -7,13 +7,6 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
 
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SBC Dashboard">
-<meta name="theme-color" content="#0f1f33">
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/images/pwa-icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -157,36 +150,28 @@ body {
 
 /* ============ TABS ============ */
 .tabs-row {
-  padding: 0 16px;
+  padding: 20px 24px 0;
   display: flex;
-  gap: 0;
+  gap: 4px;
   overflow-x: auto;
   border-bottom: 1px solid var(--line-soft);
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: var(--gold) transparent;
 }
-.tabs-row::-webkit-scrollbar { height: 3px; }
-.tabs-row::-webkit-scrollbar-track { background: transparent; }
-.tabs-row::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
 .tab {
-  padding: 12px 12px;
+  padding: 12px 16px;
   background: none;
   border: none;
   color: var(--ink-muted);
   font-family: var(--body);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   cursor: pointer;
   text-transform: uppercase;
   border-bottom: 2px solid transparent;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 .tab.active {
   color: var(--gold);
@@ -696,9 +681,9 @@ body {
   font-style: italic;
 }
 
-/* ════════════════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
    NEW DISPATCH-OPTIMIZED LAYOUT
-   ════════════════════════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════════════════ */
 
 /* TOP ALERT BAR */
 .h-alert-bar {
@@ -2061,382 +2046,6 @@ body {
 .seo-pos.pos-mid { background:var(--warn-bg); color:var(--warn); }
 .seo-pos.pos-bad { background:var(--bad-bg); color:var(--bad); }
 /* END SEO BRAIN TAB STYLES */
-
-/* ═══════════════════════════════════════════════════════
-   MOBILE / PWA OVERHAUL
-   ═══════════════════════════════════════════════════════ */
-
-/* Safe area for notch/home-bar */
-:root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
-
-@media (max-width: 640px) {
-  /* Topbar — hide buttons on mobile, use drawer instead */
-  .topbar {
-    padding: 12px 16px;
-    gap: 10px;
-  }
-  .brand-mark { font-size: 15px; letter-spacing: 2px; flex: 1; }
-  /* Hide topbar buttons on mobile — they live in the drawer */
-  .topbar > a.topbar-btn,
-  .topbar > button.topbar-btn {
-    display: none;
-  }
-
-  /* Tabs — full-width scrollable, bigger tap targets */
-  .tabs-row {
-    padding: 0;
-    gap: 0;
-  }
-  .tab {
-    padding: 14px 14px;
-    font-size: 11px;
-    letter-spacing: 0.5px;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 72px;
-  }
-  .tab-count {
-    font-size: 10px;
-    padding: 1px 7px;
-  }
-
-  /* List padding */
-  .list-section { padding: 14px; }
-
-  /* Cards — better mobile spacing */
-  .est-card { padding: 14px 16px; gap: 12px; }
-  .est-title { font-size: 15px; }
-  .est-meta { font-size: 12px; gap: 8px; }
-  .est-total { font-size: 18px; }
-  .handyman-card { padding: 12px 14px; gap: 12px; }
-  .handyman-card .h-icon { width: 44px; height: 44px; font-size: 24px; border-radius: 10px; }
-  .handyman-card .h-total { font-size: 15px; }
-
-  /* Edit modal — full screen on mobile */
-  .modal-backdrop { padding: 0; }
-  .modal-card {
-    margin: 0;
-    border-radius: 0;
-    min-height: 100vh;
-    padding: 16px;
-    border: none;
-  }
-  .invoice-modal-card {
-    margin: 0;
-    border-radius: 0;
-    min-height: 100vh;
-    padding: 16px;
-  }
-  .h-modal-card {
-    margin: 0;
-    border-radius: 0;
-    min-height: 100vh;
-    padding: 16px 14px;
-    border: none;
-  }
-
-  /* Modal header */
-  .modal-head { margin-bottom: 14px; padding-bottom: 12px; }
-  .modal-head h2 { font-size: 18px; letter-spacing: 1.5px; }
-  .modal-head .ref-sub { font-size: 10px; }
-
-  /* Handyman modal header — stack on mobile */
-  .modal-head > div:last-child {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: flex-end;
-  }
-  .h-send-conf-btn { font-size: 11px; padding: 7px 10px; }
-  .h-print-btn { font-size: 11px; padding: 7px 10px; }
-
-  /* Alert bar — stack on mobile */
-  .h-alert-bar { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 14px; }
-  .h-alert-urgency { align-self: flex-start; }
-
-  /* Hero grid — already stacks, just tighten */
-  .h-hero-grid { gap: 10px; margin-bottom: 12px; }
-  .h-hero-block { padding: 12px; }
-
-  /* Action grid (tools/materials) */
-  .h-action-grid { gap: 10px; margin-bottom: 12px; }
-  .h-action-block { padding: 12px 14px; }
-  .h-action-item { font-size: 13px; }
-
-  /* Customer row — 2 col on mobile */
-  .h-customer-row { gap: 8px; padding: 10px 12px; margin-bottom: 12px; }
-
-  /* Estimate bar — 2 col on mobile */
-  .h-estimate-bar { gap: 8px; padding: 10px 12px; margin-bottom: 12px; }
-  .h-est-bar-cell .ebv { font-size: 14px; }
-
-  /* Status buttons — wrap and bigger */
-  .h-status-row { gap: 6px; }
-  .h-status-btn { padding: 10px 12px; font-size: 11px; flex: 1; text-align: center; }
-
-  /* Form fields — bigger tap targets */
-  .field input, .field textarea, .field select {
-    padding: 14px;
-    font-size: 16px; /* prevents iOS zoom */
-  }
-  .field label { font-size: 10px; }
-
-  /* Totals box */
-  .totals-box { padding: 14px; }
-  .tot-line { font-size: 13px; }
-  .tot-line.grand { font-size: 18px; }
-
-  /* Modal actions — stack */
-  .modal-actions { flex-direction: column-reverse; gap: 8px; padding-top: 16px; margin-top: 20px; }
-  .modal-actions-right { flex-direction: column; width: 100%; }
-  .btn-primary, .btn-secondary, .btn-danger {
-    width: 100%;
-    padding: 14px;
-    font-size: 13px;
-    text-align: center;
-  }
-
-  /* CV panel */
-  .cv-panel { padding: 14px 16px; }
-
-  /* Line items table — compress on mobile */
-  .lines-table th.col-unit,
-  .lines-table td:nth-child(3) { display: none; }
-  .lines-table input { padding: 6px 8px; font-size: 13px; }
-
-  /* Invoice modal */
-  .inv-type-grid { grid-template-columns: 1fr 1fr; }
-
-  /* Confirm modal */
-  .confirm-modal { border-radius: 14px 14px 0 0; margin-top: auto; }
-  .confirm-overlay { align-items: flex-end; padding: 0; }
-  .confirm-body { padding: 18px 20px; }
-  .confirm-footer { padding: 14px 20px; }
-
-  /* SEO table — hide less important cols */
-  .seo-table th:nth-child(4),
-  .seo-table td:nth-child(4) { display: none; }
-
-  /* Bottom padding so content clears the safe area */
-  .list-section { padding-bottom: calc(20px + var(--safe-bottom)); }
-}
-
-/* PWA Install Banner */
-#pwa-banner {
-  display: none;
-  position: fixed;
-  bottom: calc(16px + var(--safe-bottom));
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--card);
-  border: 1px solid var(--gold);
-  border-radius: 14px;
-  padding: 14px 18px;
-  width: calc(100vw - 32px);
-  max-width: 400px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  z-index: 999;
-  display: none;
-  align-items: center;
-  gap: 14px;
-}
-#pwa-banner.visible { display: flex; }
-#pwa-banner .pwa-icon {
-  width: 48px; height: 48px;
-  background: var(--navy);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  flex-shrink: 0;
-  border: 1px solid var(--line);
-}
-#pwa-banner .pwa-text { flex: 1; }
-#pwa-banner .pwa-text strong {
-  display: block;
-  font-size: 13px;
-  color: var(--ink);
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-#pwa-banner .pwa-text span {
-  font-size: 11px;
-  color: var(--ink-muted);
-}
-#pwa-banner .pwa-install {
-  background: var(--gold);
-  color: var(--navy);
-  border: none;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 1px;
-  cursor: pointer;
-  font-family: var(--body);
-  text-transform: uppercase;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-#pwa-banner .pwa-dismiss {
-  background: none;
-  border: none;
-  color: var(--ink-muted);
-  cursor: pointer;
-  font-size: 18px;
-  padding: 4px;
-  flex-shrink: 0;
-}
-
-
-
-
-
-
-/* Drawer overlay */
-.drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  z-index: 300;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s;
-}
-.drawer-overlay.open {
-  opacity: 1;
-  pointer-events: all;
-}
-
-/* Slide-out drawer */
-.drawer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 280px;
-  height: 100vh;
-  background: var(--card);
-  z-index: 301;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  display: flex;
-  flex-direction: column;
-  transform: translateX(-100%);
-  transition: transform 0.25s ease;
-  visibility: hidden;
-}
-.drawer.open {
-  transform: translateX(0);
-  visibility: visible;
-}
-
-.drawer-header {
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(135deg, var(--navy-2), var(--navy));
-}
-.drawer-logo {
-  font-family: var(--display);
-  font-size: 22px;
-  letter-spacing: 4px;
-  color: var(--gold);
-  margin-bottom: 2px;
-}
-.drawer-sub {
-  font-size: 11px;
-  letter-spacing: 2px;
-  color: var(--ink-muted);
-  text-transform: uppercase;
-}
-.drawer-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: none;
-  border: none;
-  color: var(--ink-muted);
-  font-size: 22px;
-  cursor: pointer;
-  padding: 4px;
-}
-.drawer-close:hover { color: var(--gold); }
-
-.drawer-nav {
-  flex: 1;
-  padding: 12px 0;
-}
-
-
-
-
-.drawer-divider {
-  height: 1px;
-  background: var(--line-soft);
-  margin: 8px 20px;
-}
-
-.drawer-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--line-soft);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.drawer-footer a, .drawer-footer button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  color: var(--ink-soft);
-  text-decoration: none;
-  background: var(--card-2);
-  border: 1px solid var(--line-soft);
-  cursor: pointer;
-  font-family: var(--body);
-  font-weight: 500;
-  transition: all 0.15s;
-  width: 100%;
-  text-align: left;
-}
-.drawer-footer a:hover, .drawer-footer button:hover {
-  color: var(--gold);
-  border-color: var(--gold);
-}
-
-@media (max-width: 640px) {
-  
-  .tabs-row { display: none; } /* hide old tab bar on mobile */
-  /* Show active tab name in topbar */
-  .active-tab-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--display);
-    font-size: 14px;
-    letter-spacing: 2px;
-    color: var(--ink-soft);
-    flex: 1;
-    overflow: hidden;
-  }
-}
-@media (min-width: 641px) {
-  /* drawer hidden via transform on desktop — no need to force display:none */
-  .drawer-overlay { pointer-events: none !important; opacity: 0 !important; }
-  .active-tab-label { display: none; }
-}
-
-</style>
-<style>
-/* Photo strips — force single horizontal row */
-.cust-photos { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 6px; }
-.cust-photos img { flex: 0 0 auto; }
-#quote-photo-preview { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto; gap: 6px !important; padding-bottom: 6px; }
-#quote-photo-preview > div { flex: 0 0 auto; width: 84px; height: 84px; aspect-ratio: auto !important; }
-#render-photo-selector { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 6px; }
-#render-photo-selector > div { flex: 0 0 auto; }
 </style>
 </head>
 <body>
@@ -2455,13 +2064,7 @@ body {
 <!-- APP -->
 <div id="app" class="app">
   <div class="topbar">
-    <button id="sbc-menu-btn" style="background:none;border:none;cursor:pointer;padding:10px 14px 10px 4px;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;gap:5px;min-width:44px;min-height:44px;align-items:center;justify-content:center">
-  <span style="display:block;width:22px;height:2.5px;background:#d4b572;border-radius:2px"></span>
-  <span style="display:block;width:22px;height:2.5px;background:#d4b572;border-radius:2px"></span>
-  <span style="display:block;width:22px;height:2.5px;background:#d4b572;border-radius:2px"></span>
-</button>
     <div class="brand-mark">SANI <span class="sep">·</span><span class="sub">DASHBOARD</span></div>
-    
     <a href="/estimate" target="_blank" class="topbar-btn">↗ Customer Form</a>
     <button class="topbar-btn" onclick="loadEstimates()">⟳ Refresh</button>
     <button class="topbar-btn" onclick="logout()">Logout</button>
@@ -2632,8 +2235,6 @@ function logout() {
 function showApp() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").classList.add("show");
-  var fab = document.getElementById("send-link-fab");
-  if (fab) fab.style.display = "flex";
   renderTabs();
   loadEstimates();
 }
@@ -2652,6 +2253,9 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+/**
+ * Calculate internal totals (with markup, before display filter).
+ */
 function calcTotal(est) {
   if (!est) return { labor: 0, mat: 0, sub: 0, markup: 0, grand: 0, laborWithMarkup: 0, matWithMarkup: 0 };
   const labor = (est.labor || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
@@ -2659,16 +2263,22 @@ function calcTotal(est) {
   const sub = labor + mat;
   const markupPct = Number(est.markupPct) || 0;
   const markup = sub * (markupPct / 100);
+  // Pro-rate markup proportionally to labor & materials so they each carry their share
   const laborWithMarkup = labor * (1 + markupPct / 100);
   const matWithMarkup = mat * (1 + markupPct / 100);
   return { labor: labor, mat: mat, sub: sub, markup: markup, grand: sub + markup, laborWithMarkup: laborWithMarkup, matWithMarkup: matWithMarkup };
 }
 
+/**
+ * Calculate CUSTOMER-FACING display amounts based on checkboxes.
+ * Returns what the customer actually sees.
+ */
 function calcCustomerView(est) {
   const t = calcTotal(est);
-  const showLabor = est.showLaborCost !== false;
-  const showMaterials = est.showMaterialsCost === true;
+  const showLabor = est.showLaborCost !== false; // default true
+  const showMaterials = est.showMaterialsCost === true; // default false
 
+  // If both unchecked, fall back to showing just the grand total (full project)
   if (!showLabor && !showMaterials) {
     return {
       showLabor: false,
@@ -2701,9 +2311,14 @@ function toast(msg, isError) {
   setTimeout(function() { t.classList.remove("show"); }, 3200);
 }
 
+/**
+ * Migrate legacy displayMode to checkboxes
+ */
 function normalizeDisplayFlags(est) {
   if (!est) return;
+  // If already has new flags, skip
   if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") return;
+  // Migrate from old displayMode
   if (est.displayMode === "total") {
     est.showLaborCost = false;
     est.showMaterialsCost = false;
@@ -2711,6 +2326,7 @@ function normalizeDisplayFlags(est) {
     est.showLaborCost = true;
     est.showMaterialsCost = true;
   } else {
+    // "labor" or undefined → default
     est.showLaborCost = true;
     est.showMaterialsCost = false;
   }
@@ -2723,7 +2339,7 @@ function renderTabs() {
   estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
   counts.handyman = handymanBookings.length;
   counts.seo = seoInsightCount;
-  counts.visitors = visitorsLiveCount;
+counts.visitors = visitorsLiveCount;
   document.getElementById("tabs-row").innerHTML = TABS.map(function(t) {
     return '<button class="tab ' + (activeTab === t.id ? "active" : "") + '" data-tab="' + t.id + '">' +
       '<span>' + t.label + '</span>' +
@@ -2736,14 +2352,6 @@ function renderTabs() {
       renderTabs(); renderList();
     });
   });
-  // Scroll active tab into view, and reset to start when on ALL
-  var activeBtn = document.querySelector(".tab.active");
-  var tabsRow = document.getElementById("tabs-row");
-  if (activeTab === "all") {
-    tabsRow.scrollLeft = 0;
-  } else if (activeBtn) {
-    activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }
 }
 
 /* ===== LIST ===== */
@@ -2751,6 +2359,7 @@ async function loadEstimates() {
   const host = document.getElementById("list-host");
   host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
   try {
+    // Load both renovation estimates AND handyman bookings in parallel
     const [estimateRes, handymanRes] = await Promise.all([
       fetch("/.netlify/functions/list-estimates").catch(function(e) { console.error("Estimates load failed:", e); return null; }),
       fetch("/.netlify/functions/handyman-get").catch(function(e) { console.error("Handyman load failed:", e); return null; })
@@ -2776,16 +2385,19 @@ async function loadEstimates() {
 function renderList() {
   const host = document.getElementById("list-host");
 
+  // HANDYMAN TAB - completely different rendering
   if (activeTab === "handyman") {
     renderHandymanList();
     return;
   }
 
+  // SEO BRAIN TAB
   if (activeTab === "seo") {
     renderSeoTab();
     return;
   }
 
+  // CONTENT STUDIO TAB
   if (activeTab === "content") {
     renderContentStudio();
     return;
@@ -2851,6 +2463,7 @@ async function openEdit(ref) {
     const r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref));
     if (!r.ok) throw new Error("Load failed");
     currentRecord = await r.json();
+    // Migrate legacy displayMode to new flags
     if (!currentRecord.estimate) currentRecord.estimate = {};
     normalizeDisplayFlags(currentRecord.estimate);
     renderEdit();
@@ -2985,7 +2598,11 @@ function renderEdit() {
       '</div>' +
     '</div>' +
     '<div class="form-section">' +
-      '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
+      '<div class="form-section" id="materials-section" style="display:none">' +
+      '<h3 style="display:flex;align-items:center;justify-content:space-between">🛒 MATERIALS SHOPPING LIST <button class="btn-ai" id="find-materials-btn" onclick="findMaterials()" style="font-size:11px;padding:7px 14px;letter-spacing:1px">🛒 Find Materials</button></h3>' +
+      '<div id="materials-result"></div>' +
+    '</div>' +
+    '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
       ((req.photos && req.photos.length > 0) ?
         '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Customer Uploaded</div><div class="cust-photos" id="customer-photos-strip">' + photosHtml + '</div></div>'
         : '') +
@@ -2998,6 +2615,7 @@ function renderEdit() {
     '<div style="background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.03));border:1.5px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:22px">' +
       '<div style="font-family:var(--display);font-size:15px;letter-spacing:2px;color:var(--gold);margin-bottom:4px">✨ AI RENOVATION RENDER</div>' +
       '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:14px">Select a photo, then generate a photorealistic visualization of the finished renovation</div>' +
+      // Photo selector
       ((req.photos && req.photos.length > 0) ?
         '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Select a photo to render from:</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap" id="render-photo-selector">' +
@@ -3026,8 +2644,7 @@ function renderEdit() {
           '<div style="font-family:var(--display);font-size:13px;letter-spacing:2px;color:var(--gold)" id="render-status">Analyzing photo...</div>' +
           '<div style="font-size:11px;color:var(--ink-muted);margin-top:6px">This takes about 15–20 seconds</div>' +
         '</div>' +
-        '<div id="render-image-wrap" style="display:none;position:relative">' +
-          '<button onclick="dismissRender()" title="Dismiss render" style="position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;font-size:18px;line-height:1;z-index:3">×</button>' +
+        '<div id="render-image-wrap" style="display:none">' +
           '<img id="render-image" src="" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" alt="AI Renovation Render">' +
           '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
             '<button onclick="addRenderToQuote()" style="padding:9px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">+ Add to Quote Photos</button>' +
@@ -3090,9 +2707,20 @@ function renderEdit() {
   renderLines("materials", est.materials || []);
   attachLineListeners();
   document.getElementById("f-markup").addEventListener("input", recalc);
+  // Initialize quote photo preview
   renderQuotePhotoPreview();
   selectedRenderPhotoData = null;
   currentRenderBase64 = null;
+  // Show materials section if estimate has content
+  const matSection = document.getElementById("materials-section");
+  if (matSection) {
+    const hasContent = (est.scopeOfWork && est.scopeOfWork.trim()) || (est.materials && est.materials.length > 0);
+    matSection.style.display = hasContent ? "block" : "none";
+    // Re-render saved materials if any
+    if (est.savedMaterials && est.savedMaterials.length > 0) {
+      renderMaterialsList(est.savedMaterials, est.materialsTotalEstimate || 0);
+    }
+  }
   recalc();
 }
 
@@ -3142,6 +2770,129 @@ function renderQuotePhotoPreview() {
   }).join("");
 }
 
+/* ===== MATERIALS SHOPPING LIST ===== */
+async function findMaterials() {
+  if (!currentRecord) return;
+  const btn = document.getElementById("find-materials-btn");
+  const resultEl = document.getElementById("materials-result");
+  if (!btn || !resultEl) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ai-spin"></span> Finding…';
+  resultEl.innerHTML = '<div style="text-align:center;padding:28px;color:var(--ink-muted)"><div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px"><div style="width:9px;height:9px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite"></div><div style="width:9px;height:9px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.15s"></div><div style="width:9px;height:9px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.3s"></div></div><div style="font-size:13px">Searching Home Depot, Lowe's & Amazon…</div></div>';
+
+  try {
+    const req = currentRecord.request || {};
+    const est = currentRecord.estimate || {};
+    syncLines();
+
+    const res = await fetch("/.netlify/functions/find-materials", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scopeOfWork: est.scopeOfWork || "",
+        materials: est.materials || [],
+        serviceLabel: req.service || est.projectTitle || "",
+        serviceAnswers: req.serviceAnswers || {},
+        projectTitle: est.projectTitle || ""
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.items) throw new Error(data.error || "Failed to find materials");
+
+    // Save to estimate
+    currentRecord.estimate.savedMaterials = data.items;
+    currentRecord.estimate.materialsTotalEstimate = data.totalEstimate;
+
+    renderMaterialsList(data.items, data.totalEstimate);
+    toast("✓ " + data.items.length + " materials found");
+  } catch (e) {
+    resultEl.innerHTML = '<div style="color:var(--bad);padding:12px;font-size:13px">⚠ ' + esc(e.message) + '</div>';
+    toast("Materials search failed: " + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "🛒 Find Materials";
+  }
+}
+
+function renderMaterialsList(items, totalEstimate) {
+  const resultEl = document.getElementById("materials-result");
+  if (!resultEl || !items || !items.length) return;
+
+  const CATEGORY_ICONS = {
+    "tile & stone": "🪨", "waterproofing": "💧", "adhesive & grout": "🪣",
+    "plumbing": "🚿", "electrical": "⚡", "lumber & drywall": "🪵",
+    "paint & primer": "🎨", "hardware & fasteners": "🔩", "tools": "🔧",
+    "fixtures": "🚪", "flooring": "⬜", "insulation": "🧱", "other": "📦"
+  };
+
+  // Group by category
+  const groups = {};
+  items.forEach(function(item) {
+    const cat = item.category || "other";
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(item);
+  });
+
+  let html = '';
+
+  // Summary bar
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
+    '<div style="font-size:12px;color:var(--ink-muted)">' + items.length + ' items across ' + Object.keys(groups).length + ' categories</div>' +
+    (totalEstimate > 0 ? '<div style="font-family:var(--display);font-size:16px;color:var(--gold);letter-spacing:1px">Est. ~$' + totalEstimate.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) + '</div>' : '') +
+    '<button onclick="copyMaterialsList()" style="padding:6px 12px;background:var(--card-2);border:1px solid var(--line);color:var(--ink-soft);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy List</button>' +
+  '</div>';
+
+  // Items by category
+  Object.keys(groups).forEach(function(cat) {
+    const icon = CATEGORY_ICONS[cat] || "📦";
+    html += '<div style="margin-bottom:16px">' +
+      '<div style="font-size:10px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px">' + icon + ' ' + cat + '</div>';
+
+    groups[cat].forEach(function(item) {
+      const isPriority = item.priority === "required";
+      const total = item.totalEstimate ? "$" + item.totalEstimate.toFixed(2) : "";
+      const unitCost = item.estimatedUnitCost ? "$" + item.estimatedUnitCost + "/" + (item.unit || "ea") : "";
+
+      html += '<div style="background:var(--card-2);border:1px solid ' + (isPriority ? "var(--gold)" : "var(--line-soft)") + ';border-radius:10px;padding:12px 14px;margin-bottom:8px">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:14px;font-weight:600;color:var(--ink)">' + esc(item.name) + '</div>' +
+            '<div style="font-size:12px;color:var(--ink-muted);margin-top:2px">' + esc(item.spec || "") + '</div>' +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0">' +
+            '<div style="font-size:13px;font-weight:600;color:var(--ink)">' + (item.qty || 1) + ' ' + (item.unit || "ea") + '</div>' +
+            (unitCost ? '<div style="font-size:11px;color:var(--ink-muted)">' + unitCost + '</div>' : '') +
+            (total ? '<div style="font-size:12px;color:var(--gold);font-weight:600">' + total + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+          '<a href="' + esc(item.homedepotUrl) + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#f96302;color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">🏠 Home Depot</a>' +
+          '<a href="' + esc(item.lowesUrl) + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#004990;color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">🔵 Lowe's</a>' +
+          '<a href="' + esc(item.amazonUrl) + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#ff9900;color:#111;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">📦 Amazon</a>' +
+        '</div>' +
+      '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  resultEl.innerHTML = html;
+}
+
+function copyMaterialsList() {
+  if (!currentRecord || !currentRecord.estimate || !currentRecord.estimate.savedMaterials) return;
+  const items = currentRecord.estimate.savedMaterials;
+  const lines = items.map(function(i) {
+    return "• " + i.name + " — " + (i.qty || 1) + " " + (i.unit || "ea") +
+      (i.spec ? " (" + i.spec + ")" : "") +
+      (i.estimatedUnitCost ? " ~$" + i.estimatedUnitCost + "/" + (i.unit || "ea") : "");
+  });
+  const text = (currentRecord.estimate.projectTitle || "Materials List") + "\n\n" + lines.join("\n");
+  navigator.clipboard.writeText(text).then(function() { toast("✓ List copied to clipboard"); }).catch(function() { toast("Copy failed", true); });
+}
+
 function removeQuotePhoto(idx) {
   if (!currentRecord || !currentRecord.estimate || !currentRecord.estimate.quotePhotos) return;
   currentRecord.estimate.quotePhotos.splice(idx, 1);
@@ -3153,10 +2904,12 @@ let currentRenderBase64 = null;
 let selectedRenderPhotoData = null;
 
 function selectRenderPhoto(idx, el) {
+  // Deselect all
   document.querySelectorAll("#render-photo-selector > div").forEach(function(d) {
     d.style.borderColor = "var(--line)";
     d.classList.remove("rp-selected");
   });
+  // Select clicked
   el.style.borderColor = "var(--gold)";
   el.classList.add("rp-selected");
   const photos = (currentRecord && currentRecord.request && currentRecord.request.photos) || [];
@@ -3180,7 +2933,7 @@ async function generateRender() {
   imageWrap.style.display = "none";
   currentRenderBase64 = null;
 
-  const messages = ["Analyzing photo…", "Crafting render prompt…", "Generating with Gemini…", "Almost done…"];
+  const messages = ["Analyzing photo…", "Crafting render prompt…", "Generating with DALL-E 3…", "Almost done…"];
   let msgIdx = 0;
   const msgTimer = setInterval(function() {
     msgIdx = (msgIdx + 1) % messages.length;
@@ -3190,28 +2943,15 @@ async function generateRender() {
   try {
     const req = currentRecord.request || {};
     const est = currentRecord.estimate || {};
-    let photoToUse = selectedRenderPhotoData ||
+    const photoToUse = selectedRenderPhotoData ||
       ((req.photos && req.photos.length > 0) ? req.photos[0].data : null);
-    if (photoToUse) {
-      photoToUse = await new Promise(function (resolve) {
-        var img = new Image();
-        img.onload = function () {
-          var w = img.width, h = img.height, MAX = 512;
-          if (w > MAX) { h = Math.round(h * (MAX / w)); w = MAX; }
-          var c = document.createElement("canvas");
-          c.width = w; c.height = h;
-          c.getContext("2d").drawImage(img, 0, 0, w, h);
-          resolve(c.toDataURL("image/jpeg", 0.6));
-        };
-        img.onerror = function () { resolve(null); };
-        img.src = photoToUse;
-      });
-    }
     const customPromptEl = document.getElementById("render-custom-prompt");
     const customPrompt = customPromptEl ? customPromptEl.value.trim() : "";
 
+    // Generate unique job ID
     const jobId = "render-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
 
+    // Start background job (returns 202 immediately — no timeout issue)
     await fetch("/.netlify/functions/generate-render-background", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -3226,12 +2966,13 @@ async function generateRender() {
       })
     });
 
+    // Poll for result (max 90 seconds, check every 4 seconds)
     const data = await new Promise(function(resolve, reject) {
       let attempts = 0;
-      const maxAttempts = 22;
+      const maxAttempts = 22; // 22 × 4s = 88s max
       function poll() {
         attempts++;
-        if (attempts > maxAttempts) { reject(new Error("Render timed out — Gemini took too long. Try a shorter prompt.")); return; }
+        if (attempts > maxAttempts) { reject(new Error("Render timed out — DALL-E took too long. Try a shorter prompt.")); return; }
         fetch("/.netlify/functions/get-render-status?jobId=" + encodeURIComponent(jobId))
           .then(function(r) { return r.json(); })
           .then(function(d) {
@@ -3241,7 +2982,7 @@ async function generateRender() {
           })
           .catch(function() { setTimeout(poll, 4000); });
       }
-      setTimeout(poll, 5000);
+      setTimeout(poll, 5000); // First check after 5 seconds
     });
 
     clearInterval(msgTimer);
@@ -3266,16 +3007,6 @@ async function generateRender() {
   }
 }
 
-function dismissRender() {
-  var wrap = document.getElementById("render-image-wrap");
-  var result = document.getElementById("render-result");
-  var img = document.getElementById("render-image");
-  if (wrap) wrap.style.display = "none";
-  if (result) result.style.display = "none";
-  if (img) img.src = "";
-  currentRenderBase64 = null;
-}
-
 function addRenderToQuote() {
   if (!currentRenderBase64 || !currentRecord || !currentRecord.estimate) return;
   if (!currentRecord.estimate.quotePhotos) currentRecord.estimate.quotePhotos = [];
@@ -3296,6 +3027,7 @@ function toggleCv(kind) {
   } else if (kind === "materials") {
     currentRecord.estimate.showMaterialsCost = !(currentRecord.estimate.showMaterialsCost === true);
   }
+  // Update visual state
   const el = document.querySelector('.cv-check[data-kind="' + kind + '"]');
   const checkbox = document.getElementById("cv-" + kind);
   const isChecked = kind === "labor"
@@ -3311,15 +3043,18 @@ function updateCvPreview() {
   const t = calcTotal(currentRecord.estimate);
   const cv = calcCustomerView(currentRecord.estimate);
 
+  // Update amount labels next to checkboxes
   const laborAmtEl = document.getElementById("cv-labor-amt");
   const matAmtEl = document.getElementById("cv-materials-amt");
   if (laborAmtEl) laborAmtEl.textContent = "Will show: " + fmt(t.laborWithMarkup);
   if (matAmtEl) matAmtEl.textContent = "Will show: " + fmt(t.matWithMarkup);
 
+  // Build preview body
   const body = document.getElementById("cv-preview-body");
   if (!body) return;
 
   if (cv.bothHidden) {
+    // Just total, no breakdown
     body.innerHTML =
       '<div style="text-align:center;padding:18px 0">' +
         '<div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:4px">Your Estimate</div>' +
@@ -3337,9 +3072,11 @@ function updateCvPreview() {
   }
   html += '<div class="cv-preview-row preview-grand"><span>TOTAL</span><span class="pv-value">' + fmt(cv.customerTotal) + '</span></div>';
 
+  // "All materials included" note when labor shown but materials hidden AND materials exist
   if (cv.showLabor && !cv.showMaterials && t.mat > 0) {
     html += '<div class="cv-preview-note"><strong>✓ All materials included</strong> in the total price.</div>';
   }
+  // Note when materials shown but labor hidden
   if (!cv.showLabor && cv.showMaterials && t.labor > 0) {
     html += '<div class="cv-preview-note"><strong>✓ Labor included</strong> in the total price.</div>';
   }
@@ -3439,6 +3176,7 @@ async function generateAI(isRegenerate) {
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || "AI generation failed");
 
+    // Preserve checkbox preferences
     const prevShowLabor = currentRecord.estimate && currentRecord.estimate.showLaborCost;
     const prevShowMat = currentRecord.estimate && currentRecord.estimate.showMaterialsCost;
     currentRecord.estimate = data.estimate;
@@ -3497,6 +3235,7 @@ async function sendToCustomer() {
   const cv = calcCustomerView(est);
   if (cv.customerTotal <= 0) { toast("Add labor or materials with prices first", true); return; }
 
+  // Build confirm message showing what customer will see
   let visibility;
   if (est.showLaborCost && est.showMaterialsCost) {
     visibility = "Labor + Materials (split into both)";
@@ -3552,7 +3291,7 @@ async function deleteEstimate() {
 
 /* ===== INVOICE MODAL ===== */
 let invoiceState = {
-  type: "full",
+  type: "full",  // deposit | final | full | custom
   amount: 0,
   dueDate: "",
   memo: "",
@@ -3566,11 +3305,14 @@ function openInvoiceModal() {
   if (!currentRecord) return;
   const est = gatherForm();
   const t = calcTotal(est);
+  // Save the form first so the invoice can use latest totals
   syncLines();
   
+  // Calculate prior invoiced amount
   const prior = (currentRecord.invoices || []).reduce(function(s, inv) { return s + (Number(inv.amount) || 0); }, 0);
   const remaining = Math.max(0, t.grand - prior);
 
+  // Default state
   invoiceState = {
     type: "full",
     amount: t.grand,
@@ -3589,6 +3331,7 @@ function openInvoiceModal() {
 
 function closeInvoiceModal() {
   document.getElementById("invoice-modal").classList.remove("show");
+  // Only close body overflow if edit modal isn't also showing
   if (!document.getElementById("edit-modal").classList.contains("show")) {
     document.body.style.overflow = "";
   }
@@ -3708,6 +3451,7 @@ function buildPayOpt(method, icon, label) {
 
 function setInvoiceType(type) {
   invoiceState.type = type;
+  // Recalculate amount based on type
   const est = currentRecord.estimate || {};
   const t = calcTotal(est);
   const prior = (currentRecord.invoices || []).reduce(function(s, inv) { return s + (Number(inv.amount) || 0); }, 0);
@@ -3718,11 +3462,13 @@ function setInvoiceType(type) {
   } else if (type === "full") {
     invoiceState.amount = Math.round(t.grand * 100) / 100;
   }
+  // For "custom", don't change amount
   renderInvoiceModal(t, prior, Math.max(0, t.grand - prior));
 }
 
 function setPaymentMethod(method) {
   invoiceState.paymentMethod = method;
+  // Auto-fill payment details based on method
   const defaults = {
     zelle: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
     bank: "Bank Transfer:\nBank name: [your bank]\nRouting: xxx\nAccount: xxx",
@@ -3753,6 +3499,7 @@ function updateInvoiceState() {
   invoiceState.paymentDetails = document.getElementById("inv-paydetails").value;
   const linkField = document.getElementById("inv-paylink");
   if (linkField) invoiceState.paymentLink = linkField.value;
+  // Update preview live
   document.getElementById("inv-preview-amount").textContent = fmt(invoiceState.amount);
   const dueText = invoiceState.dueDate
     ? "Due " + new Date(invoiceState.dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
@@ -3761,6 +3508,7 @@ function updateInvoiceState() {
 }
 
 async function submitInvoice() {
+  // Validate
   if (!invoiceState.amount || invoiceState.amount <= 0) {
     toast("Please enter a valid amount", true);
     return;
@@ -3797,6 +3545,7 @@ async function submitInvoice() {
     if (!r.ok) throw new Error(data.error || "Send failed");
     toast(data.forwardedToContractor ? "✓ Invoice sent to your inbox to forward" : "✓ Invoice sent to customer (" + data.invoiceNumber + ")");
     closeInvoiceModal();
+    // Refresh the estimate to show updated status + invoice history
     await loadEstimates();
     closeEdit();
   } catch (e) {
@@ -3929,6 +3678,7 @@ function renderHandymanModal(b) {
                        '🗓 FLEXIBLE';
 
   document.getElementById("handyman-card").innerHTML =
+    // ═══════════ HEADER ═══════════
     '<div class="modal-head">' +
       '<div>' +
         '<h2 style="display:flex;align-items:center;gap:10px">' + icon + ' ' + esc(b.service_name || b.service_id) + '</h2>' +
@@ -3940,6 +3690,8 @@ function renderHandymanModal(b) {
         '<button class="modal-close" onclick="closeHandymanModal()">×</button>' +
       '</div>' +
     '</div>' +
+
+    // ═══════════ TOP ALERT BAR (Confidence + Urgency) ═══════════
     '<div class="h-alert-bar">' +
       '<div class="h-alert-left">' +
         '<div class="h-alert-conf-circle ' + conf + '">' + (b.confidence_score || 0) + '</div>' +
@@ -3950,7 +3702,10 @@ function renderHandymanModal(b) {
       '</div>' +
       '<div class="h-alert-urgency ' + urgency + '">' + urgencyLabel + '</div>' +
     '</div>' +
+
+    // ═══════════ HERO: PHOTOS + AI ANALYSIS (the main dispatch view) ═══════════
     '<div class="h-hero-grid">' +
+      // Photos
       '<div class="h-hero-block">' +
         '<div class="h-hero-block-title">' +
           '<span>📸 Customer Photos</span>' +
@@ -3965,6 +3720,7 @@ function renderHandymanModal(b) {
           : '<div class="h-hero-photos-empty">📷 No photos uploaded</div>'
         ) +
       '</div>' +
+      // AI Analysis
       '<div class="h-hero-block">' +
         '<div class="h-hero-block-title">🧠 AI Analysis</div>' +
         '<div class="h-ai-analysis">' +
@@ -3978,7 +3734,10 @@ function renderHandymanModal(b) {
         ) : '') +
       '</div>' +
     '</div>' +
+
+    // ═══════════ TOOLS + MATERIALS (THE DISPATCH CHECKLIST) ═══════════
     '<div class="h-action-grid">' +
+      // Tools
       '<div class="h-action-block">' +
         '<div class="h-action-block-title">' +
           '<span>🧰 Tools to Bring</span>' +
@@ -3989,6 +3748,7 @@ function renderHandymanModal(b) {
           : '<div class="h-action-empty">No specific tools listed</div>'
         ) +
       '</div>' +
+      // Materials
       '<div class="h-action-block">' +
         '<div class="h-action-block-title">' +
           '<span>📦 Materials to Bring</span>' +
@@ -4000,18 +3760,23 @@ function renderHandymanModal(b) {
         ) +
       '</div>' +
     '</div>' +
+
+    // ═══════════ SPECIAL ORDER + WARNINGS (alerts) ═══════════
     ((b.special_order_flag && specialOrderItems.length > 0) ? (
       '<div class="h-special-order" style="margin-bottom:14px">' +
         '<div class="so-title">🚨 SPECIAL ORDER REQUIRED — buy before arrival</div>' +
         '<ul>' + specialOrderItems.map(function(s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
       '</div>'
     ) : '') +
+
     (warnings.length > 0 ? (
       '<div class="h-warnings" style="margin-bottom:18px;margin-top:0">' +
         '<div class="w-title">⚠️ Warnings & Notes</div>' +
         '<ul>' + warnings.map(function(w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' +
       '</div>'
     ) : '') +
+
+    // ═══════════ CUSTOMER COMPACT ROW ═══════════
     '<div class="h-customer-row">' +
       '<div class="h-cust-cell">' +
         '<span class="ccl">👤 Customer</span>' +
@@ -4030,6 +3795,8 @@ function renderHandymanModal(b) {
         '<span class="ccv"><a href="mailto:' + esc(b.customer_email) + '">' + esc(b.customer_email) + '</a></span>' +
       '</div>' +
     '</div>' +
+
+    // ═══════════ ESTIMATE COMPACT BAR ═══════════
     '<div class="h-estimate-bar">' +
       '<div class="h-est-bar-cell">' +
         '<div class="ebl">⏱ Time</div>' +
@@ -4048,6 +3815,8 @@ function renderHandymanModal(b) {
         '<div class="ebv">' + (b.deposit_amount > 0 ? '$' + b.deposit_amount : 'None') + '</div>' +
       '</div>' +
     '</div>' +
+
+    // ═══════════ STATUS MANAGEMENT ═══════════
     '<div class="h-section" style="border-bottom:none;padding-bottom:0;margin-bottom:14px">' +
       '<div class="h-section-title">🎯 Booking Status</div>' +
       '<div class="h-status-row">' +
@@ -4056,6 +3825,8 @@ function renderHandymanModal(b) {
         }).join('') +
       '</div>' +
     '</div>' +
+
+    // ═══════════ COLLAPSIBLE: CUSTOMER ANSWERS ═══════════
     (Object.keys(answers).length > 0 ? (
       '<div class="h-collapsible" id="collapse-answers">' +
         '<div class="h-collapsible-header" onclick="toggleCollapse(\'collapse-answers\')">' +
@@ -4076,6 +3847,8 @@ function renderHandymanModal(b) {
         '</div>' +
       '</div>'
     ) : '') +
+
+    // ═══════════ COLLAPSIBLE: CONTRACTOR NOTES ═══════════
     '<div class="h-collapsible ' + (b.contractor_notes ? 'expanded' : '') + '" id="collapse-notes">' +
       '<div class="h-collapsible-header" onclick="toggleCollapse(\'collapse-notes\')">' +
         '<span>✏️ Your Private Notes' + (b.contractor_notes ? ' ●' : '') + '</span>' +
@@ -4086,6 +3859,8 @@ function renderHandymanModal(b) {
         '<button onclick="saveContractorNotes(\'' + esc(b.ref) + '\')" style="margin-top:8px;padding:8px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">💾 Save Notes</button>' +
       '</div>' +
     '</div>' +
+
+    // ═══════════ ACTIONS ═══════════
     '<div class="modal-actions" style="margin-top:18px">' +
       '<button class="btn-secondary" onclick="closeHandymanModal()">Close</button>' +
       '<div class="modal-actions-right">' +
@@ -4108,7 +3883,9 @@ async function updateHandymanStatus(ref, newStatus) {
     });
     if (!r.ok) throw new Error("Update failed");
     toast("✓ Status updated to " + newStatus);
+    // Reload
     await loadEstimates();
+    // Reopen modal with fresh data
     openHandymanDetail(ref);
   } catch (e) {
     toast("Update failed: " + e.message, true);
@@ -4145,6 +3922,7 @@ function humanizeKey(key) {
   return key.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
 }
 
+// Close handyman modal on backdrop click
 document.getElementById("handyman-modal").addEventListener("click", function(e) {
   if (e.target.id === "handyman-modal") closeHandymanModal();
 });
@@ -4173,6 +3951,7 @@ function openConfirmationModal() {
   }
   const b = currentHandymanBooking;
 
+  // Pre-fill from booking AI estimate
   document.getElementById('price-min').value = b.estimated_labor_min || '';
   document.getElementById('price-max').value = b.estimated_labor_max || '';
   document.getElementById('price-fixed').value = '';
@@ -4245,10 +4024,12 @@ function validateConfirmForm() {
   }
 }
 
+// Live validation
 document.addEventListener('input', function(e) {
   if (e.target.closest('#confirm-overlay')) validateConfirmForm();
 });
 
+// Close on backdrop click
 document.getElementById('confirm-overlay').addEventListener('click', function(e) {
   if (e.target.id === 'confirm-overlay') closeConfirmationModal();
 });
@@ -4317,10 +4098,12 @@ async function sendConfirmation() {
 /* END SEND CONFIRMATION FEATURE */
 
 /* ════════════════════════════════════════════════════════════════════
-   CONTENT STUDIO TAB
+   CONTENT STUDIO TAB — embeds the AI Page Content Writer
    ════════════════════════════════════════════════════════════════════ */
 function renderContentStudio() {
   const host = document.getElementById("list-host");
+  // The studio (/seo-content.html) shares the same sessionStorage auth key,
+  // so it auto-unlocks inside the iframe — no second login.
   host.innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">' +
       '<div>' +
@@ -4331,9 +4114,10 @@ function renderContentStudio() {
     '</div>' +
     '<iframe src="/seo-content.html" style="width:100%;height:78vh;border:1px solid var(--line);border-radius:14px;background:var(--bg)" title="SEO Content Studio"></iframe>';
 }
+/* END CONTENT STUDIO TAB */
 
 /* ════════════════════════════════════════════════════════════════════
-   SEO BRAIN TAB
+   SEO BRAIN TAB — May 2026
    ════════════════════════════════════════════════════════════════════ */
 var seoData = null;
 var seoInsightCount = 0;
@@ -4362,7 +4146,7 @@ async function renderSeoTab() {
 
     seoData = data;
     seoInsightCount = (data.insights || []).length;
-    renderTabs();
+    renderTabs(); // update count badge
     drawSeoDashboard();
   } catch (e) {
     host.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Could not load SEO data</h3><p>' + esc(e.message) + '</p><button class="topbar-btn" onclick="renderSeoTab()">Retry</button></div>';
@@ -4387,6 +4171,7 @@ function drawSeoDashboard() {
   const cur = d.latest;
   const prev = d.previous;
 
+  // STAT CARDS
   const statsHtml =
     '<div class="seo-stats">' +
       '<div class="seo-stat">' +
@@ -4411,8 +4196,10 @@ function drawSeoDashboard() {
       '</div>' +
     '</div>';
 
+  // TREND CHART (simple SVG bars for clicks)
   const chartHtml = drawSeoChart(d.history);
 
+  // INSIGHTS
   const insights = d.insights || [];
   const filtered = seoInsightFilter === "all"
     ? insights
@@ -4431,6 +4218,7 @@ function drawSeoDashboard() {
       ? '<div style="color:var(--ink-muted);padding:20px;text-align:center;font-size:14px">No insights in this filter.</div>'
       : filtered.map(seoInsightCard).join(''));
 
+  // KEYWORDS TABLE
   const queries = (d.queries || []).slice(0, 25);
   const keywordsHtml =
     '<div class="seo-section-head"><h3>🔍 Top Keywords</h3></div>' +
@@ -4450,6 +4238,7 @@ function drawSeoDashboard() {
       '</tbody>' +
     '</table></div>';
 
+  // PAGES TABLE
   const pages = (d.pages || []).slice(0, 15);
   const pagesHtml =
     '<div class="seo-section-head"><h3>📄 Top Pages</h3></div>' +
@@ -4468,6 +4257,9 @@ function drawSeoDashboard() {
       }).join('') +
       '</tbody>' +
     '</table></div>';
+
+  // SUMMARY + DATE
+  const summaryText = insights.length && d.latest ? '' : '';
 
   host.innerHTML =
     '<div class="seo-wrap">' +
@@ -4547,6 +4339,7 @@ async function updateSeoInsight(id, status) {
       body: JSON.stringify({ action: "updateInsight", insightId: id, status: status })
     });
     if (!r.ok) throw new Error("Update failed");
+    // Update local state
     const ins = (seoData.insights || []).find(function(i){ return i.id === id; });
     if (ins) ins.status = status;
     drawSeoDashboard();
@@ -4569,6 +4362,7 @@ async function runSeoNow() {
   }
 }
 
+/* SEO TAB STYLES (injected) */
 (function injectSeoStyles(){
   const css = `
   .seo-wrap { max-width: 1000px; }
@@ -4631,11 +4425,14 @@ async function runSeoNow() {
   style.textContent = css;
   document.head.appendChild(style);
 })();
+/* END SEO BRAIN TAB */
 
 /* ════════════════════════════════════════════════════════════════════
-   LIVE VISITORS TAB
+   LIVE VISITORS TAB  —  added May 2026
+   Auth reuses the dashboard password. In Netlify set env var
+   VISITS_KEY equal to the dashboard password, then redeploy.
    ════════════════════════════════════════════════════════════════════ */
-var VISITS_KEY = DASHBOARD_PASSWORD;
+var VISITS_KEY = DASHBOARD_PASSWORD;   // must match the Netlify VISITS_KEY env var
 var visitorsTimer = null;
 
 var VISIT_PAGE_NAMES = {
@@ -4797,6 +4594,7 @@ function drawVisitors(d){
     '</div>';
 }
 
+/* Route to the tab WITHOUT editing renderList — wrap the existing one. */
 if (typeof renderList === "function") {
   var _sbcOrigRenderList = renderList;
   renderList = function(){
@@ -4806,6 +4604,7 @@ if (typeof renderList === "function") {
   };
 }
 
+/* Styles for the Live Visitors tab (matches your dashboard look). */
 (function injectVisitorStyles(){
   var css =
   '.vis-livepill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--gold-soft);padding:7px 14px;border-radius:30px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}'+
@@ -4836,574 +4635,7 @@ if (typeof renderList === "function") {
   '.vis-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}';
   var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
 })();
-
-/* ════════════════════════════════════════════════════════════════════
-   PHOTO STRIP + RENDER DISMISS FIXES
-   ════════════════════════════════════════════════════════════════════ */
-(function injectPhotoStripStyles(){
-  var css =
-    '.cust-photos{flex-wrap:nowrap!important;overflow-x:auto;padding-bottom:6px}' +
-    '.cust-photos img{flex:0 0 auto}' +
-    '#quote-photo-preview{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;gap:6px!important;padding-bottom:6px}' +
-    '#quote-photo-preview > div{flex:0 0 auto;width:84px;height:84px;aspect-ratio:auto!important}' +
-    '#render-photo-selector{flex-wrap:nowrap!important;overflow-x:auto;padding-bottom:6px}' +
-    '#render-photo-selector > div{flex:0 0 auto}';
-  var st = document.createElement('style');
-  st.textContent = css;
-  document.head.appendChild(st);
-})();
+/* END LIVE VISITORS TAB */
 </script>
-
-<!-- PWA Install Banner -->
-<div id="pwa-banner">
-  <div class="pwa-icon">🏗️</div>
-  <div class="pwa-text">
-    <strong>Add to Home Screen</strong>
-    <span>Install SBC Dashboard as an app</span>
-  </div>
-  <button class="pwa-install" id="pwa-install-btn">Install</button>
-  <button class="pwa-dismiss" onclick="dismissPwaBanner()">×</button>
-</div>
-
-
-<script>
-/* ═══════ PWA: Service Worker + Install Prompt ═══════ */
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/sw.js').then(function(reg) {
-      console.log('SW registered:', reg.scope);
-    }).catch(function(err) {
-      console.log('SW failed:', err);
-    });
-  });
-}
-
-var deferredPrompt = null;
-
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Only show if not already installed and not dismissed recently
-  var dismissed = localStorage.getItem('pwa-banner-dismissed');
-  var oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-  if (!dismissed || Number(dismissed) < oneDayAgo) {
-    setTimeout(function() {
-      document.getElementById('pwa-banner').classList.add('visible');
-    }, 3000);
-  }
-});
-
-document.getElementById('pwa-install-btn').addEventListener('click', function() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function(choice) {
-    if (choice.outcome === 'accepted') {
-      document.getElementById('pwa-banner').classList.remove('visible');
-    }
-    deferredPrompt = null;
-  });
-});
-
-function dismissPwaBanner() {
-  document.getElementById('pwa-banner').classList.remove('visible');
-  localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
-}
-
-window.addEventListener('appinstalled', function() {
-  document.getElementById('pwa-banner').classList.remove('visible');
-  deferredPrompt = null;
-});
-
-/* Deep-link tab from URL hash on load */
-window.addEventListener('load', function() {
-  if (location.hash) {
-    var tabId = location.hash.replace('#', '');
-    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','declined','handyman','seo','content','visitors'];
-    if (validTabs.includes(tabId)) {
-      activeTab = tabId;
-    }
-  }
-});
-</script>
-
-
-    <div class="drawer-sub">Dashboard</div>
-  </div>
-  <nav class="drawer-nav" id="drawer-nav">
-    <!-- filled by JS -->
-  </nav>
-  <div class="drawer-footer">
-    <a href="/estimate" target="_blank">↗ Customer Form</a>
-    <button onclick="loadEstimates(); closeDrawer();">⟳ Refresh Data</button>
-    <button onclick="logout()">⎋ Logout</button>
-  </div>
-</div>
-
-
-
-
-
-
-
-
-
-
-<!-- ===== MOBILE DRAWER ===== -->
-<div id="sbc-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9000"></div>
-<div id="sbc-drawer" style="display:none;position:fixed;top:0;left:0;width:280px;height:100%;background:#0f1f33;z-index:9001;flex-direction:column;overflow-y:auto;box-shadow:4px 0 20px rgba(0,0,0,0.5)">
-  <div style="padding:24px 20px 16px;background:#122740;border-bottom:1px solid rgba(212,181,114,0.18)">
-    <div style="font-size:22px;letter-spacing:4px;color:#d4b572;font-family:Arial,sans-serif;font-weight:bold">SANI</div>
-    <div style="font-size:11px;letter-spacing:2px;color:#7a8aa3;text-transform:uppercase;margin-top:2px">Dashboard</div>
-    <button id="sbc-close-btn" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#7a8aa3;font-size:24px;cursor:pointer;padding:4px 8px;-webkit-tap-highlight-color:transparent">×</button>
-  </div>
-  <div id="sbc-nav" style="flex:1;padding:8px 0"></div>
-  <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06)">
-    <a href="/estimate" target="_blank" style="display:block;padding:12px 14px;background:#142a44;border-radius:10px;color:#b8c4d6;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">↗ Customer Form</a>
-    <button onclick="loadEstimates()" style="display:block;width:100%;padding:12px 14px;background:#142a44;border-radius:10px;color:#b8c4d6;font-size:13px;border:none;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">⟳ Refresh</button>
-    <button onclick="logout()" style="display:block;width:100%;padding:12px 14px;background:#142a44;border-radius:10px;color:#b8c4d6;font-size:13px;border:none;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">⎋ Logout</button>
-  </div>
-</div>
-<!-- ===== END MOBILE DRAWER ===== -->
-
-
-<script>
-// ===== SBC MOBILE DRAWER =====
-var SBC_TABS = [
-  {id:'all',      icon:'📋', label:'All'},
-  {id:'new',      icon:'🔔', label:'New'},
-  {id:'drafted',  icon:'✏️',  label:'Drafts'},
-  {id:'sent',     icon:'📨', label:'Sent'},
-  {id:'accepted', icon:'✅', label:'Accepted'},
-  {id:'invoiced', icon:'💳', label:'Invoiced'},
-  {id:'paid',     icon:'💰', label:'Paid'},
-  {id:'declined', icon:'❌', label:'Declined'},
-  null,
-  {id:'handyman', icon:'🔧', label:'Handyman'},
-  {id:'seo',      icon:'🧠', label:'SEO Brain'},
-  {id:'content',  icon:'✍️',  label:'Content'},
-  {id:'visitors', icon:'👁',  label:'Live Visitors'},
-];
-
-function sbcOpenDrawer() {
-  var drawer  = document.getElementById('sbc-drawer');
-  var overlay = document.getElementById('sbc-overlay');
-  var nav     = document.getElementById('sbc-nav');
-  if (!drawer) return;
-
-  // Build nav
-  // Calculate counts from live data
-  var counts = {all:0,new:0,drafted:0,sent:0,accepted:0,invoiced:0,paid:0,declined:0,handyman:0,seo:0,content:0,visitors:0};
-  try {
-    if (typeof estimates !== 'undefined' && estimates) {
-      counts.all = estimates.length;
-      estimates.forEach(function(e) { if (e.status && counts[e.status] !== undefined) counts[e.status]++; });
-    }
-    if (typeof handymanBookings !== 'undefined' && handymanBookings) counts.handyman = handymanBookings.length;
-    if (typeof seoInsightCount !== 'undefined') counts.seo = seoInsightCount || 0;
-    if (typeof visitorsLiveCount !== 'undefined') counts.visitors = visitorsLiveCount || 0;
-  } catch(e) {}
-
-  var html = '';
-  var cur = (typeof activeTab !== 'undefined') ? activeTab : 'all';
-  SBC_TABS.forEach(function(t) {
-    if (!t) {
-      html += '<div style="height:1px;background:rgba(255,255,255,0.06);margin:6px 16px"></div>';
-      return;
-    }
-    var active = cur === t.id;
-    var count = counts[t.id] || 0;
-    html += '<button data-tid="' + t.id + '" style="'
-      + 'display:flex;align-items:center;gap:14px;'
-      + 'width:calc(100% - 12px);margin-right:12px;'
-      + 'padding:14px 20px;border:none;cursor:pointer;'
-      + 'background:' + (active ? 'rgba(212,181,114,0.15)' : 'transparent') + ';'
-      + 'color:' + (active ? '#d4b572' : '#b8c4d6') + ';'
-      + 'font-size:14px;font-family:Inter,sans-serif;font-weight:' + (active ? '700' : '500') + ';'
-      + 'text-align:left;border-radius:0 30px 30px 0;'
-      + '-webkit-tap-highlight-color:transparent'
-      + '">'
-      + '<span style="font-size:18px;width:24px;text-align:center">' + t.icon + '</span>'
-      + '<span style="flex:1">' + t.label + '</span>'
-      + '<span style="background:' + (active ? '#d4b572' : 'rgba(212,181,114,0.15)') + ';'
-      + 'color:' + (active ? '#0f1f33' : '#d4b572') + ';'
-      + 'padding:2px 9px;border-radius:10px;font-size:12px;font-weight:700;min-width:22px;text-align:center">'
-      + count + '</span>'
-      + '</button>';
-  });
-  nav.innerHTML = html;
-
-  // Tab click handlers
-  nav.querySelectorAll('button[data-tid]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var id = this.getAttribute('data-tid');
-      sbcCloseDrawer();
-      if (typeof activeTab !== 'undefined') activeTab = id;
-      if (typeof renderTabs === 'function') renderTabs();
-      if (typeof renderList === 'function') renderList();
-    });
-  });
-
-  // Show
-  drawer.style.display  = 'flex';
-  overlay.style.display = 'block';
-  document.body.style.overflow = 'hidden';
-}
-
-function sbcCloseDrawer() {
-  var drawer  = document.getElementById('sbc-drawer');
-  var overlay = document.getElementById('sbc-overlay');
-  if (drawer)  drawer.style.display  = 'none';
-  if (overlay) overlay.style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-// Wire up after DOM ready
-function sbcInitDrawer() {
-  var menuBtn  = document.getElementById('sbc-menu-btn');
-  var closeBtn = document.getElementById('sbc-close-btn');
-  var overlay  = document.getElementById('sbc-overlay');
-
-  if (!menuBtn) { setTimeout(sbcInitDrawer, 300); return; }
-
-  menuBtn.addEventListener('click',  sbcOpenDrawer);
-  if (closeBtn) closeBtn.addEventListener('click', sbcCloseDrawer);
-  if (overlay)  overlay.addEventListener('click',  sbcCloseDrawer);
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', sbcInitDrawer);
-} else {
-  sbcInitDrawer();
-}
-// ===== END SBC MOBILE DRAWER =====
-</script>
-
-
-<!-- ===== SEND ESTIMATE LINK BUTTON + MODAL ===== -->
-
-<!-- Floating Button -->
-<button id="send-link-fab" onclick="(function(){var o=document.getElementById('send-link-overlay');if(o){o.style.display='flex';document.body.style.overflow='hidden';}})()" style="
-  display:none;
-  position:fixed;
-  bottom:calc(24px + env(safe-area-inset-bottom, 0px));
-  right:20px;
-  z-index:800;
-  background:linear-gradient(135deg,#d4b572,#c9a84c);
-  color:#0b1828;
-  border:none;
-  border-radius:28px;
-  padding:14px 20px;
-  font-family:Inter,sans-serif;
-  font-size:13px;
-  font-weight:700;
-  letter-spacing:1px;
-  text-transform:uppercase;
-  cursor:pointer;
-  box-shadow:0 4px 20px rgba(212,181,114,0.45);
-  display:flex;
-  align-items:center;
-  gap:8px;
-  -webkit-tap-highlight-color:transparent;
-  transition:transform .15s,box-shadow .15s;
-" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(212,181,114,0.55)'"
-   onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(212,181,114,0.45)'">
-  <span style="font-size:16px">📤</span>
-  <span>Send Estimate Link</span>
-</button>
-
-<!-- Modal Overlay -->
-<div id="send-link-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9500;align-items:center;justify-content:center;padding:20px">
-
-  <!-- Modal Card -->
-  <div style="background:#0f1f33;border:1px solid rgba(212,181,114,0.25);border-radius:18px;max-width:440px;width:100%;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
-
-    <!-- Header -->
-    <div style="background:linear-gradient(135deg,#122740,#1a3354);padding:22px 24px 18px;border-bottom:2px solid #d4b572;position:relative">
-      <div style="font-family:Arial,sans-serif;font-size:20px;font-weight:900;letter-spacing:3px;color:#d4b572">📤 SEND ESTIMATE LINK</div>
-      <div style="font-size:12px;color:#7a8aa3;margin-top:4px">Customer fills out the form on their phone or computer</div>
-      <button onclick="(function(){var o=document.getElementById('send-link-overlay');if(o){o.style.display='none';document.body.style.overflow=''}})()" style="position:absolute;top:16px;right:16px;background:rgba(212,181,114,0.12);border:1px solid rgba(212,181,114,0.2);color:#d4b572;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">×</button>
-    </div>
-
-    <!-- Body -->
-    <div style="padding:22px 24px">
-
-      <!-- Customer Name -->
-      <div style="margin-bottom:16px">
-        <label style="display:block;font-size:10px;letter-spacing:1.5px;color:#7a8aa3;text-transform:uppercase;font-weight:600;margin-bottom:6px">Customer Name</label>
-        <input id="sl-name" type="text" placeholder="e.g. John Smith" style="width:100%;padding:13px 14px;background:#06101e;border:1.5px solid rgba(255,255,255,0.08);color:#e8edf5;border-radius:10px;font-size:15px;font-family:Inter,sans-serif;outline:none;-webkit-appearance:none"
-          onfocus="this.style.borderColor='#d4b572'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
-      </div>
-
-      <!-- Phone -->
-      <div style="margin-bottom:16px">
-        <label style="display:block;font-size:10px;letter-spacing:1.5px;color:#7a8aa3;text-transform:uppercase;font-weight:600;margin-bottom:6px">
-          📱 Phone Number <span style="color:#7a8aa3;font-weight:400;letter-spacing:0">(optional)</span>
-        </label>
-        <input id="sl-phone" type="tel" placeholder="e.g. (718) 555-0123" style="width:100%;padding:13px 14px;background:#06101e;border:1.5px solid rgba(255,255,255,0.08);color:#e8edf5;border-radius:10px;font-size:15px;font-family:Inter,sans-serif;outline:none;-webkit-appearance:none"
-          onfocus="this.style.borderColor='#d4b572'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
-        <div style="font-size:11px;color:#7a8aa3;margin-top:5px">Opens your Messages app with the text pre-filled</div>
-      </div>
-
-      <!-- Email -->
-      <div style="margin-bottom:20px">
-        <label style="display:block;font-size:10px;letter-spacing:1.5px;color:#7a8aa3;text-transform:uppercase;font-weight:600;margin-bottom:6px">
-          ✉️ Email Address <span style="color:#7a8aa3;font-weight:400;letter-spacing:0">(optional)</span>
-        </label>
-        <input id="sl-email" type="email" placeholder="e.g. john@email.com" style="width:100%;padding:13px 14px;background:#06101e;border:1.5px solid rgba(255,255,255,0.08);color:#e8edf5;border-radius:10px;font-size:15px;font-family:Inter,sans-serif;outline:none;-webkit-appearance:none"
-          onfocus="this.style.borderColor='#d4b572'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
-        <div style="font-size:11px;color:#7a8aa3;margin-top:5px">Opens your Mail app with the email pre-filled</div>
-      </div>
-
-      <!-- Preview box -->
-      <div id="sl-preview" style="background:#06101e;border:1px solid rgba(212,181,114,0.15);border-radius:10px;padding:14px 16px;margin-bottom:20px;display:none">
-        <div style="font-size:10px;letter-spacing:1.5px;color:#d4b572;text-transform:uppercase;font-weight:700;margin-bottom:8px">Message Preview</div>
-        <div id="sl-preview-text" style="font-size:13px;color:#b8c4d6;line-height:1.6;white-space:pre-wrap"></div>
-      </div>
-
-      <!-- Error -->
-      <div id="sl-error" style="display:none;background:rgba(248,113,113,0.12);border:1px solid #f87171;border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;margin-bottom:16px"></div>
-
-      <!-- Buttons -->
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button id="sl-sms-btn" style="
-          padding:14px;background:linear-gradient(135deg,#d4b572,#c9a84c);color:#0b1828;
-          border:none;border-radius:10px;font-family:Inter,sans-serif;font-size:13px;
-          font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;gap:8px;
-          -webkit-tap-highlight-color:transparent;width:100%;
-        " onclick="
-          var p=document.getElementById('sl-phone').value.replace(/[^0-9]/g,'');
-          var n=document.getElementById('sl-name').value.trim();
-          var first=n?n.split(' ')[0]:'';
-          var gr=first?'Hi '+first+'! ':'Hi! ';
-          var msg=gr+'It\'s Sani Building Corp. Click below for your free estimate — takes 2 min!\n\nhttps://www.sanibuildingcorp.com/estimate\n\nQuestions? Call (332) 277-0990';
-          if(!p){alert('Please enter a phone number');return;}
-          window.location.href='sms:+1'+p+(navigator.userAgent.indexOf('iPhone')>-1?'&':'?')+'body='+encodeURIComponent(msg);
-        ">📱 Send via Text Message</button>
-
-        <button id="sl-email-btn" style="
-          padding:14px;background:transparent;color:#d4b572;
-          border:2px solid #d4b572;border-radius:10px;font-family:Inter,sans-serif;font-size:13px;
-          font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;gap:8px;
-          -webkit-tap-highlight-color:transparent;width:100%;
-        " onclick="
-          var e=document.getElementById('sl-email').value.trim();
-          var n=document.getElementById('sl-name').value.trim();
-          var first=n?n.split(' ')[0]:'';
-          var gr=first?'Hi '+first+',':'Hi,';
-          var subj='Your Free Renovation Estimate — Sani Building Corp';
-          var body=gr+'\n\nHere is your link to request a free estimate from Sani Building Corp:\n\nhttps://www.sanibuildingcorp.com/estimate\n\nTakes about 2 minutes to fill out. I will review and send your estimate within 24 hours.\n\nQuestions? Call or text (332) 277-0990\n\nBest,\nSani Building Corp';
-          if(!e){alert('Please enter an email address');return;}
-          window.location.href='mailto:'+e+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
-        ">✉️ Send via Email</button>
-
-        <button style="
-          padding:12px;background:rgba(212,181,114,0.08);color:#7a8aa3;
-          border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-family:Inter,sans-serif;
-          font-size:12px;font-weight:600;cursor:pointer;
-          -webkit-tap-highlight-color:transparent;width:100%;
-        " onclick="
-          var url='https://www.sanibuildingcorp.com/estimate';
-          if(navigator.clipboard){
-            navigator.clipboard.writeText(url).then(function(){alert('Link copied!');});
-          } else {
-            var t=document.createElement('textarea');
-            t.value=url;document.body.appendChild(t);t.select();
-            document.execCommand('copy');document.body.removeChild(t);
-            alert('Link copied!');
-          }
-        ">🔗 Copy Link Only</button>
-      </div>
-
-    </div>
-  </div>
-</div>
-<!-- ===== END SEND ESTIMATE LINK ===== -->
-
-
-<script>
-/* ===== SEND ESTIMATE LINK ===== */
-var ESTIMATE_URL = 'https://www.sanibuildingcorp.com/estimate';
-
-function openSendLinkModal() {
-  var overlay = document.getElementById('send-link-overlay');
-  if (!overlay) return;
-  overlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-  var n = document.getElementById('sl-name');
-  var p = document.getElementById('sl-phone');
-  var e = document.getElementById('sl-email');
-  var err = document.getElementById('sl-error');
-  var prev = document.getElementById('sl-preview');
-  if (n) n.value = '';
-  if (p) p.value = '';
-  if (e) e.value = '';
-  if (err) err.style.display = 'none';
-  if (prev) prev.style.display = 'none';
-  updateSendLinkButtons();
-  setTimeout(function() { if (n) n.focus(); }, 300);
-}
-
-function closeSendLinkModal() {
-  document.getElementById('send-link-overlay').style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-// Close on overlay click
-(function() {
-  var ov = document.getElementById('send-link-overlay');
-  if (ov) ov.addEventListener('click', function(e) {
-    if (e.target === this) closeSendLinkModal();
-  });
-})();
-
-function getSMSMessage(name) {
-  var first = name ? name.split(' ')[0] : '';
-  var greeting = first ? ('Hi ' + first + '! ') : 'Hi! ';
-  return greeting + "It's Sani Building Corp. Click the link below to request your free renovation estimate — takes about 2 minutes!
-
-" + ESTIMATE_URL + "
-
-Any questions? Call or text (332) 277-0990";
-}
-
-function getEmailSubject(name) {
-  return 'Your Free Renovation Estimate — Sani Building Corp';
-}
-
-function getEmailBody(name) {
-  var first = name ? name.split(' ')[0] : '';
-  var greeting = first ? ('Hi ' + first + ',') : 'Hi,';
-  return greeting + "
-
-Thank you for your interest in Sani Building Corp!
-
-Click the link below to request your free renovation estimate. It only takes about 2 minutes to fill out:
-
-" + ESTIMATE_URL + "
-
-Once you submit, I'll review your request and send you a detailed estimate within 24 hours.
-
-Any questions? Feel free to call or text me at (332) 277-0990.
-
-Best regards,
-Sani Building Corp
-Brooklyn, NYC
-(332) 277-0990";
-}
-
-function updateSendLinkButtons() {
-  var phone = document.getElementById('sl-phone').value.trim();
-  var email = document.getElementById('sl-email').value.trim();
-  var name  = document.getElementById('sl-name').value.trim();
-
-  var smsBtn   = document.getElementById('sl-sms-btn');
-  var emailBtn = document.getElementById('sl-email-btn');
-  var preview  = document.getElementById('sl-preview');
-  var previewText = document.getElementById('sl-preview-text');
-
-  // Enable/disable SMS button
-  smsBtn.style.opacity   = phone ? '1' : '0.4';
-  smsBtn.style.cursor    = phone ? 'pointer' : 'default';
-
-  // Enable/disable Email button
-  emailBtn.style.opacity = email ? '1' : '0.4';
-  emailBtn.style.cursor  = email ? 'pointer' : 'default';
-
-  // Show preview if name entered
-  if (name || phone || email) {
-    preview.style.display = 'block';
-    if (phone) {
-      previewText.textContent = getSMSMessage(name);
-    } else if (email) {
-      previewText.textContent = 'Subject: ' + getEmailSubject(name) + '
-
-' + getEmailBody(name);
-    }
-  } else {
-    preview.style.display = 'none';
-  }
-}
-
-// Live update preview as user types — attach after DOM ready
-function attachSendLinkInputs() {
-  ['sl-name','sl-phone','sl-email'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('input', updateSendLinkButtons);
-  });
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', attachSendLinkInputs);
-} else {
-  attachSendLinkInputs();
-}
-
-function sendEstimateBySMS() {
-  var phoneEl = document.getElementById('sl-phone');
-  var nameEl  = document.getElementById('sl-name');
-  var phone = phoneEl ? phoneEl.value.trim() : '';
-  var name  = nameEl  ? nameEl.value.trim()  : '';
-  if (!phone) { showSendLinkError('Please enter a phone number first.'); return; }
-  var msg   = getSMSMessage(name);
-  var clean = phone.replace(/[^0-9]/g, '');
-  var smsUrl = 'sms:+1' + clean + (navigator.userAgent.match(/iPhone|iPad/) ? '&' : '?') + 'body=' + encodeURIComponent(msg);
-  window.location.href = smsUrl;
-  setTimeout(function() { showSendLinkSuccess('Messages app opened!'); }, 500);
-}
-
-function sendEstimateByEmail() {
-  var emailEl = document.getElementById('sl-email');
-  var nameEl  = document.getElementById('sl-name');
-  var email = emailEl ? emailEl.value.trim() : '';
-  var name  = nameEl  ? nameEl.value.trim()  : '';
-  if (!email) { showSendLinkError('Please enter an email address first.'); return; }
-  var subject = getEmailSubject(name);
-  var body    = getEmailBody(name);
-  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  setTimeout(function() { showSendLinkSuccess('Mail app opened!'); }, 500);
-}
-
-function copyEstimateLink() {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(ESTIMATE_URL).then(function() {
-      showSendLinkSuccess('Link copied to clipboard!');
-    });
-  } else {
-    var ta = document.createElement('textarea');
-    ta.value = ESTIMATE_URL;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showSendLinkSuccess('Link copied!');
-  }
-}
-
-function showSendLinkError(msg) {
-  var el = document.getElementById('sl-error');
-  el.textContent = msg;
-  el.style.display = 'block';
-  setTimeout(function() { el.style.display = 'none'; }, 4000);
-}
-
-function showSendLinkSuccess(msg) {
-  var el = document.getElementById('sl-error');
-  el.textContent = '✓ ' + msg;
-  el.style.background = 'rgba(74,222,128,0.12)';
-  el.style.borderColor = '#4ade80';
-  el.style.color = '#4ade80';
-  el.style.display = 'block';
-  setTimeout(function() {
-    el.style.display = 'none';
-    el.style.background = 'rgba(248,113,113,0.12)';
-    el.style.borderColor = '#f87171';
-    el.style.color = '#f87171';
-    closeSendLinkModal();
-  }, 2000);
-}
-/* ===== END SEND ESTIMATE LINK ===== */
-</script>
-
 </body>
 </html>
