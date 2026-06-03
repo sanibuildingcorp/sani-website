@@ -136,15 +136,20 @@ exports.handler = async function (event) {
           </div>
         </div>
       `;
-      // Only show note when customer sees materials but NOT labor
-      // Don't show "All materials included" when only labor is checked
-      if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
+      if (calc.showLabor && calc.showMaterials) {
         includedNoteHtml = `
           <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:11px 16px;font-size:13px;color:#555;border-radius:0 6px 6px 0;margin:-12px 0 24px">
-            <strong style="color:#2ecc71">Labor included</strong> — all work is covered in the price above.
+            <strong style="color:#2ecc71">✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.
+          </div>
+        `;
+      } else if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
+        includedNoteHtml = `
+          <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:11px 16px;font-size:13px;color:#555;border-radius:0 6px 6px 0;margin:-12px 0 24px">
+            <strong style="color:#2ecc71">✓ Labor included</strong> — all work is covered in the price above.
           </div>
         `;
       }
+      // Only labor checked: no note shown
     }
 
     const issuedDate = new Date(record.sentAt || record.submittedAt || Date.now()).toLocaleDateString("en-US", {
@@ -217,7 +222,12 @@ exports.handler = async function (event) {
     </div>` : ""}
 
     <div style="text-align:center;margin:28px 0">
-      <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">View Full Estimate and Approve</a>
+      <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">
+        View Full Estimate &amp; Approve →
+      </a>
+      <div style="margin-top:10px;font-size:12px;color:#888">
+        📸 Includes project photos &nbsp;·&nbsp; ✓ Approve online &nbsp;·&nbsp; ✎ Request changes
+      </div>
     </div>
 
     <p style="font-size:14px;color:#555;margin:24px 0 0">Click the button above to view your estimate, approve it online, or request changes. You can also reply directly to this email or call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
