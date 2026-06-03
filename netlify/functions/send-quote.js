@@ -136,13 +136,9 @@ exports.handler = async function (event) {
           </div>
         </div>
       `;
-      if (calc.showLabor && !calc.showMaterials && calc.hasMaterials) {
-        includedNoteHtml = `
-          <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:11px 16px;font-size:13px;color:#555;border-radius:0 6px 6px 0;margin:-12px 0 24px">
-            <strong style="color:#2ecc71">All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.
-          </div>
-        `;
-      } else if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
+      // Only show note when customer sees materials but NOT labor
+      // Don't show "All materials included" when only labor is checked
+      if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
         includedNoteHtml = `
           <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:11px 16px;font-size:13px;color:#555;border-radius:0 6px 6px 0;margin:-12px 0 24px">
             <strong style="color:#2ecc71">Labor included</strong> — all work is covered in the price above.
@@ -177,6 +173,9 @@ exports.handler = async function (event) {
 
     <h1 style="color:#0d1b2a;font-size:23px;margin:0 0 14px">Hi ${escapeHtml(firstName)},</h1>
     <p style="font-size:14.5px;color:#555;margin-bottom:18px">Thanks for reaching out about your <strong>${escapeHtml(projectTitle)}</strong>. We have put together a detailed estimate for you.</p>
+    <div style="background:#fff8e8;border:1px solid #e8c97a;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:#8a6a00">
+      📬 <strong>Gmail users:</strong> This email may appear in your Promotions tab. To always receive it in your inbox, drag this email to the Primary tab and click "Yes" when prompted.
+    </div>
 
     ${est.summary ? `<div style="background:#f7f0e3;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:14px;color:#444;border-radius:0 6px 6px 0">${escapeHtml(est.summary)}</div>` : ""}
 
@@ -210,6 +209,12 @@ exports.handler = async function (event) {
     ${lineItemsHtml}
     ${includedNoteHtml}
     ${photosHtml}
+
+    ${allPhotos.length > 0 ? `
+    <div style="background:#f7f0e3;border:1px solid #e8c97a;border-radius:10px;padding:14px 18px;margin:0 0 24px;text-align:center">
+      <div style="font-size:13px;color:#8a6a00;margin-bottom:6px;letter-spacing:0.5px">📸 This estimate includes <strong>${allPhotos.length} project photo${allPhotos.length > 1 ? 's' : ''}</strong></div>
+      <div style="font-size:12px;color:#a08030">Tap the button below to view all photos</div>
+    </div>` : ""}
 
     <div style="text-align:center;margin:28px 0">
       <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">View Full Estimate and Approve</a>
