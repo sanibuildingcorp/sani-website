@@ -214,7 +214,73 @@ body {
   top: 4px;
 }
 
-/* LINE ITEMS BOX (with dotted leader) */
+/* PHOTOS GRID */
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
+@media (max-width: 480px) { .photos-grid { grid-template-columns: repeat(2, 1fr); } }
+.photo-thumb {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--line);
+  border: 1px solid var(--line);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.photo-thumb:hover { transform: scale(1.03); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* LIGHTBOX */
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.lightbox.open { display: flex; }
+.lightbox img {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.lightbox-close {
+  position: fixed;
+  top: 18px; right: 18px;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.lightbox-prev, .lightbox-next {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.lightbox-prev { left: 14px; }
+.lightbox-next { right: 14px; }
+
+/* LINE ITEMS BOX */
 .line-items-box {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -292,7 +358,7 @@ body {
   white-space: pre-wrap;
 }
 
-/* TOTAL ONLY (dramatic centerpiece when no breakdown) */
+/* TOTAL ONLY */
 .totals-only {
   background: linear-gradient(135deg, var(--navy), var(--navy-2));
   color: #fff;
@@ -508,9 +574,10 @@ body {
 /* PRINT */
 @media print {
   body { background: #fff; padding: 0; }
-  .actions, .back-link-wrap, #state-loading, #state-error { display: none !important; }
+  .actions, .back-link-wrap, #state-loading, #state-error, .lightbox { display: none !important; }
   .card, .hero { border-radius: 0; box-shadow: none; }
   .btn { display: none; }
+  .photo-thumb { break-inside: avoid; }
 }
 </style>
 </head>
@@ -573,14 +640,20 @@ body {
         <div id="breakdown-body"></div>
       </div>
 
-      <!-- LINE ITEMS (dynamic based on checkboxes) -->
+      <!-- PROJECT PHOTOS -->
+      <div id="photos-wrap" style="display:none">
+        <div class="section-label">Project Photos</div>
+        <div class="photos-grid" id="photos-grid"></div>
+      </div>
+
+      <!-- LINE ITEMS -->
       <div id="lineitems-wrap" style="display:none">
         <div class="section-label">Line Items</div>
         <div class="line-items-box" id="lineitems-body"></div>
         <div id="included-note-wrap"></div>
       </div>
 
-      <!-- TOTAL ONLY (if both unchecked) -->
+      <!-- TOTAL ONLY -->
       <div id="totals-only-wrap" style="display:none">
         <div class="totals-only">
           <div class="label">Your Estimate</div>
@@ -648,6 +721,14 @@ body {
 
 </div>
 
+<!-- LIGHTBOX -->
+<div id="lightbox" class="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  <button class="lightbox-prev" onclick="event.stopPropagation();lightboxNav(-1)">‹</button>
+  <img id="lightbox-img" src="" alt="Project photo">
+  <button class="lightbox-next" onclick="event.stopPropagation();lightboxNav(1)">›</button>
+</div>
+
 <!-- ACCEPT MODAL -->
 <div id="accept-modal" class="modal-backdrop">
   <div class="modal">
@@ -680,6 +761,8 @@ body {
 const params = new URLSearchParams(window.location.search);
 const ref = params.get("ref");
 let record = null;
+let allPhotosSrc = [];
+let lightboxIdx = 0;
 
 function fmt(n) {
   return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -687,238 +770,216 @@ function fmt(n) {
 function esc(s) { return String(s == null ? "" : s); }
 function escHtml(s) {
   if (s == null) return "";
-  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 function fmtDate(iso) {
   if (!iso) return "—";
-  try { return new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); }
-  catch (e) { return "—"; }
+  try { return new Date(iso).toLocaleDateString("en-US", { month:"long", day:"numeric", year:"numeric" }); }
+  catch(e) { return "—"; }
 }
 
-/**
- * Calculate internal totals + customer-facing totals.
- * shownLabor + shownMaterials = customerTotal (sum of CHECKED items only)
- */
 function calcAll(est) {
-  if (!est) return { customerTotal: 0, shownLabor: 0, shownMaterials: 0, hasLabor: false, hasMaterials: false, internalLabor: 0, internalMaterials: 0, showLabor: false, showMaterials: false, bothHidden: true };
-  const labor = (est.labor || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
-  const mat = (est.materials || []).reduce(function(s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
-  const markupPct = Number(est.markupPct) || 0;
-  // Each carries its proportional markup share
-  const laborWithMarkup = labor * (1 + markupPct / 100);
-  const matWithMarkup = mat * (1 + markupPct / 100);
-
-  // Migrate from old displayMode if needed
+  if (!est) return { customerTotal:0, shownLabor:0, shownMaterials:0, hasLabor:false, hasMaterials:false, showLabor:false, showMaterials:false, bothHidden:true };
+  const labor = (est.labor||[]).reduce(function(s,i){ return s+(Number(i.qty)||0)*(Number(i.rate)||0); },0);
+  const mat   = (est.materials||[]).reduce(function(s,i){ return s+(Number(i.qty)||0)*(Number(i.rate)||0); },0);
+  const markupPct = Number(est.markupPct)||0;
+  const laborWithMarkup = labor*(1+markupPct/100);
+  const matWithMarkup   = mat*(1+markupPct/100);
   let showLabor, showMaterials;
-  if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
-    showLabor = est.showLaborCost !== false;
+  if (typeof est.showLaborCost==="boolean"||typeof est.showMaterialsCost==="boolean") {
+    showLabor     = est.showLaborCost !== false;
     showMaterials = est.showMaterialsCost === true;
-  } else if (est.displayMode === "total") {
-    showLabor = false; showMaterials = false;
-  } else if (est.displayMode === "full") {
-    showLabor = true; showMaterials = true;
-  } else {
-    showLabor = true; showMaterials = false; // default
-  }
-
-  const bothHidden = !showLabor && !showMaterials;
-  // If both hidden, customer sees the grand total (labor + materials + markup)
-  const fallbackGrand = (labor + mat) * (1 + markupPct / 100);
-
-  const shownLabor = showLabor ? laborWithMarkup : 0;
-  const shownMaterials = showMaterials ? matWithMarkup : 0;
-  const customerTotal = bothHidden ? fallbackGrand : (shownLabor + shownMaterials);
-
-  return {
-    customerTotal: customerTotal,
-    shownLabor: shownLabor,
-    shownMaterials: shownMaterials,
-    internalLabor: labor,
-    internalMaterials: mat,
-    hasLabor: labor > 0,
-    hasMaterials: mat > 0,
-    showLabor: showLabor,
-    showMaterials: showMaterials,
-    bothHidden: bothHidden
-  };
+  } else if (est.displayMode==="total") { showLabor=false; showMaterials=false; }
+  else if (est.displayMode==="full")    { showLabor=true;  showMaterials=true; }
+  else                                   { showLabor=true;  showMaterials=false; }
+  const bothHidden   = !showLabor && !showMaterials;
+  const fallbackGrand= (labor+mat)*(1+markupPct/100);
+  const shownLabor   = showLabor     ? laborWithMarkup : 0;
+  const shownMaterials = showMaterials ? matWithMarkup   : 0;
+  const customerTotal  = bothHidden   ? fallbackGrand   : (shownLabor+shownMaterials);
+  return { customerTotal, shownLabor, shownMaterials, hasLabor:labor>0, hasMaterials:mat>0, showLabor, showMaterials, bothHidden };
 }
 
-/**
- * Parse scope-of-work text into categorized sections.
- */
 function parseScope(scopeText) {
-  if (!scopeText || !scopeText.trim()) return [];
-  const lines = scopeText.split(/\r?\n/);
-  const categories = [];
-  let current = null;
-  let preCategoryItems = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
-    if (!trimmed) continue;
-    const isHeader = /^[^•\-*\d].*:$/.test(trimmed) && trimmed.length < 80 && !trimmed.startsWith("•") && !trimmed.startsWith("-") && !trimmed.startsWith("*");
+  if (!scopeText||!scopeText.trim()) return [];
+  const lines=scopeText.split(/\r?\n/);
+  const categories=[]; let current=null; const pre=[];
+  for (let i=0;i<lines.length;i++) {
+    const t=lines[i].trim(); if(!t) continue;
+    const isHeader=/^[^•\-*\d].*:$/.test(t)&&t.length<80&&!t.startsWith("•")&&!t.startsWith("-")&&!t.startsWith("*");
     if (isHeader) {
-      if (current && current.items.length) categories.push(current);
-      current = { name: trimmed.replace(/:$/, "").trim(), items: [] };
+      if (current&&current.items.length) categories.push(current);
+      current={name:t.replace(/:$/,"").trim(),items:[]};
     } else {
-      const cleanedItem = trimmed.replace(/^[•\-*]\s*/, "").replace(/^\d+\.\s*/, "").trim();
-      if (!cleanedItem) continue;
-      if (current) current.items.push(cleanedItem);
-      else preCategoryItems.push(cleanedItem);
+      const item=t.replace(/^[•\-*]\s*/,"").replace(/^\d+\.\s*/,"").trim();
+      if (!item) continue;
+      if (current) current.items.push(item); else pre.push(item);
     }
   }
-  if (current && current.items.length) categories.push(current);
-  if (preCategoryItems.length) {
-    if (categories.length === 0) categories.push({ name: "Scope of Work", items: preCategoryItems });
-    else categories.unshift({ name: "Scope of Work", items: preCategoryItems });
-  }
+  if (current&&current.items.length) categories.push(current);
+  if (pre.length) { if(categories.length===0) categories.push({name:"Scope of Work",items:pre}); else categories.unshift({name:"Scope of Work",items:pre}); }
   return categories;
 }
 
 function getStatusPill(status) {
-  switch (status) {
-    case "accepted": return { className: "approved", text: "Approved" };
-    case "declined": return { className: "declined", text: "Declined" };
-    case "opened": return { className: "viewed", text: "Viewed" };
-    case "sent": return { className: "pending", text: "Pending" };
-    default: return { className: "pending", text: "Pending" };
+  switch(status) {
+    case "accepted": return {className:"approved",text:"Approved"};
+    case "declined": return {className:"declined",text:"Declined"};
+    case "opened":   return {className:"viewed",  text:"Viewed"};
+    case "sent":     return {className:"pending",  text:"Pending"};
+    default:         return {className:"pending",  text:"Pending"};
   }
 }
 
 async function load() {
   if (!ref) { showError(); return; }
   try {
-    const r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref));
+    const r = await fetch("/.netlify/functions/get-estimate?ref="+encodeURIComponent(ref));
     if (!r.ok) { showError(); return; }
     record = await r.json();
     render();
-  } catch (e) {
-    console.error(e); showError();
-  }
+  } catch(e) { console.error(e); showError(); }
 }
 
 function showError() {
-  document.getElementById("state-loading").style.display = "none";
-  document.getElementById("state-error").style.display = "block";
+  document.getElementById("state-loading").style.display="none";
+  document.getElementById("state-error").style.display="block";
 }
 
 function render() {
-  if (record.status === "accepted") { showSuccess("accepted"); return; }
-  if (record.status === "declined") { showSuccess("declined"); return; }
+  if (record.status==="accepted") { showSuccess("accepted"); return; }
+  if (record.status==="declined") { showSuccess("declined"); return; }
 
-  const est = record.estimate || {};
-  const customer = record.customer || {};
-  const reqData = record.request || {};
-
-  const calc = calcAll(est);
+  const est     = record.estimate||{};
+  const customer= record.customer||{};
+  const reqData = record.request||{};
+  const calc    = calcAll(est);
 
   // INFO BOX
-  document.getElementById("est-ref").textContent = record.ref || "—";
-  document.getElementById("est-project").textContent = est.projectTitle || reqData.service || "Your Project";
-  document.getElementById("est-customer").textContent = customer.name || "—";
-  document.getElementById("est-issued").textContent = fmtDate(record.sentAt || record.submittedAt);
-  document.getElementById("est-total").textContent = fmt(calc.customerTotal);
-
+  document.getElementById("est-ref").textContent     = record.ref||"—";
+  document.getElementById("est-project").textContent  = est.projectTitle||reqData.service||"Your Project";
+  document.getElementById("est-customer").textContent = customer.name||"—";
+  document.getElementById("est-issued").textContent   = fmtDate(record.sentAt||record.submittedAt);
+  document.getElementById("est-total").textContent    = fmt(calc.customerTotal);
   const pillInfo = getStatusPill(record.status);
-  const pillEl = document.getElementById("status-pill");
-  pillEl.className = "status-pill " + pillInfo.className;
-  pillEl.textContent = pillInfo.text;
+  const pillEl   = document.getElementById("status-pill");
+  pillEl.className="status-pill "+pillInfo.className;
+  pillEl.textContent=pillInfo.text;
 
   // SUMMARY
   if (est.summary) {
-    document.getElementById("summary-wrap").style.display = "block";
-    document.getElementById("summary-text").textContent = est.summary;
+    document.getElementById("summary-wrap").style.display="block";
+    document.getElementById("summary-text").textContent=est.summary;
   }
 
   // TIMELINE
   if (est.timelineText) {
-    document.getElementById("timeline-wrap").style.display = "block";
-    document.getElementById("timeline-text").textContent = est.timelineText;
+    document.getElementById("timeline-wrap").style.display="block";
+    document.getElementById("timeline-text").textContent=est.timelineText;
   }
 
-  // PROJECT BREAKDOWN (categorized scope)
+  // PROJECT BREAKDOWN
   if (est.scopeOfWork) {
-    const categories = parseScope(est.scopeOfWork);
-    if (categories.length > 0) {
-      document.getElementById("breakdown-wrap").style.display = "block";
-      const html = categories.map(function(cat) {
-        const itemsHtml = cat.items.map(function(item) {
-          return '<li>' + escHtml(item) + '</li>';
-        }).join("");
-        return '<div class="scope-category">' +
-          '<div class="scope-category-header">' + escHtml(cat.name) + '</div>' +
-          '<div class="scope-category-body"><ul>' + itemsHtml + '</ul></div>' +
-        '</div>';
+    const cats=parseScope(est.scopeOfWork);
+    if (cats.length>0) {
+      document.getElementById("breakdown-wrap").style.display="block";
+      document.getElementById("breakdown-body").innerHTML=cats.map(function(cat){
+        return '<div class="scope-category">'
+          +'<div class="scope-category-header">'+escHtml(cat.name)+'</div>'
+          +'<div class="scope-category-body"><ul>'
+          +cat.items.map(function(item){ return '<li>'+escHtml(item)+'</li>'; }).join("")
+          +'</ul></div></div>';
       }).join("");
-      document.getElementById("breakdown-body").innerHTML = html;
     }
   }
 
-  // ===== LINE ITEMS (Labor / Materials / Total) =====
+  // ── PROJECT PHOTOS ────────────────────────────────────────────────────────
+  // Combines: customer-uploaded photos + contractor quote photos
+  // Both base64 (data:) and real URLs are supported here (this is a webpage, not email)
+  const customerPhotos = (reqData.photos   ||[]).map(function(p){ return p.data||p.url||""; }).filter(Boolean);
+  const quotePhotos    = (est.quotePhotos  ||[]).map(function(p){ return p.data||p.url||""; }).filter(Boolean);
+  allPhotosSrc = [...customerPhotos, ...quotePhotos];
+
+  if (allPhotosSrc.length > 0) {
+    document.getElementById("photos-wrap").style.display="block";
+    document.getElementById("photos-grid").innerHTML = allPhotosSrc.map(function(src, idx){
+      return '<div class="photo-thumb" onclick="openLightbox('+idx+')">'
+        +'<img src="'+escHtml(src)+'" alt="Project photo '+( idx+1)+'" loading="lazy">'
+        +'</div>';
+    }).join("");
+  }
+
+  // LINE ITEMS
   if (calc.bothHidden) {
-    // Both unchecked → just the dramatic total
-    document.getElementById("totals-only-wrap").style.display = "block";
-    document.getElementById("totals-only-amount").textContent = fmt(calc.customerTotal);
+    document.getElementById("totals-only-wrap").style.display="block";
+    document.getElementById("totals-only-amount").textContent=fmt(calc.customerTotal);
   } else {
-    // Build the line-items box
-    document.getElementById("lineitems-wrap").style.display = "block";
-    let rowsHtml = "";
+    document.getElementById("lineitems-wrap").style.display="block";
+    let rowsHtml="";
     if (calc.showLabor) {
-      rowsHtml += '<div class="line-items-row">' +
-        '<span class="li-label">Labor</span>' +
-        '<span class="li-dots"></span>' +
-        '<span class="li-value">' + fmt(calc.shownLabor) + '</span>' +
-      '</div>';
+      rowsHtml+='<div class="line-items-row"><span class="li-label">Labor</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.shownLabor)+'</span></div>';
     }
     if (calc.showMaterials) {
-      rowsHtml += '<div class="line-items-row">' +
-        '<span class="li-label">Materials</span>' +
-        '<span class="li-dots"></span>' +
-        '<span class="li-value">' + fmt(calc.shownMaterials) + '</span>' +
-      '</div>';
+      rowsHtml+='<div class="line-items-row"><span class="li-label">Materials</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.shownMaterials)+'</span></div>';
     }
-    rowsHtml += '<div class="line-items-row grand-total">' +
-      '<span class="li-label">TOTAL</span>' +
-      '<span class="li-dots"></span>' +
-      '<span class="li-value">' + fmt(calc.customerTotal) + '</span>' +
-    '</div>';
-    document.getElementById("lineitems-body").innerHTML = rowsHtml;
-
-    // "Included" notes
-    let noteHtml = "";
-    if (calc.showLabor && !calc.showMaterials && calc.hasMaterials) {
-      noteHtml = '<div class="included-note"><strong>✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.</div>';
-    } else if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
-      noteHtml = '<div class="included-note"><strong>✓ Labor included</strong> — all work is covered in the price above.</div>';
+    rowsHtml+='<div class="line-items-row grand-total"><span class="li-label">TOTAL</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.customerTotal)+'</span></div>';
+    document.getElementById("lineitems-body").innerHTML=rowsHtml;
+    let noteHtml="";
+    if (calc.showLabor&&!calc.showMaterials&&calc.hasMaterials) {
+      noteHtml='<div class="included-note"><strong>✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.</div>';
+    } else if (!calc.showLabor&&calc.showMaterials&&calc.hasLabor) {
+      noteHtml='<div class="included-note"><strong>✓ Labor included</strong> — all work is covered in the price above.</div>';
     }
-    document.getElementById("included-note-wrap").innerHTML = noteHtml;
+    document.getElementById("included-note-wrap").innerHTML=noteHtml;
   }
 
-  // NOTES (customer's original description)
+  // NOTES
   if (reqData.description) {
-    document.getElementById("notes-wrap").style.display = "block";
-    document.getElementById("notes-body").textContent = reqData.description;
+    document.getElementById("notes-wrap").style.display="block";
+    document.getElementById("notes-body").textContent=reqData.description;
   }
 
-  document.getElementById("state-loading").style.display = "none";
-  document.getElementById("state-quote").style.display = "block";
+  document.getElementById("state-loading").style.display="none";
+  document.getElementById("state-quote").style.display="block";
 }
 
+// ── LIGHTBOX ──────────────────────────────────────────────────────────────
+function openLightbox(idx) {
+  lightboxIdx=idx;
+  document.getElementById("lightbox-img").src=allPhotosSrc[idx];
+  document.getElementById("lightbox").classList.add("open");
+  document.body.style.overflow="hidden";
+}
+function closeLightbox() {
+  document.getElementById("lightbox").classList.remove("open");
+  document.body.style.overflow="";
+}
+function lightboxNav(dir) {
+  lightboxIdx=(lightboxIdx+dir+allPhotosSrc.length)%allPhotosSrc.length;
+  document.getElementById("lightbox-img").src=allPhotosSrc[lightboxIdx];
+}
+document.addEventListener("keydown",function(e){
+  if (!document.getElementById("lightbox").classList.contains("open")) return;
+  if (e.key==="Escape") closeLightbox();
+  if (e.key==="ArrowLeft")  lightboxNav(-1);
+  if (e.key==="ArrowRight") lightboxNav(1);
+});
+
 function showSuccess(kind) {
-  document.getElementById("state-loading").style.display = "none";
-  document.getElementById("state-quote").style.display = "none";
-  document.getElementById("state-success").style.display = "block";
-  if (kind === "declined") {
-    document.getElementById("success-tag").textContent = "Response received";
-    document.getElementById("success-icon").textContent = "✎";
-    document.getElementById("success-icon").style.background = "#999";
-    document.getElementById("success-title").textContent = "Change Request Received";
-    document.getElementById("success-msg").textContent = "Thanks for letting us know. We'll review your request and get back to you shortly with an updated estimate.";
+  document.getElementById("state-loading").style.display="none";
+  document.getElementById("state-quote").style.display="none";
+  document.getElementById("state-success").style.display="block";
+  if (kind==="declined") {
+    document.getElementById("success-tag").textContent="Response received";
+    document.getElementById("success-icon").textContent="✎";
+    document.getElementById("success-icon").style.background="#999";
+    document.getElementById("success-title").textContent="Change Request Received";
+    document.getElementById("success-msg").textContent="Thanks for letting us know. We'll review your request and get back to you shortly with an updated estimate.";
   }
 }
 
 function downloadQuote() { window.print(); }
-function openAccept() { document.getElementById("accept-modal").classList.add("show"); }
+function openAccept()  { document.getElementById("accept-modal").classList.add("show"); }
 function openDecline() { document.getElementById("decline-modal").classList.add("show"); }
 function closeModals() {
   document.getElementById("accept-modal").classList.remove("show");
@@ -926,39 +987,37 @@ function closeModals() {
 }
 
 async function submitAccept() {
-  const sig = document.getElementById("signature-input").value.trim();
+  const sig=document.getElementById("signature-input").value.trim();
   if (!sig) { alert("Please type your full name to sign."); return; }
-  const btn = document.getElementById("confirm-accept");
-  btn.disabled = true; btn.textContent = "Submitting…";
+  const btn=document.getElementById("confirm-accept");
+  btn.disabled=true; btn.textContent="Submitting…";
   try {
-    const r = await fetch("/.netlify/functions/quote-response", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: ref, action: "accept", signature: sig }),
+    const r=await fetch("/.netlify/functions/quote-response",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ref,action:"accept",signature:sig}),
     });
     if (!r.ok) throw new Error("Failed");
-    closeModals();
-    showSuccess("accepted");
-  } catch (e) {
+    closeModals(); showSuccess("accepted");
+  } catch(e) {
     alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
-    btn.disabled = false; btn.textContent = "Approve & Sign";
+    btn.disabled=false; btn.textContent="Approve & Sign";
   }
 }
 
 async function submitDecline() {
-  const reason = document.getElementById("decline-reason").value.trim();
-  const btn = document.getElementById("confirm-decline");
-  btn.disabled = true; btn.textContent = "Submitting…";
+  const reason=document.getElementById("decline-reason").value.trim();
+  const btn=document.getElementById("confirm-decline");
+  btn.disabled=true; btn.textContent="Submitting…";
   try {
-    const r = await fetch("/.netlify/functions/quote-response", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: ref, action: "decline", declineReason: reason }),
+    const r=await fetch("/.netlify/functions/quote-response",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ref,action:"decline",declineReason:reason}),
     });
     if (!r.ok) throw new Error("Failed");
-    closeModals();
-    showSuccess("declined");
-  } catch (e) {
+    closeModals(); showSuccess("declined");
+  } catch(e) {
     alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
-    btn.disabled = false; btn.textContent = "Send Request";
+    btn.disabled=false; btn.textContent="Send Request";
   }
 }
 
@@ -968,13 +1027,13 @@ load();
 <script>
 (function trackOpen() {
   try {
-    var params = new URLSearchParams(window.location.search);
-    var refVal = params.get("ref");
+    var params=new URLSearchParams(window.location.search);
+    var refVal=params.get("ref");
     if (!refVal) return;
-    fetch("/.netlify/functions/track-quote-open?ref=" + encodeURIComponent(refVal), {
-      method: "GET", keepalive: true, cache: "no-store"
-    }).catch(function () {});
-  } catch (e) {}
+    fetch("/.netlify/functions/track-quote-open?ref="+encodeURIComponent(refVal),{
+      method:"GET", keepalive:true, cache:"no-store"
+    }).catch(function(){});
+  } catch(e) {}
 })();
 </script>
 </body>
