@@ -109,9 +109,10 @@ exports.handler = async function (event) {
     } else {
       let rowsHtml = "";
       if (calc.showLabor) {
+        const laborLabel = (calc.showLabor && !calc.showMaterials) ? 'Labor only' : 'Labor';
         rowsHtml += `
           <tr>
-            <td style="padding:9px 0;font-size:14.5px;color:#555">Labor</td>
+            <td style="padding:9px 0;font-size:14.5px;color:#555">${laborLabel}</td>
             <td style="padding:9px 0;font-size:14.5px;color:#1a1a1a;font-weight:600;text-align:right">${fmt(calc.shownLabor)}</td>
           </tr>`;
       }
