@@ -925,9 +925,9 @@ function render() {
     rowsHtml+='<div class="line-items-row grand-total"><span class="li-label">TOTAL</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.customerTotal)+'</span></div>';
     document.getElementById("lineitems-body").innerHTML=rowsHtml;
     let noteHtml="";
-    if (calc.showLabor&&!calc.showMaterials&&calc.hasMaterials) {
-      noteHtml='<div class="included-note"><strong>✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.</div>';
-    } else if (!calc.showLabor&&calc.showMaterials&&calc.hasLabor) {
+    // Only show "Labor included" note when customer sees materials cost but NOT labor cost
+    // Do NOT show any note when only labor is checked (customer doesn't need to see materials breakdown)
+    if (!calc.showLabor&&calc.showMaterials&&calc.hasLabor) {
       noteHtml='<div class="included-note"><strong>✓ Labor included</strong> — all work is covered in the price above.</div>';
     }
     document.getElementById("included-note-wrap").innerHTML=noteHtml;
