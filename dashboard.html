@@ -5295,7 +5295,7 @@ if (document.readyState === 'loading') {
           var subj='Your Free Renovation Estimate — Sani Building Corp';
           var body=gr+'\n\nHere is your link to request a free estimate from Sani Building Corp:\n\nhttps://www.sanibuildingcorp.com/estimate\n\nTakes about 2 minutes to fill out. I will review and send your estimate within 24 hours.\n\nQuestions? Call or text (332) 277-0990\n\nBest,\nSani Building Corp';
           if(!e){alert('Please enter an email address');return;}
-          window.location.href='mailto:'+e+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+          var b=this;var orig=b.innerHTML;b.disabled=true;b.style.opacity='0.6';b.innerHTML='⏳ Sending…';fetch('/.netlify/functions/send-estimate-link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,email:e})}).then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});}).then(function(res){b.disabled=false;b.style.opacity='1';b.innerHTML=orig;if(!res.ok){alert('Could not send: '+((res.d&&res.d.error)||'error'));return;}alert('✓ Estimate invite emailed to '+e);var o=document.getElementById('send-link-overlay');if(o){o.style.display='none';document.body.style.overflow='';}}).catch(function(err){b.disabled=false;b.style.opacity='1';b.innerHTML=orig;alert('Send failed: '+err.message);});
         ">✉️ Send via Email</button>
 
         <button style="
