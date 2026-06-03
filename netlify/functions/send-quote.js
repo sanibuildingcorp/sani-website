@@ -1,11 +1,10 @@
 // netlify/functions/send-quote.js
 // Sends the estimate email DIRECTLY to the customer.
-// Email format adapts to estimate.showLaborCost / estimate.showMaterialsCost checkboxes.
+// Fixed: base64 photos filtered out, tracking pixel added.
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 
-// Basic email sanity check.
 function isValidEmail(e) {
   return typeof e === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 }
@@ -36,13 +35,12 @@ exports.handler = async function (event) {
     }
 
     const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
-    const siteUrl = process.env.SITE_URL || "https://velvety-horse-2aa6e3.netlify.app";
+    const siteUrl = process.env.SITE_URL || "https://www.sanibuildingcorp.com";
 
     const customer = record.customer || {};
     const est = record.estimate || {};
     const reqData = record.request || {};
 
-    // ── ALWAYS send to the customer. Validate first. ──────────────────────────
     const recipientEmail = (customer.email || "").trim();
     if (!isValidEmail(recipientEmail)) {
       return {
@@ -58,10 +56,13 @@ exports.handler = async function (event) {
     const calc = calcAll(est);
     const quoteUrl = `${siteUrl}/quote.html?ref=${encodeURIComponent(ref)}`;
     const firstName = (customer.name || "there").split(" ")[0];
+    const projectTitle = est.projectTitle || reqData.service || "Project";
 
-    // Build photos section (customer photos + contractor quote photos)
-    const customerPhotos = (reqData.photos || []).slice(0, 4);
-    const quotePhotos = (est.quotePhotos || []).slice(0, 6);
+    // ── PHOTOS: filter out base64 data URIs — Gmail blocks them ──────────────
+    // Only include photos that are real HTTP URLs (uploaded to Supabase/CDN)
+    const isRealUrl = (p) => p && p.data && (p.data.startsWith("http://") || p.data.startsWith("https://"));
+    const customerPhotos = (reqData.photos || []).filter(isRealUrl).slice(0, 4);
+    const quotePhotos = (est.quotePhotos || []).filter(isRealUrl).slice(0, 6);
     const allPhotos = [...customerPhotos, ...quotePhotos].slice(0, 8);
     const photosHtml = allPhotos.length > 0 ? `
     <div style="margin:24px 0">
@@ -71,7 +72,7 @@ exports.handler = async function (event) {
       </div>
     </div>` : "";
 
-    // Build categorized scope HTML (if scope has CATEGORY: headers)
+    // ── SCOPE BREAKDOWN ───────────────────────────────────────────────────────
     const categories = parseScope(est.scopeOfWork || "");
     const breakdownHtml = categories.length > 0
       ? categories.map(cat => `
@@ -93,7 +94,7 @@ exports.handler = async function (event) {
         `).join("")
       : "";
 
-    // Build line items section based on checkboxes
+    // ── LINE ITEMS ────────────────────────────────────────────────────────────
     let lineItemsHtml = "";
     let includedNoteHtml = "";
 
@@ -138,13 +139,13 @@ exports.handler = async function (event) {
       if (calc.showLabor && !calc.showMaterials && calc.hasMaterials) {
         includedNoteHtml = `
           <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:11px 16px;font-size:13px;color:#555;border-radius:0 6px 6px 0;margin:-12px 0 24px">
-            <strong style="color:#2ecc71">✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.
+            <strong style="color:#2ecc71">All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.
           </div>
         `;
       } else if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
         includedNoteHtml = `
           <div style="background:#f7f9f5;border-left:3px solid #2ecc71;padding:11px 16px;font-size:13px;color:#555;border-radius:0 6px 6px 0;margin:-12px 0 24px">
-            <strong style="color:#2ecc71">✓ Labor included</strong> — all work is covered in the price above.
+            <strong style="color:#2ecc71">Labor included</strong> — all work is covered in the price above.
           </div>
         `;
       }
@@ -154,7 +155,15 @@ exports.handler = async function (event) {
       month: "long", day: "numeric", year: "numeric"
     });
 
-    const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
+    // ── TRACKING PIXEL ────────────────────────────────────────────────────────
+    // Fires every time the email is opened — track-open.js handles deduplication
+    const trackingPixelUrl = `${siteUrl}/.netlify/functions/track-open?ref=${encodeURIComponent(ref)}&name=${encodeURIComponent(customer.name || "")}&email=${encodeURIComponent(recipientEmail)}&title=${encodeURIComponent(projectTitle)}`;
+    const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none;border:0;outline:none" alt="">`;
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
 <div style="max-width:640px;margin:0 auto;padding:20px">
 
   <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:32px 24px;border-radius:12px 12px 0 0;text-align:center">
@@ -167,7 +176,7 @@ exports.handler = async function (event) {
   <div style="background:#fff;padding:30px 28px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 12px 12px">
 
     <h1 style="color:#0d1b2a;font-size:23px;margin:0 0 14px">Hi ${escapeHtml(firstName)},</h1>
-    <p style="font-size:14.5px;color:#555;margin-bottom:18px">Thanks for reaching out about your <strong>${escapeHtml(est.projectTitle || reqData.service || "project")}</strong>. We've put together a detailed estimate for you.</p>
+    <p style="font-size:14.5px;color:#555;margin-bottom:18px">Thanks for reaching out about your <strong>${escapeHtml(projectTitle)}</strong>. We have put together a detailed estimate for you.</p>
 
     ${est.summary ? `<div style="background:#f7f0e3;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:14px;color:#444;border-radius:0 6px 6px 0">${escapeHtml(est.summary)}</div>` : ""}
 
@@ -203,30 +212,32 @@ exports.handler = async function (event) {
     ${photosHtml}
 
     <div style="text-align:center;margin:28px 0">
-      <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">View Full Estimate &amp; Approve →</a>
+      <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">View Full Estimate and Approve</a>
     </div>
 
     <p style="font-size:14px;color:#555;margin:24px 0 0">Click the button above to view your estimate, approve it online, or request changes. You can also reply directly to this email or call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
 
     <div style="margin-top:32px;padding-top:24px;border-top:1px solid #eee;text-align:center">
       <div style="color:#888;font-size:11px;letter-spacing:2px;text-transform:uppercase">Sani Building Corp</div>
-      <div style="font-size:12px;color:#888;margin-top:4px">Fully Insured · 4.9 ★ · NYC Metro</div>
-      <div style="margin-top:14px"><a href="https://www.sanibuildingcorp.com" style="color:#b8930a;text-decoration:none;font-size:12px;font-weight:600">← Visit sanibuildingcorp.com</a></div>
+      <div style="font-size:12px;color:#888;margin-top:4px">Fully Insured · 4.9 Stars · NYC Metro</div>
+      <div style="margin-top:14px"><a href="https://www.sanibuildingcorp.com" style="color:#b8930a;text-decoration:none;font-size:12px;font-weight:600">Visit sanibuildingcorp.com</a></div>
     </div>
   </div>
 </div>
+
+${trackingPixel}
 </body></html>`;
 
     // ── SEND ──────────────────────────────────────────────────────────────────
-    // After your domain verifies in Resend, change the "from" address below to
-    // your own domain, e.g.  "Sani Building Corp <estimates@sanibuildingcorp.com>"
-    // Until then, onboarding@resend.dev only sends to your own Resend account email.
     await sendResend(resendKey, {
       from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
       to: [recipientEmail],
       reply_to: contractorEmail,
-      subject: `Your Estimate from Sani Building Corp — ${est.projectTitle || reqData.service || "Project"} (${ref})`,
+      subject: `Your Estimate from Sani Building Corp - ${projectTitle} (${ref})`,
       html,
+      headers: {
+        "X-Entity-Ref-ID": ref,
+      },
     });
 
     record.status = "sent";
