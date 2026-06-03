@@ -64,6 +64,10 @@ exports.handler = async function (event) {
     const customerPhotos = (reqData.photos || []).filter(isRealUrl).slice(0, 4);
     const quotePhotos = (est.quotePhotos || []).filter(isRealUrl).slice(0, 6);
     const allPhotos = [...customerPhotos, ...quotePhotos].slice(0, 8);
+    // Count ALL photos (base64 + real URLs) — base64 can't render in email
+    // but the customer can still view them on the quote page via the button.
+    const photoCount = [...(reqData.photos || []), ...(est.quotePhotos || [])]
+      .filter(p => p && p.data).length;
     const photosHtml = allPhotos.length > 0 ? `
     <div style="margin:24px 0">
       <div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:12px;font-family:Arial,sans-serif">Project Photos</div>
@@ -216,18 +220,12 @@ exports.handler = async function (event) {
     ${includedNoteHtml}
     ${photosHtml}
 
-    ${allPhotos.length > 0 ? `
-    <div style="background:#f7f0e3;border:1px solid #e8c97a;border-radius:10px;padding:14px 18px;margin:0 0 24px;text-align:center">
-      <div style="font-size:13px;color:#8a6a00;margin-bottom:6px;letter-spacing:0.5px">📸 This estimate includes <strong>${allPhotos.length} project photo${allPhotos.length > 1 ? 's' : ''}</strong></div>
-      <div style="font-size:12px;color:#a08030">Tap the button below to view all photos</div>
-    </div>` : ""}
-
-    ${allPhotos.length > 0 ? `
+    ${photoCount > 0 ? `
     <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);border-radius:12px;padding:18px 20px;margin:0 0 16px;display:flex;align-items:center;gap:14px">
       <div style="font-size:32px;flex-shrink:0">📸</div>
       <div>
-        <div style="color:#c9a84c;font-weight:700;font-size:14px;letter-spacing:0.5px">${allPhotos.length} Project Photo${allPhotos.length > 1 ? 's' : ''} Included</div>
-        <div style="color:rgba(255,255,255,0.65);font-size:12px;margin-top:3px">Tap the button below to view all photos from your project</div>
+        <div style="color:#c9a84c;font-weight:700;font-size:14px;letter-spacing:0.5px">${photoCount} Project Photo${photoCount > 1 ? 's' : ''} Included</div>
+        <div style="color:rgba(255,255,255,0.65);font-size:12px;margin-top:3px">Tap “View Full Estimate” below to see all photos for your project.</div>
       </div>
     </div>` : ""}
 
