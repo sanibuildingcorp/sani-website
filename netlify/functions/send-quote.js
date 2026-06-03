@@ -222,12 +222,21 @@ exports.handler = async function (event) {
       <div style="font-size:12px;color:#a08030">Tap the button below to view all photos</div>
     </div>` : ""}
 
-    <div style="text-align:center;margin:28px 0">
-      <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:16px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:1px">
+    ${allPhotos.length > 0 ? `
+    <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);border-radius:12px;padding:18px 20px;margin:0 0 16px;display:flex;align-items:center;gap:14px">
+      <div style="font-size:32px;flex-shrink:0">📸</div>
+      <div>
+        <div style="color:#c9a84c;font-weight:700;font-size:14px;letter-spacing:0.5px">${allPhotos.length} Project Photo${allPhotos.length > 1 ? 's' : ''} Included</div>
+        <div style="color:rgba(255,255,255,0.65);font-size:12px;margin-top:3px">Tap the button below to view all photos from your project</div>
+      </div>
+    </div>` : ""}
+
+    <div style="text-align:center;margin:8px 0 28px">
+      <a href="${quoteUrl}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:18px 40px;border-radius:12px;text-decoration:none;font-weight:800;font-size:16px;letter-spacing:0.5px;width:100%;box-sizing:border-box">
         View Full Estimate &amp; Approve →
       </a>
-      <div style="margin-top:10px;font-size:12px;color:#888">
-        📸 Includes project photos &nbsp;·&nbsp; ✓ Approve online &nbsp;·&nbsp; ✎ Request changes
+      <div style="margin-top:8px;font-size:11px;color:#aaa">
+        ✓ Approve online &nbsp;·&nbsp; ✎ Request changes &nbsp;·&nbsp; ⬇ Download
       </div>
     </div>
 
