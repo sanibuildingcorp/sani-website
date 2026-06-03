@@ -166,6 +166,19 @@ exports.handler = async function (event) {
     const trackingPixelUrl = `${siteUrl}/.netlify/functions/track-open?ref=${encodeURIComponent(ref)}&name=${encodeURIComponent(customer.name || "")}&email=${encodeURIComponent(recipientEmail)}&title=${encodeURIComponent(projectTitle)}`;
     const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none;border:0;outline:none" alt="">`;
 
+    // ── PLAIN-TEXT VERSION — multipart mail looks transactional, helps land in Primary ──
+    const textBody =
+      `Hi ${firstName},\n\n` +
+      `Thanks for reaching out about your ${projectTitle}. We've put together a detailed estimate for you.\n\n` +
+      `Estimate #${ref}\n` +
+      `Issued: ${issuedDate}\n` +
+      `Total: ${fmt(calc.customerTotal)}\n` +
+      (est.timelineText ? `Timeline: ${est.timelineText}\n` : "") +
+      (photoCount > 0 ? `Project photos included: ${photoCount}\n` : "") +
+      `\nView your full estimate, approve it, or request changes here:\n${quoteUrl}\n\n` +
+      `You can also reply to this email or call (332) 277-0990.\n\n` +
+      `— Sani Building Corp\nFully insured · 4.9 stars · NYC Metro\nhttps://www.sanibuildingcorp.com`;
+
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -183,10 +196,6 @@ exports.handler = async function (event) {
 
     <h1 style="color:#0d1b2a;font-size:23px;margin:0 0 14px">Hi ${escapeHtml(firstName)},</h1>
     <p style="font-size:14.5px;color:#555;margin-bottom:18px">Thanks for reaching out about your <strong>${escapeHtml(projectTitle)}</strong>. We have put together a detailed estimate for you.</p>
-    <div style="background:#fff8e8;border:1px solid #e8c97a;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:#8a6a00">
-      📬 <strong>Gmail users:</strong> This email may appear in your Promotions tab. To always receive it in your inbox, drag this email to the Primary tab and click "Yes" when prompted.
-    </div>
-
     ${est.summary ? `<div style="background:#f7f0e3;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:14px;color:#444;border-radius:0 6px 6px 0">${escapeHtml(est.summary)}</div>` : ""}
 
     <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden;margin:20px 0">
@@ -253,11 +262,12 @@ ${trackingPixel}
 
     // ── SEND ──────────────────────────────────────────────────────────────────
     await sendResend(resendKey, {
-      from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
+      from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",
       to: [recipientEmail],
       reply_to: contractorEmail,
-      subject: `Your Estimate from Sani Building Corp - ${projectTitle} (${ref})`,
+      subject: `Your estimate is ready, ${firstName} (#${ref})`,
       html,
+      text: textBody,
       headers: {
         "X-Entity-Ref-ID": ref,
       },
