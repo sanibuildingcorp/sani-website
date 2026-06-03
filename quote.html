@@ -917,7 +917,8 @@ function render() {
     document.getElementById("lineitems-wrap").style.display="block";
     let rowsHtml="";
     if (calc.showLabor) {
-      rowsHtml+='<div class="line-items-row"><span class="li-label">Labor</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.shownLabor)+'</span></div>';
+      var laborLabel = (calc.showLabor && !calc.showMaterials) ? 'Labor only' : 'Labor';
+      rowsHtml+='<div class="line-items-row"><span class="li-label">'+laborLabel+'</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.shownLabor)+'</span></div>';
     }
     if (calc.showMaterials) {
       rowsHtml+='<div class="line-items-row"><span class="li-label">Materials</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.shownMaterials)+'</span></div>';
