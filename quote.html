@@ -234,6 +234,74 @@ body {
 .photo-thumb:hover { transform: scale(1.03); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
 .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+/* ── FINISHING OPTIONS (customer-selectable) ──────────────────────────── */
+.finish-group { margin-bottom: 22px; }
+.finish-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.finish-group-name {
+  font-family: var(--display);
+  font-size: 17px;
+  letter-spacing: 1.5px;
+  color: var(--navy);
+}
+.finish-group-pick { font-size: 11px; color: var(--ink-muted); letter-spacing: 1px; text-transform: uppercase; }
+.finish-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+@media (max-width: 560px) { .finish-options { grid-template-columns: repeat(2, 1fr); } }
+.finish-opt {
+  position: relative;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #fff;
+  transition: all .15s;
+  display: flex;
+  flex-direction: column;
+}
+.finish-opt:hover { border-color: var(--gold); transform: translateY(-1px); }
+.finish-opt.selected { border-color: var(--gold); box-shadow: 0 6px 18px rgba(201,168,76,.28); }
+.finish-opt-photo { aspect-ratio: 4/3; background: #f0ece4; overflow: hidden; }
+.finish-opt-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.finish-opt-noimg { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--ink-muted); }
+.finish-opt-body { padding: 10px 12px; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.finish-opt-name { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+.finish-opt-spec { font-size: 11.5px; color: var(--ink-muted); line-height: 1.4; }
+.finish-opt-price { margin-top: auto; padding-top: 5px; font-size: 13px; font-weight: 700; color: var(--gold-2); }
+.finish-opt-price.included { color: var(--good); }
+.finish-opt-check {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #fff;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+}
+.finish-opt.selected .finish-opt-check { display: flex; }
+.finish-hint {
+  background: #f7f9f5;
+  border-left: 3px solid var(--good);
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 6px;
+}
+
 /* LIGHTBOX */
 .lightbox {
   display: none;
@@ -551,6 +619,17 @@ body {
   color: #fff;
   border: 1.5px solid #e74c3c;
 }
+.modal .finish-confirm {
+  background: var(--gold-soft);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #444;
+}
+.modal .finish-confirm .fc-row { display: flex; justify-content: space-between; padding: 3px 0; }
+.modal .finish-confirm .fc-total { border-top: 1px dashed var(--gold); margin-top: 6px; padding-top: 8px; font-weight: 700; color: var(--navy); }
 
 /* SUCCESS */
 .success-screen { text-align: center; padding: 50px 24px; }
@@ -578,6 +657,7 @@ body {
   .card, .hero { border-radius: 0; box-shadow: none; }
   .btn { display: none; }
   .photo-thumb { break-inside: avoid; }
+  .finish-group-pick { display: none; }
 }
 </style>
 </head>
@@ -644,6 +724,13 @@ body {
       <div id="photos-wrap" style="display:none">
         <div class="section-label">Project Photos</div>
         <div class="photos-grid" id="photos-grid"></div>
+      </div>
+
+      <!-- FINISHING OPTIONS (customer can swap) -->
+      <div id="finishes-wrap" style="display:none">
+        <div class="section-label">Choose Your Finishes</div>
+        <div class="finish-hint">Tap an option to personalize your project — your total updates instantly. Your selections are saved when you approve.</div>
+        <div id="finishes-body"></div>
       </div>
 
       <!-- LINE ITEMS -->
@@ -734,6 +821,7 @@ body {
   <div class="modal">
     <h3>APPROVE ESTIMATE</h3>
     <p>By typing your full name below, you accept this estimate and authorize Sani Building Corp to proceed with the work as described.</p>
+    <div id="accept-finish-summary"></div>
     <label>Type your full name to sign</label>
     <input type="text" id="signature-input" placeholder="e.g. John Smith">
     <div class="modal-actions">
@@ -764,8 +852,16 @@ let record = null;
 let allPhotosSrc = [];
 let lightboxIdx = 0;
 
+// Finishing options state
+let baseCalc = null;
+let finishGroups = [];
+let finishSel = {};
+
 function fmt(n) {
   return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtSigned(n) {
+  return (n > 0 ? "+" : "−") + fmt(Math.abs(n));
 }
 function esc(s) { return String(s == null ? "" : s); }
 function escHtml(s) {
@@ -909,33 +1005,13 @@ function render() {
     }).join("");
   }
 
-  // LINE ITEMS
-  if (calc.bothHidden) {
-    document.getElementById("totals-only-wrap").style.display="block";
-    document.getElementById("totals-only-amount").textContent=fmt(calc.customerTotal);
-  } else {
-    document.getElementById("lineitems-wrap").style.display="block";
-    let rowsHtml="";
-    if (calc.showLabor) {
-      var laborLabel = (calc.showLabor && !calc.showMaterials) ? 'Labor only' : 'Labor';
-      rowsHtml+='<div class="line-items-row"><span class="li-label">'+laborLabel+'</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.shownLabor)+'</span></div>';
-    }
-    if (calc.showMaterials) {
-      rowsHtml+='<div class="line-items-row"><span class="li-label">Materials</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.shownMaterials)+'</span></div>';
-    }
-    rowsHtml+='<div class="line-items-row grand-total"><span class="li-label">TOTAL</span><span class="li-dots"></span><span class="li-value">'+fmt(calc.customerTotal)+'</span></div>';
-    document.getElementById("lineitems-body").innerHTML=rowsHtml;
-    let noteHtml="";
-    if (calc.showLabor && calc.showMaterials) {
-      // Both checked: show "All materials included" note
-      noteHtml='<div class="included-note"><strong>✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.</div>';
-    } else if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
-      // Only materials checked: show "Labor included" note
-      noteHtml='<div class="included-note"><strong>✓ Labor included</strong> — all work is covered in the price above.</div>';
-    }
-    // Only labor checked: no note shown
-    document.getElementById("included-note-wrap").innerHTML=noteHtml;
-  }
+  // ── FINISHING OPTIONS + TOTALS ────────────────────────────────────────────
+  baseCalc = calc;
+  finishGroups = (est.finishGroups || []).filter(function(g){ return g && g.options && g.options.length; });
+  finishSel = {};
+  finishGroups.forEach(function(g){ var d = defaultOpt(g); if (d && d.id) finishSel[g.id] = d.id; });
+  renderFinishes();
+  renderTotalsSection();
 
   // NOTES
   if (reqData.description) {
@@ -945,6 +1021,116 @@ function render() {
 
   document.getElementById("state-loading").style.display="none";
   document.getElementById("state-quote").style.display="block";
+}
+
+// ── FINISHING OPTIONS ───────────────────────────────────────────────────────
+function defaultOpt(g) {
+  const o = (g && g.options) || [];
+  for (let i=0;i<o.length;i++) { if (o[i].isDefault) return o[i]; }
+  return o[0] || { price: 0 };
+}
+function selectedOpt(g) {
+  const o = (g && g.options) || [];
+  for (let i=0;i<o.length;i++) { if (o[i].id === finishSel[g.id]) return o[i]; }
+  return defaultOpt(g);
+}
+function finishDelta() {
+  return (finishGroups||[]).reduce(function(sum,g){
+    const def = defaultOpt(g);
+    const sel = selectedOpt(g);
+    return sum + ((Number(sel.price)||0) - (Number(def.price)||0));
+  }, 0);
+}
+function renderFinishes() {
+  const wrap = document.getElementById("finishes-wrap");
+  if (!finishGroups || !finishGroups.length) { wrap.style.display="none"; return; }
+  wrap.style.display="block";
+  document.getElementById("finishes-body").innerHTML = finishGroups.map(function(g){
+    const def = defaultOpt(g);
+    const opts = (g.options||[]).map(function(o){
+      const isSel = o.id === finishSel[g.id];
+      const d = (Number(o.price)||0) - (Number(def.price)||0);
+      const priceLabel = d === 0
+        ? '<div class="finish-opt-price included">Included</div>'
+        : '<div class="finish-opt-price">'+fmtSigned(d)+'</div>';
+      const photo = o.photo
+        ? '<div class="finish-opt-photo"><img src="'+escHtml(o.photo)+'" alt=""></div>'
+        : '<div class="finish-opt-photo"><div class="finish-opt-noimg">🎨</div></div>';
+      return '<div class="finish-opt'+(isSel?' selected':'')+'" onclick="selectFinish(\''+escHtml(g.id)+'\',\''+escHtml(o.id)+'\')">'
+        +'<div class="finish-opt-check">✓</div>'
+        +photo
+        +'<div class="finish-opt-body">'
+          +'<div class="finish-opt-name">'+escHtml(o.name||"Option")+'</div>'
+          +(o.spec?'<div class="finish-opt-spec">'+escHtml(o.spec)+'</div>':'')
+          +priceLabel
+        +'</div>'
+      +'</div>';
+    }).join("");
+    return '<div class="finish-group">'
+      +'<div class="finish-group-head"><div class="finish-group-name">'+escHtml(g.name||"Finish")+'</div><div class="finish-group-pick">Tap to choose</div></div>'
+      +'<div class="finish-options">'+opts+'</div>'
+    +'</div>';
+  }).join("");
+}
+function selectFinish(gid, oid) {
+  finishSel[gid] = oid;
+  renderFinishes();
+  renderTotalsSection();
+}
+function renderTotalsSection() {
+  const calc = baseCalc;
+  if (!calc) return;
+  const delta = finishDelta();
+  const grand = calc.customerTotal + delta;
+
+  document.getElementById("est-total").textContent = fmt(grand);
+
+  if (calc.bothHidden) {
+    document.getElementById("lineitems-wrap").style.display="none";
+    document.getElementById("totals-only-wrap").style.display="block";
+    document.getElementById("totals-only-amount").textContent = fmt(grand);
+    return;
+  }
+
+  document.getElementById("totals-only-wrap").style.display="none";
+  document.getElementById("lineitems-wrap").style.display="block";
+
+  function row(label, value) {
+    return '<div class="line-items-row"><span class="li-label">'+label+'</span><span class="li-dots"></span><span class="li-value">'+value+'</span></div>';
+  }
+  let rowsHtml = "";
+  if (calc.showLabor) {
+    const laborLabel = (calc.showLabor && !calc.showMaterials) ? 'Labor only' : 'Labor';
+    rowsHtml += row(laborLabel, fmt(calc.shownLabor));
+  }
+  if (calc.showMaterials) {
+    rowsHtml += row('Materials', fmt(calc.shownMaterials));
+  }
+  if (delta !== 0) {
+    rowsHtml += row('Selected finishes', fmtSigned(delta));
+  }
+  rowsHtml += '<div class="line-items-row grand-total"><span class="li-label">TOTAL</span><span class="li-dots"></span><span class="li-value">'+fmt(grand)+'</span></div>';
+  document.getElementById("lineitems-body").innerHTML = rowsHtml;
+
+  let noteHtml = "";
+  if (calc.showLabor && calc.showMaterials) {
+    noteHtml='<div class="included-note"><strong>✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.</div>';
+  } else if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
+    noteHtml='<div class="included-note"><strong>✓ Labor included</strong> — all work is covered in the price above.</div>';
+  }
+  document.getElementById("included-note-wrap").innerHTML = noteHtml;
+}
+function getFinishSelections() {
+  return (finishGroups||[]).map(function(g){
+    const sel = selectedOpt(g);
+    const def = defaultOpt(g);
+    return {
+      group: g.name || "Finish",
+      option: sel.name || "Option",
+      price: Number(sel.price)||0,
+      upgrade: (Number(sel.price)||0) - (Number(def.price)||0)
+    };
+  });
 }
 
 // ── LIGHTBOX ──────────────────────────────────────────────────────────────
@@ -983,7 +1169,25 @@ function showSuccess(kind) {
 }
 
 function downloadQuote() { window.print(); }
-function openAccept()  { document.getElementById("accept-modal").classList.add("show"); }
+function openAccept()  {
+  // Show a confirmation of chosen finishes + final total inside the accept modal
+  const box = document.getElementById("accept-finish-summary");
+  if (box) {
+    if (finishGroups && finishGroups.length) {
+      const grand = (baseCalc ? baseCalc.customerTotal : 0) + finishDelta();
+      let rows = getFinishSelections().map(function(s){
+        return '<div class="fc-row"><span>'+escHtml(s.group)+'</span><span>'+escHtml(s.option)+'</span></div>';
+      }).join("");
+      rows += '<div class="fc-row fc-total"><span>Your total</span><span>'+fmt(grand)+'</span></div>';
+      box.className = "finish-confirm";
+      box.innerHTML = rows;
+    } else {
+      box.className = "";
+      box.innerHTML = "";
+    }
+  }
+  document.getElementById("accept-modal").classList.add("show");
+}
 function openDecline() { document.getElementById("decline-modal").classList.add("show"); }
 function closeModals() {
   document.getElementById("accept-modal").classList.remove("show");
@@ -995,10 +1199,12 @@ async function submitAccept() {
   if (!sig) { alert("Please type your full name to sign."); return; }
   const btn=document.getElementById("confirm-accept");
   btn.disabled=true; btn.textContent="Submitting…";
+  const finishSelections = getFinishSelections();
+  const finalTotal = (baseCalc ? baseCalc.customerTotal : 0) + finishDelta();
   try {
     const r=await fetch("/.netlify/functions/quote-response",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ref,action:"accept",signature:sig}),
+      body:JSON.stringify({ref,action:"accept",signature:sig,finishSelections:finishSelections,finalTotal:finalTotal}),
     });
     if (!r.ok) throw new Error("Failed");
     closeModals(); showSuccess("accepted");
