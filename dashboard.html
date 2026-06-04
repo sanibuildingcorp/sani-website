@@ -5504,6 +5504,196 @@ function showSendLinkSuccess(msg) {
 }
 /* ===== END SEND ESTIMATE LINK ===== */
 </script>
+<!-- ============================================================
+     FINISHING OPTIONS BUILDER  ·  paste this whole block right before </body>
+     Adds a "Finishing Options" section to the estimate editor.
+     Pulls from your Find Materials list, saves into the estimate,
+     and the customer can swap options live in their quote.
+     ============================================================ -->
+<style id="sbcf-styles">
+.sbcf-section .sbcf-hint{font-size:12px;color:var(--ink-muted);line-height:1.5;background:rgba(212,181,114,.06);border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px;margin-bottom:14px}
+.sbcf-section .sbcf-hint b{color:var(--gold)}
+.sbcf-empty{font-size:13px;color:var(--ink-muted);font-style:italic;text-align:center;padding:14px;border:1px dashed var(--line);border-radius:10px;margin-bottom:12px}
+.sbcf-group{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.sbcf-group-head{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.sbcf-gname{flex:1;background:var(--navy);border:1.5px solid var(--line-soft);color:var(--ink);padding:10px 12px;border-radius:8px;font-family:var(--body);font-size:14px;font-weight:600}
+.sbcf-gname:focus{outline:none;border-color:var(--gold)}
+.sbcf-del{background:transparent;border:1px solid var(--line-soft);color:var(--ink-muted);border-radius:8px;padding:8px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--body);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.sbcf-del:hover{border-color:var(--bad);color:var(--bad)}
+.sbcf-opt{display:flex;gap:10px;background:var(--navy);border:1px solid var(--line-soft);border-radius:10px;padding:10px;margin-bottom:8px}
+.sbcf-opt.is-def{border-color:var(--gold)}
+.sbcf-thumb{width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid var(--line-soft);background:#000}
+.sbcf-thumb-empty{display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink-muted);cursor:default}
+.sbcf-opt-fields{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.sbcf-opt-fields input[type=text],.sbcf-oname,.sbcf-ospec{width:100%;background:var(--card-2);border:1.5px solid var(--line-soft);color:var(--ink);padding:8px 10px;border-radius:7px;font-family:var(--body);font-size:13px}
+.sbcf-oname{font-weight:600}
+.sbcf-opt-fields input:focus{outline:none;border-color:var(--gold)}
+.sbcf-opt-row2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sbcf-price-wrap{display:flex;align-items:center;gap:4px;color:var(--ink-soft);font-size:13px;font-weight:600}
+.sbcf-oprice{width:90px;background:var(--card-2);border:1.5px solid var(--line-soft);color:var(--gold);padding:8px 10px;border-radius:7px;font-family:var(--body);font-size:13px;text-align:right;font-weight:600}
+.sbcf-oprice:focus{outline:none;border-color:var(--gold)}
+.sbcf-def-lbl{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-soft);cursor:pointer;font-weight:600}
+.sbcf-def-lbl input{accent-color:var(--gold);cursor:pointer}
+.sbcf-photo-btn{display:inline-flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--card-2);border:1px solid var(--line-soft);border-radius:7px;padding:7px 10px;color:var(--ink-soft)}
+.sbcf-photo-btn:hover{border-color:var(--gold);color:var(--gold)}
+.sbcf-del-opt{margin-left:auto;background:transparent;border:none;color:var(--ink-muted);font-size:18px;cursor:pointer;line-height:1;padding:2px 6px}
+.sbcf-del-opt:hover{color:var(--bad)}
+.sbcf-delta{font-size:11px}
+.sbcf-delta .sbcf-inc{color:var(--good);font-weight:600}
+.sbcf-delta .sbcf-up{color:var(--gold);font-weight:600}
+.sbcf-group-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.sbcf-add-opt,.sbcf-from-mat{background:var(--gold-soft);border:1px dashed var(--line);color:var(--gold);padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--body);letter-spacing:.5px}
+.sbcf-from-mat{background:var(--card-2);border-style:solid;border-color:var(--line-soft);color:var(--ink-soft);max-width:230px}
+.sbcf-from-mat:focus{outline:none;border-color:var(--gold)}
+.sbcf-foot{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.sbcf-add-group{background:var(--gold);color:var(--navy);border:none;padding:11px 18px;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase}
+.sbcf-add-group:hover{background:var(--gold-2);color:#fff}
+.sbcf-render-use{background:transparent;border:1.5px solid var(--gold);color:var(--gold);padding:11px 18px;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase}
+.sbcf-render-use:hover{background:var(--gold-soft)}
+</style>
+<script>
+(function(){
+  function uid(){ return 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+  function escAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function groups(){
+    if(!window.currentRecord || !window.currentRecord.estimate) return [];
+    if(!currentRecord.estimate.finishGroups) currentRecord.estimate.finishGroups = [];
+    return currentRecord.estimate.finishGroups;
+  }
+  function find(gid){ var gs=groups(); for(var i=0;i<gs.length;i++){ if(gs[i].id===gid) return gs[i]; } return null; }
+  function findOpt(gid,oid){ var g=find(gid); if(!g) return null; var o=g.options||[]; for(var i=0;i<o.length;i++){ if(o[i].id===oid) return o[i]; } return null; }
+  function defOpt(g){ var o=(g&&g.options)||[]; for(var i=0;i<o.length;i++){ if(o[i].isDefault) return o[i]; } return o[0]||{price:0}; }
 
+  function compress(file,maxW,q){
+    return new Promise(function(res,rej){
+      var r=new FileReader(); r.onerror=rej;
+      r.onload=function(e){
+        var img=new Image(); img.onerror=rej;
+        img.onload=function(){
+          var w=img.width,h=img.height;
+          if(w>maxW){ h=Math.round(h*(maxW/w)); w=maxW; }
+          var c=document.createElement('canvas'); c.width=w; c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          res(c.toDataURL('image/jpeg',q));
+        };
+        img.src=e.target.result;
+      };
+      r.readAsDataURL(file);
+    });
+  }
+
+  function sectionHTML(){
+    var gs=groups();
+    var sm=(currentRecord.estimate.savedMaterials)||[];
+    var matOpts=sm.map(function(m,i){
+      var label=(m.name||('Material '+(i+1)));
+      if(m.totalEstimate) label+=' — $'+m.totalEstimate;
+      return '<option value="'+i+'">'+escAttr(label)+'</option>';
+    }).join('');
+
+    var html='<h3>🎨 FINISHING OPTIONS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(customer can swap these in their quote)</span></h3>';
+    html+='<div class="sbcf-hint">Offer the customer choices (tile, color, fixtures…). Mark one option as <b>Default</b> — that price is included in the quote total. Other options show the customer a <b>+$ upgrade</b> and update their total live when they swap.</div>';
+
+    if(!gs.length){
+      html+='<div class="sbcf-empty">No finish options yet. Add a group like “Wall Tile” or “Vanity”, then add 2–3 choices.</div>';
+    }
+
+    gs.forEach(function(g){
+      var d=defOpt(g);
+      html+='<div class="sbcf-group">';
+      html+='<div class="sbcf-group-head">'
+        +'<input class="sbcf-gname" type="text" value="'+escAttr(g.name||'')+'" placeholder="Group name (e.g. Wall Tile)" oninput="sbcfEditGroup(\''+g.id+'\',this.value)">'
+        +'<button class="sbcf-del" onclick="sbcfRemoveGroup(\''+g.id+'\')">Remove</button>'
+      +'</div>';
+
+      (g.options||[]).forEach(function(o){
+        var delta=(Number(o.price)||0)-(Number(d.price)||0);
+        var deltaTxt = o.isDefault
+          ? '<span class="sbcf-inc">★ Default — included in quote total</span>'
+          : '<span class="sbcf-up">Customer sees: '+(delta>=0?'+':'−')+'$'+Math.abs(delta)+'</span>';
+        var thumb = o.photo
+          ? '<img src="'+o.photo+'" class="sbcf-thumb" onclick="openLightbox(this.src)" alt="">'
+          : '<div class="sbcf-thumb sbcf-thumb-empty">🎨</div>';
+        html+='<div class="sbcf-opt'+(o.isDefault?' is-def':'')+'">'
+          +thumb
+          +'<div class="sbcf-opt-fields">'
+            +'<input class="sbcf-oname" type="text" value="'+escAttr(o.name||'')+'" placeholder="Option name (e.g. Marble-look porcelain)" oninput="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'name\',this.value)">'
+            +'<input class="sbcf-ospec" type="text" value="'+escAttr(o.spec||'')+'" placeholder="Spec (e.g. 12x24 matte) — optional" oninput="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'spec\',this.value)">'
+            +'<div class="sbcf-opt-row2">'
+              +'<span class="sbcf-price-wrap">$<input type="number" class="sbcf-oprice" value="'+(o.price!=null?o.price:'')+'" placeholder="0" step="1" min="0" onchange="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'price\',this.value)"></span>'
+              +'<label class="sbcf-def-lbl"><input type="radio" name="sbcf-def-'+g.id+'" '+(o.isDefault?'checked':'')+' onclick="sbcfSetDefault(\''+g.id+'\',\''+o.id+'\')"> Default</label>'
+              +'<label class="sbcf-photo-btn">📷 Photo<input type="file" accept="image/*" style="display:none" onchange="sbcfPhoto(\''+g.id+'\',\''+o.id+'\',event)"></label>'
+              +'<button class="sbcf-del-opt" title="Remove option" onclick="sbcfRemoveOption(\''+g.id+'\',\''+o.id+'\')">×</button>'
+            +'</div>'
+            +'<div class="sbcf-delta">'+deltaTxt+'</div>'
+          +'</div>'
+        +'</div>';
+      });
+
+      html+='<div class="sbcf-group-foot">'
+        +'<button class="sbcf-add-opt" onclick="sbcfAddOption(\''+g.id+'\')">+ Add option</button>';
+      if(sm.length){
+        html+='<select class="sbcf-from-mat" onchange="sbcfAddFromMaterial(\''+g.id+'\',this.value);this.selectedIndex=0">'
+          +'<option value="">+ Add from Find Materials…</option>'+matOpts+'</select>';
+      }
+      html+='</div>';
+      html+='</div>';
+    });
+
+    html+='<div class="sbcf-foot">'
+      +'<button class="sbcf-add-group" onclick="sbcfAddGroup()">+ Add finish group</button>'
+      +'<button class="sbcf-render-use" onclick="sbcfUseInRender()">✨ Use defaults in AI render</button>'
+    +'</div>';
+    return html;
+  }
+
+  function render(){
+    var card=document.getElementById('edit-card');
+    if(!card || !window.currentRecord || !currentRecord.estimate) return;
+    var ex=document.getElementById('sbcf-section'); if(ex) ex.remove();
+    var sec=document.createElement('div');
+    sec.className='form-section sbcf-section';
+    sec.id='sbcf-section';
+    sec.innerHTML=sectionHTML();
+    var anchor=card.querySelector('.cv-panel');
+    if(anchor && anchor.parentNode) anchor.parentNode.insertBefore(sec,anchor);
+    else card.appendChild(sec);
+  }
+
+  // ---- actions (exposed globally for inline onclick) ----
+  window.sbcfAddGroup=function(){ groups().push({id:uid(),name:'',options:[]}); render(); };
+  window.sbcfRemoveGroup=function(gid){ var gs=groups(); for(var i=0;i<gs.length;i++){ if(gs[i].id===gid){ gs.splice(i,1); break; } } render(); };
+  window.sbcfAddOption=function(gid){ var g=find(gid); if(!g) return; if(!g.options) g.options=[]; var first=g.options.length===0; g.options.push({id:uid(),name:'',spec:'',price:0,photo:'',isDefault:first}); render(); };
+  window.sbcfAddFromMaterial=function(gid,idxStr){ var idx=parseInt(idxStr,10); if(isNaN(idx)) return; var sm=(currentRecord.estimate.savedMaterials)||[]; var m=sm[idx]; if(!m) return; var g=find(gid); if(!g) return; if(!g.options) g.options=[]; var first=g.options.length===0; g.options.push({id:uid(),name:m.name||'',spec:m.spec||'',price:Number(m.totalEstimate||m.estimatedUnitCost||0)||0,photo:'',isDefault:first}); render(); };
+  window.sbcfRemoveOption=function(gid,oid){ var g=find(gid); if(!g) return; g.options=(g.options||[]).filter(function(o){ return o.id!==oid; }); if(g.options.length && !g.options.some(function(o){return o.isDefault;})) g.options[0].isDefault=true; render(); };
+  window.sbcfSetDefault=function(gid,oid){ var g=find(gid); if(!g) return; (g.options||[]).forEach(function(o){ o.isDefault=(o.id===oid); }); render(); };
+  window.sbcfEditGroup=function(gid,val){ var g=find(gid); if(g) g.name=val; };
+  window.sbcfEditOpt=function(gid,oid,field,val){ var o=findOpt(gid,oid); if(!o) return; if(field==='price'){ o.price=parseFloat(val)||0; render(); } else { o[field]=val; } };
+  window.sbcfPhoto=function(gid,oid,ev){ var f=ev.target.files&&ev.target.files[0]; if(!f) return; compress(f,900,0.8).then(function(data){ var o=findOpt(gid,oid); if(o){ o.photo=data; render(); } }).catch(function(){ if(window.toast) toast('Photo failed — try a smaller image',true); }); ev.target.value=''; };
+  window.sbcfUseInRender=function(){
+    var gs=groups().filter(function(g){ return g.options && g.options.length; });
+    if(!gs.length){ if(window.toast) toast('Add finish options first',true); return; }
+    var parts=gs.map(function(g){ var d=defOpt(g); return (g.name||'Finish')+': '+(d.name||''); });
+    var txt='Use these finishes — '+parts.join('; ')+'.';
+    var ta=document.getElementById('render-custom-prompt');
+    if(ta){ ta.value=(ta.value?ta.value.trim()+' ':'')+txt; if(window.toast) toast('✓ Finishes added to render prompt'); }
+    else if(window.toast){ toast('Scroll to the render box and tap Generate'); }
+  };
+
+  // ---- hook into the existing editor (additive monkey-patches) ----
+  if(typeof renderEdit==='function'){
+    var _origRenderEdit=renderEdit;
+    renderEdit=function(){ _origRenderEdit.apply(this,arguments); try{ render(); }catch(e){ console.error('finish builder render',e); } };
+  }
+  if(typeof gatherForm==='function'){
+    var _origGatherForm=gatherForm;
+    gatherForm=function(){
+      var est=_origGatherForm.apply(this,arguments);
+      est.finishGroups=(window.currentRecord && currentRecord.estimate && currentRecord.estimate.finishGroups) || [];
+      return est;
+    };
+  }
+})();
+</script>
 </body>
 </html>
