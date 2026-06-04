@@ -5504,6 +5504,427 @@ function showSendLinkSuccess(msg) {
 }
 /* ===== END SEND ESTIMATE LINK ===== */
 </script>
+<!-- ============================================================
+     INSERT THIS WHOLE FILE INTO dashboard.html
+     ON GITHUB: open dashboard.html → press . (period) to open editor →
+     scroll to the bottom → find </body></html>  →
+     paste this BLOCK on a NEW LINE just above </body> →
+     commit. Netlify deploys in ~1 min.
+     ============================================================ -->
 
+
+<!-- ============================================================
+     CUSTOMER CHOICES BUILDER  (Finishing Options + Materials)
+     Replaces the old FINISHING OPTIONS block.
+     Paste this where the old finishing block was — just ABOVE the
+     PHOTO AUTO-SHRINK block. Adds two sections to the estimate editor:
+       🎨 Finishing Options  — customer swaps one choice per group
+       🛒 Customer Materials — customer ticks materials to include
+     Both save into the estimate and update the customer's quote total live.
+     ============================================================ -->
+<style id="sbcf-styles">
+.sbcf-section .sbcf-hint{font-size:12px;color:var(--ink-muted);line-height:1.5;background:rgba(212,181,114,.06);border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px;margin-bottom:14px}
+.sbcf-section .sbcf-hint b{color:var(--gold)}
+.sbcf-empty{font-size:13px;color:var(--ink-muted);font-style:italic;text-align:center;padding:14px;border:1px dashed var(--line);border-radius:10px;margin-bottom:12px}
+.sbcf-group{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.sbcf-group-head{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.sbcf-gname{flex:1;background:var(--navy);border:1.5px solid var(--line-soft);color:var(--ink);padding:10px 12px;border-radius:8px;font-family:var(--body);font-size:14px;font-weight:600}
+.sbcf-gname:focus{outline:none;border-color:var(--gold)}
+.sbcf-del{background:transparent;border:1px solid var(--line-soft);color:var(--ink-muted);border-radius:8px;padding:8px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--body);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.sbcf-del:hover{border-color:var(--bad);color:var(--bad)}
+.sbcf-opt{display:flex;gap:10px;background:var(--navy);border:1px solid var(--line-soft);border-radius:10px;padding:10px;margin-bottom:8px}
+.sbcf-opt.is-def{border-color:var(--gold)}
+.sbcf-thumb{width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid var(--line-soft);background:#000}
+.sbcf-thumb-empty{display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink-muted);cursor:default}
+.sbcf-opt-fields{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.sbcf-opt-fields input[type=text],.sbcf-oname,.sbcf-ospec{width:100%;background:var(--card-2);border:1.5px solid var(--line-soft);color:var(--ink);padding:8px 10px;border-radius:7px;font-family:var(--body);font-size:13px}
+.sbcf-oname{font-weight:600}
+.sbcf-opt-fields input:focus{outline:none;border-color:var(--gold)}
+.sbcf-opt-row2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sbcf-price-wrap{display:flex;align-items:center;gap:4px;color:var(--ink-soft);font-size:13px;font-weight:600}
+.sbcf-oprice{width:90px;background:var(--card-2);border:1.5px solid var(--line-soft);color:var(--gold);padding:8px 10px;border-radius:7px;font-family:var(--body);font-size:13px;text-align:right;font-weight:600}
+.sbcf-oprice:focus{outline:none;border-color:var(--gold)}
+.sbcf-def-lbl{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-soft);cursor:pointer;font-weight:600}
+.sbcf-def-lbl input{accent-color:var(--gold);cursor:pointer}
+.sbcf-photo-btn{display:inline-flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--card-2);border:1px solid var(--line-soft);border-radius:7px;padding:7px 10px;color:var(--ink-soft)}
+.sbcf-photo-btn:hover{border-color:var(--gold);color:var(--gold)}
+.sbcf-del-opt{margin-left:auto;background:transparent;border:none;color:var(--ink-muted);font-size:18px;cursor:pointer;line-height:1;padding:2px 6px}
+.sbcf-del-opt:hover{color:var(--bad)}
+.sbcf-delta{font-size:11px}
+.sbcf-delta .sbcf-inc{color:var(--good);font-weight:600}
+.sbcf-delta .sbcf-up{color:var(--gold);font-weight:600}
+.sbcf-group-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.sbcf-add-opt,.sbcf-from-mat{background:var(--gold-soft);border:1px dashed var(--line);color:var(--gold);padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--body);letter-spacing:.5px}
+.sbcf-from-mat{background:var(--card-2);border-style:solid;border-color:var(--line-soft);color:var(--ink-soft);max-width:230px}
+.sbcf-from-mat:focus{outline:none;border-color:var(--gold)}
+.sbcf-foot{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.sbcf-add-group{background:var(--gold);color:var(--navy);border:none;padding:11px 18px;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase}
+.sbcf-add-group:hover{background:var(--gold-2);color:#fff}
+.sbcf-render-use{background:transparent;border:1.5px solid var(--gold);color:var(--gold);padding:11px 18px;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase}
+.sbcf-render-use:hover{background:var(--gold-soft)}
+</style>
+<style id="sbcm-styles">
+  #sbcm-section { margin: 22px 0; }
+  #sbcm-section .sbcm-head { font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #f0a500; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  #sbcm-section .sbcm-sub { font-size: 12px; color: #8aa0b8; margin-bottom: 12px; line-height: 1.5; }
+  #sbcm-section .sbcm-empty { font-size: 13px; color: #8aa0b8; font-style: italic; border: 1px dashed rgba(240,165,0,.35); border-radius: 10px; padding: 14px; text-align: center; }
+  #sbcm-section .sbcm-item { border: 1px solid rgba(255,255,255,.08); border-radius: 10px; background: rgba(255,255,255,.02); padding: 11px 13px; margin-bottom: 9px; }
+  #sbcm-section .sbcm-item.on { border-color: rgba(240,165,0,.55); background: rgba(240,165,0,.06); }
+  #sbcm-section .sbcm-row1 { display: flex; align-items: flex-start; gap: 11px; }
+  #sbcm-section .sbcm-cb { width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px; border-radius: 6px; border: 2px solid #6b7f96; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #0a1628; font-weight: 800; font-size: 14px; user-select: none; }
+  #sbcm-section .sbcm-item.on .sbcm-cb { background: #f0a500; border-color: #f0a500; }
+  #sbcm-section .sbcm-meta { flex: 1; min-width: 0; }
+  #sbcm-section .sbcm-name { font-size: 14px; font-weight: 700; color: #eaf1f8; line-height: 1.3; }
+  #sbcm-section .sbcm-spec { font-size: 12px; color: #8aa0b8; margin-top: 2px; }
+  #sbcm-section .sbcm-row2 { display: flex; align-items: center; gap: 10px; margin: 10px 0 0 33px; flex-wrap: wrap; }
+  #sbcm-section .sbcm-price-wrap { display: flex; align-items: center; gap: 6px; }
+  #sbcm-section .sbcm-price-wrap label { font-size: 11px; color: #8aa0b8; letter-spacing: .5px; text-transform: uppercase; }
+  #sbcm-section .sbcm-price-wrap .dollar { color: #f0a500; font-weight: 700; }
+  #sbcm-section .sbcm-price { width: 110px; padding: 7px 9px; border-radius: 7px; border: 1.5px solid rgba(255,255,255,.14); background: #0a1628; color: #eaf1f8; font-size: 14px; font-weight: 700; }
+  #sbcm-section .sbcm-price:focus { outline: none; border-color: #f0a500; }
+  #sbcm-section .sbcm-def { font-size: 11px; color: #8aa0b8; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  #sbcm-section .sbcm-def input { width: 15px; height: 15px; accent-color: #f0a500; }
+  #sbcm-section .sbcm-count { font-size: 12px; color: #f0a500; font-weight: 700; margin-top: 10px; text-align: right; }
+</style>
+<script>
+/* ===== 🎨 FINISHING OPTIONS (uses bare currentRecord) ===== */
+(function(){
+  function uid(){ return 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+  function escAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function rec(){ return (typeof currentRecord!=='undefined' && currentRecord) ? currentRecord : null; }
+  function groups(){
+    var r=rec(); if(!r || !r.estimate) return [];
+    if(!r.estimate.finishGroups) r.estimate.finishGroups = [];
+    return r.estimate.finishGroups;
+  }
+  function find(gid){ var gs=groups(); for(var i=0;i<gs.length;i++){ if(gs[i].id===gid) return gs[i]; } return null; }
+  function findOpt(gid,oid){ var g=find(gid); if(!g) return null; var o=g.options||[]; for(var i=0;i<o.length;i++){ if(o[i].id===oid) return o[i]; } return null; }
+  function defOpt(g){ var o=(g&&g.options)||[]; for(var i=0;i<o.length;i++){ if(o[i].isDefault) return o[i]; } return o[0]||{price:0}; }
+
+  function compress(file,maxW,q){
+    return new Promise(function(res,rej){
+      var r=new FileReader(); r.onerror=rej;
+      r.onload=function(e){
+        var img=new Image(); img.onerror=rej;
+        img.onload=function(){
+          var w=img.width,h=img.height;
+          if(w>maxW){ h=Math.round(h*(maxW/w)); w=maxW; }
+          var c=document.createElement('canvas'); c.width=w; c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          res(c.toDataURL('image/jpeg',q));
+        };
+        img.src=e.target.result;
+      };
+      r.readAsDataURL(file);
+    });
+  }
+
+  function sectionHTML(){
+    var r=rec(); if(!r) return '';
+    var gs=groups();
+    var sm=(r.estimate.savedMaterials)||[];
+    var matOpts=sm.map(function(m,i){
+      var label=(m.name||('Material '+(i+1)));
+      if(m.totalEstimate) label+=' — $'+m.totalEstimate;
+      return '<option value="'+i+'">'+escAttr(label)+'</option>';
+    }).join('');
+
+    var html='<h3>🎨 FINISHING OPTIONS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(customer can swap these in their quote)</span></h3>';
+    html+='<div class="sbcf-hint">Offer the customer choices (tile, color, fixtures…). Mark one option as <b>Default</b> — that price is included in the quote total. Other options show the customer a <b>+$ upgrade</b> and update their total live when they swap.</div>';
+
+    if(!gs.length){
+      html+='<div class="sbcf-empty">No finish options yet. Add a group like “Wall Tile” or “Vanity”, then add 2–3 choices.</div>';
+    }
+
+    gs.forEach(function(g){
+      var d=defOpt(g);
+      html+='<div class="sbcf-group">';
+      html+='<div class="sbcf-group-head">'
+        +'<input class="sbcf-gname" type="text" value="'+escAttr(g.name||'')+'" placeholder="Group name (e.g. Wall Tile)" oninput="sbcfEditGroup(\''+g.id+'\',this.value)">'
+        +'<button class="sbcf-del" onclick="sbcfRemoveGroup(\''+g.id+'\')">Remove</button>'
+      +'</div>';
+
+      (g.options||[]).forEach(function(o){
+        var delta=(Number(o.price)||0)-(Number(d.price)||0);
+        var deltaTxt = o.isDefault
+          ? '<span class="sbcf-inc">★ Default — included in quote total</span>'
+          : '<span class="sbcf-up">Customer sees: '+(delta>=0?'+':'−')+'$'+Math.abs(delta)+'</span>';
+        var thumb = o.photo
+          ? '<img src="'+o.photo+'" class="sbcf-thumb" onclick="openLightbox(this.src)" alt="">'
+          : '<div class="sbcf-thumb sbcf-thumb-empty">🎨</div>';
+        html+='<div class="sbcf-opt'+(o.isDefault?' is-def':'')+'">'
+          +thumb
+          +'<div class="sbcf-opt-fields">'
+            +'<input class="sbcf-oname" type="text" value="'+escAttr(o.name||'')+'" placeholder="Option name (e.g. Marble-look porcelain)" oninput="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'name\',this.value)">'
+            +'<input class="sbcf-ospec" type="text" value="'+escAttr(o.spec||'')+'" placeholder="Spec (e.g. 12x24 matte) — optional" oninput="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'spec\',this.value)">'
+            +'<div class="sbcf-opt-row2">'
+              +'<span class="sbcf-price-wrap">$<input type="number" class="sbcf-oprice" value="'+(o.price!=null?o.price:'')+'" placeholder="0" step="1" min="0" onchange="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'price\',this.value)"></span>'
+              +'<label class="sbcf-def-lbl"><input type="radio" name="sbcf-def-'+g.id+'" '+(o.isDefault?'checked':'')+' onclick="sbcfSetDefault(\''+g.id+'\',\''+o.id+'\')"> Default</label>'
+              +'<label class="sbcf-photo-btn">📷 Photo<input type="file" accept="image/*" style="display:none" onchange="sbcfPhoto(\''+g.id+'\',\''+o.id+'\',event)"></label>'
+              +'<button class="sbcf-del-opt" title="Remove option" onclick="sbcfRemoveOption(\''+g.id+'\',\''+o.id+'\')">×</button>'
+            +'</div>'
+            +'<div class="sbcf-delta">'+deltaTxt+'</div>'
+          +'</div>'
+        +'</div>';
+      });
+
+      html+='<div class="sbcf-group-foot">'
+        +'<button class="sbcf-add-opt" onclick="sbcfAddOption(\''+g.id+'\')">+ Add option</button>';
+      if(sm.length){
+        html+='<select class="sbcf-from-mat" onchange="sbcfAddFromMaterial(\''+g.id+'\',this.value);this.selectedIndex=0">'
+          +'<option value="">+ Add from Find Materials…</option>'+matOpts+'</select>';
+      }
+      html+='</div>';
+      html+='</div>';
+    });
+
+    html+='<div class="sbcf-foot">'
+      +'<button class="sbcf-add-group" onclick="sbcfAddGroup()">+ Add finish group</button>'
+      +'<button class="sbcf-render-use" onclick="sbcfUseInRender()">✨ Use defaults in AI render</button>'
+    +'</div>';
+    return html;
+  }
+
+  function render(){
+    var card=document.getElementById('edit-card');
+    var r=rec();
+    if(!card || !r || !r.estimate) return;
+    var ex=document.getElementById('sbcf-section'); if(ex) ex.remove();
+    var sec=document.createElement('div');
+    sec.className='form-section sbcf-section';
+    sec.id='sbcf-section';
+    sec.innerHTML=sectionHTML();
+    var anchor=card.querySelector('.cv-panel');
+    if(anchor && anchor.parentNode) anchor.parentNode.insertBefore(sec,anchor);
+    else card.appendChild(sec);
+  }
+
+  window.sbcfAddGroup=function(){ groups().push({id:uid(),name:'',options:[]}); render(); };
+  window.sbcfRemoveGroup=function(gid){ var gs=groups(); for(var i=0;i<gs.length;i++){ if(gs[i].id===gid){ gs.splice(i,1); break; } } render(); };
+  window.sbcfAddOption=function(gid){ var g=find(gid); if(!g) return; if(!g.options) g.options=[]; var first=g.options.length===0; g.options.push({id:uid(),name:'',spec:'',price:0,photo:'',isDefault:first}); render(); };
+  window.sbcfAddFromMaterial=function(gid,idxStr){ var idx=parseInt(idxStr,10); if(isNaN(idx)) return; var r=rec(); if(!r) return; var sm=(r.estimate.savedMaterials)||[]; var m=sm[idx]; if(!m) return; var g=find(gid); if(!g) return; if(!g.options) g.options=[]; var first=g.options.length===0; g.options.push({id:uid(),name:m.name||'',spec:m.spec||'',price:Number(m.totalEstimate||m.estimatedUnitCost||0)||0,photo:'',isDefault:first}); render(); };
+  window.sbcfRemoveOption=function(gid,oid){ var g=find(gid); if(!g) return; g.options=(g.options||[]).filter(function(o){ return o.id!==oid; }); if(g.options.length && !g.options.some(function(o){return o.isDefault;})) g.options[0].isDefault=true; render(); };
+  window.sbcfSetDefault=function(gid,oid){ var g=find(gid); if(!g) return; (g.options||[]).forEach(function(o){ o.isDefault=(o.id===oid); }); render(); };
+  window.sbcfEditGroup=function(gid,val){ var g=find(gid); if(g) g.name=val; };
+  window.sbcfEditOpt=function(gid,oid,field,val){ var o=findOpt(gid,oid); if(!o) return; if(field==='price'){ o.price=parseFloat(val)||0; render(); } else { o[field]=val; } };
+  window.sbcfPhoto=function(gid,oid,ev){ var f=ev.target.files&&ev.target.files[0]; if(!f) return; compress(f,900,0.8).then(function(data){ var o=findOpt(gid,oid); if(o){ o.photo=data; render(); } }).catch(function(){ if(window.toast) toast('Photo failed — try a smaller image',true); }); ev.target.value=''; };
+  window.sbcfUseInRender=function(){
+    var gs=groups().filter(function(g){ return g.options && g.options.length; });
+    if(!gs.length){ if(window.toast) toast('Add finish options first',true); return; }
+    var parts=gs.map(function(g){ var d=defOpt(g); return (g.name||'Finish')+': '+(d.name||''); });
+    var txt='Use these finishes — '+parts.join('; ')+'.';
+    var ta=document.getElementById('render-custom-prompt');
+    if(ta){ ta.value=(ta.value?ta.value.trim()+' ':'')+txt; if(window.toast) toast('✓ Finishes added to render prompt'); }
+    else if(window.toast){ toast('Scroll to the render box and tap Generate'); }
+  };
+
+  if(typeof renderEdit==='function'){
+    var _origRenderEdit=renderEdit;
+    renderEdit=function(){ _origRenderEdit.apply(this,arguments); try{ render(); }catch(e){ console.error('finish builder render',e); } };
+  }
+  if(typeof gatherForm==='function'){
+    var _origGatherForm=gatherForm;
+    gatherForm=function(){
+      var est=_origGatherForm.apply(this,arguments);
+      try{ var r=rec(); if(est && typeof est==='object') est.finishGroups=(r && r.estimate && r.estimate.finishGroups) || []; }catch(e){}
+      return est;
+    };
+  }
+})();
+
+/* ===== 🛒 CUSTOMER-SELECTABLE MATERIALS (uses bare currentRecord) ===== */
+(function(){
+  if (window.__sbcMaterials) return;
+  window.__sbcMaterials = true;
+
+  function rec(){ return (typeof currentRecord!=='undefined' && currentRecord) ? currentRecord : null; }
+  function est(){ var r=rec(); if(!r) return null; if(!r.estimate) r.estimate={}; return r.estimate; }
+
+  function getSaved(){
+    var e = est() || {};
+    var keys = ['savedMaterials','materialsList','foundMaterials','findMaterials','materialsFound'];
+    for (var i=0;i<keys.length;i++){ if (Array.isArray(e[keys[i]]) && e[keys[i]].length) return e[keys[i]]; }
+    for (var p in e){
+      if (!Object.prototype.hasOwnProperty.call(e,p)) continue;
+      var v = e[p];
+      if (Array.isArray(v) && v.length && v[0] && (v[0].estimatedUnitCost!=null || v[0].totalEstimate!=null || v[0].searchQuery!=null)) return v;
+    }
+    return [];
+  }
+
+  function ensureCM(){ var e=est(); if(!e) return []; if(!Array.isArray(e.customerMaterials)) e.customerMaterials=[]; return e.customerMaterials; }
+
+  function defaultPrice(item){
+    var p = Number(item.totalEstimate);
+    if (!p) p = (Number(item.estimatedUnitCost)||0) * (Number(item.qty)||1);
+    if (!p) p = Number(item.price)||0;
+    return Math.round(p*100)/100;
+  }
+  function findEntry(cm, idx){ for(var i=0;i<cm.length;i++){ if(cm[i].srcIndex===idx) return i; } return -1; }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  window.sbcmToggle = function(idx){
+    var saved = getSaved(); var item = saved[idx]; if (!item) return;
+    var cm = ensureCM(); var at = findEntry(cm, idx);
+    if (at > -1) cm.splice(at,1);
+    else cm.push({ id:'cm_'+idx+'_'+Math.random().toString(36).slice(2,7), srcIndex:idx, name:item.name||'Material', spec:item.spec||'', qty:item.qty||'', unit:item.unit||'', price:defaultPrice(item), includedByDefault:false });
+    sbcmInject();
+  };
+  window.sbcmPrice = function(idx, val){
+    var cm = ensureCM(); var at = findEntry(cm, idx); if (at<0) return;
+    cm[at].price = Math.round((Number(val)||0)*100)/100;
+    var c = document.getElementById('sbcm-count'); if (c) c.textContent = sbcmSummary();
+  };
+  window.sbcmDefault = function(idx, checked){
+    var cm = ensureCM(); var at = findEntry(cm, idx); if (at<0) return;
+    cm[at].includedByDefault = !!checked;
+  };
+
+  function sbcmSummary(){
+    var cm = ensureCM();
+    var total = cm.reduce(function(s,m){ return s + (Number(m.price)||0); }, 0);
+    return cm.length + ' offered · ' + (cm.length ? ('$'+total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' if all picked') : '');
+  }
+
+  function sbcmInject(){
+    var card = document.getElementById('edit-card');
+    if (!card || !rec()) return;
+    var old = document.getElementById('sbcm-section'); if (old) old.remove();
+
+    var sec = document.createElement('div');
+    sec.id = 'sbcm-section';
+
+    var saved = getSaved();
+    var cm = ensureCM();
+
+    var html = '<div class="sbcm-head">🛒 Customer-Selectable Materials</div>'
+      + '<div class="sbcm-sub">Tick items to let the customer choose them on their quote. Price is pre-filled from your Find Materials list — edit if you want to mark it up.</div>';
+
+    if (!saved.length) {
+      html += '<div class="sbcm-empty">Run <b>Find Materials</b> above first, then come back here to offer items to the customer.</div>';
+    } else {
+      for (var i=0;i<saved.length;i++){
+        var item = saved[i];
+        var at = findEntry(cm, i);
+        var on = at > -1;
+        var price = on ? (Number(cm[at].price)||0) : defaultPrice(item);
+        var isDef = on ? !!cm[at].includedByDefault : false;
+        var specBits = [];
+        if (item.qty) specBits.push(esc(item.qty)+(item.unit?(' '+esc(item.unit)):''));
+        if (item.spec) specBits.push(esc(item.spec));
+        var specLine = specBits.join(' · ');
+
+        html += '<div class="sbcm-item'+(on?' on':'')+'">'
+          + '<div class="sbcm-row1">'
+            + '<div class="sbcm-cb" onclick="sbcmToggle('+i+')">'+(on?'✓':'')+'</div>'
+            + '<div class="sbcm-meta">'
+              + '<div class="sbcm-name">'+esc(item.name||'Material')+'</div>'
+              + (specLine?'<div class="sbcm-spec">'+specLine+'</div>':'')
+            + '</div>'
+          + '</div>';
+
+        if (on) {
+          html += '<div class="sbcm-row2">'
+            + '<div class="sbcm-price-wrap"><label>Customer price</label><span class="dollar">$</span>'
+              + '<input type="number" class="sbcm-price" value="'+price+'" min="0" step="0.01" '
+              + 'onchange="sbcmPrice('+i+',this.value)" oninput="sbcmPrice('+i+',this.value)"></div>'
+            + '<label class="sbcm-def"><input type="checkbox" '+(isDef?'checked':'')+' onchange="sbcmDefault('+i+',this.checked)"> Pre-check for customer</label>'
+          + '</div>';
+        }
+        html += '</div>';
+      }
+      html += '<div class="sbcm-count" id="sbcm-count">'+sbcmSummary()+'</div>';
+    }
+
+    sec.innerHTML = html;
+    var anchor = card.querySelector('.cv-panel');
+    if (anchor) card.insertBefore(sec, anchor);
+    else card.appendChild(sec);
+  }
+
+  if (typeof renderEdit === 'function') {
+    var _origRenderEdit = renderEdit;
+    renderEdit = function(){ _origRenderEdit.apply(this, arguments); try { sbcmInject(); } catch(e){ console.error('materials builder', e); } };
+  }
+  if (typeof gatherForm === 'function') {
+    var _origGatherForm = gatherForm;
+    gatherForm = function(){
+      var e = _origGatherForm.apply(this, arguments);
+      try { var r=rec(); if (e && typeof e === 'object') e.customerMaterials = (r && r.estimate && r.estimate.customerMaterials) || []; } catch(err){}
+      return e;
+    };
+  }
+})();
+</script>
+
+
+<!-- ============================================================
+     PHOTO AUTO-SHRINK  ·  uploads base64 photos to Supabase Storage
+     before save-estimate is called so they survive Netlify Blobs.
+     Intercepts window.fetch transparently.
+     ============================================================ -->
+<script>
+(function(){
+  var _origFetch = window.fetch;
+  window.fetch = async function(input, init){
+    try {
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (init && init.method === 'POST' && url.indexOf('/save-estimate') !== -1 && init.body) {
+        var bodyStr = typeof init.body === 'string' ? init.body : null;
+        if (bodyStr) {
+          var payload = JSON.parse(bodyStr);
+          var ref = (payload && payload.ref) || (payload && payload.estimate && payload.estimate.ref) || '';
+          if (ref) {
+            // quote photos
+            if (payload.estimate && Array.isArray(payload.estimate.quotePhotos)) {
+              for (var i = 0; i < payload.estimate.quotePhotos.length; i++) {
+                var p = payload.estimate.quotePhotos[i];
+                var data = (typeof p === 'string') ? p : (p && p.data);
+                if (typeof data === 'string' && data.indexOf('data:') === 0) {
+                  try {
+                    var r = await _origFetch('/.netlify/functions/upload-photo', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ base64: data, ref: ref })
+                    });
+                    var jr = await r.json();
+                    if (jr && jr.url) {
+                      if (typeof p === 'string') payload.estimate.quotePhotos[i] = jr.url;
+                      else payload.estimate.quotePhotos[i] = { name: p.name || 'photo', data: jr.url };
+                    }
+                  } catch(e) {}
+                }
+              }
+            }
+            // customer photos
+            if (payload.request && Array.isArray(payload.request.photos)) {
+              for (var j = 0; j < payload.request.photos.length; j++) {
+                var pp = payload.request.photos[j];
+                var d2 = (typeof pp === 'string') ? pp : (pp && pp.data);
+                if (typeof d2 === 'string' && d2.indexOf('data:') === 0) {
+                  try {
+                    var rr = await _origFetch('/.netlify/functions/upload-photo', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ base64: d2, ref: ref })
+                    });
+                    var jrr = await rr.json();
+                    if (jrr && jrr.url) {
+                      if (typeof pp === 'string') payload.request.photos[j] = jrr.url;
+                      else payload.request.photos[j] = { name: pp.name || 'photo', data: jrr.url };
+                    }
+                  } catch(e) {}
+                }
+              }
+            }
+            init.body = JSON.stringify(payload);
+          }
+        }
+      }
+    } catch(e) { /* swallow */ }
+    return _origFetch.apply(this, arguments);
+  };
+})();
+</script>
 </body>
 </html>
