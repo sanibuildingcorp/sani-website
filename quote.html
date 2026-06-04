@@ -302,6 +302,37 @@ body {
   margin-bottom: 6px;
 }
 
+/* ── MATERIALS OPTIONS (customer-selectable, multi-pick) ───────────────── */
+.mat-list { display: flex; flex-direction: column; gap: 10px; }
+.mat-opt {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 15px;
+  cursor: pointer;
+  background: #fff;
+  transition: all .15s;
+}
+.mat-opt:hover { border-color: var(--gold); }
+.mat-opt.selected { border-color: var(--gold); box-shadow: 0 6px 18px rgba(201,168,76,.22); background: var(--gold-soft); }
+.mat-check {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  border: 2px solid var(--ink-muted);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700;
+  color: #fff;
+  transition: all .15s;
+}
+.mat-opt.selected .mat-check { background: var(--gold); border-color: var(--gold); }
+.mat-info { flex: 1; min-width: 0; }
+.mat-name { font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+.mat-spec { font-size: 12px; color: var(--ink-muted); margin-top: 2px; line-height: 1.4; }
+.mat-price { flex-shrink: 0; font-size: 14px; font-weight: 700; color: var(--gold-2); white-space: nowrap; }
+
 /* LIGHTBOX */
 .lightbox {
   display: none;
@@ -733,6 +764,13 @@ body {
         <div id="finishes-body"></div>
       </div>
 
+      <!-- MATERIALS OPTIONS (customer can pick) -->
+      <div id="materials-wrap" style="display:none">
+        <div class="section-label">Choose Your Materials</div>
+        <div class="finish-hint">Pick the materials you'd like us to supply — your total updates instantly. Leave any unchecked if you'll provide them yourself. Your selections are saved when you approve.</div>
+        <div class="mat-list" id="materials-body"></div>
+      </div>
+
       <!-- LINE ITEMS -->
       <div id="lineitems-wrap" style="display:none">
         <div class="section-label">Line Items</div>
@@ -856,6 +894,10 @@ let lightboxIdx = 0;
 let baseCalc = null;
 let finishGroups = [];
 let finishSel = {};
+
+// Materials options state (customer-selectable)
+let customerMaterials = [];
+let matSel = {};
 
 function fmt(n) {
   return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1011,6 +1053,12 @@ function render() {
   finishSel = {};
   finishGroups.forEach(function(g){ var d = defaultOpt(g); if (d && d.id) finishSel[g.id] = d.id; });
   renderFinishes();
+
+  customerMaterials = (est.customerMaterials || []).filter(function(m){ return m && (m.name || m.id); });
+  matSel = {};
+  customerMaterials.forEach(function(m){ matSel[m.id] = (m.includedByDefault === true); });
+  renderMaterials();
+
   renderTotalsSection();
 
   // NOTES
@@ -1081,7 +1129,8 @@ function renderTotalsSection() {
   const calc = baseCalc;
   if (!calc) return;
   const delta = finishDelta();
-  const grand = calc.customerTotal + delta;
+  const matTotal = materialsSelectedTotal();
+  const grand = calc.customerTotal + delta + matTotal;
 
   document.getElementById("est-total").textContent = fmt(grand);
 
@@ -1109,6 +1158,9 @@ function renderTotalsSection() {
   if (delta !== 0) {
     rowsHtml += row('Selected finishes', fmtSigned(delta));
   }
+  if (matTotal > 0) {
+    rowsHtml += row('Selected materials', fmtSigned(matTotal));
+  }
   rowsHtml += '<div class="line-items-row grand-total"><span class="li-label">TOTAL</span><span class="li-dots"></span><span class="li-value">'+fmt(grand)+'</span></div>';
   document.getElementById("lineitems-body").innerHTML = rowsHtml;
 
@@ -1130,6 +1182,41 @@ function getFinishSelections() {
       price: Number(sel.price)||0,
       upgrade: (Number(sel.price)||0) - (Number(def.price)||0)
     };
+  });
+}
+
+// ── MATERIALS OPTIONS ───────────────────────────────────────────────────────
+function materialsSelectedTotal() {
+  return (customerMaterials||[]).reduce(function(s,m){
+    return s + (matSel[m.id] ? (Number(m.price)||0) : 0);
+  }, 0);
+}
+function renderMaterials() {
+  const wrap = document.getElementById("materials-wrap");
+  if (!customerMaterials || !customerMaterials.length) { wrap.style.display="none"; return; }
+  wrap.style.display="block";
+  document.getElementById("materials-body").innerHTML = customerMaterials.map(function(m){
+    const sel = !!matSel[m.id];
+    const qtyLine = (m.qty ? (escHtml(m.qty)+(m.unit?(" "+escHtml(m.unit)):"")+" · ") : "");
+    const spec = (qtyLine + (m.spec?escHtml(m.spec):"")).replace(/ · $/,"");
+    return '<div class="mat-opt'+(sel?' selected':'')+'" onclick="toggleMaterial(\''+escHtml(m.id)+'\')">'
+      +'<div class="mat-check">'+(sel?'✓':'')+'</div>'
+      +'<div class="mat-info">'
+        +'<div class="mat-name">'+escHtml(m.name||"Material")+'</div>'
+        +(spec?'<div class="mat-spec">'+spec+'</div>':'')
+      +'</div>'
+      +'<div class="mat-price">'+(Number(m.price)>0?('+'+fmt(Number(m.price))):'Included')+'</div>'
+    +'</div>';
+  }).join("");
+}
+function toggleMaterial(id) {
+  matSel[id] = !matSel[id];
+  renderMaterials();
+  renderTotalsSection();
+}
+function getMaterialSelections() {
+  return (customerMaterials||[]).filter(function(m){ return matSel[m.id]; }).map(function(m){
+    return { id:m.id, name:m.name||"Material", spec:m.spec||"", qty:m.qty||"", unit:m.unit||"", price:Number(m.price)||0 };
   });
 }
 
@@ -1170,13 +1257,18 @@ function showSuccess(kind) {
 
 function downloadQuote() { window.print(); }
 function openAccept()  {
-  // Show a confirmation of chosen finishes + final total inside the accept modal
+  // Show a confirmation of chosen finishes + materials + final total inside the accept modal
   const box = document.getElementById("accept-finish-summary");
   if (box) {
-    if (finishGroups && finishGroups.length) {
-      const grand = (baseCalc ? baseCalc.customerTotal : 0) + finishDelta();
-      let rows = getFinishSelections().map(function(s){
+    const finSel = (finishGroups && finishGroups.length) ? getFinishSelections() : [];
+    const matSelArr = getMaterialSelections();
+    if (finSel.length || matSelArr.length) {
+      const grand = (baseCalc ? baseCalc.customerTotal : 0) + finishDelta() + materialsSelectedTotal();
+      let rows = finSel.map(function(s){
         return '<div class="fc-row"><span>'+escHtml(s.group)+'</span><span>'+escHtml(s.option)+'</span></div>';
+      }).join("");
+      rows += matSelArr.map(function(m){
+        return '<div class="fc-row"><span>'+escHtml(m.name)+'</span><span>'+(Number(m.price)>0?('+'+fmt(Number(m.price))):'Included')+'</span></div>';
       }).join("");
       rows += '<div class="fc-row fc-total"><span>Your total</span><span>'+fmt(grand)+'</span></div>';
       box.className = "finish-confirm";
@@ -1200,11 +1292,12 @@ async function submitAccept() {
   const btn=document.getElementById("confirm-accept");
   btn.disabled=true; btn.textContent="Submitting…";
   const finishSelections = getFinishSelections();
-  const finalTotal = (baseCalc ? baseCalc.customerTotal : 0) + finishDelta();
+  const materialsSelections = getMaterialSelections();
+  const finalTotal = (baseCalc ? baseCalc.customerTotal : 0) + finishDelta() + materialsSelectedTotal();
   try {
     const r=await fetch("/.netlify/functions/quote-response",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ref,action:"accept",signature:sig,finishSelections:finishSelections,finalTotal:finalTotal}),
+      body:JSON.stringify({ref,action:"accept",signature:sig,finishSelections:finishSelections,materialsSelections:materialsSelections,finalTotal:finalTotal}),
     });
     if (!r.ok) throw new Error("Failed");
     closeModals(); showSuccess("accepted");
