@@ -5695,5 +5695,69 @@ function showSendLinkSuccess(msg) {
   }
 })();
 </script>
+<!-- ============================================================
+     PHOTO AUTO-SHRINK  ·  paste this whole block right before </body>
+     (just below the FINISHING OPTIONS block is fine)
+     Before every save, any embedded photo is uploaded to Storage and
+     swapped for a link, so the estimate never hits the save size limit.
+     ============================================================ -->
+<script>
+(function(){
+  if (window.__sbcPhotoShrink) return;
+  window.__sbcPhotoShrink = true;
+
+  var _fetch = window.fetch.bind(window);
+
+  async function uploadOne(dataUri, ref){
+    try{
+      var r = await _fetch('/.netlify/functions/upload-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: dataUri, ref: ref || 'misc' })
+      });
+      if(!r.ok) return null;
+      var d = await r.json();
+      return (d && d.url) ? d.url : null;
+    }catch(e){ return null; }
+  }
+
+  async function shrink(node, ref){
+    if(Array.isArray(node)){
+      for(var i=0;i<node.length;i++){
+        var v = node[i];
+        if(typeof v==='string' && v.indexOf('data:image')===0){
+          var u = await uploadOne(v, ref); if(u) node[i] = u;
+        } else if(v && typeof v==='object'){
+          await shrink(v, ref);
+        }
+      }
+    } else if(node && typeof node==='object'){
+      for(var k in node){
+        if(!Object.prototype.hasOwnProperty.call(node,k)) continue;
+        var val = node[k];
+        if(typeof val==='string' && val.indexOf('data:image')===0){
+          var u2 = await uploadOne(val, ref); if(u2) node[k] = u2;
+        } else if(val && typeof val==='object'){
+          await shrink(val, ref);
+        }
+      }
+    }
+  }
+
+  window.fetch = async function(url, opts){
+    try{
+      var u = (typeof url === 'string') ? url : (url && url.url) || '';
+      if(u.indexOf('/save-estimate') > -1 && opts && opts.body && typeof opts.body === 'string'){
+        var payload = JSON.parse(opts.body);
+        var ref = payload.ref || 'misc';
+        if(payload.estimate) await shrink(payload.estimate, ref);
+        if(payload.request)  await shrink(payload.request, ref);
+        opts = Object.assign({}, opts, { body: JSON.stringify(payload) });
+      }
+    }catch(e){ console.error('photo shrink', e); }
+    return _fetch(url, opts);
+  };
+})();
+</script>
 </body>
 </html>
