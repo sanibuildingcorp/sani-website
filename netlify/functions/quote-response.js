@@ -14,11 +14,11 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { ref, action, signature, declineReason } = JSON.parse(event.body);
+    const { ref, action, signature, declineReason, finishSelections, materialsSelections, finalTotal } = JSON.parse(event.body);
     if (!ref || !action) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref or action" }) };
     }
-    if (action !== "accept" && action !== "decline") {
+    if (action !== "accept" && action !== "decline" && action !== "review") {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Invalid action" }) };
     }
 
@@ -32,6 +32,15 @@ exports.handler = async function (event) {
       record.status = "accepted";
       record.acceptedAt = new Date().toISOString();
       record.signature = signature || "";
+      if (finishSelections) record.customerSelections = finishSelections;
+      if (materialsSelections) record.customerMaterialSelections = materialsSelections;
+      if (finalTotal != null) record.customerFinalTotal = finalTotal;
+    } else if (action === "review") {
+      record.status = "review_requested";
+      record.reviewRequestedAt = new Date().toISOString();
+      if (finishSelections) record.customerSelections = finishSelections;
+      if (materialsSelections) record.customerMaterialSelections = materialsSelections;
+      if (finalTotal != null) record.customerFinalTotal = finalTotal;
     } else {
       record.status = "declined";
       record.declinedAt = new Date().toISOString();
@@ -62,12 +71,31 @@ exports.handler = async function (event) {
 async function notifyContractor(resendKey, contractorEmail, record, action, signature, declineReason) {
   const customer = record.customer || {};
   const est = record.estimate || {};
-  const total = calculateTotal(est);
+  const total = (record.customerFinalTotal != null) ? Number(record.customerFinalTotal) : calculateTotal(est);
 
   const isAccept = action === "accept";
-  const color = isAccept ? "#2ecc71" : "#e74c3c";
-  const emoji = isAccept ? "✅" : "❌";
-  const title = isAccept ? "QUOTE ACCEPTED" : "QUOTE DECLINED";
+  const isReview = action === "review";
+  const color = isAccept ? "#2ecc71" : (isReview ? "#c9a84c" : "#e74c3c");
+  const emoji = isAccept ? "✅" : (isReview ? "🛠" : "❌");
+  const title = isAccept ? "QUOTE ACCEPTED" : (isReview ? "FINISH SELECTIONS — REVIEW NEEDED" : "QUOTE DECLINED");
+  const headline = isAccept
+    ? (escapeHtml(customer.name || "Customer") + " accepted the quote")
+    : (isReview
+      ? (escapeHtml(customer.name || "Customer") + " chose finishes — review &amp; resend")
+      : (escapeHtml(customer.name || "Customer") + " declined the quote"));
+
+  // Chosen finishes list (review + accept)
+  let finishRows = "";
+  const sels = record.customerSelections || [];
+  if ((isReview || isAccept) && sels.length) {
+    finishRows = '<div style="background:#faf8f4;border:1px solid #e8e2d9;border-radius:8px;padding:14px 16px;margin:18px 0">' +
+      '<div style="font-size:12px;letter-spacing:1px;color:#888;margin-bottom:8px">CUSTOMER\'S CHOICES</div>' +
+      sels.map(function (s) {
+        const up = Number(s.upgrade) || 0;
+        const upTxt = up === 0 ? '<span style="color:#2ecc71">included</span>' : ('<span style="color:#b8720a;font-weight:700">' + (up > 0 ? "+" : "-") + "$" + Math.abs(up).toLocaleString("en-US") + '</span>');
+        return '<div style="display:flex;justify-content:space-between;font-size:14px;padding:5px 0;border-bottom:1px solid #efe9df"><span><strong>' + escapeHtml(s.group || "Finish") + ':</strong> ' + escapeHtml(s.option || "") + '</span>' + upTxt + '</div>';
+      }).join("") + '</div>';
+  }
 
   const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333">
 <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:24px;border-radius:10px 10px 0 0;text-align:center">
@@ -78,21 +106,26 @@ async function notifyContractor(resendKey, contractorEmail, record, action, sign
   <div style="text-align:center;margin-bottom:20px">
     <div style="display:inline-block;background:${color};color:#fff;width:64px;height:64px;border-radius:50%;line-height:64px;font-size:32px">${emoji}</div>
   </div>
-  <h1 style="text-align:center;color:#0d1b2a;font-size:22px;margin:0 0 8px">${escapeHtml(customer.name || "Customer")} ${isAccept ? "accepted" : "declined"} the quote</h1>
+  <h1 style="text-align:center;color:#0d1b2a;font-size:22px;margin:0 0 8px">${headline}</h1>
   <p style="text-align:center;color:#888;font-size:13px;margin:0 0 24px">${escapeHtml(est.projectTitle || record.request?.service || "Project")} · ${escapeHtml(record.ref)}</p>
+
+  ${finishRows}
 
   <table style="width:100%;font-size:14px;margin-bottom:18px;border-collapse:collapse">
     <tr><td style="padding:8px 12px;background:#faf8f4;color:#888;width:140px"><strong>Customer</strong></td><td style="padding:8px 12px">${escapeHtml(customer.name)}</td></tr>
     <tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Phone</strong></td><td style="padding:8px 12px"><a href="tel:${escapeHtml(customer.phone)}" style="color:#b8720a">${escapeHtml(customer.phone)}</a></td></tr>
     <tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Email</strong></td><td style="padding:8px 12px"><a href="mailto:${escapeHtml(customer.email)}" style="color:#b8720a">${escapeHtml(customer.email)}</a></td></tr>
     <tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Address</strong></td><td style="padding:8px 12px">${escapeHtml(customer.address || "—")}</td></tr>
-    <tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Total</strong></td><td style="padding:8px 12px;color:${color};font-weight:700;font-size:16px">$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td></tr>
+    <tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>${isReview ? "New total (their picks)" : "Total"}</strong></td><td style="padding:8px 12px;color:${color};font-weight:700;font-size:16px">$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td></tr>
     ${isAccept && signature ? `<tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Signature</strong></td><td style="padding:8px 12px;font-style:italic">${escapeHtml(signature)}</td></tr>` : ""}
-    ${!isAccept && declineReason ? `<tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Reason</strong></td><td style="padding:8px 12px">${escapeHtml(declineReason)}</td></tr>` : ""}
+    ${!isAccept && !isReview && declineReason ? `<tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Reason</strong></td><td style="padding:8px 12px">${escapeHtml(declineReason)}</td></tr>` : ""}
   </table>
 
   ${isAccept ? `<div style="background:#e8f4ed;border-left:4px solid #2ecc71;padding:14px 18px;margin:20px 0;font-size:14px">
     <strong>Next steps:</strong> Send the customer an invoice with deposit details and schedule the project start.
+  </div>` : ""}
+  ${isReview ? `<div style="background:#fbf6e8;border-left:4px solid #c9a84c;padding:14px 18px;margin:20px 0;font-size:14px">
+    <strong>Action needed:</strong> Open the dashboard, apply the customer's choices, adjust labor if needed, then re-send the quote for their final approval.
   </div>` : ""}
 
   <div style="text-align:center;margin-top:24px">
@@ -105,7 +138,7 @@ async function notifyContractor(resendKey, contractorEmail, record, action, sign
     from: "Sani Building Corp <onboarding@resend.dev>",
     to: [contractorEmail],
     reply_to: customer.email,
-    subject: `${emoji} ${isAccept ? "ACCEPTED" : "DECLINED"}: ${customer.name} — ${est.projectTitle || record.request?.service} (${record.ref})`,
+    subject: `${emoji} ${isAccept ? "ACCEPTED" : (isReview ? "REVIEW NEEDED" : "DECLINED")}: ${customer.name} — ${est.projectTitle || record.request?.service} (${record.ref})`,
     html,
   });
 }
