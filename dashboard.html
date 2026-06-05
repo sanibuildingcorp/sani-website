@@ -5671,6 +5671,11 @@ function showSendLinkSuccess(msg) {
 .sbcf-del-opt{margin-left:auto;background:transparent;border:none;color:var(--ink-muted);font-size:18px;cursor:pointer;line-height:1;padding:2px 6px}
 .sbcf-del-opt:hover{color:var(--bad)}
 .sbcf-delta{font-size:11px}
+.sbcf-meta{font-size:11px;color:var(--ink-soft);display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:2px}
+.sbcf-store{color:var(--gold);font-weight:600}
+.sbcf-link{color:var(--gold-2);text-decoration:none;font-weight:600}
+.sbcf-link:hover{text-decoration:underline}
+.sbcf-dot{color:var(--ink-muted)}
 .sbcf-delta .sbcf-inc{color:var(--good);font-weight:600}
 .sbcf-delta .sbcf-up{color:var(--gold);font-weight:600}
 .sbcf-group-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
@@ -5772,6 +5777,11 @@ function showSendLinkSuccess(msg) {
         var thumb = o.photo
           ? '<img src="'+o.photo+'" class="sbcf-thumb" onclick="openLightbox(this.src)" alt="">'
           : '<div class="sbcf-thumb sbcf-thumb-empty">🎨</div>';
+        var metaBits=[];
+        if(o.store) metaBits.push('<span class="sbcf-store">🏬 '+escAttr(o.store)+'</span>');
+        if(o.qty) metaBits.push(escAttr(o.qty+(o.unit?(' '+o.unit):''))+(o.unitPrice?(' @ $'+o.unitPrice):''));
+        if(o.link) metaBits.push('<a href="'+escAttr(o.link)+'" target="_blank" rel="noopener" class="sbcf-link">View product →</a>');
+        var meta = metaBits.length ? '<div class="sbcf-meta">'+metaBits.join('<span class="sbcf-dot"> · </span>')+'</div>' : '';
         html+='<div class="sbcf-opt'+(o.isDefault?' is-def':'')+'">'
           +thumb
           +'<div class="sbcf-opt-fields">'
@@ -5783,6 +5793,7 @@ function showSendLinkSuccess(msg) {
               +'<label class="sbcf-photo-btn">📷 Photo<input type="file" accept="image/*" style="display:none" onchange="sbcfPhoto(\''+g.id+'\',\''+o.id+'\',event)"></label>'
               +'<button class="sbcf-del-opt" title="Remove option" onclick="sbcfRemoveOption(\''+g.id+'\',\''+o.id+'\')">×</button>'
             +'</div>'
+            +meta
             +'<div class="sbcf-delta">'+deltaTxt+'</div>'
           +'</div>'
         +'</div>';
@@ -5870,10 +5881,30 @@ function showSendLinkSuccess(msg) {
       var gs=groups();
       detected.forEach(function(g){
         var opts=(g.options||[]).map(function(o){
-          return { id:uid(), name:o.name||'', spec:o.spec||'', price:Number(o.price)||0, photo:'', isDefault:!!o.isDefault };
+          return {
+            id:uid(),
+            name:o.name||'',
+            spec:o.spec||'',
+            price:Number(o.price)||0,
+            unitPrice:Number(o.unitPrice)||0,
+            unit:o.unit||'',
+            qty:Number(o.qty)||0,
+            store:o.store||'',
+            link:o.link||'',
+            photo:o.photo||'',
+            isDefault:!!o.isDefault
+          };
         });
         if(opts.length && !opts.some(function(o){return o.isDefault;})) opts[0].isDefault=true;
-        gs.push({ id:uid(), name:g.name||'Finish', options:opts });
+        gs.push({
+          id:uid(),
+          name:g.name||'Finish',
+          characteristics:g.characteristics||null,
+          qty:Number(g.qty)||0,
+          unit:g.unit||'',
+          searchQuery:g.searchQuery||'',
+          options:opts
+        });
       });
       render();
       if(window.toast) toast('✓ '+detected.length+' finish group(s) added — review prices, then send');
