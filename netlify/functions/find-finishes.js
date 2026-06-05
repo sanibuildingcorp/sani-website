@@ -26,10 +26,10 @@ exports.handler = async function (event) {
     const serperKey = process.env.SERPER_API_KEY;
 
     if (!openaiKey) return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "OPENAI_API_KEY not set" }) };
-    if (!image || typeof image !== "string") {
+    if (!image || typeof image !== "string" || !image.trim()) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "No render image provided. Generate an AI render first." }) };
     }
-    const imageUrl = image.indexOf("data:") === 0 ? image : ("data:image/jpeg;base64," + image);
+    const imageUrl = buildImageUrl(image);
 
     /* ---------- STEP 1: VISION -> structured finishes + quantities ---------- */
     const visionPrompt = `You are a NYC renovation estimator. You are looking at an AI render of a FINISHED renovation.
@@ -162,6 +162,23 @@ function parsePrice(p) {
   return isNaN(n) ? 0 : n;
 }
 function cleanTitle(t) { return String(t || "").replace(/\s+/g, " ").trim().slice(0, 90); }
+
+// Accept the render in any form OpenAI can use:
+//  - hosted URL (http/https)  -> pass through, OpenAI fetches it
+//  - data: URL                -> strip whitespace from the base64 part
+//  - raw base64               -> wrap as a png data URL
+function buildImageUrl(image) {
+  var s = String(image || "").trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.indexOf("data:") === 0) {
+    var c = s.indexOf(",");
+    if (c > -1) return s.slice(0, c + 1) + s.slice(c + 1).replace(/\s+/g, "");
+    return s;
+  }
+  // strip an accidental data-prefix fragment, then treat as raw base64
+  s = s.replace(/^data:[^,]*,/i, "").replace(/\s+/g, "");
+  return "data:image/png;base64," + s;
+}
 
 function serperShopping(apiKey, query) {
   return new Promise(function (resolve, reject) {
