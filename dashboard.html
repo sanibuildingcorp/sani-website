@@ -3080,6 +3080,7 @@ function renderEdit() {
         '<span id="tot-markup">$0.00</span>' +
       '</div>' +
       '<div class="tot-line grand"><span>GRAND TOTAL</span><span id="tot-grand">$0.00</span></div>' +
+      '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
     '</div>' +
     '<div class="modal-actions">' +
       '<button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>' +
@@ -3519,6 +3520,146 @@ function recalc() {
     totEl.value = fmt(q * r);
   });
   updateCvPreview();
+}
+
+/* ===== SET TOTAL TO A NUMBER (SimplyWise-style) ===== */
+function _stEnsureModal() {
+  if (document.getElementById("set-total-overlay")) return;
+  var ov = document.createElement("div");
+  ov.id = "set-total-overlay";
+  ov.style.cssText = "display:none;position:fixed;inset:0;z-index:9999;background:rgba(3,9,18,0.72);align-items:center;justify-content:center;padding:18px";
+  ov.onclick = function(e){ if(e.target===ov) closeSetTotalModal(); };
+  ov.innerHTML =
+    '<div style="width:100%;max-width:420px;background:var(--navy-2,#122740);border:1px solid var(--line,rgba(212,181,114,0.18));border-radius:20px;padding:22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.55)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<div style="font-family:var(--display,inherit);font-size:18px;font-weight:700;color:var(--gold,#d4b572)">🎯 Set Total</div>' +
+        '<button type="button" onclick="closeSetTotalModal()" style="background:none;border:none;color:var(--ink-muted,#7a8aa3);font-size:24px;line-height:1;cursor:pointer">×</button>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--ink-muted,#7a8aa3);margin-bottom:6px;letter-spacing:.4px">TOTAL THE CUSTOMER WILL SEE</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;background:var(--navy,#0b1828);border:1.5px solid var(--line,rgba(212,181,114,0.18));border-radius:12px;padding:12px 14px;margin-bottom:16px">' +
+        '<span style="font-family:var(--display,inherit);font-size:24px;color:var(--gold,#d4b572)">$</span>' +
+        '<input id="st-target" type="number" min="0" step="0.01" inputmode="decimal" oninput="_stRefresh()" style="flex:1;background:none;border:none;outline:none;color:var(--ink,#e8edf5);font-family:var(--display,inherit);font-size:26px;width:100%">' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--ink-muted,#7a8aa3);margin-bottom:10px;letter-spacing:.4px">CHANGE IT BY ADJUSTING</div>' +
+      '<div id="st-modes" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">' +
+        _stRadio("all","All costs","Scale labor + materials together") +
+        _stRadio("mat","Materials only","Keep labor the same") +
+        _stRadio("labor","Labor only","Keep materials the same") +
+      '</div>' +
+      '<div id="st-warn" style="display:none;color:#ff8a8a;font-size:12.5px;margin:6px 2px 4px"></div>' +
+      '<button id="st-apply" type="button" onclick="applySetTotal()" style="width:100%;margin-top:10px;padding:15px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--gold,#d4b572),var(--gold-2,#c9a84c));color:#0b1828;font-family:var(--display,inherit);font-weight:800;font-size:16px;letter-spacing:.5px;cursor:pointer">Update</button>' +
+    '</div>';
+  document.body.appendChild(ov);
+}
+function _stRadio(val,label,sub){
+  return '<label style="display:flex;align-items:flex-start;gap:11px;padding:13px 14px;border:1.5px solid var(--line-soft,rgba(255,255,255,0.06));border-radius:12px;cursor:pointer" onclick="_stPick(\''+val+'\')" data-st-mode="'+val+'">' +
+    '<span class="st-dot" style="flex:none;width:20px;height:20px;border-radius:50%;border:2px solid var(--ink-muted,#7a8aa3);margin-top:1px;position:relative"></span>' +
+    '<span><span style="display:block;color:var(--ink,#e8edf5);font-weight:600;font-size:15px">'+label+'</span>' +
+    '<span style="display:block;color:var(--ink-muted,#7a8aa3);font-size:12px;margin-top:2px">'+sub+'</span></span>' +
+  '</label>';
+}
+var _stMode = "all";
+function _stPick(mode){
+  _stMode = mode;
+  document.querySelectorAll('#st-modes [data-st-mode]').forEach(function(el){
+    var on = el.getAttribute('data-st-mode') === mode;
+    el.style.borderColor = on ? 'var(--gold-2,#c9a84c)' : 'var(--line-soft,rgba(255,255,255,0.06))';
+    el.style.background = on ? 'var(--gold-soft,rgba(212,181,114,0.12))' : 'transparent';
+    var dot = el.querySelector('.st-dot');
+    dot.style.borderColor = on ? 'var(--gold,#d4b572)' : 'var(--ink-muted,#7a8aa3)';
+    dot.innerHTML = on ? '<span style="position:absolute;inset:3px;border-radius:50%;background:var(--gold,#d4b572)"></span>' : '';
+  });
+  _stRefresh();
+}
+function _stCurrentTotal(){
+  if(!currentRecord || !currentRecord.estimate) return 0;
+  if(typeof syncLines==="function") syncLines();
+  return calcCustomerView(currentRecord.estimate).customerTotal;
+}
+function openSetTotalModal(){
+  if(!currentRecord || !currentRecord.estimate){ toast("Open an estimate first", true); return; }
+  _stEnsureModal();
+  var cur = _stCurrentTotal();
+  document.getElementById("st-target").value = (Math.round(cur*100)/100);
+  _stPick("all");
+  document.getElementById("set-total-overlay").style.display = "flex";
+}
+function closeSetTotalModal(){
+  var ov = document.getElementById("set-total-overlay");
+  if(ov) ov.style.display = "none";
+}
+function _stRefresh(){
+  var cur = _stCurrentTotal();
+  var target = parseFloat(document.getElementById("st-target").value);
+  var btn = document.getElementById("st-apply");
+  var warn = document.getElementById("st-warn");
+  warn.style.display = "none";
+  if(isNaN(target) || target < 0){ btn.textContent = "Update"; return; }
+  var delta = target - cur;
+  var sign = delta >= 0 ? "+" : "−";
+  btn.textContent = Math.abs(delta) < 0.005 ? "Update" : ("Update (" + sign + fmt(Math.abs(delta)) + ")");
+}
+function _stScaleBucket(arr, targetSub, kind){
+  var cur = arr.reduce(function(s,i){ return s + (Number(i.qty)||0)*(Number(i.rate)||0); }, 0);
+  if(cur <= 0){
+    arr.push({ item: "Adjustment", qty: 1, unit: (kind==="labor"?"job":"ea"), rate: Math.round(targetSub*100)/100 });
+    return;
+  }
+  var f = targetSub / cur;
+  arr.forEach(function(i){ if((Number(i.qty)||0) > 0){ i.rate = Math.round((Number(i.rate)||0)*f*100)/100; } });
+  var newSum = arr.reduce(function(s,i){ return s + (Number(i.qty)||0)*(Number(i.rate)||0); }, 0);
+  var resid = targetSub - newSum;
+  if(Math.abs(resid) >= 0.005){
+    for(var k=arr.length-1;k>=0;k--){ var q=Number(arr[k].qty)||0; if(q>0){ arr[k].rate = Math.round((arr[k].rate + resid/q)*100)/100; break; } }
+  }
+}
+function applySetTotal(){
+  if(!currentRecord || !currentRecord.estimate) return;
+  syncLines();
+  var est = currentRecord.estimate;
+  var target = parseFloat(document.getElementById("st-target").value);
+  var warn = document.getElementById("st-warn");
+  if(isNaN(target) || target < 0){ warn.textContent = "Enter a valid amount."; warn.style.display="block"; return; }
+
+  var mk = 1 + (Number(est.markupPct)||0)/100;
+  var t = calcTotal(est);                 // pre-markup: t.labor, t.mat
+  var showLabor = est.showLaborCost !== false;
+  var showMat = est.showMaterialsCost === true;
+  if(!showLabor && !showMat){ showLabor = true; showMat = true; } // both hidden = customer sees grand
+  var targetSub = target / mk;            // pre-markup total across shown buckets
+
+  est.labor = est.labor || [];
+  est.materials = est.materials || [];
+
+  if(_stMode === "all"){
+    var shownSub = (showLabor ? t.labor : 0) + (showMat ? t.mat : 0);
+    if(shownSub <= 0){
+      // nothing to scale — drop it all into whichever bucket is shown (prefer labor)
+      if(showLabor) _stScaleBucket(est.labor, targetSub, "labor");
+      else _stScaleBucket(est.materials, targetSub, "materials");
+    } else {
+      var f = targetSub / shownSub;
+      if(showLabor) _stScaleBucket(est.labor, t.labor * f, "labor");
+      if(showMat) _stScaleBucket(est.materials, t.mat * f, "materials");
+    }
+  } else if(_stMode === "labor"){
+    var matPart = showMat ? t.mat : 0;
+    var newLaborSub = targetSub - matPart;
+    if(newLaborSub < -0.005){ warn.textContent = "Too low — materials alone are " + fmt(matPart*mk) + "."; warn.style.display="block"; return; }
+    _stScaleBucket(est.labor, Math.max(0,newLaborSub), "labor");
+  } else if(_stMode === "mat"){
+    var laborPart = showLabor ? t.labor : 0;
+    var newMatSub = targetSub - laborPart;
+    if(newMatSub < -0.005){ warn.textContent = "Too low — labor alone is " + fmt(laborPart*mk) + "."; warn.style.display="block"; return; }
+    _stScaleBucket(est.materials, Math.max(0,newMatSub), "materials");
+  }
+
+  renderLines("labor", est.labor);
+  renderLines("materials", est.materials);
+  attachLineListeners();
+  recalc();
+  closeSetTotalModal();
+  toast("✓ Total set to " + fmt(_stCurrentTotal()));
 }
 
 /* ===== AI GENERATE ===== */
@@ -5361,11 +5502,7 @@ function closeSendLinkModal() {
 function getSMSMessage(name) {
   var first = name ? name.split(' ')[0] : '';
   var greeting = first ? ('Hi ' + first + '! ') : 'Hi! ';
-  return greeting + "It's Sani Building Corp. Click the link below to request your free renovation estimate — takes about 2 minutes!
-
-" + ESTIMATE_URL + "
-
-Any questions? Call or text (332) 277-0990";
+  return greeting + "It's Sani Building Corp. Click the link below to request your free renovation estimate — takes about 2 minutes!\n\n" + ESTIMATE_URL + "\n\nAny questions? Call or text (332) 277-0990";
 }
 
 function getEmailSubject(name) {
@@ -5375,22 +5512,7 @@ function getEmailSubject(name) {
 function getEmailBody(name) {
   var first = name ? name.split(' ')[0] : '';
   var greeting = first ? ('Hi ' + first + ',') : 'Hi,';
-  return greeting + "
-
-Thank you for your interest in Sani Building Corp!
-
-Click the link below to request your free renovation estimate. It only takes about 2 minutes to fill out:
-
-" + ESTIMATE_URL + "
-
-Once you submit, I'll review your request and send you a detailed estimate within 24 hours.
-
-Any questions? Feel free to call or text me at (332) 277-0990.
-
-Best regards,
-Sani Building Corp
-Brooklyn, NYC
-(332) 277-0990";
+  return greeting + "\n\nThank you for your interest in Sani Building Corp!\n\nClick the link below to request your free renovation estimate. It only takes about 2 minutes to fill out:\n\n" + ESTIMATE_URL + "\n\nOnce you submit, I'll review your request and send you a detailed estimate within 24 hours.\n\nAny questions? Feel free to call or text me at (332) 277-0990.\n\nBest regards,\nSani Building Corp\nBrooklyn, NYC\n(332) 277-0990";
 }
 
 function updateSendLinkButtons() {
@@ -5417,9 +5539,7 @@ function updateSendLinkButtons() {
     if (phone) {
       previewText.textContent = getSMSMessage(name);
     } else if (email) {
-      previewText.textContent = 'Subject: ' + getEmailSubject(name) + '
-
-' + getEmailBody(name);
+      previewText.textContent = 'Subject: ' + getEmailSubject(name) + '\n\n' + getEmailBody(name);
     }
   } else {
     preview.style.display = 'none';
