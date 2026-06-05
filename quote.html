@@ -796,6 +796,9 @@ body {
       </div>
 
       <!-- ACTIONS -->
+      <div id="review-notice" style="display:none;background:rgba(212,181,114,0.12);border:1px solid var(--gold-2,#c9a84c);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13.5px;color:var(--ink-soft,#444);line-height:1.5">
+        <strong style="color:var(--gold-2,#b8720a)">You changed your finishes.</strong> Tap below to send your choices to Sani — we'll confirm pricing and send back an updated quote for your final approval.
+      </div>
       <div class="actions" id="actions-row">
         <button class="btn" onclick="downloadQuote()">
           <span class="btn-icon">⬇</span> Download
@@ -803,8 +806,8 @@ body {
         <button class="btn" onclick="openDecline()">
           <span class="btn-icon">✎</span> Request Change
         </button>
-        <button class="btn btn-accept" onclick="openAccept()">
-          <span class="btn-icon">✓</span> Approve
+        <button class="btn btn-accept" id="btn-primary" onclick="primaryAction()">
+          <span class="btn-icon" id="btn-primary-icon">✓</span> <span id="btn-primary-label">Approve</span>
         </button>
       </div>
 
@@ -1133,6 +1136,7 @@ function renderTotalsSection() {
   const grand = calc.customerTotal + delta + matTotal;
 
   document.getElementById("est-total").textContent = fmt(grand);
+  updatePrimaryAction();
 
   if (calc.bothHidden) {
     document.getElementById("lineitems-wrap").style.display="none";
@@ -1183,6 +1187,57 @@ function getFinishSelections() {
       upgrade: (Number(sel.price)||0) - (Number(def.price)||0)
     };
   });
+}
+
+// ── REVIEW LOOP: changed finishes go to Sani first ──────────────────────────
+function finishesAreChanged() {
+  if (!finishGroups || !finishGroups.length) return false;
+  for (var i=0;i<finishGroups.length;i++){
+    var g=finishGroups[i];
+    var def=defaultOpt(g);
+    if (finishSel[g.id] && def && finishSel[g.id] !== def.id) return true;
+  }
+  return false;
+}
+function updatePrimaryAction() {
+  var label=document.getElementById("btn-primary-label");
+  var icon=document.getElementById("btn-primary-icon");
+  var notice=document.getElementById("review-notice");
+  if (!label) return;
+  if (finishesAreChanged()) {
+    label.textContent="Send to Sani for Review";
+    if (icon) icon.textContent="↪";
+    if (notice) notice.style.display="block";
+  } else {
+    label.textContent="Approve";
+    if (icon) icon.textContent="✓";
+    if (notice) notice.style.display="none";
+  }
+}
+function primaryAction() {
+  if (finishesAreChanged()) submitReview();
+  else openAccept();
+}
+async function submitReview() {
+  var finishSelections=getFinishSelections();
+  var materialsSelections=getMaterialSelections();
+  var finalTotal=(baseCalc?baseCalc.customerTotal:0)+finishDelta()+materialsSelectedTotal();
+  var changed=finishSelections.filter(function(s){ return s.upgrade!==0; });
+  var summary=changed.map(function(s){ return "• "+s.group+": "+s.option; }).join("\n");
+  if (!confirm("Send your selected finishes to Sani for review?\n\n"+summary+"\n\nNew estimate: "+fmt(finalTotal)+"\n\nWe'll confirm pricing and send you an updated quote to approve.")) return;
+  var btn=document.getElementById("btn-primary");
+  if (btn){ btn.disabled=true; document.getElementById("btn-primary-label").textContent="Sending…"; }
+  try {
+    var r=await fetch("/.netlify/functions/quote-response",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ref,action:"review",finishSelections:finishSelections,materialsSelections:materialsSelections,finalTotal:finalTotal}),
+    });
+    if (!r.ok) throw new Error("Failed");
+    showSuccess("review");
+  } catch(e) {
+    alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
+    if (btn){ btn.disabled=false; updatePrimaryAction(); }
+  }
 }
 
 // ── MATERIALS OPTIONS ───────────────────────────────────────────────────────
@@ -1252,6 +1307,13 @@ function showSuccess(kind) {
     document.getElementById("success-icon").style.background="#999";
     document.getElementById("success-title").textContent="Change Request Received";
     document.getElementById("success-msg").textContent="Thanks for letting us know. We'll review your request and get back to you shortly with an updated estimate.";
+  }
+  if (kind==="review") {
+    document.getElementById("success-tag").textContent="Sent for review";
+    document.getElementById("success-icon").textContent="↪";
+    document.getElementById("success-icon").style.background="#c9a84c";
+    document.getElementById("success-title").textContent="Selections Sent";
+    document.getElementById("success-msg").textContent="Thanks! Sani will confirm pricing on your chosen finishes and send back an updated quote for your final approval.";
   }
 }
 
