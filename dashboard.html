@@ -5755,6 +5755,21 @@ function showSendLinkSuccess(msg) {
     }).join('');
 
     var html='<h3>🎨 FINISHING OPTIONS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(customer can swap these in their quote)</span></h3>';
+    // Customer sent finish changes back for review
+    var sel=(r.customerSelections)||[];
+    if(sel.length && r.status==='review_requested'){
+      var ft=(r.customerFinalTotal!=null)?(' — new total $'+Number(r.customerFinalTotal).toLocaleString('en-US')):'';
+      html+='<div style="background:rgba(212,181,114,.12);border:1.5px solid var(--gold-2);border-radius:12px;padding:14px 16px;margin-bottom:14px">';
+      html+='<div style="color:var(--gold);font-weight:700;font-size:14px;margin-bottom:8px">🛠 Customer chose these finishes — review &amp; resend'+ft+'</div>';
+      html+=sel.map(function(s){
+        var up=Number(s.upgrade)||0;
+        var upTxt=up===0?'<span style="color:var(--good)">included</span>':'<span style="color:var(--gold);font-weight:600">'+(up>0?'+':'−')+'$'+Math.abs(up).toLocaleString('en-US')+'</span>';
+        return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line-soft)"><span><b>'+escAttr(s.group||'Finish')+':</b> '+escAttr(s.option||'')+'</span>'+upTxt+'</div>';
+      }).join('');
+      html+='<button class="sbcf-add-group" style="margin-top:12px" onclick="sbcfApplyCustomerChoices()">✓ Apply their choices as defaults</button>';
+      html+='<div style="font-size:11px;color:var(--ink-muted);margin-top:8px">Then adjust labor if needed and tap <b>Send to Customer</b> for final approval.</div>';
+      html+='</div>';
+    }
     html+='<div class="sbcf-hint">Offer the customer choices (tile, color, fixtures…). Mark one option as <b>Default</b> — that price is included in the quote total. Other options show the customer a <b>+$ upgrade</b> and update their total live when they swap.</div>';
 
     if(!gs.length){
@@ -5837,6 +5852,30 @@ function showSendLinkSuccess(msg) {
   window.sbcfAddFromMaterial=function(gid,idxStr){ var idx=parseInt(idxStr,10); if(isNaN(idx)) return; var r=rec(); if(!r) return; var sm=(r.estimate.savedMaterials)||[]; var m=sm[idx]; if(!m) return; var g=find(gid); if(!g) return; if(!g.options) g.options=[]; var first=g.options.length===0; g.options.push({id:uid(),name:m.name||'',spec:m.spec||'',price:Number(m.totalEstimate||m.estimatedUnitCost||0)||0,photo:'',isDefault:first}); render(); };
   window.sbcfRemoveOption=function(gid,oid){ var g=find(gid); if(!g) return; g.options=(g.options||[]).filter(function(o){ return o.id!==oid; }); if(g.options.length && !g.options.some(function(o){return o.isDefault;})) g.options[0].isDefault=true; render(); };
   window.sbcfSetDefault=function(gid,oid){ var g=find(gid); if(!g) return; (g.options||[]).forEach(function(o){ o.isDefault=(o.id===oid); }); render(); };
+  window.sbcfApplyCustomerChoices=function(){
+    var r=rec(); if(!r || !r.estimate) return;
+    var sel=(r.customerSelections)||[]; if(!sel.length){ if(window.toast) toast('No customer choices to apply',true); return; }
+    var gs=groups(); var applied=0;
+    sel.forEach(function(s){
+      var gName=String(s.group||'').trim().toLowerCase();
+      var oName=String(s.option||'').trim().toLowerCase();
+      for(var i=0;i<gs.length;i++){
+        if(String(gs[i].name||'').trim().toLowerCase()===gName){
+          var opts=gs[i].options||[];
+          for(var j=0;j<opts.length;j++){
+            if(String(opts[j].name||'').trim().toLowerCase()===oName){
+              opts.forEach(function(o){ o.isDefault=false; });
+              opts[j].isDefault=true; applied++; break;
+            }
+          }
+          break;
+        }
+      }
+    });
+    render();
+    if(window.recalc) recalc();
+    if(window.toast) toast(applied?('✓ Applied '+applied+' customer choice(s) as defaults'):'Could not match choices — set defaults manually',!applied);
+  };
   window.sbcfEditGroup=function(gid,val){ var g=find(gid); if(g) g.name=val; };
   window.sbcfEditOpt=function(gid,oid,field,val){ var o=findOpt(gid,oid); if(!o) return; if(field==='price'){ o.price=parseFloat(val)||0; render(); } else { o[field]=val; } };
   window.sbcfPhoto=function(gid,oid,ev){ var f=ev.target.files&&ev.target.files[0]; if(!f) return; compress(f,900,0.8).then(function(data){ var o=findOpt(gid,oid); if(o){ o.photo=data; render(); } }).catch(function(){ if(window.toast) toast('Photo failed — try a smaller image',true); }); ev.target.value=''; };
