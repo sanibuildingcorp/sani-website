@@ -5879,6 +5879,17 @@ function showSendLinkSuccess(msg) {
       if(!detected.length){ if(window.toast) toast('No finishes detected — try a clearer render',true); return; }
 
       var gs=groups();
+      // Remove previously AI-detected groups so re-running Detect refreshes instead of duplicating.
+      // (Auto groups carry characteristics / searchQuery, or options with a store/link.)
+      var hadAuto=false;
+      for(var di=gs.length-1; di>=0; di--){
+        var eg=gs[di];
+        var isAuto = eg && (eg.characteristics || eg.searchQuery || (eg.options||[]).some(function(o){ return o.store || o.link; }));
+        if(isAuto){ gs.splice(di,1); hadAuto=true; }
+      }
+      if(hadAuto && !confirm('Re-detect will replace the current AI-detected finishes (your manually added groups are kept). Continue?')){
+        render(); return;
+      }
       detected.forEach(function(g){
         var opts=(g.options||[]).map(function(o){
           return {
