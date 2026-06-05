@@ -1,114 +1,139 @@
 // netlify/functions/find-finishes.js
-// Reads the AI render image (vision) + scope → returns finishing-material GROUPS.
-// Each group = one visible finish (tile, vanity, fixtures…), with the material
-// shown in the render marked as Default + 2-3 similar options & prices.
-// Output maps 1:1 to the dashboard's Finishing Options (finishGroups).
+// Design-to-Materials AI layer for Sani Building Corp.
+// 1) OpenAI Vision reads the Gemini render -> detects each finishing material
+//    with STRUCTURED characteristics (category, color, finish, size, material, style),
+//    an estimated QUANTITY + unit, and a Google Shopping search query.
+// 2) Serper.dev Google Shopping search -> REAL store products (Home Depot, Lowe's,
+//    Floor & Decor, Wayfair, etc.) with image, name, store, price, link.
+// 3) Returns finish GROUPS with cheaper / default / premium real options,
+//    ready to drop into the dashboard's Finishing Options (finishGroups).
+//
+// Env vars required in Netlify: OPENAI_API_KEY, SERPER_API_KEY
+// If SERPER_API_KEY is missing or a search returns nothing, that finish falls back
+// to an AI price estimate (clearly marked store: "Estimate").
 
 const https = require("https");
 
+const TARGET_STORES = ["home depot", "lowe", "floor & decor", "floor and decor", "wayfair", "build.com", "the tile shop", "ferguson"];
+
 exports.handler = async function (event) {
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers: cors(), body: "" };
-  }
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
-  }
+  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
+  if (event.httpMethod !== "POST") return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
 
   try {
     const { image, scopeOfWork, serviceLabel, projectTitle } = JSON.parse(event.body || "{}");
     const openaiKey = process.env.OPENAI_API_KEY;
+    const serperKey = process.env.SERPER_API_KEY;
 
-    if (!openaiKey) {
-      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "OPENAI_API_KEY not set" }) };
-    }
+    if (!openaiKey) return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "OPENAI_API_KEY not set" }) };
     if (!image || typeof image !== "string") {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "No render image provided. Generate an AI render first." }) };
     }
-
-    // Accept full data URL or raw base64
     const imageUrl = image.indexOf("data:") === 0 ? image : ("data:image/jpeg;base64," + image);
 
-    const prompt = `You are a NYC renovation contractor's finishing-materials assistant.
-You are looking at an AI-generated render of a FINISHED renovation.
+    /* ---------- STEP 1: VISION -> structured finishes + quantities ---------- */
+    const visionPrompt = `You are a NYC renovation estimator. You are looking at an AI render of a FINISHED renovation.
 
-Identify ONLY the visible FINISHING materials — things the customer chooses by look:
-wall tile, floor tile, countertop, backsplash, vanity, cabinets, faucet/fixtures, paint color, lighting fixtures, shower glass/hardware. Ignore structural, hidden, or labor items.
+Identify ONLY the visible FINISHING materials the customer chooses by look:
+wall tile, floor tile, countertop, backsplash, vanity, cabinets, faucet/fixtures, paint color, lighting, shower glass/hardware, tub. Ignore structural/hidden/labor items.
 
 PROJECT: ${projectTitle || serviceLabel || "Renovation"}
 ${serviceLabel ? "SERVICE: " + serviceLabel : ""}
-${scopeOfWork ? "SCOPE:\n" + String(scopeOfWork).slice(0, 700) : ""}
+${scopeOfWork ? "SCOPE:\n" + String(scopeOfWork).slice(0, 800) : ""}
 
-For EACH distinct finishing material you can actually see, return one group. In each group:
-- The material shown in the render is the FIRST option, with "isDefault": true.
-- Add 2-3 similar real-world alternatives the customer could pick instead (different color, style, or grade) — realistic products.
-- Give each option a realistic estimated TOTAL material cost in USD for THIS project (NYC retail prices; if the area is unknown, estimate sensibly so the price difference between options is meaningful).
+For each distinct finishing material visible (2 to 5 total), describe its real characteristics and ESTIMATE the quantity needed for this job using the render + scope (rough is fine).
 
-Return ONLY a valid JSON array, no markdown, no other text. Each element:
+Return ONLY a valid JSON array, no markdown. Each element:
 {
-  "name": "<finish/group name, e.g. Floor Tile>",
-  "options": [
-    { "name": "<product or style name>", "spec": "<size/type/finish — 1 short line>", "price": <number>, "isDefault": true },
-    { "name": "...", "spec": "...", "price": <number>, "isDefault": false }
-  ]
-}
-Rules: 2-5 groups max. Exactly ONE option per group has "isDefault": true (the one shown in the render). Prices are plain numbers (no $).`;
+  "category": "<e.g. Floor Tile, Wall Tile, Vanity, Faucet, Countertop, Lighting>",
+  "color": "<e.g. Warm Beige>",
+  "finish": "<e.g. Matte / Polished / Brushed Nickel>",
+  "size": "<e.g. 24x48 / 60-inch / n/a>",
+  "material": "<e.g. Porcelain / Acrylic / Quartz>",
+  "style": "<e.g. Modern / Subway / Floating>",
+  "quantity": <number>,
+  "unit": "<sqft / linear ft / each / box>",
+  "searchQuery": "<best Google Shopping query, 4-7 words, specific, e.g. 'beige matte porcelain tile 24x48'>"
+}`;
 
-    const raw = await openaiPost(openaiKey, JSON.stringify({
+    const visionRaw = await postJson("api.openai.com", "/v1/chat/completions", {
+      "Authorization": "Bearer " + openaiKey, "Content-Type": "application/json"
+    }, JSON.stringify({
       model: "gpt-4o-mini",
-      max_tokens: 2000,
-      temperature: 0.4,
-      messages: [{
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: { url: imageUrl, detail: "low" } }
-        ]
-      }]
+      max_tokens: 1600,
+      temperature: 0.3,
+      messages: [{ role: "user", content: [
+        { type: "text", text: visionPrompt },
+        { type: "image_url", image_url: { url: imageUrl, detail: "low" } }
+      ] }]
     }));
 
-    const data = JSON.parse(raw);
-    if (data.error) {
-      console.error("OpenAI error:", data.error.message);
-      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: data.error.message || "OpenAI error" }) };
-    }
+    const visionData = JSON.parse(visionRaw);
+    if (visionData.error) return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: visionData.error.message || "Vision error" }) };
+    let vc = (visionData.choices && visionData.choices[0] && visionData.choices[0].message && visionData.choices[0].message.content) || "[]";
+    vc = vc.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
 
-    let content = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "[]";
-    content = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    let finishes;
+    try { finishes = JSON.parse(vc); if (!Array.isArray(finishes)) throw 0; }
+    catch (e) { return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "Failed to read finishes from render" }) }; }
+    finishes = finishes.filter(function (f) { return f && (f.category || f.searchQuery); }).slice(0, 5);
+    if (!finishes.length) return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true, groups: [] }) };
 
-    let groups;
-    try {
-      groups = JSON.parse(content);
-      if (!Array.isArray(groups)) throw new Error("Not an array");
-    } catch (e) {
-      console.error("Parse failed:", content.slice(0, 300));
-      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "Failed to parse finishes" }) };
-    }
+    /* ---------- STEP 2: SERPER Google Shopping per finish (parallel) ---------- */
+    const groups = await Promise.all(finishes.map(async function (f) {
+      const qty = Math.max(1, parseFloat(f.quantity) || 1);
+      const unit = f.unit || "each";
+      const chars = { category: f.category || "Finish", color: f.color || "", finish: f.finish || "", size: f.size || "", material: f.material || "", style: f.style || "" };
+      const query = f.searchQuery || [chars.color, chars.finish, chars.material, chars.size, chars.category].filter(Boolean).join(" ");
+      const specLine = [chars.size, chars.material, chars.finish, chars.color].filter(function (x) { return x && x !== "n/a"; }).join(", ");
 
-    // Normalize: ensure shape + exactly one default per group
-    groups = groups
-      .filter(function (g) { return g && g.name && Array.isArray(g.options) && g.options.length; })
-      .map(function (g) {
-        var opts = g.options.map(function (o) {
+      let products = [];
+      if (serperKey) {
+        try { products = await serperShopping(serperKey, query); } catch (e) { products = []; }
+      }
+
+      let options;
+      if (products.length) {
+        // Prefer target stores, keep ones with a price, sort by price
+        const priced = products
+          .map(function (p) { return Object.assign({}, p, { _v: parsePrice(p.price) }); })
+          .filter(function (p) { return p._v > 0; });
+        priced.sort(function (a, b) {
+          const aT = isTarget(a.source) ? 0 : 1, bT = isTarget(b.source) ? 0 : 1;
+          if (aT !== bT) return aT - bT;
+          return a._v - b._v;
+        });
+        // Take up to 6 target-priority, then sort by price for tiers
+        const pool = priced.slice(0, 8).sort(function (a, b) { return a._v - b._v; });
+        const picks = tier3(pool);
+        options = picks.map(function (p, i) {
+          const unitPrice = p._v;
           return {
-            name: String(o.name || "").trim(),
-            spec: String(o.spec || "").trim(),
-            price: Math.round((parseFloat(o.price) || 0) * 100) / 100,
-            isDefault: !!o.isDefault
+            name: cleanTitle(p.title),
+            spec: specLine,
+            store: p.source || "",
+            link: p.link || "",
+            photo: p.imageUrl || "",
+            unitPrice: unitPrice,
+            unit: unit,
+            qty: qty,
+            price: Math.round(unitPrice * qty * 100) / 100, // total material cost for this finish
+            isDefault: i === picks.defaultIndex
           };
         });
-        if (!opts.some(function (o) { return o.isDefault; })) opts[0].isDefault = true;
-        else {
-          var seen = false;
-          opts.forEach(function (o) { if (o.isDefault && !seen) { seen = true; } else { o.isDefault = false; } });
-        }
-        return { name: String(g.name).trim(), options: opts };
-      });
+      } else {
+        // Fallback: single AI-estimated option (clearly marked)
+        options = [{
+          name: [chars.color, chars.material, chars.category].filter(Boolean).join(" ") || "Selected finish",
+          spec: specLine, store: "Estimate", link: "", photo: "",
+          unitPrice: 0, unit: unit, qty: qty, price: 0, isDefault: true
+        }];
+      }
 
-    return {
-      statusCode: 200,
-      headers: cors(),
-      body: JSON.stringify({ success: true, groups: groups })
-    };
+      return { name: chars.category, characteristics: chars, qty: qty, unit: unit, searchQuery: query, options: options };
+    }));
+
+    return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true, groups: groups, serper: !!serperKey }) };
 
   } catch (err) {
     console.error("find-finishes error:", err.message);
@@ -116,27 +141,53 @@ Rules: 2-5 groups max. Exactly ONE option per group has "isDefault": true (the o
   }
 };
 
-function openaiPost(apiKey, bodyStr) {
+/* pick cheaper / default(mid) / premium from a price-sorted pool */
+function tier3(pool) {
+  if (!pool.length) { const a = []; a.defaultIndex = 0; return a; }
+  if (pool.length === 1) { const a = [pool[0]]; a.defaultIndex = 0; return a; }
+  if (pool.length === 2) { const a = [pool[0], pool[1]]; a.defaultIndex = 0; return a; }
+  const mid = Math.floor(pool.length / 2);
+  const a = [pool[0], pool[mid], pool[pool.length - 1]];
+  a.defaultIndex = 1; // middle = default
+  return a;
+}
+
+function isTarget(src) {
+  const s = String(src || "").toLowerCase();
+  return TARGET_STORES.some(function (t) { return s.indexOf(t) !== -1; });
+}
+function parsePrice(p) {
+  if (p == null) return 0;
+  const n = parseFloat(String(p).replace(/[^0-9.]/g, ""));
+  return isNaN(n) ? 0 : n;
+}
+function cleanTitle(t) { return String(t || "").replace(/\s+/g, " ").trim().slice(0, 90); }
+
+function serperShopping(apiKey, query) {
   return new Promise(function (resolve, reject) {
+    const body = JSON.stringify({ q: query, gl: "us", num: 10 });
     const opts = {
-      hostname: "api.openai.com",
-      port: 443,
-      path: "/v1/chat/completions",
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + apiKey,
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(bodyStr)
-      }
+      hostname: "google.serper.dev", port: 443, path: "/shopping", method: "POST",
+      headers: { "X-API-KEY": apiKey, "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) }
     };
     const req = https.request(opts, function (res) {
-      let d = "";
-      res.on("data", function (c) { d += c; });
-      res.on("end", function () { resolve(d); });
+      let d = ""; res.on("data", function (c) { d += c; });
+      res.on("end", function () {
+        try { const j = JSON.parse(d); resolve(Array.isArray(j.shopping) ? j.shopping : []); }
+        catch (e) { resolve([]); }
+      });
     });
-    req.on("error", reject);
-    req.write(bodyStr);
-    req.end();
+    req.on("error", reject); req.write(body); req.end();
+  });
+}
+
+function postJson(hostname, path, headers, bodyStr) {
+  return new Promise(function (resolve, reject) {
+    const h = Object.assign({}, headers, { "Content-Length": Buffer.byteLength(bodyStr) });
+    const req = https.request({ hostname: hostname, port: 443, path: path, method: "POST", headers: h }, function (res) {
+      let d = ""; res.on("data", function (c) { d += c; }); res.on("end", function () { resolve(d); });
+    });
+    req.on("error", reject); req.write(bodyStr); req.end();
   });
 }
 
