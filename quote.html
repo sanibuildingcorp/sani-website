@@ -269,8 +269,15 @@ body {
 }
 .finish-opt:hover { border-color: var(--gold); transform: translateY(-1px); }
 .finish-opt.selected { border-color: var(--gold); box-shadow: 0 6px 18px rgba(201,168,76,.28); }
-.finish-opt-photo { aspect-ratio: 4/3; background: #f0ece4; overflow: hidden; }
+.finish-opt-photo { aspect-ratio: 4/3; background: #f0ece4; overflow: hidden; position: relative; }
 .finish-opt-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.finish-zoom { position:absolute; top:6px; right:6px; width:30px; height:30px; border:none; border-radius:8px; background:rgba(13,27,42,0.66); color:#fff; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+.finish-zoom:hover { background:rgba(13,27,42,0.9); }
+.finish-opt-meta { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:7px; }
+.finish-opt-store { font-size:11.5px; color:#b8720a; font-weight:600; }
+.finish-opt-link { font-size:12px; color:#b8720a; font-weight:700; text-decoration:none; }
+.finish-opt-link:hover { text-decoration:underline; }
+.lightbox.single .lightbox-prev, .lightbox.single .lightbox-next { display:none; }
 .finish-opt-noimg { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--ink-muted); }
 .finish-opt-body { padding: 10px 12px; flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .finish-opt-name { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.3; }
@@ -1105,8 +1112,14 @@ function renderFinishes() {
         ? '<div class="finish-opt-price included">Included</div>'
         : '<div class="finish-opt-price">'+fmtSigned(d)+'</div>';
       const photo = o.photo
-        ? '<div class="finish-opt-photo"><img src="'+escHtml(o.photo)+'" alt=""></div>'
+        ? '<div class="finish-opt-photo"><img src="'+escHtml(o.photo)+'" alt=""><button class="finish-zoom" onclick="event.stopPropagation();openImgEl(this)" aria-label="Enlarge">⤢</button></div>'
         : '<div class="finish-opt-photo"><div class="finish-opt-noimg">🎨</div></div>';
+      var metaLine = "";
+      if (o.store || o.link) {
+        var storeTxt = o.store ? '<span class="finish-opt-store">🏬 '+escHtml(o.store)+'</span>' : '';
+        var linkTxt = o.link ? '<a class="finish-opt-link" href="'+escHtml(o.link)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">View product ↗</a>' : '';
+        metaLine = '<div class="finish-opt-meta">'+storeTxt+linkTxt+'</div>';
+      }
       return '<div class="finish-opt'+(isSel?' selected':'')+'" onclick="selectFinish(\''+escHtml(g.id)+'\',\''+escHtml(o.id)+'\')">'
         +'<div class="finish-opt-check">✓</div>'
         +photo
@@ -1114,6 +1127,7 @@ function renderFinishes() {
           +'<div class="finish-opt-name">'+escHtml(o.name||"Option")+'</div>'
           +(o.spec?'<div class="finish-opt-spec">'+escHtml(o.spec)+'</div>':'')
           +priceLabel
+          +metaLine
         +'</div>'
       +'</div>';
     }).join("");
@@ -1276,17 +1290,31 @@ function getMaterialSelections() {
 }
 
 // ── LIGHTBOX ──────────────────────────────────────────────────────────────
+var singleImg = false;
 function openLightbox(idx) {
+  singleImg = false;
+  document.getElementById("lightbox").classList.remove("single");
   lightboxIdx=idx;
   document.getElementById("lightbox-img").src=allPhotosSrc[idx];
   document.getElementById("lightbox").classList.add("open");
   document.body.style.overflow="hidden";
 }
+// Open any single image (e.g. a finish-option product photo) in the lightbox
+function openImgEl(btn) {
+  var img = btn && btn.parentNode ? btn.parentNode.querySelector("img") : null;
+  if (!img) return;
+  singleImg = true;
+  document.getElementById("lightbox-img").src = img.src;
+  document.getElementById("lightbox").classList.add("open","single");
+  document.body.style.overflow="hidden";
+}
 function closeLightbox() {
-  document.getElementById("lightbox").classList.remove("open");
+  document.getElementById("lightbox").classList.remove("open","single");
   document.body.style.overflow="";
+  singleImg = false;
 }
 function lightboxNav(dir) {
+  if (singleImg) return;
   lightboxIdx=(lightboxIdx+dir+allPhotosSrc.length)%allPhotosSrc.length;
   document.getElementById("lightbox-img").src=allPhotosSrc[lightboxIdx];
 }
