@@ -5801,6 +5801,7 @@ function showSendLinkSuccess(msg) {
     html+='<div class="sbcf-foot">'
       +'<button class="sbcf-add-group" onclick="sbcfAddGroup()">+ Add finish group</button>'
       +'<button class="sbcf-render-use" onclick="sbcfUseInRender()">✨ Use defaults in AI render</button>'
+      +'<button class="sbcf-render-use" id="sbcf-detect-btn" onclick="sbcfDetectFromRender()">🔎 Detect finishes from render</button>'
     +'</div>';
     return html;
   }
@@ -5836,6 +5837,52 @@ function showSendLinkSuccess(msg) {
     var ta=document.getElementById('render-custom-prompt');
     if(ta){ ta.value=(ta.value?ta.value.trim()+' ':'')+txt; if(window.toast) toast('✓ Finishes added to render prompt'); }
     else if(window.toast){ toast('Scroll to the render box and tap Generate'); }
+  };
+  window.sbcfDetectFromRender=async function(){
+    var r=rec(); if(!r || !r.estimate){ if(window.toast) toast('Open an estimate first',true); return; }
+    // Find the render image: live render first, then a saved ai-render in quote photos
+    var img = (typeof currentRenderBase64!=='undefined' && currentRenderBase64) ? currentRenderBase64 : null;
+    if(!img){
+      var qp=(r.estimate.quotePhotos)||[];
+      for(var i=0;i<qp.length;i++){ if(qp[i] && /render/i.test(qp[i].name||'') && qp[i].data){ img=qp[i].data; break; } }
+    }
+    if(!img){ if(window.toast) toast('Generate an AI render first, then tap this',true); return; }
+
+    var btn=document.getElementById('sbcf-detect-btn');
+    var oldTxt = btn ? btn.textContent : '';
+    if(btn){ btn.disabled=true; btn.textContent='🔎 Detecting…'; }
+    try{
+      var resp=await fetch('/.netlify/functions/find-finishes',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          image: img,
+          scopeOfWork: r.estimate.scopeOfWork || '',
+          serviceLabel: (r.request && (r.request.serviceLabel || r.request.service)) || '',
+          projectTitle: r.estimate.projectTitle || ''
+        })
+      });
+      var data=await resp.json();
+      if(!resp.ok || !data.success){ throw new Error(data.error || 'Detection failed'); }
+      var detected=(data.groups)||[];
+      if(!detected.length){ if(window.toast) toast('No finishes detected — try a clearer render',true); return; }
+
+      var gs=groups();
+      detected.forEach(function(g){
+        var opts=(g.options||[]).map(function(o){
+          return { id:uid(), name:o.name||'', spec:o.spec||'', price:Number(o.price)||0, photo:'', isDefault:!!o.isDefault };
+        });
+        if(opts.length && !opts.some(function(o){return o.isDefault;})) opts[0].isDefault=true;
+        gs.push({ id:uid(), name:g.name||'Finish', options:opts });
+      });
+      render();
+      if(window.toast) toast('✓ '+detected.length+' finish group(s) added — review prices, then send');
+    }catch(e){
+      if(window.toast) toast('Detect failed: '+e.message,true);
+    }finally{
+      var b=document.getElementById('sbcf-detect-btn');
+      if(b){ b.disabled=false; b.textContent=oldTxt||'🔎 Detect finishes from render'; }
+    }
   };
 
   if(typeof renderEdit==='function'){
