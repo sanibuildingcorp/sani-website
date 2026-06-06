@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Image Studio — Sani Building Corp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0b1828; --navy-2:#122740; --navy-3:#0e2034;
+    --gold:#d4b572; --gold-2:#c9a84c; --gold-soft:rgba(212,181,114,.14);
+    --ink:#eaf0f7; --ink-muted:#8ea3bd; --line:rgba(255,255,255,.12); --line-soft:rgba(255,255,255,.06);
+    --ok:#3ecf8e; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--navy);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;line-height:1.5}
+  h1,h2,h3{font-family:'Playfair Display',serif;margin:0}
+  a{color:var(--gold)}
+  .wrap{max-width:920px;margin:0 auto;padding:22px 14px 80px}
+
+  #gate{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  #gate .box{width:100%;max-width:340px;text-align:center}
+  #gate h2{font-size:24px;margin-bottom:6px}
+  #gate p{color:var(--ink-muted);font-size:13px;margin:0 0 18px}
+  #gate input{width:100%;padding:13px 14px;border-radius:10px;border:1.5px solid var(--line);background:var(--navy-2);color:var(--ink);font-size:15px;font-family:inherit;margin-bottom:10px}
+  #gate input:focus{outline:none;border-color:var(--gold)}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  header h1{font-size:24px}
+  .badge{font-size:11px;letter-spacing:.5px;color:var(--navy);background:var(--gold);padding:4px 10px;border-radius:999px;font-weight:700}
+  .sub{color:var(--ink-muted);font-size:13px;margin:0 0 14px}
+
+  .notice{background:var(--gold-soft);border:1px solid rgba(212,181,114,.4);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#e8d9b0;margin-bottom:18px}
+  .notice b{color:var(--gold)}
+
+  .card{background:var(--navy-2);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+  .step{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--gold);color:var(--navy);font-weight:700;font-size:12px;margin-right:8px}
+  .card h3{font-size:15px;font-family:'DM Sans',sans-serif;font-weight:700;display:flex;align-items:center;margin-bottom:12px}
+  .label{font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:7px;font-weight:600}
+
+  textarea,input.txt,select{width:100%;background:var(--navy-3);border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:14px;color:var(--ink);resize:vertical;line-height:1.55}
+  textarea:focus,input.txt:focus,select:focus{outline:none;border-color:var(--gold)}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row > div{flex:1;min-width:170px}
+  .hint{font-size:11px;color:var(--ink-muted);margin-top:5px}
+  .linkbtn{background:none;border:none;color:var(--gold);font-size:12.5px;cursor:pointer;padding:0;font-family:inherit;text-decoration:underline}
+
+  .btn{background:var(--gold);color:var(--navy);border:none;border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:filter .15s}
+  .btn:hover{filter:brightness(1.06)}
+  .btn:disabled{opacity:.55;cursor:default}
+  .btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+
+  /* slot grid */
+  .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+  .slot{border:2px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;background:var(--navy-3);transition:border-color .15s}
+  .slot:hover{border-color:var(--gold)}
+  .slot.active{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft)}
+  .slot .thumb{width:100%;height:84px;object-fit:cover;display:block;background:#0a1422}
+  .slot .meta{padding:7px 8px}
+  .slot .meta .ctx{font-size:11px;color:var(--ink);font-weight:600;line-height:1.3;max-height:28px;overflow:hidden}
+  .slot .meta .pth{font-size:10px;color:var(--ink-muted);margin-top:3px;word-break:break-all}
+
+  #result{display:none}
+  .loading{text-align:center;padding:34px 10px;color:var(--ink-muted)}
+  .spin{display:inline-block;width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:sp 1s linear infinite;margin-bottom:12px}
+  .spin-sm{display:inline-block;width:14px;height:14px;border:2px solid rgba(11,24,40,.35);border-top-color:var(--navy);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #preview{width:100%;border-radius:12px;display:block;border:1px solid var(--line)}
+  .preview-wrap{display:none}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+
+  .err{display:none;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.4);color:#ffb4b4;border-radius:10px;padding:10px 13px;font-size:13px;margin-top:12px}
+  .err.show{display:block}
+  .done{display:none;background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.4);color:#a8ecca;border-radius:10px;padding:12px 14px;font-size:13px;margin-top:12px}
+  .done.show{display:block}
+
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--navy-3);border:1px solid var(--gold);color:var(--ink);padding:12px 20px;border-radius:999px;font-size:13px;transition:transform .3s;z-index:90;max-width:90%}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  .muted{color:var(--ink-muted)}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <h2>Image Studio</h2>
+    <p>Enter the dashboard password</p>
+    <input id="gate-pass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')checkPass()">
+    <button class="btn" style="width:100%" onclick="checkPass()">Unlock</button>
+    <div id="gate-err" style="color:var(--bad);font-size:12px;margin-top:10px;display:none">Wrong password</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <h1>🎨 Image Studio</h1>
+    <span class="badge">Nano Banana Pro</span>
+  </header>
+  <p class="sub">Pick a page, let AI read it, generate a matching photo, and publish straight to your site.</p>
+
+  <div class="notice">
+    <b>Use AI for backgrounds & thematic slots.</b> For your <b>Projects / Gallery</b> and the <b>owner photo</b>, use real photos — AI rooms carry a hidden SynthID watermark and can mislead customers.
+  </div>
+
+  <!-- STEP 1: page -->
+  <div class="card">
+    <h3><span class="step">1</span> Choose a page</h3>
+    <div class="row">
+      <div style="flex:2">
+        <select id="page">
+          <option value="">Home (index)</option>
+          <option value="services">Services</option>
+          <option value="bathroom-renovation">Bathroom Renovation</option>
+          <option value="kitchen-renovation">Kitchen Renovation</option>
+          <option value="painting">Painting</option>
+          <option value="flooring">Flooring</option>
+          <option value="carpentry">Carpentry</option>
+          <option value="handyman">Handyman</option>
+          <option value="water-damage">Water Damage</option>
+          <option value="bathroom-floor-tile-installation">Bathroom Floor Tile</option>
+          <option value="about">About</option>
+          <option value="contact">Contact</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:150px">
+        <button class="btn" style="width:100%" id="read-btn" onclick="loadPage()">📄 Read page</button>
+      </div>
+    </div>
+    <div class="hint">AI scans the live page and lists the photos you can replace. <button class="linkbtn" onclick="toggleManual()">Skip — prompt freely instead</button></div>
+    <div class="err" id="read-err"></div>
+  </div>
+
+  <!-- STEP 2: slots -->
+  <div class="card" id="slots-card" style="display:none">
+    <h3><span class="step">2</span> Pick the photo to replace <span class="muted" id="slots-page" style="font-weight:400;font-size:12px;margin-left:6px"></span></h3>
+    <div class="slots" id="slots"></div>
+    <div class="hint" id="slots-empty" style="display:none">No replaceable images found on that page.</div>
+  </div>
+
+  <!-- STEP 3: prompt -->
+  <div class="card" id="prompt-card" style="display:none">
+    <h3><span class="step">3</span> Prompt &amp; generate</h3>
+
+    <div class="label">What to generate</div>
+    <textarea id="prompt" rows="4" placeholder="Describe the photo — or tap “Suggest from page” to let AI write it for you."></textarea>
+    <div style="margin-top:8px">
+      <button class="btn-ghost btn" id="suggest-btn" onclick="suggest()" style="padding:9px 14px;font-size:13px">🪄 Suggest from page</button>
+      <span class="hint" id="suggest-hint" style="margin-left:8px"></span>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <div>
+        <div class="label">Orientation</div>
+        <select id="orient">
+          <option value="wide">Wide 16:9 (cards, sections)</option>
+          <option value="hero">Hero banner (ultra-wide)</option>
+          <option value="square">Square 1:1</option>
+          <option value="tall">Tall 3:4 (portrait)</option>
+        </select>
+      </div>
+      <div>
+        <div class="label">Destination path in repo</div>
+        <input class="txt" id="path" placeholder="images/services-strip/kitchen.jpg">
+        <div class="hint">Writing to a path a page already uses = it auto-updates on deploy.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <button class="btn" id="gen-btn" onclick="generate()">✨ Generate Image</button>
+    </div>
+    <div class="err" id="gen-err"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="card" id="result">
+    <div class="loading" id="loading">
+      <div class="spin"></div>
+      <div id="loading-msg">Sending to Gemini…</div>
+      <div style="font-size:11px;margin-top:6px">Nano Banana Pro thinks before it draws — up to ~90 seconds.</div>
+    </div>
+    <div class="preview-wrap" id="preview-wrap">
+      <div class="label">Preview</div>
+      <img id="preview" alt="generated preview">
+      <div class="actions">
+        <button class="btn-ghost btn" onclick="generate()">↻ Regenerate</button>
+        <button class="btn" id="pub-btn" onclick="publish()">✅ Approve &amp; Publish to site</button>
+      </div>
+      <div class="hint" id="pub-target"></div>
+      <div class="err" id="pub-err"></div>
+      <div class="done" id="pub-done"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* skip the password gate when embedded inside the (already-authenticated) dashboard iframe */
+(function(){
+  var embedded = false;
+  try { embedded = window.self !== window.top; } catch(e){ embedded = true; }
+  if (embedded) { document.getElementById("gate").style.display = "none"; }
+})();
+var PASS = "L0nd0n12@";
+function checkPass(){
+  if(document.getElementById("gate-pass").value === PASS){ document.getElementById("gate").style.display="none"; }
+  else { document.getElementById("gate-err").style.display="block"; }
+}
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+function showErr(id,msg){ var e=document.getElementById(id); e.textContent="⚠️ "+msg; e.classList.add("show"); }
+function hideErr(id){ document.getElementById(id).classList.remove("show"); }
+
+/* ---------- STEP 1: read page ---------- */
+var slots = [];
+var selectedSlot = -1;
+var currentPageTitle = "";
+
+async function loadPage(){
+  hideErr("read-err");
+  var page = document.getElementById("page").value;
+  var btn = document.getElementById("read-btn");
+  btn.disabled = true; btn.innerHTML = '<span class="spin-sm"></span>Reading…';
+  try {
+    var r = await fetch("/.netlify/functions/image-context", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ action:"list", page:page })
+    });
+    var data = await r.json();
+    if(!r.ok) throw new Error(data.error || "Could not read page");
+    slots = data.images || [];
+    currentPageTitle = data.pageTitle || page || "Home";
+    renderSlots();
+    document.getElementById("slots-card").style.display = "block";
+    document.getElementById("slots-page").textContent = "on “" + currentPageTitle + "”";
+    document.getElementById("prompt-card").style.display = "block";
+  } catch(e){
+    showErr("read-err", e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = "📄 Read page";
+  }
+}
+
+function renderSlots(){
+  var host = document.getElementById("slots");
+  document.getElementById("slots-empty").style.display = slots.length ? "none" : "block";
+  host.innerHTML = slots.map(function(s,i){
+    return '<div class="slot" data-i="'+i+'" onclick="selectSlot('+i+')">'
+      + '<img class="thumb" src="'+esc(s.displaySrc)+'" onerror="this.style.opacity=.25;this.alt=\'(missing)\'">'
+      + '<div class="meta"><div class="ctx">'+esc(s.context||"(image)")+'</div>'
+      + '<div class="pth">'+esc(s.path)+'</div></div></div>';
+  }).join("");
+}
+
+function selectSlot(i){
+  selectedSlot = i;
+  var s = slots[i];
+  document.getElementById("path").value = s.path;
+  var btns = document.querySelectorAll(".slot");
+  for(var k=0;k<btns.length;k++){ btns[k].classList.toggle("active", k===i); }
+  document.getElementById("suggest-hint").textContent = "Slot: " + s.path;
+  document.getElementById("prompt-card").scrollIntoView({behavior:"smooth"});
+}
+
+function toggleManual(){
+  document.getElementById("prompt-card").style.display = "block";
+  document.getElementById("prompt-card").scrollIntoView({behavior:"smooth"});
+}
+
+/* ---------- STEP 3a: AI suggest ---------- */
+async function suggest(){
+  if(selectedSlot < 0){ showErr("gen-err","Pick a photo slot above first (or just type your own prompt)."); return; }
+  hideErr("gen-err");
+  var s = slots[selectedSlot];
+  var btn = document.getElementById("suggest-btn");
+  btn.disabled = true; btn.innerHTML = '<span class="spin-sm" style="border-top-color:var(--gold)"></span>Thinking…';
+  try {
+    var r = await fetch("/.netlify/functions/image-context", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ action:"suggest", page:document.getElementById("page").value, pageTitle:currentPageTitle, src:s.path, alt:s.alt, context:s.context })
+    });
+    var data = await r.json();
+    if(!r.ok) throw new Error(data.error || "Suggestion failed");
+    if(data.prompt) document.getElementById("prompt").value = data.prompt;
+    if(data.orientation) document.getElementById("orient").value = data.orientation;
+    toast("🪄 Prompt drafted from the page");
+  } catch(e){
+    showErr("gen-err", e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = "🪄 Suggest from page";
+  }
+}
+
+/* ---------- STEP 3b: generate ---------- */
+var currentImage = null, loadingTimer = null;
+
+async function generate(){
+  var prompt = document.getElementById("prompt").value.trim();
+  if(!prompt){ showErr("gen-err","Type a prompt (or tap “Suggest from page”)."); return; }
+  hideErr("gen-err"); hideErr("pub-err");
+  document.getElementById("pub-done").classList.remove("show");
+
+  var btn = document.getElementById("gen-btn");
+  btn.disabled = true; btn.innerHTML = '<span class="spin-sm"></span>Generating…';
+  document.getElementById("result").style.display = "block";
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("preview-wrap").style.display = "none";
+  currentImage = null;
+  document.getElementById("result").scrollIntoView({behavior:"smooth"});
+
+  var msgs = ["Sending to Gemini…","Composing the scene…","Rendering finishes…","Refining details…","Almost there…"];
+  var mi=0;
+  loadingTimer = setInterval(function(){ mi=(mi+1)%msgs.length; document.getElementById("loading-msg").textContent=msgs[mi]; }, 8000);
+
+  var jobId = "img-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+  var orientation = document.getElementById("orient").value;
+  try {
+    await fetch("/.netlify/functions/generate-image-background", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ jobId:jobId, prompt:prompt, orientation:orientation })
+    });
+    var data = await pollJob(jobId);
+    clearInterval(loadingTimer);
+    currentImage = data.imageBase64 || data.image_base64;
+    if(!currentImage) throw new Error("No image came back. Try again.");
+    document.getElementById("preview").src = currentImage;
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("preview-wrap").style.display = "block";
+    document.getElementById("pub-target").textContent = "Will publish to: " + (document.getElementById("path").value.trim() || "(set a destination path)");
+    toast("✨ Image generated");
+  } catch(e){
+    clearInterval(loadingTimer);
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("result").style.display = "none";
+    showErr("gen-err", e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = "✨ Generate Image";
+  }
+}
+
+function pollJob(jobId){
+  return new Promise(function(resolve, reject){
+    var attempts=0, max=26;
+    function poll(){
+      attempts++;
+      if(attempts>max){ reject(new Error("Timed out — Gemini took too long. Try a shorter prompt.")); return; }
+      fetch("/.netlify/functions/get-render-status?jobId="+encodeURIComponent(jobId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if(d.status==="done"){ resolve(d); }
+          else if(d.status==="error"){ reject(new Error(d.error||"Generation failed")); }
+          else { setTimeout(poll, 4000); }
+        })
+        .catch(function(){ setTimeout(poll, 4000); });
+    }
+    setTimeout(poll, 4000);
+  });
+}
+
+/* ---------- optimize + publish ---------- */
+function optimize(dataUrl, maxW, quality){
+  return new Promise(function(resolve){
+    var img = new Image();
+    img.onload = function(){
+      var w=img.width,h=img.height;
+      if(w>maxW){ h=Math.round(h*(maxW/w)); w=maxW; }
+      var c=document.createElement("canvas"); c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      resolve(c.toDataURL("image/jpeg", quality));
+    };
+    img.onerror=function(){ resolve(dataUrl); };
+    img.src=dataUrl;
+  });
+}
+
+async function publish(){
+  if(!currentImage){ toast("Generate an image first"); return; }
+  var path = document.getElementById("path").value.trim();
+  if(!path){ showErr("pub-err","Set a destination path (e.g. images/services-strip/kitchen.jpg)."); return; }
+  hideErr("pub-err");
+  if(!confirm("Publish this image to your LIVE site?\n\nIt will be committed to:\n"+path+"\n\nThe page using that path updates in about a minute.")) return;
+
+  var btn = document.getElementById("pub-btn");
+  btn.disabled=true; btn.innerHTML='<span class="spin-sm"></span>Publishing…';
+  try {
+    var orient = document.getElementById("orient").value;
+    var maxW = (orient==="square"||orient==="tall") ? 1200 : 1600;
+    var optimized = await optimize(currentImage, maxW, 0.82);
+    var r = await fetch("/.netlify/functions/publish-image", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ path:path, imageBase64:optimized, message:"Image Studio: "+path })
+    });
+    var text = await r.text();
+    var data; try{ data=JSON.parse(text); }catch(e){ throw new Error("Server error while publishing. Try again in a moment."); }
+    if(!r.ok){ throw new Error(data.error || "Publish failed"); }
+    var done = document.getElementById("pub-done");
+    done.innerHTML = "✅ Published to <b>"+esc(path)+"</b>. Live in ~1 minute. "
+      + (data.commitUrl ? '<a href="'+esc(data.commitUrl)+'" target="_blank">View commit ↗</a>' : "")
+      + '<br><span class="muted" style="font-size:12px">Tip: hard-refresh (or open in private) to get past your browser cache.</span>';
+    done.classList.add("show");
+    btn.innerHTML="✅ Published";
+    toast("✅ Committed to GitHub");
+  } catch(e){
+    showErr("pub-err", e.message);
+    btn.disabled=false; btn.innerHTML="✅ Approve & Publish to site";
+  }
+}
+
+/* ---------- toast ---------- */
+var toastTimer=null;
+function toast(msg){
+  var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); }, 2600);
+}
+</script>
+</body>
+</html>
