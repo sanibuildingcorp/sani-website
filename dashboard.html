@@ -2603,6 +2603,7 @@ const TABS = [
   { id: "handyman", label: "🔧 Handyman" },
   { id: "seo", label: "🧠 SEO Brain" },
   { id: "content", label: "✍️ Content" },
+  { id: "images", label: "🎨 Images" },
   { id: "visitors", label: "👁 Live Visitors" },
 ];
 
@@ -2788,6 +2789,11 @@ function renderList() {
 
   if (activeTab === "content") {
     renderContentStudio();
+    return;
+  }
+
+  if (activeTab === "images") {
+    renderImageStudio();
     return;
   }
 
@@ -4574,6 +4580,22 @@ function renderContentStudio() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   IMAGE STUDIO TAB
+   ════════════════════════════════════════════════════════════════════ */
+function renderImageStudio() {
+  const host = document.getElementById("list-host");
+  host.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">' +
+      '<div>' +
+        '<div style="font-family:var(--display);font-size:22px;letter-spacing:1.5px;color:var(--gold)">🎨 AI IMAGE STUDIO</div>' +
+        '<div style="font-size:12px;color:var(--ink-muted);margin-top:2px">Pick a page, let AI read it, generate a matching photo, and publish it straight to your site.</div>' +
+      '</div>' +
+      '<a href="/image-studio.html" target="_blank" class="topbar-btn" style="text-decoration:none">↗ Open Full Screen</a>' +
+    '</div>' +
+    '<iframe src="/image-studio.html" style="width:100%;height:78vh;border:1px solid var(--line);border-radius:14px;background:var(--bg)" title="Image Studio"></iframe>';
+}
+
+/* ════════════════════════════════════════════════════════════════════
    SEO BRAIN TAB
    ════════════════════════════════════════════════════════════════════ */
 var seoData = null;
@@ -5159,7 +5181,7 @@ window.addEventListener('appinstalled', function() {
 window.addEventListener('load', function() {
   if (location.hash) {
     var tabId = location.hash.replace('#', '');
-    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','declined','handyman','seo','content','visitors'];
+    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','declined','handyman','seo','content','images','visitors'];
     if (validTabs.includes(tabId)) {
       activeTab = tabId;
     }
@@ -5222,6 +5244,7 @@ var SBC_TABS = [
   {id:'handyman', icon:'🔧', label:'Handyman'},
   {id:'seo',      icon:'🧠', label:'SEO Brain'},
   {id:'content',  icon:'✍️',  label:'Content'},
+  {id:'images',   icon:'🎨', label:'Images'},
   {id:'visitors', icon:'👁',  label:'Live Visitors'},
 ];
 
