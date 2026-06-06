@@ -845,6 +845,11 @@ body {
         <h1 id="success-title">Estimate Approved</h1>
         <p style="color:var(--ink-soft);font-size:15px;margin:16px 0 24px;max-width:420px;margin-left:auto;margin-right:auto" id="success-msg">Thanks! We'll be in touch shortly to schedule the start date and send over the invoice with deposit details.</p>
         <p style="color:var(--ink-muted);font-size:13px">Questions? Call <a href="tel:+13322770990" style="color:var(--gold-2);text-decoration:none;font-weight:600">(332) 277-0990</a></p>
+        <div id="back-to-quote-wrap" style="display:none;margin-top:22px">
+          <button class="btn btn-accept" style="min-width:220px" onclick="backToQuote()">
+            <span class="btn-icon">←</span> Back to My Quote
+          </button>
+        </div>
         <div class="back-link-wrap">
           <a href="https://www.sanibuildingcorp.com" class="back-link">
             <span class="back-link-arrow">←</span> Back to sanibuildingcorp.com
@@ -1325,10 +1330,18 @@ document.addEventListener("keydown",function(e){
   if (e.key==="ArrowRight") lightboxNav(1);
 });
 
+function backToQuote() {
+  document.getElementById("state-success").style.display="none";
+  document.getElementById("state-quote").style.display="block";
+  if (typeof updatePrimaryAction==="function") updatePrimaryAction();
+  window.scrollTo(0,0);
+}
 function showSuccess(kind) {
   document.getElementById("state-loading").style.display="none";
   document.getElementById("state-quote").style.display="none";
   document.getElementById("state-success").style.display="block";
+  var btq=document.getElementById("back-to-quote-wrap");
+  if (btq) btq.style.display=(kind==="review"||kind==="declined")?"block":"none";
   if (kind==="declined") {
     document.getElementById("success-tag").textContent="Response received";
     document.getElementById("success-icon").textContent="✎";
