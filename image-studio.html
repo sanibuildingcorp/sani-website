@@ -158,6 +158,13 @@
       <span class="hint" id="suggest-hint" style="margin-left:8px"></span>
     </div>
 
+    <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)">
+      <div class="label">Or use your own photo</div>
+      <button class="btn-ghost btn" onclick="document.getElementById('upload').click()" style="padding:9px 14px;font-size:13px">⬆ Upload a photo</button>
+      <input type="file" id="upload" accept="image/*" style="display:none" onchange="onUpload(event)">
+      <span class="hint" id="upload-hint" style="margin-left:8px">Use a real job photo (best for Gallery / Projects).</span>
+    </div>
+
     <div id="alt-wrap" style="margin-top:14px">
       <div class="label">Alt text (for SEO &amp; accessibility)</div>
       <input class="txt" id="alt" placeholder="e.g. Freshly painted modern living room in a Brooklyn apartment">
@@ -178,6 +185,28 @@
         <div class="label">Destination path in repo</div>
         <input class="txt" id="path" placeholder="images/painting/hero.jpg">
         <div class="hint" id="path-hint">Where the photo file is saved.</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <div>
+        <div class="label">Compress — max width</div>
+        <select id="maxw" onchange="updateSizeEstimate()">
+          <option value="1600">1600 px (recommended)</option>
+          <option value="2000">2000 px (large)</option>
+          <option value="1200">1200 px (small)</option>
+          <option value="0">Original size</option>
+        </select>
+      </div>
+      <div>
+        <div class="label">Compress — quality</div>
+        <select id="quality" onchange="updateSizeEstimate()">
+          <option value="0.82">High (recommended)</option>
+          <option value="0.9">Maximum</option>
+          <option value="0.7">Medium</option>
+          <option value="0.6">Small file</option>
+        </select>
+        <div class="hint" id="size-note">Output size shows after a photo is ready.</div>
       </div>
     </div>
 
@@ -360,6 +389,7 @@ async function generate(){
     document.getElementById("loading").style.display = "none";
     document.getElementById("preview-wrap").style.display = "block";
     document.getElementById("pub-target").textContent = "Will save to: " + (document.getElementById("path").value.trim() || "(set a destination path)");
+    updateSizeEstimate();
     toast("✨ Image generated");
   } catch(e){
     clearInterval(loadingTimer);
@@ -390,19 +420,58 @@ function pollJob(jobId){
   });
 }
 
-function optimize(dataUrl, maxW, quality){
+function getOpt(){
+  var mw = parseInt(document.getElementById("maxw").value, 10);
+  var q = parseFloat(document.getElementById("quality").value);
+  return { maxW: (mw > 0 ? mw : 100000), quality: (q || 0.82) };
+}
+function optimize(dataUrl){
+  var o = getOpt();
   return new Promise(function(resolve){
     var img = new Image();
     img.onload = function(){
       var w=img.width,h=img.height;
-      if(w>maxW){ h=Math.round(h*(maxW/w)); w=maxW; }
+      if(w>o.maxW){ h=Math.round(h*(o.maxW/w)); w=o.maxW; }
       var c=document.createElement("canvas"); c.width=w; c.height=h;
       c.getContext("2d").drawImage(img,0,0,w,h);
-      resolve(c.toDataURL("image/jpeg", quality));
+      resolve(c.toDataURL("image/jpeg", o.quality));
     };
     img.onerror=function(){ resolve(dataUrl); };
     img.src=dataUrl;
   });
+}
+
+async function updateSizeEstimate(){
+  var note = document.getElementById("size-note");
+  if(!currentImage){ note.textContent = "Output size shows after a photo is ready."; return; }
+  try {
+    var opt = await optimize(currentImage);
+    var b64 = opt.slice(opt.indexOf(",")+1);
+    var kb = Math.max(1, Math.round(b64.length * 3 / 4 / 1024));
+    note.textContent = "≈ " + kb + " KB after compression";
+  } catch(e){ note.textContent = ""; }
+}
+
+function onUpload(e){
+  var f = e.target.files && e.target.files[0];
+  if(!f) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    currentImage = reader.result;
+    hideErr("gen-err"); hideErr("pub-err");
+    document.getElementById("pub-done").classList.remove("show");
+    document.getElementById("pub-warn").classList.remove("show");
+    document.getElementById("result").style.display = "block";
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("preview-wrap").style.display = "block";
+    document.getElementById("preview").src = currentImage;
+    document.getElementById("pub-target").textContent = "Will save to: " + (document.getElementById("path").value.trim() || "(set a destination path)");
+    updateSizeEstimate();
+    document.getElementById("result").scrollIntoView({behavior:"smooth"});
+    toast("📷 Photo loaded — set the path and Publish");
+  };
+  reader.readAsDataURL(f);
+  e.target.value = "";
 }
 
 async function publish(){
@@ -432,9 +501,7 @@ async function publish(){
   var btn = document.getElementById("pub-btn");
   btn.disabled=true; btn.innerHTML='<span class="spin-sm"></span>Publishing…';
   try {
-    var orient = document.getElementById("orient").value;
-    var maxW = (orient==="square"||orient==="tall") ? 1200 : 1600;
-    var optimized = await optimize(currentImage, maxW, 0.82);
+    var optimized = await optimize(currentImage);
 
     var r, data;
     if(needPatch){
