@@ -76,6 +76,8 @@
   #preview{width:100%;border-radius:12px;display:block;border:1px solid var(--line)}
   .preview-wrap{display:none}
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .x-btn{background:transparent;border:1px solid var(--line);color:var(--ink-muted);width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+  .x-btn:hover{border-color:var(--bad);color:var(--bad)}
 
   .err{display:none;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.4);color:#ffb4b4;border-radius:10px;padding:10px 13px;font-size:13px;margin-top:12px}
   .err.show{display:block}
@@ -224,7 +226,10 @@
       <div style="font-size:11px;margin-top:6px">Nano Banana Pro thinks before it draws — up to ~90 seconds.</div>
     </div>
     <div class="preview-wrap" id="preview-wrap">
-      <div class="label">Preview</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="label" style="margin-bottom:0">Preview</div>
+        <button class="x-btn" onclick="dismissPreview()" title="Close">✕</button>
+      </div>
       <img id="preview" alt="generated preview">
       <div class="actions">
         <button class="btn-ghost btn" onclick="generate()">↻ Regenerate</button>
@@ -450,6 +455,20 @@ async function updateSizeEstimate(){
     var kb = Math.max(1, Math.round(b64.length * 3 / 4 / 1024));
     note.textContent = "≈ " + kb + " KB after compression";
   } catch(e){ note.textContent = ""; }
+}
+
+function dismissPreview(){
+  currentImage = null;
+  document.getElementById("preview").src = "";
+  document.getElementById("result").style.display = "none";
+  document.getElementById("preview-wrap").style.display = "none";
+  document.getElementById("pub-done").classList.remove("show");
+  document.getElementById("pub-warn").classList.remove("show");
+  hideErr("pub-err");
+  var pb = document.getElementById("pub-btn");
+  pb.disabled = false; pb.innerHTML = "✅ Approve &amp; Publish";
+  document.getElementById("size-note").textContent = "Output size shows after a photo is ready.";
+  document.getElementById("prompt-card").scrollIntoView({behavior:"smooth"});
 }
 
 function onUpload(e){
