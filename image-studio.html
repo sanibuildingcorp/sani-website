@@ -324,6 +324,8 @@ function selectSlot(i){
   var btns = document.querySelectorAll(".slot");
   for(var k=0;k<btns.length;k++){ btns[k].classList.toggle("active", k===i); }
   document.getElementById("suggest-hint").textContent = s.isExternal ? "External slot — will be localized on publish" : "Slot: " + s.path;
+  resetPubBtn();
+  document.getElementById("pub-done").classList.remove("show");
   document.getElementById("prompt-card").scrollIntoView({behavior:"smooth"});
 }
 
@@ -373,6 +375,7 @@ async function generate(){
   document.getElementById("loading").style.display = "block";
   document.getElementById("preview-wrap").style.display = "none";
   currentImage = null;
+  resetPubBtn();
   document.getElementById("result").scrollIntoView({behavior:"smooth"});
 
   var msgs = ["Sending to Gemini…","Composing the scene…","Rendering finishes…","Refining details…","Almost there…"];
@@ -457,6 +460,11 @@ async function updateSizeEstimate(){
   } catch(e){ note.textContent = ""; }
 }
 
+function resetPubBtn(){
+  var pb = document.getElementById("pub-btn");
+  if(pb){ pb.disabled = false; pb.innerHTML = "✅ Approve &amp; Publish"; }
+}
+
 function dismissPreview(){
   currentImage = null;
   document.getElementById("preview").src = "";
@@ -465,8 +473,7 @@ function dismissPreview(){
   document.getElementById("pub-done").classList.remove("show");
   document.getElementById("pub-warn").classList.remove("show");
   hideErr("pub-err");
-  var pb = document.getElementById("pub-btn");
-  pb.disabled = false; pb.innerHTML = "✅ Approve &amp; Publish";
+  resetPubBtn();
   document.getElementById("size-note").textContent = "Output size shows after a photo is ready.";
   document.getElementById("prompt-card").scrollIntoView({behavior:"smooth"});
 }
@@ -480,6 +487,7 @@ function onUpload(e){
     hideErr("gen-err"); hideErr("pub-err");
     document.getElementById("pub-done").classList.remove("show");
     document.getElementById("pub-warn").classList.remove("show");
+    resetPubBtn();
     document.getElementById("result").style.display = "block";
     document.getElementById("loading").style.display = "none";
     document.getElementById("preview-wrap").style.display = "block";
