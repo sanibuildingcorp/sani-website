@@ -29,9 +29,10 @@ exports.handler = async function (event) {
   try { body = JSON.parse(event.body || "{}"); }
   catch (e) { return json(400, { error: "Invalid request body" }); }
 
-  const newPath = String(body.newPath || "").trim().replace(/^\/+/, "");
-  if (newPath.indexOf("..") !== -1 || !/^images\/[A-Za-z0-9_\-\/]+\.(jpg|jpeg|png|webp)$/.test(newPath)) {
-    return json(400, { error: "newPath must be an image inside images/ (.jpg .jpeg .png .webp). Got: " + newPath });
+  const rawNewPath = String(body.newPath || "").trim().replace(/^\/+/, "");
+  const filePath = rawNewPath.split("?")[0].split("#")[0];
+  if (filePath.indexOf("..") !== -1 || !/^images\/[A-Za-z0-9_\-\/]+\.(jpg|jpeg|png|webp)$/.test(filePath)) {
+    return json(400, { error: "Path must be an image inside images/ (.jpg .jpeg .png .webp). Got: " + filePath });
   }
 
   // raw base64
@@ -50,7 +51,7 @@ exports.handler = async function (event) {
 
   try {
     // ── STEP 1: commit the image file ──────────────────────────────
-    const imgCommit = await putFile(gh, newPath, contentB64, "Image Studio: " + newPath, true);
+    const imgCommit = await putFile(gh, filePath, contentB64, "Image Studio: " + filePath, true);
     if (imgCommit.error) return json(imgCommit.status || 500, { error: imgCommit.error });
 
     // ── STEP 2: patch the page HTML (only if asked + currentRef given) ──
@@ -74,12 +75,13 @@ exports.handler = async function (event) {
         } else if (occurrences > 1) {
           warning = "That photo appears " + occurrences + " times on " + repoFile + " — image saved, but the page link wasn't changed (to avoid touching the wrong one).";
         } else {
-          // unique — safe to patch
-          pageHtml = pageHtml.split(currentRef).join(newPath);
+          // unique — safe to patch. Add a version stamp so browsers/CDN reload it.
+          const htmlVal = filePath + "?v=" + Date.now();
+          pageHtml = pageHtml.split(currentRef).join(htmlVal);
 
-          // For <img>, also set alt within the now-updated tag
+          // For <img>, also set alt within the now-updated tag (match by clean file path)
           if (body.kind === "img" && typeof body.alt === "string") {
-            const tagRe = new RegExp("<img\\b[^>]*?" + escapeRe(newPath) + "[^>]*?>", "i");
+            const tagRe = new RegExp("<img\\b[^>]*?" + escapeRe(filePath) + "[^>]*?>", "i");
             pageHtml = pageHtml.replace(tagRe, function (tag) {
               const altVal = escAttr(body.alt);
               if (/\balt\s*=\s*["'][^"']*["']/i.test(tag)) {
@@ -90,7 +92,7 @@ exports.handler = async function (event) {
           }
 
           const putPage = await putFileRaw(gh, repoFile, Buffer.from(pageHtml, "utf8").toString("base64"),
-            "Image Studio: point " + repoFile + " to " + newPath, meta.sha);
+            "Image Studio: point " + repoFile + " to " + filePath, meta.sha);
           if (putPage.error) warning = "Image saved, but updating " + repoFile + " failed: " + putPage.error;
           else pagePatched = true;
         }
@@ -99,7 +101,7 @@ exports.handler = async function (event) {
 
     return json(200, {
       success: true,
-      path: newPath,
+      path: filePath,
       pagePatched: pagePatched,
       warning: warning,
       commitUrl: imgCommit.commitUrl,
