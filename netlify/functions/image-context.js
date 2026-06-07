@@ -23,6 +23,7 @@ exports.handler = async function (event) {
   try {
     if (body.action === "list") return await listImages(body);
     if (body.action === "suggest") return await suggestPrompt(body);
+    if (body.action === "research") return await researchKeywords(body);
     return json(400, { error: "Unknown action" });
   } catch (err) {
     return json(500, { error: err.message });
@@ -123,27 +124,35 @@ async function suggestPrompt(body) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return json(500, { error: "OPENAI_API_KEY not set" });
 
-  // Pull this site's REAL Google Search Console keywords (from the SEO Brain).
-  const kws = await topQueries();
-  const kwList = kws.map(function (k) { return k.query; }).slice(0, 40);
+  // Pull keywords. Prefer keywords for THIS page; fall back to site-wide.
+  const kwData = await pageQueries(body.page || "");
+  const kwList = kwData.list.map(function (k) { return k.query; }).slice(0, 40);
+  const scope = kwData.scope; // "page" | "site" | "none"
   const kwText = kwList.length ? kwList.join(", ") : "(none available)";
+  const kwNote = scope === "page"
+    ? "These are the REAL Google keywords THIS page already shows for — prefer the most relevant."
+    : (scope === "site"
+        ? "These are SITE-WIDE keywords and may be OFF-TOPIC for this page. Use one ONLY if it genuinely fits this page's service; otherwise return an empty keywords array and write a plain descriptive alt."
+        : "No keyword data — write a plain descriptive alt.");
 
-  const sys = "You write prompts for an AI image generator AND SEO alt text, for a New York City "
-    + "renovation and handyman contractor's website (Sani Building Corp). Given the page topic, one "
-    + "image slot, and a list of REAL Google Search keywords this site already gets impressions for, do this:\n"
-    + "1) Write ONE concise photorealistic image prompt (1-2 sentences) for the ideal photo for that slot — "
-    + "real, finished, professional contractor work that fits the page. No people, no text, no watermark.\n"
-    + "2) Write SEO alt text under 14 words that naturally describes the photo AND naturally includes the SINGLE "
-    + "most relevant keyword from the list (only if it fits naturally — never keyword-stuff).\n"
-    + "3) Pick the best orientation: \"hero\", \"wide\", \"square\", or \"tall\".\n"
-    + "4) Return up to 5 keywords from the list most relevant to this page/slot.\n"
+  const sys = "You write an AI-image prompt AND SEO alt text for a New York City renovation and handyman "
+    + "contractor (Sani Building Corp). RULES:\n"
+    + "- The image MUST depict work that matches THIS page's own service/topic. Never change the subject to chase a "
+    + "keyword (e.g., if the page is Handyman, do NOT generate a bathroom renovation just because bathroom keywords rank).\n"
+    + "1) Write ONE concise photorealistic image prompt (1-2 sentences) for the ideal photo for this slot — real, "
+    + "finished, professional work that matches the page topic. No people, no text, no watermark.\n"
+    + "2) Write SEO alt text under 14 words describing the photo; include the single most relevant keyword ONLY if it "
+    + "fits naturally and matches the page topic. Never keyword-stuff.\n"
+    + "3) Pick orientation: \"hero\", \"wide\", \"square\", or \"tall\".\n"
+    + "4) Return up to 5 keywords from the list that are genuinely relevant to THIS page (may be empty).\n"
     + "Return ONLY JSON: {\"prompt\":\"...\",\"alt\":\"...\",\"orientation\":\"wide\",\"keywords\":[\"...\"]}";
 
   const user = "PAGE: " + (body.pageTitle || body.page || "") + "\n"
     + "IMAGE SLOT FILE: " + (body.src || "") + "\n"
     + "CURRENT ALT TEXT: " + (body.alt || "(none)") + "\n"
     + "NEARBY SECTION: " + (body.context || "(none)") + "\n"
-    + "REAL GOOGLE KEYWORDS (most impressions first): " + kwText;
+    + "KEYWORDS (" + scope + "): " + kwText + "\n"
+    + "KEYWORD GUIDANCE: " + kwNote;
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -165,28 +174,87 @@ async function suggestPrompt(body) {
   if (!outp.orientation) outp.orientation = "wide";
   if (!outp.alt) outp.alt = "";
   if (!Array.isArray(outp.keywords)) outp.keywords = [];
-  // Fall back to top GSC keywords if the model returned none
-  if (!outp.keywords.length && kwList.length) outp.keywords = kwList.slice(0, 5);
+  // Only auto-fill when keywords are page-specific — never force off-topic site keywords.
+  if (!outp.keywords.length && scope === "page") outp.keywords = kwList.slice(0, 5);
+  outp.keywordScope = scope;
   outp.keywordsFromGSC = kwList.length > 0;
   return json(200, outp);
 }
 
-// Top Google Search Console queries from the SEO Brain (latest snapshot).
-async function topQueries() {
+// Google Search Console keywords from the SEO Brain. Prefers keywords for THIS page
+// (seo_query_pages, matched by the page slug in the URL); falls back to site-wide queries.
+async function pageQueries(slug) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
-  if (!url || !key) return [];
+  if (!url || !key) return { list: [], scope: "none" };
   const h = { apikey: key, Authorization: "Bearer " + key };
   try {
     const snapRes = await fetch(url + "/rest/v1/seo_snapshots?select=id&order=fetched_at.desc&limit=1", { headers: h });
     const snaps = snapRes.ok ? await snapRes.json() : [];
     const id = snaps[0] && snaps[0].id;
-    if (!id) return [];
-    const qRes = await fetch(url + "/rest/v1/seo_queries?snapshot_id=eq." + id + "&select=query,impressions,clicks,position&order=impressions.desc&limit=40", { headers: h });
-    return qRes.ok ? await qRes.json() : [];
+    if (!id) return { list: [], scope: "none" };
+
+    const s = String(slug || "").trim();
+    if (s && s !== "index" && s !== "home") {
+      const token = s.split("/").pop();
+      const qpRes = await fetch(url + "/rest/v1/seo_query_pages?snapshot_id=eq." + id
+        + "&page_url=ilike.*" + encodeURIComponent(token) + "*"
+        + "&select=query,impressions,clicks,position&order=impressions.desc&limit=40", { headers: h });
+      const qp = qpRes.ok ? await qpRes.json() : [];
+      if (qp.length) return { list: qp, scope: "page" };
+    }
+    const qRes = await fetch(url + "/rest/v1/seo_queries?snapshot_id=eq." + id
+      + "&select=query,impressions,clicks,position&order=impressions.desc&limit=40", { headers: h });
+    const q = qRes.ok ? await qRes.json() : [];
+    return { list: q, scope: "site" };
   } catch (e) {
-    return [];
+    return { list: [], scope: "none" };
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// LIVE keyword discovery via Serper: Google autocomplete + related searches + PAA.
+// This surfaces what people ACTUALLY search (incl. terms you don't rank for yet),
+// unlike Search Console which only shows queries you already appear for.
+async function researchKeywords(body) {
+  const apiKey = process.env.SERPER_API_KEY;
+  if (!apiKey) return json(400, { error: "SERPER_API_KEY not set — add it in Netlify env vars to use live keyword research." });
+
+  const seed = String(body.seed || "").trim();
+  if (!seed) return json(400, { error: "Provide a seed search term." });
+
+  let auto = [], related = [], paa = [];
+  try {
+    const a = await serper("/autocomplete", { q: seed, gl: "us" });
+    auto = ((a && a.suggestions) || []).map(function (x) { return (x && (x.value || x.query)) || x; });
+  } catch (e) { /* ignore */ }
+  try {
+    const s = await serper("/search", { q: seed, gl: "us", location: "New York, New York, United States", num: 10 });
+    related = ((s && s.relatedSearches) || []).map(function (x) { return x && x.query; });
+    paa = ((s && s.peopleAlsoAsk) || []).map(function (x) { return x && x.question; });
+  } catch (e) { /* ignore */ }
+
+  const keywords = [];
+  const seen = {};
+  [].concat(auto, related).forEach(function (k) {
+    k = String(k || "").trim();
+    const key = k.toLowerCase();
+    if (k && k.length <= 70 && !seen[key]) { seen[key] = 1; keywords.push(k); }
+  });
+
+  return json(200, {
+    seed: seed,
+    keywords: keywords.slice(0, 24),
+    questions: paa.filter(Boolean).slice(0, 8),
+  });
+}
+
+function serper(path, payload) {
+  return fetch("https://google.serper.dev" + path, {
+    method: "POST",
+    headers: { "X-API-KEY": process.env.SERPER_API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then(function (r) { return r.ok ? r.json() : {}; });
 }
 
 // ─────────────────────────────────────────────────────────────
