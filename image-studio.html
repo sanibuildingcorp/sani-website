@@ -78,6 +78,8 @@
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
   .x-btn{background:transparent;border:1px solid var(--line);color:var(--ink-muted);width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
   .x-btn:hover{border-color:var(--bad);color:var(--bad)}
+  .kw-chip{display:inline-block;background:var(--navy-3);border:1px solid var(--line);color:var(--gold);font-size:12px;padding:5px 11px;border-radius:999px;margin:0 6px 6px 0;cursor:pointer;font-family:inherit}
+  .kw-chip:hover{border-color:var(--gold);filter:brightness(1.1)}
 
   .err{display:none;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.4);color:#ffb4b4;border-radius:10px;padding:10px 13px;font-size:13px;margin-top:12px}
   .err.show{display:block}
@@ -171,6 +173,7 @@
       <div class="label">Alt text (for SEO &amp; accessibility)</div>
       <input class="txt" id="alt" placeholder="e.g. Freshly painted modern living room in a Brooklyn apartment">
       <div class="hint">Saved into the page when you publish. Background slots don't use alt.</div>
+      <div id="kw-wrap" style="display:none;margin-top:10px"></div>
     </div>
 
     <div class="row" style="margin-top:14px">
@@ -324,6 +327,7 @@ function selectSlot(i){
   var btns = document.querySelectorAll(".slot");
   for(var k=0;k<btns.length;k++){ btns[k].classList.toggle("active", k===i); }
   document.getElementById("suggest-hint").textContent = s.isExternal ? "External slot — will be localized on publish" : "Slot: " + s.path;
+  document.getElementById("kw-wrap").style.display = "none";
   resetPubBtn();
   document.getElementById("pub-done").classList.remove("show");
   document.getElementById("prompt-card").scrollIntoView({behavior:"smooth"});
@@ -352,6 +356,7 @@ async function suggest(){
     if(data.prompt) document.getElementById("prompt").value = data.prompt;
     if(data.orientation) document.getElementById("orient").value = data.orientation;
     if(data.alt && s.kind!=="background" && !document.getElementById("alt").value.trim()) document.getElementById("alt").value = data.alt;
+    if(s.kind!=="background") renderKeywords(data.keywords, data.keywordsFromGSC);
     toast("🪄 Drafted from the page");
   } catch(e){
     showErr("gen-err", e.message);
@@ -560,6 +565,25 @@ async function publish(){
     showErr("pub-err", e.message);
     btn.disabled=false; btn.innerHTML="✅ Approve & Publish";
   }
+}
+
+var lastKeywords = [];
+function renderKeywords(arr, fromGSC){
+  lastKeywords = arr || [];
+  var wrap = document.getElementById("kw-wrap");
+  if(!lastKeywords.length){ wrap.style.display="none"; wrap.innerHTML=""; return; }
+  var label = fromGSC ? "📊 Your real Google keywords — tap to add to alt:" : "Suggested keywords — tap to add:";
+  var chips = lastKeywords.map(function(k,i){ return '<button class="kw-chip" onclick="insertKwIdx('+i+')">'+esc(k)+'</button>'; }).join("");
+  wrap.innerHTML = '<div class="hint" style="margin:0 0 6px">'+label+'</div>'+chips;
+  wrap.style.display = "block";
+}
+function insertKwIdx(i){
+  var w = lastKeywords[i]; if(!w) return;
+  var a = document.getElementById("alt");
+  var cur = a.value.trim();
+  if(cur.toLowerCase().indexOf(w.toLowerCase()) !== -1){ toast("Already in alt"); return; }
+  a.value = cur ? (cur + " " + w) : w;
+  toast("Added: " + w);
 }
 
 var toastTimer=null;
