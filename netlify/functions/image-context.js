@@ -1,13 +1,14 @@
 // netlify/functions/image-context.js
-// Two jobs for the Image Studio:
-//   action "list"    -> fetch a live page, return its replaceable images (those under
-//                       images/) with the nearby heading/section as context.
-//   action "suggest" -> read the page topic + chosen image slot, ask gpt-4o-mini for a
-//                       photorealistic prompt + best orientation for that slot.
+// Image Studio brain. Two actions:
+//   "list"    -> fetch a live page, return EVERY image it uses: local <img>, local CSS
+//                backgrounds, AND external (e.g. Unsplash) images. Each item carries the
+//                exact reference string (for safe HTML patching), current alt, a suggested
+//                local target path, and whether it's external.
+//   "suggest" -> gpt-4o-mini drafts a photorealistic prompt + orientation for a chosen slot.
 //
-// POST { action:"list", page:"bathroom-renovation" }
+// POST { action:"list", page:"painting" }
 // POST { action:"suggest", page, src, alt, context, pageTitle }
-// Requires Netlify env var: OPENAI_API_KEY  (only for "suggest")
+// Requires OPENAI_API_KEY (only for "suggest").
 
 const SITE_ORIGIN = process.env.SITE_ORIGIN || "https://www.sanibuildingcorp.com";
 
@@ -32,6 +33,7 @@ exports.handler = async function (event) {
 async function listImages(body) {
   const slug = String(body.page || "").trim();
   const url = pageUrl(slug);
+  const dir = (slug && slug !== "index" && slug !== "home") ? slug : "home";
 
   let html = "";
   let res = await fetch(url, { headers: { "User-Agent": "SaniImageStudio/1.0" } });
@@ -41,37 +43,79 @@ async function listImages(body) {
   if (res.ok) html = await res.text();
   if (!html) return json(200, { pageTitle: slug, images: [], note: "Could not load that page." });
 
-  const pageTitle = (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || slug;
-  const h1 = (html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || "";
+  const pageTitle = strip((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || slug);
 
-  const images = [];
-  const seen = {};
+  const out = [];
+  const seenRef = {};
+  const usedPaths = {};
+  let counter = 0;
+
+  function uniqueLocalPath(base) {
+    let p = "images/" + dir + "/" + base + ".jpg";
+    let n = 2;
+    while (usedPaths[p]) { p = "images/" + dir + "/" + base + "-" + n + ".jpg"; n++; }
+    usedPaths[p] = true;
+    return p;
+  }
+
+  function pushItem(rawRef, alt, context, kind) {
+    if (!rawRef) return;
+    if (rawRef.indexOf("data:") === 0 || rawRef.charAt(0) === "#") return;  // skip data/svg-ref
+    if (/\.svg(\?|$)/i.test(rawRef)) return;                                 // skip svg icons
+    if (seenRef[rawRef]) return;
+    if (!/\.(jpg|jpeg|png|webp)(\?|$)/i.test(rawRef) && !/images\//i.test(rawRef) && !/unsplash|cloudinary|imgix|githubusercontent/i.test(rawRef)) return;
+    seenRef[rawRef] = true;
+    counter++;
+
+    const normalized = normalizePath(rawRef);
+    const isLocal = /^images\//.test(normalized);
+    let path, displaySrc, isExternal;
+
+    if (isLocal) {
+      path = normalized;
+      displaySrc = SITE_ORIGIN + "/" + normalized;
+      isExternal = false;
+      usedPaths[path] = true;
+    } else {
+      isExternal = true;
+      displaySrc = /^https?:\/\//i.test(rawRef) ? rawRef : (SITE_ORIGIN + "/" + normalized);
+      const base = slugify(context || alt || (kind === "background" ? "bg" : "photo")) || ("photo-" + counter);
+      path = uniqueLocalPath((kind === "background" && /hero/i.test(context || "")) ? "hero" : base);
+    }
+
+    out.push({
+      ref: rawRef,                 // exact string in the page HTML (for patching)
+      path: path,                  // local target path to publish to
+      displaySrc: displaySrc,      // thumbnail
+      alt: alt || "",
+      context: context || prettyFromPath(path),
+      kind: kind,                  // "img" | "background"
+      isExternal: isExternal,
+    });
+  }
+
+  // PASS 1 — <img> tags
   const imgRe = /<img\b[^>]*>/gi;
   let m;
   while ((m = imgRe.exec(html)) !== null) {
     const tag = m[0];
-    const srcRaw = (tag.match(/\bsrc\s*=\s*["']([^"']+)["']/i) || [])[1] || "";
+    const src = (tag.match(/\bsrc\s*=\s*["']([^"']+)["']/i) || [])[1]
+             || (tag.match(/\bdata-src\s*=\s*["']([^"']+)["']/i) || [])[1] || "";
     const alt = strip((tag.match(/\balt\s*=\s*["']([^"']*)["']/i) || [])[1] || "");
-    const path = normalizePath(srcRaw);
-    if (!path || !/^images\//.test(path)) continue;          // only replaceable local images
-    if (/\.svg$/i.test(path)) continue;                       // skip icons/logos
-    if (seen[path]) continue;
-    seen[path] = true;
-
-    // nearest preceding heading for context
     const before = html.slice(0, m.index);
     const hMatch = before.match(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>(?![\s\S]*<h[1-3])/i);
     const heading = hMatch ? strip(hMatch[1]) : "";
-
-    images.push({
-      path: path,                                  // repo path to write to
-      displaySrc: SITE_ORIGIN + "/" + path,        // absolute, for thumbnail
-      alt: alt,
-      context: heading || alt || "",
-    });
+    pushItem(src, alt, heading || alt, "img");
   }
 
-  return json(200, { pageTitle: strip(pageTitle), h1: strip(h1), images: images });
+  // PASS 2 — CSS background url(...) (inline style + <style> blocks)
+  const urlRe = /url\(\s*['"]?([^'")]+?)['"]?\s*\)/gi;
+  let u;
+  while ((u = urlRe.exec(html)) !== null) {
+    pushItem(u[1].trim(), "", null, "background");
+  }
+
+  return json(200, { pageTitle: pageTitle, images: out });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -81,11 +125,11 @@ async function suggestPrompt(body) {
 
   const sys = "You write prompts for an AI image generator, for a New York City renovation "
     + "and handyman contractor's website (Sani Building Corp). Given the page topic and one "
-    + "image slot on that page, write ONE concise photorealistic prompt (1-2 sentences) for the "
-    + "ideal photo for that slot. It must show real, finished, professional contractor work that "
-    + "fits the page. No people, no text, no watermark. Also pick the best orientation: "
-    + "\"hero\" (wide banner with space for text), \"wide\" (section/card), \"square\", or \"tall\". "
-    + "Return ONLY JSON: {\"prompt\":\"...\",\"orientation\":\"wide\"}";
+    + "image slot, write ONE concise photorealistic prompt (1-2 sentences) for the ideal photo "
+    + "for that slot — real, finished, professional contractor work that fits the page. No people, "
+    + "no text, no watermark. Also write a short SEO alt text (under 12 words) describing the photo, "
+    + "and pick orientation: \"hero\", \"wide\", \"square\", or \"tall\". "
+    + "Return ONLY JSON: {\"prompt\":\"...\",\"alt\":\"...\",\"orientation\":\"wide\"}";
 
   const user = "PAGE: " + (body.pageTitle || body.page || "") + "\n"
     + "IMAGE SLOT FILE: " + (body.src || "") + "\n"
@@ -106,11 +150,12 @@ async function suggestPrompt(body) {
 
   let txt = ((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "").trim();
   txt = txt.replace(/```json|```/g, "").trim();
-  let out;
-  try { out = JSON.parse(txt); }
-  catch (e) { out = { prompt: txt, orientation: "wide" }; }
-  if (!out.orientation) out.orientation = "wide";
-  return json(200, out);
+  let outp;
+  try { outp = JSON.parse(txt); }
+  catch (e) { outp = { prompt: txt, alt: "", orientation: "wide" }; }
+  if (!outp.orientation) outp.orientation = "wide";
+  if (!outp.alt) outp.alt = "";
+  return json(200, outp);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -121,10 +166,21 @@ function pageUrl(slug) {
 function normalizePath(src) {
   let s = String(src || "").trim();
   if (!s || s.indexOf("data:") === 0) return "";
+  if (s.charAt(0) === "#") return "";
   s = s.split("#")[0].split("?")[0];
-  s = s.replace(/^https?:\/\/[^/]+\//i, "");   // drop origin
-  s = s.replace(/^\/+/, "");                    // drop leading slash
+  s = s.replace(/^https?:\/\/[^/]+\//i, "");
+  s = s.replace(/^\.?\//, "");
   return s;
+}
+function prettyFromPath(path) {
+  const parts = path.replace(/^images\//, "").split("/");
+  const file = (parts.pop() || "").replace(/\.(jpg|jpeg|png|webp)$/i, "").replace(/[-_]/g, " ");
+  const folder = parts.length ? parts[0].replace(/[-_]/g, " ") : "";
+  const cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
+  return folder ? (cap(folder) + ": " + file) : cap(file);
+}
+function slugify(s) {
+  return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
 }
 function strip(s) {
   return String(s || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
