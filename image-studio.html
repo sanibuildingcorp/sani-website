@@ -173,6 +173,10 @@
       <div class="label">Alt text (for SEO &amp; accessibility)</div>
       <input class="txt" id="alt" placeholder="e.g. Freshly painted modern living room in a Brooklyn apartment">
       <div class="hint">Saved into the page when you publish. Background slots don't use alt.</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input class="txt" id="kw-seed" style="flex:1;min-width:150px" placeholder="research what people search, e.g. handyman near me">
+        <button class="btn-ghost btn" id="research-btn" onclick="researchKeywords()" style="padding:9px 14px;font-size:13px;white-space:nowrap">🔎 Live keywords</button>
+      </div>
       <div id="kw-wrap" style="display:none;margin-top:10px"></div>
     </div>
 
@@ -356,7 +360,7 @@ async function suggest(){
     if(data.prompt) document.getElementById("prompt").value = data.prompt;
     if(data.orientation) document.getElementById("orient").value = data.orientation;
     if(data.alt && s.kind!=="background" && !document.getElementById("alt").value.trim()) document.getElementById("alt").value = data.alt;
-    if(s.kind!=="background") renderKeywords(data.keywords, data.keywordsFromGSC);
+    if(s.kind!=="background") renderKeywords(data.keywords, data.keywordScope);
     toast("🪄 Drafted from the page");
   } catch(e){
     showErr("gen-err", e.message);
@@ -568,14 +572,44 @@ async function publish(){
 }
 
 var lastKeywords = [];
-function renderKeywords(arr, fromGSC){
+function renderKeywords(arr, scope){
   lastKeywords = arr || [];
   var wrap = document.getElementById("kw-wrap");
   if(!lastKeywords.length){ wrap.style.display="none"; wrap.innerHTML=""; return; }
-  var label = fromGSC ? "📊 Your real Google keywords — tap to add to alt:" : "Suggested keywords — tap to add:";
+  var label = scope === "page"
+    ? "📊 Keywords this page shows for in Google — tap to add:"
+    : (scope === "live"
+        ? "🔎 What people actually search on Google — tap to add:"
+        : (scope === "site"
+            ? "📊 Your site's top Google keywords (use only if relevant) — tap to add:"
+            : "Suggested keywords — tap to add:"));
   var chips = lastKeywords.map(function(k,i){ return '<button class="kw-chip" onclick="insertKwIdx('+i+')">'+esc(k)+'</button>'; }).join("");
   wrap.innerHTML = '<div class="hint" style="margin:0 0 6px">'+label+'</div>'+chips;
   wrap.style.display = "block";
+}
+
+async function researchKeywords(){
+  var seed = document.getElementById("kw-seed").value.trim();
+  if(!seed){ seed = (currentPageTitle||"").replace(/\s*[|–-].*$/,"").trim() || document.getElementById("page").value; }
+  if(!seed){ toast("Type a search to research"); return; }
+  var btn = document.getElementById("research-btn");
+  var orig = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<span class="spin-sm" style="border-top-color:var(--gold)"></span>Searching…';
+  try {
+    var r = await fetch("/.netlify/functions/image-context", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ action:"research", seed:seed })
+    });
+    var data = await r.json();
+    if(!r.ok) throw new Error(data.error || "Research failed");
+    renderKeywords(data.keywords || [], "live");
+    if(!(data.keywords||[]).length) toast("No suggestions — try a different seed");
+    else toast("🔎 " + data.keywords.length + " live searches");
+  } catch(e){
+    showErr("gen-err", e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = orig;
+  }
 }
 function insertKwIdx(i){
   var w = lastKeywords[i]; if(!w) return;
