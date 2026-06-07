@@ -13,7 +13,7 @@
     --navy:#0b1828; --navy-2:#122740; --navy-3:#0e2034;
     --gold:#d4b572; --gold-2:#c9a84c; --gold-soft:rgba(212,181,114,.14);
     --ink:#eaf0f7; --ink-muted:#8ea3bd; --line:rgba(255,255,255,.12); --line-soft:rgba(255,255,255,.06);
-    --ok:#3ecf8e; --bad:#ff6b6b;
+    --ok:#3ecf8e; --bad:#ff6b6b; --ext:#5aa9ff;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--navy);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;line-height:1.5}
@@ -54,15 +54,19 @@
   .btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
   .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
 
-  /* slot grid */
-  .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
-  .slot{border:2px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;background:var(--navy-3);transition:border-color .15s}
+  .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .slot{border:2px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;background:var(--navy-3);transition:border-color .15s;position:relative}
   .slot:hover{border-color:var(--gold)}
   .slot.active{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft)}
-  .slot .thumb{width:100%;height:84px;object-fit:cover;display:block;background:#0a1422}
+  .slot .thumb{width:100%;height:88px;object-fit:cover;display:block;background:#0a1422}
+  .slot .tag{position:absolute;top:6px;left:6px;font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:999px;text-transform:uppercase}
+  .tag-img{background:rgba(62,207,142,.92);color:#06281a}
+  .tag-bg{background:rgba(212,181,114,.92);color:#2a1f06}
+  .tag-ext{background:rgba(90,169,255,.92);color:#04203f}
   .slot .meta{padding:7px 8px}
   .slot .meta .ctx{font-size:11px;color:var(--ink);font-weight:600;line-height:1.3;max-height:28px;overflow:hidden}
   .slot .meta .pth{font-size:10px;color:var(--ink-muted);margin-top:3px;word-break:break-all}
+  .slot .meta .altx{font-size:10px;color:var(--ink-muted);margin-top:3px;font-style:italic;max-height:26px;overflow:hidden}
 
   #result{display:none}
   .loading{text-align:center;padding:34px 10px;color:var(--ink-muted)}
@@ -77,6 +81,8 @@
   .err.show{display:block}
   .done{display:none;background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.4);color:#a8ecca;border-radius:10px;padding:12px 14px;font-size:13px;margin-top:12px}
   .done.show{display:block}
+  .warn{display:none;background:rgba(245,200,90,.1);border:1px solid rgba(245,200,90,.4);color:#f0dca0;border-radius:10px;padding:11px 13px;font-size:12.5px;margin-top:10px}
+  .warn.show{display:block}
 
   #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--navy-3);border:1px solid var(--gold);color:var(--ink);padding:12px 20px;border-radius:999px;font-size:13px;transition:transform .3s;z-index:90;max-width:90%}
   #toast.show{transform:translateX(-50%) translateY(0)}
@@ -100,13 +106,13 @@
     <h1>🎨 Image Studio</h1>
     <span class="badge">Nano Banana Pro</span>
   </header>
-  <p class="sub">Pick a page, let AI read it, generate a matching photo, and publish straight to your site.</p>
+  <p class="sub">Pick a page, swap any photo, set its alt text, and publish straight to your site.</p>
 
   <div class="notice">
-    <b>Use AI for backgrounds & thematic slots.</b> For your <b>Projects / Gallery</b> and the <b>owner photo</b>, use real photos — AI rooms carry a hidden SynthID watermark and can mislead customers.
+    <b>Use AI for backgrounds & thematic slots.</b> For your <b>Projects / Gallery</b> and the <b>owner photo</b>, use real photos — AI rooms carry a hidden SynthID watermark.
   </div>
 
-  <!-- STEP 1: page -->
+  <!-- STEP 1 -->
   <div class="card">
     <h3><span class="step">1</span> Choose a page</h3>
     <div class="row">
@@ -130,42 +136,48 @@
         <button class="btn" style="width:100%" id="read-btn" onclick="loadPage()">📄 Read page</button>
       </div>
     </div>
-    <div class="hint">AI scans the live page and lists the photos you can replace. <button class="linkbtn" onclick="toggleManual()">Skip — prompt freely instead</button></div>
+    <div class="hint">Lists every photo on the page — local, background, or hotlinked. <button class="linkbtn" onclick="toggleManual()">Skip — prompt freely</button></div>
     <div class="err" id="read-err"></div>
   </div>
 
-  <!-- STEP 2: slots -->
+  <!-- STEP 2 -->
   <div class="card" id="slots-card" style="display:none">
     <h3><span class="step">2</span> Pick the photo to replace <span class="muted" id="slots-page" style="font-weight:400;font-size:12px;margin-left:6px"></span></h3>
     <div class="slots" id="slots"></div>
-    <div class="hint" id="slots-empty" style="display:none">No replaceable images found on that page.</div>
+    <div class="hint" id="slots-empty" style="display:none">No photos found on that page (it may use gradients only).</div>
   </div>
 
-  <!-- STEP 3: prompt -->
+  <!-- STEP 3 -->
   <div class="card" id="prompt-card" style="display:none">
-    <h3><span class="step">3</span> Prompt &amp; generate</h3>
+    <h3><span class="step">3</span> Prompt, alt &amp; generate</h3>
 
     <div class="label">What to generate</div>
-    <textarea id="prompt" rows="4" placeholder="Describe the photo — or tap “Suggest from page” to let AI write it for you."></textarea>
+    <textarea id="prompt" rows="4" placeholder="Describe the photo — or tap “Suggest from page”."></textarea>
     <div style="margin-top:8px">
       <button class="btn-ghost btn" id="suggest-btn" onclick="suggest()" style="padding:9px 14px;font-size:13px">🪄 Suggest from page</button>
       <span class="hint" id="suggest-hint" style="margin-left:8px"></span>
+    </div>
+
+    <div id="alt-wrap" style="margin-top:14px">
+      <div class="label">Alt text (for SEO &amp; accessibility)</div>
+      <input class="txt" id="alt" placeholder="e.g. Freshly painted modern living room in a Brooklyn apartment">
+      <div class="hint">Saved into the page when you publish. Background slots don't use alt.</div>
     </div>
 
     <div class="row" style="margin-top:14px">
       <div>
         <div class="label">Orientation</div>
         <select id="orient">
-          <option value="wide">Wide 16:9 (cards, sections)</option>
-          <option value="hero">Hero banner (ultra-wide)</option>
+          <option value="wide">Wide 16:9</option>
+          <option value="hero">Hero banner</option>
           <option value="square">Square 1:1</option>
-          <option value="tall">Tall 3:4 (portrait)</option>
+          <option value="tall">Tall 3:4</option>
         </select>
       </div>
       <div>
         <div class="label">Destination path in repo</div>
-        <input class="txt" id="path" placeholder="images/services-strip/kitchen.jpg">
-        <div class="hint">Writing to a path a page already uses = it auto-updates on deploy.</div>
+        <input class="txt" id="path" placeholder="images/painting/hero.jpg">
+        <div class="hint" id="path-hint">Where the photo file is saved.</div>
       </div>
     </div>
 
@@ -187,10 +199,11 @@
       <img id="preview" alt="generated preview">
       <div class="actions">
         <button class="btn-ghost btn" onclick="generate()">↻ Regenerate</button>
-        <button class="btn" id="pub-btn" onclick="publish()">✅ Approve &amp; Publish to site</button>
+        <button class="btn" id="pub-btn" onclick="publish()">✅ Approve &amp; Publish</button>
       </div>
       <div class="hint" id="pub-target"></div>
       <div class="err" id="pub-err"></div>
+      <div class="warn" id="pub-warn"></div>
       <div class="done" id="pub-done"></div>
     </div>
   </div>
@@ -199,7 +212,6 @@
 <div id="toast"></div>
 
 <script>
-/* skip the password gate when embedded inside the (already-authenticated) dashboard iframe */
 (function(){
   var embedded = false;
   try { embedded = window.self !== window.top; } catch(e){ embedded = true; }
@@ -215,7 +227,6 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){retu
 function showErr(id,msg){ var e=document.getElementById(id); e.textContent="⚠️ "+msg; e.classList.add("show"); }
 function hideErr(id){ document.getElementById(id).classList.remove("show"); }
 
-/* ---------- STEP 1: read page ---------- */
 var slots = [];
 var selectedSlot = -1;
 var currentPageTitle = "";
@@ -234,6 +245,7 @@ async function loadPage(){
     if(!r.ok) throw new Error(data.error || "Could not read page");
     slots = data.images || [];
     currentPageTitle = data.pageTitle || page || "Home";
+    selectedSlot = -1;
     renderSlots();
     document.getElementById("slots-card").style.display = "block";
     document.getElementById("slots-page").textContent = "on “" + currentPageTitle + "”";
@@ -245,14 +257,23 @@ async function loadPage(){
   }
 }
 
+function tagFor(s){
+  if(s.isExternal) return '<span class="tag tag-ext">🌐 External</span>';
+  if(s.kind==="background") return '<span class="tag tag-bg">🎛 Background</span>';
+  return '<span class="tag tag-img">🖼 Photo</span>';
+}
+
 function renderSlots(){
   var host = document.getElementById("slots");
   document.getElementById("slots-empty").style.display = slots.length ? "none" : "block";
   host.innerHTML = slots.map(function(s,i){
     return '<div class="slot" data-i="'+i+'" onclick="selectSlot('+i+')">'
-      + '<img class="thumb" src="'+esc(s.displaySrc)+'" onerror="this.style.opacity=.25;this.alt=\'(missing)\'">'
+      + tagFor(s)
+      + '<img class="thumb" src="'+esc(s.displaySrc)+'" onerror="this.style.opacity=.25">'
       + '<div class="meta"><div class="ctx">'+esc(s.context||"(image)")+'</div>'
-      + '<div class="pth">'+esc(s.path)+'</div></div></div>';
+      + '<div class="pth">'+esc(s.path)+'</div>'
+      + (s.kind==="img" && s.alt ? '<div class="altx">alt: '+esc(s.alt)+'</div>' : '')
+      + '</div></div>';
   }).join("");
 }
 
@@ -260,20 +281,27 @@ function selectSlot(i){
   selectedSlot = i;
   var s = slots[i];
   document.getElementById("path").value = s.path;
+  document.getElementById("alt").value = s.alt || "";
+  // alt only matters for content photos
+  document.getElementById("alt-wrap").style.display = (s.kind === "background") ? "none" : "block";
+  document.getElementById("path-hint").textContent = s.isExternal
+    ? "External photo → publishing saves it locally here and points the page at it."
+    : "Replaces this photo. Keep the path to overwrite in place.";
   var btns = document.querySelectorAll(".slot");
   for(var k=0;k<btns.length;k++){ btns[k].classList.toggle("active", k===i); }
-  document.getElementById("suggest-hint").textContent = "Slot: " + s.path;
+  document.getElementById("suggest-hint").textContent = s.isExternal ? "External slot — will be localized on publish" : "Slot: " + s.path;
   document.getElementById("prompt-card").scrollIntoView({behavior:"smooth"});
 }
 
 function toggleManual(){
+  selectedSlot = -1;
+  document.getElementById("alt-wrap").style.display = "block";
   document.getElementById("prompt-card").style.display = "block";
   document.getElementById("prompt-card").scrollIntoView({behavior:"smooth"});
 }
 
-/* ---------- STEP 3a: AI suggest ---------- */
 async function suggest(){
-  if(selectedSlot < 0){ showErr("gen-err","Pick a photo slot above first (or just type your own prompt)."); return; }
+  if(selectedSlot < 0){ showErr("gen-err","Pick a photo above first (or just type your own prompt)."); return; }
   hideErr("gen-err");
   var s = slots[selectedSlot];
   var btn = document.getElementById("suggest-btn");
@@ -287,7 +315,8 @@ async function suggest(){
     if(!r.ok) throw new Error(data.error || "Suggestion failed");
     if(data.prompt) document.getElementById("prompt").value = data.prompt;
     if(data.orientation) document.getElementById("orient").value = data.orientation;
-    toast("🪄 Prompt drafted from the page");
+    if(data.alt && s.kind!=="background" && !document.getElementById("alt").value.trim()) document.getElementById("alt").value = data.alt;
+    toast("🪄 Drafted from the page");
   } catch(e){
     showErr("gen-err", e.message);
   } finally {
@@ -295,7 +324,6 @@ async function suggest(){
   }
 }
 
-/* ---------- STEP 3b: generate ---------- */
 var currentImage = null, loadingTimer = null;
 
 async function generate(){
@@ -303,6 +331,7 @@ async function generate(){
   if(!prompt){ showErr("gen-err","Type a prompt (or tap “Suggest from page”)."); return; }
   hideErr("gen-err"); hideErr("pub-err");
   document.getElementById("pub-done").classList.remove("show");
+  document.getElementById("pub-warn").classList.remove("show");
 
   var btn = document.getElementById("gen-btn");
   btn.disabled = true; btn.innerHTML = '<span class="spin-sm"></span>Generating…';
@@ -330,7 +359,7 @@ async function generate(){
     document.getElementById("preview").src = currentImage;
     document.getElementById("loading").style.display = "none";
     document.getElementById("preview-wrap").style.display = "block";
-    document.getElementById("pub-target").textContent = "Will publish to: " + (document.getElementById("path").value.trim() || "(set a destination path)");
+    document.getElementById("pub-target").textContent = "Will save to: " + (document.getElementById("path").value.trim() || "(set a destination path)");
     toast("✨ Image generated");
   } catch(e){
     clearInterval(loadingTimer);
@@ -347,7 +376,7 @@ function pollJob(jobId){
     var attempts=0, max=26;
     function poll(){
       attempts++;
-      if(attempts>max){ reject(new Error("Timed out — Gemini took too long. Try a shorter prompt.")); return; }
+      if(attempts>max){ reject(new Error("Timed out — try a shorter prompt.")); return; }
       fetch("/.netlify/functions/get-render-status?jobId="+encodeURIComponent(jobId))
         .then(function(r){ return r.json(); })
         .then(function(d){
@@ -361,7 +390,6 @@ function pollJob(jobId){
   });
 }
 
-/* ---------- optimize + publish ---------- */
 function optimize(dataUrl, maxW, quality){
   return new Promise(function(resolve){
     var img = new Image();
@@ -380,9 +408,26 @@ function optimize(dataUrl, maxW, quality){
 async function publish(){
   if(!currentImage){ toast("Generate an image first"); return; }
   var path = document.getElementById("path").value.trim();
-  if(!path){ showErr("pub-err","Set a destination path (e.g. images/services-strip/kitchen.jpg)."); return; }
+  if(!path){ showErr("pub-err","Set a destination path."); return; }
   hideErr("pub-err");
-  if(!confirm("Publish this image to your LIVE site?\n\nIt will be committed to:\n"+path+"\n\nThe page using that path updates in about a minute.")) return;
+  document.getElementById("pub-warn").classList.remove("show");
+
+  var slot = (selectedSlot >= 0) ? slots[selectedSlot] : null;
+  var page = document.getElementById("page").value;
+  var alt = document.getElementById("alt").value.trim();
+  var kind = slot ? slot.kind : "img";
+
+  // Decide whether we need to rewrite the page's HTML reference
+  var needPatch = false;
+  if(slot){
+    var altChanged = (kind==="img") && (alt !== (slot.alt||""));
+    if(slot.isExternal || path !== slot.path || altChanged) needPatch = true;
+  }
+
+  var msg = needPatch
+    ? "Publish to your LIVE site?\n\nImage saved to:\n"+path+"\n\nAnd “"+(currentPageTitle||page||"the page")+"” will be updated to use it"+(kind==="img"?" (with your alt text)":"")+".\n\nThe page updates in ~1 minute."
+    : "Publish to your LIVE site?\n\nImage saved to:\n"+path+"\n\nUpdates in ~1 minute.";
+  if(!confirm(msg)) return;
 
   var btn = document.getElementById("pub-btn");
   btn.disabled=true; btn.innerHTML='<span class="spin-sm"></span>Publishing…';
@@ -390,15 +435,31 @@ async function publish(){
     var orient = document.getElementById("orient").value;
     var maxW = (orient==="square"||orient==="tall") ? 1200 : 1600;
     var optimized = await optimize(currentImage, maxW, 0.82);
-    var r = await fetch("/.netlify/functions/publish-image", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ path:path, imageBase64:optimized, message:"Image Studio: "+path })
-    });
+
+    var r, data;
+    if(needPatch){
+      r = await fetch("/.netlify/functions/publish-image-to-page", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ page:page, imageBase64:optimized, newPath:path, currentRef:slot.ref, kind:kind, alt:alt })
+      });
+    } else {
+      r = await fetch("/.netlify/functions/publish-image", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ path:path, imageBase64:optimized, message:"Image Studio: "+path })
+      });
+    }
     var text = await r.text();
-    var data; try{ data=JSON.parse(text); }catch(e){ throw new Error("Server error while publishing. Try again in a moment."); }
+    try{ data=JSON.parse(text); }catch(e){ throw new Error("Server error while publishing. Try again."); }
     if(!r.ok){ throw new Error(data.error || "Publish failed"); }
+
+    if(data.warning){
+      var w = document.getElementById("pub-warn");
+      w.textContent = "⚠️ "+data.warning;
+      w.classList.add("show");
+    }
     var done = document.getElementById("pub-done");
-    done.innerHTML = "✅ Published to <b>"+esc(path)+"</b>. Live in ~1 minute. "
+    done.innerHTML = "✅ Saved to <b>"+esc(path)+"</b>"
+      + (data.pagePatched ? " &amp; page updated" : "") + ". Live in ~1 minute. "
       + (data.commitUrl ? '<a href="'+esc(data.commitUrl)+'" target="_blank">View commit ↗</a>' : "")
       + '<br><span class="muted" style="font-size:12px">Tip: hard-refresh (or open in private) to get past your browser cache.</span>';
     done.classList.add("show");
@@ -406,11 +467,10 @@ async function publish(){
     toast("✅ Committed to GitHub");
   } catch(e){
     showErr("pub-err", e.message);
-    btn.disabled=false; btn.innerHTML="✅ Approve & Publish to site";
+    btn.disabled=false; btn.innerHTML="✅ Approve & Publish";
   }
 }
 
-/* ---------- toast ---------- */
 var toastTimer=null;
 function toast(msg){
   var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
