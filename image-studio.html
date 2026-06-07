@@ -486,12 +486,9 @@ async function publish(){
   var alt = document.getElementById("alt").value.trim();
   var kind = slot ? slot.kind : "img";
 
-  // Decide whether we need to rewrite the page's HTML reference
-  var needPatch = false;
-  if(slot){
-    var altChanged = (kind==="img") && (alt !== (slot.alt||""));
-    if(slot.isExternal || path !== slot.path || altChanged) needPatch = true;
-  }
+  // Any selected page slot publishes through the page-patcher so it cache-busts the
+  // link (and sets alt / localizes). Only free-prompt (no slot) does a plain overwrite.
+  var needPatch = !!slot;
 
   var msg = needPatch
     ? "Publish to your LIVE site?\n\nImage saved to:\n"+path+"\n\nAnd “"+(currentPageTitle||page||"the page")+"” will be updated to use it"+(kind==="img"?" (with your alt text)":"")+".\n\nThe page updates in ~1 minute."
