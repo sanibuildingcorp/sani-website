@@ -123,18 +123,27 @@ async function suggestPrompt(body) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return json(500, { error: "OPENAI_API_KEY not set" });
 
-  const sys = "You write prompts for an AI image generator, for a New York City renovation "
-    + "and handyman contractor's website (Sani Building Corp). Given the page topic and one "
-    + "image slot, write ONE concise photorealistic prompt (1-2 sentences) for the ideal photo "
-    + "for that slot — real, finished, professional contractor work that fits the page. No people, "
-    + "no text, no watermark. Also write a short SEO alt text (under 12 words) describing the photo, "
-    + "and pick orientation: \"hero\", \"wide\", \"square\", or \"tall\". "
-    + "Return ONLY JSON: {\"prompt\":\"...\",\"alt\":\"...\",\"orientation\":\"wide\"}";
+  // Pull this site's REAL Google Search Console keywords (from the SEO Brain).
+  const kws = await topQueries();
+  const kwList = kws.map(function (k) { return k.query; }).slice(0, 40);
+  const kwText = kwList.length ? kwList.join(", ") : "(none available)";
+
+  const sys = "You write prompts for an AI image generator AND SEO alt text, for a New York City "
+    + "renovation and handyman contractor's website (Sani Building Corp). Given the page topic, one "
+    + "image slot, and a list of REAL Google Search keywords this site already gets impressions for, do this:\n"
+    + "1) Write ONE concise photorealistic image prompt (1-2 sentences) for the ideal photo for that slot — "
+    + "real, finished, professional contractor work that fits the page. No people, no text, no watermark.\n"
+    + "2) Write SEO alt text under 14 words that naturally describes the photo AND naturally includes the SINGLE "
+    + "most relevant keyword from the list (only if it fits naturally — never keyword-stuff).\n"
+    + "3) Pick the best orientation: \"hero\", \"wide\", \"square\", or \"tall\".\n"
+    + "4) Return up to 5 keywords from the list most relevant to this page/slot.\n"
+    + "Return ONLY JSON: {\"prompt\":\"...\",\"alt\":\"...\",\"orientation\":\"wide\",\"keywords\":[\"...\"]}";
 
   const user = "PAGE: " + (body.pageTitle || body.page || "") + "\n"
     + "IMAGE SLOT FILE: " + (body.src || "") + "\n"
     + "CURRENT ALT TEXT: " + (body.alt || "(none)") + "\n"
-    + "NEARBY SECTION: " + (body.context || "(none)");
+    + "NEARBY SECTION: " + (body.context || "(none)") + "\n"
+    + "REAL GOOGLE KEYWORDS (most impressions first): " + kwText;
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -152,10 +161,32 @@ async function suggestPrompt(body) {
   txt = txt.replace(/```json|```/g, "").trim();
   let outp;
   try { outp = JSON.parse(txt); }
-  catch (e) { outp = { prompt: txt, alt: "", orientation: "wide" }; }
+  catch (e) { outp = { prompt: txt, alt: "", orientation: "wide", keywords: [] }; }
   if (!outp.orientation) outp.orientation = "wide";
   if (!outp.alt) outp.alt = "";
+  if (!Array.isArray(outp.keywords)) outp.keywords = [];
+  // Fall back to top GSC keywords if the model returned none
+  if (!outp.keywords.length && kwList.length) outp.keywords = kwList.slice(0, 5);
+  outp.keywordsFromGSC = kwList.length > 0;
   return json(200, outp);
+}
+
+// Top Google Search Console queries from the SEO Brain (latest snapshot).
+async function topQueries() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) return [];
+  const h = { apikey: key, Authorization: "Bearer " + key };
+  try {
+    const snapRes = await fetch(url + "/rest/v1/seo_snapshots?select=id&order=fetched_at.desc&limit=1", { headers: h });
+    const snaps = snapRes.ok ? await snapRes.json() : [];
+    const id = snaps[0] && snaps[0].id;
+    if (!id) return [];
+    const qRes = await fetch(url + "/rest/v1/seo_queries?snapshot_id=eq." + id + "&select=query,impressions,clicks,position&order=impressions.desc&limit=40", { headers: h });
+    return qRes.ok ? await qRes.json() : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
