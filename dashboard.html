@@ -4842,15 +4842,27 @@ async function updateSeoInsight(id, status) {
 }
 
 async function runSeoNow() {
-  toast("⚡ Running SEO Brain… this takes ~15 sec");
+  toast("⚡ Step 1/2: pulling Search Console…");
   try {
-    const r = await fetch("/.netlify/functions/seo-weekly-run");
-    const data = await r.json();
-    if (!data.success) throw new Error(data.error || "Run failed");
+    // Step 1 — fetch Search Console + save to Supabase (its own 26s budget)
+    const r1 = await fetch("/.netlify/functions/fetch-search-console");
+    const t1 = await r1.text();
+    let d1; try { d1 = JSON.parse(t1); }
+    catch (_) { throw new Error("Search Console step timed out — please tap Run Now again in a moment."); }
+    if (d1 && d1.success === false) throw new Error(d1.error || "Search Console step failed");
+
+    // Step 2 — AI analysis + email (separate 26s budget)
+    toast("⚡ Step 2/2: AI analysis + email…");
+    const r2 = await fetch("/.netlify/functions/seo-ai-analyze");
+    const t2 = await r2.text();
+    let d2; try { d2 = JSON.parse(t2); }
+    catch (_) { throw new Error("Your data was saved. The AI analysis is taking longer than usual — insights/email will arrive shortly, or tap Run Now again."); }
+    if (d2 && d2.success === false) throw new Error(d2.error || "AI analysis failed");
+
     toast("✓ SEO Brain ran! Email sent. Refreshing…");
     setTimeout(renderSeoTab, 1500);
   } catch (e) {
-    toast("Run failed: " + e.message, true);
+    toast(e.message, true);
   }
 }
 
