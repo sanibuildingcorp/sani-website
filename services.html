@@ -24,15 +24,15 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
 .section-title em{font-style:italic;color:var(--gold)}
 .section-title.white{color:#fff}
 .page-hero{min-height:60vh;display:flex;align-items:flex-end;background:#0a0a12;position:relative;overflow:hidden;padding-top:68px}
-.page-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.2}
-.page-hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:44px 44px}
+.page-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:1}
+.page-hero-grid{display:none}
 .page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
 .page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 28px 56px;width:100%}
-.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:20px;text-transform:uppercase}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.7);margin-bottom:20px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,.85)}
 .breadcrumb a{color:var(--gold-light);text-decoration:none}
-.page-hero h1{font-family:'Playfair Display',serif;font-size:clamp(32px,5vw,60px);font-weight:700;color:#fff;line-height:1.05;margin-bottom:16px}
+.page-hero h1{font-family:'Playfair Display',serif;font-size:clamp(32px,5vw,60px);font-weight:700;color:#fff;line-height:1.05;margin-bottom:16px;text-shadow:0 2px 5px rgba(0,0,0,.9),0 4px 26px rgba(0,0,0,.6)}
 .page-hero h1 em{font-style:italic;color:var(--gold-light)}
-.page-hero p{font-size:16px;color:rgba(255,255,255,.6);max-width:560px;line-height:1.7;margin-bottom:28px}
+.page-hero p{font-size:16px;color:rgba(255,255,255,.92);max-width:560px;line-height:1.7;margin-bottom:28px;text-shadow:0 1px 4px rgba(0,0,0,.9),0 2px 16px rgba(0,0,0,.7)}
 .hero-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
 .hero-badge{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;padding:6px 12px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65)}
 .hero-badge.gold{border-color:var(--gold);color:var(--gold);background:rgba(200,134,10,.08)}
@@ -50,6 +50,9 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
   div[style*="grid-template-columns:2fr 1fr"]{grid-template-columns:1fr!important}
   div[style*="grid-template-columns:300px 1fr"]{grid-template-columns:1fr!important}
   div[style*="grid-template-columns:1fr 300px"]{grid-template-columns:1fr!important}
+  .svc-row{display:flex!important;flex-direction:column!important}
+  .svc-row.rev{flex-direction:column-reverse!important}
+  .svc-row>div{width:100%!important}
   div[style*="grid-template-columns:repeat(2"]{grid-template-columns:1fr!important}
   div[style*="grid-template-columns:repeat(3"]{grid-template-columns:1fr!important}
   div[style*="grid-template-columns:repeat(4"]{grid-template-columns:1fr 1fr!important}
@@ -90,7 +93,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
   <div style="max-width:1100px;margin:0 auto">
     <div style="display:grid;gap:2px;background:var(--border);border:2px solid var(--border)">
 
-      <a href="bathroom-renovation.html" style="display:grid;grid-template-columns:300px 1fr;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+      <a href="bathroom-renovation.html" class="svc-row" style="display:grid;grid-template-columns:300px 1fr;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
         <div style="background:url('https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80') center/cover;min-height:220px"></div>
         <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
           <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 01</span>
@@ -100,7 +103,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
         </div>
       </a>
 
-      <a href="kitchen-renovation.html" style="display:grid;grid-template-columns:1fr 300px;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+      <a href="kitchen-renovation.html" class="svc-row rev" style="display:grid;grid-template-columns:1fr 300px;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
         <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
           <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 02</span>
           <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--black);margin-bottom:12px">Kitchen Renovation</div>
@@ -110,7 +113,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
         <div style="background:url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80') center/cover;min-height:220px"></div>
       </a>
 
-      <a href="painting.html" style="display:grid;grid-template-columns:300px 1fr;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+      <a href="painting.html" class="svc-row" style="display:grid;grid-template-columns:300px 1fr;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
         <div style="background:url('https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=600&q=80') center/cover;min-height:220px"></div>
         <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
           <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 03</span>
@@ -120,7 +123,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
         </div>
       </a>
 
-      <a href="flooring.html" style="display:grid;grid-template-columns:1fr 300px;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+      <a href="flooring.html" class="svc-row rev" style="display:grid;grid-template-columns:1fr 300px;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
         <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
           <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 04</span>
           <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--black);margin-bottom:12px">Flooring Installation</div>
@@ -130,7 +133,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
         <div style="background:url('https://images.unsplash.com/photo-1600585152220-90363fe7e115?w=600&q=80') center/cover;min-height:220px"></div>
       </a>
 
-      <a href="carpentry.html" style="display:grid;grid-template-columns:300px 1fr;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
+      <a href="carpentry.html" class="svc-row" style="display:grid;grid-template-columns:300px 1fr;background:#fff;text-decoration:none;color:inherit;transition:background .2s;border-bottom:2px solid var(--border)">
         <div style="background:url('https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&q=80') center/cover;min-height:220px"></div>
         <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
           <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 05</span>
@@ -140,7 +143,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
         </div>
       </a>
 
-      <a href="water-damage.html" style="display:grid;grid-template-columns:1fr 300px;background:#fff;text-decoration:none;color:inherit;transition:background .2s">
+      <a href="water-damage.html" class="svc-row rev" style="display:grid;grid-template-columns:1fr 300px;background:#fff;text-decoration:none;color:inherit;transition:background .2s">
         <div style="padding:36px 40px;display:flex;flex-direction:column;justify-content:center">
           <span style="font-size:10px;letter-spacing:2.5px;color:#ccc;font-weight:500;margin-bottom:12px;display:block">SERVICE 06</span>
           <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--black);margin-bottom:12px">Water Damage Restoration</div>
