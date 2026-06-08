@@ -558,10 +558,45 @@ function renderReview(){
 }
 function esc(s){if(!s)return'';return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function generateRef(){const d=new Date();return 'SBC-'+d.getFullYear().toString().slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+Math.random().toString(36).slice(2,6).toUpperCase();}
+
+// Upload base64 photos to Supabase Storage first, return small {name,data:url} objects.
+// Keeps the estimate-request payload tiny so it never hits Netlify's 6MB limit.
+async function uploadPhotosForSubmit(ref){
+  const list=formData.photos||[];const out=[];
+  for(let i=0;i<list.length;i++){
+    const p=list[i];const data=p&&p.data;
+    if(typeof data==='string'&&data.indexOf('data:')===0){
+      try{
+        const r=await fetch('/.netlify/functions/upload-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:data,ref:ref})});
+        const j=await r.json().catch(function(){return null;});
+        if(r.ok&&j&&j.url){out.push({name:(p.name||('photo-'+(i+1))),data:j.url});continue;}
+      }catch(err){console.error('upload-photo failed for #'+(i+1),err);}
+      // If this one fails, skip it rather than bloat the payload with base64.
+    }else if(data){
+      out.push({name:(p.name||('photo-'+(i+1))),data:data}); // already a URL
+    }
+  }
+  return out;
+}
+
 async function submitForm(){
-  const btn=document.getElementById('submit-btn');btn.disabled=true;btn.textContent='Sending...';
+  const btn=document.getElementById('submit-btn');btn.disabled=true;
   const ref=generateRef();
-  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:formData.photos.length,photos:formData.photos,photoAnalysis:formData.photoAnalysis,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
+
+  // 1) Upload photos to Supabase Storage -> keep only small URLs in the payload
+  let photos=[];
+  try{
+    btn.textContent=formData.photos.length?'Uploading photos...':'Sending...';
+    photos=await uploadPhotosForSubmit(ref);
+  }catch(e){console.error('photo upload step failed',e);photos=[];}
+
+  // 2) Strip heavy base64 thumbnails out of the AI analysis (server doesn't need them)
+  const analysisLite=(formData.photoAnalysis||[]).map(function(a){
+    const c=Object.assign({},a);delete c._photoThumb;return c;
+  });
+
+  btn.textContent='Sending...';
+  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,photoAnalysis:analysisLite,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
   try{
     const res=await fetch('/.netlify/functions/estimate-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!res.ok){let m='Server error '+res.status;if(res.status===413)m='Photos too large.';btn.disabled=false;btn.textContent='Try Again';alert('Something went wrong: '+m+'\n\nRef: '+ref+'. Call (332) 277-0990.');return;}
