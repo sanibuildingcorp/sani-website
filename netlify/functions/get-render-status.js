@@ -1,53 +1,65 @@
 // netlify/functions/get-render-status.js
-// Dashboard polls this every few seconds to check if the background render is done.
-// Reads the job result from Supabase (render_jobs table).
+// Polling endpoint — checks Supabase render_jobs table for render job result.
+// Matches generate-render-background.js which WRITES to Supabase (not Netlify Blobs).
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY;
 
 exports.handler = async function (event) {
-  const jobId = (event.queryStringParameters || {}).jobId;
+  const cors = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+  };
 
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers: cors, body: "" };
+  }
+
+  const jobId = (event.queryStringParameters || {}).jobId;
   if (!jobId) {
-    return json(400, { status: "error", error: "Missing jobId" });
+    return { statusCode: 400, headers: cors, body: JSON.stringify({ error: "Missing jobId" }) };
   }
 
   try {
-    const res = await fetch(
-      SUPABASE_URL + "/rest/v1/render_jobs?id=eq." + encodeURIComponent(jobId) + "&select=*",
-      { headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY } }
-    );
+    const url = SUPABASE_URL
+      + "/rest/v1/render_jobs?id=eq." + encodeURIComponent(jobId)
+      + "&select=status,image_base64,space_description,revised_prompt,error";
+
+    const res = await fetch(url, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY
+      }
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error("Supabase read failed:", res.status, txt.slice(0, 200));
+      return { statusCode: 200, headers: cors, body: JSON.stringify({ status: "pending" }) };
+    }
+
     const rows = await res.json();
+    const row = rows && rows[0];
 
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return json(200, { status: "processing" });
+    // No row yet = background function hasn't written the first status. Still pending.
+    if (!row) {
+      return { statusCode: 200, headers: cors, body: JSON.stringify({ status: "pending" }) };
     }
 
-    const job = rows[0];
+    return {
+      statusCode: 200,
+      headers: cors,
+      body: JSON.stringify({
+        status: row.status || "pending",
+        imageBase64: row.image_base64 || null,
+        spaceDescription: row.space_description || "",
+        revisedPrompt: row.revised_prompt || "",
+        error: row.error || null
+      })
+    };
 
-    if (job.status === "done") {
-      return json(200, {
-        status: "done",
-        imageBase64: job.image_base64,
-        spaceDescription: job.space_description,
-        revisedPrompt: job.revised_prompt
-      });
-    }
-    if (job.status === "error") {
-      return json(200, { status: "error", error: job.error || "Render failed" });
-    }
-    return json(200, { status: "processing" });
-
-  } catch (err) {
-    // Treat a transient read error as "still processing" so polling retries
-    return json(200, { status: "processing" });
+  } catch (e) {
+    console.error("get-render-status error:", e.message);
+    return { statusCode: 200, headers: cors, body: JSON.stringify({ status: "pending" }) };
   }
 };
-
-function json(statusCode, obj) {
-  return {
-    statusCode: statusCode,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(obj)
-  };
-}
