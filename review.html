@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leave a Review | Sani Building Corp</title>
+<meta name="description" content="Thank you for choosing Sani Building Corp — Brooklyn's top-rated renovation contractor. Share your experience in 30 seconds.">
+<link rel="canonical" href="https://www.sanibuildingcorp.com/review">
+
+<!-- Rich text/social preview card -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.sanibuildingcorp.com/review">
+<meta property="og:title" content="How did we do? — Sani Building Corp">
+<meta property="og:description" content="Brooklyn's top-rated renovation contractor. Your review takes 30 seconds and means the world to our team.">
+<meta property="og:image" content="https://www.sanibuildingcorp.com/images/hero/home-hero.PNG">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How did we do? — Sani Building Corp">
+<meta name="twitter:description" content="Your review takes 30 seconds and means the world to our team.">
+<meta name="twitter:image" content="https://www.sanibuildingcorp.com/images/hero/home-hero.PNG">
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--gold:#c8860a;--gold-light:#f0a500;--gold-soft:#d4b572;--navy:#0a1628;--navy-2:#122740}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 22px;
+  background:radial-gradient(120% 90% at 50% 0%,#122740 0%,#0a1628 48%,#050d1a 100%);
+  color:#fff;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+
+/* faint grid + glow atmosphere */
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(240,165,0,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.035) 1px,transparent 1px);
+  background-size:46px 46px}
+body::after{content:"";position:fixed;left:50%;top:-10%;transform:translateX(-50%);width:680px;height:680px;z-index:0;pointer-events:none;
+  background:radial-gradient(circle,rgba(240,165,0,.14) 0%,transparent 60%);filter:blur(8px)}
+
+.card{position:relative;z-index:2;width:100%;max-width:480px;text-align:center;
+  background:rgba(10,22,40,.55);border:1px solid rgba(240,165,0,.22);border-top:3px solid var(--gold);
+  backdrop-filter:blur(8px);padding:48px 34px 40px;box-shadow:0 30px 70px rgba(0,0,0,.45)}
+
+.eyebrow{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:22px;
+  font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold-soft);font-weight:500}
+.eyebrow::before,.eyebrow::after{content:"";width:24px;height:1px;background:rgba(240,165,0,.45)}
+
+h1{font-family:'Playfair Display',serif;font-weight:700;font-size:clamp(30px,7vw,40px);line-height:1.08;margin-bottom:8px}
+h1 em{font-style:italic;color:var(--gold-light);display:block}
+
+.stars{font-size:34px;letter-spacing:6px;color:var(--gold-light);margin:24px 0 20px;height:42px}
+.stars span{display:inline-block;opacity:0;transform:translateY(8px) scale(.6);
+  animation:pop .45s cubic-bezier(.34,1.56,.64,1) forwards}
+.stars span:nth-child(1){animation-delay:.10s}
+.stars span:nth-child(2){animation-delay:.22s}
+.stars span:nth-child(3){animation-delay:.34s}
+.stars span:nth-child(4){animation-delay:.46s}
+.stars span:nth-child(5){animation-delay:.58s}
+@keyframes pop{to{opacity:1;transform:translateY(0) scale(1)}}
+
+.lead{font-size:15.5px;line-height:1.7;color:rgba(255,255,255,.72);max-width:380px;margin:0 auto 30px}
+
+.btn{display:block;width:100%;background:var(--gold);color:#0a1628;text-decoration:none;
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;
+  padding:18px 24px;transition:background .2s,transform .15s,box-shadow .2s;box-shadow:0 10px 26px rgba(200,134,10,.28)}
+.btn:hover{background:#a06c08;transform:translateY(-2px);box-shadow:0 14px 32px rgba(200,134,10,.36)}
+.btn .g{display:inline-flex;align-items:center;gap:9px}
+
+.sub{margin-top:16px;font-size:12.5px;letter-spacing:.4px;color:rgba(255,255,255,.42)}
+
+.foot{position:relative;z-index:2;margin-top:30px;text-align:center;font-size:12px;color:rgba(255,255,255,.4);letter-spacing:.5px}
+.foot a{color:var(--gold-soft);text-decoration:none}
+.foot .brand{font-family:'Playfair Display',serif;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.6);font-size:12px}
+.foot .brand b{color:var(--gold-light);font-weight:700}
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="eyebrow">Sani Building Corp</div>
+    <h1>How did we<em>do?</em></h1>
+    <div class="stars" aria-hidden="true"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+    <p class="lead">Thank you for trusting us with your project. We're a small Brooklyn team — a quick Google review helps more than you know.</p>
+    <a class="btn" id="reviewBtn" href="#" target="_blank" rel="noopener">
+      <span class="g">Leave a Review on Google →</span>
+    </a>
+    <div class="sub">Takes about 30 seconds · No account hassle</div>
+  </div>
+
+  <div class="foot">
+    <div class="brand">SANI <b>BUILDING</b> CORP</div>
+    <div style="margin-top:6px">Questions? <a href="tel:3322770990">332-277-0990</a></div>
+  </div>
+
+<script>
+/* ===================================================================
+   ⬇⬇⬇  PASTE YOUR GOOGLE REVIEW LINK BETWEEN THE QUOTES BELOW  ⬇⬇⬇
+   Get it from the Google app screen you screenshotted:
+   Business → Reviews → "Get more reviews" → Share / copy link
+   (it looks like  https://g.page/r/XXXXXXXXXXXX/review )
+   =================================================================== */
+var REVIEW_LINK = "https://g.page/r/CXtX_n13XF6aEBE/review";
+
+(function(){
+  var btn = document.getElementById('reviewBtn');
+  btn.href = REVIEW_LINK;
+  btn.addEventListener('click', function(){
+    if (typeof gtag === 'function') {
+      gtag('event', 'review_click', { event_category: 'engagement', event_label: 'google_review' });
+    }
+  });
+})();
+</script>
+</body>
+</html>
