@@ -31,6 +31,7 @@ exports.handler = async function (event) {
     const includeAnalysis = body.usePhotoAnalysis !== false;
     const includeDescription = body.useDescription !== false;
     const includeAnswers = body.useAnswers !== false;
+    const extraRequest = (body.extraRequest || "").trim();
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -84,6 +85,11 @@ exports.handler = async function (event) {
         `\n\nAI PHOTO ANALYSIS (preliminary, generated from the customer's photos — treat as a helpful hint, NOT confirmed fact; the contractor verifies on site):\n${analysisText}`;
     }
 
+    // ---- Contractor-added extra work (optional, e.g. from a phone call) ----
+    const extraBlock = extraRequest
+      ? `\n\nADDITIONAL WORK REQUESTED (added by the contractor after speaking with the customer — treat as CONFIRMED and authoritative; include it in the scope, labor, and materials alongside the original request):\n${extraRequest}`
+      : "";
+
     const prompt = `You are an estimator for Sani Building Corp, an NYC-metro general contractor (Manhattan, Brooklyn, Queens, Bronx, Staten Island, Long Island, Nassau). You build detailed estimates from customer requests.
 
 CUSTOMER REQUEST:
@@ -93,7 +99,7 @@ Timeline: ${request.timeline || "Not specified"}
 Address: ${customer.address || "Not specified"}
 ${descLine}
 
-${answersBlock}${analysisBlock}
+${answersBlock}${analysisBlock}${extraBlock}
 
 YOUR TASK:
 Generate a realistic, professional estimate draft for this NYC-area project. Use current NYC labor and material rates. Be specific — itemize labor by trade/task and materials by what's actually needed.
