@@ -463,14 +463,32 @@ function renderAIQuestion(q){
     setTimeout(()=>{const el=document.getElementById('ai-text-input');if(el)el.focus();},100);
   }else{
     const cls=q.type==='options-grid'?'option-grid-2':'option-stack';
-    c.innerHTML=`<div class="${cls}">${(q.options||[]).map(opt=>`<button class="option-btn" data-value="${esc(opt)}" onclick="selectAIOption(this)"><span>${esc(opt)}</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>`).join('')}</div>`;
+    const chk='<span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
+    const opts=(q.options||[]).map(opt=>`<button class="option-btn" data-value="${esc(opt)}" onclick="selectAIOption(this)"><span>${esc(opt)}</span>${chk}</button>`).join('');
+    const other=`<button class="option-btn" data-value="__other__" onclick="selectAIOtherOption(this)"><span>Other — let me explain</span>${chk}</button>`;
+    c.innerHTML=`<div class="${cls}">${opts}${other}</div><div class="input-group" id="ai-other-wrap" style="display:none;margin-top:12px"><input type="text" class="input-field" id="ai-other-input" placeholder="Tell us in your own words…" oninput="aiOtherChanged(this.value)"></div>`;
   }
 }
 function selectAIOption(el){
   el.parentElement.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');
+  var w=document.getElementById('ai-other-wrap');if(w)w.style.display='none';
   formData.serviceAnswers[currentAIQuestion.questionId]=el.dataset.value;
   document.getElementById('continue-2').disabled=false;
+}
+function selectAIOtherOption(el){
+  el.parentElement.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  var w=document.getElementById('ai-other-wrap');if(w)w.style.display='block';
+  var inp=document.getElementById('ai-other-input');
+  var v=inp?inp.value.trim():'';
+  if(v){formData.serviceAnswers[currentAIQuestion.questionId]=v;document.getElementById('continue-2').disabled=false;}
+  else{delete formData.serviceAnswers[currentAIQuestion.questionId];document.getElementById('continue-2').disabled=true;}
+  if(inp)setTimeout(function(){inp.focus();},60);
+}
+function aiOtherChanged(v){
+  if(v&&v.trim()){formData.serviceAnswers[currentAIQuestion.questionId]=v.trim();document.getElementById('continue-2').disabled=false;}
+  else{document.getElementById('continue-2').disabled=true;}
 }
 function aiTextChanged(v){
   if(v&&v.trim()){formData.serviceAnswers[currentAIQuestion.questionId]=v.trim();document.getElementById('continue-2').disabled=false;}
