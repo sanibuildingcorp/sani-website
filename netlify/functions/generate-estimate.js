@@ -2,6 +2,12 @@
 // AI scope + line-item generator.
 // Reads the customer's V3 request from Blobs, asks Claude to draft scope + pricing,
 // saves the draft back to Blobs, returns it to the dashboard.
+//
+// The dashboard can include/exclude each input before generating:
+//   usePhotoAnalysis (default true) — AI photo-analysis findings saved with the request
+//   useDescription   (default true) — customer's free-text description
+//   useAnswers       (default true) — customer's answers to the intake questions
+// Any flag omitted from the request body defaults to true (old behavior preserved).
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
@@ -15,10 +21,16 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { ref } = JSON.parse(event.body);
+    const body = JSON.parse(event.body || "{}");
+    const ref = body.ref;
     if (!ref) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
     }
+
+    // Input toggles — anything not explicitly false stays on (backwards compatible)
+    const includeAnalysis = body.usePhotoAnalysis !== false;
+    const includeDescription = body.useDescription !== false;
+    const includeAnswers = body.useAnswers !== false;
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -35,11 +47,42 @@ exports.handler = async function (event) {
     // Build the prompt
     const customer = record.customer || {};
     const request = record.request || {};
+
+    // ---- Question answers (optional) ----
     const answers = request.serviceAnswers || {};
     const answersText = Object.entries(answers)
       .filter(([_, v]) => v && String(v).trim())
       .map(([k, v]) => `- ${k.replace(/-/g, " ")}: ${v}`)
       .join("\n");
+
+    const answersBlock = includeAnswers
+      ? `CUSTOMER ANSWERS TO QUESTIONS:\n${answersText || "(no specific answers)"}`
+      : `CUSTOMER ANSWERS TO QUESTIONS:\n(excluded by contractor — do not use)`;
+
+    // ---- Description (optional) ----
+    const descLine = includeDescription
+      ? `Description: ${request.description || "(none)"}`
+      : `Description: (excluded by contractor — do not use)`;
+
+    // ---- AI photo analysis (optional) ----
+    const analysis = Array.isArray(request.photoAnalysis) ? request.photoAnalysis : [];
+    let analysisBlock = "";
+    if (includeAnalysis && analysis.length > 0) {
+      const analysisText = analysis
+        .map((a, i) => {
+          const bits = [];
+          if (a.detected) bits.push(`detected "${a.detected}"`);
+          if (a.description) bits.push(`observed: ${a.description}`);
+          if (a.recommendedAction) bits.push(`suggested fix: ${a.recommendedAction}`);
+          if (a.estimatedComplexity) bits.push(`complexity: ${a.estimatedComplexity}`);
+          if (a.confidence) bits.push(`confidence: ${a.confidence}`);
+          if (a.safetyFlag) bits.push(`SAFETY FLAG — needs in-person inspection`);
+          return `- Photo ${i + 1}: ${bits.join("; ")}`;
+        })
+        .join("\n");
+      analysisBlock =
+        `\n\nAI PHOTO ANALYSIS (preliminary, generated from the customer's photos — treat as a helpful hint, NOT confirmed fact; the contractor verifies on site):\n${analysisText}`;
+    }
 
     const prompt = `You are an estimator for Sani Building Corp, an NYC-metro general contractor (Manhattan, Brooklyn, Queens, Bronx, Staten Island, Long Island, Nassau). You build detailed estimates from customer requests.
 
@@ -48,10 +91,9 @@ Service: ${request.service || "General"}
 Property: ${request.propertyType || "Not specified"}
 Timeline: ${request.timeline || "Not specified"}
 Address: ${customer.address || "Not specified"}
-Description: ${request.description || "(none)"}
+${descLine}
 
-CUSTOMER ANSWERS TO QUESTIONS:
-${answersText || "(no specific answers)"}
+${answersBlock}${analysisBlock}
 
 YOUR TASK:
 Generate a realistic, professional estimate draft for this NYC-area project. Use current NYC labor and material rates. Be specific — itemize labor by trade/task and materials by what's actually needed.
