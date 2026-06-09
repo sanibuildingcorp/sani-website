@@ -3305,17 +3305,31 @@ async function generateRender() {
       ((req.photos && req.photos.length > 0) ? req.photos[0].data : null);
     if (photoToUse) {
       photoToUse = await new Promise(function (resolve) {
+        var original = photoToUse;
+        var isUrl = /^https?:\/\//i.test(original);
+        var done = false;
+        function finish(val) { if (done) return; done = true; resolve(val); }
+        // Safety: if load/shrink stalls, send the raw value so the spinner never hangs
+        var safety = setTimeout(function () { finish(original); }, 9000);
         var img = new Image();
+        if (isUrl) img.crossOrigin = "anonymous"; // allow canvas read on Supabase Storage URLs
         img.onload = function () {
-          var w = img.width, h = img.height, MAX = 512;
-          if (w > MAX) { h = Math.round(h * (MAX / w)); w = MAX; }
-          var c = document.createElement("canvas");
-          c.width = w; c.height = h;
-          c.getContext("2d").drawImage(img, 0, 0, w, h);
-          resolve(c.toDataURL("image/jpeg", 0.6));
+          clearTimeout(safety);
+          try {
+            var w = img.width, h = img.height, MAX = 512;
+            if (w > MAX) { h = Math.round(h * (MAX / w)); w = MAX; }
+            var c = document.createElement("canvas");
+            c.width = w; c.height = h;
+            c.getContext("2d").drawImage(img, 0, 0, w, h);
+            finish(c.toDataURL("image/jpeg", 0.6));
+          } catch (e) {
+            // Cross-origin taint blocks toDataURL — fall back to raw photo value
+            finish(original);
+          }
         };
-        img.onerror = function () { resolve(null); };
-        img.src = photoToUse;
+        img.onerror = function () { clearTimeout(safety); finish(original); };
+        // Cache-buster forces a fresh CORS request; never appended to data: URIs
+        img.src = isUrl ? (original + (original.indexOf("?") === -1 ? "?cors=1" : "&cors=1")) : original;
       });
     }
     const customPromptEl = document.getElementById("render-custom-prompt");
