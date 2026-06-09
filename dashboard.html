@@ -2902,6 +2902,20 @@ function renderEdit() {
   const laborChecked = est.showLaborCost !== false;
   const materialsChecked = est.showMaterialsCost === true;
 
+  // AI input toggles — only show a toggle for inputs this request actually has
+  var hasAnswers = !!answersHtml;
+  var hasDesc = !!(req.description && String(req.description).trim());
+  var hasAnalysis = Array.isArray(req.photoAnalysis) && req.photoAnalysis.length > 0;
+  var aiToggleStyle = "display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-soft,#cbd5e1);cursor:pointer;margin-right:16px;user-select:none";
+  var aiToggleHtml = (hasAnswers || hasDesc || hasAnalysis)
+    ? '<div style="display:flex;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line,rgba(255,255,255,.08))">' +
+        '<div style="width:100%;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-muted,#8a9bb0);margin-bottom:7px">Use for this estimate</div>' +
+        (hasAnalysis ? '<label style="' + aiToggleStyle + '"><input type="checkbox" id="use-photo-analysis" checked style="accent-color:var(--gold,#c8860a)"> AI photo analysis</label>' : '') +
+        (hasDesc ? '<label style="' + aiToggleStyle + '"><input type="checkbox" id="use-description" checked style="accent-color:var(--gold,#c8860a)"> Customer description</label>' : '') +
+        (hasAnswers ? '<label style="' + aiToggleStyle + '"><input type="checkbox" id="use-answers" checked style="accent-color:var(--gold,#c8860a)"> Question answers</label>' : '') +
+      '</div>'
+    : '';
+
   document.getElementById("edit-card").innerHTML =
     '<div class="modal-head">' +
       '<div>' +
@@ -2931,6 +2945,7 @@ function renderEdit() {
         '<div class="ai-bar-text">' +
           '<h4>✨ AI ESTIMATE GENERATOR</h4>' +
           '<p>Let Claude draft the scope of work, labor, and materials based on the customer answers. You can review and edit everything before sending.</p>' +
+          aiToggleHtml +
         '</div>' +
         '<button class="btn-ai" id="gen-btn" onclick="generateAI()">Generate Estimate</button>' +
       '</div>'
@@ -2939,6 +2954,7 @@ function renderEdit() {
         '<div class="ai-bar-text">' +
           '<h4>↻ REGENERATE</h4>' +
           '<p>Want a different draft? Re-run the AI estimator. Your current work will be replaced.</p>' +
+          aiToggleHtml +
         '</div>' +
         '<button class="btn-ai" id="gen-btn" onclick="generateAI(true)">Regenerate with AI</button>' +
       '</div>'
@@ -3696,10 +3712,16 @@ async function generateAI(isRegenerate) {
   btn.innerHTML = '<span class="ai-spin"></span> Generating…';
 
   try {
+    function aiChk(id) { var el = document.getElementById(id); return el ? el.checked : true; }
     const r = await fetch("/.netlify/functions/generate-estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref }),
+      body: JSON.stringify({
+        ref: currentRecord.ref,
+        usePhotoAnalysis: aiChk("use-photo-analysis"),
+        useDescription: aiChk("use-description"),
+        useAnswers: aiChk("use-answers")
+      }),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || "AI generation failed");
