@@ -2997,7 +2997,7 @@ function renderEdit() {
       '<button class="modal-close" onclick="closeEdit()">×</button>' +
     '</div>' +
     '<div class="cust-panel">' +
-      '<h3>📥 CUSTOMER REQUEST</h3>' +
+      '<h3 style="display:flex;align-items:center;justify-content:space-between"><span>📥 CUSTOMER REQUEST</span><button type="button" onclick="sbcEditCustomer()" style="font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold-2);padding:6px 12px;border-radius:8px;cursor:pointer">✏️ Edit</button></h3>' +
       '<div class="cust-grid">' +
         '<div class="cust-field"><span class="lbl">Name</span><span class="val">' + esc(cust.name) + '</span></div>' +
         '<div class="cust-field"><span class="lbl">Phone</span><a href="tel:' + esc(cust.phone) + '" class="val">' + esc(cust.phone) + '</a></div>' +
@@ -6552,6 +6552,104 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 })();
 </script>
 <!-- ===== END INVOICE WORK COMPLETED DATE ===== -->
+
+
+<!-- ============================================================
+     EDIT CUSTOMER INFO  (name / email / phone / address)
+     Self-contained inline editor. Saves via update-customer.js
+     then refreshes the open estimate. Does not touch render code.
+     ============================================================ -->
+<style id="sbc-editcust-styles">
+#sbc-ec-overlay{display:none;position:fixed;inset:0;z-index:99995;background:rgba(15,30,60,0.55);align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+#sbc-ec-overlay.show{display:flex}
+.sbc-ec-card{background:#fff;border:1px solid var(--line);border-radius:16px;max-width:460px;width:100%;padding:24px 22px;box-shadow:0 24px 64px rgba(15,30,60,0.25);margin:auto}
+.sbc-ec-card h3{font-family:var(--display);font-size:20px;letter-spacing:1.5px;color:var(--gold-2);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.sbc-ec-x{background:none;border:none;color:var(--ink-muted);font-size:24px;line-height:1;cursor:pointer;padding:0 4px}
+.sbc-ec-sub{font-size:12px;color:var(--ink-muted);margin-bottom:16px;line-height:1.5}
+.sbc-ec-field{margin-bottom:13px}
+.sbc-ec-field label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-muted);font-weight:600;margin-bottom:5px}
+.sbc-ec-field input{width:100%;box-sizing:border-box;padding:12px 14px;border:1.5px solid rgba(13,27,42,0.16);border-radius:8px;background:#f7f9fc;color:var(--ink);font-size:15px;font-family:var(--body);outline:none}
+.sbc-ec-field input:focus{border-color:var(--gold);background:#fff}
+.sbc-ec-err{display:none;color:var(--bad);font-size:13px;margin-top:6px;line-height:1.4}
+.sbc-ec-save{width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:var(--gold);color:#102236;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer}
+.sbc-ec-save:disabled{opacity:.6;cursor:not-allowed}
+</style>
+<div id="sbc-ec-overlay">
+  <div class="sbc-ec-card">
+    <h3><span>✏️ Edit Customer Info</span><button type="button" class="sbc-ec-x" onclick="sbcCloseEditCustomer()">×</button></h3>
+    <div class="sbc-ec-sub">Update the customer's contact details. Changes apply to this estimate and its quote/invoice.</div>
+    <div class="sbc-ec-field"><label>Name</label><input id="sbc-ec-name" type="text" placeholder="John Smith"></div>
+    <div class="sbc-ec-field"><label>Email</label><input id="sbc-ec-email" type="email" placeholder="john@email.com"></div>
+    <div class="sbc-ec-field"><label>Phone</label><input id="sbc-ec-phone" type="tel" placeholder="(347) 555-0199"></div>
+    <div class="sbc-ec-field"><label>Address</label><input id="sbc-ec-address" type="text" placeholder="Street, Borough, NY"></div>
+    <div class="sbc-ec-err" id="sbc-ec-err"></div>
+    <button class="sbc-ec-save" id="sbc-ec-save" onclick="sbcSaveCustomer()">💾 Save Changes</button>
+  </div>
+</div>
+<script>
+(function(){
+  if (window.__sbcEditCust) return;
+  window.__sbcEditCust = true;
+
+  window.sbcEditCustomer = function(){
+    var r = (typeof currentRecord !== 'undefined') ? currentRecord : null;
+    if(!r){ if(window.toast) toast('Open an estimate first', true); return; }
+    var c = r.customer || {};
+    document.getElementById('sbc-ec-name').value = c.name || '';
+    document.getElementById('sbc-ec-email').value = c.email || '';
+    document.getElementById('sbc-ec-phone').value = c.phone || '';
+    document.getElementById('sbc-ec-address').value = c.address || '';
+    document.getElementById('sbc-ec-err').style.display = 'none';
+    document.getElementById('sbc-ec-overlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  };
+  window.sbcCloseEditCustomer = function(){
+    document.getElementById('sbc-ec-overlay').classList.remove('show');
+    document.body.style.overflow = '';
+  };
+  window.sbcSaveCustomer = function(){
+    var r = (typeof currentRecord !== 'undefined') ? currentRecord : null;
+    if(!r) return;
+    var err = document.getElementById('sbc-ec-err');
+    err.style.display = 'none';
+    var customer = {
+      name: document.getElementById('sbc-ec-name').value.trim(),
+      email: document.getElementById('sbc-ec-email').value.trim(),
+      phone: document.getElementById('sbc-ec-phone').value.trim(),
+      address: document.getElementById('sbc-ec-address').value.trim()
+    };
+    if(!customer.name && !customer.email){
+      err.textContent = 'Enter at least a name or an email.';
+      err.style.display = 'block';
+      return;
+    }
+    var btn = document.getElementById('sbc-ec-save');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    fetch('/.netlify/functions/update-customer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: r.ref, customer: customer })
+    })
+    .then(function(res){ return res.json().then(function(d){ return { ok: res.ok, d: d }; }); })
+    .then(function(out){
+      btn.disabled = false; btn.textContent = '💾 Save Changes';
+      if(!out.ok){ throw new Error((out.d && out.d.error) || 'Save failed'); }
+      currentRecord.customer = out.d.customer || customer;
+      sbcCloseEditCustomer();
+      if(typeof renderEdit === 'function') renderEdit();
+      if(typeof loadEstimates === 'function') loadEstimates();
+      if(window.toast) toast('✓ Customer info updated');
+    })
+    .catch(function(e){
+      btn.disabled = false; btn.textContent = '💾 Save Changes';
+      err.textContent = e.message; err.style.display = 'block';
+    });
+  };
+  var ov = document.getElementById('sbc-ec-overlay');
+  if(ov) ov.addEventListener('click', function(e){ if(e.target === ov) sbcCloseEditCustomer(); });
+})();
+</script>
+<!-- ===== END EDIT CUSTOMER INFO ===== -->
 
 </body>
 </html>
