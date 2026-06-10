@@ -6309,5 +6309,115 @@ function showSendLinkSuccess(msg) {
   };
 })();
 </script>
+<!-- ════════════════════════════════════════════════════════════════════
+     NEW INVOICE FEATURE — paste this ENTIRE block into dashboard.html
+     right BEFORE the closing </body> tag. Nothing else to change.
+     It self-injects a "➕ New Invoice" button + entry modal.
+     ════════════════════════════════════════════════════════════════════ -->
+<div id="sbc-newinv-modal" style="display:none;position:fixed;inset:0;z-index:99990;background:rgba(5,13,26,0.9);align-items:center;justify-content:center;padding:18px;overflow-y:auto">
+  <div style="background:#0a1628;border:1px solid rgba(240,165,0,0.4);border-radius:16px;max-width:480px;width:100%;padding:26px 22px;box-shadow:0 30px 80px rgba(0,0,0,0.7);margin:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px">➕ New Invoice / Estimate</div>
+      <button onclick="sbcCloseNewInv()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:18px;cursor:pointer">×</button>
+    </div>
+    <div style="font-size:12.5px;color:rgba(255,255,255,0.55);margin-bottom:18px;line-height:1.5">Creates a record you can fill with line items, then send as a quote or invoice — same as any estimate.</div>
+
+    <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.6);font-weight:600;margin:0 0 5px">Customer Name *</label>
+    <input id="sbc-ni-name" type="text" placeholder="John Smith" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:15px;margin-bottom:13px;outline:none">
+
+    <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.6);font-weight:600;margin:0 0 5px">Customer Email *</label>
+    <input id="sbc-ni-email" type="email" placeholder="john@email.com" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:15px;margin-bottom:13px;outline:none">
+
+    <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.6);font-weight:600;margin:0 0 5px">Phone</label>
+    <input id="sbc-ni-phone" type="tel" placeholder="(347) 555-0199" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:15px;margin-bottom:13px;outline:none">
+
+    <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.6);font-weight:600;margin:0 0 5px">Job Address</label>
+    <input id="sbc-ni-address" type="text" placeholder="Street, Borough" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:15px;margin-bottom:13px;outline:none">
+
+    <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.6);font-weight:600;margin:0 0 5px">Project Title *</label>
+    <input id="sbc-ni-title" type="text" placeholder="e.g. Office Door Repairs — Manhattan" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:15px;margin-bottom:13px;outline:none">
+
+    <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.6);font-weight:600;margin:0 0 5px">Service Type</label>
+    <input id="sbc-ni-service" type="text" value="Handyman" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:15px;margin-bottom:6px;outline:none">
+
+    <div id="sbc-ni-err" style="display:none;color:#ff8a7a;font-size:13px;margin-top:8px;line-height:1.4"></div>
+
+    <button id="sbc-ni-create" onclick="sbcCreateInv()" style="width:100%;margin-top:16px;background:#c8860a;color:#0a1628;border:none;border-radius:10px;padding:15px;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Create &amp; Open Editor</button>
+  </div>
+</div>
+
+<script>
+function sbcOpenNewInv(){
+  document.getElementById('sbc-newinv-modal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function sbcCloseNewInv(){
+  document.getElementById('sbc-newinv-modal').style.display='none';
+  document.body.style.overflow='';
+}
+function sbcCreateInv(){
+  var name=document.getElementById('sbc-ni-name').value.trim();
+  var email=document.getElementById('sbc-ni-email').value.trim();
+  var title=document.getElementById('sbc-ni-title').value.trim();
+  var errEl=document.getElementById('sbc-ni-err');
+  errEl.style.display='none';
+  if(!name||!email||!title){
+    errEl.textContent='Customer name, email and project title are required.';
+    errEl.style.display='block';
+    return;
+  }
+  var btn=document.getElementById('sbc-ni-create');
+  btn.disabled=true;btn.textContent='Creating…';
+
+  fetch('/.netlify/functions/create-estimate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      customer:{
+        name:name,
+        email:email,
+        phone:document.getElementById('sbc-ni-phone').value.trim(),
+        address:document.getElementById('sbc-ni-address').value.trim()
+      },
+      projectTitle:title,
+      service:document.getElementById('sbc-ni-service').value.trim()||'Handyman'
+    })
+  })
+  .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+  .then(function(res){
+    btn.disabled=false;btn.textContent='Create & Open Editor';
+    if(!res.ok)throw new Error(res.d.error||'Create failed');
+    sbcCloseNewInv();
+    ['sbc-ni-name','sbc-ni-email','sbc-ni-phone','sbc-ni-address','sbc-ni-title'].forEach(function(id){document.getElementById(id).value='';});
+    if(typeof toast==='function')toast('✓ Created '+res.d.ref);
+    if(typeof loadEstimates==='function'){
+      loadEstimates().then(function(){
+        if(typeof openEdit==='function')openEdit(res.d.ref);
+      });
+    } else if(typeof openEdit==='function'){
+      openEdit(res.d.ref);
+    }
+  })
+  .catch(function(e){
+    btn.disabled=false;btn.textContent='Create & Open Editor';
+    errEl.textContent=e.message;
+    errEl.style.display='block';
+  });
+}
+// Close on backdrop tap
+document.getElementById('sbc-newinv-modal').addEventListener('click',function(e){
+  if(e.target.id==='sbc-newinv-modal')sbcCloseNewInv();
+});
+// Self-inject the floating "New Invoice" button (above the existing gold FAB)
+(function(){
+  var b=document.createElement('button');
+  b.id='sbc-newinv-fab';
+  b.innerHTML='➕ NEW INVOICE';
+  b.setAttribute('onclick','sbcOpenNewInv()');
+  b.style.cssText='position:fixed;bottom:96px;right:16px;z-index:9000;background:#0a1628;color:#f0a500;border:1.5px solid #c8860a;border-radius:30px;padding:13px 20px;font-size:12px;font-weight:700;letter-spacing:1.5px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.5);font-family:inherit';
+  document.body.appendChild(b);
+})();
+</script>
+<!-- ════════════════ END NEW INVOICE FEATURE ════════════════ -->
 </body>
 </html>
