@@ -54,6 +54,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"GeneralContractor","name":"Sani Building Corp","telephone":"332-277-0990","email":"contact@sanibuildingcorp.com","url":"https://www.sanibuildingcorp.com","image":"https://www.sanibuildingcorp.com/images/og/og-image.jpg","priceRange":"$$","address":{"@type":"PostalAddress","streetAddress":"2954 Brighton 12th Street","addressLocality":"Brooklyn","addressRegion":"NY","postalCode":"11235","addressCountry":"US"},"geo":{"@type":"GeoCoordinates","latitude":40.5795,"longitude":-73.9707},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"62"},"areaServed":["Brooklyn","Manhattan","Queens","Bronx","Staten Island","Nassau County","Suffolk County","Long Island"],"foundingDate":"2020","sameAs":["https://www.facebook.com/sanibuildingcorp","https://www.instagram.com/sanibuildingcorp"],"hasOfferCatalog":{"@type":"OfferCatalog","name":"Renovation Services","itemListElement":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Kitchen Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Bathroom Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Interior Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Exterior Renovation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Painting Services"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Flooring Installation"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Carpentry Services"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Water Damage Repair"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Handyman Services"}}]},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"08:00","closes":"18:00"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Saturday","opens":"08:00","closes":"16:00"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do you offer free estimates?","acceptedAnswer":{"@type":"Answer","text":"Yes — all estimates are completely free with no obligation. We visit your property, assess the space, and provide a clear written quote within 24 hours."}},{"@type":"Question","name":"How quickly can you start a project?","acceptedAnswer":{"@type":"Answer","text":"We offer same-day response for urgent repairs. For full renovations, we typically start within 1–2 weeks depending on project scope and material availability."}},{"@type":"Question","name":"Are you insured in NYC?","acceptedAnswer":{"@type":"Answer","text":"Yes. Sani Building Corp is fully insured to perform renovation work throughout New York City. We carry full liability insurance and workers' compensation."}},{"@type":"Question","name":"Do you work with property managers?","acceptedAnswer":{"@type":"Answer","text":"Absolutely — property managers are one of our primary clients. We offer fast turnaround for unit renovations, common area upgrades, and ongoing building maintenance."}},{"@type":"Question","name":"What areas do you serve?","acceptedAnswer":{"@type":"Answer","text":"We serve all 5 NYC boroughs — Brooklyn, Manhattan, Queens, Bronx, and Staten Island — plus Nassau County and Suffolk County on Long Island."}},{"@type":"Question","name":"Do you handle permits for renovation work?","acceptedAnswer":{"@type":"Answer","text":"Yes. We manage all required permits for plumbing, electrical, and structural work. All renovations meet NYC Department of Buildings requirements."}}]}</script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -526,6 +527,11 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 .cf-submit button:hover{background:var(--gold);color:#0a1628;gap:18px}
 .cf-submit button svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;transition:transform .25s}
 .cf-submit button:hover svg{transform:translateX(4px)}
+.cf-success{grid-column:span 2;background:#eefbf1;border:1px solid #2ecc71;color:#1e7a45;padding:16px 18px;font-size:14px;line-height:1.6;display:none}
+.cf-success.show{display:block}
+.cf-error{grid-column:span 2;background:#fef0ee;border:1px solid #c94f1a;color:#a03a10;padding:14px 16px;font-size:13.5px;line-height:1.6;display:none}
+.cf-error.show{display:block}
+.cf-hp{position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden}
 
 /* RIGHT: Image + headline panel */
 .contact-visual{position:relative;background:url('images/projects/sage-tile-bathroom.jpg') center/cover;min-height:600px;display:flex;flex-direction:column;justify-content:center;padding:60px 56px;overflow:hidden}
@@ -559,6 +565,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
   .scope-options{grid-template-columns:1fr}
   .cf-submit{grid-column:span 1;justify-content:stretch}
   .cf-submit button{width:100%;justify-content:center}
+  .cf-success,.cf-error{grid-column:span 1}
 }
 
 /* ══════════ CTA ══════════ */
@@ -975,7 +982,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
     <p class="hero-sub">From concept to completion, we deliver high-quality renovations, repairs, and improvements with precision, transparency, and care.</p>
 
     <div class="hero-btn-row">
-      <a href="contact.html" class="hero-btn">
+      <a href="#estimator" class="hero-btn">
         Get a Free Estimate
         <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
@@ -1134,7 +1141,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
       <p>Sani Building Corp is a full-service NYC renovation contractor delivering white-glove craftsmanship for homeowners, property managers, hotels, and multi-unit buildings since 2020. From the first sketch to the final walkthrough, our in-house team handles every trade — design, permits, demolition, construction, and finishing.</p>
       <p>We bridge the gap between a high-end design-build firm and a reliable local contractor. Honest pricing. Same-day response. Built to last.</p>
       <div class="about-cta-row">
-        <a href="contact.html" class="btn-primary">Get a Free Estimate</a>
+        <a href="#estimator" class="btn-primary">Get a Free Estimate</a>
         <a href="about.html" class="btn-secondary">Meet Our Team</a>
       </div>
     </div>
@@ -1222,56 +1229,56 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 
     <div class="gallery-grid">
       <a href="kitchen-renovation.html" class="gallery-item big">
-        <img src="images/projects/project-1.jpg" alt="Luxury kitchen renovation in Brooklyn featuring custom shaker cabinets, waterfall quartz island and brass pendant lighting — by Sani Building Corp" onerror="this.src='https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=85'">
+        <img loading="lazy" decoding="async" src="images/projects/project-1.jpg" alt="Luxury kitchen renovation in Brooklyn featuring custom shaker cabinets, waterfall quartz island and brass pendant lighting — by Sani Building Corp" onerror="this.src='https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=85'">
         <div class="gallery-caption">
           <span class="gallery-cat">Kitchen Renovation</span>
           <div class="gallery-name">Brooklyn Heights — Full Remodel</div>
         </div>
       </a>
       <a href="bathroom-renovation.html" class="gallery-item">
-        <img src="images/projects/project-2.jpg" alt="Master bathroom remodel in Park Slope with marble tile, freestanding tub and matte black fixtures" onerror="this.src='https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=85'">
+        <img loading="lazy" decoding="async" src="images/projects/project-2.jpg" alt="Master bathroom remodel in Park Slope with marble tile, freestanding tub and matte black fixtures" onerror="this.src='https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=85'">
         <div class="gallery-caption">
           <span class="gallery-cat">Bathroom</span>
           <div class="gallery-name">Park Slope Bathroom</div>
         </div>
       </a>
       <a href="painting.html" class="gallery-item">
-        <img src="images/projects/project-3.jpg" alt="Interior painting in Manhattan apartment — premium two-tone wall finish with crisp trim work" onerror="this.src='https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&q=85'">
+        <img loading="lazy" decoding="async" src="images/projects/project-3.jpg" alt="Interior painting in Manhattan apartment — premium two-tone wall finish with crisp trim work" onerror="this.src='https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&q=85'">
         <div class="gallery-caption">
           <span class="gallery-cat">Painting</span>
           <div class="gallery-name">Manhattan UWS Apartment</div>
         </div>
       </a>
       <a href="services.html" class="gallery-item tall">
-        <img src="images/projects/project-4.jpg" alt="Full apartment gut renovation in Manhattan — open-plan living space with white oak floors and custom built-ins" onerror="this.src='https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&q=85'">
+        <img loading="lazy" decoding="async" src="images/projects/project-4.jpg" alt="Full apartment gut renovation in Manhattan — open-plan living space with white oak floors and custom built-ins" onerror="this.src='https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&q=85'">
         <div class="gallery-caption">
           <span class="gallery-cat">Full Renovation</span>
           <div class="gallery-name">Tribeca Loft Transformation</div>
         </div>
       </a>
       <a href="carpentry.html" class="gallery-item">
-        <img src="images/projects/project-5.jpg" alt="Custom carpentry and millwork — handcrafted living room built-ins with floating shelves in a Queens brownstone" onerror="this.src='https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=800&q=85'">
+        <img loading="lazy" decoding="async" src="images/projects/project-5.jpg" alt="Custom carpentry and millwork — handcrafted living room built-ins with floating shelves in a Queens brownstone" onerror="this.src='https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=800&q=85'">
         <div class="gallery-caption">
           <span class="gallery-cat">Carpentry</span>
           <div class="gallery-name">Custom Living Room Built-Ins</div>
         </div>
       </a>
       <a href="flooring.html" class="gallery-item wide">
-        <img src="images/projects/project-6.jpg" alt="Wide-plank white oak hardwood flooring installation across an open Brooklyn loft" onerror="this.src='https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1200&q=85'">
+        <img loading="lazy" decoding="async" src="images/projects/project-6.jpg" alt="Wide-plank white oak hardwood flooring installation across an open Brooklyn loft" onerror="this.src='https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1200&q=85'">
         <div class="gallery-caption">
           <span class="gallery-cat">Flooring</span>
           <div class="gallery-name">White Oak — Williamsburg Loft</div>
         </div>
       </a>
       <a href="services.html" class="gallery-item">
-        <img src="images/projects/project-7.jpg" alt="Exterior facade restoration on a Brooklyn brownstone — repointed brick, repaired cornice and new entry door" onerror="this.src='https://images.unsplash.com/photo-1592595896616-c37162298647?w=800&q=85'">
+        <img loading="lazy" decoding="async" src="images/projects/project-7.jpg" alt="Exterior facade restoration on a Brooklyn brownstone — repointed brick, repaired cornice and new entry door" onerror="this.src='https://images.unsplash.com/photo-1592595896616-c37162298647?w=800&q=85'">
         <div class="gallery-caption">
           <span class="gallery-cat">Exterior</span>
           <div class="gallery-name">Brownstone Facade Restoration</div>
         </div>
       </a>
       <a href="services.html" class="gallery-item">
-        <img src="images/projects/project-8.jpg" alt="Water damage restoration and ceiling repair in a Manhattan co-op — drywall replacement, fresh paint and finish" onerror="this.src='https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=85'">
+        <img loading="lazy" decoding="async" src="images/projects/project-8.jpg" alt="Water damage restoration and ceiling repair in a Manhattan co-op — drywall replacement, fresh paint and finish" onerror="this.src='https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=85'">
         <div class="gallery-caption">
           <span class="gallery-cat">Restoration</span>
           <div class="gallery-name">Water Damage Repair</div>
@@ -1280,8 +1287,8 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
     </div>
 
     <div class="gallery-cta">
-      <a href="gallery.html">
-        View Full Project Gallery
+      <a href="services.html">
+        Explore All Our Services
         <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
     </div>
@@ -1628,6 +1635,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 </section>
 
 <!-- ══════════ CONTACT FORM ══════════ -->
+<div id="estimator"></div>
 <section class="contact-section" id="contact-form">
   <div class="contact-grid">
 
@@ -1637,7 +1645,9 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
       <h3>Request a <em>Free Estimate</em></h3>
       <p class="form-sub">Tell us about your project and we'll get back to you within 24 hours with a transparent quote.</p>
 
-      <form class="contact-form" action="#" method="POST" onsubmit="event.preventDefault();alert('Thanks! We\u2019ll be in touch within 24 hours.');">
+      <form class="contact-form" name="free-estimate" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="estimateForm">
+        <input type="hidden" name="form-name" value="free-estimate">
+        <p class="cf-hp"><label>Don't fill this out: <input name="bot-field"></label></p>
 
         <div class="cf-field">
           <label for="cf-first-name">First Name <span class="req">*</span></label>
@@ -1707,8 +1717,11 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
           <textarea id="cf-details" name="details" rows="4" placeholder="Tell us more about your project, timeline, or any specific needs…"></textarea>
         </div>
 
+        <div class="cf-success" id="cfSuccess">✓ <strong>Request received!</strong> Thank you — we'll get back to you within 24 hours with your free estimate. For urgent jobs, call <a href="tel:3322770990" style="color:inherit;font-weight:700">332-277-0990</a>.</div>
+        <div class="cf-error" id="cfError">Something went wrong sending your request. Please try again, or call us directly at <a href="tel:3322770990" style="color:inherit;font-weight:700">332-277-0990</a>.</div>
+
         <div class="cf-submit">
-          <button type="submit">
+          <button type="submit" id="cfSubmitBtn">
             Submit Request
             <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
@@ -1725,7 +1738,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
       <div class="contact-meta">
         <div class="contact-meta-item">
           <div class="contact-meta-icon">
-            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 2 2 0 015 7.6h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
           </div>
           <div class="contact-meta-text">
             <span class="contact-meta-label">Call Us</span>
@@ -1763,7 +1776,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
     <h2>Ready to Transform<br>Your <em>Space?</em></h2>
     <p>Get a free estimate from Brooklyn's most trusted renovation contractor. We serve all 5 boroughs with same-day response and transparent pricing.</p>
     <div class="cta-btns">
-      <a href="contact.html" class="btn-primary">Get a Free Estimate</a>
+      <a href="#estimator" class="btn-primary">Get a Free Estimate</a>
       <a href="tel:3322770990" class="btn-secondary">📞 332-277-0990</a>
     </div>
     <div class="cta-info">
@@ -1908,6 +1921,48 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
       resumeAuto();
     }
   }, {passive:true});
+})();
+</script>
+
+<!-- ══════════ NETLIFY FORM SUBMIT (AJAX) ══════════ -->
+<script>
+(function(){
+  var form=document.getElementById('estimateForm');
+  if(!form)return;
+  var btn=document.getElementById('cfSubmitBtn');
+  var ok=document.getElementById('cfSuccess');
+  var err=document.getElementById('cfError');
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    if(err)err.classList.remove('show');
+    if(btn){btn.disabled=true;btn.style.opacity='0.6';}
+
+    var fd=new FormData(form);
+    var pairs=[];
+    fd.forEach(function(value,key){
+      pairs.push(encodeURIComponent(key)+'='+encodeURIComponent(value));
+    });
+
+    fetch('/',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:pairs.join('&')
+    })
+    .then(function(res){
+      if(!res.ok)throw new Error('Bad response: '+res.status);
+      form.querySelectorAll('.cf-field,.scope-section,.cf-submit,.cf-hp').forEach(function(el){el.style.display='none';});
+      if(ok){
+        ok.classList.add('show');
+        ok.scrollIntoView({behavior:'smooth',block:'center'});
+      }
+    })
+    .catch(function(error){
+      console.error('Form submit failed:',error);
+      if(err)err.classList.add('show');
+      if(btn){btn.disabled=false;btn.style.opacity='';}
+    });
+  });
 })();
 </script>
 
