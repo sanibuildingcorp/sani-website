@@ -1,8 +1,8 @@
 // netlify/functions/send-invoice.js
-// Sends an invoice email to the customer.
-// Supports: deposit / final / full / custom amounts.
-// Payment link is OPTIONAL — invoice can also be sent without one.
-// NEW: Email includes "View Online & Download" button linking to invoice.html page.
+// Sends a professional invoice email DIRECTLY to the customer
+// from the verified domain (estimates@sanibuildingcorp.com).
+// Contractor gets a BCC copy instead of a [FORWARD TO] email.
+// Includes: itemized work table, work-completed date, issued date+time.
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
@@ -24,9 +24,10 @@ exports.handler = async function (event) {
       dueDate,            // ISO date string
       memo,               // optional note from contractor
       paymentMethod,      // "zelle" | "bank" | "cash" | "check" | "link" | "none"
-      paymentDetails,     // string with details (e.g. "Zelle: (332) 277-0990")
-      paymentLink,        // optional URL if paymentMethod === "link"
+      paymentDetails,     // string with details (e.g. "Zelle: ...")
+      paymentLink,        // optional URL
       includePaymentLink, // true if customer should see "Pay Now" button
+      workDate,           // YYYY-MM-DD — date the work was completed
     } = body;
 
     if (!ref) {
@@ -48,7 +49,7 @@ exports.handler = async function (event) {
     }
 
     const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
-    const siteUrl = process.env.SITE_URL || "https://velvety-horse-2aa6e3.netlify.app";
+    const siteUrl = process.env.SITE_URL || "https://www.sanibuildingcorp.com";
 
     const customer = record.customer || {};
     const est = record.estimate || {};
@@ -61,11 +62,16 @@ exports.handler = async function (event) {
     // URL to online invoice page
     const invoiceUrl = `${siteUrl}/invoice.html?ref=${encodeURIComponent(ref)}&inv=${encodeURIComponent(invoiceNumber)}`;
 
-    // Format due date
-    const dueDateFormatted = dueDate
-      ? new Date(dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-      : "Upon receipt";
-    const issuedDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    // ── Dates ──
+    const nowIso = new Date().toISOString();
+    const issuedFormatted =
+      new Date().toLocaleDateString("en-US", { timeZone: "America/New_York", month: "long", day: "numeric", year: "numeric" }) +
+      " · " +
+      new Date().toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) +
+      " ET";
+    const dueDateFormatted = dueDate ? fmtDateOnly(dueDate) : "Upon receipt";
+    const finalWorkDate = workDate || est.invoiceWorkDate || null;
+    const workDateFormatted = finalWorkDate ? fmtDateOnly(finalWorkDate) : "";
 
     // Invoice type label
     const typeLabel = {
@@ -75,12 +81,100 @@ exports.handler = async function (event) {
       custom: "Invoice",
     }[invoiceType] || "Invoice";
 
-    const canSendToCustomer = customer.email && customer.email.toLowerCase() === contractorEmail.toLowerCase();
-    const recipientEmail = canSendToCustomer ? customer.email : contractorEmail;
+    const hasCustomerEmail = !!(customer.email && customer.email.trim());
+    const recipientEmail = hasCustomerEmail ? customer.email.trim() : contractorEmail;
+    const sendingToCustomer = hasCustomerEmail && recipientEmail.toLowerCase() !== contractorEmail.toLowerCase();
     const firstName = (customer.name || "there").split(" ")[0];
-    const subjectPrefix = canSendToCustomer ? "" : `[FORWARD TO ${customer.email}] `;
+    const amountFormatted = fmt(amount);
 
-    // Payment instructions section
+    // ── Itemized work table (same display rules as the quote) ──
+    const mk = 1 + (Number(est.markupPct) || 0) / 100;
+    const showLabor = est.showLaborCost !== false;
+    const showMat = est.showMaterialsCost === true;
+    const labor = Array.isArray(est.labor) ? est.labor : [];
+    const materials = Array.isArray(est.materials) ? est.materials : [];
+
+    const cellL = 'padding:10px 14px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a';
+    const cellR = 'padding:10px 14px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;text-align:right;white-space:nowrap';
+    const groupCell = 'padding:8px 14px;background:#f7f0e3;color:#96770a;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8e2d9';
+
+    function rowsWithPrices(arr, groupName) {
+      const valid = arr.filter(function (it) { return it && String(it.item || "").trim(); });
+      if (!valid.length) return "";
+      let h = `<tr><td colspan="4" style="${groupCell}">${escapeHtml(groupName)}</td></tr>`;
+      valid.forEach(function (it) {
+        const qty = (it.qty != null ? it.qty : "") + (it.unit ? " " + it.unit : "");
+        const rate = (Number(it.rate) || 0) * mk;
+        const total = (Number(it.qty) || 0) * (Number(it.rate) || 0) * mk;
+        h += `<tr>
+          <td style="${cellL}">${escapeHtml(it.item)}</td>
+          <td style="${cellR}">${escapeHtml(qty)}</td>
+          <td style="${cellR}">${fmt(rate)}</td>
+          <td style="${cellR};font-weight:600">${fmt(total)}</td>
+        </tr>`;
+      });
+      return h;
+    }
+    function rowsNoPrices(arr, groupName) {
+      const valid = arr.filter(function (it) { return it && String(it.item || "").trim(); });
+      if (!valid.length) return "";
+      let h = `<tr><td colspan="2" style="${groupCell}">${escapeHtml(groupName)}</td></tr>`;
+      valid.forEach(function (it) {
+        h += `<tr>
+          <td style="${cellL}">${escapeHtml(it.item)}</td>
+          <td style="${cellR};color:#8a8a8a">Included</td>
+        </tr>`;
+      });
+      return h;
+    }
+    function bucketSum(arr) {
+      return arr.reduce(function (s, it) { return s + (Number(it.qty) || 0) * (Number(it.rate) || 0) * mk; }, 0);
+    }
+
+    let itemizedHtml = "";
+    if (labor.length || materials.length) {
+      const head = `<tr>
+        <th style="text-align:left;background:#faf8f4;color:#8a8a8a;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid #e8e2d9">Item</th>
+        <th style="text-align:right;background:#faf8f4;color:#8a8a8a;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid #e8e2d9">Qty</th>
+        <th style="text-align:right;background:#faf8f4;color:#8a8a8a;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid #e8e2d9">Rate</th>
+        <th style="text-align:right;background:#faf8f4;color:#8a8a8a;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid #e8e2d9">Total</th>
+      </tr>`;
+
+      if (!showLabor && !showMat) {
+        // Total-only mode: list the work, no per-line prices
+        let rows = rowsNoPrices(labor, "Labor") + rowsNoPrices(materials, "Materials");
+        if (rows) {
+          itemizedHtml = `
+            <div style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;color:#888;text-transform:uppercase;margin:26px 0 10px">Work Performed</div>
+            <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden">
+              <table style="width:100%;border-collapse:collapse">${rows}</table>
+            </div>`;
+        }
+      } else {
+        let rows = "";
+        let grand = 0;
+        if (showLabor) { rows += rowsWithPrices(labor, "Labor"); grand += bucketSum(labor); }
+        if (showMat) { rows += rowsWithPrices(materials, "Materials"); grand += bucketSum(materials); }
+        if (rows) {
+          rows += `<tr>
+            <td colspan="3" style="padding:12px 14px;background:#f7f0e3;border-top:2px solid #c9a84c;font-size:13px;font-weight:700;color:#0d1b2a;letter-spacing:1px">PROJECT TOTAL</td>
+            <td style="padding:12px 14px;background:#f7f0e3;border-top:2px solid #c9a84c;font-size:15px;font-weight:700;color:#0d1b2a;text-align:right">${fmt(grand)}</td>
+          </tr>`;
+          let note = "";
+          if (grand > 0 && Math.abs(grand - Number(amount)) > 0.01) {
+            const pct = Math.round((Number(amount) / grand) * 100);
+            note = `<div style="padding:9px 14px;background:#faf8f4;border-top:1px solid #e8e2d9;font-size:12px;color:#8a8a8a">This ${invoiceType === "deposit" ? "deposit " : ""}invoice covers ${amountFormatted} of the ${fmt(grand)} project total${invoiceType === "deposit" ? " (" + pct + "%)" : ""}.</div>`;
+          }
+          itemizedHtml = `
+            <div style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;color:#888;text-transform:uppercase;margin:26px 0 10px">Work Performed — Itemized</div>
+            <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden">
+              <table style="width:100%;border-collapse:collapse">${head}${rows}</table>${note}
+            </div>`;
+        }
+      }
+    }
+
+    // ── Optional blocks ──
     let paymentInstructionsHtml = "";
     if (paymentDetails && paymentDetails.trim()) {
       paymentInstructionsHtml = `
@@ -91,7 +185,6 @@ exports.handler = async function (event) {
       `;
     }
 
-    // Optional Pay Now button
     let payButtonHtml = "";
     if (includePaymentLink && paymentLink && paymentLink.trim()) {
       payButtonHtml = `
@@ -101,40 +194,35 @@ exports.handler = async function (event) {
       `;
     }
 
-    // Memo
     const memoHtml = memo && memo.trim()
-      ? `<div style="background:#f7f0e3;border-left:4px solid #c9a84c;padding:14px 18px;margin:18px 0;font-size:14px;color:#444;border-radius:0 6px 6px 0">${escapeHtml(memo)}</div>`
+      ? `<div style="background:#f7f0e3;border-left:4px solid #c9a84c;padding:14px 18px;font-size:14px;color:#444;border-radius:0 8px 8px 0;margin:22px 0;line-height:1.6">${escapeHtml(memo)}</div>`
       : "";
 
-    const amountFormatted = fmt(amount);
+    const workDateRow = workDateFormatted
+      ? `<tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Work Completed</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(workDateFormatted)}</td>
+        </tr>`
+      : "";
 
-    const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
-<div style="max-width:640px;margin:0 auto;padding:20px">
+    // ── Email ──
+    const html = `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#f5f0e8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+<div style="max-width:640px;margin:0 auto;padding:24px 16px">
 
   <!-- HEADER -->
-  <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:32px 24px;border-radius:12px 12px 0 0;text-align:center">
-    <a href="https://www.sanibuildingcorp.com" style="text-decoration:none;color:inherit">
-      <div style="font-family:Arial,sans-serif;font-size:24px;letter-spacing:4px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>
-    </a>
-    <div style="font-size:11px;letter-spacing:2.5px;color:#aaa;margin-top:8px;text-transform:uppercase">${escapeHtml(typeLabel.toUpperCase())}</div>
+  <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);border-radius:14px 14px 0 0;padding:32px 28px;text-align:center">
+    <div style="font-family:Arial,sans-serif;font-size:24px;letter-spacing:5px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>
+    <div style="font-size:11px;letter-spacing:3px;color:#aaa;margin-top:6px;text-transform:uppercase">${escapeHtml(typeLabel)}</div>
   </div>
 
-  <!-- BODY -->
-  <div style="background:#fff;padding:30px 28px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 12px 12px">
+  <div style="background:#ffffff;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 14px 14px;padding:30px 28px">
 
-    <h1 style="color:#0d1b2a;font-size:23px;margin:0 0 14px">Hi ${escapeHtml(firstName)},</h1>
-    <p style="font-size:14.5px;color:#555;margin-bottom:18px">
-      ${invoiceType === "deposit"
-        ? `Please find your deposit invoice for <strong>${escapeHtml(est.projectTitle || reqData.service || "your project")}</strong> below. This deposit secures your project on our schedule.`
-        : invoiceType === "final"
-        ? `Thank you for your business! Your final invoice for <strong>${escapeHtml(est.projectTitle || reqData.service || "your project")}</strong> is ready.`
-        : `Please find your invoice for <strong>${escapeHtml(est.projectTitle || reqData.service || "your project")}</strong> below.`}
-    </p>
+    <p style="font-size:15px;color:#1a1a1a;margin:0 0 6px">Hi ${escapeHtml(firstName)},</p>
+    <p style="font-size:14px;color:#555;margin:0 0 22px;line-height:1.6">Please find your ${escapeHtml(typeLabel.toLowerCase())} for <strong>${escapeHtml(est.projectTitle || reqData.service || "your project")}</strong> below.</p>
 
-    ${memoHtml}
-
-    <!-- INVOICE INFO BOX -->
-    <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden;margin:20px 0">
+    <!-- INVOICE INFO -->
+    <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden">
       <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:13px 18px;font-family:Arial,sans-serif;font-size:15px;letter-spacing:2px;font-weight:700">
         ${escapeHtml(typeLabel.toUpperCase())} <span style="color:#c9a84c">#${escapeHtml(invoiceNumber)}</span>
       </div>
@@ -144,24 +232,31 @@ exports.handler = async function (event) {
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(est.projectTitle || reqData.service || "Your Project")}</td>
         </tr>
         <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Billed To</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(customer.name || "—")}${customer.address ? "<br><span style='font-weight:400;color:#555'>" + escapeHtml(customer.address) + "</span>" : ""}</td>
+        </tr>
+        <tr>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Estimate Ref</td>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(ref)}</td>
         </tr>
         <tr>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Issued</td>
-          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(issuedDate)}</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(issuedFormatted)}</td>
         </tr>
+        ${workDateRow}
         <tr>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Due</td>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(dueDateFormatted)}</td>
         </tr>
         <tr>
-          <td style="padding:14px 18px;font-size:13px;color:#555;background:#faf8f4">Amount Due</td>
-          <td style="padding:14px 18px;font-family:Arial,sans-serif;font-size:24px;color:#0d1b2a;font-weight:700;letter-spacing:1px;background:#faf8f4">${escapeHtml(amountFormatted)}</td>
+          <td style="padding:14px 18px;font-size:13px;color:#555;background:#f7f0e3">Amount Due</td>
+          <td style="padding:14px 18px;font-family:Arial,sans-serif;font-size:24px;color:#0d1b2a;font-weight:700;letter-spacing:1px;background:#f7f0e3">${escapeHtml(amountFormatted)}</td>
         </tr>
       </table>
     </div>
 
+    ${itemizedHtml}
+    ${memoHtml}
     ${payButtonHtml}
     ${paymentInstructionsHtml}
 
@@ -184,13 +279,19 @@ exports.handler = async function (event) {
 </div>
 </body></html>`;
 
-    await sendResend(resendKey, {
-      from: "Sani Building Corp <onboarding@resend.dev>",
+    const emailPayload = {
+      from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",
       to: [recipientEmail],
       reply_to: contractorEmail,
-      subject: `${subjectPrefix}${typeLabel} ${invoiceNumber} from Sani Building Corp — ${amountFormatted}`,
+      subject: `${typeLabel} ${invoiceNumber} from Sani Building Corp — ${amountFormatted}`,
       html,
-    });
+    };
+    // Always keep a copy in the contractor inbox without ugly FORWARD prefixes
+    if (sendingToCustomer) {
+      emailPayload.bcc = [contractorEmail];
+    }
+
+    await sendResend(resendKey, emailPayload);
 
     // Update record with invoice history
     const invoice = {
@@ -198,12 +299,13 @@ exports.handler = async function (event) {
       type: invoiceType,
       amount: Number(amount),
       dueDate: dueDate || null,
+      workDate: finalWorkDate,
       memo: memo || "",
       paymentMethod: paymentMethod || "none",
       paymentDetails: paymentDetails || "",
       paymentLink: paymentLink || "",
       includePaymentLink: !!includePaymentLink,
-      sentAt: new Date().toISOString(),
+      sentAt: nowIso,
       sentTo: recipientEmail,
       status: "sent",
     };
@@ -227,7 +329,7 @@ exports.handler = async function (event) {
         invoiceNumber,
         invoiceUrl,
         sentTo: recipientEmail,
-        forwardedToContractor: !canSendToCustomer,
+        forwardedToContractor: !sendingToCustomer,
       }),
     };
   } catch (err) {
@@ -238,6 +340,16 @@ exports.handler = async function (event) {
 
 function fmt(n) {
   return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Date-only strings like "2026-06-10" formatted without timezone day-shift
+function fmtDateOnly(s) {
+  const m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  }
+  try { return new Date(s).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); }
+  catch (e) { return String(s || ""); }
 }
 
 function escapeHtml(t) {
