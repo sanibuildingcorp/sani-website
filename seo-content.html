@@ -54,11 +54,45 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);-webkit-font-
 .pc-status{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:12px;font-weight:700;white-space:nowrap}
 .pc-status.none{background:var(--line-soft);color:var(--ink-muted)}
 .pc-status.has{background:var(--good-bg);color:var(--good)}
-.pc-gen{padding:11px;background:var(--gold);color:var(--navy);border:none;border-radius:9px;font-family:var(--body);font-weight:700;font-size:12px;letter-spacing:1.2px;cursor:pointer;text-transform:uppercase}
+.pc-btn-row{display:flex;gap:8px}
+.pc-gen{flex:1;padding:11px;background:var(--gold);color:var(--navy);border:none;border-radius:9px;font-family:var(--body);font-weight:700;font-size:12px;letter-spacing:1.2px;cursor:pointer;text-transform:uppercase}
 .pc-gen:hover:not(:disabled){background:var(--gold-2)}
 .pc-gen:disabled{opacity:0.55;cursor:not-allowed}
+.pc-kw{flex:0 0 auto;padding:11px 14px;background:var(--gold-soft);color:var(--gold);border:1px solid var(--line);border-radius:9px;font-family:var(--body);font-weight:700;font-size:12px;letter-spacing:1.2px;cursor:pointer;text-transform:uppercase;white-space:nowrap}
+.pc-kw:hover{background:var(--gold);color:var(--navy)}
 .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(11,24,40,0.3);border-top-color:var(--navy);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:7px}
+.spin-g{display:inline-block;width:13px;height:13px;border:2px solid rgba(212,181,114,0.3);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:7px}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* keyword picker */
+.kwpanel{display:none;background:var(--card);border:1px solid var(--gold);border-radius:16px;padding:22px 24px;margin-bottom:24px}
+.kwpanel.show{display:block}
+.kwpanel h2{font-family:var(--display);font-size:20px;letter-spacing:1.5px;color:var(--gold);margin-bottom:4px}
+.kp-sub{font-size:12.5px;color:var(--ink-muted);margin-bottom:14px;line-height:1.55}
+.kp-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.kp-input{flex:1;min-width:220px;padding:11px 13px;background:var(--navy);border:1.5px solid var(--line);color:var(--ink);font-family:var(--body);font-size:13.5px;border-radius:9px}
+.kp-input:focus{outline:none;border-color:var(--gold)}
+.kp-btn{padding:11px 16px;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold);border-radius:9px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;font-family:var(--body);text-transform:uppercase;white-space:nowrap}
+.kp-btn:hover:not(:disabled){background:var(--gold);color:var(--navy)}
+.kp-btn:disabled{opacity:.55;cursor:not-allowed}
+.kw-chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.kw-chip{display:inline-flex;align-items:center;gap:8px;background:var(--navy);border:1.5px solid var(--line-soft);color:var(--ink-soft);font-size:13px;padding:8px 12px;border-radius:10px;cursor:pointer;font-family:var(--body)}
+.kw-chip:hover{border-color:var(--gold)}
+.kw-chip.sel{background:var(--gold-soft);border-color:var(--gold);color:var(--ink)}
+.kw-chip .v{font-weight:700;color:var(--gold)}
+.kw-chip .c{font-size:10px;letter-spacing:.5px;padding:2px 7px;border-radius:999px;border:1px solid var(--line-soft)}
+.kw-chip .c.LOW{color:var(--good);border-color:rgba(74,222,128,.4)}
+.kw-chip .c.MEDIUM{color:var(--warn)}
+.kw-chip .c.HIGH{color:var(--bad)}
+.kp-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft)}
+.kp-count{font-size:13px;color:var(--ink-soft)}
+.kp-count b{color:var(--gold)}
+.kp-gen{padding:12px 20px;background:var(--gold);color:var(--navy);border:none;border-radius:10px;font-family:var(--body);font-weight:700;font-size:12.5px;letter-spacing:1.2px;cursor:pointer;text-transform:uppercase}
+.kp-gen:hover:not(:disabled){background:var(--gold-2)}
+.kp-gen:disabled{opacity:.55;cursor:not-allowed}
+.kp-note{font-size:11.5px;color:var(--ink-muted);margin-top:10px;line-height:1.5}
+.kp-pending{display:none;background:var(--gold-soft);border:1px solid var(--gold);border-radius:10px;padding:12px 14px;color:var(--ink);font-size:12.5px;line-height:1.55;margin-top:10px}
+.kp-pending.show{display:block}
 
 /* result */
 .result{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin-top:8px}
@@ -119,10 +153,27 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);-webkit-font-
   <div class="wrap">
     <div class="intro">
       <h1>✍️ AI Page Content Writer</h1>
-      <p>For each service page, the AI reads your live page, pulls the real keywords your site already shows up for in Google, picks the best-value targets, and writes fully optimized, ready-to-publish content. Generate, review, copy into your page on GitHub.</p>
+      <p>For each service page, the AI reads your page, pulls the real keywords your site already shows up for in Google, picks the best-value targets, and writes fully optimized, ready-to-publish content. Tap 🔎 Keywords on a page to hand-pick live Keyword Planner keywords the AI must use.</p>
     </div>
 
     <div class="page-grid" id="page-grid"></div>
+
+    <div class="kwpanel" id="kwpanel">
+      <h2>🔎 LIVE KEYWORDS — <span id="kp-service"></span></h2>
+      <div class="kp-sub">Real monthly searches + competition straight from your Google Ads Keyword Planner. Tap the keywords you want — the AI will be <b style="color:var(--gold)">required</b> to use every selected one in the title, H1, headings and body text.</div>
+      <div class="kp-row">
+        <input class="kp-input" id="kp-seed" placeholder="seed keywords, comma-separated">
+        <button class="kp-btn" id="kp-look" onclick="kwLookup()">🔢 Get live volumes</button>
+        <button class="kp-btn" onclick="closeKwPanel()">✕ Close</button>
+      </div>
+      <div class="kw-chips" id="kp-chips"></div>
+      <div class="kp-pending" id="kp-pending"></div>
+      <div class="kp-footer">
+        <div class="kp-count"><b id="kp-count">0</b> keywords selected (max 10)</div>
+        <button class="kp-gen" id="kp-gen" onclick="generateWithKeywords(this)" disabled>✨ Generate with selected keywords</button>
+      </div>
+      <div class="kp-note">No selection needed — the regular Generate button on each page card still works on its own, using Search Console data only.</div>
+    </div>
 
     <div class="err" id="err"></div>
     <div class="result" id="result"></div>
@@ -135,6 +186,10 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);-webkit-font-
 const DASHBOARD_PASSWORD = "L0nd0n12@";
 let pages = [];
 let currentDraft = null;
+let currentSelectedKw = [];
+let kwSlug = null;
+let kwRows = [];
+let kwSelected = {};
 
 document.getElementById("pw-btn").addEventListener("click", tryLogin);
 document.getElementById("pw-input").addEventListener("keypress", function(e){ if(e.key==="Enter") tryLogin(); });
@@ -178,21 +233,123 @@ function renderPages(){
         '</div>'+
         '<span class="pc-status '+(p.hasDraft?"has":"none")+'">'+(p.hasDraft?("✓ "+fmtDate(p.lastGenerated)):"No draft")+'</span>'+
       '</div>'+
-      '<button class="pc-gen" data-slug="'+esc(p.slug)+'" onclick="generate(\''+esc(p.slug)+'\', this)">'+(p.hasDraft?"↻ Regenerate":"✨ Generate Content")+'</button>'+
+      '<div class="pc-btn-row">'+
+        '<button class="pc-gen" data-slug="'+esc(p.slug)+'" onclick="generate(\''+esc(p.slug)+'\', this)">'+(p.hasDraft?"↻ Regenerate":"✨ Generate Content")+'</button>'+
+        '<button class="pc-kw" onclick="openKwPanel(\''+esc(p.slug)+'\')">🔎 Keywords</button>'+
+      '</div>'+
     '</div>';
   }).join("");
 }
 
-async function generate(slug, btn, isRetry){
+/* ───────── Live keyword picker ───────── */
+function openKwPanel(slug){
+  const page = pages.find(function(p){ return p.slug===slug; });
+  if(!page) return;
+  kwSlug = slug; kwRows = []; kwSelected = {};
+  document.getElementById("kp-service").textContent = page.service.toUpperCase();
+  const base = page.service.toLowerCase();
+  document.getElementById("kp-seed").value = base+" brooklyn, "+base+" nyc";
+  document.getElementById("kp-chips").innerHTML = "";
+  document.getElementById("kp-pending").classList.remove("show");
+  updateKwFooter();
+  const panel = document.getElementById("kwpanel");
+  panel.classList.add("show");
+  panel.scrollIntoView({behavior:"smooth"});
+}
+function closeKwPanel(){
+  document.getElementById("kwpanel").classList.remove("show");
+  kwSlug = null;
+}
+
+async function kwLookup(){
+  if(!kwSlug) return;
+  const page = pages.find(function(p){ return p.slug===kwSlug; });
+  if(!page) return;
+  const seed = document.getElementById("kp-seed").value.trim();
+  if(!seed){ toast("Type at least one seed keyword"); return; }
+  document.getElementById("kp-pending").classList.remove("show");
+  const btn = document.getElementById("kp-look");
+  btn.disabled = true; const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spin-g"></span>Asking Google…';
+  try {
+    const r = await fetch("/.netlify/functions/keyword-ideas",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ seed:seed, url:page.url })
+    });
+    const data = await r.json().catch(function(){ return {}; });
+    if(!r.ok){
+      const msg = (data && data.error) ? data.error : ("Error "+r.status);
+      const p = document.getElementById("kp-pending");
+      p.innerHTML = "⚠️ "+esc(msg);
+      p.classList.add("show");
+      return;
+    }
+    kwRows = (data.keywords||[]).slice(0,30);
+    renderKwChips();
+    if(!kwRows.length) toast("No ideas returned — try different seeds");
+    else toast("🔢 "+kwRows.length+" keywords with live volumes");
+  } catch(e){
+    const p = document.getElementById("kp-pending");
+    p.innerHTML = "⚠️ "+esc(e.message);
+    p.classList.add("show");
+  } finally {
+    btn.disabled = false; btn.innerHTML = orig;
+  }
+}
+
+function renderKwChips(){
+  document.getElementById("kp-chips").innerHTML = kwRows.map(function(k,i){
+    const sel = kwSelected[k.keyword] ? " sel" : "";
+    const comp = (k.competition||"UNKNOWN").toUpperCase();
+    return '<button class="kw-chip'+sel+'" onclick="toggleKw('+i+')">'+esc(k.keyword)+
+      ' <span class="v">'+Number(k.avgMonthlySearches||0).toLocaleString()+'</span>'+
+      '<span class="c '+esc(comp)+'">'+esc(comp)+'</span></button>';
+  }).join("");
+  updateKwFooter();
+}
+
+function toggleKw(i){
+  const k = kwRows[i];
+  if(!k) return;
+  if(kwSelected[k.keyword]){
+    delete kwSelected[k.keyword];
+  } else {
+    if(Object.keys(kwSelected).length >= 10){ toast("Max 10 keywords — quality over quantity"); return; }
+    kwSelected[k.keyword] = {
+      keyword: k.keyword,
+      volume: Number(k.avgMonthlySearches||0),
+      competition: (k.competition||"").toUpperCase()
+    };
+  }
+  renderKwChips();
+}
+
+function updateKwFooter(){
+  const n = Object.keys(kwSelected).length;
+  document.getElementById("kp-count").textContent = n;
+  document.getElementById("kp-gen").disabled = (n===0);
+}
+
+function generateWithKeywords(btn){
+  if(!kwSlug){ toast("Pick a page first"); return; }
+  const sel = Object.values(kwSelected);
+  if(!sel.length){ toast("Tap at least one keyword first"); return; }
+  generate(kwSlug, btn, false, sel);
+}
+
+/* ───────── Generation ───────── */
+async function generate(slug, btn, isRetry, selectedKw){
   const page = pages.find(function(p){ return p.slug===slug; });
   if(!page) return;
   document.getElementById("err").classList.remove("show");
+  const isKpBtn = btn && btn.id === "kp-gen";
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>'+(isRetry?"Retrying…":"Reading page + writing…"); }
   try {
     const r = await fetch("/.netlify/functions/seo-content-engine",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ slug:slug, url:page.url, service:page.service, buildFullHtml:true })
+      body:JSON.stringify({ slug:slug, url:page.url, service:page.service, buildFullHtml:true, selectedKeywords:(selectedKw||[]) })
     });
     const textBody = await r.text();
     let data;
@@ -202,12 +359,13 @@ async function generate(slug, btn, isRetry){
       // Server returned HTML (usually a timeout) instead of JSON
       if(!isRetry){
         if(btn){ btn.innerHTML='<span class="spin"></span>Retrying…'; }
-        return generate(slug, btn, true);
+        return generate(slug, btn, true, selectedKw);
       }
       throw new Error("The AI is taking longer than usual right now. Please click Generate again in a moment — it usually works on the next try.");
     }
     if(!r.ok){ throw new Error(data.error || "Generation failed"); }
     currentDraft = data;
+    currentSelectedKw = selectedKw || [];
     renderResult(data);
     toast("✓ Content generated for "+page.service);
     loadPages();
@@ -217,7 +375,10 @@ async function generate(slug, btn, isRetry){
     err.textContent="⚠️ "+e.message;
     err.classList.add("show");
   } finally {
-    if(btn){ btn.disabled=false; btn.innerHTML="↻ Regenerate"; }
+    if(btn){
+      btn.disabled=false;
+      btn.innerHTML = isKpBtn ? "✨ Generate with selected keywords" : "↻ Regenerate";
+    }
   }
 }
 
@@ -240,6 +401,13 @@ function renderResult(data){
   const links = (c.internalLinks||[]).map(function(l){ return '<span class="chip">'+esc(l)+'</span>'; }).join("");
   const alts = (c.imageAltSuggestions||[]).map(function(a){ return '<span class="chip">'+esc(a)+'</span>'; }).join("");
 
+  const srcLabel = data.pageSource==="github" ? "read from GitHub ✓"
+    : (data.pageSource==="live" || data.currentTitle) ? "read ✓"
+    : "not read";
+  const selLabel = (currentSelectedKw && currentSelectedKw.length)
+    ? ' · '+currentSelectedKw.length+' hand-picked keyword'+(currentSelectedKw.length>1?'s':'')+' enforced 🔎'
+    : '';
+
   res.innerHTML =
     '<div class="result-head">'+
       '<h2>'+esc(data.service)+'</h2>'+
@@ -250,7 +418,7 @@ function renderResult(data){
         (data.fullHtmlAvailable?'<button class="r-btn publish" id="publish-btn" onclick="publishToGitHub()">✅ Approve &amp; Publish</button>':'')+
       '</div>'+
     '</div>'+
-    '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:18px">Analyzed '+(data.keywordsAnalyzed||0)+' real Google keywords · live page '+(data.currentTitle?"read ✓":"not read")+'</div>'+
+    '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:18px">Analyzed '+(data.keywordsAnalyzed||0)+' real Google keywords · page '+srcLabel+selLabel+'</div>'+
 
     block("🎯 Best Target Keywords", '<div class="kw-list">'+kw+'</div>', null)+
     block("🏷️ Title Tag", '<div class="field-box mono">'+esc(c.title||"")+'</div>', c.title)+
