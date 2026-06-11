@@ -3,9 +3,11 @@
 // then asks OpenAI to find the best-value keywords and write fully optimized page content.
 //
 // POST { slug: "bathroom-renovation", url: "https://www.sanibuildingcorp.com/bathroom-renovation.html", service: "Bathroom Renovation" }
-//   -> fetches the live page, pulls that page's GSC keywords from Supabase,
+//   -> reads the page (GitHub first, live fetch as fallback), pulls that page's GSC keywords from Supabase,
 //      asks OpenAI to produce optimized title/meta/H1/body/FAQ + target keywords,
 //      saves the draft to seo_content_drafts, returns it.
+//   Optional body.selectedKeywords: [{ keyword, volume, competition }] — hand-picked live
+//   Keyword Planner keywords the AI is REQUIRED to use in title/H1/headings/body.
 //
 // GET  ?slug=bathroom-renovation        -> returns the latest saved draft for that slug
 // GET  (no slug)                         -> returns the list of service pages + whether a draft exists
@@ -20,6 +22,7 @@ const SERVICE_PAGES = [
 ];
 
 const SITE_ORIGIN = "https://www.sanibuildingcorp.com";
+const GITHUB_REPO = process.env.GITHUB_REPO || "sanibuildingcorp/sani-website";
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -93,23 +96,77 @@ exports.handler = async function (event) {
       return json(400, { error: "slug and url are required" });
     }
 
-    // STEP 1 — read the live page
+    // Optional: hand-picked live keywords from the Keyword Volumes picker
+    const selectedKeywords = Array.isArray(body.selectedKeywords)
+      ? body.selectedKeywords
+          .map(function (k) {
+            return {
+              keyword: String((k && k.keyword) || "").trim(),
+              volume: Number((k && (k.volume || k.avgMonthlySearches)) || 0),
+              competition: String((k && k.competition) || "").toUpperCase(),
+            };
+          })
+          .filter(function (k) { return k.keyword; })
+          .slice(0, 12)
+      : [];
+
+    // STEP 1 — read the page.
+    // GitHub FIRST: Cloudflare Bot Fight Mode blocks server-side fetches of the live
+    // site, which used to leave "live page not read" and no Publish button. Reading
+    // the file from GitHub also means we rewrite the exact file Approve & Publish
+    // commits back. Live fetch (browser-like UA) stays as a fallback.
     let pageText = "";
     let currentTitle = "";
     let currentMeta = "";
     let rawHtml = "";
+    let pageSource = "none";
+
     try {
-      const pageRes = await fetch(url, {
-        headers: { "User-Agent": "SaniSEOBot/1.0" },
-      });
-      if (pageRes.ok) {
-        rawHtml = await pageRes.text();
-        currentTitle = (rawHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || "";
-        currentMeta = (rawHtml.match(/<meta[^>]*name=["']description["'][^>]*content=["']([\s\S]*?)["']/i) || [])[1] || "";
-        pageText = extractText(rawHtml).slice(0, 6000);
+      const ghToken = process.env.GITHUB_TOKEN;
+      if (ghToken) {
+        const ghRes = await fetch(
+          "https://api.github.com/repos/" + GITHUB_REPO + "/contents/" + encodeURIComponent(slug) + ".html",
+          {
+            headers: {
+              Authorization: "Bearer " + ghToken,
+              Accept: "application/vnd.github.raw+json",
+              "User-Agent": "SaniSEOStudio",
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          }
+        );
+        if (ghRes.ok) {
+          rawHtml = await ghRes.text();
+          if (rawHtml && /<html[\s>]/i.test(rawHtml)) {
+            pageSource = "github";
+          } else {
+            rawHtml = "";
+          }
+        }
       }
-    } catch (e) {
-      // page fetch failed — continue with keyword data only
+    } catch (e) { /* fall through to live fetch */ }
+
+    if (!rawHtml) {
+      try {
+        const pageRes = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+        });
+        if (pageRes.ok) {
+          rawHtml = await pageRes.text();
+          pageSource = "live";
+        }
+      } catch (e) {
+        // page fetch failed — continue with keyword data only
+      }
+    }
+
+    if (rawHtml) {
+      currentTitle = (rawHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || "";
+      currentMeta = (rawHtml.match(/<meta[^>]*name=["']description["'][^>]*content=["']([\s\S]*?)["']/i) || [])[1] || "";
+      pageText = extractText(rawHtml).slice(0, 6000);
     }
 
     // STEP 2 — pull this site's GSC keyword data from Supabase
@@ -144,6 +201,15 @@ exports.handler = async function (event) {
       .map((q) => `- "${q.query}" | impressions: ${q.impressions} | clicks: ${q.clicks} | avg position: ${Number(q.position).toFixed(1)} | CTR: ${(Number(q.ctr) * 100 || 0).toFixed(1)}%`)
       .join("\n");
 
+    // Compact table of the owner's hand-picked live keywords (if any)
+    const selectedLines = selectedKeywords
+      .map(function (k) {
+        return '- "' + k.keyword + '"'
+          + (k.volume ? " | " + k.volume.toLocaleString("en-US") + " searches/mo" : "")
+          + (k.competition ? " | competition: " + k.competition : "");
+      })
+      .join("\n");
+
     // STEP 3 — ask OpenAI to find best keywords + write optimized content
     const systemPrompt =
       "You are an elite local-SEO copywriter for a New York City renovation contractor. " +
@@ -167,13 +233,22 @@ CURRENT PAGE CONTENT (extracted text, may be truncated):
 """
 ${pageText || "(could not read live page — base your work on the keyword data and service type)"}
 """
+${selectedLines ? `
+MANDATORY TARGET KEYWORDS (hand-picked by the owner from live Google Keyword Planner volumes — you MUST use every single one):
+${selectedLines}
 
+MANDATORY KEYWORD RULES:
+- Put the highest-volume mandatory keyword in the title tag AND the H1.
+- Use each mandatory keyword naturally at least once in a section heading (H2) or its body text.
+- Include EVERY mandatory keyword in targetKeywords, with its volume/competition as the reason.
+- Weave them naturally — never keyword-stuff or write awkward sentences.
+` : ""}
 GOOGLE SEARCH CONSOLE KEYWORD DATA (real searches this whole site already appears for — use this to pick the BEST-VALUE keywords for THIS service page; prioritize queries with high impressions but weak position or low CTR, and queries clearly relevant to "${service}"):
 ${keywordLines || "(no keyword data available yet)"}
 ${pageRow ? `\nThis page's own totals: impressions ${pageRow.impressions}, clicks ${pageRow.clicks}, avg position ${Number(pageRow.position).toFixed(1)}.` : ""}
 
 TASK:
-1. Choose the 6-10 best-value target keywords for THIS page (relevant to ${service} + local NYC intent). For each, say WHY in a few words (e.g. "92 impressions, position 36 — big upside").
+1. ${selectedLines ? "Start from the MANDATORY keywords above, then add" : "Choose"} the 6-10 best-value target keywords for THIS page (relevant to ${service} + local NYC intent). For each, say WHY in a few words (e.g. "92 impressions, position 36 — big upside").
 2. Write fully optimized, ready-to-publish page content that naturally targets those keywords and drives calls.
 
 Return ONLY this JSON shape:
@@ -268,7 +343,9 @@ Provide exactly 4 sections and 4 FAQ items. Keep each section body to 2-3 senten
       url,
       currentTitle,
       currentMeta,
+      pageSource: pageSource,
       keywordsAnalyzed: queries.length,
+      selectedKeywordsUsed: selectedKeywords.length,
       content,
       savedId: saved ? saved.id : null,
       fullHtml: fullHtml,
