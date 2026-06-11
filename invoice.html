@@ -439,6 +439,10 @@ body {
           <div class="info-label">Estimate Ref</div>
           <div class="info-value" id="invoice-ref">—</div>
         </div>
+        <div class="info-row" id="invoice-jobaddr-row" style="display:none">
+          <div class="info-label">Job Address</div>
+          <div class="info-value" id="invoice-jobaddr">—</div>
+        </div>
         <div class="info-row">
           <div class="info-label">Issued</div>
           <div class="info-value" id="invoice-issued">—</div>
@@ -611,6 +615,11 @@ function render() {
   document.getElementById("invoice-project").textContent = est.projectTitle || reqData.service || "Your Project";
   document.getElementById("invoice-customer").textContent = customer.name || "—";
   document.getElementById("invoice-ref").textContent = record.ref || "—";
+  var jobAddr = invoice.projectAddress || record.projectAddress || "";
+  if (jobAddr && jobAddr !== (customer.address || "")) {
+    document.getElementById("invoice-jobaddr").textContent = jobAddr;
+    document.getElementById("invoice-jobaddr-row").style.display = "flex";
+  }
   document.getElementById("invoice-issued").textContent = fmtDateTime(invoice.sentAt);
   document.getElementById("invoice-due").textContent = invoice.dueDate ? fmtDateOnly(invoice.dueDate) : "Upon receipt";
   document.getElementById("invoice-amount").textContent = fmt(invoice.amount);
