@@ -6842,26 +6842,41 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 
   window.sbcGenContract = function(force){
     if (!currentRecord) return;
+    var theRef = currentRecord.ref;
     var btn = document.getElementById('sbc-ct-gen');
     var msg = document.getElementById('sbc-ct-genmsg');
-    if (btn){ btn.disabled = true; btn.textContent = '✨ Generating… (~15s)'; }
+    if (btn){ btn.disabled = true; btn.textContent = '✨ Generating…'; }
     if (msg) msg.textContent = '';
-    fetch('/.netlify/functions/generate-contract', {
+    // Fire the BACKGROUND generator (no 10s limit), then poll until the contract lands
+    fetch('/.netlify/functions/generate-contract-background', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ ref: currentRecord.ref, force: !!force })
-    })
-    .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
-    .then(function(out){
-      if (!out.ok || !out.d.contract) throw new Error((out.d && out.d.error) || 'Generation failed');
-      currentRecord.contract = out.d.contract;
-      renderContractPanel();
-      if (window.toast) toast('✓ Contract ready — review & edit below');
-    })
-    .catch(function(e){
-      if (btn){ btn.disabled = false; btn.textContent = '✨ Generate Contract with AI'; }
-      if (msg) msg.textContent = e.message;
-      if (window.toast) toast('Contract: ' + e.message, true);
-    });
+      body: JSON.stringify({ ref: theRef, force: !!force })
+    }).catch(function(){});
+    var started = Date.now(), tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      if (btn) btn.textContent = '✨ Generating… ' + Math.round((Date.now()-started)/1000) + 's';
+      fetch('/.netlify/functions/get-estimate?ref=' + encodeURIComponent(theRef))
+        .then(function(r){ return r.json(); })
+        .then(function(rec){
+          if (!currentRecord || currentRecord.ref !== theRef){ clearInterval(iv); return; }
+          if (rec && rec.contract && rec.contract.sections){
+            clearInterval(iv);
+            currentRecord.contract = rec.contract;
+            renderContractPanel();
+            if (window.toast) toast('✓ Contract ready — review & edit below');
+          } else if (rec && rec.contractError){
+            clearInterval(iv);
+            if (btn){ btn.disabled = false; btn.textContent = '✨ Generate Contract with AI'; }
+            if (msg) msg.textContent = rec.contractError;
+            if (window.toast) toast('Contract: ' + rec.contractError, true);
+          } else if (tries >= 30){
+            clearInterval(iv);
+            if (btn){ btn.disabled = false; btn.textContent = '✨ Generate Contract with AI'; }
+            if (msg) msg.textContent = 'Still working — tap Generate again in a moment to check.';
+          }
+        }).catch(function(){});
+    }, 2500);
   };
 
   window.sbcRegenContract = function(){
