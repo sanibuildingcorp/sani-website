@@ -3,468 +3,320 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex, nofollow">
-<title>Service Agreement · Sani Building Corp</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Free Estimate | Contact Sani Building Corp NYC</title>
+<meta name="description" content="Get a free renovation estimate from Sani Building Corp. Serving Brooklyn, Manhattan, Queens, Bronx and Long Island. Call 332-277-0990.">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-:root{
-  --navy:#0d1b2a; --navy-2:#1a2d42; --gold:#c9a84c; --gold-2:#b8930a;
-  --ink:#1a1a1a; --ink-soft:#444; --ink-muted:#8a8a8a;
-  --beige:#f5f0e8; --card:#ffffff; --line:#e8e2d9;
-  --display:'Bebas Neue',Arial,sans-serif; --body:'Inter',-apple-system,sans-serif;
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--gold:#c8860a;--gold-light:#f0a500;--black:#0e0e0e;--dark:#1a1a1a;--gray:#6b6b6b;--light:#f5f4f2;--white:#fff;--border:#e8e4de}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(10,10,10,0.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,165,0,0.15)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.nav-logo{display:flex;flex-direction:column;text-decoration:none}
+.nav-logo .brand{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
+.nav-logo .brand span{color:var(--gold-light)}
+.nav-logo .sub{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:1px}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-links>a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
+.nav-links>a:hover{color:var(--gold-light)}
+.nav-dropdown{position:relative}
+.nav-dropdown>a{display:flex;align-items:center;gap:6px;cursor:pointer;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:8px 14px;transition:color .2s}
+.nav-dropdown>a:hover{color:var(--gold-light)}
+.nav-dropdown>a::after{display:none}
+
+.dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:#111;border:1px solid rgba(240,165,0,0.2);border-top:2px solid var(--gold);min-width:220px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:999}
+.nav-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.dropdown-menu a{display:block;color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.06);transition:color 0.2s,background 0.2s}
+.dropdown-menu a:last-child{border-bottom:none}
+.dropdown-menu a:hover{color:var(--gold-light);background:rgba(240,165,0,0.06)}
+.nav-cta{background:var(--gold)!important;color:#fff!important;padding:9px 20px!important;font-size:12px!important;font-weight:500!important;letter-spacing:1.5px!important;text-transform:uppercase!important}
+.nav-cta:hover{background:#a06c08!important}
+.nav-phone{color:var(--gold-light)!important;font-weight:500!important}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{display:block;width:22px;height:2px;background:#fff}
+.mobile-menu{display:none;position:fixed;top:68px;left:0;width:100%;background:rgba(10,10,10,0.98);padding:24px 28px 32px;z-index:999;border-top:1px solid rgba(240,165,0,0.1)}
+.mobile-menu a{display:block;color:rgba(255,255,255,0.8);text-decoration:none;font-size:15px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+.mobile-menu a.mobile-cta{border-bottom:none;margin-top:10px;background:var(--gold);color:#fff;text-align:center;padding:14px;font-weight:500;letter-spacing:1px;text-transform:uppercase;font-size:13px}
+.mobile-menu.open{display:block}
+.mobile-sub{padding-left:16px!important;font-size:13px!important;color:rgba(255,255,255,0.55)!important}
+.btn-primary{background:var(--gold);color:#000;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:15px 32px;text-decoration:none;transition:background .2s,transform .15s;display:inline-block}
+.btn-primary:hover{background:#a06c08;transform:translateY(-2px)}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:500;text-decoration:none;border:1px solid rgba(255,255,255,.28);padding:14px 24px;transition:border-color .2s,color .2s}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold-light)}
+.btn-dark{display:inline-block;background:var(--dark);color:#fff;font-size:13px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:14px 28px;text-decoration:none;transition:background .2s}
+.btn-dark:hover{background:#000}
+.section-eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.section-eyebrow .line{width:28px;height:2px;background:var(--gold);flex-shrink:0}
+.section-eyebrow span{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:500}
+.section-title{font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,44px);font-weight:700;line-height:1.1;color:var(--black)}
+.section-title em{font-style:italic;color:var(--gold)}
+.section-title.white{color:#fff}
+.page-hero{min-height:60vh;display:flex;align-items:flex-end;background:#0a0a12;position:relative;overflow:hidden;padding-top:68px}
+.page-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.2}
+.page-hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:44px 44px}
+.page-hero-accent{position:absolute;left:0;top:0;width:5px;height:100%;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
+.page-hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 20px 56px;width:100%}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:20px;text-transform:uppercase}
+.breadcrumb a{color:var(--gold-light);text-decoration:none}
+.page-hero h1{font-family:'Playfair Display',serif;font-size:clamp(32px,5vw,60px);font-weight:700;color:#fff;line-height:1.05;margin-bottom:16px}
+.page-hero h1 em{font-style:italic;color:var(--gold-light)}
+.page-hero p{font-size:16px;color:rgba(255,255,255,.6);max-width:560px;line-height:1.7;margin-bottom:28px}
+.hero-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
+.hero-badge{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;padding:6px 12px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65)}
+.hero-badge.gold{border-color:var(--gold);color:var(--gold);background:rgba(200,134,10,.08)}
+footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,165,0,.12)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
+.footer-brand .brand{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
+.footer-brand .brand span{color:var(--gold-light)}
+.footer-brand .tagline{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;margin-bottom:16px}
+.footer-brand p{font-size:13px;color:rgba(255,255,255,.45);line-height:1.7;max-width:260px}
+.footer-col h4{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:16px}
+.footer-col a{display:block;font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;margin-bottom:9px;transition:color .2s}
+.footer-col a:hover{color:var(--gold-light)}
+.footer-col p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.7;margin-bottom:8px}
+.footer-col p a{display:inline;margin-bottom:0}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p{font-size:12px;color:rgba(255,255,255,.25)}
+@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.nav-links{display:none}.hamburger{display:flex}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.page-hero-content{padding:40px 20px 44px}}
+
+.contact-grid{display:grid;grid-template-columns:1fr 420px;gap:64px;align-items:start}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.contact-sidebar{position:sticky;top:90px}
+@media(max-width:768px){
+  .contact-grid{grid-template-columns:1fr!important;gap:32px}
+  .form-row-2{grid-template-columns:1fr!important}
+  .contact-sidebar{position:static}
 }
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--body);background:var(--beige);color:var(--ink);-webkit-font-smoothing:antialiased}
-.wrap{max-width:680px;margin:0 auto;padding:20px 14px 40px}
-.hero{background:linear-gradient(135deg,var(--navy),var(--navy-2));border-radius:14px 14px 0 0;padding:30px 24px;text-align:center}
-.brand{font-family:var(--display);font-size:26px;letter-spacing:5px;color:var(--gold);text-decoration:none}
-.tag{font-size:11px;letter-spacing:3px;color:#aaa;margin-top:6px;text-transform:uppercase}
-.card{background:var(--card);border:1px solid var(--line);border-top:none;border-radius:0 0 14px 14px;padding:26px 22px}
-.section-label{font-family:var(--display);font-size:14px;letter-spacing:2.5px;color:var(--ink-muted);margin:26px 0 10px;text-transform:uppercase}
-.section-label:first-child{margin-top:0}
-.info-box{border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.info-head{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;padding:13px 16px;font-family:var(--display);font-size:15px;letter-spacing:2px}
-.info-head span{color:var(--gold)}
-.info-row{display:flex;border-bottom:1px solid var(--line)}
-.info-row:last-child{border-bottom:none}
-.info-label{width:140px;min-width:140px;padding:11px 14px;font-size:12.5px;color:var(--ink-soft);background:#faf8f4}
-.info-value{padding:11px 14px;font-size:13.5px;font-weight:600;flex:1}
-.parties{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.party{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#fafaf7}
-.party-label{font-size:10px;letter-spacing:2px;color:var(--ink-muted);text-transform:uppercase;font-weight:700;margin-bottom:6px}
-.party-name{font-weight:700;font-size:14.5px;margin-bottom:3px}
-.party-line{font-size:12.5px;color:var(--ink-soft);line-height:1.55}
-.list-box{border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.list-box .li{padding:11px 16px 11px 38px;border-bottom:1px solid #f0ece4;font-size:14px;position:relative;line-height:1.55}
-.list-box .li:last-child{border-bottom:none}
-.list-box .li::before{content:"✓";position:absolute;left:16px;color:var(--gold);font-weight:700}
-.pay-table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.pay-table th{background:#faf8f4;color:var(--ink-muted);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
-.pay-table td{padding:11px 14px;border-bottom:1px solid #f0ece4;font-size:14px}
-.pay-table tr:last-child td{border-bottom:none}
-.pay-table .amt{text-align:right;font-weight:700;white-space:nowrap}
-.pay-total{background:#f7f0e3}
-.pay-total td{font-weight:700;border-top:2px solid var(--gold)}
-.clause{margin-bottom:16px}
-.clause h4{font-size:13px;letter-spacing:0.5px;margin-bottom:5px;color:var(--ink)}
-.clause p{font-size:13px;color:var(--ink-soft);line-height:1.65}
-.timeline-box{background:#f7f0e3;border-left:4px solid var(--gold);padding:13px 16px;border-radius:0 8px 8px 0;font-size:14px;color:var(--ink-soft);line-height:1.6}
-.total-banner{background:linear-gradient(135deg,var(--navy),var(--navy-2));border-radius:10px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;margin-top:6px}
-.total-banner .lbl{font-family:var(--display);letter-spacing:2px;font-size:14px;color:#aaa}
-.total-banner .amt{font-family:var(--display);font-size:30px;letter-spacing:1px;color:var(--gold)}
-/* signature */
-.sig-card{border:2px solid var(--gold);border-radius:12px;padding:18px 16px;margin-top:8px;background:#fffdf8}
-.sig-card label{display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-muted);font-weight:700;margin-bottom:6px}
-.sig-card input[type=text]{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:8px;font-size:16px;font-family:var(--body);outline:none;background:#fff}
-.sig-card input[type=text]:focus{border-color:var(--gold)}
-#sig-canvas{width:100%;height:150px;border:1.5px dashed #c9b27a;border-radius:8px;background:#fff;touch-action:none;display:block;cursor:crosshair}
-.sig-tools{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
-.sig-hint{font-size:11.5px;color:var(--ink-muted)}
-.sig-clear{background:none;border:none;color:var(--gold-2);font-size:12.5px;font-weight:700;cursor:pointer;padding:4px}
-.agree-row{display:flex;gap:10px;align-items:flex-start;margin:16px 0 6px;cursor:pointer}
-.agree-row input{width:20px;height:20px;margin-top:1px;accent-color:var(--gold-2);flex-shrink:0}
-.agree-row span{font-size:13px;color:var(--ink-soft);line-height:1.55}
-.btn-sign{width:100%;margin-top:14px;padding:16px;border:none;border-radius:10px;background:linear-gradient(135deg,#2ecc71,#27ae60);color:#fff;font-family:var(--body);font-weight:700;font-size:15px;letter-spacing:1px;cursor:pointer}
-.btn-sign:disabled{opacity:0.55;cursor:not-allowed}
-.sig-err{display:none;color:#e74c3c;font-size:13px;margin-top:10px;line-height:1.4}
-/* signed banner */
-.signed-banner{background:#e8f4ed;border:1px solid #2ecc71;border-radius:10px;padding:16px 18px;margin-bottom:18px}
-.signed-banner .t{font-weight:700;color:#1e8e4e;font-size:15px}
-.signed-banner .s{font-size:13px;color:var(--ink-soft);margin-top:4px;line-height:1.5}
-.signed-sig-img{max-width:260px;max-height:90px;display:block;margin-top:8px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px}
-.deposit-box{background:#f7f0e3;border:1px solid var(--gold);border-radius:10px;padding:16px 18px;margin-top:14px;font-size:14px;color:var(--ink-soft);line-height:1.7}
-/* loading / states */
-.center-state{text-align:center;padding:70px 20px}
-.dots{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
-.dots div{width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite}
-.dots div:nth-child(2){animation-delay:.15s}.dots div:nth-child(3){animation-delay:.3s}
-@keyframes pulse{0%,100%{opacity:.3;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}
-.gen-title{font-family:var(--display);font-size:16px;letter-spacing:2px;color:var(--gold-2)}
-.gen-sub{font-size:12.5px;color:var(--ink-muted);margin-top:8px}
-.footer{text-align:center;margin-top:26px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-muted);line-height:1.8}
-.footer strong{font-family:var(--display);letter-spacing:2px;color:var(--gold-2);font-size:14px}
-.footer a{color:var(--gold-2);text-decoration:none;font-weight:600}
-.btn-row{display:flex;gap:10px;margin-top:18px}
-.btn{flex:1;padding:13px;border:1.5px solid var(--gold);border-radius:10px;background:#fff;color:var(--ink);font-family:var(--body);font-weight:700;font-size:13.5px;cursor:pointer;text-align:center;text-decoration:none}
-.btn-dark{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:var(--gold);border:none}
-@media (max-width:560px){ .parties{grid-template-columns:1fr} .info-label{width:115px;min-width:115px} }
-@media print{
-  body{background:#fff}
-  .hero{border-radius:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .btn-row,.sig-card .sig-tools,.back-wrap{display:none}
+
+/* ── GLOBAL MOBILE FIXES ── */
+@media(max-width:768px){
+  .contact-grid{grid-template-columns:1fr!important;gap:32px!important}
+  .form-row-2{grid-template-columns:1fr!important}
+  .contact-sidebar{position:static!important}
+  section[style*="grid-template-columns:1fr 1fr"]{display:block!important}
+  section[style*="grid-template-columns:1fr 420px"]{display:block!important}
+  div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:1fr 420px"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:2fr 1fr"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:300px 1fr"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:1fr 300px"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:repeat(2"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:repeat(3"]{grid-template-columns:1fr!important}
+  div[style*="grid-template-columns:repeat(4"]{grid-template-columns:1fr 1fr!important}
+  div[style*="position:sticky"]{position:static!important}
+  .page-hero-content{padding:40px 20px 44px!important}
+  .page-hero h1{font-size:32px!important}
+  div[style*="gap:64px"]{gap:24px!important}
+  div[style*="gap:48px"]{gap:20px!important}
+  div[style*="padding:80px 28px"]{padding:48px 20px!important}
+  div[style*="padding:88px 28px"]{padding:48px 20px!important}
+  section[style*="padding:80px 28px"]{padding:48px 20px!important}
+  section[style*="padding:88px 28px"]{padding:48px 20px!important}
+  .check-grid{grid-template-columns:1fr!important}
+  .process-steps{grid-template-columns:1fr!important}
+  .sidebar-box{position:static!important}
+  div[style*="grid-template-columns:1fr 300px"]{display:flex!important;flex-direction:column!important}
+  div[style*="min-height:220px"]{min-height:200px!important}
 }
 </style>
 </head>
 <body>
-<div class="wrap">
-
-  <!-- LOADING -->
-  <div id="state-loading" class="center-state">
-    <div class="dots"><div></div><div></div><div></div></div>
-    <div class="gen-title" id="loading-title">LOADING…</div>
-    <div class="gen-sub" id="loading-sub"></div>
-  </div>
-
-  <!-- ERROR -->
-  <div id="state-error" class="center-state" style="display:none">
-    <div style="font-size:44px;margin-bottom:14px">⚠️</div>
-    <div class="gen-title">COULD NOT LOAD AGREEMENT</div>
-    <div class="gen-sub" id="error-detail">Please try again, or call <a href="tel:+13322770990" style="color:var(--gold-2);font-weight:700;text-decoration:none">(332) 277-0990</a></div>
-    <button onclick="retryLoad()" style="margin-top:18px;padding:13px 34px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--navy),var(--navy-2));color:var(--gold);font-family:var(--body);font-weight:700;font-size:14px;letter-spacing:1px;cursor:pointer">↻ Try Again</button>
-  </div>
-
-  <!-- MAIN -->
-  <div id="state-main" style="display:none">
-    <div class="hero">
-      <a class="brand" href="https://www.sanibuildingcorp.com">SANI BUILDING CORP</a>
-      <div class="tag">Service Agreement</div>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="brand">SANI <span>BUILDING</span> CORP</div>
+      <div class="sub">NYC Renovation &amp; Repair</div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <div class="nav-dropdown">
+        <a href="services.html">Services ▾</a>
+        <div class="dropdown-menu">
+          <a href="bathroom-renovation.html">&#x1F6C1; Bathroom Renovation</a>
+          <a href="kitchen-renovation.html">&#x1F373; Kitchen Renovation</a>
+          <a href="painting.html">&#x1F3A8; Painting Services</a>
+          <a href="flooring.html">&#x1FAB5; Flooring Installation</a>
+          <a href="carpentry.html">&#x1F528; Carpentry &amp; Millwork</a>
+          <a href="water-damage.html">&#x1F4A7; Water Damage Restoration</a>
+          <a href="services.html">&rarr; View All Services</a>
+        </div>
+      </div>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="tel:3322770990" class="nav-phone">332-277-0990</a>
+      <a href="contact.html" class="nav-cta">Free Estimate</a>
     </div>
-    <div class="card">
-
-      <div id="signed-banner-wrap"></div>
-
-      <!-- PARTIES -->
-      <div class="section-label">Parties to this Agreement</div>
-      <div class="parties">
-        <div class="party">
-          <div class="party-label">Contractor</div>
-          <div class="party-name">Sani Building Corp</div>
-          <div class="party-line">2954 Brighton 12th Street<br>Brooklyn, NY 11235</div>
-          <div class="party-line">(332) 277-0990<br>contact@sanibuildingcorp.com</div>
-        </div>
-        <div class="party">
-          <div class="party-label">Customer</div>
-          <div class="party-name" id="cust-name">—</div>
-          <div class="party-line" id="cust-address"></div>
-          <div class="party-line" id="cust-contact"></div>
-        </div>
-      </div>
-
-      <!-- PROJECT -->
-      <div class="section-label">Project</div>
-      <div class="info-box">
-        <div class="info-head">AGREEMENT <span id="ref-label">—</span></div>
-        <div class="info-row"><div class="info-label">Project Type</div><div class="info-value" id="ct-type">—</div></div>
-        <div class="info-row"><div class="info-label">Project Address</div><div class="info-value" id="ct-address">—</div></div>
-        <div class="info-row"><div class="info-label">Agreement Date</div><div class="info-value" id="ct-date">—</div></div>
-      </div>
-      <div class="total-banner">
-        <span class="lbl">CONTRACT PRICE</span>
-        <span class="amt" id="ct-total">$0.00</span>
-      </div>
-
-      <!-- SCOPE -->
-      <div class="section-label">Scope of Work</div>
-      <div class="list-box" id="scope-list"></div>
-
-      <!-- MATERIALS -->
-      <div id="materials-section" style="display:none">
-        <div class="section-label">Materials &amp; Finishes</div>
-        <div class="list-box" id="materials-list"></div>
-      </div>
-
-      <!-- TIMELINE -->
-      <div class="section-label">Project Timeline</div>
-      <div class="timeline-box" id="ct-timeline">—</div>
-
-      <!-- PAYMENT SCHEDULE -->
-      <div class="section-label">Payment Schedule</div>
-      <table class="pay-table">
-        <thead><tr><th>Milestone</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody id="pay-body"></tbody>
-      </table>
-
-      <!-- CLAUSES -->
-      <div class="section-label">Terms &amp; Conditions</div>
-      <div id="clauses-wrap"></div>
-
-      <!-- SIGNATURE -->
-      <div id="sign-section">
-        <div class="section-label">✍️ Sign &amp; Approve</div>
-        <div class="sig-card">
-          <label>Type your full legal name</label>
-          <input type="text" id="sig-name" placeholder="e.g. John Smith" autocomplete="name">
-          <div style="height:14px"></div>
-          <label>Draw your signature</label>
-          <canvas id="sig-canvas"></canvas>
-          <div class="sig-tools">
-            <span class="sig-hint">Use your finger or mouse</span>
-            <button type="button" class="sig-clear" onclick="clearSig()">✕ Clear</button>
-          </div>
-          <label class="agree-row">
-            <input type="checkbox" id="sig-agree">
-            <span>I have read this agreement and accept the scope of work, contract price, payment schedule, and terms above. I authorize Sani Building Corp to proceed.</span>
-          </label>
-          <div class="sig-err" id="sig-err"></div>
-          <button class="btn-sign" id="btn-sign" onclick="submitSign()">✓ Sign &amp; Approve Agreement</button>
-        </div>
-      </div>
-
-      <!-- POST-SIGN DEPOSIT INFO -->
-      <div id="deposit-wrap"></div>
-
-      <div class="btn-row">
-        <button class="btn" onclick="window.print()">⬇ Download / Print</button>
-        <a class="btn btn-dark" href="https://www.sanibuildingcorp.com">Visit Website ↗</a>
-      </div>
-
-      <div class="footer">
-        <strong>SANI BUILDING CORP</strong><br>
-        Fully Insured · NYC Metro · 4.9 ★<br>
-        <a href="tel:+13322770990">(332) 277-0990</a> · <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a>
-      </div>
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
     </div>
   </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.html" onclick="toggleMenu()">Home</a>
+  <a href="services.html" onclick="toggleMenu()">All Services</a>
+  <a href="bathroom-renovation.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Bathroom Renovation</a>
+  <a href="kitchen-renovation.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Kitchen Renovation</a>
+  <a href="painting.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Painting Services</a>
+  <a href="flooring.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Flooring</a>
+  <a href="carpentry.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Carpentry</a>
+  <a href="water-damage.html" class="mobile-sub" onclick="toggleMenu()">&rdsh; Water Damage</a>
+  <a href="about.html" onclick="toggleMenu()">About Us</a>
+  <a href="contact.html" onclick="toggleMenu()">Contact</a>
+  <a href="tel:3322770990" onclick="toggleMenu()">&#x1F4DE; 332-277-0990</a>
+  <a href="contact.html" class="mobile-cta" onclick="toggleMenu()">Get Free Estimate</a>
 </div>
 
+<section class="page-hero">
+  <div class="page-hero-bg" style="background-image:url('https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1600&q=80')"></div>
+  <div class="page-hero-grid"></div>
+  <div class="page-hero-accent"></div>
+  <div class="page-hero-content">
+    <div class="breadcrumb"><a href="index.html">Home</a> <span>&rsaquo;</span> <span>Contact</span></div>
+    <h1>Get a <em>Free Estimate</em></h1>
+    <p>Fill out the form and we&apos;ll get back to you within a few hours. Or call us directly &mdash; we&apos;re available 6 days a week.</p>
+  </div>
+</section>
+
+<section style="padding:80px 28px;background:#fff">
+  <div class="contact-grid" style="max-width:1100px;margin:0 auto">
+
+    <div>
+      <div class="section-eyebrow"><div class="line"></div><span>Request Estimate</span></div>
+      <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;margin-bottom:8px">Tell Us About Your <em>Project</em></div>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:32px;line-height:1.7">We&apos;ll review your project and get back to you within a few hours with a free, no-obligation estimate.</p>
+
+      <form name="estimate" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="estimateForm" style="display:grid;gap:20px">
+        <input type="hidden" name="form-name" value="estimate">
+        <p style="display:none"><input name="bot-field"></p>
+        <div class="form-row-2">
+          <div>
+            <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Full Name *</label>
+            <input type="text" name="name" required placeholder="John Smith" style="width:100%;border:1.5px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;background:#fafafa">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Phone Number *</label>
+            <input type="tel" name="phone" required placeholder="(212) 555-0000" style="width:100%;border:1.5px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;background:#fafafa">
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Email Address *</label>
+          <input type="email" name="email" required placeholder="john@example.com" style="width:100%;border:1.5px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;background:#fafafa">
+        </div>
+        <div class="form-row-2">
+          <div>
+            <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Service Needed *</label>
+            <select name="service" required style="width:100%;border:1.5px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;background:#fafafa;appearance:none">
+              <option value="" disabled selected>Select a service</option>
+              <option>Bathroom Renovation</option>
+              <option>Kitchen Renovation</option>
+              <option>Painting Services</option>
+              <option>Flooring Installation</option>
+              <option>Carpentry / Millwork</option>
+              <option>Water Damage Restoration</option>
+              <option>Handyman Services</option>
+              <option>Full Gut Renovation</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Borough / Area *</label>
+            <select name="borough" required style="width:100%;border:1.5px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;background:#fafafa;appearance:none">
+              <option value="" disabled selected>Select area</option>
+              <option>Brooklyn</option>
+              <option>Manhattan</option>
+              <option>Queens</option>
+              <option>Bronx</option>
+              <option>Long Island</option>
+              <option>Staten Island</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Property Address</label>
+          <input type="text" name="address" placeholder="123 Main St, Brooklyn, NY" style="width:100%;border:1.5px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;background:#fafafa">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Describe Your Project *</label>
+          <textarea name="message" required placeholder="Tell us about your project - size, current condition, timeline..." rows="5" style="width:100%;border:1.5px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:vertical;background:#fafafa"></textarea>
+        </div>
+        <button type="submit" style="background:var(--gold);color:#000;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:16px 32px;border:none;cursor:pointer;transition:background .2s;width:100%">Submit Request — It&apos;s Free</button>
+      </form>
+      <div id="successMsg" style="display:none;background:#f0f9f0;border:1.5px solid #2d8a2d;padding:28px;margin-top:20px;text-align:center">
+        <div style="font-family:'Playfair Display',serif;font-size:22px;color:#2d8a2d;margin-bottom:8px">&#10003; Request Received!</div>
+        <p style="color:#444;font-size:14px">We&apos;ll get back to you within a few hours with your free estimate.</p>
+      </div>
+    </div>
+
+    <div class="contact-sidebar">
+      <div style="background:var(--dark);padding:36px;margin-bottom:20px">
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#fff;margin-bottom:20px">Contact Info</div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <a href="tel:3322770990" style="display:flex;align-items:center;gap:12px;color:var(--gold-light);text-decoration:none;font-size:15px;font-weight:500">&#x1F4DE; 332-277-0990</a>
+          <a href="mailto:sanibuildingcorp@gmail.com" style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.6);text-decoration:none;font-size:14px">&#x2709; sanibuildingcorp@gmail.com</a>
+          <div style="color:rgba(255,255,255,.5);font-size:14px;line-height:1.6">&#x1F4CD; 2954 Brighton 12th Street<br>&nbsp;&nbsp;&nbsp;&nbsp;Brooklyn, NY 11235</div>
+          <div style="color:rgba(255,255,255,.4);font-size:13px">&#x1F550; Mon&ndash;Sat: 8:00 AM &ndash; 9:00 PM</div>
+        </div>
+      </div>
+      <div style="background:var(--gold);padding:28px;text-align:center">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(0,0,0,.7);margin-bottom:8px">4.9 Star Rated</div>
+        <div style="font-size:24px;margin-bottom:4px">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <div style="font-size:13px;color:rgba(0,0,0,.65)">62+ Google Reviews</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <script>
-var params = new URLSearchParams(window.location.search);
-var ref = params.get("ref");
-var record = null;
-var contract = null;
-var carry = null; // selections carried over from the quote page
+const form = document.getElementById("estimateForm");
+if(form){form.addEventListener("submit",async function(e){e.preventDefault();const data=new FormData(form);try{await fetch("/",{method:"POST",body:data});form.style.display="none";document.getElementById("successMsg").style.display="block";}catch(err){form.submit();}});}
+</script>
 
-function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-function fmt(n){ return "$" + Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
-
-try { carry = JSON.parse(sessionStorage.getItem("sbc-approve-" + ref) || "null"); } catch(e) { carry = null; }
-
-function showError(msg){
-  document.getElementById("state-loading").style.display="none";
-  document.getElementById("state-main").style.display="none";
-  document.getElementById("state-error").style.display="block";
-  if (msg) {
-    document.getElementById("error-detail").innerHTML =
-      '<span style="color:#b05c4c">' + esc(msg) + '</span><br>Please try again, or call <a href="tel:+13322770990" style="color:var(--gold-2);font-weight:700;text-decoration:none">(332) 277-0990</a>';
-  }
-}
-function retryLoad(){
-  document.getElementById("state-error").style.display="none";
-  document.getElementById("state-loading").style.display="block";
-  document.getElementById("loading-title").textContent = "PREPARING YOUR AGREEMENT…";
-  document.getElementById("loading-sub").textContent = "Building a project-specific contract from your estimate · about 15–20 seconds";
-  load();
-}
-
-async function load(){
-  if(!ref){ showError(); return; }
-  try{
-    var r = await fetch("/.netlify/functions/get-estimate?ref="+encodeURIComponent(ref));
-    if(!r.ok){ showError("Estimate " + ref + " could not be loaded."); return; }
-    record = await r.json();
-
-    if(record.contract && record.contract.sections){
-      contract = record.contract;
-      render();
-      return;
-    }
-    // Generate the project-specific contract with AI (background) and poll until ready
-    document.getElementById("loading-title").textContent = "PREPARING YOUR AGREEMENT…";
-    document.getElementById("loading-sub").textContent = "Building a project-specific contract from your estimate · 15–30 seconds";
-    fetch("/.netlify/functions/generate-contract-background",{
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ ref: ref })
-    }).catch(function(){});
-    var started = Date.now();
-    var done = await new Promise(function(resolve){
-      var iv = setInterval(function(){
-        var secs = Math.round((Date.now()-started)/1000);
-        document.getElementById("loading-sub").textContent = "Writing your agreement… " + secs + "s";
-        fetch("/.netlify/functions/get-estimate?ref="+encodeURIComponent(ref))
-          .then(function(r){ return r.json(); })
-          .then(function(rec){
-            if (rec && rec.contract && rec.contract.sections){
-              clearInterval(iv); record = rec; resolve({ ok:true });
-            } else if (rec && rec.contractError){
-              clearInterval(iv); resolve({ ok:false, err: rec.contractError });
-            } else if (secs >= 75){
-              clearInterval(iv); resolve({ ok:false, err: "This is taking longer than usual." });
-            }
-          }).catch(function(){});
-      }, 2500);
-    });
-    if (!done.ok) throw new Error(done.err || "Could not prepare agreement");
-    contract = record.contract;
-    render();
-  }catch(e){ console.error(e); showError(e.message || "Something went wrong."); }
-}
-
-function render(){
-  var cust = record.customer || {};
-  var s = contract.sections || {};
-  var signed = contract.signed;
-
-  document.getElementById("state-loading").style.display="none";
-  document.getElementById("state-main").style.display="block";
-
-  // Parties
-  document.getElementById("cust-name").textContent = cust.name || "—";
-  document.getElementById("cust-address").textContent = cust.address || "";
-  document.getElementById("cust-contact").innerHTML =
-    (cust.phone ? esc(cust.phone) + "<br>" : "") + (cust.email ? esc(cust.email) : "");
-
-  // Project
-  document.getElementById("ref-label").textContent = "#" + (record.ref || "");
-  document.getElementById("ct-type").textContent = s.projectType || "—";
-  document.getElementById("ct-address").textContent = contract.projectAddress || cust.address || "—";
-  document.getElementById("ct-date").textContent = new Date(contract.generatedAt || Date.now())
-    .toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
-
-  // Total — carried final total (changed finishes) wins
-  var total = (carry && carry.finalTotal > 0) ? carry.finalTotal : (Number(contract.total)||0);
-  document.getElementById("ct-total").textContent = fmt(total);
-
-  // Scope
-  document.getElementById("scope-list").innerHTML =
-    (s.scopeOfWork||[]).map(function(it){ return '<div class="li">'+esc(it)+'</div>'; }).join("") ||
-    '<div class="li">Work as described in estimate '+esc(record.ref||"")+'</div>';
-
-  // Materials
-  var mats = s.materialsList || [];
-  if(mats.length){
-    document.getElementById("materials-section").style.display="block";
-    document.getElementById("materials-list").innerHTML =
-      mats.map(function(it){ return '<div class="li">'+esc(it)+'</div>'; }).join("");
-  }
-
-  // Timeline
-  document.getElementById("ct-timeline").textContent = s.timeline || "To be scheduled";
-
-  // Payment schedule (re-proportion if carried total differs)
-  var sched = (s.paymentSchedule||[]).slice();
-  var schedSum = sched.reduce(function(a,p){ return a+(Number(p.amount)||0); },0);
-  if(total > 0 && schedSum > 0 && Math.abs(schedSum-total) > 1){
-    var ratio = total/schedSum, run = 0;
-    sched = sched.map(function(p,i){
-      var amt = (i===sched.length-1) ? Math.round((total-run)*100)/100 : Math.round(p.amount*ratio*100)/100;
-      run += amt; return { label:p.label, amount:amt };
-    });
-  }
-  document.getElementById("pay-body").innerHTML =
-    sched.map(function(p){
-      return '<tr><td>'+esc(p.label)+'</td><td class="amt">'+fmt(p.amount)+'</td></tr>';
-    }).join("") +
-    '<tr class="pay-total"><td>TOTAL</td><td class="amt">'+fmt(total)+'</td></tr>';
-
-  // Clauses
-  var c = s.clauses || {};
-  var titles = {
-    hiddenConditions:"Hidden &amp; Concealed Conditions",
-    changeOrder:"Change Orders",
-    warranty:"Warranty",
-    cancellation:"Cancellation",
-    permitsAndInsurance:"Permits, Code Compliance &amp; Insurance"
-  };
-  document.getElementById("clauses-wrap").innerHTML =
-    Object.keys(titles).filter(function(k){ return c[k]; }).map(function(k){
-      return '<div class="clause"><h4>'+titles[k]+'</h4><p>'+esc(c[k])+'</p></div>';
-    }).join("");
-
-  // Signed state
-  if(signed){
-    document.getElementById("signed-banner-wrap").innerHTML =
-      '<div class="signed-banner">'+
-        '<div class="t">✓ Agreement signed</div>'+
-        '<div class="s">Signed by <strong>'+esc(signed.name)+'</strong> on '+
-          new Date(signed.at).toLocaleString("en-US",{month:"long",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"})+
-        '</div>'+
-        (signed.image ? '<img class="signed-sig-img" src="'+signed.image+'" alt="Signature">' : '')+
-      '</div>';
-    document.getElementById("sign-section").style.display="none";
-    showDeposit();
-  } else {
-    initCanvas();
-  }
-}
-
-function showDeposit(){
-  var sched = (contract.sections && contract.sections.paymentSchedule) || [];
-  if(!sched.length) return;
-  var d = sched[0];
-  document.getElementById("deposit-wrap").innerHTML =
-    '<div class="deposit-box"><strong>Next step — '+esc(d.label)+': '+fmt(d.amount)+'</strong><br>'+
-    'Zelle: (332) 277-0990 · Account name: Sani Building Corp<br>'+
-    'Questions? Call <a href="tel:+13322770990" style="color:var(--gold-2);font-weight:700;text-decoration:none">(332) 277-0990</a></div>';
-}
-
-/* ===== SIGNATURE PAD ===== */
-var canvas, ctx2d, drawing=false, hasInk=false, lastX=0, lastY=0;
-function initCanvas(){
-  canvas = document.getElementById("sig-canvas");
-  var rect = canvas.getBoundingClientRect();
-  var dpr = window.devicePixelRatio || 1;
-  canvas.width = rect.width * dpr;
-  canvas.height = 150 * dpr;
-  ctx2d = canvas.getContext("2d");
-  ctx2d.scale(dpr,dpr);
-  ctx2d.lineWidth = 2.4; ctx2d.lineCap = "round"; ctx2d.lineJoin = "round";
-  ctx2d.strokeStyle = "#16263c";
-  canvas.addEventListener("pointerdown", startDraw);
-  canvas.addEventListener("pointermove", moveDraw);
-  window.addEventListener("pointerup", endDraw);
-}
-function pos(e){
-  var r = canvas.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-function startDraw(e){ e.preventDefault(); drawing=true; var p=pos(e); lastX=p.x; lastY=p.y; }
-function moveDraw(e){
-  if(!drawing) return; e.preventDefault();
-  var p=pos(e);
-  ctx2d.beginPath(); ctx2d.moveTo(lastX,lastY); ctx2d.lineTo(p.x,p.y); ctx2d.stroke();
-  lastX=p.x; lastY=p.y; hasInk=true;
-}
-function endDraw(){ drawing=false; }
-function clearSig(){
-  if(!ctx2d) return;
-  ctx2d.clearRect(0,0,canvas.width,canvas.height);
-  hasInk=false;
-}
-
-async function submitSign(){
-  var name = document.getElementById("sig-name").value.trim();
-  var agree = document.getElementById("sig-agree").checked;
-  var err = document.getElementById("sig-err");
-  err.style.display="none";
-
-  if(!name){ err.textContent="Please type your full name."; err.style.display="block"; return; }
-  if(!agree){ err.textContent="Please check the box to confirm you accept the agreement."; err.style.display="block"; return; }
-
-  var btn = document.getElementById("btn-sign");
-  btn.disabled = true; btn.textContent = "Signing…";
-
-  var sigData = "";
-  try{ if(hasInk) sigData = canvas.toDataURL("image/png"); }catch(e){}
-
-  var payload = { ref: ref, name: name, signatureData: sigData };
-  if(carry){
-    if(carry.finishSelections) payload.finishSelections = carry.finishSelections;
-    if(carry.materialsSelections) payload.materialsSelections = carry.materialsSelections;
-    if(carry.finalTotal > 0) payload.finalTotal = carry.finalTotal;
-  }
-
-  try{
-    var r = await fetch("/.netlify/functions/sign-contract",{
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    var d = await r.json();
-    if(!r.ok) throw new Error(d.error || "Could not sign");
-    try{ sessionStorage.removeItem("sbc-approve-"+ref); }catch(e){}
-    // re-render as signed
-    contract.signed = { name: name, image: sigData, at: d.signedAt || new Date().toISOString() };
-    if(carry && carry.finalTotal>0) contract.total = carry.finalTotal;
-    window.scrollTo(0,0);
-    render();
-  }catch(e){
-    btn.disabled=false; btn.textContent="✓ Sign & Approve Agreement";
-    err.textContent = e.message + " — or call (332) 277-0990.";
-    err.style.display="block";
-  }
-}
-
-load();
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand">SANI <span>BUILDING</span> CORP</div>
+        <div class="tagline">NYC Renovation &amp; Repair Contractor</div>
+        <p>Professional renovation contractor serving Manhattan, Brooklyn, Queens, Bronx, Staten Island &amp; Long Island since 2015.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Services</h4>
+        <a href="bathroom-renovation.html">Bathroom Renovation</a>
+        <a href="kitchen-renovation.html">Kitchen Renovation</a>
+        <a href="painting.html">Painting Services</a>
+        <a href="flooring.html">Flooring Installation</a>
+        <a href="carpentry.html">Carpentry</a>
+        <a href="water-damage.html">Water Damage</a>
+        <a href="services.html">All Services</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="index.html">Home</a>
+        <a href="about.html">About Us</a>
+        <a href="services.html">Services ▾</a>
+        <a href="contact.html">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <p><a href="tel:3322770990">&#x1F4DE; 332-277-0990</a></p>
+        <p><a href="mailto:sanibuildingcorp@gmail.com">&#x2709; sanibuildingcorp@gmail.com</a></p>
+        <p style="margin-top:8px;color:rgba(255,255,255,.4)">2954 Brighton 12th St<br>Brooklyn, NY 11235</p>
+        <p style="margin-top:8px;color:rgba(255,255,255,.3)">Mon&ndash;Sat: 8:00 AM &ndash; 9:00 PM</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Sani Building Corp. All Rights Reserved.</p>
+      <p>Brooklyn &bull; Manhattan &bull; Queens &bull; Bronx &bull; Staten Island &bull; Long Island</p>
+    </div>
+  </div>
+</footer>
+<script>
+function toggleMenu(){document.getElementById('mobileMenu').classList.toggle('open');}
+document.addEventListener('click',function(e){var menu=document.getElementById('mobileMenu');var ham=document.getElementById('hamburger');if(menu&&ham&&!menu.contains(e.target)&&!ham.contains(e.target)){menu.classList.remove('open');}});
 </script>
 </body>
 </html>
