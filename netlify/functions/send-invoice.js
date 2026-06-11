@@ -105,18 +105,11 @@ exports.handler = async function (event) {
 
     // ── Work performed (DESCRIPTIONS ONLY — no per-line prices) ──
     // Prefer the manually-typed list from the dashboard; otherwise fall back to line items.
-    const labor = Array.isArray(est.labor) ? est.labor : [];
-    const materials = Array.isArray(est.materials) ? est.materials : [];
-
     const itemCell = 'padding:11px 16px 11px 36px;border-bottom:1px solid #f0ece4;font-size:14px;color:#1a1a1a;position:relative';
-    const groupCell = 'padding:9px 16px;background:#f7f0e3;color:#96770a;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8e2d9';
     const checkSpan = '<span style="position:absolute;left:16px;color:#c9a84c;font-weight:700">\u2713</span>';
 
     function lineRow(text) {
       return `<tr><td style="${itemCell}">${checkSpan}${escapeHtml(text)}</td></tr>`;
-    }
-    function groupRow(name) {
-      return `<tr><td style="${groupCell}">${escapeHtml(name)}</td></tr>`;
     }
 
     let workRowsHtml = "";
