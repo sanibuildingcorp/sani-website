@@ -6725,5 +6725,207 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 </script>
 <!-- ===== END EDIT CUSTOMER INFO ===== -->
 
+
+<!-- ============================================================
+     CONTRACT PANEL (contractor side)
+     Generate / review / EDIT the AI contract before the customer
+     sees it. Appears at the bottom of the estimate editor.
+     Read-only once signed.
+     ============================================================ -->
+<script>
+(function(){
+  if (window.__sbcContract) return;
+  window.__sbcContract = true;
+
+  var IN = 'width:100%;box-sizing:border-box;background:#f7f9fc;border:1.5px solid rgba(13,27,42,0.16);color:var(--ink);padding:10px 12px;border-radius:8px;font-family:inherit;font-size:14px;outline:none';
+  var TA = IN + ';resize:vertical;line-height:1.6';
+  var LBL = 'display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-muted);font-weight:600;margin:14px 0 5px';
+
+  function esc2(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+  function fmt2(n){ return '$' + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  function inject(){
+    try{
+      var card = document.getElementById('edit-card');
+      if (!card || typeof currentRecord === 'undefined' || !currentRecord) return;
+      if (document.getElementById('sbc-contract-panel')) return;
+      var panel = document.createElement('div');
+      panel.id = 'sbc-contract-panel';
+      panel.style.cssText = 'margin-top:18px;border:2px solid var(--line);border-radius:14px;padding:18px 16px;background:#fafbfd';
+      card.appendChild(panel);
+      renderContractPanel();
+    }catch(e){ console.error('contract panel', e); }
+  }
+
+  window.renderContractPanel = function(){
+    var panel = document.getElementById('sbc-contract-panel');
+    if (!panel || !currentRecord) return;
+    var ct = currentRecord.contract;
+    var head = '<div style="font-family:var(--display);font-size:16px;letter-spacing:2px;color:var(--gold-2);margin-bottom:4px">📄 CONTRACT</div>';
+
+    if (!ct || !ct.sections){
+      panel.innerHTML = head +
+        '<div style="font-size:12.5px;color:var(--ink-muted);margin-bottom:12px;line-height:1.5">Generate the project-specific agreement the customer signs when they approve. You can review and edit everything before they see it.</div>'+
+        '<button onclick="sbcGenContract(false)" id="sbc-ct-gen" style="padding:12px 22px;background:var(--gold);color:#102236;border:none;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer">✨ Generate Contract with AI</button>'+
+        '<span id="sbc-ct-genmsg" style="font-size:12px;color:var(--ink-muted);margin-left:10px"></span>';
+      return;
+    }
+
+    var s = ct.sections;
+    if (ct.signed){
+      panel.innerHTML = head +
+        '<div style="background:rgba(22,163,74,0.10);border:1px solid #16a34a;border-radius:9px;padding:12px 14px;margin:10px 0">'+
+          '<div style="font-weight:700;color:#15803d;font-size:13.5px">✓ Signed by '+esc2(ct.signed.name)+'</div>'+
+          '<div style="font-size:12px;color:var(--ink-soft);margin-top:3px">'+new Date(ct.signed.at).toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' · Total '+fmt2(ct.total)+'</div>'+
+          (ct.signed.image ? '<img src="'+ct.signed.image+'" style="max-width:220px;max-height:80px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:4px;margin-top:8px;display:block">' : '')+
+        '</div>'+
+        '<button onclick="window.open(\'/contract.html?ref=\'+encodeURIComponent(currentRecord.ref))" style="padding:11px 20px;background:#fff;border:1.5px solid var(--gold);color:var(--ink);border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;cursor:pointer">👁 View Signed Contract</button>';
+      return;
+    }
+
+    var schedRows = (s.paymentSchedule||[]).map(function(p,i){
+      return '<div style="display:flex;gap:8px;margin-bottom:8px" class="sbc-cs-row">'+
+        '<input type="text" class="sbc-cs-l" value="'+esc2(p.label)+'" placeholder="Milestone" style="'+IN+';flex:2">'+
+        '<input type="number" class="sbc-cs-a" value="'+(Number(p.amount)||0)+'" step="0.01" style="'+IN+';flex:1">'+
+        '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:var(--bad);font-size:17px;cursor:pointer;padding:0 4px">✕</button>'+
+      '</div>';
+    }).join('');
+
+    var c = s.clauses || {};
+    panel.innerHTML = head +
+      '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:6px">Edit anything below — the customer sees this exact contract when they tap Review Contract &amp; Approve. Contract total: <strong style="color:var(--gold-2)">'+fmt2(ct.total)+'</strong>'+(ct.editedAt?' · edited '+new Date(ct.editedAt).toLocaleDateString():'')+'</div>'+
+
+      '<label style="'+LBL+'">Project Type</label>'+
+      '<input type="text" id="sbc-ct-type" value="'+esc2(s.projectType)+'" style="'+IN+'">'+
+
+      '<label style="'+LBL+'">Scope of Work (one item per line)</label>'+
+      '<textarea id="sbc-ct-scope" rows="7" style="'+TA+'">'+esc2((s.scopeOfWork||[]).join('\n'))+'</textarea>'+
+
+      '<label style="'+LBL+'">Materials &amp; Finishes (one per line)</label>'+
+      '<textarea id="sbc-ct-mats" rows="5" style="'+TA+'">'+esc2((s.materialsList||[]).join('\n'))+'</textarea>'+
+
+      '<label style="'+LBL+'">Timeline</label>'+
+      '<input type="text" id="sbc-ct-timeline" value="'+esc2(s.timeline)+'" style="'+IN+'">'+
+
+      '<label style="'+LBL+'">Payment Schedule <span style="text-transform:none;letter-spacing:0;font-weight:400">(should sum to '+fmt2(ct.total)+')</span></label>'+
+      '<div id="sbc-cs-rows">'+schedRows+'</div>'+
+      '<button onclick="sbcAddSchedRow()" style="background:none;border:1.5px dashed var(--line);color:var(--ink-muted);border-radius:8px;padding:8px 16px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;width:100%">+ Add Payment Row</button>'+
+
+      '<label style="'+LBL+'">Hidden &amp; Concealed Conditions</label>'+
+      '<textarea id="sbc-ct-cl-hidden" rows="3" style="'+TA+'">'+esc2(c.hiddenConditions)+'</textarea>'+
+      '<label style="'+LBL+'">Change Orders</label>'+
+      '<textarea id="sbc-ct-cl-change" rows="3" style="'+TA+'">'+esc2(c.changeOrder)+'</textarea>'+
+      '<label style="'+LBL+'">Warranty</label>'+
+      '<textarea id="sbc-ct-cl-warranty" rows="3" style="'+TA+'">'+esc2(c.warranty)+'</textarea>'+
+      '<label style="'+LBL+'">Cancellation</label>'+
+      '<textarea id="sbc-ct-cl-cancel" rows="3" style="'+TA+'">'+esc2(c.cancellation)+'</textarea>'+
+      '<label style="'+LBL+'">Permits, Code &amp; Insurance</label>'+
+      '<textarea id="sbc-ct-cl-permits" rows="3" style="'+TA+'">'+esc2(c.permitsAndInsurance)+'</textarea>'+
+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">'+
+        '<button onclick="sbcSaveContract()" id="sbc-ct-save" style="padding:12px 22px;background:var(--gold);color:#102236;border:none;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer">💾 Save Contract</button>'+
+        '<button onclick="window.open(\'/contract.html?ref=\'+encodeURIComponent(currentRecord.ref))" style="padding:12px 20px;background:#fff;border:1.5px solid var(--gold);color:var(--ink);border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;cursor:pointer">👁 Preview as Customer</button>'+
+        '<button onclick="sbcRegenContract()" style="padding:12px 20px;background:#fff;border:1.5px solid rgba(13,27,42,0.16);color:var(--ink-soft);border-radius:9px;font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer">↻ Regenerate with AI</button>'+
+      '</div>';
+  };
+
+  window.sbcAddSchedRow = function(){
+    var IN2 = IN;
+    var div = document.createElement('div');
+    div.className = 'sbc-cs-row';
+    div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px';
+    div.innerHTML = '<input type="text" class="sbc-cs-l" placeholder="Milestone" style="'+IN2+';flex:2">'+
+      '<input type="number" class="sbc-cs-a" value="0" step="0.01" style="'+IN2+';flex:1">'+
+      '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:var(--bad);font-size:17px;cursor:pointer;padding:0 4px">✕</button>';
+    document.getElementById('sbc-cs-rows').appendChild(div);
+  };
+
+  window.sbcGenContract = function(force){
+    if (!currentRecord) return;
+    var btn = document.getElementById('sbc-ct-gen');
+    var msg = document.getElementById('sbc-ct-genmsg');
+    if (btn){ btn.disabled = true; btn.textContent = '✨ Generating… (~15s)'; }
+    if (msg) msg.textContent = '';
+    fetch('/.netlify/functions/generate-contract', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ ref: currentRecord.ref, force: !!force })
+    })
+    .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+    .then(function(out){
+      if (!out.ok || !out.d.contract) throw new Error((out.d && out.d.error) || 'Generation failed');
+      currentRecord.contract = out.d.contract;
+      renderContractPanel();
+      if (window.toast) toast('✓ Contract ready — review & edit below');
+    })
+    .catch(function(e){
+      if (btn){ btn.disabled = false; btn.textContent = '✨ Generate Contract with AI'; }
+      if (msg) msg.textContent = e.message;
+      if (window.toast) toast('Contract: ' + e.message, true);
+    });
+  };
+
+  window.sbcRegenContract = function(){
+    if (!confirm('Regenerate the contract with AI? Your edits will be replaced.')) return;
+    currentRecord.contract = null;
+    renderContractPanel();
+    sbcGenContract(true);
+  };
+
+  window.sbcSaveContract = function(){
+    if (!currentRecord || !currentRecord.contract) return;
+    var lines = function(id){
+      return document.getElementById(id).value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+    };
+    var sched = [];
+    document.querySelectorAll('#sbc-cs-rows .sbc-cs-row').forEach(function(row){
+      var l = row.querySelector('.sbc-cs-l').value.trim();
+      var a = parseFloat(row.querySelector('.sbc-cs-a').value) || 0;
+      if (l) sched.push({ label:l, amount:a });
+    });
+    var sections = {
+      projectType: document.getElementById('sbc-ct-type').value.trim(),
+      scopeOfWork: lines('sbc-ct-scope'),
+      materialsList: lines('sbc-ct-mats'),
+      timeline: document.getElementById('sbc-ct-timeline').value.trim(),
+      paymentSchedule: sched,
+      clauses: {
+        hiddenConditions: document.getElementById('sbc-ct-cl-hidden').value.trim(),
+        changeOrder: document.getElementById('sbc-ct-cl-change').value.trim(),
+        warranty: document.getElementById('sbc-ct-cl-warranty').value.trim(),
+        cancellation: document.getElementById('sbc-ct-cl-cancel').value.trim(),
+        permitsAndInsurance: document.getElementById('sbc-ct-cl-permits').value.trim()
+      }
+    };
+    var schedSum = sched.reduce(function(s,p){ return s+p.amount; },0);
+    var total = Number(currentRecord.contract.total)||0;
+    if (total > 0 && Math.abs(schedSum-total) > 1 && !confirm('Payment schedule sums to '+fmt2(schedSum)+' but the contract total is '+fmt2(total)+'. Save anyway?')) return;
+
+    var btn = document.getElementById('sbc-ct-save');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    fetch('/.netlify/functions/save-contract', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ ref: currentRecord.ref, sections: sections })
+    })
+    .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+    .then(function(out){
+      btn.disabled = false; btn.textContent = '💾 Save Contract';
+      if (!out.ok) throw new Error((out.d && out.d.error) || 'Save failed');
+      currentRecord.contract = out.d.contract;
+      if (window.toast) toast('✓ Contract saved — customer will see this version');
+    })
+    .catch(function(e){
+      btn.disabled = false; btn.textContent = '💾 Save Contract';
+      if (window.toast) toast('Save failed: ' + e.message, true);
+    });
+  };
+
+  if (typeof renderEdit === 'function'){
+    var _orig = renderEdit;
+    renderEdit = function(){ var out = _orig.apply(this, arguments); try{ inject(); }catch(e){} return out; };
+  }
+})();
+</script>
+<!-- ===== END CONTRACT PANEL ===== -->
+
 </body>
 </html>
