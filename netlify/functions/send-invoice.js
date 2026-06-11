@@ -23,7 +23,12 @@ exports.handler = async function (event) {
       amount,             // dollar amount
       dueDate,            // ISO date string
       memo,               // optional note from contractor
-      workPerformed,      // manual work list (one job per line) — overrides line items
+      workPerformed,      // manual work list (one job per line) — ONLY this shows in the checklist
+      customerName,       // editable customer fields from the invoice modal
+      customerEmail,
+      customerPhone,
+      customerAddress,
+      projectAddress,     // optional job address if different from billing
       paymentMethod,      // "zelle" | "bank" | "cash" | "check" | "link" | "none"
       paymentDetails,     // string with details (e.g. "Zelle: ...")
       paymentLink,        // optional URL
@@ -52,9 +57,19 @@ exports.handler = async function (event) {
     const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
     const siteUrl = process.env.SITE_URL || "https://www.sanibuildingcorp.com";
 
+    // Apply any edited customer details from the invoice modal
+    const clean = function (v) { return String(v == null ? "" : v).trim().slice(0, 300); };
+    record.customer = record.customer || {};
+    if (customerName != null && clean(customerName)) record.customer.name = clean(customerName);
+    if (customerEmail != null && clean(customerEmail)) record.customer.email = clean(customerEmail);
+    if (customerPhone != null) record.customer.phone = clean(customerPhone);
+    if (customerAddress != null) record.customer.address = clean(customerAddress);
+    if (projectAddress != null && clean(projectAddress)) record.projectAddress = clean(projectAddress);
+
     const customer = record.customer || {};
     const est = record.estimate || {};
     const reqData = record.request || {};
+    const jobAddress = clean(projectAddress) || record.projectAddress || "";
 
     // Generate invoice number (one-up per estimate)
     const invoiceCount = (record.invoices || []).length + 1;
