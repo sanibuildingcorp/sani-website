@@ -108,7 +108,7 @@ RULES:
 1. scopeOfWork: 5-12 items, rewritten in professional contract language from the estimate scope — specific to THIS project.
 2. materialsList: use the actual materials/finishes above.
 3. paymentSchedule amounts MUST sum to exactly $${total.toFixed(2)}. Use: under $1,000 → single payment on completion; $1,000–$5,000 → 50% deposit / 50% completion; over $5,000 → 40% deposit / 40% mid-project milestone (name the actual milestone for this project) / 20% completion.
-4. Clauses: professional NY contractor language, 2-4 sentences each, tailored to this project type (e.g. deck → mention structural framing discoveries; bathroom → mention plumbing/subfloor).
+4. Clauses: professional NY contractor language, 2-3 sentences each, concise, tailored to this project type (e.g. deck → mention structural framing discoveries; bathroom → mention plumbing/subfloor).
 5. No placeholders like {{name}} — write the real values in.
 6. Return ONLY the JSON.`;
 
@@ -168,7 +168,7 @@ RULES:
 function callClaude(apiKey, prompt) {
   const payload = JSON.stringify({
     model: "claude-sonnet-4-5-20250929",
-    max_tokens: 3500,
+    max_tokens: 2200,
     messages: [{ role: "user", content: prompt }],
   });
   return new Promise((resolve, reject) => {
@@ -184,7 +184,7 @@ function callClaude(apiKey, prompt) {
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
-        timeout: 24000,
+        timeout: 22000,
       },
       (res) => {
         const chunks = [];
