@@ -106,16 +106,9 @@ exports.handler = async function (event) {
 
     let workRowsHtml = "";
     const manualList = (workPerformed || "").split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
-
     if (manualList.length) {
-      // Manual list — exactly what the contractor typed, no grouping
+      // ONLY what the contractor typed — no line-item fallback
       workRowsHtml = manualList.map(lineRow).join("");
-    } else {
-      // Fallback — descriptions from the saved line items
-      const lab = labor.filter(function (it) { return it && String(it.item || "").trim(); });
-      const mat = materials.filter(function (it) { return it && String(it.item || "").trim(); });
-      if (lab.length) workRowsHtml += groupRow("Labor — Work Performed") + lab.map(function (it) { return lineRow(it.item); }).join("");
-      if (mat.length) workRowsHtml += groupRow("Materials Used") + mat.map(function (it) { return lineRow(it.item); }).join("");
     }
 
     let itemizedHtml = "";
@@ -189,6 +182,10 @@ exports.handler = async function (event) {
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Billed To</td>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(customer.name || "—")}${customer.address ? "<br><span style='font-weight:400;color:#555'>" + escapeHtml(customer.address) + "</span>" : ""}</td>
         </tr>
+        ${jobAddress && jobAddress !== (customer.address || "") ? `<tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Job Address</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(jobAddress)}</td>
+        </tr>` : ""}
         <tr>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Estimate Ref</td>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(ref)}</td>
@@ -256,6 +253,7 @@ exports.handler = async function (event) {
       workDate: finalWorkDate,
       memo: memo || "",
       workPerformed: workPerformed || "",
+      projectAddress: jobAddress || "",
       paymentMethod: paymentMethod || "none",
       paymentDetails: paymentDetails || "",
       paymentLink: paymentLink || "",
