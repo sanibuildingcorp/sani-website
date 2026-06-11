@@ -259,16 +259,33 @@ async function load(){
       render();
       return;
     }
-    // Generate the project-specific contract with AI
+    // Generate the project-specific contract with AI (background) and poll until ready
     document.getElementById("loading-title").textContent = "PREPARING YOUR AGREEMENT…";
-    document.getElementById("loading-sub").textContent = "Building a project-specific contract from your estimate · about 15–20 seconds";
-    var g = await fetch("/.netlify/functions/generate-contract",{
+    document.getElementById("loading-sub").textContent = "Building a project-specific contract from your estimate · 15–30 seconds";
+    fetch("/.netlify/functions/generate-contract-background",{
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ ref: ref })
+    }).catch(function(){});
+    var started = Date.now();
+    var done = await new Promise(function(resolve){
+      var iv = setInterval(function(){
+        var secs = Math.round((Date.now()-started)/1000);
+        document.getElementById("loading-sub").textContent = "Writing your agreement… " + secs + "s";
+        fetch("/.netlify/functions/get-estimate?ref="+encodeURIComponent(ref))
+          .then(function(r){ return r.json(); })
+          .then(function(rec){
+            if (rec && rec.contract && rec.contract.sections){
+              clearInterval(iv); record = rec; resolve({ ok:true });
+            } else if (rec && rec.contractError){
+              clearInterval(iv); resolve({ ok:false, err: rec.contractError });
+            } else if (secs >= 75){
+              clearInterval(iv); resolve({ ok:false, err: "This is taking longer than usual." });
+            }
+          }).catch(function(){});
+      }, 2500);
     });
-    var gd = await g.json();
-    if(!g.ok || !gd.contract) throw new Error(gd.error || "Could not prepare agreement");
-    contract = gd.contract;
+    if (!done.ok) throw new Error(done.err || "Could not prepare agreement");
+    contract = record.contract;
     render();
   }catch(e){ console.error(e); showError(e.message || "Something went wrong."); }
 }
