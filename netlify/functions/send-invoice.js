@@ -23,6 +23,7 @@ exports.handler = async function (event) {
       amount,             // dollar amount
       dueDate,            // ISO date string
       memo,               // optional note from contractor
+      workPerformed,      // manual work list (one job per line) — overrides line items
       paymentMethod,      // "zelle" | "bank" | "cash" | "check" | "link" | "none"
       paymentDetails,     // string with details (e.g. "Zelle: ...")
       paymentLink,        // optional URL
@@ -88,31 +89,42 @@ exports.handler = async function (event) {
     const amountFormatted = fmt(amount);
 
     // ── Work performed (DESCRIPTIONS ONLY — no per-line prices) ──
-    // Invoices show the customer WHAT was done, never the line-item pricing.
+    // Prefer the manually-typed list from the dashboard; otherwise fall back to line items.
     const labor = Array.isArray(est.labor) ? est.labor : [];
     const materials = Array.isArray(est.materials) ? est.materials : [];
 
-    function workRows(arr, groupName) {
-      const valid = arr.filter(function (it) { return it && String(it.item || "").trim(); });
-      if (!valid.length) return "";
-      const groupCell = 'padding:9px 16px;background:#f7f0e3;color:#96770a;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8e2d9';
-      const itemCell = 'padding:11px 16px 11px 36px;border-bottom:1px solid #f0ece4;font-size:14px;color:#1a1a1a;position:relative';
-      let h = `<tr><td style="${groupCell}">${escapeHtml(groupName)}</td></tr>`;
-      valid.forEach(function (it) {
-        h += `<tr><td style="${itemCell}"><span style="position:absolute;left:16px;color:#c9a84c;font-weight:700">✓</span>${escapeHtml(it.item)}</td></tr>`;
-      });
-      return h;
+    const itemCell = 'padding:11px 16px 11px 36px;border-bottom:1px solid #f0ece4;font-size:14px;color:#1a1a1a;position:relative';
+    const groupCell = 'padding:9px 16px;background:#f7f0e3;color:#96770a;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8e2d9';
+    const checkSpan = '<span style="position:absolute;left:16px;color:#c9a84c;font-weight:700">\u2713</span>';
+
+    function lineRow(text) {
+      return `<tr><td style="${itemCell}">${checkSpan}${escapeHtml(text)}</td></tr>`;
+    }
+    function groupRow(name) {
+      return `<tr><td style="${groupCell}">${escapeHtml(name)}</td></tr>`;
+    }
+
+    let workRowsHtml = "";
+    const manualList = (workPerformed || "").split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+
+    if (manualList.length) {
+      // Manual list — exactly what the contractor typed, no grouping
+      workRowsHtml = manualList.map(lineRow).join("");
+    } else {
+      // Fallback — descriptions from the saved line items
+      const lab = labor.filter(function (it) { return it && String(it.item || "").trim(); });
+      const mat = materials.filter(function (it) { return it && String(it.item || "").trim(); });
+      if (lab.length) workRowsHtml += groupRow("Labor — Work Performed") + lab.map(function (it) { return lineRow(it.item); }).join("");
+      if (mat.length) workRowsHtml += groupRow("Materials Used") + mat.map(function (it) { return lineRow(it.item); }).join("");
     }
 
     let itemizedHtml = "";
-    const laborRows = workRows(labor, "Labor — Work Performed");
-    const materialRows = workRows(materials, "Materials Used");
-    if (laborRows || materialRows) {
+    if (workRowsHtml) {
       itemizedHtml = `
         <div style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;color:#888;text-transform:uppercase;margin:26px 0 10px">What This Invoice Covers</div>
         <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden">
-          <table style="width:100%;border-collapse:collapse">${laborRows}${materialRows}</table>
-          <div style="padding:11px 16px;background:#faf8f4;border-top:1px solid #e8e2d9;font-size:12.5px;color:#8a8a8a">All labor and materials above are included in the total shown.</div>
+          <table style="width:100%;border-collapse:collapse">${workRowsHtml}</table>
+          <div style="padding:11px 16px;background:#faf8f4;border-top:1px solid #e8e2d9;font-size:12.5px;color:#8a8a8a">All work and materials above are included in the total shown.</div>
         </div>`;
     }
 
@@ -243,6 +255,7 @@ exports.handler = async function (event) {
       dueDate: dueDate || null,
       workDate: finalWorkDate,
       memo: memo || "",
+      workPerformed: workPerformed || "",
       paymentMethod: paymentMethod || "none",
       paymentDetails: paymentDetails || "",
       paymentLink: paymentLink || "",
