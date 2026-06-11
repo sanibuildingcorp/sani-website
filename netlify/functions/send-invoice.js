@@ -87,91 +87,33 @@ exports.handler = async function (event) {
     const firstName = (customer.name || "there").split(" ")[0];
     const amountFormatted = fmt(amount);
 
-    // ── Itemized work table (same display rules as the quote) ──
-    const mk = 1 + (Number(est.markupPct) || 0) / 100;
-    const showLabor = est.showLaborCost !== false;
-    const showMat = est.showMaterialsCost === true;
+    // ── Work performed (DESCRIPTIONS ONLY — no per-line prices) ──
+    // Invoices show the customer WHAT was done, never the line-item pricing.
     const labor = Array.isArray(est.labor) ? est.labor : [];
     const materials = Array.isArray(est.materials) ? est.materials : [];
 
-    const cellL = 'padding:10px 14px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a';
-    const cellR = 'padding:10px 14px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;text-align:right;white-space:nowrap';
-    const groupCell = 'padding:8px 14px;background:#f7f0e3;color:#96770a;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8e2d9';
-
-    function rowsWithPrices(arr, groupName) {
+    function workRows(arr, groupName) {
       const valid = arr.filter(function (it) { return it && String(it.item || "").trim(); });
       if (!valid.length) return "";
-      let h = `<tr><td colspan="4" style="${groupCell}">${escapeHtml(groupName)}</td></tr>`;
+      const groupCell = 'padding:9px 16px;background:#f7f0e3;color:#96770a;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8e2d9';
+      const itemCell = 'padding:11px 16px 11px 36px;border-bottom:1px solid #f0ece4;font-size:14px;color:#1a1a1a;position:relative';
+      let h = `<tr><td style="${groupCell}">${escapeHtml(groupName)}</td></tr>`;
       valid.forEach(function (it) {
-        const qty = (it.qty != null ? it.qty : "") + (it.unit ? " " + it.unit : "");
-        const rate = (Number(it.rate) || 0) * mk;
-        const total = (Number(it.qty) || 0) * (Number(it.rate) || 0) * mk;
-        h += `<tr>
-          <td style="${cellL}">${escapeHtml(it.item)}</td>
-          <td style="${cellR}">${escapeHtml(qty)}</td>
-          <td style="${cellR}">${fmt(rate)}</td>
-          <td style="${cellR};font-weight:600">${fmt(total)}</td>
-        </tr>`;
+        h += `<tr><td style="${itemCell}"><span style="position:absolute;left:16px;color:#c9a84c;font-weight:700">✓</span>${escapeHtml(it.item)}</td></tr>`;
       });
       return h;
-    }
-    function rowsNoPrices(arr, groupName) {
-      const valid = arr.filter(function (it) { return it && String(it.item || "").trim(); });
-      if (!valid.length) return "";
-      let h = `<tr><td colspan="2" style="${groupCell}">${escapeHtml(groupName)}</td></tr>`;
-      valid.forEach(function (it) {
-        h += `<tr>
-          <td style="${cellL}">${escapeHtml(it.item)}</td>
-          <td style="${cellR};color:#8a8a8a">Included</td>
-        </tr>`;
-      });
-      return h;
-    }
-    function bucketSum(arr) {
-      return arr.reduce(function (s, it) { return s + (Number(it.qty) || 0) * (Number(it.rate) || 0) * mk; }, 0);
     }
 
     let itemizedHtml = "";
-    if (labor.length || materials.length) {
-      const head = `<tr>
-        <th style="text-align:left;background:#faf8f4;color:#8a8a8a;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid #e8e2d9">Item</th>
-        <th style="text-align:right;background:#faf8f4;color:#8a8a8a;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid #e8e2d9">Qty</th>
-        <th style="text-align:right;background:#faf8f4;color:#8a8a8a;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid #e8e2d9">Rate</th>
-        <th style="text-align:right;background:#faf8f4;color:#8a8a8a;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid #e8e2d9">Total</th>
-      </tr>`;
-
-      if (!showLabor && !showMat) {
-        // Total-only mode: list the work, no per-line prices
-        let rows = rowsNoPrices(labor, "Labor") + rowsNoPrices(materials, "Materials");
-        if (rows) {
-          itemizedHtml = `
-            <div style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;color:#888;text-transform:uppercase;margin:26px 0 10px">Work Performed</div>
-            <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden">
-              <table style="width:100%;border-collapse:collapse">${rows}</table>
-            </div>`;
-        }
-      } else {
-        let rows = "";
-        let grand = 0;
-        if (showLabor) { rows += rowsWithPrices(labor, "Labor"); grand += bucketSum(labor); }
-        if (showMat) { rows += rowsWithPrices(materials, "Materials"); grand += bucketSum(materials); }
-        if (rows) {
-          rows += `<tr>
-            <td colspan="3" style="padding:12px 14px;background:#f7f0e3;border-top:2px solid #c9a84c;font-size:13px;font-weight:700;color:#0d1b2a;letter-spacing:1px">PROJECT TOTAL</td>
-            <td style="padding:12px 14px;background:#f7f0e3;border-top:2px solid #c9a84c;font-size:15px;font-weight:700;color:#0d1b2a;text-align:right">${fmt(grand)}</td>
-          </tr>`;
-          let note = "";
-          if (grand > 0 && Math.abs(grand - Number(amount)) > 0.01) {
-            const pct = Math.round((Number(amount) / grand) * 100);
-            note = `<div style="padding:9px 14px;background:#faf8f4;border-top:1px solid #e8e2d9;font-size:12px;color:#8a8a8a">This ${invoiceType === "deposit" ? "deposit " : ""}invoice covers ${amountFormatted} of the ${fmt(grand)} project total${invoiceType === "deposit" ? " (" + pct + "%)" : ""}.</div>`;
-          }
-          itemizedHtml = `
-            <div style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;color:#888;text-transform:uppercase;margin:26px 0 10px">Work Performed — Itemized</div>
-            <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden">
-              <table style="width:100%;border-collapse:collapse">${head}${rows}</table>${note}
-            </div>`;
-        }
-      }
+    const laborRows = workRows(labor, "Labor — Work Performed");
+    const materialRows = workRows(materials, "Materials Used");
+    if (laborRows || materialRows) {
+      itemizedHtml = `
+        <div style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:2px;color:#888;text-transform:uppercase;margin:26px 0 10px">What This Invoice Covers</div>
+        <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse">${laborRows}${materialRows}</table>
+          <div style="padding:11px 16px;background:#faf8f4;border-top:1px solid #e8e2d9;font-size:12.5px;color:#8a8a8a">All labor and materials above are included in the total shown.</div>
+        </div>`;
     }
 
     // ── Optional blocks ──
