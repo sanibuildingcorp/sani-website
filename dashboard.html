@@ -3922,12 +3922,21 @@ let invoiceState = {
   type: "full",
   amount: 0,
   dueDate: "",
+  workPerformed: "",
   memo: "",
   paymentMethod: "zelle",
   paymentDetails: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
   paymentLink: "",
   includePaymentLink: false,
 };
+
+function defaultWorkPerformed(est) {
+  if (!est) return "";
+  var lines = [];
+  (est.labor || []).forEach(function(it){ if (it && String(it.item||"").trim()) lines.push(String(it.item).trim()); });
+  (est.materials || []).forEach(function(it){ if (it && String(it.item||"").trim()) lines.push(String(it.item).trim()); });
+  return lines.join("\n");
+}
 
 function openInvoiceModal() {
   if (!currentRecord) return;
@@ -3942,6 +3951,7 @@ function openInvoiceModal() {
     type: "full",
     amount: t.grand,
     dueDate: "",
+    workPerformed: defaultWorkPerformed(currentRecord.estimate),
     memo: "",
     paymentMethod: "zelle",
     paymentDetails: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
@@ -4026,6 +4036,14 @@ function renderInvoiceModal(totals, prior, remaining) {
       '<div class="field">' +
         '<label>Memo / Notes for Customer (optional)</label>' +
         '<textarea id="inv-memo" rows="2" placeholder="e.g. Thank you for choosing Sani Building Corp..." oninput="updateInvoiceState()">' + esc(invoiceState.memo) + '</textarea>' +
+      '</div>' +
+    '</div>' +
+    '<div class="inv-section">' +
+      '<div class="inv-section-label">📝 Work Performed (shown on invoice)</div>' +
+      '<div class="field">' +
+        '<label>One job per line — these appear as a ✓ checklist. No prices shown to the customer.</label>' +
+        '<textarea id="inv-workperformed" rows="7" placeholder="Door hinge repair&#10;TV mounting (including cable management)&#10;Shelving installation&#10;Closet light fixture replacement&#10;Weatherstripping installation" oninput="updateInvoiceState()">' + esc(invoiceState.workPerformed) + '</textarea>' +
+        '<div style="font-size:11px;color:var(--ink-muted);margin-top:4px">Pre-filled from the estimate — edit freely. Leave blank to fall back to the line items.</div>' +
       '</div>' +
     '</div>' +
     '<div class="inv-section">' +
@@ -4117,6 +4135,8 @@ function updateInvoiceState() {
   invoiceState.amount = parseFloat(document.getElementById("inv-amount").value) || 0;
   invoiceState.dueDate = document.getElementById("inv-duedate").value;
   invoiceState.memo = document.getElementById("inv-memo").value;
+  var wpEl = document.getElementById("inv-workperformed");
+  if (wpEl) invoiceState.workPerformed = wpEl.value;
   invoiceState.paymentDetails = document.getElementById("inv-paydetails").value;
   const linkField = document.getElementById("inv-paylink");
   if (linkField) invoiceState.paymentLink = linkField.value;
@@ -4154,6 +4174,7 @@ async function submitInvoice() {
         amount: invoiceState.amount,
         dueDate: invoiceState.dueDate,
         memo: invoiceState.memo,
+        workPerformed: invoiceState.workPerformed,
         paymentMethod: invoiceState.paymentMethod,
         paymentDetails: invoiceState.paymentDetails,
         paymentLink: invoiceState.paymentLink,
