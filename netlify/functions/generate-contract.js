@@ -79,11 +79,11 @@ PROJECT DATA:
 - Timeline: ${est.timelineText || "To be scheduled"}
 - Summary: ${est.summary || "(none)"}
 - Scope of work (from estimate):
-${est.scopeOfWork || "(see labor items)"}
-- Labor items: ${(est.labor || []).map(function (i) { return i.item; }).filter(Boolean).join("; ") || "(none)"}
-- Materials: ${materialNames.join("; ") || "(none listed)"}
+${String(est.scopeOfWork || "(see labor items)").slice(0, 1200)}
+- Labor items: ${(est.labor || []).map(function (i) { return i.item; }).filter(Boolean).join("; ").slice(0, 600) || "(none)"}
+- Materials: ${materialNames.join("; ").slice(0, 600) || "(none listed)"}
 - Selected finishes: ${(chosen.length ? chosen : finishDefaults).join("; ") || "(standard finishes)"}
-- Special customer notes: ${reqData.description || "(none)"}
+- Special customer notes: ${String(reqData.description || "(none)").slice(0, 400)}
 
 OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact shape:
 {
@@ -105,10 +105,10 @@ OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact s
 }
 
 RULES:
-1. scopeOfWork: 5-12 items, rewritten in professional contract language from the estimate scope — specific to THIS project.
+1. scopeOfWork: 5-9 items, rewritten in professional contract language from the estimate scope — specific to THIS project.
 2. materialsList: use the actual materials/finishes above.
 3. paymentSchedule amounts MUST sum to exactly $${total.toFixed(2)}. Use: under $1,000 → single payment on completion; $1,000–$5,000 → 50% deposit / 50% completion; over $5,000 → 40% deposit / 40% mid-project milestone (name the actual milestone for this project) / 20% completion.
-4. Clauses: professional NY contractor language, 2-3 sentences each, concise, tailored to this project type (e.g. deck → mention structural framing discoveries; bathroom → mention plumbing/subfloor).
+4. Clauses: professional NY contractor language, exactly 2 sentences each, tailored to this project type (e.g. deck → mention structural framing discoveries; bathroom → mention plumbing/subfloor).
 5. No placeholders like {{name}} — write the real values in.
 6. Return ONLY the JSON.`;
 
@@ -167,8 +167,8 @@ RULES:
 
 function callClaude(apiKey, prompt) {
   const payload = JSON.stringify({
-    model: "claude-sonnet-4-5-20250929",
-    max_tokens: 2200,
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 1800,
     messages: [{ role: "user", content: prompt }],
   });
   return new Promise((resolve, reject) => {
@@ -184,7 +184,7 @@ function callClaude(apiKey, prompt) {
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
-        timeout: 22000,
+        timeout: 8500,
       },
       (res) => {
         const chunks = [];
@@ -205,7 +205,7 @@ function callClaude(apiKey, prompt) {
       }
     );
     req.on("error", reject);
-    req.on("timeout", () => { req.destroy(); reject(new Error("Contract generation timeout")); });
+    req.on("timeout", () => { req.destroy(); reject(new Error("Contract generation timeout — tap Try Again")); });
     req.write(payload);
     req.end();
   });
