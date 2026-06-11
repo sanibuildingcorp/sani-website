@@ -1360,28 +1360,23 @@ function showSuccess(kind) {
 
 function downloadQuote() { window.print(); }
 function openAccept()  {
-  // Show a confirmation of chosen finishes + materials + final total inside the accept modal
-  const box = document.getElementById("accept-finish-summary");
-  if (box) {
-    const finSel = (finishGroups && finishGroups.length) ? getFinishSelections() : [];
-    const matSelArr = getMaterialSelections();
-    if (finSel.length || matSelArr.length) {
-      const grand = (baseCalc ? baseCalc.customerTotal : 0) + finishDelta() + materialsSelectedTotal();
-      let rows = finSel.map(function(s){
-        return '<div class="fc-row"><span>'+escHtml(s.group)+'</span><span>'+escHtml(s.option)+'</span></div>';
-      }).join("");
-      rows += matSelArr.map(function(m){
-        return '<div class="fc-row"><span>'+escHtml(m.name)+'</span><span>'+(Number(m.price)>0?('+'+fmt(Number(m.price))):'Included')+'</span></div>';
-      }).join("");
-      rows += '<div class="fc-row fc-total"><span>Your total</span><span>'+fmt(grand)+'</span></div>';
-      box.className = "finish-confirm";
-      box.innerHTML = rows;
-    } else {
-      box.className = "";
-      box.innerHTML = "";
-    }
+  // APPROVE → review & e-sign the project-specific agreement on contract.html.
+  // Carry the customer's finish/material selections + final total with them.
+  try {
+    var carry = {
+      finishSelections: getFinishSelections(),
+      materialsSelections: getMaterialSelections(),
+      finalTotal: (baseCalc ? baseCalc.customerTotal : 0) + finishDelta() + materialsSelectedTotal()
+    };
+    sessionStorage.setItem("sbc-approve-" + ref, JSON.stringify(carry));
+  } catch(e) {}
+  var btn = document.getElementById("btn-primary");
+  if (btn) {
+    btn.disabled = true;
+    var lbl = document.getElementById("btn-primary-label");
+    if (lbl) lbl.textContent = "Opening agreement…";
   }
-  document.getElementById("accept-modal").classList.add("show");
+  window.location.href = "contract.html?ref=" + encodeURIComponent(ref);
 }
 function openDecline() { document.getElementById("decline-modal").classList.add("show"); }
 function closeModals() {
