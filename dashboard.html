@@ -3924,35 +3924,38 @@ let invoiceState = {
   dueDate: "",
   workPerformed: "",
   memo: "",
+  custName: "",
+  custEmail: "",
+  custPhone: "",
+  custAddress: "",
+  projectAddress: "",
   paymentMethod: "zelle",
   paymentDetails: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
   paymentLink: "",
   includePaymentLink: false,
 };
 
-function defaultWorkPerformed(est) {
-  if (!est) return "";
-  var lines = [];
-  (est.labor || []).forEach(function(it){ if (it && String(it.item||"").trim()) lines.push(String(it.item).trim()); });
-  (est.materials || []).forEach(function(it){ if (it && String(it.item||"").trim()) lines.push(String(it.item).trim()); });
-  return lines.join("\n");
-}
-
 function openInvoiceModal() {
   if (!currentRecord) return;
   const est = gatherForm();
   const t = calcTotal(est);
   syncLines();
-  
+
   const prior = (currentRecord.invoices || []).reduce(function(s, inv) { return s + (Number(inv.amount) || 0); }, 0);
   const remaining = Math.max(0, t.grand - prior);
+  const cust = currentRecord.customer || {};
 
   invoiceState = {
     type: "full",
     amount: t.grand,
     dueDate: "",
-    workPerformed: defaultWorkPerformed(currentRecord.estimate),
+    workPerformed: "",                 // starts EMPTY — only what you type shows in the checklist
     memo: "",
+    custName: cust.name || "",
+    custEmail: cust.email || "",
+    custPhone: cust.phone || "",
+    custAddress: cust.address || "",
+    projectAddress: currentRecord.projectAddress || "",
     paymentMethod: "zelle",
     paymentDetails: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
     paymentLink: "",
@@ -3996,17 +3999,47 @@ function renderInvoiceModal(totals, prior, remaining) {
     '<div class="modal-head">' +
       '<div>' +
         '<h2>💳 CREATE INVOICE</h2>' +
-        '<div class="ref-sub">For ' + esc(cust.name || "—") + ' · Estimate Ref ' + esc(currentRecord.ref) + '</div>' +
+        '<div class="ref-sub">Estimate Ref ' + esc(currentRecord.ref) + '</div>' +
       '</div>' +
       '<button class="modal-close" onclick="closeInvoiceModal()">×</button>' +
     '</div>' +
     historyHtml +
+    // ── 1) CUSTOMER INFORMATION (editable) ──
     '<div class="inv-section">' +
-      '<div class="inv-section-label">📋 Invoice Type</div>' +
+      '<div class="inv-section-label">👤 Customer Information</div>' +
+      '<div class="inv-amount-row">' +
+        '<div class="field"><label>Name</label>' +
+          '<input type="text" id="inv-cust-name" value="' + esc(invoiceState.custName) + '" placeholder="John Smith" oninput="updateInvoiceState()"></div>' +
+        '<div class="field"><label>Email (invoice is sent here)</label>' +
+          '<input type="email" id="inv-cust-email" value="' + esc(invoiceState.custEmail) + '" placeholder="john@email.com" oninput="updateInvoiceState()"></div>' +
+      '</div>' +
+      '<div class="inv-amount-row">' +
+        '<div class="field"><label>Phone</label>' +
+          '<input type="tel" id="inv-cust-phone" value="' + esc(invoiceState.custPhone) + '" placeholder="(347) 555-0199" oninput="updateInvoiceState()"></div>' +
+        '<div class="field"><label>Billing Address</label>' +
+          '<input type="text" id="inv-cust-address" value="' + esc(invoiceState.custAddress) + '" placeholder="Street, Borough, NY" oninput="updateInvoiceState()"></div>' +
+      '</div>' +
+      '<div class="field">' +
+        '<label>Project / Job Address (only if different from billing)</label>' +
+        '<input type="text" id="inv-project-address" value="' + esc(invoiceState.projectAddress) + '" placeholder="Leave blank if same as billing address" oninput="updateInvoiceState()">' +
+      '</div>' +
+    '</div>' +
+    // ── 2) DESCRIPTION → CHECKLIST (only what you type) ──
+    '<div class="inv-section">' +
+      '<div class="inv-section-label">📝 Description — What This Invoice Covers</div>' +
+      '<div class="field">' +
+        '<label>Write one line per item. Each line shows as a ✓ on the invoice. Nothing else is shown — only what you write here.</label>' +
+        '<textarea id="inv-workperformed" rows="7" placeholder="Door hinge repair&#10;TV mounting (including cable management)&#10;Shelving installation&#10;Closet light fixture replacement&#10;Front door weatherstripping" oninput="updateInvoiceState()">' + esc(invoiceState.workPerformed) + '</textarea>' +
+        '<div style="font-size:11px;color:var(--ink-muted);margin-top:4px">Leave blank to show no checklist — just the total.</div>' +
+      '</div>' +
+    '</div>' +
+    // ── 3) AMOUNT + DUE ──
+    '<div class="inv-section">' +
+      '<div class="inv-section-label">💵 Amount</div>' +
       '<div class="inv-type-grid">' +
         '<div class="inv-type-opt' + (invoiceState.type === "deposit" ? " selected" : "") + '" onclick="setInvoiceType(\'deposit\')">' +
           '<div class="ito-name">Deposit</div>' +
-          '<div class="ito-amount">' + fmt(depositAmt) + '<br><span style="font-size:10px;opacity:0.7">(50% of estimate)</span></div>' +
+          '<div class="ito-amount">' + fmt(depositAmt) + '<br><span style="font-size:10px;opacity:0.7">(50%)</span></div>' +
         '</div>' +
         '<div class="inv-type-opt' + (invoiceState.type === "final" ? " selected" : "") + '" onclick="setInvoiceType(\'final\')">' +
           '<div class="ito-name">Final</div>' +
@@ -4014,18 +4047,16 @@ function renderInvoiceModal(totals, prior, remaining) {
         '</div>' +
         '<div class="inv-type-opt' + (invoiceState.type === "full" ? " selected" : "") + '" onclick="setInvoiceType(\'full\')">' +
           '<div class="ito-name">Full</div>' +
-          '<div class="ito-amount">' + fmt(fullAmt) + '<br><span style="font-size:10px;opacity:0.7">(full amount)</span></div>' +
+          '<div class="ito-amount">' + fmt(fullAmt) + '<br><span style="font-size:10px;opacity:0.7">(full)</span></div>' +
         '</div>' +
         '<div class="inv-type-opt' + (invoiceState.type === "custom" ? " selected" : "") + '" onclick="setInvoiceType(\'custom\')">' +
           '<div class="ito-name">Custom</div>' +
           '<div class="ito-amount">Enter below<br><span style="font-size:10px;opacity:0.7">&nbsp;</span></div>' +
         '</div>' +
       '</div>' +
-    '</div>' +
-    '<div class="inv-section">' +
-      '<div class="inv-amount-row">' +
+      '<div class="inv-amount-row" style="margin-top:12px">' +
         '<div class="field">' +
-          '<label>Amount</label>' +
+          '<label>Total Amount Due</label>' +
           '<input type="number" id="inv-amount" value="' + invoiceState.amount + '" step="0.01" min="0" oninput="updateInvoiceState()">' +
         '</div>' +
         '<div class="field">' +
@@ -4038,14 +4069,7 @@ function renderInvoiceModal(totals, prior, remaining) {
         '<textarea id="inv-memo" rows="2" placeholder="e.g. Thank you for choosing Sani Building Corp..." oninput="updateInvoiceState()">' + esc(invoiceState.memo) + '</textarea>' +
       '</div>' +
     '</div>' +
-    '<div class="inv-section">' +
-      '<div class="inv-section-label">📝 Work Performed (shown on invoice)</div>' +
-      '<div class="field">' +
-        '<label>One job per line — these appear as a ✓ checklist. No prices shown to the customer.</label>' +
-        '<textarea id="inv-workperformed" rows="7" placeholder="Door hinge repair&#10;TV mounting (including cable management)&#10;Shelving installation&#10;Closet light fixture replacement&#10;Weatherstripping installation" oninput="updateInvoiceState()">' + esc(invoiceState.workPerformed) + '</textarea>' +
-        '<div style="font-size:11px;color:var(--ink-muted);margin-top:4px">Pre-filled from the estimate — edit freely. Leave blank to fall back to the line items.</div>' +
-      '</div>' +
-    '</div>' +
+    // ── 4) PAYMENT ──
     '<div class="inv-section">' +
       '<div class="inv-section-label">💰 Payment Method</div>' +
       '<div class="inv-pay-grid">' +
@@ -4091,7 +4115,25 @@ function buildPayOpt(method, icon, label) {
   '</div>';
 }
 
+// Preserve the typed fields across a re-render (type/payment changes rebuild the modal)
+function captureInvoiceInputs() {
+  var ids = {
+    "inv-cust-name": "custName", "inv-cust-email": "custEmail",
+    "inv-cust-phone": "custPhone", "inv-cust-address": "custAddress",
+    "inv-project-address": "projectAddress", "inv-workperformed": "workPerformed",
+    "inv-memo": "memo", "inv-duedate": "dueDate", "inv-paydetails": "paymentDetails",
+    "inv-paylink": "paymentLink"
+  };
+  Object.keys(ids).forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) invoiceState[ids[id]] = el.value;
+  });
+  var amtEl = document.getElementById("inv-amount");
+  if (amtEl && amtEl.value !== "") invoiceState.amount = parseFloat(amtEl.value) || 0;
+}
+
 function setInvoiceType(type) {
+  captureInvoiceInputs();
   invoiceState.type = type;
   const est = currentRecord.estimate || {};
   const t = calcTotal(est);
@@ -4107,6 +4149,7 @@ function setInvoiceType(type) {
 }
 
 function setPaymentMethod(method) {
+  captureInvoiceInputs();
   invoiceState.paymentMethod = method;
   const defaults = {
     zelle: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
@@ -4124,6 +4167,7 @@ function setPaymentMethod(method) {
 }
 
 function togglePaymentLink() {
+  captureInvoiceInputs();
   invoiceState.includePaymentLink = !invoiceState.includePaymentLink;
   const est = currentRecord.estimate || {};
   const t = calcTotal(est);
@@ -4132,14 +4176,7 @@ function togglePaymentLink() {
 }
 
 function updateInvoiceState() {
-  invoiceState.amount = parseFloat(document.getElementById("inv-amount").value) || 0;
-  invoiceState.dueDate = document.getElementById("inv-duedate").value;
-  invoiceState.memo = document.getElementById("inv-memo").value;
-  var wpEl = document.getElementById("inv-workperformed");
-  if (wpEl) invoiceState.workPerformed = wpEl.value;
-  invoiceState.paymentDetails = document.getElementById("inv-paydetails").value;
-  const linkField = document.getElementById("inv-paylink");
-  if (linkField) invoiceState.paymentLink = linkField.value;
+  captureInvoiceInputs();
   document.getElementById("inv-preview-amount").textContent = fmt(invoiceState.amount);
   const dueText = invoiceState.dueDate
     ? "Due " + new Date(invoiceState.dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
@@ -4148,8 +4185,13 @@ function updateInvoiceState() {
 }
 
 async function submitInvoice() {
+  captureInvoiceInputs();
   if (!invoiceState.amount || invoiceState.amount <= 0) {
     toast("Please enter a valid amount", true);
+    return;
+  }
+  if (!invoiceState.custEmail || !invoiceState.custEmail.trim()) {
+    toast("Add the customer's email so the invoice can be sent", true);
     return;
   }
   if (invoiceState.includePaymentLink && (!invoiceState.paymentLink || !invoiceState.paymentLink.trim())) {
@@ -4158,7 +4200,7 @@ async function submitInvoice() {
   }
 
   const typeLabel = invoiceState.type.charAt(0).toUpperCase() + invoiceState.type.slice(1);
-  if (!confirm("Send " + typeLabel + " invoice of " + fmt(invoiceState.amount) + " to " + (currentRecord.customer.name || "customer") + "?")) return;
+  if (!confirm("Send " + typeLabel + " invoice of " + fmt(invoiceState.amount) + " to " + (invoiceState.custName || "customer") + "?")) return;
 
   const btn = document.getElementById("inv-send-btn");
   btn.disabled = true;
@@ -4175,6 +4217,11 @@ async function submitInvoice() {
         dueDate: invoiceState.dueDate,
         memo: invoiceState.memo,
         workPerformed: invoiceState.workPerformed,
+        customerName: invoiceState.custName,
+        customerEmail: invoiceState.custEmail,
+        customerPhone: invoiceState.custPhone,
+        customerAddress: invoiceState.custAddress,
+        projectAddress: invoiceState.projectAddress,
         paymentMethod: invoiceState.paymentMethod,
         paymentDetails: invoiceState.paymentDetails,
         paymentLink: invoiceState.paymentLink,
@@ -4183,6 +4230,12 @@ async function submitInvoice() {
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || "Send failed");
+    // keep the in-memory record's customer in sync
+    currentRecord.customer = Object.assign({}, currentRecord.customer || {}, {
+      name: invoiceState.custName, email: invoiceState.custEmail,
+      phone: invoiceState.custPhone, address: invoiceState.custAddress
+    });
+    if (invoiceState.projectAddress) currentRecord.projectAddress = invoiceState.projectAddress;
     toast(data.forwardedToContractor ? "✓ Invoice sent to your inbox to forward" : "✓ Invoice sent to customer (" + data.invoiceNumber + ")");
     closeInvoiceModal();
     await loadEstimates();
