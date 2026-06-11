@@ -670,33 +670,41 @@ function render() {
 }
 
 /* ===== WORK PERFORMED (DESCRIPTIONS ONLY — no per-line prices) =====
-   The invoice shows the customer WHAT was done, never the line-item pricing.
-   Only the Amount Due total is shown.  */
+   Prefer the manually-typed list saved on the invoice; otherwise fall
+   back to the estimate line items. Only the Amount Due total is shown. */
 function renderItems(est) {
-  var labor = est.labor || [];
-  var materials = est.materials || [];
-  if (!labor.length && !materials.length) return;
+  var table = document.getElementById("items-table");
+  var note = document.getElementById("items-note");
 
-  function rowsFor(arr, groupName) {
-    var valid = arr.filter(function(it){ return it && String(it.item || "").trim(); });
-    if (!valid.length) return "";
-    var h = '<tr class="group-row"><td>' + escHtml(groupName) + '</td></tr>';
-    valid.forEach(function(it){
-      h += '<tr><td class="work-item">' + escHtml(it.item) + '</td></tr>';
-    });
-    return h;
+  // 1) Manual list typed in the dashboard (one job per line)
+  var manual = (invoice.workPerformed || "").split("\n")
+    .map(function(l){ return l.trim(); })
+    .filter(function(l){ return l.length; });
+
+  var rows = "";
+  if (manual.length) {
+    rows = manual.map(function(line){
+      return '<tr><td class="work-item">' + escHtml(line) + '</td></tr>';
+    }).join("");
+  } else {
+    // 2) Fallback to estimate line items (descriptions only)
+    var labor = est.labor || [];
+    var materials = est.materials || [];
+    function rowsFor(arr, groupName){
+      var valid = arr.filter(function(it){ return it && String(it.item || "").trim(); });
+      if (!valid.length) return "";
+      var h = '<tr class="group-row"><td>' + escHtml(groupName) + '</td></tr>';
+      valid.forEach(function(it){ h += '<tr><td class="work-item">' + escHtml(it.item) + '</td></tr>'; });
+      return h;
+    }
+    rows = rowsFor(labor, "Labor — Work Performed") + rowsFor(materials, "Materials Used");
   }
 
-  var rows = rowsFor(labor, "Labor — Work Performed") + rowsFor(materials, "Materials Used");
   if (!rows) return;
 
-  var table = document.getElementById("items-table");
   table.innerHTML = '<tr><th>What this invoice covers</th></tr>' + rows;
-
-  var note = document.getElementById("items-note");
-  note.textContent = "All labor and materials above are included in the total shown.";
+  note.textContent = "All work and materials above are included in the total shown.";
   note.style.display = "block";
-
   document.getElementById("items-wrap").style.display = "block";
 }
 
