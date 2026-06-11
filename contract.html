@@ -109,8 +109,9 @@ body{font-family:var(--body);background:var(--beige);color:var(--ink);-webkit-fo
   <!-- ERROR -->
   <div id="state-error" class="center-state" style="display:none">
     <div style="font-size:44px;margin-bottom:14px">⚠️</div>
-    <div class="gen-title">AGREEMENT NOT FOUND</div>
-    <div class="gen-sub">Please use the link from your email, or call <a href="tel:+13322770990" style="color:var(--gold-2);font-weight:700;text-decoration:none">(332) 277-0990</a></div>
+    <div class="gen-title">COULD NOT LOAD AGREEMENT</div>
+    <div class="gen-sub" id="error-detail">Please try again, or call <a href="tel:+13322770990" style="color:var(--gold-2);font-weight:700;text-decoration:none">(332) 277-0990</a></div>
+    <button onclick="retryLoad()" style="margin-top:18px;padding:13px 34px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--navy),var(--navy-2));color:var(--gold);font-family:var(--body);font-weight:700;font-size:14px;letter-spacing:1px;cursor:pointer">↻ Try Again</button>
   </div>
 
   <!-- MAIN -->
@@ -229,16 +230,28 @@ function fmt(n){ return "$" + Number(n||0).toLocaleString("en-US",{minimumFracti
 
 try { carry = JSON.parse(sessionStorage.getItem("sbc-approve-" + ref) || "null"); } catch(e) { carry = null; }
 
-function showError(){
+function showError(msg){
   document.getElementById("state-loading").style.display="none";
+  document.getElementById("state-main").style.display="none";
   document.getElementById("state-error").style.display="block";
+  if (msg) {
+    document.getElementById("error-detail").innerHTML =
+      '<span style="color:#b05c4c">' + esc(msg) + '</span><br>Please try again, or call <a href="tel:+13322770990" style="color:var(--gold-2);font-weight:700;text-decoration:none">(332) 277-0990</a>';
+  }
+}
+function retryLoad(){
+  document.getElementById("state-error").style.display="none";
+  document.getElementById("state-loading").style.display="block";
+  document.getElementById("loading-title").textContent = "PREPARING YOUR AGREEMENT…";
+  document.getElementById("loading-sub").textContent = "Building a project-specific contract from your estimate · about 15–20 seconds";
+  load();
 }
 
 async function load(){
   if(!ref){ showError(); return; }
   try{
     var r = await fetch("/.netlify/functions/get-estimate?ref="+encodeURIComponent(ref));
-    if(!r.ok){ showError(); return; }
+    if(!r.ok){ showError("Estimate " + ref + " could not be loaded."); return; }
     record = await r.json();
 
     if(record.contract && record.contract.sections){
@@ -246,18 +259,35 @@ async function load(){
       render();
       return;
     }
-    // Generate the project-specific contract with AI
+    // Generate the project-specific contract with AI (background) and poll until ready
     document.getElementById("loading-title").textContent = "PREPARING YOUR AGREEMENT…";
-    document.getElementById("loading-sub").textContent = "Building a project-specific contract from your estimate · about 15–20 seconds";
-    var g = await fetch("/.netlify/functions/generate-contract",{
+    document.getElementById("loading-sub").textContent = "Building a project-specific contract from your estimate · 15–30 seconds";
+    fetch("/.netlify/functions/generate-contract-background",{
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ ref: ref })
+    }).catch(function(){});
+    var started = Date.now();
+    var done = await new Promise(function(resolve){
+      var iv = setInterval(function(){
+        var secs = Math.round((Date.now()-started)/1000);
+        document.getElementById("loading-sub").textContent = "Writing your agreement… " + secs + "s";
+        fetch("/.netlify/functions/get-estimate?ref="+encodeURIComponent(ref))
+          .then(function(r){ return r.json(); })
+          .then(function(rec){
+            if (rec && rec.contract && rec.contract.sections){
+              clearInterval(iv); record = rec; resolve({ ok:true });
+            } else if (rec && rec.contractError){
+              clearInterval(iv); resolve({ ok:false, err: rec.contractError });
+            } else if (secs >= 75){
+              clearInterval(iv); resolve({ ok:false, err: "This is taking longer than usual." });
+            }
+          }).catch(function(){});
+      }, 2500);
     });
-    var gd = await g.json();
-    if(!g.ok || !gd.contract) throw new Error(gd.error || "Could not prepare agreement");
-    contract = gd.contract;
+    if (!done.ok) throw new Error(done.err || "Could not prepare agreement");
+    contract = record.contract;
     render();
-  }catch(e){ console.error(e); showError(); }
+  }catch(e){ console.error(e); showError(e.message || "Something went wrong."); }
 }
 
 function render(){
