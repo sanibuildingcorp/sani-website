@@ -80,6 +80,11 @@
   .x-btn:hover{border-color:var(--bad);color:var(--bad)}
   .kw-chip{display:inline-block;background:var(--navy-3);border:1px solid var(--line);color:var(--gold);font-size:12px;padding:5px 11px;border-radius:999px;margin:0 6px 6px 0;cursor:pointer;font-family:inherit}
   .kw-chip:hover{border-color:var(--gold);filter:brightness(1.1)}
+  .kw-chip .v{font-weight:700;color:var(--gold);margin-left:5px}
+  .kw-chip .c{font-size:9px;letter-spacing:.5px;padding:1px 6px;border-radius:999px;border:1px solid var(--line-soft);margin-left:5px}
+  .kw-chip .c.LOW{color:var(--ok);border-color:rgba(62,207,142,.4)}
+  .kw-chip .c.MEDIUM{color:#f0c95a}
+  .kw-chip .c.HIGH{color:var(--bad)}
 
   .err{display:none;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.4);color:#ffb4b4;border-radius:10px;padding:10px 13px;font-size:13px;margin-top:12px}
   .err.show{display:block}
@@ -175,6 +180,7 @@
       <div class="hint">Saved into the page when you publish. Background slots don't use alt.</div>
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <input class="txt" id="kw-seed" style="flex:1;min-width:150px" placeholder="research what people search, e.g. handyman near me">
+        <button class="btn-ghost btn" id="volumes-btn" onclick="volumeKeywords()" style="padding:9px 14px;font-size:13px;white-space:nowrap">🔢 Volumes</button>
         <button class="btn-ghost btn" id="research-btn" onclick="researchKeywords()" style="padding:9px 14px;font-size:13px;white-space:nowrap">🔎 Live keywords</button>
       </div>
       <div id="kw-wrap" style="display:none;margin-top:10px"></div>
@@ -611,6 +617,50 @@ async function researchKeywords(){
     btn.disabled = false; btn.innerHTML = orig;
   }
 }
+
+// 🔢 Real monthly search VOLUMES from your Google Ads Keyword Planner (New York).
+// Chips show the number + competition so you can pick the strongest keyword for this
+// photo's alt text. Uses the same keyword-ideas function as the Keyword Volumes page.
+async function volumeKeywords(){
+  var seed = document.getElementById("kw-seed").value.trim();
+  if(!seed){ seed = (currentPageTitle||"").replace(/\s*[|–-].*$/,"").trim() || document.getElementById("page").value; }
+  if(!seed){ toast("Type a search to look up"); return; }
+  var btn = document.getElementById("volumes-btn");
+  var orig = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<span class="spin-sm" style="border-top-color:var(--gold)"></span>Asking Google…';
+  try {
+    var r = await fetch("/.netlify/functions/keyword-ideas", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ seed:seed })
+    });
+    var data = await r.json().catch(function(){ return {}; });
+    if(!r.ok) throw new Error((data && data.error) ? data.error : ("Error "+r.status));
+    var rows = (data.keywords || []).slice(0, 24);
+    renderVolumeKeywords(rows);
+    if(!rows.length) toast("No volumes returned — try a different seed");
+    else toast("🔢 " + rows.length + " keywords with NY volumes");
+  } catch(e){
+    showErr("gen-err", e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = orig;
+  }
+}
+
+function renderVolumeKeywords(rows){
+  lastKeywords = (rows || []).map(function(k){ return k.keyword; });
+  var wrap = document.getElementById("kw-wrap");
+  if(!rows.length){ wrap.style.display="none"; wrap.innerHTML=""; return; }
+  var chips = rows.map(function(k,i){
+    var comp = (k.competition||"UNKNOWN").toUpperCase();
+    var vol = Number(k.avgMonthlySearches||0).toLocaleString();
+    return '<button class="kw-chip" onclick="insertKwIdx('+i+')">'+esc(k.keyword)+
+      '<span class="v">'+vol+'</span>'+
+      '<span class="c '+esc(comp)+'">'+esc(comp)+'</span></button>';
+  }).join("");
+  wrap.innerHTML = '<div class="hint" style="margin:0 0 6px">🔢 Real monthly searches in New York — tap the strongest to add to your alt text:</div>'+chips;
+  wrap.style.display = "block";
+}
+
 function insertKwIdx(i){
   var w = lastKeywords[i]; if(!w) return;
   var a = document.getElementById("alt");
