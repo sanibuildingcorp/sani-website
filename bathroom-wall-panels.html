@@ -189,6 +189,13 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
 .ba-caption{text-align:center;margin-top:14px;font-size:.86rem;color:var(--ink-soft)}
 .ba-caption strong{color:var(--navy)}
 
+/* Editable photo slots — real <img> sits over the CSS art; if the file is missing, onerror hides it and the CSS art shows through (so the page never looks broken) */
+.ba__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ba__before .ba__img{z-index:1}
+.finish-preview .finish-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:1}
+.swatch .chip{position:relative;overflow:hidden}
+.swatch .chip img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+
 /* Marble surfaces */
 .surface--carrara{background:radial-gradient(120% 90% at 18% 12%,#ffffff,#f1f0ee 60%,#e7e6e3 100%),repeating-linear-gradient(38deg,rgba(120,128,138,0) 0 22px,rgba(120,128,138,.10) 23px 24px),linear-gradient(120deg,rgba(150,158,168,.16),transparent 40%);background-blend-mode:normal,multiply,normal}
 .surface--white{background:radial-gradient(120% 90% at 30% 20%,#ffffff,#f6f5f3 70%,#eceae6 100%),repeating-linear-gradient(70deg,rgba(180,170,150,0) 0 30px,rgba(180,170,150,.08) 31px 32px)}
@@ -386,8 +393,8 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
     <div class="ba-shell">
       <div class="ba-frame">
         <div class="ba" id="ba">
-          <div class="ba__layer ba__after surface--carrara" id="baAfter"></div>
-          <div class="ba__layer ba__before"><div class="ba__layer tile-old"></div></div>
+          <div class="ba__layer ba__after surface--carrara" id="baAfter"><img class="ba__img" id="afterImg" src="images/wall-panels/after.jpg" alt="After — bathroom refreshed with marble-look waterproof wall panels, no demolition" onerror="this.style.display='none'"></div>
+          <div class="ba__layer ba__before"><div class="ba__layer tile-old"></div><img class="ba__img" id="beforeImg" src="images/wall-panels/before.jpg" alt="Before — dated tiled bathroom" onerror="this.style.display='none'"></div>
           <span class="ba__tag before">Before</span>
           <span class="ba__tag after">After</span>
           <div class="ba__handle" id="baHandle"><span class="ba__knob">⟷</span></div>
@@ -442,23 +449,24 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
     <div class="finish-stage">
       <div class="finish-preview reveal">
         <div class="surface surface--carrara" id="finishPreview"></div>
+        <img class="finish-img" id="finishImg" src="images/wall-panels/finish-carrara.jpg" alt="Carrara marble wall panel finish" onerror="this.style.display='none'">
         <div class="pv-label"><small>Now previewing</small><span id="finishName">Carrara Marble</span></div>
       </div>
       <div class="swatches" id="swatches">
         <button class="swatch is-active" data-finish="carrara" data-name="Carrara Marble">
-          <span class="chip surface--carrara"></span><span class="txt"><b>Carrara Marble</b><span>Soft grey veining on bright white</span></span>
+          <span class="chip surface--carrara"><img src="images/wall-panels/finish-carrara.jpg" alt="Carrara marble wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>Carrara Marble</b><span>Soft grey veining on bright white</span></span>
         </button>
         <button class="swatch" data-finish="white" data-name="White Marble">
-          <span class="chip surface--white"></span><span class="txt"><b>White Marble</b><span>Clean, luminous, minimal veining</span></span>
+          <span class="chip surface--white"><img src="images/wall-panels/finish-white.jpg" alt="White marble wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>White Marble</b><span>Clean, luminous, minimal veining</span></span>
         </button>
         <button class="swatch" data-finish="stone" data-name="Natural Stone">
-          <span class="chip surface--stone"></span><span class="txt"><b>Natural Stone</b><span>Deep, textured, contemporary</span></span>
+          <span class="chip surface--stone"><img src="images/wall-panels/finish-stone.jpg" alt="Natural stone wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>Natural Stone</b><span>Deep, textured, contemporary</span></span>
         </button>
         <button class="swatch" data-finish="travertine" data-name="Travertine">
-          <span class="chip surface--travertine"></span><span class="txt"><b>Travertine</b><span>Warm beige, spa-like tones</span></span>
+          <span class="chip surface--travertine"><img src="images/wall-panels/finish-travertine.jpg" alt="Travertine wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>Travertine</b><span>Warm beige, spa-like tones</span></span>
         </button>
         <button class="swatch" data-finish="concrete" data-name="Concrete Look">
-          <span class="chip surface--concrete"></span><span class="txt"><b>Concrete Look</b><span>Matte, modern, industrial-chic</span></span>
+          <span class="chip surface--concrete"><img src="images/wall-panels/finish-concrete.jpg" alt="Concrete look wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>Concrete Look</b><span>Matte, modern, industrial-chic</span></span>
         </button>
       </div>
     </div>
@@ -664,6 +672,7 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
   // ----- Finish gallery -----
   var swatches = document.getElementById('swatches');
   var preview = document.getElementById('finishPreview');
+  var previewImg = document.getElementById('finishImg');
   var nameEl = document.getElementById('finishName');
   var heroAfter = document.getElementById('baAfter');
   if (swatches){
@@ -676,6 +685,7 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
       for (var i=0;i<all.length;i++){ all[i].classList.remove('is-active'); }
       btn.classList.add('is-active');
       if (preview) preview.className = 'surface surface--' + finish;
+      if (previewImg){ previewImg.style.display = ''; previewImg.src = 'images/wall-panels/finish-' + finish + '.jpg'; }
       if (nameEl) nameEl.textContent = name;
       if (heroAfter) heroAfter.className = 'ba__layer ba__after surface--' + finish;
     });
