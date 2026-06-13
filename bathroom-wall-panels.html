@@ -337,6 +337,14 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
 .wp-anim .reveal{opacity:0;transform:translateY(22px)}
 .wp-anim .reveal.in{opacity:1;transform:none}
 
+/* Photo lightbox */
+.zoom{cursor:zoom-in}
+.wp-lightbox{position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;background:rgba(5,13,26,.92);padding:24px;cursor:zoom-out}
+.wp-lightbox.open{display:flex}
+.wp-lightbox img{max-width:94vw;max-height:88vh;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.wp-lightbox-close{position:absolute;top:16px;right:18px;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:1.7rem;line-height:1;cursor:pointer}
+.wp-lightbox-close:hover{background:rgba(255,255,255,.26)}
+
 /* Sticky mobile call bar */
 .callbar{display:none}
 
@@ -431,35 +439,35 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
     <div class="benefits">
       <div class="benefit reveal">
         <div class="benefit-text"><div class="ico">🧱</div><h3>Installs over tile</h3><p>Panels bond directly to your existing tile and walls — no chipping, no opening up the room.</p></div>
-        <div class="benefit-photo surface--carrara"><img src="images/wall-panels/benefit-installs-over-tile.jpg?v=1781362216198" alt="Waterproof wall panel installed over existing tile" onerror="this.style.display='none'"></div>
+        <div class="benefit-photo surface--carrara"><img class="zoom" src="images/wall-panels/benefit-installs-over-tile.jpg" alt="Waterproof wall panel installed over existing tile" onerror="this.style.display='none'"></div>
       </div>
       <div class="benefit reveal">
         <div class="benefit-text"><div class="ico">🚫</div><h3>No major demolition</h3><p>No jackhammers, no dumpster on the curb, no debris hauled through the building.</p></div>
-        <div class="benefit-photo surface--white"><img src="images/wall-panels/benefit-no-demolition.jpg?v=1781362597972" alt="Clean bathroom panel install with no demolition" onerror="this.style.display='none'"></div>
+        <div class="benefit-photo surface--white"><img class="zoom" src="images/wall-panels/benefit-no-demolition.jpg" alt="Clean bathroom panel install with no demolition" onerror="this.style.display='none'"></div>
       </div>
       <div class="benefit reveal">
         <div class="benefit-text"><div class="ico">💧</div><h3>100% waterproof</h3><p>Sealed seams make panels ideal for shower walls and wet areas.</p></div>
-        <div class="benefit-photo surface--white"><img src="images/wall-panels/benefit-waterproof.jpg?v=1781362327091" alt="Waterproof seamless marble shower panels" onerror="this.style.display='none'"></div>
+        <div class="benefit-photo surface--white"><img class="zoom" src="images/wall-panels/benefit-waterproof.jpg" alt="Waterproof seamless marble shower panels" onerror="this.style.display='none'"></div>
       </div>
       <div class="benefit reveal">
         <div class="benefit-text"><div class="ico">✨</div><h3>No grout lines</h3><p>A continuous seamless surface — nothing for mold or mildew to hide in.</p></div>
-        <div class="benefit-photo surface--carrara"><img src="images/wall-panels/benefit-no-grout.jpg?v=1781362951068" alt="Seamless panel wall with no grout lines" onerror="this.style.display='none'"></div>
+        <div class="benefit-photo surface--carrara"><img class="zoom" src="images/wall-panels/benefit-no-grout.jpg" alt="Seamless panel wall with no grout lines" onerror="this.style.display='none'"></div>
       </div>
       <div class="benefit reveal">
         <div class="benefit-text"><div class="ico">🧽</div><h3>Easier cleaning</h3><p>Wipe down a smooth panel instead of scrubbing dozens of grout joints.</p></div>
-        <div class="benefit-photo surface--white"><img src="images/wall-panels/benefit-easier-cleaning.jpg?v=1781363115692" alt="Smooth easy-clean wall panel surface" onerror="this.style.display='none'"></div>
+        <div class="benefit-photo surface--white"><img class="zoom" src="images/wall-panels/benefit-easier-cleaning.jpg" alt="Smooth easy-clean wall panel surface" onerror="this.style.display='none'"></div>
       </div>
       <div class="benefit reveal">
         <div class="benefit-text"><div class="ico">🏛️</div><h3>Marble &amp; stone look</h3><p>Large-format Carrara, marble, travertine, stone and concrete finishes.</p></div>
-        <div class="benefit-photo surface--travertine"><img src="images/wall-panels/benefit-marble-look.jpg?v=1781363212834" alt="Marble and stone look wall panels" onerror="this.style.display='none'"></div>
+        <div class="benefit-photo surface--travertine"><img class="zoom" src="images/wall-panels/benefit-marble-look.jpg" alt="Marble and stone look wall panels" onerror="this.style.display='none'"></div>
       </div>
       <div class="benefit reveal">
         <div class="benefit-text"><div class="ico">⏱️</div><h3>Done in 1–2 days</h3><p>The bathroom is usable again in days, not weeks.</p></div>
-        <div class="benefit-photo surface--carrara"><img src="images/wall-panels/benefit-fast.jpg?v=1781363401695" alt="Finished marble panel bathroom" onerror="this.style.display='none'"></div>
+        <div class="benefit-photo surface--carrara"><img class="zoom" src="images/wall-panels/benefit-fast.jpg" alt="Finished marble panel bathroom" onerror="this.style.display='none'"></div>
       </div>
       <div class="benefit reveal">
         <div class="benefit-text"><div class="ico">💰</div><h3>Lower cost</h3><p>No demo or re-tile labor means a premium look for less than a full remodel.</p></div>
-        <div class="benefit-photo surface--stone"><img src="images/wall-panels/benefit-lower-cost.jpg?v=1781363504838" alt="Modern panel bathroom at lower cost" onerror="this.style.display='none'"></div>
+        <div class="benefit-photo surface--stone"><img class="zoom" src="images/wall-panels/benefit-lower-cost.jpg" alt="Modern panel bathroom at lower cost" onerror="this.style.display='none'"></div>
       </div>
     </div>
   </div>
@@ -476,7 +484,7 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
     <div class="finish-stage">
       <div class="finish-preview reveal">
         <div class="surface surface--carrara" id="finishPreview"></div>
-        <img class="finish-img" id="finishImg" src="images/wall-panels/finish-carrara.jpg" alt="Carrara marble wall panel finish" onerror="this.style.display='none'">
+        <img class="finish-img zoom" id="finishImg" src="images/wall-panels/finish-carrara.jpg" alt="Carrara marble wall panel finish" onerror="this.style.display='none'">
         <div class="pv-label"><small>Now previewing</small><span id="finishName">Carrara Marble</span></div>
       </div>
       <div class="swatches" id="swatches">
@@ -684,6 +692,12 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
 <!-- Loads menu/footer partials + mobile menu functions + GA -->
 <script src="partials/site.js"></script>
 
+<!-- Photo lightbox -->
+<div class="wp-lightbox" id="wpLightbox" aria-hidden="true">
+  <button class="wp-lightbox-close" id="wpLightboxClose" aria-label="Close">&times;</button>
+  <img id="wpLightboxImg" src="" alt="">
+</div>
+
 <!-- Page-specific JS -->
 <script>
 (function(){
@@ -754,6 +768,24 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
     }, {threshold:0.1, rootMargin:'0px 0px -8% 0px'});
     for (var k=0;k<reveals.length;k++){ io.observe(reveals[k]); }
   }
+
+  // ----- Photo lightbox (tap a real photo to open full-screen) -----
+  var lb = document.getElementById('wpLightbox');
+  var lbImg = document.getElementById('wpLightboxImg');
+  function closeLb(){ if(!lb) return; lb.classList.remove('open'); lb.setAttribute('aria-hidden','true'); lbImg.removeAttribute('src'); }
+  document.addEventListener('click', function(e){
+    var z = e.target.closest('img.zoom');
+    if (z && z.style.display !== 'none' && z.getAttribute('src')){
+      e.preventDefault();
+      lbImg.src = z.currentSrc || z.src;
+      lbImg.alt = z.alt || '';
+      lb.classList.add('open');
+      lb.setAttribute('aria-hidden','false');
+      return;
+    }
+    if (lb && lb.classList.contains('open')) closeLb();
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeLb(); });
 })();
 </script>
 </body>
