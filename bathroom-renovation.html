@@ -259,6 +259,51 @@ img{max-width:100%;display:block}
   .cta-buttons{flex-direction:column}
   .cta-buttons .btn-primary,.cta-buttons .btn-outline{width:100%}
 }
+
+/* ============ NO-DEMO PROMO BAND ============ */
+.norem-section{padding:56px 28px 0;background:var(--light)}
+.norem-inner{max-width:1280px;margin:0 auto}
+.norem-card{display:flex;align-items:center;justify-content:space-between;gap:30px;flex-wrap:wrap;background:linear-gradient(120deg,var(--navy) 0%,var(--navy-3) 100%);border:1px solid var(--gold);border-radius:16px;padding:30px 36px;box-shadow:0 16px 44px rgba(10,22,40,.14)}
+.norem-card-text{flex:1;min-width:280px}
+.norem-eyebrow{display:inline-block;color:var(--gold-light);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.norem-card h2{font-family:"Playfair Display",serif;font-size:clamp(22px,2.6vw,30px);color:#fff;margin-bottom:16px;line-height:1.15}
+.norem-points{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;max-width:540px}
+.norem-points li{display:flex;align-items:center;gap:9px;color:rgba(255,255,255,.9);font-size:14px}
+.norem-points li::before{content:"\2714";color:var(--gold-light);font-weight:700;font-size:13px}
+.norem-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:10px;background:var(--gold);color:var(--navy);font-weight:700;font-size:14px;letter-spacing:.5px;padding:16px 28px;border-radius:8px;text-decoration:none;transition:all .25s;white-space:nowrap}
+.norem-btn:hover{background:var(--gold-light);transform:translateY(-2px);box-shadow:0 10px 28px rgba(200,134,10,.4)}
+.norem-btn .arrow{transition:transform .25s}
+.norem-btn:hover .arrow{transform:translateX(4px)}
+
+/* ============ COMPARE: FULL RENO vs NO-DEMO ============ */
+.compare-section{padding:80px 28px;background:var(--white)}
+.compare-inner{max-width:1040px;margin:0 auto}
+.compare-head{text-align:center;margin-bottom:42px}
+.compare-eyebrow{font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:600;text-transform:uppercase;margin-bottom:10px}
+.compare-title{font-family:"Playfair Display",serif;font-size:clamp(28px,3.5vw,42px);font-weight:700;color:var(--black);line-height:1.1}
+.compare-title em{font-style:italic;color:var(--gold)}
+.compare-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.06)}
+.cg-cell{padding:16px 18px;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--gray);line-height:1.5}
+.cg-cell.cg-label{font-weight:600;color:var(--black);background:var(--light)}
+.cg-cell.cg-b{background:rgba(200,134,10,.05)}
+.cg-cell.cg-head{font-family:"Playfair Display",serif;font-weight:700;font-size:16px;color:var(--black);background:var(--white)}
+.cg-cell.cg-head.cg-b{color:var(--gold);background:rgba(200,134,10,.08)}
+.compare-grid .cg-cell:nth-last-child(-n+3){border-bottom:none}
+.cg-cta{padding:18px}
+.cg-cta a{width:100%}
+.compare-note{text-align:center;font-size:12.5px;color:var(--gray);margin-top:18px}
+@media(max-width:720px){
+  .norem-card{padding:26px 24px}
+  .norem-points{grid-template-columns:1fr}
+  .norem-btn{width:100%;justify-content:center}
+  .compare-grid{grid-template-columns:1fr}
+  .compare-grid .cg-cell{border-bottom:1px solid var(--border)}
+  .cg-head{display:none}
+  .cg-cta-label{display:none}
+  .cg-cell.cg-label{background:var(--navy);color:#fff;font-family:"Playfair Display",serif;font-size:15px;padding:13px 18px}
+  .cg-cell.cg-a::before{content:"Full Renovation \2014 ";font-weight:700;color:var(--black)}
+  .cg-cell.cg-b:not(.cg-cta)::before{content:"No-Demo Refresh \2014 ";font-weight:700;color:var(--gold)}
+}
 </style>
 <link rel="stylesheet" href="partials/site.css">
 
@@ -339,6 +384,25 @@ img{max-width:100%;display:block}
       <div class="stat-value">5</div>
       <div class="stat-label">Boroughs</div>
       <div class="stat-sublabel">Serving All NYC</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NO-DEMO PROMO BAND ============ -->
+<section class="norem-section">
+  <div class="norem-inner">
+    <div class="norem-card reveal">
+      <div class="norem-card-text">
+        <span class="norem-eyebrow">Faster Option Available</span>
+        <h2>Need a Faster Bathroom Upgrade?</h2>
+        <ul class="norem-points">
+          <li>No major demolition</li>
+          <li>Install over existing tile</li>
+          <li>Waterproof wall panels</li>
+          <li>Finished in 1&ndash;2 days</li>
+        </ul>
+      </div>
+      <a class="norem-btn" href="/bathroom-wall-panels">View Bathroom Refresh (No Demo) <span class="arrow">&rarr;</span></a>
     </div>
   </div>
 </section>
@@ -440,6 +504,62 @@ img{max-width:100%;display:block}
       </div>
       <a class="related-service-btn" href="/bathroom-floor-tile-installation">View Floor Tile Installation <span class="arrow">→</span></a>
     </div>
+    <div class="related-service reveal">
+      <div class="related-service-text">
+        <span class="related-service-eyebrow">Specialized Service</span>
+        <h3>Want a refresh without the demolition?</h3>
+        <p>Our <strong>Bathroom Refresh (No Demo)</strong> installs waterproof, marble-look wall panels right over your existing tile &mdash; finished in 1&ndash;2 days, with no dust or gut work.</p>
+      </div>
+      <a class="related-service-btn" href="/bathroom-wall-panels">View Bathroom Refresh (No Demo) <span class="arrow">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMPARE: FULL RENO vs NO-DEMO ============ -->
+<section class="compare-section">
+  <div class="compare-inner">
+    <div class="compare-head">
+      <div class="compare-eyebrow reveal">Two Ways to Transform Your Bathroom</div>
+      <h2 class="compare-title reveal">Full Renovation vs. <em>No-Demo Refresh</em></h2>
+    </div>
+    <div class="compare-grid reveal">
+      <div class="cg-cell cg-head cg-label"></div>
+      <div class="cg-cell cg-head cg-a">Full Bathroom Renovation</div>
+      <div class="cg-cell cg-head cg-b">Bathroom Refresh (No Demo)</div>
+
+      <div class="cg-cell cg-label">Timeline</div>
+      <div class="cg-cell cg-a">2&ndash;6 weeks</div>
+      <div class="cg-cell cg-b">1&ndash;2 days</div>
+
+      <div class="cg-cell cg-label">Demolition</div>
+      <div class="cg-cell cg-a">Full demo &amp; gut</div>
+      <div class="cg-cell cg-b">None &mdash; installs over existing tile</div>
+
+      <div class="cg-cell cg-label">Mess &amp; disruption</div>
+      <div class="cg-cell cg-a">Significant dust &amp; debris</div>
+      <div class="cg-cell cg-b">Minimal &mdash; clean install</div>
+
+      <div class="cg-cell cg-label">Layout &amp; plumbing changes</div>
+      <div class="cg-cell cg-a">Yes &mdash; move fixtures, walls &amp; plumbing</div>
+      <div class="cg-cell cg-b">No &mdash; surfaces only</div>
+
+      <div class="cg-cell cg-label">Waterproofing</div>
+      <div class="cg-cell cg-a">Full waterproofing system</div>
+      <div class="cg-cell cg-b">Waterproof rigid panels</div>
+
+      <div class="cg-cell cg-label">Best for</div>
+      <div class="cg-cell cg-a">Outdated layouts &amp; complete transformations</div>
+      <div class="cg-cell cg-b">Tired surfaces, fast refresh &amp; rentals</div>
+
+      <div class="cg-cell cg-label">Investment</div>
+      <div class="cg-cell cg-a">Larger investment</div>
+      <div class="cg-cell cg-b">Budget-friendly</div>
+
+      <div class="cg-cell cg-label cg-cta-label"></div>
+      <div class="cg-cell cg-a cg-cta"><a class="btn-outline-dark" href="/contact">Get Free Estimate</a></div>
+      <div class="cg-cell cg-b cg-cta"><a class="norem-btn" href="/bathroom-wall-panels">View No-Demo Refresh <span class="arrow">&rarr;</span></a></div>
+    </div>
+    <p class="compare-note">Not sure which fits your bathroom? Call us at <strong>(332) 277-0990</strong> for a free recommendation.</p>
   </div>
 </section>
 
