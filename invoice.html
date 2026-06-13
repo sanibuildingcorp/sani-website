@@ -134,6 +134,36 @@ body {
 .status-pill.paid { background: rgba(46, 204, 113, 0.12); color: var(--good); border: 1px solid var(--good); }
 .status-pill.overdue { background: rgba(231, 76, 60, 0.12); color: var(--bad); border: 1px solid var(--bad); }
 
+/* PAID BANNER */
+.paid-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(46, 204, 113, 0.10);
+  border: 1px solid var(--good);
+  border-left: 4px solid var(--good);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.paid-banner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--good);
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+}
+.paid-banner-text { display: flex; flex-direction: column; line-height: 1.35; }
+.paid-banner-text strong { color: var(--good); font-size: 15px; letter-spacing: .3px; }
+.paid-banner-text span { color: var(--ink-soft); font-size: 13px; }
+
 /* SECTION TITLES */
 .section-label {
   font-family: var(--display);
@@ -467,6 +497,15 @@ body {
         </div>
       </div>
 
+      <!-- PAID BANNER (shown only when invoice is paid) -->
+      <div id="paid-banner" class="paid-banner" style="display:none">
+        <span class="paid-banner-icon">&#10003;</span>
+        <div class="paid-banner-text">
+          <strong>Paid in Full</strong>
+          <span id="paid-banner-date"></span>
+        </div>
+      </div>
+
       <!-- ITEMIZED WORK PERFORMED -->
       <div id="items-wrap" style="display:none">
         <div class="section-label" style="margin-top:0">What This Invoice Covers</div>
@@ -644,6 +683,19 @@ function render() {
     statusEl.textContent = "Unpaid";
   }
 
+  // Paid banner + relabel amount row when paid
+  if (invoice.status === "paid") {
+    var paidBanner = document.getElementById("paid-banner");
+    if (paidBanner) {
+      paidBanner.style.display = "flex";
+      var paidWhen = invoice.paidAt || invoice.paidDate || "";
+      document.getElementById("paid-banner-date").textContent =
+        paidWhen ? ("Paid on " + fmtDateOnly(paidWhen)) : "";
+    }
+    var amtLabel = document.querySelector(".info-row.amount-due .info-label");
+    if (amtLabel) amtLabel.textContent = "Amount Paid";
+  }
+
   // Itemized work performed
   renderItems(est);
 
@@ -653,14 +705,14 @@ function render() {
     document.getElementById("memo-text").textContent = invoice.memo;
   }
 
-  // Pay Now button (only if includePaymentLink + paymentLink provided)
-  if (invoice.includePaymentLink && invoice.paymentLink && invoice.paymentLink.trim()) {
+  // Pay Now button (only if includePaymentLink + paymentLink provided, and not yet paid)
+  if (invoice.status !== "paid" && invoice.includePaymentLink && invoice.paymentLink && invoice.paymentLink.trim()) {
     document.getElementById("pay-now-wrap").style.display = "block";
     document.getElementById("pay-now-link").href = invoice.paymentLink;
   }
 
-  // Payment instructions
-  if (invoice.paymentDetails && invoice.paymentDetails.trim()) {
+  // Payment instructions (hidden once paid)
+  if (invoice.status !== "paid" && invoice.paymentDetails && invoice.paymentDetails.trim()) {
     document.getElementById("payment-wrap").style.display = "block";
     const methodLabels = {
       zelle: "Zelle",
