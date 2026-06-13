@@ -320,9 +320,10 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
 .spec .k{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px}
 .spec .v{color:var(--navy);font-weight:600;font-size:1rem;line-height:1.4}
 
-/* Reveal */
-.reveal{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
-.reveal.in{opacity:1;transform:none}
+/* Reveal — hidden state only applies after JS adds .wp-anim, so content is visible by default if JS/IO is unavailable */
+.reveal{transition:opacity .6s ease,transform .6s ease}
+.wp-anim .reveal{opacity:0;transform:translateY(22px)}
+.wp-anim .reveal.in{opacity:1;transform:none}
 
 /* Sticky mobile call bar */
 .callbar{display:none}
@@ -350,7 +351,7 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
   body{padding-bottom:64px}
 }
 @media (prefers-reduced-motion:reduce){
-  .reveal{opacity:1;transform:none;transition:none}
+  .wp-anim .reveal{opacity:1;transform:none;transition:none}
 }
 </style>
 </head>
@@ -700,16 +701,18 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
   }
 
   // ----- Scroll reveal -----
+  // Only enable the hidden-then-animate state when we can actually animate.
+  // If JS/IntersectionObserver is unavailable or reduced-motion is on, we never
+  // add 'wp-anim', so all content stays visible by default.
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var reveals = document.querySelectorAll('.reveal');
-  if (reduce || !('IntersectionObserver' in window)){
-    for (var r=0;r<reveals.length;r++){ reveals[r].classList.add('in'); }
-  } else {
+  if (!reduce && 'IntersectionObserver' in window){
+    document.body.classList.add('wp-anim');
+    var reveals = document.querySelectorAll('.reveal');
     var io = new IntersectionObserver(function(entries){
       entries.forEach(function(en){
         if (en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
       });
-    }, {threshold:0.12});
+    }, {threshold:0.1, rootMargin:'0px 0px -8% 0px'});
     for (var k=0;k<reveals.length;k++){ io.observe(reveals[k]); }
   }
 })();
