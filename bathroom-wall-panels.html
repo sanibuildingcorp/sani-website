@@ -149,7 +149,7 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
 .italic-accent{font-style:italic;color:var(--gold-light)}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:1rem;padding:15px 28px;border-radius:999px;border:1.5px solid transparent;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,background .2s ease;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:1rem;padding:15px 28px;border-radius:999px;border:1.5px solid transparent;cursor:pointer;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease,background .2s ease;white-space:nowrap}
 .btn-gold{background:linear-gradient(135deg,var(--gold-bright),var(--gold));color:var(--navy);box-shadow:0 10px 26px rgba(200,134,10,.32)}
 .btn-gold:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(200,134,10,.42)}
 .btn-ghost{background:transparent;border-color:rgba(255,255,255,.45);color:#fff}
@@ -386,8 +386,8 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
         <div class="ba" id="ba">
           <div class="ba__layer ba__after surface--carrara" id="baAfter"></div>
           <div class="ba__layer ba__before"><div class="ba__layer tile-old"></div></div>
-          <span class="ba__tag before">Before · old tile</span>
-          <span class="ba__tag after">After · marble panel</span>
+          <span class="ba__tag before">Before</span>
+          <span class="ba__tag after">After</span>
           <div class="ba__handle" id="baHandle"><span class="ba__knob">⟷</span></div>
           <input type="range" min="0" max="100" value="50" class="ba__range" id="baRange" aria-label="Drag to compare before and after">
         </div>
