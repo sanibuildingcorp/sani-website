@@ -1,12 +1,16 @@
 // netlify/functions/find-finishes.js
 // Design-to-Materials AI layer for Sani Building Corp.
-// 1) OpenAI Vision reads the Gemini render -> detects each finishing material
-//    with STRUCTURED characteristics (category, color, finish, size, material, style),
+// 1) OpenAI Vision reads the Gemini render OR an uploaded customer photo ->
+//    detects each finishing material with STRUCTURED characteristics
+//    (category, color, finish, size, material, style),
 //    an estimated QUANTITY + unit, and a Google Shopping search query.
 // 2) Serper.dev Google Shopping search -> REAL store products (Home Depot, Lowe's,
 //    Floor & Decor, Wayfair, etc.) with image, name, store, price, link.
 // 3) Returns finish GROUPS with cheaper / default / premium real options,
 //    ready to drop into the dashboard's Finishing Options (finishGroups).
+//
+// Body params: { image, sourceType: "render" | "photo", scopeOfWork, serviceLabel, projectTitle }
+// sourceType defaults to "render" so existing callers keep working unchanged.
 //
 // Env vars required in Netlify: OPENAI_API_KEY, SERPER_API_KEY
 // If SERPER_API_KEY is missing or a search returns nothing, that finish falls back
@@ -21,18 +25,23 @@ exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
 
   try {
-    const { image, scopeOfWork, serviceLabel, projectTitle } = JSON.parse(event.body || "{}");
+    const { image, sourceType, scopeOfWork, serviceLabel, projectTitle } = JSON.parse(event.body || "{}");
     const openaiKey = process.env.OPENAI_API_KEY;
     const serperKey = process.env.SERPER_API_KEY;
 
     if (!openaiKey) return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "OPENAI_API_KEY not set" }) };
     if (!image || typeof image !== "string" || !image.trim()) {
-      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "No render image provided. Generate an AI render first." }) };
+      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "No image provided. Select a photo or generate an AI render first." }) };
     }
     const imageUrl = buildImageUrl(image);
+    const isPhoto = String(sourceType || "render").toLowerCase() === "photo";
 
     /* ---------- STEP 1: VISION -> structured finishes + quantities ---------- */
-    const visionPrompt = `You are a NYC renovation estimator. You are looking at an AI render of a FINISHED renovation.
+    const sourceLine = isPhoto
+      ? "You are looking at a customer's PHOTO of the actual space (it may be the current/before condition or an inspiration photo). Identify the visible finishing materials in the photo; where a material is being replaced per the scope, describe a comparable replacement product of the same category."
+      : "You are looking at an AI render of a FINISHED renovation.";
+
+    const visionPrompt = `You are a NYC renovation estimator. ${sourceLine}
 
 Identify ONLY the visible FINISHING materials the customer chooses by look:
 wall tile, floor tile, countertop, backsplash, vanity, cabinets, faucet/fixtures, paint color, lighting, shower glass/hardware, tub. Ignore structural/hidden/labor items.
@@ -41,7 +50,7 @@ PROJECT: ${projectTitle || serviceLabel || "Renovation"}
 ${serviceLabel ? "SERVICE: " + serviceLabel : ""}
 ${scopeOfWork ? "SCOPE:\n" + String(scopeOfWork).slice(0, 800) : ""}
 
-For each distinct finishing material visible (2 to 5 total), describe its real characteristics and ESTIMATE the quantity needed for this job using the render + scope (rough is fine).
+For each distinct finishing material visible (2 to 5 total), describe its real characteristics and ESTIMATE the quantity needed for this job using the image + scope (rough is fine).
 
 Return ONLY a valid JSON array, no markdown. Each element:
 {
@@ -75,7 +84,7 @@ Return ONLY a valid JSON array, no markdown. Each element:
 
     let finishes;
     try { finishes = JSON.parse(vc); if (!Array.isArray(finishes)) throw 0; }
-    catch (e) { return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "Failed to read finishes from render" }) }; }
+    catch (e) { return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "Failed to read finishes from image" }) }; }
     finishes = finishes.filter(function (f) { return f && (f.category || f.searchQuery); }).slice(0, 5);
     if (!finishes.length) return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true, groups: [] }) };
 
@@ -163,7 +172,7 @@ function parsePrice(p) {
 }
 function cleanTitle(t) { return String(t || "").replace(/\s+/g, " ").trim().slice(0, 90); }
 
-// Accept the render in any form OpenAI can use:
+// Accept the image in any form OpenAI can use:
 //  - hosted URL (http/https)  -> pass through, OpenAI fetches it
 //  - data: URL                -> strip whitespace from the base64 part
 //  - raw base64               -> wrap as a png data URL
