@@ -218,12 +218,15 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
 .concept-arrow{color:var(--gold);font-size:1.3rem;font-weight:700}
 
 /* Benefits grid */
-.benefits{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-.benefit{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:26px 22px;box-shadow:var(--shadow-sm);transition:transform .25s ease,box-shadow .25s ease}
+.benefits{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.benefit{display:grid;grid-template-columns:1.05fr .95fr;background:var(--white);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-sm);overflow:hidden;transition:transform .25s ease,box-shadow .25s ease}
 .benefit:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}
+.benefit-text{padding:24px 22px}
 .benefit .ico{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-size:1.35rem;margin-bottom:15px;background:linear-gradient(135deg,rgba(240,165,0,.16),rgba(200,134,10,.08));color:var(--gold)}
 .benefit h3{font-size:1.12rem;margin-bottom:7px}
 .benefit p{font-size:.93rem;color:var(--ink-soft)}
+.benefit-photo{position:relative;min-height:170px;border-left:1px solid var(--line)}
+.benefit-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 
 /* Finish gallery */
 .gallery-wp{background:var(--navy);color:#fff}
@@ -340,7 +343,7 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
 @media (max-width:920px){
   .hero-grid{grid-template-columns:1fr;gap:34px}
   .ba-shell{order:-1}
-  .benefits{grid-template-columns:repeat(2,1fr)}
+  .benefits{grid-template-columns:1fr}
   .finish-stage{grid-template-columns:1fr;gap:24px}
   .compare{grid-template-columns:1fr}
   .process{grid-template-columns:repeat(2,1fr)}
@@ -393,8 +396,8 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
     <div class="ba-shell">
       <div class="ba-frame">
         <div class="ba" id="ba">
-          <div class="ba__layer ba__after surface--carrara" id="baAfter"><img class="ba__img" id="afterImg" src="images/wall-panels/after.jpg?v=1781360211655" alt="Bathroom refresh without demolition using waterproof marble wall panels installed over existing tile in Brooklyn NY refreshing bathroom tiles" onerror="this.style.display='none'"></div>
-          <div class="ba__layer ba__before"><div class="ba__layer tile-old"></div><img class="ba__img" id="beforeImg" src="images/wall-panels/before.jpg?v=1781360249325" alt="Before — dated tiled bathroom" onerror="this.style.display='none'"></div>
+          <div class="ba__layer ba__after surface--carrara" id="baAfter"><img class="ba__img" id="afterImg" src="images/wall-panels/after.jpg" alt="After — bathroom refreshed with marble-look waterproof wall panels, no demolition" onerror="this.style.display='none'"></div>
+          <div class="ba__layer ba__before"><div class="ba__layer tile-old"></div><img class="ba__img" id="beforeImg" src="images/wall-panels/before.jpg" alt="Before — dated tiled bathroom" onerror="this.style.display='none'"></div>
           <span class="ba__tag before">Before</span>
           <span class="ba__tag after">After</span>
           <div class="ba__handle" id="baHandle"><span class="ba__knob">⟷</span></div>
@@ -426,14 +429,38 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
       <p>You keep the walls you have. We give them a high-end, fully waterproof surface — fast, clean, and built to last.</p>
     </div>
     <div class="benefits">
-      <div class="benefit reveal"><div class="ico">🧱</div><h3>Installs over tile</h3><p>Panels bond directly to your existing tile and walls — no chipping, no opening up the room.</p></div>
-      <div class="benefit reveal"><div class="ico">🚫</div><h3>No major demolition</h3><p>No jackhammers, no dumpster on the curb, no debris hauled through the building.</p></div>
-      <div class="benefit reveal"><div class="ico">💧</div><h3>100% waterproof</h3><p>Sealed seams make panels ideal for shower walls and wet areas.</p></div>
-      <div class="benefit reveal"><div class="ico">✨</div><h3>No grout lines</h3><p>A continuous seamless surface — nothing for mold or mildew to hide in.</p></div>
-      <div class="benefit reveal"><div class="ico">🧽</div><h3>Easier cleaning</h3><p>Wipe down a smooth panel instead of scrubbing dozens of grout joints.</p></div>
-      <div class="benefit reveal"><div class="ico">🏛️</div><h3>Marble &amp; stone look</h3><p>Large-format Carrara, marble, travertine, stone and concrete finishes.</p></div>
-      <div class="benefit reveal"><div class="ico">⏱️</div><h3>Done in 1–2 days</h3><p>The bathroom is usable again in days, not weeks.</p></div>
-      <div class="benefit reveal"><div class="ico">💰</div><h3>Lower cost</h3><p>No demo or re-tile labor means a premium look for less than a full remodel.</p></div>
+      <div class="benefit reveal">
+        <div class="benefit-text"><div class="ico">🧱</div><h3>Installs over tile</h3><p>Panels bond directly to your existing tile and walls — no chipping, no opening up the room.</p></div>
+        <div class="benefit-photo surface--carrara"><img src="images/wall-panels/benefit-installs-over-tile.jpg" alt="Waterproof wall panel installed over existing tile" onerror="this.style.display='none'"></div>
+      </div>
+      <div class="benefit reveal">
+        <div class="benefit-text"><div class="ico">🚫</div><h3>No major demolition</h3><p>No jackhammers, no dumpster on the curb, no debris hauled through the building.</p></div>
+        <div class="benefit-photo surface--white"><img src="images/wall-panels/benefit-no-demolition.jpg" alt="Clean bathroom panel install with no demolition" onerror="this.style.display='none'"></div>
+      </div>
+      <div class="benefit reveal">
+        <div class="benefit-text"><div class="ico">💧</div><h3>100% waterproof</h3><p>Sealed seams make panels ideal for shower walls and wet areas.</p></div>
+        <div class="benefit-photo surface--white"><img src="images/wall-panels/benefit-waterproof.jpg" alt="Waterproof seamless marble shower panels" onerror="this.style.display='none'"></div>
+      </div>
+      <div class="benefit reveal">
+        <div class="benefit-text"><div class="ico">✨</div><h3>No grout lines</h3><p>A continuous seamless surface — nothing for mold or mildew to hide in.</p></div>
+        <div class="benefit-photo surface--carrara"><img src="images/wall-panels/benefit-no-grout.jpg" alt="Seamless panel wall with no grout lines" onerror="this.style.display='none'"></div>
+      </div>
+      <div class="benefit reveal">
+        <div class="benefit-text"><div class="ico">🧽</div><h3>Easier cleaning</h3><p>Wipe down a smooth panel instead of scrubbing dozens of grout joints.</p></div>
+        <div class="benefit-photo surface--white"><img src="images/wall-panels/benefit-easier-cleaning.jpg" alt="Smooth easy-clean wall panel surface" onerror="this.style.display='none'"></div>
+      </div>
+      <div class="benefit reveal">
+        <div class="benefit-text"><div class="ico">🏛️</div><h3>Marble &amp; stone look</h3><p>Large-format Carrara, marble, travertine, stone and concrete finishes.</p></div>
+        <div class="benefit-photo surface--travertine"><img src="images/wall-panels/benefit-marble-look.jpg" alt="Marble and stone look wall panels" onerror="this.style.display='none'"></div>
+      </div>
+      <div class="benefit reveal">
+        <div class="benefit-text"><div class="ico">⏱️</div><h3>Done in 1–2 days</h3><p>The bathroom is usable again in days, not weeks.</p></div>
+        <div class="benefit-photo surface--carrara"><img src="images/wall-panels/benefit-fast.jpg" alt="Finished marble panel bathroom" onerror="this.style.display='none'"></div>
+      </div>
+      <div class="benefit reveal">
+        <div class="benefit-text"><div class="ico">💰</div><h3>Lower cost</h3><p>No demo or re-tile labor means a premium look for less than a full remodel.</p></div>
+        <div class="benefit-photo surface--stone"><img src="images/wall-panels/benefit-lower-cost.jpg" alt="Modern panel bathroom at lower cost" onerror="this.style.display='none'"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -457,7 +484,7 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
           <span class="chip surface--carrara"><img src="images/wall-panels/finish-carrara.jpg" alt="Carrara marble wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>Carrara Marble</b><span>Soft grey veining on bright white</span></span>
         </button>
         <button class="swatch" data-finish="white" data-name="White Marble">
-          <span class="chip surface--white"><img src="images/wall-panels/finish-white.jpg?v=1781360579137" alt="White marble wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>White Marble</b><span>Clean, luminous, minimal veining</span></span>
+          <span class="chip surface--white"><img src="images/wall-panels/finish-white.jpg" alt="White marble wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>White Marble</b><span>Clean, luminous, minimal veining</span></span>
         </button>
         <button class="swatch" data-finish="stone" data-name="Natural Stone">
           <span class="chip surface--stone"><img src="images/wall-panels/finish-stone.jpg" alt="Natural stone wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>Natural Stone</b><span>Deep, textured, contemporary</span></span>
@@ -466,7 +493,7 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
           <span class="chip surface--travertine"><img src="images/wall-panels/finish-travertine.jpg" alt="Travertine wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>Travertine</b><span>Warm beige, spa-like tones</span></span>
         </button>
         <button class="swatch" data-finish="concrete" data-name="Concrete Look">
-          <span class="chip surface--concrete"><img src="images/wall-panels/finish-concrete.jpg?v=1781360653325" alt="Concrete look wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>Concrete Look</b><span>Matte, modern, industrial-chic</span></span>
+          <span class="chip surface--concrete"><img src="images/wall-panels/finish-concrete.jpg" alt="Concrete look wall panel finish" onerror="this.style.display='none'"></span><span class="txt"><b>Concrete Look</b><span>Matte, modern, industrial-chic</span></span>
         </button>
       </div>
     </div>
