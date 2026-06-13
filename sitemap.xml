@@ -62,6 +62,11 @@
 
   <!-- Bathroom Sub-Pages -->
   <url>
+    <loc>https://www.sanibuildingcorp.com/bathroom-wall-panels</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.sanibuildingcorp.com/bathroom-floor-tile-installation</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
