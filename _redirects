@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════
 # SANI BUILDING CORP — Netlify Redirects
-# Last updated: May 2026
+# Last updated: June 2026
 # ═══════════════════════════════════════════════════════════════════
 
 # ─── FORCE ALL NETLIFY URLs → REAL DOMAIN (PREVENTS DUPLICATE CONTENT) ───
@@ -56,6 +56,7 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 
 # Bathroom SEO pages
 /bathroom-floor-tile-installation.html   /bathroom-floor-tile-installation   301!
+/bathroom-wall-panels.html               /bathroom-wall-panels               301!
 /bathroom-renovation-brooklyn.html       /bathroom-renovation-brooklyn       301!
 /bathroom-renovation-manhattan.html      /bathroom-renovation-manhattan      301!
 /bathroom-renovation-queens.html         /bathroom-renovation-queens         301!
