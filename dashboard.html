@@ -1792,6 +1792,16 @@ body {
 .ih-btn.unpaid { background: transparent; color: var(--ink-muted); border: 1px solid var(--line-soft); }
 .ih-btn.unpaid:hover { color: var(--ink); border-color: var(--ink-muted); }
 
+/* Ask-for-review button (manual, opens prefilled text/email) */
+.review-ask-btn {
+  display: block; width: 100%; margin: 2px 0 18px; padding: 12px 16px;
+  border-radius: 9px; background: rgba(184,147,10,0.10);
+  border: 1px solid var(--gold); color: var(--gold);
+  font-weight: 700; font-size: 13px; letter-spacing: .3px;
+  cursor: pointer; transition: all .15s;
+}
+.review-ask-btn:hover { background: var(--gold); color: #fff; }
+
 /* toast */
 .toast {
   position: fixed;
@@ -4032,6 +4042,29 @@ async function toggleInvoicePaid(invoiceNumber, makePaid) {
   }
 }
 
+/* Manual "Ask for Review" — opens a prefilled text (or email) to the customer.
+   Nothing sends automatically; the contractor presses send. */
+function askForReview() {
+  var cust = (currentRecord && currentRecord.customer) || {};
+  var name = (cust.name || "").trim();
+  var phone = (cust.phone || "").trim();
+  var email = (cust.email || "").trim();
+  var greeting = name ? ("Hi " + name + ", ") : "Hi, ";
+  var msg = greeting + "thank you for choosing Sani Building Corp! If you were happy with the work, a quick Google review really helps us out — it takes 30 seconds: https://g.page/r/CXtX_n13XF6aEBE/review  Thank you!";
+  var isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (phone) {
+    var tel = phone.replace(/[^0-9+]/g, "");
+    window.location.href = "sms:" + tel + (isiOS ? "&" : "?") + "body=" + encodeURIComponent(msg);
+  } else if (email) {
+    window.location.href = "mailto:" + encodeURIComponent(email) +
+      "?subject=" + encodeURIComponent("A quick favor \u2014 Google review") +
+      "&body=" + encodeURIComponent(msg);
+  } else {
+    // no contact on file: open a blank text with the message ready, pick the contact manually
+    window.location.href = "sms:" + (isiOS ? "&" : "?") + "body=" + encodeURIComponent(msg);
+  }
+}
+
 function renderInvoiceModal(totals, prior, remaining) {
   const cust = currentRecord.customer || {};
   const est = currentRecord.estimate || {};
@@ -4072,6 +4105,7 @@ function renderInvoiceModal(totals, prior, remaining) {
       '<button class="modal-close" onclick="closeInvoiceModal()">×</button>' +
     '</div>' +
     historyHtml +
+    '<button class="review-ask-btn" onclick="askForReview()">★ Ask This Customer for a Review</button>' +
     // ── 1) CUSTOMER INFORMATION (editable) ──
     '<div class="inv-section">' +
       '<div class="inv-section-label">👤 Customer Information</div>' +
