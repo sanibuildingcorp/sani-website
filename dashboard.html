@@ -6921,8 +6921,6 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       '<textarea id="sbc-ct-cl-warranty" rows="3" style="'+TA+'">'+esc2(c.warranty)+'</textarea>'+
       '<label style="'+LBL+'">Cancellation</label>'+
       '<textarea id="sbc-ct-cl-cancel" rows="3" style="'+TA+'">'+esc2(c.cancellation)+'</textarea>'+
-      '<label style="'+LBL+'">Permits, Code &amp; Insurance</label>'+
-      '<textarea id="sbc-ct-cl-permits" rows="3" style="'+TA+'">'+esc2(c.permitsAndInsurance)+'</textarea>'+
 
       '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">'+
         '<button onclick="sbcSaveContract()" id="sbc-ct-save" style="padding:12px 22px;background:var(--gold);color:#102236;border:none;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer">💾 Save Contract</button>'+
@@ -7009,8 +7007,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
         hiddenConditions: document.getElementById('sbc-ct-cl-hidden').value.trim(),
         changeOrder: document.getElementById('sbc-ct-cl-change').value.trim(),
         warranty: document.getElementById('sbc-ct-cl-warranty').value.trim(),
-        cancellation: document.getElementById('sbc-ct-cl-cancel').value.trim(),
-        permitsAndInsurance: document.getElementById('sbc-ct-cl-permits').value.trim()
+        cancellation: document.getElementById('sbc-ct-cl-cancel').value.trim()
       }
     };
     var schedSum = sched.reduce(function(s,p){ return s+p.amount; },0);
