@@ -1218,6 +1218,10 @@ function finishesAreChanged() {
   }
   return false;
 }
+function hasContract() {
+  var c = record && record.contract;
+  return !!(c && typeof c === "object" && Object.keys(c).length > 0);
+}
 function updatePrimaryAction() {
   var label=document.getElementById("btn-primary-label");
   var icon=document.getElementById("btn-primary-icon");
@@ -1227,15 +1231,24 @@ function updatePrimaryAction() {
     label.textContent="Send to Sani for Review";
     if (icon) icon.textContent="↪";
     if (notice) notice.style.display="block";
-  } else {
+  } else if (hasContract()) {
     label.textContent="Review Contract & Approve";
     if (icon) icon.textContent="📄";
+    if (notice) notice.style.display="none";
+  } else {
+    label.textContent="Approve Estimate";
+    if (icon) icon.textContent="✓";
     if (notice) notice.style.display="none";
   }
 }
 function primaryAction() {
   if (finishesAreChanged()) submitReview();
-  else openAccept();
+  else if (hasContract()) openAccept();
+  else openAcceptModal();
+}
+function openAcceptModal() {
+  var m = document.getElementById("accept-modal");
+  if (m) m.classList.add("show");
 }
 async function submitReview() {
   var finishSelections=getFinishSelections();
