@@ -3907,6 +3907,12 @@ async function sendToCustomer() {
 
   if (!confirm("Send estimate of " + fmt(cv.customerTotal) + " to " + currentRecord.customer.name + "?\n\nCustomer will see: " + visibility)) return;
 
+  // Only attach the contract if you choose to — small jobs can go quote-only.
+  let includeContract = false;
+  if (currentRecord.contract && currentRecord.contract.sections) {
+    includeContract = confirm("Include the contract with this estimate?\n\nOK = customer must review & sign the contract to approve.\nCancel = customer just approves the estimate (no contract).");
+  }
+
   try {
     let r = await fetch("/.netlify/functions/save-estimate", {
       method: "POST",
@@ -3918,7 +3924,7 @@ async function sendToCustomer() {
     r = await fetch("/.netlify/functions/send-quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref }),
+      body: JSON.stringify({ ref: currentRecord.ref, includeContract: includeContract }),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || "Send failed");
