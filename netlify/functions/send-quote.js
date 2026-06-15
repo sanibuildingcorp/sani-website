@@ -21,7 +21,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { ref } = JSON.parse(event.body);
+    const { ref, includeContract } = JSON.parse(event.body);
     if (!ref) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
     }
@@ -137,6 +137,7 @@ exports.handler = async function (event) {
       },
     });
 
+    record.includeContractForCustomer = includeContract === true;
     record.status = "sent";
     record.sentAt = new Date().toISOString();
     record.updatedAt = record.sentAt;
