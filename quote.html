@@ -1219,6 +1219,8 @@ function finishesAreChanged() {
   return false;
 }
 function hasContract() {
+  // Only show the contract flow if the contractor chose to include it at send time.
+  if (!(record && record.includeContractForCustomer === true)) return false;
   var c = record && record.contract;
   return !!(c && typeof c === "object" && Object.keys(c).length > 0);
 }
