@@ -81,29 +81,45 @@ exports.handler = async function (event) {
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.65">
-<div style="max-width:560px;margin:0 auto;padding:28px 20px">
+<body style="margin:0;padding:0;background:#f2efe9;font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.6">
+<div style="max-width:600px;margin:0 auto;padding:24px 16px">
 
-  <p style="font-size:15px;margin:0 0 16px">Hi ${escapeHtml(firstName)},</p>
+  <div style="background:#0a1628;border-radius:14px 14px 0 0;padding:34px 28px;text-align:center">
+    <div style="font-size:26px;font-weight:bold;letter-spacing:4px;color:#e0b84e">SANI BUILDING CORP</div>
+    <div style="font-size:12px;letter-spacing:3px;color:#9aa6b4;margin-top:8px;text-transform:uppercase">Your Estimate Is Ready</div>
+  </div>
 
-  <p style="font-size:15px;margin:0 0 16px">Thank you for reaching out about your <strong>${escapeHtml(projectTitle)}</strong>. I've finished your estimate — here it is:</p>
+  <div style="background:#ffffff;border-radius:0 0 14px 14px;padding:30px 28px">
 
-  <p style="font-size:15px;margin:0 0 6px"><strong>Estimate #${escapeHtml(ref)}</strong> &nbsp;·&nbsp; ${issuedDate}</p>
-  <p style="font-size:18px;margin:0 0 16px"><strong>Total: ${fmt(total)}</strong></p>
-  ${est.timelineText ? `<p style="font-size:14px;margin:0 0 16px;color:#444">Timeline: ${escapeHtml(est.timelineText)}</p>` : ""}
+    <p style="font-size:17px;margin:0 0 16px;color:#0a1628"><strong>Hi ${escapeHtml(firstName)},</strong></p>
 
-  <p style="font-size:15px;margin:0 0 20px">
-    <a href="${quoteUrl}" style="color:#1a56b0">View your full estimate here</a>${photoCount > 0 ? ` — the page also includes ${photoCount} project photo${photoCount > 1 ? "s" : ""}` : ""}.
-  </p>
+    <p style="font-size:15px;margin:0 0 22px;color:#333">Thank you for reaching out about your <strong>${escapeHtml(projectTitle)}</strong>. I've put together your estimate — here are the details:</p>
 
-  <p style="font-size:15px;margin:0 0 16px">On that page you can see the complete breakdown, approve online, or request any changes. If anything looks off or you have questions, just reply to this email or call/text me at <a href="tel:+13322770990" style="color:#1a56b0">(332) 277-0990</a>.</p>
+    <div style="border:1px solid #e6e0d6;border-radius:12px;overflow:hidden;margin:0 0 24px">
+      <div style="background:#0a1628;padding:12px 18px;color:#fff;font-size:13px;letter-spacing:1px">ESTIMATE <span style="color:#e0b84e;font-weight:bold">#${escapeHtml(ref)}</span></div>
+      <div style="padding:18px">
+        <div style="font-size:13px;color:#777;margin-bottom:4px">Issued ${issuedDate}</div>
+        <div style="font-size:30px;font-weight:bold;color:#0a1628">${fmt(total)}</div>
+        ${est.timelineText ? `<div style="font-size:13px;color:#555;margin-top:8px">Timeline: ${escapeHtml(est.timelineText)}</div>` : ""}
+      </div>
+    </div>
 
-  <p style="font-size:15px;margin:24px 0 4px">Best,<br><strong>Zurabi</strong></p>
-  <p style="font-size:13px;color:#777;margin:0;line-height:1.6">
-    Sani Building Corp · Brooklyn, NY<br>
-    Fully insured · 4.9&nbsp;stars on Google<br>
-    <a href="https://www.sanibuildingcorp.com" style="color:#777">www.sanibuildingcorp.com</a>
-  </p>
+    <div style="text-align:center;margin:0 0 24px">
+      <a href="${quoteUrl}" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 34px;border-radius:9px">View Your Full Estimate &rarr;</a>
+    </div>
+
+    ${photoCount > 0 ? `<p style="font-size:13px;color:#777;text-align:center;margin:0 0 22px">The page includes ${photoCount} project photo${photoCount > 1 ? "s" : ""}.</p>` : ""}
+
+    <p style="font-size:14.5px;margin:0 0 18px;color:#333">On that page you can see the full breakdown, approve online, or request changes. If anything looks off or you have questions, just reply to this email or call/text me at <a href="tel:+13322770990" style="color:#0a1628;font-weight:bold">(332) 277-0990</a>.</p>
+
+    <p style="font-size:15px;margin:22px 0 2px;color:#0a1628">Best,<br><strong>Zurabi</strong></p>
+  </div>
+
+  <div style="text-align:center;padding:20px 16px;font-size:12px;color:#8a8a8a;line-height:1.7">
+    <strong style="color:#555">Sani Building Corp</strong> &middot; Brooklyn, NY<br>
+    Fully insured &middot; 4.9 stars on Google<br>
+    <a href="https://www.sanibuildingcorp.com" style="color:#8a8a8a">www.sanibuildingcorp.com</a>
+  </div>
 
 </div>
 </body></html>`;
