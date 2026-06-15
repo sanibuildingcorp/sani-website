@@ -3960,7 +3960,7 @@ let invoiceState = {
   custAddress: "",
   projectAddress: "",
   paymentMethod: "zelle",
-  paymentDetails: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
+  paymentDetails: "Zelle: sanibuildingcorp@gmail.com\nAccount name: Sani Building Corp",
   paymentLink: "",
   includePaymentLink: false,
 };
@@ -3987,7 +3987,7 @@ function openInvoiceModal() {
     custAddress: cust.address || "",
     projectAddress: currentRecord.projectAddress || "",
     paymentMethod: "zelle",
-    paymentDetails: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
+    paymentDetails: "Zelle: sanibuildingcorp@gmail.com\nAccount name: Sani Building Corp",
     paymentLink: "",
     includePaymentLink: false,
   };
@@ -4182,7 +4182,7 @@ function renderInvoiceModal(totals, prior, remaining) {
       '</div>' +
       '<div class="field">' +
         '<label>Payment Instructions (shown on invoice)</label>' +
-        '<textarea id="inv-paydetails" rows="3" placeholder="e.g. Zelle to (332) 277-0990" oninput="updateInvoiceState()">' + esc(invoiceState.paymentDetails) + '</textarea>' +
+        '<textarea id="inv-paydetails" rows="3" placeholder="e.g. Zelle to sanibuildingcorp@gmail.com" oninput="updateInvoiceState()">' + esc(invoiceState.paymentDetails) + '</textarea>' +
       '</div>' +
     '</div>' +
     '<div class="inv-section">' +
@@ -4254,7 +4254,7 @@ function setPaymentMethod(method) {
   captureInvoiceInputs();
   invoiceState.paymentMethod = method;
   const defaults = {
-    zelle: "Zelle: (332) 277-0990\nAccount name: Sani Building Corp",
+    zelle: "Zelle: sanibuildingcorp@gmail.com\nAccount name: Sani Building Corp",
     bank: "Bank Transfer:\nBank name: [your bank]\nRouting: xxx\nAccount: xxx",
     cash: "Cash payment accepted in person.\nPlease call (332) 277-0990 to schedule.",
     check: "Make check payable to:\nSani Building Corp\nMail to: 2954 Brighton 12th Street, Brooklyn, NY 11235",
