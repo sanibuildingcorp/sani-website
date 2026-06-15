@@ -1000,9 +1000,6 @@ function showError() {
 }
 
 function render() {
-  if (record.status==="accepted") { showSuccess("accepted"); return; }
-  if (record.status==="declined") { showSuccess("declined"); return; }
-
   const est     = record.estimate||{};
   const customer= record.customer||{};
   const reqData = record.request||{};
@@ -1080,6 +1077,33 @@ function render() {
   if (reqData.description) {
     document.getElementById("notes-wrap").style.display="block";
     document.getElementById("notes-body").textContent=reqData.description;
+  }
+
+  // Already responded? Let the customer still review the quote, but swap the
+  // action buttons for a status banner (no re-approving / no contract trigger).
+  if (record.status==="accepted" || record.status==="declined") {
+    var rn = document.getElementById("review-notice");
+    if (rn) rn.style.display="none";
+    var ar = document.getElementById("actions-row");
+    if (ar) {
+      var when = record.acceptedAt || record.respondedAt || record.updatedAt || record.sentAt;
+      var whenTxt = when ? (" on " + fmtDate(when)) : "";
+      if (record.status==="accepted") {
+        ar.innerHTML =
+          '<div style="width:100%;background:rgba(46,204,113,0.10);border:1px solid var(--good);border-radius:12px;padding:15px 16px;text-align:center;margin-bottom:10px">'+
+            '<div style="font-weight:800;color:var(--good);font-size:15px">✓ Estimate Approved'+escHtml(whenTxt)+'</div>'+
+            '<div style="font-size:13px;color:var(--ink-soft);margin-top:5px;line-height:1.5">You\'re all set — we\'ll be in touch to schedule. Questions? Call <a href="tel:+13322770990" style="color:var(--gold-2);text-decoration:none;font-weight:700">(332) 277-0990</a>.</div>'+
+          '</div>'+
+          '<button class="btn" onclick="downloadQuote()"><span class="btn-icon">⬇</span> Download</button>';
+      } else {
+        ar.innerHTML =
+          '<div style="width:100%;background:rgba(212,181,114,0.12);border:1px solid var(--gold-2);border-radius:12px;padding:15px 16px;text-align:center;margin-bottom:10px">'+
+            '<div style="font-weight:800;color:var(--gold-2);font-size:15px">✎ Change Request Received</div>'+
+            '<div style="font-size:13px;color:var(--ink-soft);margin-top:5px;line-height:1.5">We got your request and will send an updated quote shortly. Questions? Call <a href="tel:+13322770990" style="color:var(--gold-2);text-decoration:none;font-weight:700">(332) 277-0990</a>.</div>'+
+          '</div>'+
+          '<button class="btn" onclick="downloadQuote()"><span class="btn-icon">⬇</span> Download</button>';
+      }
+    }
   }
 
   document.getElementById("state-loading").style.display="none";
@@ -1354,7 +1378,7 @@ function showSuccess(kind) {
   document.getElementById("state-quote").style.display="none";
   document.getElementById("state-success").style.display="block";
   var btq=document.getElementById("back-to-quote-wrap");
-  if (btq) btq.style.display=(kind==="review"||kind==="declined")?"block":"none";
+  if (btq) btq.style.display=(kind==="review"||kind==="declined"||kind==="accepted")?"block":"none";
   if (kind==="declined") {
     document.getElementById("success-tag").textContent="Response received";
     document.getElementById("success-icon").textContent="✎";
@@ -1411,7 +1435,7 @@ async function submitAccept() {
       body:JSON.stringify({ref,action:"accept",signature:sig,finishSelections:finishSelections,materialsSelections:materialsSelections,finalTotal:finalTotal}),
     });
     if (!r.ok) throw new Error("Failed");
-    closeModals(); showSuccess("accepted");
+    closeModals(); record.status="accepted"; render(); showSuccess("accepted");
   } catch(e) {
     alert("Sorry, something went wrong. Please call us at (332) 277-0990.");
     btn.disabled=false; btn.textContent="Approve & Sign";
