@@ -74,7 +74,7 @@ exports.handler = async function (event) {
 
     const projectAddress = record.projectAddress || customer.address || "";
 
-    const prompt = `You are a contracts specialist for Sani Building Corp, a licensed and insured NYC renovation contractor (2954 Brighton 12th Street, Brooklyn, NY 11235 · 332-277-0990 · contact@sanibuildingcorp.com).
+    const prompt = `You are a contracts specialist for Sani Building Corp, an insured NYC renovation contractor (2954 Brighton 12th Street, Brooklyn, NY 11235 · 332-277-0990 · contact@sanibuildingcorp.com).
 
 Generate a PROJECT-SPECIFIC construction service agreement using ONLY the real project data below. Do not use generic placeholders — every section must reference this actual project.
 
@@ -97,7 +97,7 @@ OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact s
   "projectType": "Short project type label (e.g. 'Full Composite Deck Replacement')",
   "scopeOfWork": ["Specific work item 1", "Specific work item 2", "..."],
   "materialsList": ["Material/finish 1 with spec", "..."],
-  "timeline": "Project duration in plain words, including permit/material-delivery conditions if relevant",
+  "timeline": "Project duration in plain words, including material-delivery conditions if relevant",
   "paymentSchedule": [
     {"label": "Deposit — due upon signing", "amount": 0.00},
     {"label": "Final payment — due upon completion", "amount": 0.00}
@@ -106,8 +106,7 @@ OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact s
     "hiddenConditions": "Hidden/concealed conditions clause specific to this project type...",
     "changeOrder": "Change order clause...",
     "warranty": "Workmanship warranty clause (1 year workmanship; manufacturer warranties pass through on materials)...",
-    "cancellation": "Cancellation clause (3-business-day right to cancel per NY law; deposit handling)...",
-    "permitsAndInsurance": "Permits, NYC code compliance, and insurance clause..."
+    "cancellation": "Cancellation clause (3-business-day right to cancel per NY law; deposit handling)..."
   }
 }
 
@@ -117,7 +116,8 @@ RULES:
 3. paymentSchedule amounts MUST sum to exactly $${total.toFixed(2)}. Use: under $1,000 → single payment on completion; $1,000–$5,000 → 50% deposit / 50% completion; over $5,000 → 40% deposit / 40% mid-project milestone (name the actual milestone for this project) / 20% completion.
 4. Clauses: professional NY contractor language, 2-3 sentences each, tailored to this project type (e.g. deck → mention structural framing discoveries; bathroom → mention plumbing/subfloor).
 5. No placeholders like {{name}} — write the real values in.
-6. Return ONLY the JSON.`;
+6. Do NOT mention permits, permitting, licenses, licensing, or municipal/DOB code compliance anywhere — omit those topics entirely.
+7. Return ONLY the JSON.`;
 
     const aiResponse = await callClaude(apiKey, prompt);
 
