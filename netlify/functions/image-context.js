@@ -78,6 +78,11 @@ async function listImages(body) {
     if (!isLocal) return;
 
     const path = normalized;
+    // Same file can be referenced two ways — a relative path AND a full
+    // https://www.sanibuildingcorp.com/images/... URL (a CSS fallback). Both normalize
+    // to the same local file, so list it once (this is why the hero showed twice).
+    if (usedPaths[path]) return;
+
     const displaySrc = SITE_ORIGIN + "/" + normalized;
     const isExternal = false;
     usedPaths[path] = true;
