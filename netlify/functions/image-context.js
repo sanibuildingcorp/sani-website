@@ -70,19 +70,17 @@ async function listImages(body) {
 
     const normalized = normalizePath(rawRef);
     const isLocal = /^images\//.test(normalized);
-    let path, displaySrc, isExternal;
 
-    if (isLocal) {
-      path = normalized;
-      displaySrc = SITE_ORIGIN + "/" + normalized;
-      isExternal = false;
-      usedPaths[path] = true;
-    } else {
-      isExternal = true;
-      displaySrc = /^https?:\/\//i.test(rawRef) ? rawRef : (SITE_ORIGIN + "/" + normalized);
-      const base = slugify(context || alt || (kind === "background" ? "bg" : "photo")) || ("photo-" + counter);
-      path = uniqueLocalPath((kind === "background" && /hero/i.test(context || "")) ? "hero" : base);
-    }
+    // Only list LOCAL images you can actually edit. External / hotlinked images
+    // (Unsplash, and absolute self-URLs used as CSS fallbacks in the hero) are NOT
+    // shown as cards — otherwise every fallback url() becomes a junk "bg N" card that
+    // points at no real file. This is what flooded the Home page with wrong photos.
+    if (!isLocal) return;
+
+    const path = normalized;
+    const displaySrc = SITE_ORIGIN + "/" + normalized;
+    const isExternal = false;
+    usedPaths[path] = true;
 
     out.push({
       ref: rawRef,                 // exact string in the page HTML (for patching)
@@ -106,7 +104,10 @@ async function listImages(body) {
     const before = html.slice(0, m.index);
     const hMatch = before.match(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>(?![\s\S]*<h[1-3])/i);
     const heading = hMatch ? strip(hMatch[1]) : "";
-    pushItem(src, alt, heading || alt, "img");
+    // Label each photo by its own file path (e.g. "Projects: project 1") so every
+    // card is unique. Reusing the nearest <h2> made 8 different photos all read the
+    // same. The alt text is still captured below and shown under the card.
+    pushItem(src, alt, null, "img");
   }
 
   // PASS 2 — CSS background url(...) (inline style + <style> blocks)
