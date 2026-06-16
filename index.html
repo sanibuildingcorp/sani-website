@@ -68,7 +68,10 @@
   --gray:#6b6b6b;
   --light:#f5f4f2;
   --white:#fff;
-  --border:#e8e4de
+  --border:#e8e4de;
+  /* Single source of truth for the hero photo — the ONLY place this path is written.
+     The Image Studio sees one swappable reference here; every hero rule uses var(--hero-photo). */
+  --hero-photo:url('images/hero/home-hero.png')
 }
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -77,7 +80,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
 
 /* ══════════ HERO ══════════ */
 .hero{position:relative;min-height:100vh;padding-top:78px;background:var(--navy-deep);overflow:hidden;display:flex;flex-direction:column}
-.hero-image{position:absolute;inset:0;background:url('images/hero/home-hero.png'),url('images/projects/nyc-luxury-livingroom.jpg');background-position:center;background-size:cover;background-repeat:no-repeat;z-index:0;filter:brightness(1.08) saturate(1.04)}
+.hero-image{position:absolute;inset:0;background:var(--hero-photo),url('images/projects/nyc-luxury-livingroom.jpg');background-position:center;background-size:cover;background-repeat:no-repeat;z-index:0;filter:brightness(1.08) saturate(1.04)}
 .hero-image::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,13,26,0.42) 0%,rgba(5,13,26,0.20) 25%,rgba(10,22,40,0.04) 50%,transparent 100%)}
 .hero-image::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 0%,transparent 64%,rgba(5,13,26,0.22) 90%,rgba(5,13,26,0.7) 100%);z-index:1}
 .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.018) 1px,transparent 1px);background-size:52px 52px;z-index:1;mask-image:linear-gradient(95deg,#000 0%,#000 30%,transparent 60%);-webkit-mask-image:linear-gradient(95deg,#000 0%,#000 30%,transparent 60%)}
@@ -980,7 +983,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
   background-image:
     linear-gradient(90deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.14) 28%,rgba(255,255,255,.05) 46%,rgba(255,255,255,.015) 64%,rgba(255,255,255,0) 100%),
     url('https://www.sanibuildingcorp.com/images/hero/home-hero.png'),
-    url('images/hero/home-hero.png') !important;
+    var(--hero-photo) !important;
   background-size:cover !important;
   background-position:center right !important;
   background-repeat:no-repeat !important;
@@ -1124,7 +1127,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
     background-image:
       linear-gradient(90deg,rgba(255,255,255,.94) 0%,rgba(255,255,255,.82) 35%,rgba(255,255,255,.28) 62%,rgba(255,255,255,0) 100%),
       url('https://www.sanibuildingcorp.com/images/hero/home-hero.png'),
-      url('images/hero/home-hero.png') !important;
+      var(--hero-photo) !important;
     background-position:60% center !important;
     background-size:cover !important;
     filter:brightness(1.2) saturate(.96) contrast(.98) !important;
@@ -1199,7 +1202,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 .hero-image{
   background-image:
     linear-gradient(90deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.88) 28%,rgba(255,255,255,.48) 46%,rgba(255,255,255,.16) 60%,rgba(255,255,255,0) 76%),
-    url('images/hero/home-hero.png'),
+    var(--hero-photo),
     url('https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=1800&q=90') !important;
   background-position:center right !important;
   background-size:cover !important;
@@ -1300,7 +1303,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
   .hero-image{
     background-image:
       linear-gradient(90deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.86) 34%,rgba(255,255,255,.38) 57%,rgba(255,255,255,.08) 76%,rgba(255,255,255,0) 100%),
-      url('images/hero/home-hero.png'),
+      var(--hero-photo),
       url('https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=1400&q=90') !important;
     background-position:63% center !important;
     filter:brightness(1.25) saturate(.92) contrast(.98) !important;
@@ -1445,7 +1448,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
   background-image:
     linear-gradient(90deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.90) 30%,rgba(255,255,255,.64) 47%,rgba(255,255,255,.18) 63%,rgba(255,255,255,0) 82%),
     url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1800&q=90'),
-    url('images/hero/home-hero.png') !important;
+    var(--hero-photo) !important;
   background-position:center right !important;
   background-size:cover !important;
   background-repeat:no-repeat !important;
@@ -1469,7 +1472,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
     background-image:
       linear-gradient(90deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.32) 31%,rgba(255,255,255,.14) 46%,rgba(255,255,255,.04) 60%,rgba(255,255,255,0) 78%),
       url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=90'),
-      url('images/hero/home-hero.png') !important;
+      var(--hero-photo) !important;
     background-position:62% center !important;
     background-size:cover !important;
     filter:brightness(1.23) saturate(.92) contrast(.98) !important;
@@ -1748,7 +1751,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         rgba(255,255,255,0) 82%
       ),
       url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1800&q=90'),
-      url('images/hero/home-hero.png') !important;
+      var(--hero-photo) !important;
     filter:brightness(1.14) saturate(.96) contrast(1.0) !important;
   }
   .hero-content{
@@ -3057,7 +3060,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
   background-image:
     linear-gradient(90deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.14) 28%,rgba(255,255,255,.05) 46%,rgba(255,255,255,.015) 64%,rgba(255,255,255,0) 100%),
     url('https://www.sanibuildingcorp.com/images/hero/home-hero.png'),
-    url('images/hero/home-hero.png') !important;
+    var(--hero-photo) !important;
 }
 .hero h1{color:#050d1a !important;text-shadow:0 1px 1px rgba(255,255,255,.12) !important;}
 .hero-sub{color:#071324 !important;text-shadow:0 0 2px #fff,0 0 4px #fff,0 0 6px #fff,0 0 10px rgba(255,255,255,.98),0 0 18px rgba(255,255,255,.95),0 0 30px rgba(255,255,255,.9),0 0 46px rgba(255,255,255,.8) !important;}
@@ -3069,7 +3072,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
     background-image:
       linear-gradient(90deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.32) 31%,rgba(255,255,255,.14) 46%,rgba(255,255,255,.04) 60%,rgba(255,255,255,0) 78%),
       url('https://www.sanibuildingcorp.com/images/hero/home-hero.png'),
-      url('images/hero/home-hero.png') !important;
+      var(--hero-photo) !important;
   }
   .hero h1{color:#050d1a !important;text-shadow:0 1px 1px rgba(255,255,255,.14) !important;}
   .hero-sub{color:#071324 !important;text-shadow:0 0 2px #fff,0 0 4px #fff,0 0 6px #fff,0 0 10px rgba(255,255,255,.98),0 0 18px rgba(255,255,255,.95),0 0 30px rgba(255,255,255,.9),0 0 46px rgba(255,255,255,.8) !important;}
