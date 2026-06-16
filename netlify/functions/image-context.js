@@ -51,6 +51,62 @@ async function listImages(body) {
   const usedPaths = {};
   let counter = 0;
 
+  // ── Find images that are only a HIDDEN FALLBACK LAYER ──
+  // A CSS background can stack several images (e.g. background: photoA, photoB). Only the
+  // FIRST image layer paints; the rest sit underneath and never show. We list only the
+  // visible top layer so the studio mirrors what's actually on the live page — no phantom
+  // "photos" that a visitor (or you) never see. <img> tags and single backgrounds are
+  // always visible; empty/missing slots are kept so you still know where to upload.
+  const varMap = {};
+  (function () {
+    const vre = /(--[a-z0-9\-]+)\s*:\s*url\(\s*['"]?([^'")]+?)['"]?\s*\)/gi;
+    let v;
+    while ((v = vre.exec(html)) !== null) varMap[v[1]] = v[2].trim();
+  })();
+  function splitLayers(value) {
+    const layers = []; let depth = 0, cur = "";
+    for (let i = 0; i < value.length; i++) {
+      const ch = value[i];
+      if (ch === "(") { depth++; cur += ch; }
+      else if (ch === ")") { depth--; cur += ch; }
+      else if (ch === "," && depth === 0) { layers.push(cur); cur = ""; }
+      else cur += ch;
+    }
+    if (cur.trim()) layers.push(cur);
+    return layers;
+  }
+  function layerImagePath(layer) {
+    const um = layer.match(/url\(\s*['"]?([^'")]+?)['"]?\s*\)/i);
+    if (um) return normalizePath(um[1].trim());
+    const vr = layer.match(/var\(\s*(--[a-z0-9\-]+)\s*\)/i);
+    if (vr && varMap[vr[1]]) return normalizePath(varMap[vr[1]]);
+    return "";
+  }
+  const visiblePaths = {};
+  const fallbackPaths = {};
+  (function () {
+    // <img> srcs are always a real visible spot
+    const ire = /<img\b[^>]*>/gi; let im;
+    while ((im = ire.exec(html)) !== null) {
+      const s = (im[0].match(/\bsrc\s*=\s*["']([^"']+)["']/i) || [])[1] || "";
+      const p = normalizePath(s);
+      if (/^images\//.test(p)) visiblePaths[p] = true;
+    }
+    // background / background-image declarations (inline styles use single-quoted url(),
+    // so the value safely ends at ; } or the attribute's closing ")
+    const bre = /background(?:-image)?\s*:\s*([^;}"]+)/gi; let bm;
+    while ((bm = bre.exec(html)) !== null) {
+      let firstImg = true;
+      const layers = splitLayers(bm[1]);
+      for (let i = 0; i < layers.length; i++) {
+        const p = layerImagePath(layers[i]);
+        if (!p || !/^images\//.test(p)) continue; // gradients / external aren't image layers
+        if (firstImg) { visiblePaths[p] = true; firstImg = false; }
+        else fallbackPaths[p] = true;
+      }
+    }
+  })();
+
   function uniqueLocalPath(base) {
     let p = "images/" + dir + "/" + base + ".jpg";
     let n = 2;
@@ -82,6 +138,10 @@ async function listImages(body) {
     // https://www.sanibuildingcorp.com/images/... URL (a CSS fallback). Both normalize
     // to the same local file, so list it once (this is why the hero showed twice).
     if (usedPaths[path]) return;
+
+    // Skip images that ONLY ever sit as a hidden fallback layer under another photo —
+    // they never render, so they're not a real spot. (Kept if they're also used visibly.)
+    if (fallbackPaths[path] && !visiblePaths[path]) return;
 
     const displaySrc = SITE_ORIGIN + "/" + normalized;
     const isExternal = false;
