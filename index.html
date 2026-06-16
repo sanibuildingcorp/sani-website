@@ -1618,25 +1618,91 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 </style>
 
 
-<!-- FINAL TRUST CARD PATCH — photo 2 match + Quality wording only -->
+<!-- FINAL PATCH — Quality wording + desktop trust card + remove mobile top gap -->
 <style>
+/* Desktop: keep trust card fully visible, not cut at the bottom */
+.hero{
+  overflow:visible !important;
+  padding-bottom:82px !important;
+}
+.hero-content{
+  overflow:visible !important;
+}
+.hero-stats{
+  position:absolute !important;
+  left:50% !important;
+  bottom:-38px !important;
+  transform:translateX(-50%) !important;
+  width:min(1120px,90vw) !important;
+  max-width:1120px !important;
+  margin:0 !important;
+  padding:24px 28px !important;
+  display:grid !important;
+  grid-template-columns:repeat(5,1fr) !important;
+  background:rgba(255,255,255,.98) !important;
+  border:1px solid rgba(10,22,40,.08) !important;
+  border-radius:20px !important;
+  box-shadow:0 24px 70px rgba(10,22,40,.15) !important;
+  overflow:visible !important;
+  z-index:999 !important;
+}
+.hero-stats .hstat{
+  min-height:92px !important;
+  padding:6px 12px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:10px !important;
+  text-align:center !important;
+  border-right:1px solid rgba(10,22,40,.12) !important;
+  border-bottom:none !important;
+  background:transparent !important;
+}
+.hero-stats .hstat:last-child{border-right:none !important;}
+.hero-stats .hstat-icon{width:42px !important;height:42px !important;margin:0 auto !important;}
+.hero-stats .hstat-icon svg{width:30px !important;height:30px !important;stroke:var(--navy) !important;filter:none !important;}
+.hero-stats .hstat-label{
+  display:block !important;
+  color:var(--navy) !important;
+  text-shadow:none !important;
+  font-size:10px !important;
+  letter-spacing:1px !important;
+  line-height:1.28 !important;
+  font-weight:800 !important;
+  text-align:center !important;
+  white-space:normal !important;
+  overflow:visible !important;
+}
+.borough-strip{
+  position:relative !important;
+  z-index:1 !important;
+  padding-top:74px !important;
+  background:#fff !important;
+}
+
 @media(max-width:900px){
+  /* Remove empty white gap under the mobile header */
   .hero{
+    padding-top:0 !important;
+    padding-bottom:0 !important;
     overflow:visible !important;
-    position:relative !important;
-    z-index:10 !important;
+  }
+  .hero-image{
+    top:0 !important;
   }
   .hero-content{
+    padding-top:86px !important;
     overflow:visible !important;
   }
+  /* Keep mobile trust card like the approved screenshot */
   .hero-stats{
     position:absolute !important;
     left:50% !important;
-    bottom:-72px !important;
+    bottom:-70px !important;
     transform:translateX(-50%) !important;
     width:calc(100vw - 34px) !important;
     max-width:640px !important;
-    margin:0 !important;
     padding:18px 6px 19px !important;
     display:grid !important;
     grid-template-columns:repeat(4,1fr) !important;
@@ -1644,69 +1710,30 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
     border:1px solid rgba(10,22,40,.07) !important;
     border-radius:18px !important;
     box-shadow:0 22px 55px rgba(10,22,40,.16) !important;
-    overflow:visible !important;
-    z-index:99 !important;
+    overflow:hidden !important;
+    z-index:999 !important;
   }
   .hero-stats .hstat:nth-child(4){display:none !important;}
   .hero-stats .hstat{
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:center !important;
-    justify-content:center !important;
-    min-height:96px !important;
-    padding:5px 5px !important;
+    min-height:92px !important;
+    padding:5px 4px !important;
     gap:9px !important;
-    margin:0 !important;
     border-right:1px solid rgba(10,22,40,.12) !important;
     border-bottom:none !important;
-    border-top:none !important;
-    background:transparent !important;
   }
   .hero-stats .hstat:nth-child(5){border-right:none !important;}
-  .hero-stats .hstat-icon{
-    width:34px !important;
-    height:34px !important;
-    margin:0 auto !important;
-  }
-  .hero-stats .hstat-icon svg{
-    width:27px !important;
-    height:27px !important;
-    stroke:var(--navy) !important;
-    filter:none !important;
-  }
-  .hero-stats .hstat-label{
-    display:block !important;
-    color:var(--navy) !important;
-    text-shadow:none !important;
-    font-size:8px !important;
-    letter-spacing:.55px !important;
-    line-height:1.18 !important;
-    font-weight:800 !important;
-    text-align:center !important;
-    white-space:normal !important;
-    overflow:visible !important;
-  }
+  .hero-stats .hstat-icon{width:32px !important;height:32px !important;}
+  .hero-stats .hstat-icon svg{width:25px !important;height:25px !important;}
+  .hero-stats .hstat-label{font-size:7.4px !important;letter-spacing:.35px !important;line-height:1.18 !important;}
   .borough-strip{
-    position:relative !important;
-    z-index:1 !important;
-    padding-top:122px !important;
+    padding-top:120px !important;
     background:#fff !important;
   }
 }
+
 @media(max-width:430px){
-  .hero-stats{
-    bottom:-70px !important;
-    padding:17px 4px 18px !important;
-  }
-  .hero-stats .hstat{
-    min-height:92px !important;
-    padding-left:3px !important;
-    padding-right:3px !important;
-  }
-  .hero-stats .hstat-icon{width:32px !important;height:32px !important;}
-  .hero-stats .hstat-icon svg{width:25px !important;height:25px !important;}
-  .hero-stats .hstat-label{font-size:7.4px !important;letter-spacing:.35px !important;}
-  .borough-strip{padding-top:120px !important;}
+  .hero-content{padding-top:74px !important;}
+  .hero-stats{bottom:-70px !important;}
 }
 </style>
 
