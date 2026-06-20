@@ -72,6 +72,11 @@ exports.handler = async function (event) {
       ? `Description: ${request.description || "(none)"}`
       : `Description: (excluded by contractor — do not use)`;
 
+    // ---- Square footage from the intake form, if the customer gave one ----
+    const sqftLine = request.sqft && String(request.sqft).trim()
+      ? `Approx. size given by customer: ${request.sqft}`
+      : "";
+
     // ---- AI photo analysis (optional, OFF by default) ----
     // The photo analysis is saved with the request and shown in the dashboard for the
     // contractor. It is NOT used for pricing unless the dashboard sends usePhotoAnalysis:true.
@@ -94,9 +99,9 @@ exports.handler = async function (event) {
         `\n\nAI PHOTO ANALYSIS (preliminary, generated from the customer's photos — treat as a helpful hint, NOT confirmed fact; the contractor verifies on site):\n${analysisText}`;
     }
 
-    // ---- Contractor-added extra work (optional, e.g. from a phone call) ----
+    // ---- Contractor notes / measurements / corrections (authoritative; sizes the job) ----
     const extraBlock = extraRequest
-      ? `\n\nADDITIONAL WORK REQUESTED (added by the contractor after speaking with the customer — treat as CONFIRMED and authoritative; include it in the scope, labor, and materials alongside the original request):\n${extraRequest}`
+      ? `\n\nCONTRACTOR NOTES, MEASUREMENTS & CORRECTIONS (added by the contractor — CONFIRMED and AUTHORITATIVE; these OVERRIDE the customer's description wherever they conflict). They may add work, remove work, or correct the SIZE of the job (for example an exact area like "total ~50 sq ft", or the real number of walls / rooms / units). Size all labor and materials to match these:\n${extraRequest}`
       : "";
 
     const prompt = `You are an estimator for Sani Building Corp, an NYC-metro general contractor (Manhattan, Brooklyn, Queens, Bronx, Staten Island, Long Island, Nassau). You build detailed estimates from customer requests.
@@ -107,11 +112,18 @@ Property: ${request.propertyType || "Not specified"}
 Timeline: ${request.timeline || "Not specified"}
 Address: ${customer.address || "Not specified"}
 ${descLine}
+${sqftLine}
 
 ${answersBlock}${analysisBlock}${extraBlock}
 
+SIZING RULES (read first — this is the #1 cause of over-quoting, so follow it strictly):
+- If ANY specific measurement or quantity is given (sq ft, linear ft, number of walls / rooms / units), price STRICTLY to that number. Labor hours and material quantities must scale to the measured size. A small measured area means a small estimate — e.g. a 50 sq ft drywall+paint patch is a few hundred dollars, not thousands.
+- A contractor measurement ALWAYS beats a vague customer description. If the customer says "4-6 apartments" but the contractor notes say "total ~50 sq ft", price the 50 sq ft — NOT 4-6 full units.
+- If the size is vague and NO measurement is given anywhere, assume the SMALLEST reasonable interpretation, price for that, and clearly state the assumption in "notes" (e.g. "Assumed ~X sq ft / 1 room — confirm on site"). Never price for the maximum just because the description sounds big.
+- Do NOT pad hours or quantities for safety margin. Margin comes from the markup percentage, not from inflated line items.
+
 YOUR TASK:
-Generate a realistic, professional estimate draft for this NYC-area project. Base the scope and pricing on the customer's answers and description above. Use current NYC labor and material rates. Be specific — itemize labor by trade/task and materials by what's actually needed. Do not add work the customer did not describe.
+Generate a realistic, professional estimate draft for this NYC-area project, sized per the rules above. Use current NYC labor and material rates. Be specific — itemize labor by trade/task and materials by what's actually needed. Do not add work nobody described.
 
 PRICING GUIDELINES (NYC market 2026):
 - General handyman labor: $75-95/hr
@@ -140,10 +152,10 @@ OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact s
 }
 
 IMPORTANT:
-- Use realistic NYC rates. Don't lowball, but only price the work the customer actually described — do not pad the scope.
-- 4-10 labor items, 4-12 material items is typical.
+- Use realistic NYC rates, but price ONLY the work and size described/measured — do not pad the scope.
+- 4-10 labor items, 4-12 material items is typical for a normal single-room job; fewer for small measured jobs.
 - Unit options: hrs, days, ea, sqft, lf (linear foot), gal, box
-- If info is missing, make conservative reasonable assumptions and note them in "notes".
+- If size info is missing, make the smallest conservative assumption and note it in "notes".
 - Return ONLY the JSON. No preamble. No code fences.`;
 
     // Call Claude API
