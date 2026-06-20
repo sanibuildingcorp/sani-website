@@ -20,7 +20,7 @@ exports.handler = async function (event) {
       ref, name, phone, email, address,
       service, serviceId, serviceAnswers,
       propertyType, description, timeline,
-      photoCount, photos, submittedAt,
+      photoCount, photos, photoAnalysis, submittedAt,
     } = body;
 
     if (!name || !email || !service) {
@@ -44,6 +44,10 @@ exports.handler = async function (event) {
           propertyType, description, timeline,
           photoCount: photoCount || 0,
           photos: photos || [],
+          // AI photo-analysis findings (contractor's eyes only — shown in the dashboard,
+          // not used for pricing unless the contractor opts in). Saved so the dashboard
+          // can display "what the analyzer read & wrote."
+          photoAnalysis: Array.isArray(photoAnalysis) ? photoAnalysis : [],
         },
         // Estimate fields (filled in later by contractor + AI)
         estimate: {
