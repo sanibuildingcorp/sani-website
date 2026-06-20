@@ -3005,7 +3005,7 @@ function renderEdit() {
   var aiToggleHtml = (hasAnswers || hasDesc || hasAnalysis)
     ? '<div style="display:flex;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line,rgba(13,27,42,.12))">' +
         '<div style="width:100%;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-muted,#8a9bb0);margin-bottom:7px">Use for this estimate</div>' +
-        (hasAnalysis ? '<label style="' + aiToggleStyle + '"><input type="checkbox" id="use-photo-analysis" checked style="accent-color:var(--gold,#c8860a)"> AI photo analysis</label>' : '') +
+        (hasAnalysis ? '<label style="' + aiToggleStyle + '"><input type="checkbox" id="use-photo-analysis" style="accent-color:var(--gold,#c8860a)"> AI photo analysis <span style="font-size:10px;color:var(--ink-muted,#8a9bb0)">(your eyes only — off for pricing)</span></label>' : '') +
         (hasDesc ? '<label style="' + aiToggleStyle + '"><input type="checkbox" id="use-description" checked style="accent-color:var(--gold,#c8860a)"> Customer description</label>' : '') +
         (hasAnswers ? '<label style="' + aiToggleStyle + '"><input type="checkbox" id="use-answers" checked style="accent-color:var(--gold,#c8860a)"> Question answers</label>' : '') +
       '</div>'
