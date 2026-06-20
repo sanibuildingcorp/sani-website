@@ -349,8 +349,8 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
         </div>
       </div>
       <div class="input-group">
-        <label class="input-label" for="address-field">Project address</label>
-        <input type="text" class="input-field" id="address-field" placeholder="e.g. Park Slope, Brooklyn" autocomplete="street-address">
+        <label class="input-label" for="address-field">Project address <span class="req">*</span></label>
+        <input type="text" class="input-field" id="address-field" placeholder="e.g. Park Slope, Brooklyn" oninput="updateContact()" autocomplete="street-address">
       </div>
       <div class="step-nav">
         <button class="btn-back" onclick="goToStep(7)">← Back</button>
@@ -513,7 +513,7 @@ function updateContact(){
   formData.address=document.getElementById('address-field').value.trim();
   const ve=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
   const vp=formData.phone.replace(/\D/g,'').length>=10;
-  document.getElementById('continue-8').disabled=!(formData.name.length>1&&ve&&vp);
+  document.getElementById('continue-8').disabled=!(formData.name.length>1&&ve&&vp&&formData.address.length>2);
 }
 async function compressImage(file,maxWidth,quality){
   maxWidth=maxWidth||1200;quality=quality||0.85;
