@@ -251,7 +251,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
       </div>
       <div class="step-nav">
         <button class="btn-back" onclick="goToStep(3)">← Back</button>
-        <button class="btn-continue" onclick="goToStep(5)">Continue →</button>
+        <button class="btn-continue" onclick="saveDesc();goToStep(5)">Continue →</button>
       </div>
     </div>
 
@@ -400,6 +400,9 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 <script src="partials/site.js"></script>
 <script>
 const formData={service:null,serviceLabel:null,serviceAnswers:{},propertyType:null,description:'',photos:[],photoAnalysis:[],timeline:null,name:'',phone:'',email:'',address:''};
+// Capture the "In your own words" textarea (Step 4) into formData so it reaches the
+// review screen, the submit payload, and the dashboard. Without this it stays empty.
+function saveDesc(){var e=document.getElementById('description-field');if(e)formData.description=e.value.trim();}
 let currentStep=1,currentAIQuestion=null,aiQuestionCount=0;
 const TOTAL_STEPS=9;
 const STEP_LABELS={1:'Project Type',2:'Project Details',3:'Property',4:'About the Job',5:'Photos',6:'AI Analysis',7:'Timeline',8:'Contact',9:'Review'};
