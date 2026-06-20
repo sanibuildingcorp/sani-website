@@ -4,10 +4,15 @@
 // saves the draft back to Blobs, returns it to the dashboard.
 //
 // The dashboard can include/exclude each input before generating:
-//   usePhotoAnalysis (default true) — AI photo-analysis findings saved with the request
-//   useDescription   (default true) — customer's free-text description
-//   useAnswers       (default true) — customer's answers to the intake questions
-// Any flag omitted from the request body defaults to true (old behavior preserved).
+//   usePhotoAnalysis (default FALSE) — AI photo-analysis findings. OFF for pricing by
+//                                      default so photos never inflate the price. The
+//                                      analysis is still saved with the request and shown
+//                                      in the dashboard (for the contractor's eyes only).
+//                                      Send usePhotoAnalysis:true to fold it into pricing.
+//   useDescription   (default true)  — customer's free-text description
+//   useAnswers       (default true)  — customer's answers to the intake questions
+// Description and answers stay ON unless explicitly set to false (old behavior preserved).
+// Price is built from the customer's answers + typed description only.
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
@@ -27,8 +32,10 @@ exports.handler = async function (event) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
     }
 
-    // Input toggles — anything not explicitly false stays on (backwards compatible)
-    const includeAnalysis = body.usePhotoAnalysis !== false;
+    // Input toggles.
+    // Photo analysis is OFF for pricing unless the dashboard explicitly opts in.
+    const includeAnalysis = body.usePhotoAnalysis === true;
+    // Description and answers stay on unless explicitly turned off (backwards compatible).
     const includeDescription = body.useDescription !== false;
     const includeAnswers = body.useAnswers !== false;
     const extraRequest = (body.extraRequest || "").trim();
@@ -65,7 +72,9 @@ exports.handler = async function (event) {
       ? `Description: ${request.description || "(none)"}`
       : `Description: (excluded by contractor — do not use)`;
 
-    // ---- AI photo analysis (optional) ----
+    // ---- AI photo analysis (optional, OFF by default) ----
+    // The photo analysis is saved with the request and shown in the dashboard for the
+    // contractor. It is NOT used for pricing unless the dashboard sends usePhotoAnalysis:true.
     const analysis = Array.isArray(request.photoAnalysis) ? request.photoAnalysis : [];
     let analysisBlock = "";
     if (includeAnalysis && analysis.length > 0) {
@@ -102,7 +111,7 @@ ${descLine}
 ${answersBlock}${analysisBlock}${extraBlock}
 
 YOUR TASK:
-Generate a realistic, professional estimate draft for this NYC-area project. Use current NYC labor and material rates. Be specific — itemize labor by trade/task and materials by what's actually needed.
+Generate a realistic, professional estimate draft for this NYC-area project. Base the scope and pricing on the customer's answers and description above. Use current NYC labor and material rates. Be specific — itemize labor by trade/task and materials by what's actually needed. Do not add work the customer did not describe.
 
 PRICING GUIDELINES (NYC market 2026):
 - General handyman labor: $75-95/hr
@@ -131,7 +140,7 @@ OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact s
 }
 
 IMPORTANT:
-- Use realistic NYC rates. Bathroom remodels typically run $8K-25K. Don't lowball.
+- Use realistic NYC rates. Don't lowball, but only price the work the customer actually described — do not pad the scope.
 - 4-10 labor items, 4-12 material items is typical.
 - Unit options: hrs, days, ea, sqft, lf (linear foot), gal, box
 - If info is missing, make conservative reasonable assumptions and note them in "notes".
