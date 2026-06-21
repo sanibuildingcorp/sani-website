@@ -78,7 +78,7 @@ exports.handler = async (event) => {
   if (!clientSecret) missing.push("GOOGLE_CLIENT_SECRET");
   if (!refreshToken) missing.push("GOOGLE_ADS_REFRESH_TOKEN");
   if (!customerId) missing.push("GOOGLE_ADS_CUSTOMER_ID");
-  if (missing.length) return J(500, { ok: false, error: "Missing env vars: " + missing.join(", ") });
+  if (missing.length) return J(200, { ok: false, error: "Missing env vars: " + missing.join(", ") });
 
   try {
     // ---- 1) refresh token -> access token ----
@@ -95,7 +95,7 @@ exports.handler = async (event) => {
     });
     const tokJson = await tokRes.json().catch(() => ({}));
     if (!tokRes.ok || !tokJson.access_token) {
-      return J(502, { ok: false, step: "oauth", error: tokJson.error_description || tokJson.error || "Token exchange failed" });
+      return J(200, { ok: false, step: "oauth", error: tokJson.error_description || tokJson.error || "Token exchange failed" });
     }
     const accessToken = tokJson.access_token;
 
@@ -126,7 +126,7 @@ exports.handler = async (event) => {
 
     if (!adsRes.ok) {
       const msg = adsJson && adsJson.error ? (adsJson.error.message || JSON.stringify(adsJson.error)) : adsText.slice(0, 800);
-      return J(502, {
+      return J(200, {
         ok: false, step: "ads", apiVersion: API_VERSION, error: msg,
         hint: "If this mentions an unsupported/invalid version, set env var GOOGLE_ADS_API_VERSION to a current one (e.g. v24 or v22)."
       });
@@ -154,6 +154,6 @@ exports.handler = async (event) => {
       keywords: out.slice(0, limit)
     });
   } catch (err) {
-    return J(500, { ok: false, error: String((err && err.message) || err) });
+    return J(200, { ok: false, error: String((err && err.message) || err) });
   }
 };
