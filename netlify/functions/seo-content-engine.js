@@ -15,7 +15,6 @@
 const SERVICE_PAGES = [
   // ── Main service pages ──
   { slug: "bathroom-renovation", service: "Bathroom Renovation", path: "/bathroom-renovation.html" },
-  { slug: "kitchen-renovation",  service: "Kitchen Renovation",  path: "/kitchen-renovation.html" },
   { slug: "painting",            service: "Painting",            path: "/painting.html" },
   { slug: "flooring",            service: "Flooring",            path: "/flooring.html" },
   { slug: "carpentry",           service: "Carpentry",           path: "/carpentry.html" },
@@ -28,11 +27,6 @@ const SERVICE_PAGES = [
   { slug: "bathroom-renovation-queens",       service: "Bathroom Renovation — Queens",    path: "/bathroom-renovation-queens.html" },
   { slug: "bathroom-wall-panels",             service: "Bathroom Wall Panels",            path: "/bathroom-wall-panels.html" },
   { slug: "bathroom-floor-tile-installation", service: "Bathroom Floor Tile",             path: "/bathroom-floor-tile-installation.html" },
-
-  // ── Kitchen subpages ──
-  { slug: "kitchen-renovation-brooklyn",  service: "Kitchen Renovation — Brooklyn",  path: "/kitchen-renovation-brooklyn.html" },
-  { slug: "kitchen-renovation-manhattan", service: "Kitchen Renovation — Manhattan", path: "/kitchen-renovation-manhattan.html" },
-  { slug: "kitchen-renovation-queens",    service: "Kitchen Renovation — Queens",    path: "/kitchen-renovation-queens.html" },
 
   // ── Painting subpages ──
   { slug: "painting-brooklyn",  service: "Painting — Brooklyn",  path: "/painting-brooklyn.html" },
