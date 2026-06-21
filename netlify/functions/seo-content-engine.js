@@ -20,6 +20,7 @@ const SERVICE_PAGES = [
   { slug: "carpentry",           service: "Carpentry",           path: "/carpentry.html" },
   { slug: "handyman",            service: "Handyman Services",   path: "/handyman.html" },
   { slug: "water-damage",        service: "Water Damage",        path: "/water-damage.html" },
+  { slug: "kitchen-cabinet-installation", service: "Kitchen Cabinet Installation", path: "/kitchen-cabinet-installation.html" },
 
   // ── Bathroom subpages ──
   { slug: "bathroom-renovation-brooklyn",     service: "Bathroom Renovation — Brooklyn",  path: "/bathroom-renovation-brooklyn.html" },
@@ -27,6 +28,11 @@ const SERVICE_PAGES = [
   { slug: "bathroom-renovation-queens",       service: "Bathroom Renovation — Queens",    path: "/bathroom-renovation-queens.html" },
   { slug: "bathroom-wall-panels",             service: "Bathroom Wall Panels",            path: "/bathroom-wall-panels.html" },
   { slug: "bathroom-floor-tile-installation", service: "Bathroom Floor Tile",             path: "/bathroom-floor-tile-installation.html" },
+
+  // ── Kitchen Cabinet subpages ──
+  { slug: "kitchen-cabinet-installation-brooklyn",  service: "Kitchen Cabinet Installation — Brooklyn",  path: "/kitchen-cabinet-installation-brooklyn.html" },
+  { slug: "kitchen-cabinet-installation-manhattan", service: "Kitchen Cabinet Installation — Manhattan", path: "/kitchen-cabinet-installation-manhattan.html" },
+  { slug: "kitchen-cabinet-installation-queens",    service: "Kitchen Cabinet Installation — Queens",    path: "/kitchen-cabinet-installation-queens.html" },
 
   // ── Painting subpages ──
   { slug: "painting-brooklyn",  service: "Painting — Brooklyn",  path: "/painting-brooklyn.html" },
