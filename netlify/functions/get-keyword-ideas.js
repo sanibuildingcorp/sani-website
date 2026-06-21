@@ -65,10 +65,10 @@ exports.handler = async (event) => {
   const limit = Math.min(Number(body.limit || q.limit || 60) || 60, 200);
 
   // ---- credentials ----
-  const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_ADS_REFRESH_TOKEN;
+  const devToken = (process.env.GOOGLE_ADS_DEVELOPER_TOKEN || "").trim();
+  const clientId = (process.env.GOOGLE_CLIENT_ID || "").trim();
+  const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
+  const refreshToken = (process.env.GOOGLE_ADS_REFRESH_TOKEN || "").trim();
   const customerId = digits(process.env.GOOGLE_ADS_CUSTOMER_ID);
   const loginCustomerId = digits(process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID);
 
@@ -93,9 +93,18 @@ exports.handler = async (event) => {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: form.toString()
     });
-    const tokJson = await tokRes.json().catch(() => ({}));
+    const tokRaw = await tokRes.text();
+    let tokJson = {};
+    try { tokJson = JSON.parse(tokRaw); } catch (e) { /* non-JSON */ }
     if (!tokRes.ok || !tokJson.access_token) {
-      return J(200, { ok: false, step: "oauth", error: tokJson.error_description || tokJson.error || "Token exchange failed" });
+      return J(200, {
+        ok: false,
+        step: "oauth",
+        httpStatus: tokRes.status,
+        error: tokJson.error || "token_error",
+        error_description: tokJson.error_description || null,
+        raw: tokRaw.slice(0, 300)
+      });
     }
     const accessToken = tokJson.access_token;
 
