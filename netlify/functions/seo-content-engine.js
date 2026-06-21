@@ -13,12 +13,49 @@
 // GET  (no slug)                         -> returns the list of service pages + whether a draft exists
 
 const SERVICE_PAGES = [
+  // ── Main service pages ──
   { slug: "bathroom-renovation", service: "Bathroom Renovation", path: "/bathroom-renovation.html" },
   { slug: "kitchen-renovation",  service: "Kitchen Renovation",  path: "/kitchen-renovation.html" },
   { slug: "painting",            service: "Painting",            path: "/painting.html" },
   { slug: "flooring",            service: "Flooring",            path: "/flooring.html" },
   { slug: "carpentry",           service: "Carpentry",           path: "/carpentry.html" },
   { slug: "handyman",            service: "Handyman Services",   path: "/handyman.html" },
+  { slug: "water-damage",        service: "Water Damage",        path: "/water-damage.html" },
+
+  // ── Bathroom subpages ──
+  { slug: "bathroom-renovation-brooklyn",     service: "Bathroom Renovation — Brooklyn",  path: "/bathroom-renovation-brooklyn.html" },
+  { slug: "bathroom-renovation-manhattan",    service: "Bathroom Renovation — Manhattan", path: "/bathroom-renovation-manhattan.html" },
+  { slug: "bathroom-renovation-queens",       service: "Bathroom Renovation — Queens",    path: "/bathroom-renovation-queens.html" },
+  { slug: "bathroom-wall-panels",             service: "Bathroom Wall Panels",            path: "/bathroom-wall-panels.html" },
+  { slug: "bathroom-floor-tile-installation", service: "Bathroom Floor Tile",             path: "/bathroom-floor-tile-installation.html" },
+
+  // ── Kitchen subpages ──
+  { slug: "kitchen-renovation-brooklyn",  service: "Kitchen Renovation — Brooklyn",  path: "/kitchen-renovation-brooklyn.html" },
+  { slug: "kitchen-renovation-manhattan", service: "Kitchen Renovation — Manhattan", path: "/kitchen-renovation-manhattan.html" },
+  { slug: "kitchen-renovation-queens",    service: "Kitchen Renovation — Queens",    path: "/kitchen-renovation-queens.html" },
+
+  // ── Painting subpages ──
+  { slug: "painting-brooklyn",  service: "Painting — Brooklyn",  path: "/painting-brooklyn.html" },
+  { slug: "painting-manhattan", service: "Painting — Manhattan", path: "/painting-manhattan.html" },
+
+  // ── Carpentry subpages ──
+  { slug: "exterior-carpentry", service: "Exterior Carpentry", path: "/exterior-carpentry.html" },
+  { slug: "deck-building",      service: "Deck Building",      path: "/deck-building.html" },
+  { slug: "deck-renovation",    service: "Deck Renovation",    path: "/deck-renovation.html" },
+  { slug: "stair-building",     service: "Stair Building",     path: "/stair-building.html" },
+  { slug: "stair-renovation",   service: "Stair Renovation",   path: "/stair-renovation.html" },
+  { slug: "stair-restoration",  service: "Stair Restoration",  path: "/stair-restoration.html" },
+  { slug: "stair-upgrade",      service: "Stair Upgrade",      path: "/stair-upgrade.html" },
+
+  // ── Service-area pages (renovation contractor by location) ──
+  { slug: "renovation-contractor-brooklyn",       service: "Renovation Contractor — Brooklyn",       path: "/renovation-contractor-brooklyn.html" },
+  { slug: "renovation-contractor-manhattan",      service: "Renovation Contractor — Manhattan",      path: "/renovation-contractor-manhattan.html" },
+  { slug: "renovation-contractor-queens",         service: "Renovation Contractor — Queens",         path: "/renovation-contractor-queens.html" },
+  { slug: "renovation-contractor-bronx",          service: "Renovation Contractor — Bronx",          path: "/renovation-contractor-bronx.html" },
+  { slug: "renovation-contractor-staten-island",  service: "Renovation Contractor — Staten Island",  path: "/renovation-contractor-staten-island.html" },
+  { slug: "renovation-contractor-long-island",    service: "Renovation Contractor — Long Island",    path: "/renovation-contractor-long-island.html" },
+  { slug: "renovation-contractor-nassau-county",  service: "Renovation Contractor — Nassau County",  path: "/renovation-contractor-nassau-county.html" },
+  { slug: "renovation-contractor-suffolk-county", service: "Renovation Contractor — Suffolk County", path: "/renovation-contractor-suffolk-county.html" },
 ];
 
 const SITE_ORIGIN = "https://www.sanibuildingcorp.com";
