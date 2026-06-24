@@ -18,6 +18,16 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 /bathroom-renovation/tile-installation-brooklyn  /bathroom-floor-tile-installation   301
 /lobby-restoration                               /services                           301
 
+# ─── KITCHEN RENAME — old kitchen-renovation URLs → new kitchen-cabinet-installation ───
+/kitchen-renovation                       /kitchen-cabinet-installation            301
+/kitchen-renovation.html                  /kitchen-cabinet-installation            301!
+/kitchen-renovation-brooklyn              /kitchen-cabinet-installation-brooklyn   301
+/kitchen-renovation-brooklyn.html         /kitchen-cabinet-installation-brooklyn   301!
+/kitchen-renovation-manhattan             /kitchen-cabinet-installation-manhattan  301
+/kitchen-renovation-manhattan.html        /kitchen-cabinet-installation-manhattan  301!
+/kitchen-renovation-queens                /kitchen-cabinet-installation-queens     301
+/kitchen-renovation-queens.html           /kitchen-cabinet-installation-queens     301!
+
 # ─── COMMON HOMEPAGE VARIANTS → / ───
 /home              /             301
 /index             /             301
@@ -51,7 +61,10 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 /flooring.html                           /flooring                           301!
 /carpentry.html                          /carpentry                          301!
 /water-damage.html                       /water-damage                       301!
-/kitchen-renovation.html                 /kitchen-renovation                 301!
+/kitchen-cabinet-installation.html            /kitchen-cabinet-installation            301!
+/kitchen-cabinet-installation-brooklyn.html   /kitchen-cabinet-installation-brooklyn   301!
+/kitchen-cabinet-installation-manhattan.html  /kitchen-cabinet-installation-manhattan  301!
+/kitchen-cabinet-installation-queens.html     /kitchen-cabinet-installation-queens     301!
 /bathroom-renovation.html                /bathroom-renovation                301!
 
 # Bathroom SEO pages
