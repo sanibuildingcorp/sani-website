@@ -6909,7 +6909,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     var schedRows = (s.paymentSchedule||[]).map(function(p,i){
       return '<div style="display:flex;gap:8px;margin-bottom:8px" class="sbc-cs-row">'+
         '<input type="text" class="sbc-cs-l" value="'+esc2(p.label)+'" placeholder="Milestone" style="'+IN+';flex:2">'+
-        '<input type="number" class="sbc-cs-a" value="'+(Number(p.amount)||0)+'" step="0.01" style="'+IN+';flex:1">'+
+        '<input type="text" inputmode="decimal" class="sbc-cs-a" value="'+(Number(p.amount)||0)+'" style="'+IN+';flex:1">'+
         '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:var(--bad);font-size:17px;cursor:pointer;padding:0 4px">✕</button>'+
       '</div>';
     }).join('');
@@ -6957,7 +6957,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     div.className = 'sbc-cs-row';
     div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px';
     div.innerHTML = '<input type="text" class="sbc-cs-l" placeholder="Milestone" style="'+IN2+';flex:2">'+
-      '<input type="number" class="sbc-cs-a" value="0" step="0.01" style="'+IN2+';flex:1">'+
+      '<input type="text" inputmode="decimal" class="sbc-cs-a" value="0" style="'+IN2+';flex:1">'+
       '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:var(--bad);font-size:17px;cursor:pointer;padding:0 4px">✕</button>';
     document.getElementById('sbc-cs-rows').appendChild(div);
   };
@@ -7016,7 +7016,13 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     var sched = [];
     document.querySelectorAll('#sbc-cs-rows .sbc-cs-row').forEach(function(row){
       var l = row.querySelector('.sbc-cs-l').value.trim();
-      var a = parseFloat(row.querySelector('.sbc-cs-a').value) || 0;
+      var raw = String(row.querySelector('.sbc-cs-a').value || '').replace(/[^0-9.,-]/g, '');
+      if (raw.indexOf('.') > -1) { raw = raw.replace(/,/g, ''); }
+      else if ((raw.match(/,/g) || []).length === 1 && /,\d{1,2}$/.test(raw)) { raw = raw.replace(',', '.'); }
+      else { raw = raw.replace(/,/g, ''); }
+      var a = parseFloat(raw);
+      if (!isFinite(a)) a = 0;
+      a = Math.round(a * 100) / 100;
       if (l) sched.push({ label:l, amount:a });
     });
     var sections = {
