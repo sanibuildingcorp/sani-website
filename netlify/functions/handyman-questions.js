@@ -1,31 +1,191 @@
 // netlify/functions/handyman-questions.js
-// Returns dynamic questions for each handyman service
-// Usage: GET /.netlify/functions/handyman-questions?service=painting-touchups
+// Photo-driven handyman intake questions.
+// POST { service, serviceName, photoBase64Array[] }  -> { questions:[...] }
+//   • If photos are provided, gpt-4o-mini (vision) reads them and returns
+//     follow-up questions tailored to what it actually sees.
+//   • If there are no photos, or the AI call fails, we fall back to the
+//     hand-written static questions for that service (never blocks the flow).
+// Backwards compatible: GET ?service=xxx still returns the static set.
+
+const https = require("https");
+
+const ALLOWED_TYPES = ["single_select", "multi_select", "textarea", "text"];
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers: cors(), body: "" };
   }
-  if (event.httpMethod !== "GET") {
+
+  // ---- Legacy GET: static questions only -------------------------------
+  if (event.httpMethod === "GET") {
+    const serviceId = (event.queryStringParameters || {}).service;
+    const list = QUESTIONS[serviceId];
+    if (!serviceId || !list) {
+      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing or unknown service" }) };
+    }
+    return { statusCode: 200, headers: cors(), body: JSON.stringify({ service: serviceId, questions: list, source: "static" }) };
+  }
+
+  if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
   }
 
-  const serviceId = (event.queryStringParameters || {}).service;
-  if (!serviceId) {
-    return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing service parameter" }) };
+  let body = {};
+  try { body = JSON.parse(event.body || "{}"); } catch (e) {}
+  const serviceId = body.service;
+  const serviceName = body.serviceName || (QUESTIONS[serviceId] ? serviceId : "Handyman Service");
+  const photos = Array.isArray(body.photoBase64Array) ? body.photoBase64Array.filter(Boolean) : [];
+
+  const fallback = QUESTIONS[serviceId] || GENERIC_FALLBACK;
+
+  // No photos, or no API key -> hand-written questions for this service.
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!photos.length || !apiKey) {
+    return { statusCode: 200, headers: cors(), body: JSON.stringify({ service: serviceId, questions: fallback, source: "static" }) };
   }
 
-  const questions = QUESTIONS[serviceId];
-  if (!questions) {
-    return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "Service not found" }) };
+  // Photos present -> ask the vision model for tailored questions.
+  try {
+    const aiQuestions = await generateFromPhotos(apiKey, serviceName, photos);
+    const cleaned = sanitizeQuestions(aiQuestions);
+    const final = ensureCoreQuestions(cleaned);
+    if (final.length >= 3) {
+      return { statusCode: 200, headers: cors(), body: JSON.stringify({ service: serviceId, questions: final, source: "ai" }) };
+    }
+    return { statusCode: 200, headers: cors(), body: JSON.stringify({ service: serviceId, questions: fallback, source: "static_thin" }) };
+  } catch (e) {
+    console.error("handyman-questions AI failed, using fallback:", e.message);
+    return { statusCode: 200, headers: cors(), body: JSON.stringify({ service: serviceId, questions: fallback, source: "static_error" }) };
   }
-
-  return {
-    statusCode: 200,
-    headers: cors(),
-    body: JSON.stringify({ service: serviceId, questions: questions }),
-  };
 };
+
+// ════════════════════════════════════════════════════════════════════
+// VISION: ask gpt-4o-mini for tailored follow-up questions
+// ════════════════════════════════════════════════════════════════════
+async function generateFromPhotos(apiKey, serviceName, photos) {
+  const prompt =
+    "You are an intake assistant for a NYC handyman company (Sani Building Corp). " +
+    "The customer selected the service: \"" + serviceName + "\". Study the attached job photo(s). " +
+    "Generate 4 to 6 SHORT, specific follow-up questions that help scope THIS exact job from what you see " +
+    "(materials, dimensions, brand, access, whether parts are on hand, extent of damage, etc.). " +
+    "Make questions easy to tap on a phone. Use mostly single_select / multi_select with 3-5 concrete options. " +
+    "Do NOT ask for the customer's name, address, contact info, scheduling, or price. " +
+    "Always include exactly one question with id \"urgency\" (single_select: " +
+    "[\"Emergency today\",\"This week\",\"Within 2 weeks\",\"Flexible\"]) " +
+    "and end with one question id \"description\" (textarea) asking for anything else we should know. " +
+    "Return ONLY raw JSON, no markdown, in this exact shape: " +
+    "{\"questions\":[{\"id\":\"slug\",\"label\":\"...\",\"type\":\"single_select|multi_select|textarea|text\"," +
+    "\"required\":true,\"options\":[\"..\"],\"placeholder\":\"..\"}]}. " +
+    "options only for select types; placeholder only for text/textarea.";
+
+  const content = [{ type: "text", text: prompt }];
+  photos.slice(0, 4).forEach(function (b64) {
+    const clean = String(b64).replace(/^data:image\/\w+;base64,/, "");
+    content.push({ type: "image_url", image_url: { url: "data:image/jpeg;base64," + clean, detail: "low" } });
+  });
+
+  const payload = {
+    model: "gpt-4o-mini",
+    max_tokens: 900,
+    temperature: 0.4,
+    messages: [{ role: "user", content: content }]
+  };
+
+  const raw = await openAIChat(apiKey, payload);
+  const text = (((raw.choices || [])[0] || {}).message || {}).content || "";
+  const jsonMatch = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").match(/\{[\s\S]*\}/);
+  const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+  return Array.isArray(parsed.questions) ? parsed.questions : [];
+}
+
+function openAIChat(apiKey, payload) {
+  const data = JSON.stringify(payload);
+  return new Promise(function (resolve, reject) {
+    const req = https.request({
+      hostname: "api.openai.com",
+      port: 443,
+      path: "/v1/chat/completions",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(data),
+        "Authorization": "Bearer " + apiKey
+      }
+    }, function (res) {
+      const chunks = [];
+      res.on("data", function (c) { chunks.push(c); });
+      res.on("end", function () {
+        const b = Buffer.concat(chunks).toString("utf8");
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try { resolve(JSON.parse(b)); } catch (e) { reject(new Error("Bad OpenAI JSON")); }
+        } else {
+          reject(new Error("OpenAI " + res.statusCode + ": " + b.slice(0, 160)));
+        }
+      });
+    });
+    req.on("error", reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Validate / normalize AI question objects
+// ════════════════════════════════════════════════════════════════════
+function slug(s, i) {
+  const base = String(s || "q").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return base ? base.slice(0, 32) : "q_" + i;
+}
+
+function sanitizeQuestions(arr) {
+  const out = [];
+  const seen = {};
+  (arr || []).forEach(function (q, i) {
+    if (!q || !q.label) return;
+    let type = ALLOWED_TYPES.indexOf(q.type) > -1 ? q.type : "text";
+    let id = slug(q.id || q.label, i);
+    while (seen[id]) id = id + "_" + i;
+    seen[id] = true;
+    const item = { id: id, label: String(q.label).slice(0, 140), type: type, required: q.required !== false };
+    if (type === "single_select" || type === "multi_select") {
+      const opts = (Array.isArray(q.options) ? q.options : []).map(function (o) { return String(o).slice(0, 60); }).filter(Boolean).slice(0, 6);
+      if (opts.length < 2) { item.type = "text"; }
+      else { item.options = opts; }
+    }
+    if (item.type === "text" || item.type === "textarea") {
+      item.placeholder = q.placeholder ? String(q.placeholder).slice(0, 120) : "";
+    }
+    out.push(item);
+  });
+  return out.slice(0, 7);
+}
+
+// Guarantee an urgency selector and a free-text description always exist.
+function ensureCoreQuestions(list) {
+  const ids = list.map(function (q) { return q.id; });
+  if (ids.indexOf("urgency") === -1) {
+    list.push({ id: "urgency", label: "How urgent is this?", type: "single_select", required: true,
+      options: ["Emergency today", "This week", "Within 2 weeks", "Flexible"] });
+  }
+  // move description to the end (create if missing)
+  let desc = null;
+  list = list.filter(function (q) { if (q.id === "description") { desc = q; return false; } return true; });
+  if (!desc) desc = { id: "description", label: "Anything else we should know?", type: "textarea", required: false, placeholder: "Optional — extra details that help us prepare." };
+  list.push(desc);
+  return list;
+}
+
+// Generic fallback if a service id is unknown
+const GENERIC_FALLBACK = [
+  { id: "issue_count", label: "How many separate issues to fix?", type: "single_select", required: true,
+    options: ["1 issue", "2-3 issues", "4-5 issues", "6+ issues"] },
+  { id: "has_parts", label: "Do you already have the parts/materials?", type: "single_select", required: true,
+    options: ["Yes, I have everything", "I have some", "No, you bring everything", "Not sure"] },
+  { id: "urgency", label: "How urgent is this?", type: "single_select", required: true,
+    options: ["Emergency today", "This week", "Within 2 weeks", "Flexible"] },
+  { id: "description", label: "Describe what needs to be done", type: "textarea", required: true,
+    placeholder: "Tell us what's going on..." }
+];
 
 const QUESTIONS = {
   "general-repairs": [
