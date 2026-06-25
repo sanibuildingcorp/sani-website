@@ -72,6 +72,10 @@ async function generateFromPhotos(apiKey, serviceName, photos, subcategory) {
     "Generate 4 to 6 SHORT, specific follow-up questions that help scope THIS exact job from what you see " +
     "(materials, dimensions, brand, access, whether parts are on hand, extent of damage, etc.). " +
     "Make questions easy to tap on a phone. Use mostly single_select / multi_select with 3-5 concrete options. " +
+    "EVERY single_select and multi_select MUST end with an \"Other\" or \"Not sure\" option. " +
+    "Never require exact measurements, dimensions, model numbers, or specs — the customer often won't know. " +
+    "If you ask for a size or spec, make that question optional (required:false). " +
+    "Set required:true ONLY for questions any customer can answer with one tap (like urgency); make everything else required:false. " +
     "Do NOT ask for the customer's name, address, contact info, scheduling, or price. " +
     "Always include exactly one question with id \"urgency\" (single_select: " +
     "[\"Emergency today\",\"This week\",\"Within 2 weeks\",\"Flexible\"]) " +
