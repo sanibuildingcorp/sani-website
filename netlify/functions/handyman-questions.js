@@ -34,6 +34,7 @@ exports.handler = async function (event) {
   try { body = JSON.parse(event.body || "{}"); } catch (e) {}
   const serviceId = body.service;
   const serviceName = body.serviceName || (QUESTIONS[serviceId] ? serviceId : "Handyman Service");
+  const subcategory = (body.subcategory || "").toString().slice(0, 60);
   const photos = Array.isArray(body.photoBase64Array) ? body.photoBase64Array.filter(Boolean) : [];
 
   const fallback = QUESTIONS[serviceId] || GENERIC_FALLBACK;
@@ -46,7 +47,7 @@ exports.handler = async function (event) {
 
   // Photos present -> ask the vision model for tailored questions.
   try {
-    const aiQuestions = await generateFromPhotos(apiKey, serviceName, photos);
+    const aiQuestions = await generateFromPhotos(apiKey, serviceName, photos, subcategory);
     const cleaned = sanitizeQuestions(aiQuestions);
     const final = ensureCoreQuestions(cleaned);
     if (final.length >= 3) {
@@ -62,10 +63,12 @@ exports.handler = async function (event) {
 // ════════════════════════════════════════════════════════════════════
 // VISION: ask gpt-4o-mini for tailored follow-up questions
 // ════════════════════════════════════════════════════════════════════
-async function generateFromPhotos(apiKey, serviceName, photos) {
+async function generateFromPhotos(apiKey, serviceName, photos, subcategory) {
   const prompt =
     "You are an intake assistant for a NYC handyman company (Sani Building Corp). " +
-    "The customer selected the service: \"" + serviceName + "\". Study the attached job photo(s). " +
+    "The customer selected the service: \"" + serviceName + "\". " +
+    (subcategory ? ("They specified the item/area is: \"" + subcategory + "\". Focus your questions on that. ") : "") +
+    "Study the attached job photo(s). " +
     "Generate 4 to 6 SHORT, specific follow-up questions that help scope THIS exact job from what you see " +
     "(materials, dimensions, brand, access, whether parts are on hand, extent of damage, etc.). " +
     "Make questions easy to tap on a phone. Use mostly single_select / multi_select with 3-5 concrete options. " +
