@@ -518,8 +518,8 @@ body {
   <div class="hdr">
     <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
     <div class="tag">Handyman Booking · NYC Metro</div>
-    <h1>Get Your <em>Instant AI Estimate</em></h1>
-    <p>Tell us what you need, upload photos, and our AI gives you an instant time + cost estimate. No surprises.</p>
+    <h1>Get Your <em>Free AI-Powered Estimate</em></h1>
+    <p>Upload a few photos, answer a couple of quick questions, and our AI preps your job. Our estimator sends you a professional quote — usually within 24 hours.</p>
   </div>
 
   <!-- PROGRESS BAR -->
@@ -594,24 +594,11 @@ body {
     </div>
   </div>
 
-  <!-- ────────── STEP 2: QUESTIONS ────────── -->
+  <!-- ────────── STEP 2: PHOTOS ────────── -->
   <div class="step" id="step-2">
     <div class="card">
-      <div class="step-title">Tell us <em>more details</em></div>
-      <div class="step-sub" id="step-2-sub">Loading questions...</div>
-      <div id="questions-container"></div>
-      <div class="btn-row">
-        <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
-        <button class="btn btn-primary" onclick="submitStep2()">Continue →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ────────── STEP 3: PHOTOS ────────── -->
-  <div class="step" id="step-3">
-    <div class="card">
-      <div class="step-title">Add <em>photos</em> (recommended)</div>
-      <div class="step-sub">📸 Better photos = more accurate estimate + we arrive prepared with the right materials</div>
+      <div class="step-title">Add <em>photos</em> of the job</div>
+      <div class="step-sub">📸 Our AI reads your photos to ask the right questions and make sure we arrive with the right materials. 2–5 photos work best (any angle).</div>
 
       <label class="photo-zone" for="photo-input">
         <div class="pz-icon">📸</div>
@@ -623,8 +610,21 @@ body {
       <div class="photo-preview-grid" id="photo-previews"></div>
 
       <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="continueFromPhotos()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────── STEP 3: AI QUESTIONS (from photos) ────────── -->
+  <div class="step" id="step-3">
+    <div class="card">
+      <div class="step-title">A few <em>quick questions</em></div>
+      <div class="step-sub" id="step-3-sub">Loading questions...</div>
+      <div id="questions-container"></div>
+      <div class="btn-row">
         <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
-        <button class="btn btn-primary" onclick="goToStep(4)">Continue →</button>
+        <button class="btn btn-primary" onclick="submitQuestions()">Continue →</button>
       </div>
     </div>
   </div>
@@ -633,7 +633,7 @@ body {
   <div class="step" id="step-4">
     <div class="card">
       <div class="step-title">Your <em>contact info</em></div>
-      <div class="step-sub">So we can confirm and schedule with you</div>
+      <div class="step-sub">So we can send your estimate and schedule with you</div>
 
       <div class="question">
         <label class="question-label">Full Name<span class="req">*</span></label>
@@ -669,12 +669,12 @@ body {
 
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
-        <button class="btn btn-primary" onclick="analyzeAndReview()">🤖 Get AI Estimate</button>
+        <button class="btn btn-primary" onclick="submitRequest()">✓ Submit Request</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 5: AI ANALYSIS & RESULT ────────── -->
+  <!-- ────────── STEP 5: CONFIRMATION (no price shown) ────────── -->
   <div class="step" id="step-5">
 
     <!-- Loading state -->
@@ -682,83 +682,31 @@ body {
       <div class="ai-loading">
         <div class="ai-spinner"></div>
         <div class="ai-status" id="ai-status-text">Analyzing your photos...</div>
-        <div class="ai-substatus" id="ai-substatus-text">Our AI is reviewing the details to give you the most accurate estimate</div>
+        <div class="ai-substatus" id="ai-substatus-text">Our AI is reviewing the details and preparing your job file</div>
       </div>
     </div>
 
-    <!-- Result state -->
+    <!-- Confirmation state -->
     <div id="result-content" style="display:none">
-      <div class="card">
-        <div style="text-align:center;margin-bottom:18px">
-          <div class="confidence-badge" id="confidence-badge">READY TO BOOK</div>
-          <div class="step-title" style="text-align:center">Your <em>AI Estimate</em></div>
-          <div class="step-sub" style="text-align:center" id="service-summary"></div>
-        </div>
-
-        <!-- Time + Total -->
-        <div class="estimate-hero">
-          <div class="eh-label">💰 Estimated Cost Range</div>
-          <div class="eh-amount" id="total-range">—</div>
-          <div class="eh-time" id="time-range">—</div>
-        </div>
-
-        <!-- Breakdown -->
-        <div class="estimate-detail">
-          <span class="ed-label">⏱️ Estimated Time</span>
-          <span class="ed-value" id="time-detail">—</span>
-        </div>
-        <div class="estimate-detail">
-          <span class="ed-label">💵 Labor Cost</span>
-          <span class="ed-value" id="labor-detail">—</span>
-        </div>
-        <div class="estimate-detail">
-          <span class="ed-label">🔧 Possible Material Cost</span>
-          <span class="ed-value" id="material-detail">—</span>
-        </div>
-        <div class="estimate-detail" id="deposit-row" style="display:none">
-          <span class="ed-label">💳 Deposit Required</span>
-          <span class="ed-value" id="deposit-detail">—</span>
-        </div>
-
-        <div class="note-box" id="customer-notes-box"></div>
-
-        <div class="warnings-box" id="warnings-box" style="display:none">
-          <div class="wb-title">Important Notes</div>
-          <ul id="warnings-list"></ul>
-        </div>
-
-        <div class="note-box">
-          <strong>⚠️ Important:</strong> Final price may change after on-site inspection. If extra materials or hidden problems are found, we will get your approval before continuing work. Time spent purchasing customer-approved materials may be billed unless arranged before the appointment.
-        </div>
-
-        <div id="submit-error"></div>
-
-        <div class="btn-row">
-          <button class="btn btn-secondary" onclick="goToStep(4)">← Edit Details</button>
-          <button class="btn btn-primary" id="book-btn" onclick="submitBooking()">📅 Book Appointment</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Success state -->
-    <div id="success-content" style="display:none">
       <div class="success-hero">
         <div class="sh-check">✓</div>
-        <h2>Booking Confirmed!</h2>
+        <h2>Request Received!</h2>
         <p>Your reference number: <strong id="success-ref">—</strong></p>
       </div>
       <div class="card">
+        <div class="step-title" style="text-align:center">Your request has been <em>analyzed by AI</em></div>
+        <ul style="list-style:none;padding:0;margin:18px 0;font-size:15px;color:var(--ink-soft);line-height:2.1">
+          <li>✓ Damage identified</li>
+          <li>✓ Materials estimated</li>
+          <li>✓ Labor time estimated</li>
+          <li>✓ Sent to our estimator for final review</li>
+        </ul>
         <p style="font-size:15px;color:var(--ink-soft);line-height:1.7;text-align:center">
-          We've sent a confirmation to your email and our team has been notified.
-          <br><br>
-          <strong style="color:var(--navy)">What happens next:</strong>
+          You'll receive your <strong style="color:var(--navy)">professional estimate</strong> shortly — typically within 24 hours. We'll email it to you and call to confirm scheduling.
         </p>
-        <ol style="font-size:14px;color:var(--ink-soft);line-height:1.8;padding-left:24px;margin:14px 0">
-          <li>📞 We'll call you within 24 hours to confirm details</li>
-          <li>📅 We schedule your appointment</li>
-          <li>🧰 We arrive with the right tools and materials</li>
-          <li>✅ Job done — pay only after work is approved</li>
-        </ol>
+
+        <div id="submit-error"></div>
+
         <div class="btn-row">
           <a href="https://www.sanibuildingcorp.com" class="btn btn-secondary">← Back to Website</a>
           <a href="tel:+13322770990" class="btn btn-navy">📞 Call Us Now</a>
@@ -837,123 +785,17 @@ document.querySelectorAll('.service-card').forEach(function(card) {
     this.classList.add('selected');
     state.service = this.dataset.service;
     state.serviceName = SERVICE_NAMES[state.service];
-    loadQuestions();
     setTimeout(function() { goToStep(2); }, 250);
   });
 });
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 2: LOAD & RENDER QUESTIONS
-   ════════════════════════════════════════════════════════════════════ */
-async function loadQuestions() {
-  document.getElementById('step-2-sub').textContent = 'Loading questions for ' + state.serviceName + '...';
-  document.getElementById('questions-container').innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div></div>';
-
-  try {
-    const r = await fetch('/.netlify/functions/handyman-questions?service=' + encodeURIComponent(state.service));
-    if (!r.ok) throw new Error('Failed to load questions');
-    const data = await r.json();
-    state.questions = data.questions || [];
-    state.answers = {};
-    renderQuestions();
-  } catch (e) {
-    console.error(e);
-    document.getElementById('questions-container').innerHTML = '<div class="error-box">Failed to load questions. Please refresh and try again.</div>';
-  }
-}
-
-function renderQuestions() {
-  document.getElementById('step-2-sub').textContent = 'Service: ' + state.serviceName;
-  const container = document.getElementById('questions-container');
-  container.innerHTML = '';
-
-  state.questions.forEach(function(q) {
-    const wrap = document.createElement('div');
-    wrap.className = 'question';
-
-    const label = document.createElement('label');
-    label.className = 'question-label';
-    label.innerHTML = q.label + (q.required ? '<span class="req">*</span>' : '');
-    wrap.appendChild(label);
-
-    if (q.type === 'single_select' || q.type === 'multi_select') {
-      const grid = document.createElement('div');
-      grid.className = 'options-grid';
-      (q.options || []).forEach(function(opt) {
-        const o = document.createElement('div');
-        o.className = 'option';
-        o.textContent = opt;
-        o.addEventListener('click', function() {
-          if (q.type === 'single_select') {
-            grid.querySelectorAll('.option').forEach(function(x) { x.classList.remove('selected'); });
-            o.classList.add('selected');
-            state.answers[q.id] = opt;
-          } else {
-            o.classList.toggle('selected');
-            state.answers[q.id] = state.answers[q.id] || [];
-            if (o.classList.contains('selected')) {
-              if (state.answers[q.id].indexOf(opt) === -1) state.answers[q.id].push(opt);
-            } else {
-              state.answers[q.id] = state.answers[q.id].filter(function(x) { return x !== opt; });
-            }
-          }
-          // Capture urgency for top-level
-          if (q.id === 'urgency') state.urgency = opt.toLowerCase();
-        });
-        grid.appendChild(o);
-      });
-      wrap.appendChild(grid);
-    } else if (q.type === 'textarea') {
-      const ta = document.createElement('textarea');
-      ta.className = 'input-textarea';
-      ta.placeholder = q.placeholder || '';
-      ta.rows = 3;
-      ta.addEventListener('input', function() {
-        state.answers[q.id] = ta.value;
-        if (q.id === 'description') state.description = ta.value;
-      });
-      wrap.appendChild(ta);
-    } else { // text
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'input-text';
-      input.placeholder = q.placeholder || '';
-      input.addEventListener('input', function() { state.answers[q.id] = input.value; });
-      wrap.appendChild(input);
-    }
-
-    container.appendChild(wrap);
-  });
-}
-
-function submitStep2() {
-  // Validate required questions
-  const missing = state.questions.filter(function(q) {
-    if (!q.required) return false;
-    const v = state.answers[q.id];
-    if (v == null || v === '') return true;
-    if (Array.isArray(v) && v.length === 0) return true;
-    return false;
-  });
-  if (missing.length > 0) {
-    alert('Please answer: ' + missing.map(function(m) { return m.label; }).join(', '));
-    return;
-  }
-  // Save description if it was in answers
-  if (state.answers.description) state.description = state.answers.description;
-  goToStep(3);
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   STEP 3: PHOTOS
+   STEP 2: PHOTOS
    ════════════════════════════════════════════════════════════════════ */
 document.getElementById('photo-input').addEventListener('change', function(e) {
   const files = Array.from(e.target.files || []);
   files.forEach(function(file) {
-    if (state.photos.length >= 5) {
-      alert('Maximum 5 photos');
-      return;
-    }
+    if (state.photos.length >= 5) { alert('Maximum 5 photos'); return; }
     compressAndAdd(file);
   });
 });
@@ -1010,6 +852,121 @@ function removePhoto(i) {
   renderPhotoPreviews();
 }
 
+function continueFromPhotos() {
+  goToStep(3);
+  generateQuestions();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   STEP 3: AI-GENERATED QUESTIONS (read from the photos)
+   ════════════════════════════════════════════════════════════════════ */
+async function generateQuestions() {
+  document.getElementById('step-3-sub').textContent = 'Reading your photos…';
+  document.getElementById('questions-container').innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div></div>';
+
+  try {
+    const photosForAI = state.photos.map(function(p) { return p.replace(/^data:image\/\w+;base64,/, ''); });
+    const r = await fetch('/.netlify/functions/handyman-questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service: state.service,
+        serviceName: state.serviceName,
+        photoBase64Array: photosForAI
+      })
+    });
+    if (!r.ok) throw new Error('Failed to load questions');
+    const data = await r.json();
+    state.questions = data.questions || [];
+    state.answers = {};
+    renderQuestions();
+  } catch (e) {
+    console.error(e);
+    document.getElementById('step-3-sub').textContent = 'Service: ' + state.serviceName;
+    document.getElementById('questions-container').innerHTML =
+      '<div class="error-box">Could not load questions. Tap ← Back to retry, or call (332) 277-0990.</div>';
+  }
+}
+
+function renderQuestions() {
+  document.getElementById('step-3-sub').textContent = 'Service: ' + state.serviceName;
+  const container = document.getElementById('questions-container');
+  container.innerHTML = '';
+
+  state.questions.forEach(function(q) {
+    const wrap = document.createElement('div');
+    wrap.className = 'question';
+
+    const label = document.createElement('label');
+    label.className = 'question-label';
+    label.innerHTML = q.label + (q.required ? '<span class="req">*</span>' : '');
+    wrap.appendChild(label);
+
+    if (q.type === 'single_select' || q.type === 'multi_select') {
+      const grid = document.createElement('div');
+      grid.className = 'options-grid';
+      (q.options || []).forEach(function(opt) {
+        const o = document.createElement('div');
+        o.className = 'option';
+        o.textContent = opt;
+        o.addEventListener('click', function() {
+          if (q.type === 'single_select') {
+            grid.querySelectorAll('.option').forEach(function(x) { x.classList.remove('selected'); });
+            o.classList.add('selected');
+            state.answers[q.id] = opt;
+          } else {
+            o.classList.toggle('selected');
+            state.answers[q.id] = state.answers[q.id] || [];
+            if (o.classList.contains('selected')) {
+              if (state.answers[q.id].indexOf(opt) === -1) state.answers[q.id].push(opt);
+            } else {
+              state.answers[q.id] = state.answers[q.id].filter(function(x) { return x !== opt; });
+            }
+          }
+          if (q.id === 'urgency') state.urgency = opt.toLowerCase();
+        });
+        grid.appendChild(o);
+      });
+      wrap.appendChild(grid);
+    } else if (q.type === 'textarea') {
+      const ta = document.createElement('textarea');
+      ta.className = 'input-textarea';
+      ta.placeholder = q.placeholder || '';
+      ta.rows = 3;
+      ta.addEventListener('input', function() {
+        state.answers[q.id] = ta.value;
+        if (q.id === 'description') state.description = ta.value;
+      });
+      wrap.appendChild(ta);
+    } else {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'input-text';
+      input.placeholder = q.placeholder || '';
+      input.addEventListener('input', function() { state.answers[q.id] = input.value; });
+      wrap.appendChild(input);
+    }
+
+    container.appendChild(wrap);
+  });
+}
+
+function submitQuestions() {
+  const missing = state.questions.filter(function(q) {
+    if (!q.required) return false;
+    const v = state.answers[q.id];
+    if (v == null || v === '') return true;
+    if (Array.isArray(v) && v.length === 0) return true;
+    return false;
+  });
+  if (missing.length > 0) {
+    alert('Please answer: ' + missing.map(function(m) { return m.label; }).join(', '));
+    return;
+  }
+  if (state.answers.description) state.description = state.answers.description;
+  goToStep(4);
+}
+
 /* ════════════════════════════════════════════════════════════════════
    STEP 4: CONTACT FORM
    ════════════════════════════════════════════════════════════════════ */
@@ -1022,10 +979,18 @@ document.querySelectorAll('#time-options .option').forEach(function(opt) {
 });
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 5: ANALYZE & SHOW ESTIMATE
+   STEP 5: SUBMIT REQUEST  (customer sees a confirmation, NOT a price)
+   The AI job file is still generated + saved so it appears in the
+   dashboard for the estimator to review, adjust, and send.
    ════════════════════════════════════════════════════════════════════ */
-async function analyzeAndReview() {
-  // Validate contact
+function setAiStatus(title, sub) {
+  const t = document.getElementById('ai-status-text');
+  const s = document.getElementById('ai-substatus-text');
+  if (t) t.textContent = title;
+  if (s) s.textContent = sub;
+}
+
+async function submitRequest() {
   const name = document.getElementById('cust-name').value.trim();
   const phone = document.getElementById('cust-phone').value.trim();
   const email = document.getElementById('cust-email').value.trim();
@@ -1044,29 +1009,32 @@ async function analyzeAndReview() {
   state.customer = { name: name, phone: phone, email: email, address: address };
   state.preferredDate = document.getElementById('cust-date').value;
 
-  // Move to step 5, show loading
   goToStep(5);
+  // rebuild the loading card in case a prior error overwrote it
+  document.getElementById('ai-loading-card').innerHTML =
+    '<div class="ai-loading"><div class="ai-spinner"></div>' +
+    '<div class="ai-status" id="ai-status-text">Analyzing your photos...</div>' +
+    '<div class="ai-substatus" id="ai-substatus-text">Our AI is reviewing the details and preparing your job file</div></div>';
   document.getElementById('ai-loading-card').style.display = 'block';
   document.getElementById('result-content').style.display = 'none';
 
-  // Cycle through loading messages
   const statuses = [
     { title: '🔍 Analyzing your photos...', sub: 'Looking at the details to understand the job' },
-    { title: '🧠 Reviewing your answers...', sub: 'Our AI is matching tools and materials' },
-    { title: '⏱️ Calculating time estimate...', sub: 'Factoring in NYC market rates' },
-    { title: '🧰 Building your job brief...', sub: 'Almost done!' }
+    { title: '🧠 Reviewing your answers...', sub: 'Matching tools and materials' },
+    { title: '🧰 Preparing your job file...', sub: 'For our estimator to review' },
+    { title: '📨 Sending to our estimator...', sub: 'Almost done!' }
   ];
   let statusIdx = 0;
   const statusInterval = setInterval(function() {
     statusIdx = (statusIdx + 1) % statuses.length;
-    document.getElementById('ai-status-text').textContent = statuses[statusIdx].title;
-    document.getElementById('ai-substatus-text').textContent = statuses[statusIdx].sub;
-  }, 2500);
+    setAiStatus(statuses[statusIdx].title, statuses[statusIdx].sub);
+  }, 2200);
 
+  // 1. Build the AI job file for the dashboard. Failure never blocks the lead.
+  let aiResult = null;
   try {
     const photosForAI = state.photos.map(function(p) { return p.replace(/^data:image\/\w+;base64,/, ''); });
-
-    const r = await fetch('/.netlify/functions/handyman-analyze', {
+    const ar = await fetch('/.netlify/functions/handyman-analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1078,91 +1046,13 @@ async function analyzeAndReview() {
         description: state.description
       })
     });
-
-    clearInterval(statusInterval);
-
-    if (!r.ok) {
-      const err = await r.json().catch(function() { return { error: 'Analysis failed' }; });
-      throw new Error(err.error || 'Analysis failed');
-    }
-
-    const data = await r.json();
-    state.aiResult = data;
-    renderEstimate(data);
+    if (ar.ok) aiResult = await ar.json();
   } catch (e) {
-    clearInterval(statusInterval);
-    console.error(e);
-    document.getElementById('ai-loading-card').innerHTML =
-      '<div style="text-align:center;padding:40px 20px">' +
-      '<div style="font-size:48px;margin-bottom:12px">⚠️</div>' +
-      '<div class="ai-status">Could not generate estimate</div>' +
-      '<div class="ai-substatus" style="margin-bottom:20px">' + (e.message || 'Please try again') + '</div>' +
-      '<button class="btn btn-primary" onclick="analyzeAndReview()">Try Again</button>' +
-      ' <button class="btn btn-secondary" onclick="goToStep(4)">Edit Details</button>' +
-      '</div>';
+    console.error('analyze failed (continuing):', e);
   }
-}
+  state.aiResult = aiResult;
 
-function renderEstimate(data) {
-  const est = data.estimate || {};
-  const conf = data.confidence || {};
-  const brief = data.internalBrief || {};
-
-  document.getElementById('ai-loading-card').style.display = 'none';
-  document.getElementById('result-content').style.display = 'block';
-
-  // Confidence badge
-  const badge = document.getElementById('confidence-badge');
-  badge.className = 'confidence-badge ' + (conf.label || 'maybe');
-  const badgeText = conf.label === 'ready' ? 'READY TO BOOK ✓'
-                  : conf.label === 'maybe' ? 'WE\'LL REVIEW WITH YOU'
-                  : 'INSPECTION RECOMMENDED';
-  badge.textContent = badgeText;
-
-  // Service summary
-  document.getElementById('service-summary').textContent = state.serviceName;
-
-  // Total range
-  const totalMin = (est.estimatedLaborMin || 0) + (est.estimatedMaterialMin || 0);
-  const totalMax = (est.estimatedLaborMax || 0) + (est.estimatedMaterialMax || 0);
-  document.getElementById('total-range').textContent = '$' + totalMin + ' – $' + totalMax;
-  document.getElementById('time-range').textContent = est.estimatedTimeMin + '–' + est.estimatedTimeMax + ' hours';
-
-  // Detail rows
-  document.getElementById('time-detail').textContent = est.estimatedTimeMin + '–' + est.estimatedTimeMax + ' hrs';
-  document.getElementById('labor-detail').textContent = '$' + est.estimatedLaborMin + ' – $' + est.estimatedLaborMax;
-  document.getElementById('material-detail').textContent = '$' + est.estimatedMaterialMin + ' – $' + est.estimatedMaterialMax;
-
-  if (est.depositRequired && est.depositAmount > 0) {
-    document.getElementById('deposit-row').style.display = 'flex';
-    document.getElementById('deposit-detail').textContent = '$' + est.depositAmount;
-  }
-
-  // Customer notes
-  document.getElementById('customer-notes-box').innerHTML = '<strong>📝 Note:</strong> ' + (est.customerNotes || 'Our team will review your request and call to confirm.');
-
-  // Warnings (only show customer-relevant ones)
-  const customerWarnings = (brief.warnings || []).filter(function(w) {
-    // Show all warnings to customer (they're general notes from our policy)
-    return true;
-  });
-  if (customerWarnings.length > 0) {
-    document.getElementById('warnings-box').style.display = 'block';
-    document.getElementById('warnings-list').innerHTML = customerWarnings.map(function(w) {
-      return '<li>' + escapeHtml(w) + '</li>';
-    }).join('');
-  }
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   SUBMIT BOOKING
-   ════════════════════════════════════════════════════════════════════ */
-async function submitBooking() {
-  const btn = document.getElementById('book-btn');
-  btn.disabled = true;
-  btn.innerHTML = '⏳ Booking...';
-  document.getElementById('submit-error').innerHTML = '';
-
+  // 2. Save the lead + send the customer the "request received" email.
   try {
     const r = await fetch('/.netlify/functions/handyman-submit', {
       method: 'POST',
@@ -1180,23 +1070,27 @@ async function submitBooking() {
         preferredTime: state.preferredTime
       })
     });
-
     if (!r.ok) {
-      const err = await r.json().catch(function() { return { error: 'Booking failed' }; });
-      throw new Error(err.error || 'Booking failed');
+      const err = await r.json().catch(function() { return { error: 'Submit failed' }; });
+      throw new Error(err.error || 'Submit failed');
     }
-
     const data = await r.json();
-    // Show success
-    document.getElementById('result-content').style.display = 'none';
-    document.getElementById('success-content').style.display = 'block';
-    document.getElementById('success-ref').textContent = data.ref;
+    clearInterval(statusInterval);
+    document.getElementById('ai-loading-card').style.display = 'none';
+    document.getElementById('result-content').style.display = 'block';
+    document.getElementById('success-ref').textContent = data.ref || '—';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
+    clearInterval(statusInterval);
     console.error(e);
-    document.getElementById('submit-error').innerHTML = '<div class="error-box">' + (e.message || 'Booking failed. Please try calling us at (332) 277-0990') + '</div>';
-    btn.disabled = false;
-    btn.innerHTML = '📅 Book Appointment';
+    document.getElementById('ai-loading-card').innerHTML =
+      '<div style="text-align:center;padding:40px 20px">' +
+      '<div style="font-size:48px;margin-bottom:12px">⚠️</div>' +
+      '<div class="ai-status">Could not send your request</div>' +
+      '<div class="ai-substatus" style="margin-bottom:20px">' + (e.message || 'Please try again') + '</div>' +
+      '<button class="btn btn-primary" onclick="submitRequest()">Try Again</button>' +
+      ' <button class="btn btn-secondary" onclick="goToStep(4)">Edit Details</button>' +
+      '</div>';
   }
 }
 
