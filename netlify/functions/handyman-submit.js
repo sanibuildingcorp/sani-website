@@ -468,7 +468,7 @@ async function sendCustomerEmail(booking) {
       </div>
     ` : ""}
 
-    <p style="font-size:14px;color:#555;line-height:1.6;margin-top:24px"><strong>Next steps:</strong> Our estimator is preparing your professional estimate. You'll receive it shortly — typically within 24 hours — and we'll call to confirm scheduling.</p>
+    <p style="font-size:14px;color:#555;line-height:1.6;margin-top:24px"><strong>Next steps:</strong> Our estimator is preparing your professional estimate. You'll receive it shortly, and we'll call to confirm scheduling.</p>
 
     <p style="font-size:13px;color:#777;margin-top:20px">Questions? Reply to this email or call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
 
