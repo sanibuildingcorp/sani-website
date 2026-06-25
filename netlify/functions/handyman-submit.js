@@ -440,10 +440,10 @@ async function sendCustomerEmail(booking) {
   <div style="background:#fff;padding:30px 28px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 12px 12px">
     <h1 style="color:#0d1b2a;font-size:22px;margin:0 0 14px">Hi ${esc(firstName)},</h1>
 
-    <p style="font-size:15px;color:#555;line-height:1.6">Thank you for booking with Sani Building Corp! We've received your request and our team will review it shortly.</p>
+    <p style="font-size:15px;color:#555;line-height:1.6">Thank you for reaching out to Sani Building Corp! Your request has been received and analyzed by our AI — our estimator is now preparing your professional estimate.</p>
 
     <div style="background:#faf8f4;border-radius:10px;padding:18px;margin:20px 0">
-      <div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:10px">Your Booking</div>
+      <div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:10px">Your Request</div>
       <div style="font-size:14px;color:#333;line-height:1.8">
         <strong>Service:</strong> ${esc(booking.service_name)}<br>
         <strong>Reference:</strong> ${esc(booking.ref)}<br>
@@ -452,12 +452,12 @@ async function sendCustomerEmail(booking) {
     </div>
 
     <div style="background:#e8f5e8;border-left:4px solid #2ecc71;padding:16px 18px;margin:20px 0;border-radius:0 8px 8px 0">
-      <div style="font-size:11px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:8px">💰 Estimate</div>
-      <div style="font-size:14px;color:#333;line-height:1.7">
-        ⏱ Time: <strong>${booking.estimated_time_min}-${booking.estimated_time_max} hours</strong><br>
-        💵 Labor: <strong>$${booking.estimated_labor_min}-$${booking.estimated_labor_max}</strong><br>
-        🔧 Materials: <strong>$${booking.estimated_material_min}-$${booking.estimated_material_max}</strong>
-        ${booking.deposit_required ? `<br>💳 Deposit: <strong>$${booking.deposit_amount}</strong> (helps secure your appointment)` : ""}
+      <div style="font-size:11px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:8px">✓ Analyzed by our AI</div>
+      <div style="font-size:14px;color:#333;line-height:1.9">
+        ✓ Damage identified<br>
+        ✓ Materials estimated<br>
+        ✓ Labor time estimated<br>
+        ✓ Sent to our estimator for final review
       </div>
     </div>
 
@@ -468,7 +468,7 @@ async function sendCustomerEmail(booking) {
       </div>
     ` : ""}
 
-    <p style="font-size:14px;color:#555;line-height:1.6;margin-top:24px"><strong>Next steps:</strong> We'll call you within 24 hours to confirm details and schedule your appointment.</p>
+    <p style="font-size:14px;color:#555;line-height:1.6;margin-top:24px"><strong>Next steps:</strong> Our estimator is preparing your professional estimate. You'll receive it shortly — typically within 24 hours — and we'll call to confirm scheduling.</p>
 
     <p style="font-size:13px;color:#777;margin-top:20px">Questions? Reply to this email or call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
 
@@ -485,7 +485,7 @@ async function sendCustomerEmail(booking) {
     to: [recipient],
     bcc: [contractorEmail],
     reply_to: contractorEmail,
-    subject: `Booking Received: ${booking.service_name} · ${booking.ref}`,
+    subject: `Request Received: ${booking.service_name} · ${booking.ref}`,
     html: html
   });
 }
