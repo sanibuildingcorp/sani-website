@@ -172,9 +172,12 @@ async function sendCustomerConfirmationEmail({ booking, agreement, displayPrice,
 
   const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
 
-  const canSendToCustomer = booking.customer_email && booking.customer_email.toLowerCase() === contractorEmail.toLowerCase();
-  const recipient = canSendToCustomer ? booking.customer_email : contractorEmail;
-  const prefix = canSendToCustomer ? "" : `[FORWARD TO ${booking.customer_email}] `;
+  // Send DIRECTLY to the customer from the verified domain (estimates@sanibuildingcorp.com);
+  // contractor gets a BCC copy. Guard against a missing/mistyped customer email.
+  const custEmail = (booking.customer_email || "").trim();
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(custEmail);
+  if (!validEmail) throw new Error("Customer email missing or invalid: " + (custEmail || "(empty)"));
+  const recipient = custEmail;
 
   const firstName = (booking.customer_name || "there").split(" ")[0];
 
@@ -287,10 +290,11 @@ async function sendCustomerConfirmationEmail({ booking, agreement, displayPrice,
 </body></html>`;
 
   return await sendResend(resendKey, {
-    from: "Sani Building Corp <onboarding@resend.dev>",
+    from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
     to: [recipient],
+    bcc: [contractorEmail],
     reply_to: contractorEmail,
-    subject: `${prefix}✍️ Sign Your Service Agreement · ${booking.ref}`,
+    subject: `✍️ Sign Your Service Agreement · ${booking.ref}`,
     html: html
   });
 }
