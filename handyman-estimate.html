@@ -533,6 +533,8 @@ body {
     <div class="progress-dot" data-step="4">4</div>
     <div class="progress-line" data-line="4"></div>
     <div class="progress-dot" data-step="5">5</div>
+    <div class="progress-line" data-line="5"></div>
+    <div class="progress-dot" data-step="6">6</div>
   </div>
 
   <!-- ────────── STEP 1: SERVICE SELECTION ────────── -->
@@ -594,8 +596,21 @@ body {
     </div>
   </div>
 
-  <!-- ────────── STEP 2: PHOTOS ────────── -->
+  <!-- ────────── STEP 2: SUB-CATEGORY (what specifically) ────────── -->
   <div class="step" id="step-2">
+    <div class="card">
+      <div class="step-title">What <em>specifically</em>?</div>
+      <div class="step-sub" id="sub-sub">Pick the closest match — this helps our AI prep the right job.</div>
+      <div class="options-grid" id="subcategory-grid"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="continueFromSubcategory()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────── STEP 3: PHOTOS ────────── -->
+  <div class="step" id="step-3">
     <div class="card">
       <div class="step-title">Add <em>photos</em> of the job</div>
       <div class="step-sub">📸 Our AI reads your photos to ask the right questions and make sure we arrive with the right materials. 2–5 photos work best (any angle).</div>
@@ -610,27 +625,27 @@ body {
       <div class="photo-preview-grid" id="photo-previews"></div>
 
       <div class="btn-row">
-        <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+        <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
         <button class="btn btn-primary" onclick="continueFromPhotos()">Continue →</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 3: AI QUESTIONS (from photos) ────────── -->
-  <div class="step" id="step-3">
+  <!-- ────────── STEP 4: AI QUESTIONS (from photos) ────────── -->
+  <div class="step" id="step-4">
     <div class="card">
       <div class="step-title">A few <em>quick questions</em></div>
-      <div class="step-sub" id="step-3-sub">Loading questions...</div>
+      <div class="step-sub" id="step-4-sub">Loading questions...</div>
       <div id="questions-container"></div>
       <div class="btn-row">
-        <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+        <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
         <button class="btn btn-primary" onclick="submitQuestions()">Continue →</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 4: CONTACT INFO ────────── -->
-  <div class="step" id="step-4">
+  <!-- ────────── STEP 5: CONTACT INFO ────────── -->
+  <div class="step" id="step-5">
     <div class="card">
       <div class="step-title">Your <em>contact info</em></div>
       <div class="step-sub">So we can send your estimate and schedule with you</div>
@@ -665,17 +680,17 @@ body {
         </div>
       </div>
 
-      <div id="step-4-error"></div>
+      <div id="step-5-error"></div>
 
       <div class="btn-row">
-        <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
+        <button class="btn btn-secondary" onclick="goToStep(4)">← Back</button>
         <button class="btn btn-primary" onclick="submitRequest()">✓ Submit Request</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 5: CONFIRMATION (no price shown) ────────── -->
-  <div class="step" id="step-5">
+  <!-- ────────── STEP 6: CONFIRMATION (no price shown) ────────── -->
+  <div class="step" id="step-6">
 
     <!-- Loading state -->
     <div class="card" id="ai-loading-card">
@@ -729,6 +744,7 @@ body {
 const state = {
   service: null,
   serviceName: null,
+  subcategory: null,
   questions: [],
   answers: {},
   description: "",
@@ -764,13 +780,13 @@ function goToStep(n) {
 }
 
 function updateProgress(n) {
-  for (var i = 1; i <= 5; i++) {
+  for (var i = 1; i <= 6; i++) {
     var dot = document.querySelector('[data-step="' + i + '"]');
     dot.classList.remove('active', 'done');
     if (i < n) dot.classList.add('done');
     else if (i === n) dot.classList.add('active');
   }
-  for (var j = 1; j <= 4; j++) {
+  for (var j = 1; j <= 5; j++) {
     var line = document.querySelector('[data-line="' + j + '"]');
     if (line) line.classList.toggle('done', j < n);
   }
@@ -785,12 +801,51 @@ document.querySelectorAll('.service-card').forEach(function(card) {
     this.classList.add('selected');
     state.service = this.dataset.service;
     state.serviceName = SERVICE_NAMES[state.service];
+    renderSubcategory();
     setTimeout(function() { goToStep(2); }, 250);
   });
 });
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 2: PHOTOS
+   STEP 2: SUB-CATEGORY  (what specifically — steers the AI)
+   ════════════════════════════════════════════════════════════════════ */
+const SUBCATEGORIES = {
+  "general-repairs": ["Door", "Window", "Lock", "Hinge", "Drywall", "Caulking", "Cabinet", "Shelf", "Other"],
+  "painting-touchups": ["Wall", "Ceiling", "Trim / Baseboard", "Door", "Cabinet", "Other"],
+  "furniture-assembly": ["Bed frame", "Wardrobe / Closet", "Desk", "Bookshelf", "Table", "Chair", "Dresser", "TV stand / mount", "Other"],
+  "leak-plumbing": ["Faucet", "Toilet", "Drain", "Showerhead", "Supply line", "Other"],
+  "tile-grout": ["Cracked tiles", "Loose tiles", "Regrouting", "Recaulking", "Other"],
+  "light-electrical": ["Light fixture", "Ceiling fan", "Outlet", "Switch", "Other"],
+  "full-handyman-day": ["General repairs", "Painting", "Plumbing", "Electrical", "Mixed / multiple"],
+  "property-manager": ["Turnover / make-ready", "Ongoing maintenance", "On-call repairs", "Emergency response", "Other"]
+};
+
+function renderSubcategory() {
+  state.subcategory = null;
+  document.getElementById('sub-sub').textContent = 'Service: ' + state.serviceName;
+  const grid = document.getElementById('subcategory-grid');
+  grid.innerHTML = '';
+  const opts = SUBCATEGORIES[state.service] || ['Other'];
+  opts.forEach(function(opt) {
+    const o = document.createElement('div');
+    o.className = 'option';
+    o.textContent = opt;
+    o.addEventListener('click', function() {
+      grid.querySelectorAll('.option').forEach(function(x) { x.classList.remove('selected'); });
+      o.classList.add('selected');
+      state.subcategory = opt;
+    });
+    grid.appendChild(o);
+  });
+}
+
+function continueFromSubcategory() {
+  if (!state.subcategory) { alert('Please pick what specifically needs work.'); return; }
+  goToStep(3);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   STEP 3: PHOTOS
    ════════════════════════════════════════════════════════════════════ */
 document.getElementById('photo-input').addEventListener('change', function(e) {
   const files = Array.from(e.target.files || []);
@@ -853,15 +908,15 @@ function removePhoto(i) {
 }
 
 function continueFromPhotos() {
-  goToStep(3);
+  goToStep(4);
   generateQuestions();
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 3: AI-GENERATED QUESTIONS (read from the photos)
+   STEP 4: AI-GENERATED QUESTIONS (read from the photos + sub-category)
    ════════════════════════════════════════════════════════════════════ */
 async function generateQuestions() {
-  document.getElementById('step-3-sub').textContent = 'Reading your photos…';
+  document.getElementById('step-4-sub').textContent = 'Reading your photos…';
   document.getElementById('questions-container').innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div></div>';
 
   try {
@@ -872,6 +927,7 @@ async function generateQuestions() {
       body: JSON.stringify({
         service: state.service,
         serviceName: state.serviceName,
+        subcategory: state.subcategory,
         photoBase64Array: photosForAI
       })
     });
@@ -882,14 +938,14 @@ async function generateQuestions() {
     renderQuestions();
   } catch (e) {
     console.error(e);
-    document.getElementById('step-3-sub').textContent = 'Service: ' + state.serviceName;
+    document.getElementById('step-4-sub').textContent = 'Service: ' + state.serviceName;
     document.getElementById('questions-container').innerHTML =
       '<div class="error-box">Could not load questions. Tap ← Back to retry, or call (332) 277-0990.</div>';
   }
 }
 
 function renderQuestions() {
-  document.getElementById('step-3-sub').textContent = 'Service: ' + state.serviceName;
+  document.getElementById('step-4-sub').textContent = 'Service: ' + state.serviceName + (state.subcategory ? ' · ' + state.subcategory : '');
   const container = document.getElementById('questions-container');
   container.innerHTML = '';
 
@@ -964,11 +1020,11 @@ function submitQuestions() {
     return;
   }
   if (state.answers.description) state.description = state.answers.description;
-  goToStep(4);
+  goToStep(5);
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 4: CONTACT FORM
+   STEP 5: CONTACT FORM
    ════════════════════════════════════════════════════════════════════ */
 document.querySelectorAll('#time-options .option').forEach(function(opt) {
   opt.addEventListener('click', function() {
@@ -979,7 +1035,7 @@ document.querySelectorAll('#time-options .option').forEach(function(opt) {
 });
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 5: SUBMIT REQUEST  (customer sees a confirmation, NOT a price)
+   STEP 6: SUBMIT REQUEST  (customer sees a confirmation, NOT a price)
    The AI job file is still generated + saved so it appears in the
    dashboard for the estimator to review, adjust, and send.
    ════════════════════════════════════════════════════════════════════ */
@@ -997,20 +1053,22 @@ async function submitRequest() {
   const address = document.getElementById('cust-address').value.trim();
 
   if (!name || !phone || !email || !address) {
-    document.getElementById('step-4-error').innerHTML = '<div class="error-box">Please fill in all required fields</div>';
+    document.getElementById('step-5-error').innerHTML = '<div class="error-box">Please fill in all required fields</div>';
     return;
   }
   if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-    document.getElementById('step-4-error').innerHTML = '<div class="error-box">Please enter a valid email</div>';
+    document.getElementById('step-5-error').innerHTML = '<div class="error-box">Please enter a valid email</div>';
     return;
   }
-  document.getElementById('step-4-error').innerHTML = '';
+  document.getElementById('step-5-error').innerHTML = '';
 
   state.customer = { name: name, phone: phone, email: email, address: address };
   state.preferredDate = document.getElementById('cust-date').value;
 
-  goToStep(5);
-  // rebuild the loading card in case a prior error overwrote it
+  // include the sub-category as a captured answer so the dashboard shows it
+  const answersOut = Object.assign({ item: state.subcategory || '' }, state.answers);
+
+  goToStep(6);
   document.getElementById('ai-loading-card').innerHTML =
     '<div class="ai-loading"><div class="ai-spinner"></div>' +
     '<div class="ai-status" id="ai-status-text">Analyzing your photos...</div>' +
@@ -1040,7 +1098,8 @@ async function submitRequest() {
       body: JSON.stringify({
         service: state.service,
         serviceName: state.serviceName,
-        answers: state.answers,
+        subcategory: state.subcategory,
+        answers: answersOut,
         photoBase64Array: photosForAI,
         urgency: state.urgency,
         description: state.description
@@ -1061,8 +1120,9 @@ async function submitRequest() {
         customer: state.customer,
         service: state.service,
         serviceName: state.serviceName,
+        subcategory: state.subcategory,
         urgency: state.urgency,
-        answers: state.answers,
+        answers: answersOut,
         description: state.description,
         photos: state.photos,
         aiResult: state.aiResult,
@@ -1089,7 +1149,7 @@ async function submitRequest() {
       '<div class="ai-status">Could not send your request</div>' +
       '<div class="ai-substatus" style="margin-bottom:20px">' + (e.message || 'Please try again') + '</div>' +
       '<button class="btn btn-primary" onclick="submitRequest()">Try Again</button>' +
-      ' <button class="btn btn-secondary" onclick="goToStep(4)">Edit Details</button>' +
+      ' <button class="btn btn-secondary" onclick="goToStep(5)">Edit Details</button>' +
       '</div>';
   }
 }
