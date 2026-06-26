@@ -97,5 +97,13 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 /renovation-contractor-staten-island.html  /renovation-contractor-staten-island  301!
 /renovation-contractor-suffolk-county.html /renovation-contractor-suffolk-county 301!
 
+# ─── Old Wix URLs (consolidate signal / remove 404s) ───
+/book-online                             /contact                            301
+/services-4                              /services                           301
+/water-damage-repairs                    /water-damage                       301
+/blog                                    /                                   301
+/service-page/*                          /services                           301
+/service-page                            /services                           301
+
 # ─── 404 FALLBACK (MUST BE THE LAST RULE) ───
 /*                 /404.html     404
