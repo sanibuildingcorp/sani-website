@@ -61,7 +61,7 @@
 .services-strip:hover .strip-inner{animation-play-state:paused}
 @keyframes strip-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .strip-item{position:relative;display:block;width:280px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.08);transition:all .35s;text-decoration:none;cursor:pointer;overflow:hidden;min-height:170px;background-color:#0a1628}
-.strip-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.85;transition:opacity .4s ease,transform .6s ease;z-index:0}
+.strip-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85;transition:opacity .4s ease,transform .6s ease;z-index:0}
 .strip-item::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,40,0.15) 0%,rgba(10,22,40,0.45) 55%,rgba(10,22,40,0.92) 100%);z-index:1;transition:opacity .35s}
 .strip-item:hover .strip-bg{opacity:1;transform:scale(1.08)}
 .strip-item:hover::after{background:linear-gradient(180deg,rgba(10,22,40,0.05) 0%,rgba(10,22,40,0.35) 55%,rgba(200,134,10,0.88) 100%)}
@@ -94,7 +94,7 @@
 .services-section{background:#fff}
 .svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:54px}
 .svc-card{position:relative;display:block;text-decoration:none;overflow:hidden;aspect-ratio:4/5;background:#0a1628;isolation:isolate;transition:transform .4s ease}
-.svc-bg{position:absolute;inset:0;background-size:cover;background-position:center;transition:transform .8s cubic-bezier(.2,.6,.2,1);z-index:0}
+.svc-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .8s cubic-bezier(.2,.6,.2,1);z-index:0}
 .svc-card::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,40,0) 0%,rgba(10,22,40,0) 35%,rgba(10,22,40,0.55) 70%,rgba(5,13,26,0.92) 100%);z-index:1;transition:opacity .35s;pointer-events:none}
 .svc-card::after{content:'';position:absolute;left:0;bottom:0;height:3px;width:0;background:var(--gold-light);transition:width .5s ease;z-index:3}
 .svc-card:hover .svc-bg{transform:scale(1.08)}
@@ -178,6 +178,7 @@
 .gallery-sub{font-size:16px;color:var(--gray);line-height:1.7;margin-top:18px}
 .gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:200px;gap:14px}
 .gal-item{position:relative;overflow:hidden;background-size:cover;background-position:center;cursor:pointer;transition:transform .8s cubic-bezier(.2,.6,.2,1)}
+.gal-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
 .gal-item::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(10,22,40,0.85) 100%);z-index:1;opacity:0;transition:opacity .3s}
 .gal-item:hover{transform:scale(1.02)}
 .gal-item:hover::before{opacity:1}
@@ -318,84 +319,84 @@
   <div class="services-strip">
     <div class="strip-inner">
       <a href="kitchen-renovation.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/renovation/kitchen.jpg'),url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/kitchen.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=85'">
         <div class="strip-label">Kitchen<br>Renovations</div>
       </a>
       <a href="bathroom-renovation.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/projects/marble-mosaic-shower-1.jpg')"></div>
+        <img class="strip-bg" src="images/projects/marble-mosaic-shower-1.jpg" alt="Renovation work in Staten Island - Sani Building Corp">
         <div class="strip-label">Bathroom<br>Renovations</div>
       </a>
       <a href="painting.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/projects/nyc-luxury-livingroom.jpg')"></div>
+        <img class="strip-bg" src="images/projects/nyc-luxury-livingroom.jpg" alt="Renovation work in Staten Island - Sani Building Corp">
         <div class="strip-label">Interior<br>Renovations</div>
       </a>
       <a href="services.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-1.jpg'),url('https://images.unsplash.com/photo-1592595896616-c37162298647?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-1.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1592595896616-c37162298647?w=800&q=85'">
         <div class="strip-label">Exterior<br>Renovations</div>
       </a>
       <a href="painting.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-2.jpg'),url('https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-2.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&q=85'">
         <div class="strip-label">Painting<br>Services</div>
       </a>
       <a href="flooring.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-3.jpg'),url('https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-3.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&q=85'">
         <div class="strip-label">Flooring<br>Installation</div>
       </a>
       <a href="carpentry.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-4.jpg'),url('https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-4.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=800&q=85'">
         <div class="strip-label">Carpentry<br>&amp; Millwork</div>
       </a>
       <a href="water-damage.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-5.jpg'),url('https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-5.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=85'">
         <div class="strip-label">Water Damage<br>Repair</div>
       </a>
       <a href="handyman.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-6.jpg'),url('https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-6.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=85'">
         <div class="strip-label">Handyman<br>Services</div>
       </a>
       <a href="services.html" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/projects/craftsmanship-tile-cutting.jpg')"></div>
+        <img class="strip-bg" src="images/projects/craftsmanship-tile-cutting.jpg" alt="Renovation work in Staten Island - Sani Building Corp">
         <div class="strip-label">Repairs &amp;<br>Maintenance</div>
       </a>
       <!-- duplicate for seamless loop -->
       <a href="kitchen-renovation.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/renovation/kitchen.jpg'),url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/kitchen.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=85'">
         <div class="strip-label">Kitchen<br>Renovations</div>
       </a>
       <a href="bathroom-renovation.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/projects/marble-mosaic-shower-1.jpg')"></div>
+        <img class="strip-bg" src="images/projects/marble-mosaic-shower-1.jpg" alt="Renovation work in Staten Island - Sani Building Corp">
         <div class="strip-label">Bathroom<br>Renovations</div>
       </a>
       <a href="painting.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/projects/nyc-luxury-livingroom.jpg')"></div>
+        <img class="strip-bg" src="images/projects/nyc-luxury-livingroom.jpg" alt="Renovation work in Staten Island - Sani Building Corp">
         <div class="strip-label">Interior<br>Renovations</div>
       </a>
       <a href="services.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-1.jpg'),url('https://images.unsplash.com/photo-1592595896616-c37162298647?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-1.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1592595896616-c37162298647?w=800&q=85'">
         <div class="strip-label">Exterior<br>Renovations</div>
       </a>
       <a href="painting.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-2.jpg'),url('https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-2.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&q=85'">
         <div class="strip-label">Painting<br>Services</div>
       </a>
       <a href="flooring.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-3.jpg'),url('https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-3.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&q=85'">
         <div class="strip-label">Flooring<br>Installation</div>
       </a>
       <a href="carpentry.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-4.jpg'),url('https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-4.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=800&q=85'">
         <div class="strip-label">Carpentry<br>&amp; Millwork</div>
       </a>
       <a href="water-damage.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-5.jpg'),url('https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-5.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=85'">
         <div class="strip-label">Water Damage<br>Repair</div>
       </a>
       <a href="handyman.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/renovation/gallery-6.jpg'),url('https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=85')"></div>
+        <img class="strip-bg" src="images/renovation/gallery-6.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=85'">
         <div class="strip-label">Handyman<br>Services</div>
       </a>
       <a href="services.html" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/projects/craftsmanship-tile-cutting.jpg')"></div>
+        <img class="strip-bg" src="images/projects/craftsmanship-tile-cutting.jpg" alt="Renovation work in Staten Island - Sani Building Corp">
         <div class="strip-label">Repairs &amp;<br>Maintenance</div>
       </a>
     </div>
@@ -448,7 +449,7 @@
     </div>
     <div class="svc-grid">
       <a href="bathroom-renovation.html" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/projects/marble-mosaic-shower-1.jpg')"></div>
+        <img class="svc-bg" src="images/projects/marble-mosaic-shower-1.jpg" alt="Renovation work in Staten Island - Sani Building Corp">
         <div class="svc-body">
           <span class="svc-num">01 — BATHROOM</span>
           <h3 class="svc-title">Bathroom<br>Renovation</h3>
@@ -456,7 +457,7 @@
         </div>
       </a>
       <a href="kitchen-renovation.html" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/renovation/kitchen.jpg'),url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=85')"></div>
+        <img class="svc-bg" src="images/renovation/kitchen.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=85'">
         <div class="svc-body">
           <span class="svc-num">02 — KITCHEN</span>
           <h3 class="svc-title">Kitchen<br>Renovation</h3>
@@ -464,7 +465,7 @@
         </div>
       </a>
       <a href="painting.html" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/renovation/gallery-2.jpg'),url('https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1200&q=85')"></div>
+        <img class="svc-bg" src="images/renovation/gallery-2.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1200&q=85'">
         <div class="svc-body">
           <span class="svc-num">03 — PAINTING</span>
           <h3 class="svc-title">Painting<br>Services</h3>
@@ -472,7 +473,7 @@
         </div>
       </a>
       <a href="flooring.html" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/renovation/gallery-3.jpg'),url('https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1200&q=85')"></div>
+        <img class="svc-bg" src="images/renovation/gallery-3.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1200&q=85'">
         <div class="svc-body">
           <span class="svc-num">04 — FLOORING</span>
           <h3 class="svc-title">Flooring<br>Installation</h3>
@@ -480,7 +481,7 @@
         </div>
       </a>
       <a href="carpentry.html" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/renovation/gallery-4.jpg'),url('https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=1200&q=85')"></div>
+        <img class="svc-bg" src="images/renovation/gallery-4.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=1200&q=85'">
         <div class="svc-body">
           <span class="svc-num">05 — CARPENTRY</span>
           <h3 class="svc-title">Carpentry<br>&amp; Millwork</h3>
@@ -488,7 +489,7 @@
         </div>
       </a>
       <a href="water-damage.html" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/renovation/gallery-5.jpg'),url('https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=1200&q=85')"></div>
+        <img class="svc-bg" src="images/renovation/gallery-5.jpg" alt="Renovation work in Staten Island - Sani Building Corp" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=1200&q=85'">
         <div class="svc-body">
           <span class="svc-num">06 — RESTORATION</span>
           <h3 class="svc-title">Water Damage<br>Restoration</h3>
@@ -509,14 +510,14 @@
     </div>
 
     <div class="gallery-grid">
-      <div class="gal-item gal-large" style="background-image:url('images/projects/marble-mosaic-shower-1.jpg')"><div class="gal-overlay"><h4>Marble Mosaic Shower</h4><p>St. George Brownstone</p></div></div>
-      <div class="gal-item" style="background-image:url('images/projects/sage-floral-shower.jpg')"><div class="gal-overlay"><h4>Sage Floral Bath</h4><p>Todt Hill Estate</p></div></div>
-      <div class="gal-item" style="background-image:url('images/projects/dark-green-powder-room.jpg')"><div class="gal-overlay"><h4>Dark Green Powder</h4><p>Great Kills Home</p></div></div>
-      <div class="gal-item" style="background-image:url('images/projects/round-mirror-wood-vanity.jpg')"><div class="gal-overlay"><h4>Wood Vanity Refresh</h4><p>Tottenville Waterfront</p></div></div>
-      <div class="gal-item" style="background-image:url('images/projects/marble-tub-brass-1.jpg')"><div class="gal-overlay"><h4>Marble Soaking Tub</h4><p>New Dorp Colonial</p></div></div>
-      <div class="gal-item" style="background-image:url('images/projects/sage-tile-bathroom.jpg')"><div class="gal-overlay"><h4>Sage Tile Bath</h4><p>Eltingville Refresh</p></div></div>
-      <div class="gal-item" style="background-image:url('images/projects/grey-marble-soaking-tub.jpg')"><div class="gal-overlay"><h4>Grey Marble Suite</h4><p>Annadale Modern</p></div></div>
-      <div class="gal-item gal-large" style="background-image:url('images/projects/botanical-luxury-bath.jpg')"><div class="gal-overlay"><h4>Botanical Luxury</h4><p>South Beach Suite</p></div></div>
+      <div class="gal-item gal-large"><img class="gal-bg" src="images/projects/marble-mosaic-shower-1.jpg" alt="Marble Mosaic Shower — St. George Brownstone bathroom renovation, Staten Island - Sani Building Corp"><div class="gal-overlay"><h4>Marble Mosaic Shower</h4><p>St. George Brownstone</p></div></div>
+      <div class="gal-item"><img class="gal-bg" src="images/projects/sage-floral-shower.jpg" alt="Sage Floral Bath — Todt Hill Estate bathroom renovation, Staten Island - Sani Building Corp"><div class="gal-overlay"><h4>Sage Floral Bath</h4><p>Todt Hill Estate</p></div></div>
+      <div class="gal-item"><img class="gal-bg" src="images/projects/dark-green-powder-room.jpg" alt="Dark Green Powder — Great Kills Home bathroom renovation, Staten Island - Sani Building Corp"><div class="gal-overlay"><h4>Dark Green Powder</h4><p>Great Kills Home</p></div></div>
+      <div class="gal-item"><img class="gal-bg" src="images/projects/round-mirror-wood-vanity.jpg" alt="Wood Vanity Refresh — Tottenville Waterfront bathroom renovation, Staten Island - Sani Building Corp"><div class="gal-overlay"><h4>Wood Vanity Refresh</h4><p>Tottenville Waterfront</p></div></div>
+      <div class="gal-item"><img class="gal-bg" src="images/projects/marble-tub-brass-1.jpg" alt="Marble Soaking Tub — New Dorp Colonial bathroom renovation, Staten Island - Sani Building Corp"><div class="gal-overlay"><h4>Marble Soaking Tub</h4><p>New Dorp Colonial</p></div></div>
+      <div class="gal-item"><img class="gal-bg" src="images/projects/sage-tile-bathroom.jpg" alt="Sage Tile Bath — Eltingville Refresh bathroom renovation, Staten Island - Sani Building Corp"><div class="gal-overlay"><h4>Sage Tile Bath</h4><p>Eltingville Refresh</p></div></div>
+      <div class="gal-item"><img class="gal-bg" src="images/projects/grey-marble-soaking-tub.jpg" alt="Grey Marble Suite — Annadale Modern bathroom renovation, Staten Island - Sani Building Corp"><div class="gal-overlay"><h4>Grey Marble Suite</h4><p>Annadale Modern</p></div></div>
+      <div class="gal-item gal-large"><img class="gal-bg" src="images/projects/botanical-luxury-bath.jpg" alt="Botanical Luxury — South Beach Suite bathroom renovation, Staten Island - Sani Building Corp"><div class="gal-overlay"><h4>Botanical Luxury</h4><p>South Beach Suite</p></div></div>
     </div>
   </div>
 </section>
