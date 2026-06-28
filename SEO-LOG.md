@@ -1,86 +1,86 @@
 # SEO-LOG.md — Sani Building Corp
-Single source of truth for on-page SEO status. **Continuity protocol:** read this first every new chat. Only work PENDING / VERIFY rows during self-directed work; a direct Zura request always overrides and is done immediately regardless of status.
+Single source of truth for on-page SEO. **Continuity protocol:** read this first every new chat. Self-directed work touches only PENDING/VERIFY rows; a direct Zura request always overrides and is done immediately regardless of status.
 
-**Legend:** ✅ DONE = optimized, no action · 🔎 VERIFY = likely fine, confirm after next commit/crawl · ⏳ PENDING = known fix queued
+**Legend:** ✅ DONE · 🔎 VERIFY (confirm after commit/crawl) · ⏳ PENDING (fix queued)
 
-_Last updated: Jun 27 2026 (batch 2) — by Claude. Authority Score 7; money keywords sit page 4–8. Per Jun 2026 core update, priority is consolidating thin/duplicate pages + earning topical depth, not adding pages._
+_Last updated: Jun 27 2026 (batch 3) — by Claude. Authority Score 7; money keywords page 4–8. Priority per Jun 2026 core updates: consolidate thin/duplicate pages + topical depth, not new pages. **License rule enforced** — all "Licensed" claims stripped, "Fully insured" used._
+
+## Confirmed by Perplexity re-audit (post 21:46 commit): 5 FIXED, 0 regressions.
 
 ---
-
 ## Location pages
-| Page | URL | Status | Outstanding |
-|---|---|---|---|
-| Bronx | /renovation-contractor-bronx | ✅ DONE | **Rebuilt Jun 27** — was verbatim Nassau copy w/ cross-canonical. Now unique 755-word Bronx page, self-canonical, compliant title/meta, Bronx schema+FAQ. |
-| Brooklyn | /renovation-contractor-brooklyn | ✅ DONE | **Jun 27** — added "general contractor brooklyn" (×6) + "contractors in Brooklyn" to title/H1/body; title→48ch, meta→156ch. |
-| Manhattan | /renovation-contractor-manhattan | 🔎 VERIFY | Strong content (769w). Title 90ch + meta 260ch → trim (Tier 2). |
-| Queens | /renovation-contractor-queens | 🔎 VERIFY | Strong content (708w). Title 84ch + meta 260ch → trim. |
-| Long Island | /renovation-contractor-long-island | 🔎 VERIFY | OK (421w). Hub for Nassau/Suffolk spokes. |
-| Nassau County | /renovation-contractor-nassau-county | ⏳ PENDING | Thin (255w, 100% boilerplate). Add OG/Twitter; trim title 105ch; rebuild as differentiated spoke. **Decision pending: rebuild deep vs consolidate.** |
-| Staten Island | /renovation-contractor-staten-island | ⏳ PENDING | Thin (256w). Add OG/Twitter; trim title 98ch; rebuild deep. |
-| Suffolk County | /renovation-contractor-suffolk-county | ⏳ PENDING | Thin (272w). Add OG/Twitter; trim title 89ch; rebuild as spoke w/ town list. |
+| Page | Status | Notes |
+|---|---|---|
+| /renovation-contractor-bronx | ✅ DONE | Rebuilt unique (was Nassau copy); self-canonical; title/meta compliant; links clean. |
+| /renovation-contractor-brooklyn | ✅ DONE | "general contractor brooklyn" ×6; title 48 / meta 156; links clean. |
+| /renovation-contractor-manhattan | ✅ DONE | title 52 / meta 154; links clean. Strong content. |
+| /renovation-contractor-queens | ✅ DONE | title 49 / meta 153; links clean. Strong content. |
+| /renovation-contractor-long-island | ✅ DONE | title 54 / meta 144; links clean. LI hub. |
+| /renovation-contractor-nassau-county | 🔎 VERIFY | title 56 / meta 145 / OG added. **Still thin (~255w)** — rebuild deep OR consolidate into LI hub (decision open). |
+| /renovation-contractor-staten-island | 🔎 VERIFY | title 56 / meta 133 / OG added. Still thin — rebuild deep. |
+| /renovation-contractor-suffolk-county | 🔎 VERIFY | title 57 / meta 141 / OG added. Still thin — rebuild as spoke w/ town list. |
 
 ## Core / hub pages
-| Page | URL | Status | Outstanding |
-|---|---|---|---|
-| Homepage | / | ⏳ PENDING | H1 "&"+&lt;br&gt; cosmetic bug; add "general contractor brooklyn"; 54 internal .html links → clean URLs; title 83ch + meta 175ch trim; link to borough/stair/deck pages. |
-| Services hub | /services | ⏳ PENDING | No schema, no OG, zero H2s; links to only 6 of ~30 pages; /lobby-restoration redirects here but no lobby content. Add ItemList/Breadcrumb schema + OG + links. |
-| About | /about | ⏳ PENDING | "TrustedRenovation" spacing bug; meta 236ch trim. |
-| Contact | /contact | ⏳ PENDING | Add ContactPoint/LocalBusiness schema + OG tags. |
-| Gallery | /gallery | ⏳ PENDING | Missing canonical; absent from sitemap.xml; add ImageObject/ImageGallery schema. |
+| Page | Status | Notes |
+|---|---|---|
+| / (index) | ✅ DONE | title 54 ("General Contractor Brooklyn & NYC") / meta 144; H1 entity fixed; 54 internal links → clean URLs. |
+| /about | ✅ DONE | title 33 / meta 155; H1 spacing fixed; links clean. |
+| /contact | ✅ DONE | GeneralContractor + ContactPoint schema + OG added; links clean. |
+| /gallery | ✅ DONE | canonical + ImageGallery schema + OG added; **added to sitemap.xml**; links clean. |
+| /services | ⏳ PENDING | **Next up.** Add ItemList + BreadcrumbList schema, OG, H2 hierarchy, links to all ~30 pages. Now the /lobby-restoration redirect no longer points here. |
 
 ## Service pages
-| Page | URL | Status | Outstanding |
-|---|---|---|---|
-| Handyman | /handyman | ✅ DONE | **Jun 27** — retargeted NYC→Brooklyn; title "Brooklyn Handyman | Same-Day Service" (57ch), H1 leads Brooklyn, exact "brooklyn handyman same day" added, meta cleaned to 159ch. |
-| Bathroom Reno NYC | /bathroom-renovation | ✅ DONE | **Jun 27** — title 88→54ch, meta 238→158ch, shifted to all-borough/commercial (cannibalization reduced; already links to bklyn page). |
-| Bathroom Reno Brooklyn | /bathroom-renovation-brooklyn | 🔎 VERIFY | **Jun 27** — title 86→49ch, meta 284→154ch (sole Brooklyn target). Optional: add "bathroom remodeling brooklyn" (vol 390) to H2/body. |
-| Bathroom Reno Manhattan | /bathroom-renovation-manhattan | ✅ DONE | **Jun 27** — title 87→50ch, meta 291→153ch. |
-| Bathroom Reno Queens | /bathroom-renovation-queens | ✅ DONE | **Jun 27** — title 84→47ch, meta 283→152ch. |
-| Bathroom Floor Tile | /bathroom-floor-tile-installation | 🔎 VERIFY | Reciprocal link to bathroom-renovation. |
-| Bathroom Wall Panels | /bathroom-wall-panels | ⏳ PENDING | H1 missing "bathroom wall panels"; meta 260ch; **FAQPage schema bug — verify 7 mainEntity have @type:Question**. |
-| Kitchen Cabinets NYC | /kitchen-cabinet-installation | ✅ DONE | **Jun 27** — title 85→53ch, meta 223→146ch. |
-| Kitchen Cabinets Brooklyn/Manhattan/Queens | /kitchen-cabinet-installation-{borough} | 🔎 VERIFY | **Jun 27** — titles 88–91→56–59ch, metas 225–234→154–159ch. Still PENDING: only 1 img w/ empty alt each — add project photos + og:image + alt. |
-| Painting NYC | /painting | 🔎 VERIFY | Schema rebuilt (11Q) + visible price prior session; meta trim. |
-| Painting Brooklyn | /painting-brooklyn | 🔎 VERIFY | Meta trim. |
-| Painting Manhattan | /painting-manhattan | 🔎 VERIFY | De-duped vs brooklyn prior session; meta trim. |
-| Painting Queens | (none) | ⏳ PENDING | Coverage gap — no Queens painting page; create to match bathroom/kitchen coverage. |
-| Flooring | /flooring | 🔎 VERIFY | Schema rebuilt (8Q) prior session; meta trim. |
-| Carpentry | /carpentry | ✅ DONE | **Jun 27** — title 85→57ch & H1 front-loaded "Carpentry NYC" (vol 880, pos 51); meta 221→159ch; schema rebuilt (8Q) prior session. |
-| Water Damage | /water-damage | 🔎 VERIFY | Meta trim. |
-| Deck Building / Renovation | /deck-building, /deck-renovation | 🔎 VERIFY | Complete Twitter card (title/desc/image). |
-| Exterior Carpentry | /exterior-carpentry | 🔎 VERIFY | — |
-| Stairs ×4 | /stair-building, -renovation, -restoration, -upgrade | ⏳ PENDING | 4-way near-duplicate (same template/boroughs/FAQ). Consolidate to 1–2 or sharply differentiate. |
+| Page | Status | Notes |
+|---|---|---|
+| /handyman | ✅ DONE | Retargeted Brooklyn; title 57 / meta 159; 46 links → clean. |
+| /bathroom-renovation | ✅ DONE | title 54 / meta 158; all-borough/commercial intent; links clean. |
+| /bathroom-renovation-brooklyn | ✅ DONE | title 49 / meta 154; links clean. Sole Brooklyn target. |
+| /bathroom-renovation-manhattan | ✅ DONE | title 50 / meta 153; links clean. |
+| /bathroom-renovation-queens | ✅ DONE | title 47 / meta 152; links clean. |
+| /bathroom-floor-tile-installation | ✅ DONE | title 51 / meta 150; links clean. |
+| /bathroom-wall-panels | ✅ DONE | title 45 / meta 146; **H1 now contains "Bathroom Wall Panels"**; links clean. FAQ schema — verify 7 Q have @type. |
+| /kitchen-cabinet-installation | ✅ DONE | title 53 / meta 146; 45 links → clean. |
+| /kitchen-...-brooklyn/manhattan/queens | 🔎 VERIFY | titles 56–59 / metas 154–159; og:image + alt added. **Still need real project photos uploaded** (1 img each). |
+| /painting | ✅ DONE | title 45 / meta 146; links clean. |
+| /painting-brooklyn | ✅ DONE | title 50 / meta 147; links clean. |
+| /painting-manhattan | ✅ DONE | title 51 / meta 143; links clean. |
+| /painting-queens | ⏳ PENDING | Coverage gap — create to match bathroom/kitchen borough coverage. |
+| /flooring | ✅ DONE | title 46 / meta 150; links clean. |
+| /carpentry | ✅ DONE | "Carpentry NYC" front-loaded title/H1; meta 159; links clean. |
+| /water-damage | ✅ DONE | title 49 / meta 149; links clean. |
+| /deck-building, /deck-renovation | ✅ DONE | titles 38/40, metas 142/134; links clean. |
+| /exterior-carpentry | ✅ DONE | title 43 / meta 136; links clean. |
+| /stair-renovation, -restoration, -building | ✅ DONE | titles/metas trimmed; links clean. |
+| /stair-upgrade | ✅ DONE | links clean. **Stair ×4 still near-duplicate cluster — consolidate/differentiate (PENDING strategic).** |
 
 ## Funnel / system / tools
-| Page | URL | Status | Outstanding |
-|---|---|---|---|
-| Estimate wizard | /estimate | ⏳ PENDING | 10 H1 tags; no canonical; add noindex (funnel, not content). |
-| Review capture | /review | ⏳ PENDING | Add noindex (thin utility). |
-| Handyman estimate | /handyman-estimate | ✅ DONE | noindex set. |
-| Internal tools | /dashboard, /quote, /agreement | ✅ DONE | noindex + in robots.txt. |
-| Invoice | /invoice | 🔎 VERIFY | noindex + in robots.txt (already disallowed). |
-| Tools NOT in robots | /contract, /image-studio, /seo-content, /keyword-volumes | ✅ DONE | **Jun 27** — added all 4 to robots.txt Disallow (keyword-volumes leak closed). |
+| Page | Status | Notes |
+|---|---|---|
+| /estimate | ✅ DONE | noindex + canonical added; 10 H1 → 1 H1 (rest H2); links clean. |
+| /review | ✅ DONE | noindex added; links clean. |
+| /handyman-estimate, /dashboard, /quote, /agreement | ✅ DONE | noindex set. (dashboard div-balance −2 is known JS baseline — don't "fix".) |
+| Internal tools .html links | ⏳ LOW | contract/invoice/image-studio/seo-content/keyword-volumes still use .html internally — noindex, SEO-irrelevant, low priority. |
 
 ## Cross-site / technical
-| Item | Status | Outstanding |
+| Item | Status | Notes |
 |---|---|---|
-| Internal links use .html | ⏳ PENDING | Sitewide: every internal .html link forces a 301 hop (homepage 54, handyman 46, kitchen 45). Global find/replace to clean URLs. |
-| Meta descriptions | ⏳ PENDING | ~25 pages 200–289ch → trim to ≤160. |
-| Title tags | ⏳ PENDING | ~20 pages 75–105ch → trim to ≤60 ("{Keyword} {Borough} | Sani Building Corp"). |
-| /lobby-restoration redirect | ⏳ PENDING | Redirects to /services (1,404 GSC impressions, pos 12.5 wasted). Repoint to relevant page or restore dedicated page. |
-| robots.txt | ⏳ PENDING | Add Disallow: contract, image-studio, seo-content, keyword-volumes. |
-| sitemap.xml | ⏳ PENDING | Add /gallery. |
-| BreadcrumbList schema | ⏳ PENDING | Only on 3 pages; add sitewide to service/location pages. |
-| H1 spacing bugs | ⏳ PENDING | "&" + br (home), "TrustedRenovation" (about), stray newlines in location H1s. |
-| robots.txt + sitemap.xml validity | ✅ DONE | Verified correct (raw bytes + XML parser). Do not re-enable Cloudflare robots mgmt or add AI-bot Disallow. |
+| Internal .html links (FIX 1) | ✅ DONE (public) | **partials/menu (83→0) + footer (17→0) cleaned = sitewide nav fixed**, plus all public body pages. Only noindex tools remain. |
+| Meta descriptions ≤160 | ✅ DONE | All public pages compliant. |
+| Title tags ≤60 | ✅ DONE | All public pages compliant. |
+| /lobby-restoration redirect | ✅ DONE | Repointed /services → /renovation-contractor-manhattan (recovers 1,404 impressions). |
+| robots.txt | ✅ DONE | keyword-volumes + 3 tools blocked. |
+| sitemap.xml | ✅ DONE | /gallery added; XML valid. |
+| Nassau/Staten/Suffolk OG | ✅ DONE | OG/Twitter added all three. |
+| BreadcrumbList sitewide | ⏳ PENDING | Add to service/location pages. |
+| robots.txt + sitemap validity | ✅ DONE | Verified. Don't re-enable CF robots mgmt or AI-bot Disallow. |
 
 ---
-## Active priority queue (next)
-1. **Decide Nassau/Staten Island/Suffolk:** rebuild deep vs consolidate into Long Island hub.
-2. Trim all over-length titles (≤60) + metas (≤160) — mechanical sitewide pass.
-3. robots.txt: block keyword-volumes / image-studio / seo-content / contract.
-4. Homepage: H1 fix + "general contractor brooklyn" + internal links to clean URLs.
-5. Stair ×4 consolidation.
-6. services.html rebuild (schema + OG + H2 + link to all pages) — fixes /lobby-restoration signal too.
+## Active queue (next)
+1. **/services rebuild** (schema + OG + H2 + links to all pages).
+2. **Decide Nassau/Staten/Suffolk:** rebuild deep vs consolidate into LI hub.
+3. **Stair ×4 consolidation** (near-duplicate).
+4. /painting-queens (coverage gap).
+5. Kitchen borough real project photos (upload).
+6. BreadcrumbList schema sitewide.
 
-_After commits → Cloudflare Purge Everything → GSC Request Indexing on changed URLs → re-run Semrush._
+_After commit → Cloudflare Purge Everything → GSC Request Indexing on changed URLs → re-run Semrush._
