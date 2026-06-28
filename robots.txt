@@ -7,6 +7,10 @@ Disallow: /quote.html
 Disallow: /quote-response.html
 Disallow: /invoice.html
 Disallow: /agreement.html
+Disallow: /contract.html
+Disallow: /image-studio.html
+Disallow: /seo-content.html
+Disallow: /keyword-volumes.html
 Disallow: /.netlify/
 Disallow: /netlify/functions/
 
