@@ -16,7 +16,7 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 /about-nyc-renovation-contractor                 /about                              301
 /contact-nyc-renovation-contractor               /contact                            301
 /bathroom-renovation/tile-installation-brooklyn  /bathroom-floor-tile-installation   301
-/lobby-restoration                               /services                           301
+/lobby-restoration                               /renovation-contractor-manhattan                           301
 
 # ─── KITCHEN RENAME — old kitchen-renovation URLs → new kitchen-cabinet-installation ───
 /kitchen-renovation                       /kitchen-cabinet-installation            301
