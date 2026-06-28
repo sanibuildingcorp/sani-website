@@ -3,7 +3,7 @@ Single source of truth for on-page SEO status. **Continuity protocol:** read thi
 
 **Legend:** ✅ DONE = optimized, no action · 🔎 VERIFY = likely fine, confirm after next commit/crawl · ⏳ PENDING = known fix queued
 
-_Last updated: Jun 27 2026 — by Claude. Authority Score 7; money keywords sit page 4–8. Per Jun 2026 core update, priority is consolidating thin/duplicate pages + earning topical depth, not adding pages._
+_Last updated: Jun 27 2026 (batch 2) — by Claude. Authority Score 7; money keywords sit page 4–8. Per Jun 2026 core update, priority is consolidating thin/duplicate pages + earning topical depth, not adding pages._
 
 ---
 
@@ -32,20 +32,20 @@ _Last updated: Jun 27 2026 — by Claude. Authority Score 7; money keywords sit 
 | Page | URL | Status | Outstanding |
 |---|---|---|---|
 | Handyman | /handyman | ✅ DONE | **Jun 27** — retargeted NYC→Brooklyn; title "Brooklyn Handyman | Same-Day Service" (57ch), H1 leads Brooklyn, exact "brooklyn handyman same day" added, meta cleaned to 159ch. |
-| Bathroom Reno NYC | /bathroom-renovation | ⏳ PENDING | Cannibalizes /bathroom-renovation-brooklyn (pos ~75 for bklyn term); shift to all-borough/commercial intent; meta 238ch. |
-| Bathroom Reno Brooklyn | /bathroom-renovation-brooklyn | ⏳ PENDING | Make sole Brooklyn target; meta 284ch trim; add "bathroom remodeling brooklyn" (vol 390) to H2/body. |
-| Bathroom Reno Manhattan | /bathroom-renovation-manhattan | 🔎 VERIFY | Meta trim. |
-| Bathroom Reno Queens | /bathroom-renovation-queens | 🔎 VERIFY | Meta trim. |
+| Bathroom Reno NYC | /bathroom-renovation | ✅ DONE | **Jun 27** — title 88→54ch, meta 238→158ch, shifted to all-borough/commercial (cannibalization reduced; already links to bklyn page). |
+| Bathroom Reno Brooklyn | /bathroom-renovation-brooklyn | 🔎 VERIFY | **Jun 27** — title 86→49ch, meta 284→154ch (sole Brooklyn target). Optional: add "bathroom remodeling brooklyn" (vol 390) to H2/body. |
+| Bathroom Reno Manhattan | /bathroom-renovation-manhattan | ✅ DONE | **Jun 27** — title 87→50ch, meta 291→153ch. |
+| Bathroom Reno Queens | /bathroom-renovation-queens | ✅ DONE | **Jun 27** — title 84→47ch, meta 283→152ch. |
 | Bathroom Floor Tile | /bathroom-floor-tile-installation | 🔎 VERIFY | Reciprocal link to bathroom-renovation. |
 | Bathroom Wall Panels | /bathroom-wall-panels | ⏳ PENDING | H1 missing "bathroom wall panels"; meta 260ch; **FAQPage schema bug — verify 7 mainEntity have @type:Question**. |
-| Kitchen Cabinets NYC | /kitchen-cabinet-installation | ⏳ PENDING | Title/meta trim. |
-| Kitchen Cabinets Brooklyn/Manhattan/Queens | /kitchen-cabinet-installation-{borough} | ⏳ PENDING | Only 1 img w/ empty alt each; add project photos + og:image + alt; meta 220–232ch. |
+| Kitchen Cabinets NYC | /kitchen-cabinet-installation | ✅ DONE | **Jun 27** — title 85→53ch, meta 223→146ch. |
+| Kitchen Cabinets Brooklyn/Manhattan/Queens | /kitchen-cabinet-installation-{borough} | 🔎 VERIFY | **Jun 27** — titles 88–91→56–59ch, metas 225–234→154–159ch. Still PENDING: only 1 img w/ empty alt each — add project photos + og:image + alt. |
 | Painting NYC | /painting | 🔎 VERIFY | Schema rebuilt (11Q) + visible price prior session; meta trim. |
 | Painting Brooklyn | /painting-brooklyn | 🔎 VERIFY | Meta trim. |
 | Painting Manhattan | /painting-manhattan | 🔎 VERIFY | De-duped vs brooklyn prior session; meta trim. |
 | Painting Queens | (none) | ⏳ PENDING | Coverage gap — no Queens painting page; create to match bathroom/kitchen coverage. |
 | Flooring | /flooring | 🔎 VERIFY | Schema rebuilt (8Q) prior session; meta trim. |
-| Carpentry | /carpentry | ⏳ PENDING | Front-load "Carpentry NYC / NY carpentry" (vol 880, pos 51) in title/H1; meta 221ch; schema rebuilt (8Q) prior session. |
+| Carpentry | /carpentry | ✅ DONE | **Jun 27** — title 85→57ch & H1 front-loaded "Carpentry NYC" (vol 880, pos 51); meta 221→159ch; schema rebuilt (8Q) prior session. |
 | Water Damage | /water-damage | 🔎 VERIFY | Meta trim. |
 | Deck Building / Renovation | /deck-building, /deck-renovation | 🔎 VERIFY | Complete Twitter card (title/desc/image). |
 | Exterior Carpentry | /exterior-carpentry | 🔎 VERIFY | — |
@@ -59,7 +59,7 @@ _Last updated: Jun 27 2026 — by Claude. Authority Score 7; money keywords sit 
 | Handyman estimate | /handyman-estimate | ✅ DONE | noindex set. |
 | Internal tools | /dashboard, /quote, /agreement | ✅ DONE | noindex + in robots.txt. |
 | Invoice | /invoice | 🔎 VERIFY | noindex + in robots.txt (already disallowed). |
-| Tools NOT in robots | /contract, /image-studio, /seo-content, /keyword-volumes | ⏳ PENDING | Add to robots.txt Disallow. **keyword-volumes leaks SEO strategy — urgent.** |
+| Tools NOT in robots | /contract, /image-studio, /seo-content, /keyword-volumes | ✅ DONE | **Jun 27** — added all 4 to robots.txt Disallow (keyword-volumes leak closed). |
 
 ## Cross-site / technical
 | Item | Status | Outstanding |
