@@ -1,18 +1,34 @@
 User-agent: *
 Allow: /
 
-# ─── Block private contractor & customer pages ───
+# ─── Public, crawlable pages ───
+# /estimate, /handyman-estimate, /review use a noindex meta tag (NOT blocked here),
+# so Googlebot must be able to crawl them to actually see the noindex.
+
+# ─── Block internal/admin tools (never index — keyword-volumes leaks SEO strategy) ───
+Disallow: /dashboard
 Disallow: /dashboard.html
-Disallow: /quote.html
-Disallow: /quote-response.html
-Disallow: /invoice.html
-Disallow: /agreement.html
-Disallow: /contract.html
+Disallow: /image-studio
 Disallow: /image-studio.html
+Disallow: /seo-content
 Disallow: /seo-content.html
+Disallow: /keyword-volumes
 Disallow: /keyword-volumes.html
+
+# ─── Block private customer-document pages (opened via tokenized email links, no SEO value) ───
+Disallow: /invoice
+Disallow: /invoice.html
+Disallow: /quote
+Disallow: /quote.html
+Disallow: /quote-response
+Disallow: /quote-response.html
+Disallow: /contract
+Disallow: /contract.html
+Disallow: /agreement
+Disallow: /agreement.html
+
+# ─── Block Netlify internals ───
 Disallow: /.netlify/
 Disallow: /netlify/functions/
 
-# ─── Sitemap ───
 Sitemap: https://www.sanibuildingcorp.com/sitemap.xml
