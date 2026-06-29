@@ -352,6 +352,11 @@ body::after{content:none}
   .mb-tx b{font-size:13px}
 }
 @media(min-width:761px){.hero-split{min-height:620px}}
+
+/* ── COMMERCIAL CLIENTS GRID ── */
+.comm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:900px){.comm-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:580px){.comm-grid{grid-template-columns:1fr}}
 </style>
 <link rel="stylesheet" href="partials/site.css">
 
@@ -371,7 +376,7 @@ body::after{content:none}
         <div><b>4.9 Google Rating</b><em>Based on 64 Reviews</em></div>
       </div>
       <h1>Handyman Services for <em>NYC Businesses</em><br><span class="small">Homes · Restaurants · Offices · Retail · Buildings</span></h1>
-      <p class="sub-new">Need a Brooklyn handyman same day? We’re your local handyman across Brooklyn &amp; all NYC — drywall repair, TV mounting, furniture assembly, door &amp; tile fixes and more for homes, offices, stores &amp; restaurants. Any issue, one call, fixed same day.</p>
+      <p class="sub-new">Restaurants, retail stores, offices, clinics, property managers and homeowners across NYC — one team for every repair. Doors, drywall, tile, plumbing fixtures, carpentry &amp; more. We work nights &amp; weekends so your business never loses a day.</p>
       <div class="hero-ctas">
         <a href="/handyman-estimate" class="cta-big cta-gold">
           <span class="cta-ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
@@ -472,7 +477,7 @@ body::after{content:none}
       <h2 style="font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,46px);font-weight:700;color:#fff;line-height:1.1;margin-bottom:16px">NYC Businesses Trust Us<br><em style="color:#f5c842;font-style:italic">For Every Repair</em></h2>
       <p style="font-size:16px;color:rgba(255,255,255,.65);max-width:580px;margin:0 auto;line-height:1.75">From a Sephora fitting room to a restaurant bathroom to a 20-unit building lobby — we handle the repairs that keep your business running. Nights, weekends, zero disruption.</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+    <div class="comm-grid">
       <div style="background:rgba(255,255,255,.05);border:1px solid rgba(240,165,0,.15);border-radius:14px;padding:28px 24px">
         <div style="font-size:28px;margin-bottom:12px">🍽️</div>
         <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#fff;margin-bottom:10px">Restaurants &amp; Cafés</div>
