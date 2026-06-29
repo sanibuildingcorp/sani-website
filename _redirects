@@ -67,6 +67,10 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 /kitchen-cabinet-installation-queens.html     /kitchen-cabinet-installation-queens     301!
 /bathroom-renovation.html                /bathroom-renovation                301!
 
+
+# ─── NEW TILE PAGES (added 2026-06-29) ───
+/tile-grouting-restoration.html     /tile-grouting-restoration      301!
+/commercial-tile-installation.html  /commercial-tile-installation   301!
 # Bathroom SEO pages
 /bathroom-floor-tile-installation.html   /bathroom-floor-tile-installation   301!
 /bathroom-wall-panels.html               /bathroom-wall-panels               301!
