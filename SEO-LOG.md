@@ -84,3 +84,8 @@ _Last updated: Jun 27 2026 (batch 3) — by Claude. Authority Score 7; money key
 6. BreadcrumbList schema sitewide.
 
 _After commit → Cloudflare Purge Everything → GSC Request Indexing on changed URLs → re-run Semrush._
+
+## Jul 3 — Backlink analysis + Citation Pack
+- Backlink truth: ~200 of 218 links are scraper spam (auto "aged domains" bot pages) — Google ignores them; do NOT disavow. Real genuine links ≈ 3 follow + few directories. Authority Score 7 confirmed as THE ranking ceiling.
+- Lost vital link: americasrenovators.com "Best Home Remodelers in Brooklyn" broke May 23 — restore it (in pack, item #1).
+- **CITATION-PACK.md delivered** — exact NAP block, categories, short/medium/long descriptions (no "licensed"), services list, 12-directory priority order (Yelp→Houzz→Angi→Thumbtack→Bing→Apple→Nextdoor→BBB→Foursquare→Porch/BuildZoom→Brooklyn Chamber), tracking checklist. This is Pillar 3 execution — highest-leverage remaining action alongside photo uploads.
