@@ -35,6 +35,7 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 
 # ─── OLD WIX BLOG/PORTFOLIO PATHS ───
 /blog/*            /             301
+/post/*            /             301
 /portfolio         /gallery      301
 /projects          /gallery      301
 
