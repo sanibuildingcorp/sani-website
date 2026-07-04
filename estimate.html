@@ -669,6 +669,52 @@ function renderAnalysisCard(a,idx){
   return '<div class="analysis-card'+sc+'"><div class="analysis-card-header">'+(a._photoThumb?'<div class="analysis-photo-thumb"><img src="'+esc(a._photoThumb)+'" alt=""></div>':'')+'<div class="analysis-card-title"><div class="analysis-eyebrow">Photo '+(idx+1)+' · Detected</div><div class="analysis-detected">'+esc(a.detected||'—')+'</div><span class="confidence-pill '+(a.confidence||'low')+'"><span class="confidence-dot"></span>'+cl+' Confidence</span></div></div>'+(a.description?'<div class="analysis-row"><span class="analysis-row-label">What we see</span><span class="analysis-row-value">'+esc(a.description)+'</span></div>':'')+(a.recommendedAction?'<div class="analysis-row"><span class="analysis-row-label">Recommended</span><span class="analysis-row-value action">'+esc(a.recommendedAction)+'</span></div>':'')+(a.estimatedComplexity?'<div class="analysis-row"><span class="analysis-row-label">Complexity</span><span class="analysis-row-value">'+esc(a.estimatedComplexity.charAt(0).toUpperCase()+a.estimatedComplexity.slice(1))+'</span></div>':'')+sb+'</div>';
 }
 renderServices();
+
+/* ===== SBC FUNNEL TRACKING (GA4) — source page + step-by-step + abandon + complete ===== */
+(function(){
+  var src='direct';
+  try{
+    var r=document.referrer;
+    if(r){var u=new URL(r);src=(u.hostname.indexOf('sanibuildingcorp')>-1)?(u.pathname||'/'):('external:'+u.hostname);}
+    var saved=sessionStorage.getItem('sbc_src');
+    if(saved){src=saved;}else{sessionStorage.setItem('sbc_src',src);}
+  }catch(e){}
+  function ev(name,p){
+    try{p=p||{};p.source_page=src;p.transport_type='beacon';
+    if(typeof gtag==='function'){gtag('event',name,p);}
+    else{setTimeout(function(){if(typeof gtag==='function')gtag('event',name,p);},1500);}}catch(e){}
+  }
+  function alertZura(type,step){
+    try{
+      var payload={type:type,step:step,source:src,
+        name:(window.formData&&formData.name)||'',
+        phone:(window.formData&&formData.phone)||'',
+        service:(window.formData&&formData.serviceLabel)||''};
+      var url='/.netlify/functions/form-alert';
+      if(type==='abandon'&&navigator.sendBeacon){
+        navigator.sendBeacon(url,new Blob([JSON.stringify(payload)],{type:'application/json'}));
+      }else{
+        fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(function(){});
+      }
+    }catch(e){}
+  }
+  var maxStep=1,started=false,completed=false;
+  var _go=goToStep;
+  window.goToStep=function(s){
+    _go(s);
+    if(typeof s==='number'){
+      if(!started&&s>1){started=true;ev('estimate_start',{step_number:s});alertZura('start',s);}
+      if(s>maxStep)maxStep=s;
+      ev('estimate_step',{step_number:s});
+    }else if(s==='success'&&!completed){
+      completed=true;ev('estimate_complete',{step_number:maxStep});
+    }
+  };
+  ev('estimate_view',{step_number:1});
+  window.addEventListener('pagehide',function(){
+    if(started&&!completed){ev('estimate_abandon',{step_number:maxStep});alertZura('abandon',maxStep);}
+  });
+})();
 </script>
 </body>
 </html>
