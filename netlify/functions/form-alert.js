@@ -28,7 +28,10 @@ exports.handler = async (event) => {
 
   const resendKey = process.env.RESEND_API_KEY;
   const to = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
-  if (!resendKey) return { statusCode: 200, body: "no key" };
+  if (!resendKey) {
+    return { statusCode: 200, headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ result: "FAILED", error: "RESEND_API_KEY env var is missing in Netlify" }) };
+  }
 
   const nyTime = new Date().toLocaleString("en-US", {
     timeZone: "America/New_York",
@@ -81,15 +84,32 @@ exports.handler = async (event) => {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
+  let sendResult = { sent: false, error: null };
   try {
-    await sendResend(resendKey, {
+    const r = await sendResend(resendKey, {
       from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
       to: [to],
       subject: subject,
       html: html,
     });
+    sendResult.sent = true;
+    sendResult.resend = r.slice(0, 200);
   } catch (e) {
+    sendResult.error = e.message;
     console.error("form-alert email failed:", e.message);
+  }
+  if (type === "test") {
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        test: true,
+        emailSentTo: to,
+        fromAddress: "estimates@sanibuildingcorp.com",
+        result: sendResult.sent ? "SUCCESS — check inbox AND spam/Promotions" : "FAILED",
+        error: sendResult.error,
+      }, null, 2),
+    };
   }
   return { statusCode: 200, body: "ok" };
 };
