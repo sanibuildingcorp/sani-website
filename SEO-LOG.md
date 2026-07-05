@@ -112,3 +112,9 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 - NEW netlify/functions/form-alert.js — emails Zura instantly via Resend (from [estimates@sanibuildingcorp.com](mailto:estimates@sanibuildingcorp.com) to CONTRACTOR_EMAIL/[sanibuildingcorp@gmail.com](mailto:sanibuildingcorp@gmail.com)): 🟢 form START (source page + step) and 🟡 ABANDON (quit step + any partial name/phone/service = callable partial leads). Uses existing env vars, no setup needed.
 - estimate.html tracker wired: start → fetch keepalive; abandon → sendBeacon. One alert per session each. GA4 events unchanged.
 - Dashboard already logs visits via track-visit.js → Supabase (no change needed).
+
+## Jul 3 — Visit alerts + alert debug tools
+- Debug finding: estimate.html tracker + form-alert.js ARE committed correctly; test failure was likely Cloudflare cache or Gmail spam. Added direct test URL to isolate.
+- **form-alert.js v2:** GET ?test=1 → sends ✅ test email (browser-openable, bypasses front-end entirely); new type "visit" (👀 email with page + referrer).
+- **partials/site.js:** appended visit-alert IIFE — one 👀 email per visitor session, sitewide. Owner silencing: open any page with **?owner=1** once per device (stored in localStorage). Internal tool pages excluded. GA4/menu/footer verified intact, node-checked.
+- Volume note: expect roughly 5–20 visit emails/day at current traffic.
