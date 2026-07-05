@@ -7,14 +7,19 @@
 const https = require("https");
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") {
+  let data = {};
+  if (event.httpMethod === "GET") {
+    if ((event.queryStringParameters || {}).test !== "1") {
+      return { statusCode: 405, body: "Method Not Allowed" };
+    }
+    data = { type: "test" };
+  } else if (event.httpMethod === "POST") {
+    try { data = JSON.parse(event.body || "{}"); } catch (e) { data = {}; }
+  } else {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  let data = {};
-  try { data = JSON.parse(event.body || "{}"); } catch (e) { data = {}; }
-
-  const type = data.type === "abandon" ? "abandon" : "start";
+  const type = ["abandon","visit","test"].includes(data.type) ? data.type : "start";
   const src = String(data.source || "direct").slice(0, 120);
   const step = parseInt(data.step, 10) || 1;
   const name = String(data.name || "").slice(0, 80);
@@ -31,15 +36,23 @@ exports.handler = async (event) => {
     hour: "numeric", minute: "2-digit",
   });
 
+  const page = String(data.page || "").slice(0, 120);
   const isStart = type === "start";
-  const subject = isStart
-    ? "\uD83D\uDFE2 Someone started the estimate form"
-    : "\uD83D\uDFE1 Estimate form abandoned at step " + step;
+  const subject =
+    type === "test" ? "\u2705 TEST — form-alert is working" :
+    type === "visit" ? "\uD83D\uDC40 Visitor on your website — " + (page || "/") :
+    isStart ? "\uD83D\uDFE2 Someone started the estimate form"
+            : "\uD83D\uDFE1 Estimate form abandoned at step " + step;
 
   const rows = [];
   rows.push(row("Time", nyTime + " (NY)"));
-  rows.push(row("Came from page", src));
-  rows.push(row(isStart ? "Reached step" : "Quit at step", String(step) + " of 9"));
+  if (type === "visit") {
+    rows.push(row("Page they opened", page || "/"));
+    rows.push(row("Came from", src));
+  } else if (type !== "test") {
+    rows.push(row("Came from page", src));
+    rows.push(row(isStart ? "Reached step" : "Quit at step", String(step) + " of 9"));
+  }
   if (service) rows.push(row("Service picked", service));
   if (name) rows.push(row("Name (partial lead!)", name));
   if (phone) rows.push(row("Phone (partial lead!)", phone));
@@ -50,7 +63,9 @@ exports.handler = async (event) => {
     '<span style="color:#f0a500;font-size:16px;font-weight:bold">Sani Building Corp — Live Form Alert</span></div>' +
     '<div style="border:1px solid #e5e5e5;border-top:0;border-radius:0 0 10px 10px;padding:20px 22px">' +
     '<p style="font-size:15px;margin:0 0 14px"><strong>' +
-    (isStart ? "A visitor just started filling the free-estimate form." :
+    (type === "test" ? "This is a test. Email delivery from form-alert works — alerts will arrive at this inbox." :
+     type === "visit" ? "Someone is browsing your website right now." :
+     isStart ? "A visitor just started filling the free-estimate form." :
       "A visitor left the estimate form without finishing.") +
     "</strong></p><table style=\"font-size:14px;border-collapse:collapse;width:100%\">" +
     rows.join("") + "</table>" +
