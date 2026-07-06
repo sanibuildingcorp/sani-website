@@ -978,6 +978,7 @@ function getStatusPill(status) {
   switch(status) {
     case "accepted": return {className:"approved",text:"Approved"};
     case "declined": return {className:"declined",text:"Declined"};
+    case "question": return {className:"viewed",  text:"Question sent"};
     case "opened":   return {className:"viewed",  text:"Viewed"};
     case "sent":     return {className:"pending",  text:"Pending"};
     default:         return {className:"pending",  text:"Pending"};
@@ -1444,12 +1445,13 @@ async function submitAccept() {
 
 async function submitDecline() {
   const reason=document.getElementById("decline-reason").value.trim();
+  if (!reason) { alert("Please tell us what you'd like changed or ask your question."); return; }
   const btn=document.getElementById("confirm-decline");
   btn.disabled=true; btn.textContent="Submitting…";
   try {
     const r=await fetch("/.netlify/functions/quote-response",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ref,action:"decline",declineReason:reason}),
+      body:JSON.stringify({ref,action:"question",questionText:reason}),
     });
     if (!r.ok) throw new Error("Failed");
     closeModals(); showSuccess("declined");
