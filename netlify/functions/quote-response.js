@@ -14,11 +14,11 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { ref, action, signature, declineReason, finishSelections, materialsSelections, finalTotal } = JSON.parse(event.body);
+    const { ref, action, signature, declineReason, questionText, finishSelections, materialsSelections, finalTotal } = JSON.parse(event.body);
     if (!ref || !action) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref or action" }) };
     }
-    if (action !== "accept" && action !== "decline" && action !== "review") {
+    if (action !== "accept" && action !== "decline" && action !== "review" && action !== "question") {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Invalid action" }) };
     }
 
@@ -41,6 +41,10 @@ exports.handler = async function (event) {
       if (finishSelections) record.customerSelections = finishSelections;
       if (materialsSelections) record.customerMaterialSelections = materialsSelections;
       if (finalTotal != null) record.customerFinalTotal = finalTotal;
+    } else if (action === "question") {
+      record.status = "question";
+      record.questionAskedAt = new Date().toISOString();
+      record.customerQuestion = questionText || "";
     } else {
       record.status = "declined";
       record.declinedAt = new Date().toISOString();
@@ -55,7 +59,7 @@ exports.handler = async function (event) {
 
     if (resendKey) {
       try {
-        await notifyContractor(resendKey, contractorEmail, record, action, signature, declineReason);
+        await notifyContractor(resendKey, contractorEmail, record, action, signature, declineReason, questionText);
       } catch (e) {
         console.error("Notification failed:", e.message);
       }
@@ -68,21 +72,24 @@ exports.handler = async function (event) {
   }
 };
 
-async function notifyContractor(resendKey, contractorEmail, record, action, signature, declineReason) {
+async function notifyContractor(resendKey, contractorEmail, record, action, signature, declineReason, questionText) {
   const customer = record.customer || {};
   const est = record.estimate || {};
   const total = (record.customerFinalTotal != null) ? Number(record.customerFinalTotal) : calculateTotal(est);
 
   const isAccept = action === "accept";
   const isReview = action === "review";
-  const color = isAccept ? "#2ecc71" : (isReview ? "#c9a84c" : "#e74c3c");
-  const emoji = isAccept ? "✅" : (isReview ? "🛠" : "❌");
-  const title = isAccept ? "QUOTE ACCEPTED" : (isReview ? "FINISH SELECTIONS — REVIEW NEEDED" : "QUOTE DECLINED");
+  const isQuestion = action === "question";
+  const color = isAccept ? "#2ecc71" : ((isReview || isQuestion) ? "#c9a84c" : "#e74c3c");
+  const emoji = isAccept ? "\u2705" : (isReview ? "\ud83d\udee0" : (isQuestion ? "\ud83d\udcac" : "\u274c"));
+  const title = isAccept ? "QUOTE ACCEPTED" : (isReview ? "FINISH SELECTIONS \u2014 REVIEW NEEDED" : (isQuestion ? "CUSTOMER QUESTION \u2014 QUOTE STILL OPEN" : "QUOTE DECLINED"));
   const headline = isAccept
     ? (escapeHtml(customer.name || "Customer") + " accepted the quote")
     : (isReview
-      ? (escapeHtml(customer.name || "Customer") + " chose finishes — review &amp; resend")
-      : (escapeHtml(customer.name || "Customer") + " declined the quote"));
+      ? (escapeHtml(customer.name || "Customer") + " chose finishes \u2014 review & resend")
+      : (isQuestion
+        ? (escapeHtml(customer.name || "Customer") + " replied with a question before accepting")
+        : (escapeHtml(customer.name || "Customer") + " declined the quote")));
 
   // Chosen finishes list (review + accept)
   let finishRows = "";
@@ -118,7 +125,8 @@ async function notifyContractor(resendKey, contractorEmail, record, action, sign
     <tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Address</strong></td><td style="padding:8px 12px">${escapeHtml(customer.address || "—")}</td></tr>
     <tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>${isReview ? "New total (their picks)" : "Total"}</strong></td><td style="padding:8px 12px;color:${color};font-weight:700;font-size:16px">$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td></tr>
     ${isAccept && signature ? `<tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Signature</strong></td><td style="padding:8px 12px;font-style:italic">${escapeHtml(signature)}</td></tr>` : ""}
-    ${!isAccept && !isReview && declineReason ? `<tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Reason</strong></td><td style="padding:8px 12px">${escapeHtml(declineReason)}</td></tr>` : ""}
+    ${isQuestion && questionText ? `<tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Their question</strong></td><td style="padding:8px 12px;font-size:15px;line-height:1.5">${escapeHtml(questionText)}</td></tr>` : ""}
+    ${!isAccept && !isReview && !isQuestion && declineReason ? `<tr><td style="padding:8px 12px;background:#faf8f4;color:#888"><strong>Reason</strong></td><td style="padding:8px 12px">${escapeHtml(declineReason)}</td></tr>` : ""}
   </table>
 
   ${isAccept ? `<div style="background:#e8f4ed;border-left:4px solid #2ecc71;padding:14px 18px;margin:20px 0;font-size:14px">
@@ -127,8 +135,12 @@ async function notifyContractor(resendKey, contractorEmail, record, action, sign
   ${isReview ? `<div style="background:#fbf6e8;border-left:4px solid #c9a84c;padding:14px 18px;margin:20px 0;font-size:14px">
     <strong>Action needed:</strong> Open the dashboard, apply the customer's choices, adjust labor if needed, then re-send the quote for their final approval.
   </div>` : ""}
+  ${isQuestion ? `<div style="background:#fbf6e8;border-left:4px solid #c9a84c;padding:14px 18px;margin:20px 0;font-size:14px">
+    <strong>This is NOT a decline.</strong> The customer has a question before accepting &mdash; reply or call them, then update &amp; re-send the quote if needed. Their quote link is still active.
+  </div>` : ""}
 
   <div style="text-align:center;margin-top:24px">
+    ${isQuestion ? `<a href="mailto:${escapeHtml(customer.email)}?subject=Re: your question about quote ${escapeHtml(record.ref)}" style="display:inline-block;background:#0d1b2a;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;margin:4px">&#9993;&#65039; Reply to ${escapeHtml((customer.name || "").split(" ")[0])}</a>` : ""}
     <a href="tel:${escapeHtml(customer.phone)}" style="display:inline-block;background:#c9a84c;color:#0d1b2a;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;margin:4px">📞 Call ${escapeHtml((customer.name || "").split(" ")[0])}</a>
   </div>
 </div>
@@ -138,7 +150,7 @@ async function notifyContractor(resendKey, contractorEmail, record, action, sign
     from: "Sani Building Corp <onboarding@resend.dev>",
     to: [contractorEmail],
     reply_to: customer.email,
-    subject: `${emoji} ${isAccept ? "ACCEPTED" : (isReview ? "REVIEW NEEDED" : "DECLINED")}: ${customer.name} — ${est.projectTitle || record.request?.service} (${record.ref})`,
+    subject: `${emoji} ${isAccept ? "ACCEPTED" : (isReview ? "REVIEW NEEDED" : (isQuestion ? "QUESTION (still open)" : "DECLINED"))}: ${customer.name} — ${est.projectTitle || record.request?.service} (${record.ref})`,
     html,
   });
 }
