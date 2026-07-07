@@ -121,3 +121,6 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 
 ## Image architecture — SPLIT (Jul 7 2026)
 All shared image paths split to per-page unique paths (`images/<page-slug>/<file>`, homepage=`images/home/`). 364 refs rewritten across 39 pages; 242 clone pairs. One-time `clone-images.js` (?key=sani-split-2026) clones existing photos to new paths in ONE commit via git tree API, then delete the function. Every page now fully independent — uploads in Image Studio affect only that page. Empty slots stay empty (photo upload still #1 pending item). Image Studio bulk upload + auto-compress (~120KB target) live.
+
+## Thin-content fix (Jul 7 2026)
+Semrush Jul 7: Health 95% (+1). Fixed low word count / low text-HTML ratio: contact 169→416w, services 180→413w, gallery 183→408w (design-matched content sections, residential+commercial, Manhattan-first, insured). Remaining 130 "broken internal images" = empty per-page slots after split → Zura bulk-uploading photos via Image Studio. 2 "blocked from crawling" + 2 "one internal link" pages: review next session.
