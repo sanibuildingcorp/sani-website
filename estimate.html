@@ -699,11 +699,24 @@ renderServices();
     }catch(e){}
   }
   var maxStep=1,started=false,completed=false;
+  function markStart(step){
+    if(started)return;
+    started=true;
+    ev('estimate_start',{step_number:step});
+    alertZura('start',step);
+  }
+  /* fire "start" on the FIRST touch of step 1 — any tap or typing inside the form */
+  document.addEventListener('DOMContentLoaded',function(){
+    var f=document.querySelector('.estimate-wrap,#estimate-form,form')||document.body;
+    ['pointerdown','input','change'].forEach(function(evt){
+      f.addEventListener(evt,function(){markStart(maxStep||1);},{once:false,passive:true});
+    });
+  });
   var _go=goToStep;
   window.goToStep=function(s){
     _go(s);
     if(typeof s==='number'){
-      if(!started&&s>1){started=true;ev('estimate_start',{step_number:s});alertZura('start',s);}
+      markStart(s);
       if(s>maxStep)maxStep=s;
       ev('estimate_step',{step_number:s});
     }else if(s==='success'&&!completed){
