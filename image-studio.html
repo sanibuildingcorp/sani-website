@@ -112,6 +112,9 @@
 .bulk-go:disabled{opacity:.6}
 .bulk-clear{background:none;border:1px solid rgba(255,255,255,.3);color:#cbd5e1;border-radius:10px;padding:12px 18px;font-size:13px;cursor:pointer}
 body{padding-bottom:90px}
+.thumb{cursor:zoom-in}
+.thumb-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:2px dashed rgba(200,134,10,.45);color:#b58a3a;font-size:10px;letter-spacing:1px;text-align:center;line-height:1.6;cursor:default}
+.slot.queued .thumb{outline:2px solid #2e9e5b;outline-offset:-2px}
 </style>
 </head>
 <body>
@@ -359,6 +362,21 @@ var bulkQueue = {};      // slotIndex -> dataURL
 var bulkTarget = -1;
 var bulkBusy = false;
 
+function thumbFail(img){
+  var d = document.createElement("div");
+  d.className = "thumb thumb-empty";
+  d.innerHTML = "\ud83d\udcf7<br><b>EMPTY</b><br>no photo yet";
+  img.parentNode.replaceChild(d, img);
+}
+function thumbView(ev, img){
+  ev.stopPropagation();
+  var v = document.getElementById("thumb-viewer");
+  document.getElementById("thumb-viewer-img").src = img.src;
+  v.style.display = "flex";
+}
+function closeThumbView(){
+  document.getElementById("thumb-viewer").style.display = "none";
+}
 function bulkPick(i){
   if(bulkBusy) return;
   bulkTarget = i;
@@ -456,7 +474,7 @@ function renderSlots(){
     return '<div class="slot'+(q?' queued':'')+'" data-i="'+i+'" onclick="selectSlot('+i+')">'
       + tagFor(s)
       + (q ? '<span class="q-badge">\ud83d\udcf7 Ready</span>' : '')
-      + '<img class="thumb" src="'+(q ? q : esc(s.displaySrc))+'" onerror="this.style.opacity=.25">'
+      + '<img class="thumb" src="'+(q ? q : esc(s.displaySrc))+'" onerror="thumbFail(this)" onclick="thumbView(event,this)">'
       + '<div class="meta"><div class="ctx">'+esc(s.context||"(image)")+'</div>'
       + '<div class="pth">'+esc(s.path)+'</div>'
       + (s.kind==="img" && s.alt ? '<div class="altx">alt: '+esc(s.alt)+'</div>' : '')
@@ -849,6 +867,10 @@ function toast(msg){
   clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); }, 2600);
 }
 </script>
+<div id="thumb-viewer" onclick="closeThumbView()" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(5,13,26,.92);align-items:center;justify-content:center;padding:20px">
+  <img id="thumb-viewer-img" src="" style="max-width:94vw;max-height:88vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+  <button onclick="closeThumbView()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#fff;font-size:34px;cursor:pointer;line-height:1">\u00d7</button>
+</div>
 <div id="bulk-bar" style="display:none">
   <span id="bulk-count" class="bulk-note">Photos ready to publish</span>
   <button id="bulk-go" class="bulk-go" onclick="publishAll()">&#128640; Approve &amp; Publish All</button>
