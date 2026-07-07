@@ -31,7 +31,7 @@ exports.handler = async function (event) {
 
   const rawNewPath = String(body.newPath || "").trim().replace(/^\/+/, "");
   const filePath = rawNewPath.split("?")[0].split("#")[0];
-  if (filePath.indexOf("..") !== -1 || !/^images\/[A-Za-z0-9_\-\/]+\.(jpg|jpeg|png|webp)$/.test(filePath)) {
+  if (filePath.indexOf("..") !== -1 || !/^images\/[A-Za-z0-9_\-\/]+\.(jpg|jpeg|png|webp)$/i.test(filePath)) {
     return json(400, { error: "Path must be an image inside images/ (.jpg .jpeg .png .webp). Got: " + filePath });
   }
 
