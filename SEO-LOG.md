@@ -124,3 +124,6 @@ All shared image paths split to per-page unique paths (`images/<page-slug>/<file
 
 ## Thin-content fix (Jul 7 2026)
 Semrush Jul 7: Health 95% (+1). Fixed low word count / low text-HTML ratio: contact 169→416w, services 180→413w, gallery 183→408w (design-matched content sections, residential+commercial, Manhattan-first, insured). Remaining 130 "broken internal images" = empty per-page slots after split → Zura bulk-uploading photos via Image Studio. 2 "blocked from crawling" + 2 "one internal link" pages: review next session.
+
+## Homepage duplicate-URL row (Jul 7 2026)
+Semrush showed homepage twice (with/without trailing slash) — cosmetic crawl artifact, canonical already correct (…com/). Normalized 5 no-slash refs (JSON-LD url fields) to trailing slash in: index, about, contact, services, tile-grouting-restoration. Gallery ratio 0.04→0.07 after content fix (markup-heavy page, low priority). contact/services word-count content confirmed committed.
