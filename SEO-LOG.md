@@ -4,7 +4,7 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 
 **Legend:** ✅ DONE · 🔎 VERIFY (confirm after commit/crawl) · ⏳ PENDING (fix queued)
 
-*Last updated: Jun 27 2026 (batch 3) — by Claude. Authority Score 7; money keywords page 4–8. Priority per Jun 2026 core updates: consolidate thin/duplicate pages + topical depth, not new pages. **License rule enforced** — all “Licensed” claims stripped, “Fully insured” used.*
+*Updated Jul 7 2026 (image split — see section below). Prior update: Jun 27 2026 (batch 3) — by Claude. Authority Score 7; money keywords page 4–8. Priority per Jun 2026 core updates: consolidate thin/duplicate pages + topical depth, not new pages. **License rule enforced** — all “Licensed” claims stripped, “Fully insured” used.*
 
 ## Confirmed by Perplexity re-audit (post 21:46 commit): 5 FIXED, 0 regressions.
 
@@ -118,3 +118,6 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 - **form-alert.js v2:** GET ?test=1 → sends ✅ test email (browser-openable, bypasses front-end entirely); new type "visit" (👀 email with page + referrer).
 - **partials/site.js:** appended visit-alert IIFE — one 👀 email per visitor session, sitewide. Owner silencing: open any page with **?owner=1** once per device (stored in localStorage). Internal tool pages excluded. GA4/menu/footer verified intact, node-checked.
 - Volume note: expect roughly 5–20 visit emails/day at current traffic.
+
+## Image architecture — SPLIT (Jul 7 2026)
+All shared image paths split to per-page unique paths (`images/<page-slug>/<file>`, homepage=`images/home/`). 364 refs rewritten across 39 pages; 242 clone pairs. One-time `clone-images.js` (?key=sani-split-2026) clones existing photos to new paths in ONE commit via git tree API, then delete the function. Every page now fully independent — uploads in Image Studio affect only that page. Empty slots stay empty (photo upload still #1 pending item). Image Studio bulk upload + auto-compress (~120KB target) live.
