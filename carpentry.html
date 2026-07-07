@@ -113,6 +113,11 @@
 .specialty-card:hover .specialty-card-arrow::after{margin-left:6px}
 @media(max-width:900px){.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}.carpentry-specialty-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.services-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:40px 20px 44px}.carpentry-specialty-grid{grid-template-columns:1fr}}
+/* card layout hardening — cards can never stretch tall */
+.carpentry-specialty-grid{align-items:start}
+.specialty-card{display:flex !important;flex-direction:column;height:auto !important;min-height:0 !important}
+.specialty-card img{flex:0 0 180px;height:180px !important;max-height:180px}
+.specialty-card-body{flex:0 0 auto}
 </style>
 <link rel="stylesheet" href="partials/site.css">
 
