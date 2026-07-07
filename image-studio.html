@@ -97,6 +97,22 @@
   #toast.show{transform:translateX(-50%) translateY(0)}
   .muted{color:var(--ink-muted)}
 </style>
+<style>
+.slot{position:relative}
+.slot-actions{display:flex;gap:6px;align-items:center;margin-left:auto;flex-shrink:0}
+.slot-up{background:rgba(200,134,10,.12);border:1px solid rgba(200,134,10,.5);color:#c8860a;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.slot-up:hover{background:rgba(200,134,10,.22)}
+.slot-rm{background:none;border:1px solid rgba(0,0,0,.2);color:#888;border-radius:8px;padding:7px 9px;font-size:12px;cursor:pointer}
+.slot.queued{outline:2px solid #c8860a;outline-offset:-2px;border-radius:10px}
+.q-badge{position:absolute;top:6px;right:6px;background:#c8860a;color:#fff;font-size:10px;font-weight:800;letter-spacing:.5px;padding:3px 8px;border-radius:999px;z-index:2}
+.q-status{font-size:12px;margin-top:3px;font-weight:600}
+#bulk-bar{position:fixed;left:0;right:0;bottom:0;z-index:999;background:#0a1628;box-shadow:0 -6px 24px rgba(0,0,0,.35);padding:12px 16px;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap}
+.bulk-note{color:#cbd5e1;font-size:13px}
+.bulk-go{background:linear-gradient(135deg,#c8860a,#f0a500);color:#0a1628;border:none;border-radius:10px;padding:13px 26px;font-size:15px;font-weight:800;cursor:pointer}
+.bulk-go:disabled{opacity:.6}
+.bulk-clear{background:none;border:1px solid rgba(255,255,255,.3);color:#cbd5e1;border-radius:10px;padding:12px 18px;font-size:13px;cursor:pointer}
+body{padding-bottom:90px}
+</style>
 </head>
 <body>
 
@@ -198,6 +214,7 @@
       <div class="label">Or use your own photo</div>
       <button class="btn-ghost btn" onclick="document.getElementById('upload').click()" style="padding:9px 14px;font-size:13px">⬆ Upload a photo</button>
       <input type="file" id="upload" accept="image/*" style="display:none" onchange="onUpload(event)">
+      <input type="file" id="bulk-file" accept="image/*" style="display:none" onchange="onBulkFile(event)">
       <span class="hint" id="upload-hint" style="margin-left:8px">Use a real job photo (best for Gallery / Projects).</span>
     </div>
 
@@ -337,18 +354,121 @@ function tagFor(s){
   return '<span class="tag tag-img">🖼 Photo</span>';
 }
 
+// ---------- BULK UPLOAD ----------
+var bulkQueue = {};      // slotIndex -> dataURL
+var bulkTarget = -1;
+var bulkBusy = false;
+
+function bulkPick(i){
+  if(bulkBusy) return;
+  bulkTarget = i;
+  document.getElementById("bulk-file").click();
+}
+function onBulkFile(e){
+  var f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!f || bulkTarget < 0) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    bulkQueue[bulkTarget] = reader.result;
+    renderSlots();
+    toast("\ud83d\udcf7 Added \u2014 " + Object.keys(bulkQueue).length + " photo(s) ready");
+  };
+  reader.readAsDataURL(f);
+}
+function bulkRemove(i){
+  if(bulkBusy) return;
+  delete bulkQueue[i];
+  renderSlots();
+}
+function bulkClear(){
+  if(bulkBusy) return;
+  bulkQueue = {};
+  renderSlots();
+}
+function updateBulkBar(){
+  var bar = document.getElementById("bulk-bar");
+  if(!bar) return;
+  var n = Object.keys(bulkQueue).length;
+  bar.style.display = n ? "flex" : "none";
+  if(n && !bulkBusy) document.getElementById("bulk-go").innerHTML = "\ud83d\ude80 Approve &amp; Publish All (" + n + ")";
+}
+async function publishAll(){
+  var idxs = Object.keys(bulkQueue).map(Number).sort(function(a,b){return a-b;});
+  if(!idxs.length) return;
+  if(!confirm("Publish " + idxs.length + " photo(s) to your LIVE site?\n\nEach photo is saved and its page card is updated automatically.\nPages update in ~1 minute after finishing.")) return;
+
+  bulkBusy = true;
+  var go = document.getElementById("bulk-go");
+  var page = document.getElementById("page").value;
+  var ok = 0, warn = 0, fail = 0;
+
+  for(var k = 0; k < idxs.length; k++){
+    var i = idxs[k];
+    var sl = slots[i];
+    go.innerHTML = '<span class="spin-sm"></span>Publishing ' + (k+1) + " / " + idxs.length + "\u2026";
+    var st = document.getElementById("q-status-" + i);
+    if(st) st.innerHTML = '<span style="color:var(--gold)">\u23f3 Publishing\u2026</span>';
+    try {
+      var optimized = await optimize(bulkQueue[i]);
+      var r = await fetch("/.netlify/functions/publish-image-to-page", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          page: page,
+          imageBase64: optimized,
+          newPath: String(sl.path||"").split("?")[0],
+          currentRef: sl.ref,
+          kind: sl.kind,
+          alt: sl.alt || ""
+        })
+      });
+      var text = await r.text(); var data;
+      try{ data = JSON.parse(text); }catch(e){ throw new Error("Server error"); }
+      if(!r.ok) throw new Error(data.error || "Publish failed");
+      if(data.warning){
+        warn++;
+        if(st) st.innerHTML = '<span style="color:#c07f14">\u26a0 Saved with note</span>';
+      } else {
+        ok++;
+        if(st) st.innerHTML = '<span style="color:#2e9e5b">\u2705 Published \u00b7 ' + kbOf(optimized) + ' KB</span>';
+      }
+      delete bulkQueue[i];
+    } catch(err){
+      fail++;
+      if(st) st.innerHTML = '<span style="color:#c0392b">\u2715 ' + esc(err.message).slice(0,60) + "</span>";
+    }
+  }
+
+  bulkBusy = false;
+  updateBulkBar();
+  var msg = "\u2705 " + ok + " published" + (warn ? " \u00b7 \u26a0 " + warn + " with notes" : "") + (fail ? " \u00b7 \u2715 " + fail + " failed (still queued)" : "");
+  toast(msg);
+  if(!fail){
+    alert(msg + "\n\nLive in ~1 minute. Then: Cloudflare \u2192 Caching \u2192 Purge Everything, and hard-refresh the page to see new photos.");
+  }
+}
+
 function renderSlots(){
   var host = document.getElementById("slots");
   document.getElementById("slots-empty").style.display = slots.length ? "none" : "block";
   host.innerHTML = slots.map(function(s,i){
-    return '<div class="slot" data-i="'+i+'" onclick="selectSlot('+i+')">'
+    var q = bulkQueue[i];
+    return '<div class="slot'+(q?' queued':'')+'" data-i="'+i+'" onclick="selectSlot('+i+')">'
       + tagFor(s)
-      + '<img class="thumb" src="'+esc(s.displaySrc)+'" onerror="this.style.opacity=.25">'
+      + (q ? '<span class="q-badge">\ud83d\udcf7 Ready</span>' : '')
+      + '<img class="thumb" src="'+(q ? q : esc(s.displaySrc))+'" onerror="this.style.opacity=.25">'
       + '<div class="meta"><div class="ctx">'+esc(s.context||"(image)")+'</div>'
       + '<div class="pth">'+esc(s.path)+'</div>'
       + (s.kind==="img" && s.alt ? '<div class="altx">alt: '+esc(s.alt)+'</div>' : '')
-      + '</div></div>';
+      + '<div class="q-status" id="q-status-'+i+'"></div>'
+      + '</div>'
+      + '<div class="slot-actions">'
+      +   '<button class="slot-up" onclick="event.stopPropagation();bulkPick('+i+')">'+(q?'\u21bb Change':'\u2b06 Add photo')+'</button>'
+      +   (q ? '<button class="slot-rm" onclick="event.stopPropagation();bulkRemove('+i+')">\u2715</button>' : '')
+      + '</div>'
+      + '</div>';
   }).join("");
+  updateBulkBar();
 }
 
 function selectSlot(i){
@@ -475,16 +595,42 @@ function getOpt(){
   var q = parseFloat(document.getElementById("quality").value);
   return { maxW: (mw > 0 ? mw : 100000), quality: (q || 0.82) };
 }
+var TARGET_KB = 120;   // auto-compress goal for site speed
+function kbOf(dataUrl){
+  var b64 = dataUrl.slice(dataUrl.indexOf(",")+1);
+  return Math.max(1, Math.round(b64.length * 3 / 4 / 1024));
+}
 function optimize(dataUrl){
   var o = getOpt();
   return new Promise(function(resolve){
     var img = new Image();
     img.onload = function(){
-      var w=img.width,h=img.height;
-      if(w>o.maxW){ h=Math.round(h*(o.maxW/w)); w=o.maxW; }
-      var c=document.createElement("canvas"); c.width=w; c.height=h;
-      c.getContext("2d").drawImage(img,0,0,w,h);
-      resolve(c.toDataURL("image/jpeg", o.quality));
+      function encode(width, quality){
+        var w = img.width, h = img.height;
+        if(width && w > width){ h = Math.round(h * (width / w)); w = width; }
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        return c.toDataURL("image/jpeg", quality);
+      }
+      // pass 1: user settings
+      var out = encode(o.maxW, o.quality);
+      // auto-shrink: step quality down, then width, until under TARGET_KB
+      var qualities = [0.78, 0.7, 0.62, 0.55, 0.48];
+      var qi = 0;
+      var width = o.maxW || img.width;
+      var guard = 0;
+      while(kbOf(out) > TARGET_KB && guard < 10){
+        guard++;
+        if(qi < qualities.length){
+          out = encode(width, qualities[qi]); qi++;
+        } else {
+          width = Math.round(width * 0.85);
+          if(width < 900){ break; }   // never go below 900px wide
+          qi = Math.max(0, qualities.length - 3); // retry mid qualities at smaller width
+          out = encode(width, qualities[qi]); qi++;
+        }
+      }
+      resolve(out);
     };
     img.onerror=function(){ resolve(dataUrl); };
     img.src=dataUrl;
@@ -495,10 +641,10 @@ async function updateSizeEstimate(){
   var note = document.getElementById("size-note");
   if(!currentImage){ note.textContent = "Output size shows after a photo is ready."; return; }
   try {
+    var beforeKb = kbOf(currentImage);
     var opt = await optimize(currentImage);
-    var b64 = opt.slice(opt.indexOf(",")+1);
-    var kb = Math.max(1, Math.round(b64.length * 3 / 4 / 1024));
-    note.textContent = "≈ " + kb + " KB after compression";
+    var kb = kbOf(opt);
+    note.textContent = "Auto-compress: " + beforeKb + " KB \u2192 \u2248 " + kb + " KB (target " + TARGET_KB + " KB)";
   } catch(e){ note.textContent = ""; }
 }
 
@@ -703,5 +849,10 @@ function toast(msg){
   clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); }, 2600);
 }
 </script>
+<div id="bulk-bar" style="display:none">
+  <span id="bulk-count" class="bulk-note">Photos ready to publish</span>
+  <button id="bulk-go" class="bulk-go" onclick="publishAll()">&#128640; Approve &amp; Publish All</button>
+  <button class="bulk-clear" onclick="bulkClear()">Clear</button>
+</div>
 </body>
 </html>
