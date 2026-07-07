@@ -93,17 +93,24 @@
 .cta-section p{color:rgba(255,255,255,.5);font-size:15px;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;position:relative;z-index:1}
 .cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
 /* SPECIALTY CARPENTRY (page-specific) */
+/* SPECIALTY CARDS — clean rebuild (flexbox, cannot stretch or collapse) */
+.carpentry-specialty-grid{display:flex;flex-wrap:wrap;gap:20px;margin-top:48px;justify-content:center}
+.specialty-card{flex:1 1 320px;max-width:380px;background:#1f1f1f;border:1px solid rgba(240,165,0,0.15);border-radius:14px;overflow:hidden;text-decoration:none;color:#fff;display:block}
+.specialty-card img{width:100%;height:180px;max-height:180px;object-fit:cover;display:block;background:#151515}
+.specialty-card:hover{border-color:rgba(240,165,0,0.5)}
+@media(max-width:640px){.carpentry-specialty-grid{display:block}.specialty-card{max-width:100%;margin:0 0 20px}}
+
 .specialty-section{padding:80px 28px;background:linear-gradient(135deg,#0f0f0f 0%,#1a1a1a 100%);color:#fff;position:relative}
 .specialty-section .section-inner{max-width:1200px;margin:0 auto;position:relative;z-index:2}
 .specialty-section .section-title{color:#fff}
 .specialty-section .section-sub{color:rgba(255,255,255,0.65);margin-left:auto;margin-right:auto;text-align:center}
 .specialty-section .section-eyebrow span{color:var(--gold-light)}
 .specialty-section .section-eyebrow .line{background:rgba(240,165,0,0.3)}
-.carpentry-specialty-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:48px}
-.specialty-card{background:#1f1f1f;border:1px solid rgba(240,165,0,0.15);border-radius:14px;overflow:hidden;transition:all .3s;text-decoration:none;color:#fff;display:block}
-.specialty-card:hover{transform:translateY(-6px);border-color:rgba(240,165,0,0.5);box-shadow:0 16px 48px rgba(240,165,0,0.15)}
-.specialty-card img{width:100%;height:180px;object-fit:cover;display:block;transition:transform .4s}
-.specialty-card:hover img{transform:scale(1.06)}
+
+
+
+
+
 .specialty-card-body{padding:22px}
 .specialty-card-tag{display:inline-block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-light);margin-bottom:10px;font-weight:500}
 .specialty-card-title{font-size:18px;color:#fff;margin-bottom:8px;font-weight:500}
@@ -111,16 +118,16 @@
 .specialty-card-arrow{font-size:13px;color:var(--gold-light);font-weight:500;letter-spacing:.5px}
 .specialty-card-arrow::after{content:' →';transition:margin .2s}
 .specialty-card:hover .specialty-card-arrow::after{margin-left:6px}
-@media(max-width:900px){.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}.carpentry-specialty-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:600px){.services-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:40px 20px 44px}.carpentry-specialty-grid{grid-template-columns:1fr}}
-/* card layout hardening — cards can never stretch tall */
-.carpentry-specialty-grid{align-items:start}
-.specialty-card{display:flex !important;flex-direction:column;height:auto !important;min-height:0 !important}
-.specialty-card img{flex:0 0 180px;height:180px !important;max-height:180px}
+@media(max-width:900px){.services-grid{grid-template-columns:1fr 1fr}.reviews-grid{grid-template-columns:1fr 1fr}.why-grid{grid-template-columns:1fr;gap:32px}.faq-grid{grid-template-columns:1fr}.process-steps{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.services-grid{grid-template-columns:1fr}.reviews-grid{grid-template-columns:1fr}.why-features{grid-template-columns:1fr}.page-hero-content{padding:40px 20px 44px}}
+
+
+
+
 .specialty-card-body{flex:0 0 auto}
-/* grid blowout fix — columns may shrink below image intrinsic width */
-.carpentry-specialty-grid > *,.services-grid > *{min-width:0}
-.specialty-card img,.svc-card img{max-width:100% !important;min-width:0}
+
+
+
 </style>
 <link rel="stylesheet" href="partials/site.css">
 
@@ -134,7 +141,7 @@
 <div id="site-menu"></div>
 
 <section class="page-hero">
-  <div class="page-hero-bg"><img src="images/carpentry/carpentry-millwork-nyc-brooklyn-custom-b.jpg?v=1780918386866" alt="Carpentry millwork NYC Brooklyn custom built-ins"></div>
+  <div class="page-hero-bg"><img height="180" src="images/carpentry/carpentry-millwork-nyc-brooklyn-custom-b.jpg?v=1780918386866" alt="Carpentry millwork NYC Brooklyn custom built-ins" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=80'"></div>
   <div class="page-hero-grid"></div>
   <div class="page-hero-overlay"></div>
   <div class="page-hero-accent"></div>
@@ -162,27 +169,27 @@
     <p class="section-sub">From crown molding installation and trim carpentry to custom built-ins, wainscoting and antique restoration, our NYC carpenters bring decades of experience to every project — for homes and businesses.</p>
     <div class="services-grid">
       <div class="svc-card">
-        <img src="images/carpentry/high-quality-carpentry-services-in-new-y.jpg?v=1781221821481" alt="Custom built-ins cabinetry NYC Brooklyn">
+        <img height="180" src="images/carpentry/high-quality-carpentry-services-in-new-y.jpg?v=1781221821481" alt="Custom built-ins cabinetry NYC Brooklyn" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=80'">
         <div class="svc-card-body"><div class="svc-card-title">Custom Built-Ins & Cabinetry</div><p class="svc-card-desc">Floor-to-ceiling shelving, entertainment centers, home office built-ins & custom cabinetry designed and built to your exact specifications.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/carpentry/crown-molding.jpg?v=1783430160307" alt="Crown molding installation trim carpentry NYC" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80'">
+        <img height="180" src="images/carpentry/crown-molding.jpg?v=1783430160307" alt="Crown molding installation trim carpentry NYC" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80'">
         <div class="svc-card-body"><div class="svc-card-title">Crown Molding, Trim & Wainscoting</div><p class="svc-card-desc">Crown molding installation, trim carpentry, baseboards, chair rails, wainscoting installation & decorative millwork to elevate interiors throughout NYC.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/carpentry/expert-finish-carpentry-services-in-new--2.jpg?v=1781224143995" alt="Staircase repair installation NYC creaky stairs repair">
+        <img height="180" src="images/carpentry/expert-finish-carpentry-services-in-new--2.jpg?v=1781224143995" alt="Staircase repair installation NYC creaky stairs repair" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80'">
         <div class="svc-card-body"><div class="svc-card-title">Staircase Repair & Installation</div><p class="svc-card-desc">Stair tread replacement, baluster repair, newel post installation & complete staircase renovations for NYC apartments & brownstones.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/carpentry/expert-finish-carpentry-services-in-new--3.jpg?v=1781224274948" alt="Antique furniture restoration NYC Brooklyn restoration antiques">
+        <img height="180" src="images/carpentry/expert-finish-carpentry-services-in-new--3.jpg?v=1781224274948" alt="Antique furniture restoration NYC Brooklyn restoration antiques" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=80'">
         <div class="svc-card-body"><div class="svc-card-title">Antique & Furniture Restoration</div><p class="svc-card-desc">Careful restoration of antique furniture, hutches, dining tables & heirloom pieces. We bring old wood back to its original beauty.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/carpentry/expert-finish-carpentry-services-in-new--4.jpg?v=1781224484032" alt="Door installation NYC Brooklyn">
+        <img height="180" src="images/carpentry/expert-finish-carpentry-services-in-new--4.jpg?v=1781224484032" alt="Door installation NYC Brooklyn" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=80'">
         <div class="svc-card-body"><div class="svc-card-title">Door Installation & Repair</div><p class="svc-card-desc">Interior & exterior door installation, hanging, hardware fitting & repair. Pocket doors, French doors & barn doors throughout NYC.</p></div>
       </div>
       <div class="svc-card">
-        <img src="images/carpentry/wainscoting.jpg?v=1783430162832" alt="Wainscoting wood paneling accent walls NYC" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80'">
+        <img height="180" src="images/carpentry/wainscoting.jpg?v=1783430162832" alt="Wainscoting wood paneling accent walls NYC" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80'">
         <div class="svc-card-body"><div class="svc-card-title">Wainscoting, Paneling & Accent Walls</div><p class="svc-card-desc">Wainscoting, shiplap, board & batten, coffered ceilings & decorative wood paneling to add character and warmth to any NYC room.</p></div>
       </div>
     </div>
@@ -199,7 +206,7 @@
     </div>
     <div class="carpentry-specialty-grid">
       <a class='specialty-card' href='/stair-building'>
-        <img src="images/carpentry/expert-finish-carpentry-services-in-new--6.jpg?v=1781225342806" alt="Stair building NYC custom staircase exterior trim carpenter">
+        <img height="180" src="images/carpentry/expert-finish-carpentry-services-in-new--6.jpg?v=1781225342806" alt="Stair building NYC custom staircase exterior trim carpenter" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80'">
         <div class="specialty-card-body">
           <span class="specialty-card-tag">Stairs</span>
           <div class="specialty-card-title">Stair Building</div>
@@ -208,7 +215,7 @@
         </div>
       </a>
       <a class='specialty-card' href='/stair-renovation'>
-        <img src="images/carpentry/expert-finish-carpentry-services-in-new--7.jpg?v=1781230454299" alt="Stair renovation NYC modernization staircase remodel contractor">
+        <img height="180" src="images/carpentry/expert-finish-carpentry-services-in-new--7.jpg?v=1781230454299" alt="Stair renovation NYC modernization staircase remodel contractor" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80'">
         <div class="specialty-card-body">
           <span class="specialty-card-tag">Stairs</span>
           <div class="specialty-card-title">Stair Renovation</div>
@@ -217,7 +224,7 @@
         </div>
       </a>
       <a class='specialty-card' href='/stair-restoration'>
-        <img src="images/carpentry/stair-restoration.jpg?v=1783430165797" alt="Stair restoration NYC brownstone historical" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&q=80'">
+        <img height="180" src="images/carpentry/stair-restoration.jpg?v=1783430165797" alt="Stair restoration NYC brownstone historical" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&q=80'">
         <div class="specialty-card-body">
           <span class="specialty-card-tag">Stairs</span>
           <div class="specialty-card-title">Stair Restoration</div>
@@ -226,7 +233,7 @@
         </div>
       </a>
       <a class='specialty-card' href='/stair-upgrade'>
-        <img src="images/carpentry/expert-finish-carpentry-services-in-new--9.jpg?v=1781230827894" alt="Stair upgrade NYC railings balusters refinishing wood stairs">
+        <img height="180" src="images/carpentry/expert-finish-carpentry-services-in-new--9.jpg?v=1781230827894" alt="Stair upgrade NYC railings balusters refinishing wood stairs" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80'">
         <div class="specialty-card-body">
           <span class="specialty-card-tag">Stairs</span>
           <div class="specialty-card-title">Stair Upgrade</div>
@@ -235,7 +242,7 @@
         </div>
       </a>
       <a class='specialty-card' href='/deck-building'>
-        <img src="images/carpentry/expert-finish-carpentry-services-in-new--10.jpg?v=1781225576858" alt="Deck building NYC Long Island custom deck builder">
+        <img height="180" src="images/carpentry/expert-finish-carpentry-services-in-new--10.jpg?v=1781225576858" alt="Deck building NYC Long Island custom deck builder" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1591825729269-caeb344f6df2?w=800&q=80'">
         <div class="specialty-card-body">
           <span class="specialty-card-tag">Outdoor</span>
           <div class="specialty-card-title">Deck Building</div>
@@ -244,7 +251,7 @@
         </div>
       </a>
       <a class='specialty-card' href='/deck-renovation'>
-        <img src="images/carpentry/deck-renovation.jpg?v=1783430168219" alt="Deck renovation refinishing NYC" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80'">
+        <img height="180" src="images/carpentry/deck-renovation.jpg?v=1783430168219" alt="Deck renovation refinishing NYC" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80'">
         <div class="specialty-card-body">
           <span class="specialty-card-tag">Outdoor</span>
           <div class="specialty-card-title">Deck Renovation</div>
@@ -254,7 +261,7 @@
       </a>
       <a class='specialty-card specialty-card-wide' href='/exterior-carpentry' style='grid-column:span 2'>
         <div style="display:grid;grid-template-columns:1fr 1fr;height:100%">
-          <img src="images/carpentry/exterior-carpentry.jpg?v=1783430171134" alt="Exterior carpentry NYC pergola fence" style="height:100%" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&q=80'">
+          <img height="180" src="images/carpentry/exterior-carpentry.jpg?v=1783430171134" alt="Exterior carpentry NYC pergola fence" style="height:100%" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&q=80'">
           <div class="specialty-card-body" style="display:flex;flex-direction:column;justify-content:center">
             <span class="specialty-card-tag">Outdoor</span>
             <div class="specialty-card-title">Exterior Carpentry</div>
@@ -270,7 +277,7 @@
 <section class="section">
   <div class="section-inner">
     <div class="why-grid">
-      <div class="why-img"><img src="images/carpentry/high-quality-carpentry-services-in-new-y-12.jpg?v=1781231221095" alt="Expert carpenter NYC Sani Building Corp stair carpenter framing carpenter"></div>
+      <div class="why-img"><img height="180" src="images/carpentry/high-quality-carpentry-services-in-new-y-12.jpg?v=1781231221095" alt="Expert carpenter NYC Sani Building Corp stair carpenter framing carpenter" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80'"></div>
       <div>
         <div class="section-eyebrow"><div class="line"></div><span>Why Choose Us</span></div>
         <h2 class="section-title">Precision Craftsmanship<br> <em>Every Time</em></h2>
