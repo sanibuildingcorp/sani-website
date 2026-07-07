@@ -118,6 +118,9 @@
 .specialty-card{display:flex !important;flex-direction:column;height:auto !important;min-height:0 !important}
 .specialty-card img{flex:0 0 180px;height:180px !important;max-height:180px}
 .specialty-card-body{flex:0 0 auto}
+/* grid blowout fix — columns may shrink below image intrinsic width */
+.carpentry-specialty-grid > *,.services-grid > *{min-width:0}
+.specialty-card img,.svc-card img{max-width:100% !important;min-width:0}
 </style>
 <link rel="stylesheet" href="partials/site.css">
 
