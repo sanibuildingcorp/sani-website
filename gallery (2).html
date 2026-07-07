@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Gallery | Sani Building Corp Brooklyn</title>
+<meta name="description" content="Browse our portfolio of luxury renovation projects across NYC — bathrooms, kitchens, interiors, exteriors. See our work before you hire.">
+<meta name="keywords" content="NYC renovation portfolio, Brooklyn renovation gallery, kitchen renovation photos, bathroom remodel NYC, Sani Building Corp projects">
+
+<!-- Open Graph -->
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,500;1,600;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- Shared site styles (menu + footer) -->
+<link rel="stylesheet" href="partials/site.css">
+
+<style>
+/* ════════════ PAGE-SPECIFIC STYLES (gallery only) ════════════ */
+
+/* ════════════ HERO ════════════ */
+.gallery-hero{position:relative;min-height:60vh;display:flex;align-items:flex-end;background:var(--navy-deep);overflow:hidden;padding-top:0}
+.gallery-hero-bg{position:absolute;inset:0;background:url('images/gallery/nyc-luxury-livingroom.jpg') center/cover;opacity:.28;filter:saturate(1.1)}
+.gallery-hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,13,26,0.4) 0%,rgba(5,13,26,0.7) 60%,rgba(5,13,26,0.95) 100%)}
+.gallery-hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+.gallery-hero-accent{position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent)}
+.gallery-hero-content{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:80px 28px 64px;width:100%}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.45);margin-bottom:24px;text-transform:uppercase}
+.breadcrumb a{color:var(--gold-light);text-decoration:none}
+.breadcrumb a:hover{color:var(--gold-bright)}
+.breadcrumb .sep{opacity:.5}
+.gallery-hero h1{font-family:'Playfair Display',serif;font-size:clamp(38px,6vw,72px);font-weight:700;color:#fff;line-height:1.02;margin-bottom:18px;letter-spacing:-1px}
+.gallery-hero h1 em{font-style:italic;color:var(--gold-light);font-weight:600}
+.gallery-hero p{font-size:17px;color:rgba(255,255,255,.7);max-width:600px;line-height:1.7;font-weight:300}
+.hero-stats{display:flex;gap:48px;margin-top:36px;flex-wrap:wrap}
+.hero-stat{display:flex;flex-direction:column}
+.hero-stat-num{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--gold-light);line-height:1}
+.hero-stat-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-top:6px}
+
+/* ════════════ FILTERS ════════════ */
+.gallery-filters{background:#fafaf8;padding:32px 28px;border-bottom:1px solid var(--border);position:sticky;top:78px;z-index:50}
+.filter-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+.filter-btn{background:transparent;border:1px solid rgba(14,14,14,.12);color:var(--black);font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:11px 22px;cursor:pointer;transition:all .25s;border-radius:0}
+.filter-btn:hover{border-color:var(--gold);color:var(--gold)}
+.filter-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.filter-btn .count{font-size:9.5px;opacity:.6;margin-left:6px}
+
+/* ════════════ GALLERY GRID ════════════ */
+.gallery-section{padding:64px 28px 96px;background:#fafaf8}
+.gallery-wrap{max-width:1300px;margin:0 auto}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.gallery-item{position:relative;aspect-ratio:4/3;overflow:hidden;cursor:pointer;background:var(--navy);border:1px solid rgba(14,14,14,.08);transition:transform .35s cubic-bezier(.4,0,.2,1), box-shadow .35s ease;opacity:0;animation:fadeUp .6s ease forwards}
+.gallery-item:nth-child(1){animation-delay:.05s}
+.gallery-item:nth-child(2){animation-delay:.1s}
+.gallery-item:nth-child(3){animation-delay:.15s}
+.gallery-item:nth-child(4){animation-delay:.2s}
+.gallery-item:nth-child(5){animation-delay:.25s}
+.gallery-item:nth-child(6){animation-delay:.3s}
+.gallery-item:nth-child(7){animation-delay:.35s}
+.gallery-item:nth-child(8){animation-delay:.4s}
+.gallery-item:nth-child(n+9){animation-delay:.45s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.gallery-item.hidden{display:none}
+.gallery-item.tall{grid-row:span 2;aspect-ratio:4/6}
+.gallery-item.wide{grid-column:span 2}
+.gallery-item:hover{transform:translateY(-4px);box-shadow:0 20px 50px rgba(10,22,40,0.18)}
+.gallery-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .55s ease, filter .55s ease}
+.gallery-item:hover img{transform:scale(1.06);filter:brightness(.85)}
+.gallery-overlay{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(5,13,26,0.85) 100%);opacity:0;transition:opacity .35s ease;display:flex;flex-direction:column;justify-content:flex-end;padding:24px;pointer-events:none}
+.gallery-item:hover .gallery-overlay{opacity:1}
+.gallery-overlay-tag{display:inline-flex;align-items:center;align-self:flex-start;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-light);background:rgba(10,22,40,0.6);padding:5px 11px;border:1px solid rgba(240,165,0,.4);margin-bottom:10px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.gallery-overlay-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:#fff;line-height:1.3;letter-spacing:.2px;margin-bottom:6px}
+.gallery-overlay-loc{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.65);font-weight:400}
+.gallery-overlay-icon{position:absolute;top:18px;right:18px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.7);transition:opacity .3s ease, transform .3s ease}
+.gallery-item:hover .gallery-overlay-icon{opacity:1;transform:scale(1)}
+.gallery-overlay-icon svg{width:18px;height:18px;stroke:var(--navy);fill:none;stroke-width:2.2}
+
+/* ════════════ EMPTY STATE ════════════ */
+.gallery-empty{display:none;text-align:center;padding:80px 28px;color:var(--gray)}
+.gallery-empty.show{display:block}
+.gallery-empty h3{font-family:'Playfair Display',serif;font-size:28px;color:var(--navy);margin-bottom:10px;font-weight:600}
+.gallery-empty p{font-size:15px;color:var(--gray)}
+
+/* ════════════ LIGHTBOX ════════════ */
+.lightbox{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(5,13,26,0.96);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:20px}
+.lightbox.is-open{display:flex}
+.lightbox-img-wrap{position:relative;max-width:min(1200px,92vw);max-height:88vh;display:flex;flex-direction:column}
+.lightbox-img{max-width:100%;max-height:78vh;display:block;border:2px solid rgba(240,165,0,0.3);box-shadow:0 30px 80px rgba(0,0,0,0.7);animation:lightboxIn .35s cubic-bezier(.16,1,.3,1)}
+@keyframes lightboxIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.lightbox-caption{padding:18px 4px 0;color:#fff;font-family:'Playfair Display',serif;font-size:20px;font-weight:600;line-height:1.3}
+.lightbox-caption .loc{display:block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:400;letter-spacing:2px;text-transform:uppercase;color:var(--gold-light);margin-top:8px}
+.lightbox-close{position:absolute;top:-50px;right:0;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .25s, border-color .25s;-webkit-tap-highlight-color:rgba(240,165,0,0.3)}
+.lightbox-close:hover{background:rgba(240,165,0,0.2);border-color:var(--gold-light)}
+.lightbox-close svg{width:20px;height:20px}
+.lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:rgba(10,22,40,0.85);border:1px solid rgba(240,165,0,0.5);color:var(--gold-light);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .25s, border-color .25s;box-shadow:0 6px 24px rgba(0,0,0,0.5);-webkit-tap-highlight-color:rgba(240,165,0,0.3)}
+.lightbox-nav:hover{background:rgba(10,22,40,0.95);border-color:var(--gold-bright)}
+.lightbox-nav svg{width:22px;height:22px}
+.lightbox-prev{left:-70px}
+.lightbox-next{right:-70px}
+body.modal-locked{overflow:hidden;position:fixed;width:100%}
+
+/* ════════════ CTA SECTION ════════════ */
+.gallery-cta-section{background:var(--navy);padding:88px 28px;position:relative;overflow:hidden}
+.gallery-cta-section::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(240,165,0,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none}
+.cta-inner{max-width:920px;margin:0 auto;text-align:center;position:relative;z-index:2}
+.cta-eyebrow{display:inline-flex;align-items:center;gap:12px;margin-bottom:18px}
+.cta-eyebrow .line{width:28px;height:1px;background:var(--gold)}
+.cta-eyebrow span{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-light);font-weight:500}
+.cta-inner h2{font-family:'Playfair Display',serif;font-size:clamp(32px,4.5vw,52px);font-weight:700;color:#fff;line-height:1.1;margin-bottom:20px;letter-spacing:-.5px}
+.cta-inner h2 em{font-style:italic;color:var(--gold-light);font-weight:600}
+.cta-inner p{font-size:17px;color:rgba(255,255,255,.7);line-height:1.7;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;font-weight:300}
+.cta-buttons{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn-gold{display:inline-flex;align-items:center;gap:12px;background:var(--gold);color:var(--navy);font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:17px 36px;text-decoration:none;transition:all .25s;border:1px solid var(--gold)}
+.btn-gold:hover{background:var(--gold-light);border-color:var(--gold-light);gap:18px}
+.btn-gold svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;transition:transform .25s}
+.btn-outline{display:inline-flex;align-items:center;gap:12px;background:transparent;color:#fff;font-size:13px;font-weight:500;letter-spacing:2px;text-transform:uppercase;padding:17px 36px;text-decoration:none;transition:all .25s;border:1px solid rgba(255,255,255,.25)}
+.btn-outline:hover{border-color:var(--gold-light);color:var(--gold-light)}
+
+/* ════════════ RESPONSIVE ════════════ */
+@media(max-width:1100px){
+  .gallery-grid{grid-template-columns:repeat(2,1fr);gap:18px}
+}
+@media(max-width:900px){
+  .hero-stats{gap:32px}
+  .hero-stat-num{font-size:26px}
+  .lightbox-prev{left:8px}
+  .lightbox-next{right:8px}
+  .lightbox-nav{width:42px;height:42px;background:rgba(10,22,40,0.9)}
+}
+@media(max-width:760px){
+  .gallery-hero{min-height:50vh}
+  .gallery-hero-content{padding:60px 20px 48px}
+  .gallery-hero h1{font-size:36px;line-height:1.05}
+  .gallery-hero p{font-size:15px}
+  .hero-stats{gap:24px;margin-top:28px}
+  .hero-stat-num{font-size:24px}
+  .gallery-filters{padding:20px 16px;top:68px}
+  .filter-btn{padding:9px 16px;font-size:10.5px;letter-spacing:1.2px}
+  .gallery-section{padding:36px 16px 64px}
+  .gallery-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .gallery-item.tall,.gallery-item.wide{grid-row:auto;grid-column:auto;aspect-ratio:4/3}
+  .gallery-overlay{padding:14px}
+  .gallery-overlay-title{font-size:15px}
+  .gallery-overlay-loc{font-size:10px}
+  .gallery-overlay-tag{font-size:9px;padding:4px 9px;margin-bottom:6px}
+  .gallery-overlay-icon{width:30px;height:30px;top:10px;right:10px}
+  .gallery-overlay-icon svg{width:14px;height:14px}
+  .gallery-cta-section{padding:60px 20px}
+  .cta-inner h2{font-size:30px}
+  .cta-inner p{font-size:15px}
+  .lightbox-close{top:-44px;width:38px;height:38px}
+  .lightbox-img{max-height:70vh}
+  .lightbox-caption{font-size:16px;padding-top:14px}
+}
+@media(max-width:480px){
+  .gallery-grid{grid-template-columns:1fr;gap:14px}
+  .gallery-item{aspect-ratio:4/3}
+  .filter-inner{justify-content:flex-start;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap;padding-bottom:2px}
+  .filter-inner::-webkit-scrollbar{display:none}
+  .filter-btn{flex-shrink:0}
+}
+</style>
+<link rel="canonical" href="https://www.sanibuildingcorp.com/gallery">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.sanibuildingcorp.com/gallery">
+    <meta property="og:title" content="Project Gallery | Sani Building Corp">
+    <meta property="og:description" content="Browse our portfolio of luxury renovation projects across NYC — bathrooms, kitchens, interiors, exteriors.">
+    <meta property="og:image" content="https://www.sanibuildingcorp.com/images/gallery/project-1.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Project Gallery | Sani Building Corp">
+    <meta name="twitter:description" content="Browse our portfolio of luxury renovation projects across NYC — bathrooms, kitchens, interiors, exteriors.">
+    <meta name="twitter:image" content="https://www.sanibuildingcorp.com/images/gallery/project-1.jpg">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "ImageGallery", "name": "Sani Building Corp — NYC Renovation Portfolio", "url": "https://www.sanibuildingcorp.com/gallery", "description": "Portfolio of bathroom, kitchen, carpentry & renovation projects across NYC."}</script>
+</head>
+<body>
+
+<!-- Menu loaded from partials/menu.html via partials/site.js -->
+<div id="site-menu"></div>
+
+<!-- ════════════ HERO ════════════ -->
+<section class="gallery-hero">
+  <div class="gallery-hero-bg"></div>
+  <div class="gallery-hero-overlay"></div>
+  <div class="gallery-hero-grid"></div>
+  <div class="gallery-hero-accent"></div>
+  <div class="gallery-hero-content">
+    <div class="breadcrumb">
+      <a href="/">Home</a>
+      <span class="sep">/</span>
+      <span>Project Gallery</span>
+    </div>
+    <h1>Our NYC <em>Renovation</em> Portfolio</h1>
+    <p>A curated selection of luxury renovations, restorations, and craftsmanship across Brooklyn, Manhattan, Queens, and beyond. Every detail, every finish — built by hand.</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">10+</div>
+        <div class="hero-stat-lbl">Years in NYC</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">500+</div>
+        <div class="hero-stat-lbl">Projects Completed</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">4.9★</div>
+        <div class="hero-stat-lbl">Customer Rating</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">64</div>
+        <div class="hero-stat-lbl">Google Reviews</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ FILTERS ════════════ -->
+<div class="gallery-filters">
+  <div class="filter-inner">
+    <button class="filter-btn active" data-filter="all">All Projects</button>
+    <button class="filter-btn" data-filter="kitchen">Kitchens</button>
+    <button class="filter-btn" data-filter="bathroom">Bathrooms</button>
+    <button class="filter-btn" data-filter="interior">Interiors</button>
+    <button class="filter-btn" data-filter="exterior">Exteriors</button>
+    <button class="filter-btn" data-filter="carpentry">Carpentry</button>
+    <button class="filter-btn" data-filter="flooring">Flooring</button>
+    <button class="filter-btn" data-filter="restoration">Restoration</button>
+  </div>
+</div>
+
+<!-- ════════════ GALLERY GRID ════════════ -->
+<section style="padding:70px 28px;background:#faf8f4"><div style="max-width:860px;margin:0 auto">
+<h2 style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#0a1628;margin:0 0 18px">Real NYC Projects, Photographed on Real Job Sites</h2>
+<p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">Every photo in this gallery comes from an actual Sani Building Corp project &mdash; no stock images, no showroom staging. You&rsquo;re looking at bathrooms gutted and rebuilt in Brooklyn brownstones, kitchen cabinets installed in Manhattan co-ops, commercial tile floors set in Queens restaurants, decks built on Long Island, and repairs completed the same day they were called in. It&rsquo;s the most honest answer to the question every client asks: <em>what does your work actually look like?</em></p>
+<h3 style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#0a1628;margin:26px 0 10px">What to Look For</h3>
+<p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">Look at the details that separate craftsmanship from quick work: grout lines that stay straight through corners, cabinet doors with even reveals, paint edges cut clean against ceilings, tile layouts centered on the room. Those small decisions are made hundreds of times on every project, and they&rsquo;re why our renovations still look right years later &mdash; in busy family homes and high-traffic commercial spaces alike.</p>
+<h3 style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#0a1628;margin:26px 0 10px">Picture Your Own Project</h3>
+<p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">If a bathroom, kitchen, or floor here looks like what you&rsquo;ve been imagining, send us the photo along with pictures of your current space &mdash; it&rsquo;s the fastest way to get an accurate free estimate. We&rsquo;ll tell you what a similar result costs in your building and how long it takes, whether it&rsquo;s a powder room refresh or a full commercial build-out anywhere in NYC or Long Island.</p>
+</div></section>
+<section class="gallery-section">
+  <div class="gallery-wrap">
+    <div class="gallery-grid" id="galleryGrid">
+
+      <div class="gallery-item" data-category="kitchen" data-title="Custom Shaker Kitchen Renovation" data-loc="Brooklyn, NY" data-img="images/gallery/project-1.jpg" data-fallback="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1600&q=85">
+        <img src="images/gallery/project-1.jpg" alt="Luxury kitchen renovation in Brooklyn featuring custom shaker cabinets, waterfall quartz island and brass pendant lighting" onerror="this.src='https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Custom Shaker Kitchen</div>
+          <div class="gallery-overlay-loc">Brooklyn, NY</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="bathroom" data-title="Marble Master Bathroom" data-loc="Park Slope, Brooklyn" data-img="images/gallery/project-2.jpg" data-fallback="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1600&q=85">
+        <img src="images/gallery/project-2.jpg" alt="Master bathroom remodel in Park Slope with marble tile, freestanding tub and matte black fixtures" onerror="this.src='https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Bathroom</span>
+          <div class="gallery-overlay-title">Marble Master Bath</div>
+          <div class="gallery-overlay-loc">Park Slope, Brooklyn</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="interior" data-title="Two-Tone Painted Interior" data-loc="Manhattan, NY" data-img="images/gallery/project-3.jpg" data-fallback="https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1600&q=85">
+        <img src="images/gallery/project-3.jpg" alt="Interior painting in Manhattan apartment with premium two-tone wall finish and crisp trim work" onerror="this.src='https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Interior</span>
+          <div class="gallery-overlay-title">Two-Tone Painted Walls</div>
+          <div class="gallery-overlay-loc">Manhattan, NY</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="interior" data-title="Full Gut Renovation" data-loc="Manhattan, NY" data-img="images/gallery/project-4.jpg" data-fallback="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1600&q=85">
+        <img src="images/gallery/project-4.jpg" alt="Full apartment gut renovation in Manhattan with open-plan living space, white oak floors and custom built-ins" onerror="this.src='https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Interior</span>
+          <div class="gallery-overlay-title">Full Apartment Renovation</div>
+          <div class="gallery-overlay-loc">Manhattan, NY</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="carpentry" data-title="Custom Built-In Shelving" data-loc="Queens, NY" data-img="images/gallery/project-5.jpg" data-fallback="https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=1600&q=85">
+        <img src="images/gallery/project-5.jpg" alt="Custom carpentry and millwork featuring handcrafted living room built-ins with floating shelves in a Queens brownstone" onerror="this.src='https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Carpentry</span>
+          <div class="gallery-overlay-title">Custom Built-Ins</div>
+          <div class="gallery-overlay-loc">Queens Brownstone</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="flooring" data-title="White Oak Hardwood Floors" data-loc="Brooklyn Loft" data-img="images/gallery/project-6.jpg" data-fallback="https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1600&q=85">
+        <img src="images/gallery/project-6.jpg" alt="Wide-plank white oak hardwood flooring installation across an open Brooklyn loft" onerror="this.src='https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Flooring</span>
+          <div class="gallery-overlay-title">Wide-Plank White Oak</div>
+          <div class="gallery-overlay-loc">Brooklyn Loft</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="exterior" data-title="Brownstone Facade Restoration" data-loc="Brooklyn, NY" data-img="images/gallery/project-7.jpg" data-fallback="https://images.unsplash.com/photo-1592595896616-c37162298647?w=1600&q=85">
+        <img src="images/gallery/project-7.jpg" alt="Exterior facade restoration on a Brooklyn brownstone with repointed brick, repaired cornice and new entry door" onerror="this.src='https://images.unsplash.com/photo-1592595896616-c37162298647?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Exterior</span>
+          <div class="gallery-overlay-title">Brownstone Restoration</div>
+          <div class="gallery-overlay-loc">Brooklyn, NY</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="restoration" data-title="Water Damage Restoration" data-loc="Manhattan Co-op" data-img="images/gallery/project-8.jpg" data-fallback="https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=1600&q=85">
+        <img src="images/gallery/project-8.jpg" alt="Water damage restoration and ceiling repair in a Manhattan co-op with drywall replacement, fresh paint and finish" onerror="this.src='https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Restoration</span>
+          <div class="gallery-overlay-title">Water Damage Repair</div>
+          <div class="gallery-overlay-loc">Manhattan Co-op</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="bathroom" data-title="Marble Mosaic Shower" data-loc="Manhattan, NY" data-img="images/gallery/marble-mosaic-shower-1.jpg" data-fallback="https://images.unsplash.com/photo-1620626011761-996317b8d101?w=1600&q=85">
+        <img src="images/gallery/marble-mosaic-shower-1.jpg" alt="Custom marble mosaic shower with brass jets in luxury Manhattan bathroom" onerror="this.src='https://images.unsplash.com/photo-1620626011761-996317b8d101?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Bathroom</span>
+          <div class="gallery-overlay-title">Marble Mosaic Shower</div>
+          <div class="gallery-overlay-loc">Manhattan, NY</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="bathroom" data-title="Sage Tile Bathroom" data-loc="Brooklyn, NY" data-img="images/gallery/sage-tile-bathroom.jpg" data-fallback="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=1600&q=85">
+        <img src="images/gallery/sage-tile-bathroom.jpg" alt="Sage green tile bathroom with modern fixtures and custom vanity" onerror="this.src='https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Bathroom</span>
+          <div class="gallery-overlay-title">Sage Tile Bathroom</div>
+          <div class="gallery-overlay-loc">Brooklyn, NY</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="interior" data-title="NYC Luxury Living Room" data-loc="Manhattan, NY" data-img="images/gallery/nyc-luxury-livingroom.jpg" data-fallback="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1600&q=85">
+        <img src="images/gallery/nyc-luxury-livingroom.jpg" alt="NYC luxury living room with chandelier, marble accents and floor-to-ceiling windows" onerror="this.src='https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Interior</span>
+          <div class="gallery-overlay-title">Luxury Living Room</div>
+          <div class="gallery-overlay-loc">Manhattan, NY</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+      <div class="gallery-item" data-category="bathroom" data-title="Marble Tub & Brass Fixtures" data-loc="Brooklyn, NY" data-img="images/gallery/marble-tub-brass-2.jpg" data-fallback="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1600&q=85">
+        <img src="images/gallery/marble-tub-brass-2.jpg" alt="Freestanding marble tub with brass fixtures in luxury Brooklyn bathroom" onerror="this.src='https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1200&q=85'">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Bathroom</span>
+          <div class="gallery-overlay-title">Marble Tub Suite</div>
+          <div class="gallery-overlay-loc">Brooklyn, NY</div>
+        </div>
+        <div class="gallery-overlay-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="gallery-empty" id="galleryEmpty">
+      <h3>No projects in this category yet</h3>
+      <p>Check back soon — we're constantly adding new completed projects.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ CTA SECTION ════════════ -->
+<section class="gallery-cta-section">
+  <div class="cta-inner">
+    <div class="cta-eyebrow">
+      <span class="line"></span>
+      <span>Ready to Start?</span>
+      <span class="line"></span>
+    </div>
+    <h2>Let's build <em>your</em> next project</h2>
+    <p>Inspired by what you see? Every project starts with a conversation. Get a free, no-obligation estimate from NYC's most trusted renovation team.</p>
+    <div class="cta-buttons">
+      <a href="/contact" class="btn-gold">
+        Get a Free Estimate
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+      <a href="tel:3322770990" class="btn-outline">
+        Call 332-277-0990
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ LIGHTBOX ════════════ -->
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="lightbox-nav lightbox-prev" id="lbPrev" aria-label="Previous project">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <div class="lightbox-img-wrap">
+    <button class="lightbox-close" id="lbClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <img class="lightbox-img" id="lbImg" src="" alt="">
+    <div class="lightbox-caption" id="lbCaption"></div>
+  </div>
+  <button class="lightbox-nav lightbox-next" id="lbNext" aria-label="Next project">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+</div>
+
+<!-- Footer loaded from partials/footer.html via partials/site.js -->
+<div id="site-footer"></div>
+
+<!-- Loads menu/footer partials + mobile menu functions -->
+<script src="partials/site.js"></script>
+
+<!-- Gallery-specific JS (filters + lightbox) -->
+<script>
+// ═════ GALLERY FILTERS ═════
+(function(){
+  var buttons=document.querySelectorAll('.filter-btn');
+  var items=document.querySelectorAll('.gallery-item');
+  var emptyState=document.getElementById('galleryEmpty');
+
+  buttons.forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var filter=btn.getAttribute('data-filter');
+      buttons.forEach(function(b){b.classList.remove('active')});
+      btn.classList.add('active');
+
+      var visibleCount=0;
+      items.forEach(function(item){
+        var category=item.getAttribute('data-category');
+        if(filter==='all' || category===filter){
+          item.classList.remove('hidden');
+          // Restart fade animation
+          item.style.animation='none';
+          item.offsetHeight; // trigger reflow
+          item.style.animation=null;
+          visibleCount++;
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      if(visibleCount===0){
+        emptyState.classList.add('show');
+      } else {
+        emptyState.classList.remove('show');
+      }
+    });
+  });
+
+  // Add counts to filter buttons
+  buttons.forEach(function(btn){
+    var filter=btn.getAttribute('data-filter');
+    var count=0;
+    if(filter==='all'){
+      count=items.length;
+    } else {
+      items.forEach(function(item){
+        if(item.getAttribute('data-category')===filter)count++;
+      });
+    }
+    if(count>0){
+      var span=document.createElement('span');
+      span.className='count';
+      span.textContent='('+count+')';
+      btn.appendChild(document.createTextNode(' '));
+      btn.appendChild(span);
+    }
+  });
+})();
+
+// ═════ LIGHTBOX ═════
+(function(){
+  var lightbox=document.getElementById('lightbox');
+  var lbImg=document.getElementById('lbImg');
+  var lbCaption=document.getElementById('lbCaption');
+  var lbClose=document.getElementById('lbClose');
+  var lbPrev=document.getElementById('lbPrev');
+  var lbNext=document.getElementById('lbNext');
+  var items=document.querySelectorAll('.gallery-item');
+  var currentIdx=0;
+
+  function getVisibleItems(){
+    return Array.from(items).filter(function(item){
+      return !item.classList.contains('hidden');
+    });
+  }
+
+  function openLightbox(idx){
+    var visible=getVisibleItems();
+    if(!visible.length)return;
+    if(idx<0)idx=visible.length-1;
+    if(idx>=visible.length)idx=0;
+    currentIdx=idx;
+    var item=visible[idx];
+    var img=item.querySelector('img');
+    var title=item.getAttribute('data-title');
+    var loc=item.getAttribute('data-loc');
+    lbImg.src=img.src;
+    lbImg.alt=img.alt;
+    lbCaption.innerHTML=title+'<span class="loc">'+loc+'</span>';
+    lightbox.classList.add('is-open');
+    lightbox.setAttribute('aria-hidden','false');
+    document.body.classList.add('modal-locked');
+  }
+
+  function closeLightbox(){
+    lightbox.classList.remove('is-open');
+    lightbox.setAttribute('aria-hidden','true');
+    document.body.classList.remove('modal-locked');
+  }
+
+  items.forEach(function(item,i){
+    item.addEventListener('click',function(){
+      var visible=getVisibleItems();
+      var visibleIdx=visible.indexOf(item);
+      if(visibleIdx>=0)openLightbox(visibleIdx);
+    });
+  });
+
+  lbClose.addEventListener('click',closeLightbox);
+  lbPrev.addEventListener('click',function(){openLightbox(currentIdx-1)});
+  lbNext.addEventListener('click',function(){openLightbox(currentIdx+1)});
+
+  // Close on backdrop click (outside image)
+  lightbox.addEventListener('click',function(e){
+    if(e.target===lightbox)closeLightbox();
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown',function(e){
+    if(!lightbox.classList.contains('is-open'))return;
+    if(e.key==='Escape')closeLightbox();
+    if(e.key==='ArrowLeft')openLightbox(currentIdx-1);
+    if(e.key==='ArrowRight')openLightbox(currentIdx+1);
+  });
+
+  // Touch swipe support
+  var tStartX=0,tEndX=0;
+  lightbox.addEventListener('touchstart',function(e){
+    if(e.touches.length===1)tStartX=e.touches[0].clientX;
+  },{passive:true});
+  lightbox.addEventListener('touchend',function(e){
+    if(e.changedTouches.length!==1)return;
+    tEndX=e.changedTouches[0].clientX;
+    var dx=tEndX-tStartX;
+    if(Math.abs(dx)>50){
+      if(dx<0)openLightbox(currentIdx+1);
+      else openLightbox(currentIdx-1);
+    }
+  },{passive:true});
+})();
+</script>
+
+</body>
+</html>
