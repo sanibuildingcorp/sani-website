@@ -3696,7 +3696,7 @@ function updateCvPreview() {
   }
   html += '<div class="cv-preview-row preview-grand"><span>TOTAL</span><span class="pv-value">' + fmt(cv.customerTotal) + '</span></div>';
 
-  if (cv.showLabor && !cv.showMaterials && t.mat > 0) {
+  if (cv.showLabor && cv.showMaterials) {
     html += '<div class="cv-preview-note"><strong>✓ All materials included</strong> in the total price.</div>';
   }
   if (!cv.showLabor && cv.showMaterials && t.labor > 0) {
@@ -5682,6 +5682,7 @@ var SBC_TABS = [
   {id:'declined', icon:'❌', label:'Declined'},
   null,
   {id:'handyman', icon:'🔧', label:'Handyman'},
+  {id:'visits',   icon:'📅', label:'Visits'},
   {id:'seo',      icon:'🧠', label:'SEO Brain'},
   {id:'content',  icon:'✍️',  label:'Content'},
   {id:'images',   icon:'🎨', label:'Images'},
@@ -5697,13 +5698,14 @@ function sbcOpenDrawer() {
 
   // Build nav
   // Calculate counts from live data
-  var counts = {all:0,new:0,drafted:0,sent:0,accepted:0,invoiced:0,paid:0,declined:0,handyman:0,seo:0,content:0,visitors:0};
+  var counts = {all:0,new:0,drafted:0,sent:0,accepted:0,invoiced:0,paid:0,declined:0,handyman:0,seo:0,content:0,visitors:0,visits:0};
   try {
     if (typeof estimates !== 'undefined' && estimates) {
       counts.all = estimates.length;
       estimates.forEach(function(e) { if (e.status && counts[e.status] !== undefined) counts[e.status]++; });
     }
     if (typeof handymanBookings !== 'undefined' && handymanBookings) counts.handyman = handymanBookings.length;
+    if (typeof visits !== 'undefined' && visits) counts.visits = visits.filter(function(v){ return !v.done; }).length;
     if (typeof seoInsightCount !== 'undefined') counts.seo = seoInsightCount || 0;
     if (typeof visitorsLiveCount !== 'undefined') counts.visitors = visitorsLiveCount || 0;
   } catch(e) {}
