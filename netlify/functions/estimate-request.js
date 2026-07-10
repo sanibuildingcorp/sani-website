@@ -211,12 +211,7 @@ async function sendContractorEmail(resendKey, contractorEmail, data) {
 }
 
 async function sendCustomerConfirmation(resendKey, contractorEmail, data) {
-  // While domain not verified at Resend, customer confirmation only sends if customer's email
-  // matches the verified one. Skip it gracefully if it would fail.
-  if (data.email.toLowerCase() !== (contractorEmail || "").toLowerCase()) {
-    console.log("Skipping customer confirmation (domain not verified at Resend yet)");
-    return;
-  }
+  // Domain is verified at Resend — confirmation goes to every customer.
 
   const firstName = (data.name || "there").split(" ")[0];
   const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif;color:#333;line-height:1.6">
