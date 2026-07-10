@@ -14,6 +14,8 @@ Disallow: /seo-content
 Disallow: /seo-content.html
 Disallow: /keyword-volumes
 Disallow: /keyword-volumes.html
+Disallow: /bid-analyzer
+Disallow: /bid-analyzer.html
 
 # ─── Block private customer-document pages (opened via tokenized email links, no SEO value) ───
 Disallow: /invoice
