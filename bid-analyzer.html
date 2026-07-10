@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bid Analyzer | Sani Building Corp</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<meta name="theme-color" content="#0a1628">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#c8860a; --gold-2:#f0a500; --gold-3:#ffb627;
+  --navy:#0a1628; --navy-2:#050d1a;
+  --bg:#050d1a; --card:#0d1b30; --line:#1c2f4d;
+  --ink:#eef2f8; --ink-muted:#8fa1bb;
+  --green:#2ecc71; --amber:#f39c12; --red:#e74c3c;
+  --display:'Playfair Display',serif; --body:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+em{color:var(--gold-2);font-style:italic}
+h1,h2,h3{font-family:var(--display)}
+button{font-family:var(--body);cursor:pointer}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+
+/* ===== LOGIN GATE ===== */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 30% 20%,var(--navy) 0%,var(--bg) 60%)}
+.login-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:44px 36px;max-width:400px;width:100%;text-align:center}
+.login-logo{font-family:var(--display);font-size:28px;letter-spacing:5px;color:var(--gold-2);margin-bottom:6px}
+.login-sub{font-size:12px;letter-spacing:3px;color:var(--ink-muted);margin-bottom:32px;text-transform:uppercase}
+.login-input{width:100%;padding:14px 16px;background:var(--navy);border:1.5px solid var(--line);color:var(--ink);font-family:var(--body);font-size:15px;border-radius:10px;margin-bottom:14px}
+.login-input:focus{outline:none;border-color:var(--gold)}
+.login-btn{width:100%;padding:14px;background:var(--gold);color:var(--navy-2);border:none;border-radius:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:13px}
+.login-err{color:var(--red);font-size:13px;margin-top:10px;display:none}
+
+/* ===== APP ===== */
+#app{display:none}
+.topbar{background:var(--navy);border-bottom:1px solid var(--line);padding:16px 0}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:20px;letter-spacing:3px}
+.brand span{color:var(--gold-2)}
+.badge-tool{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-muted);border:1px solid var(--line);padding:4px 10px;border-radius:999px}
+.topbar a{color:var(--ink-muted);font-size:13px;text-decoration:none}
+.topbar a:hover{color:var(--gold-2)}
+
+.section{padding:28px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;margin-bottom:20px}
+.card h2{font-size:22px;margin-bottom:6px}
+.card .sub{color:var(--ink-muted);font-size:14px;margin-bottom:18px}
+
+/* Upload */
+.dropzone{border:2px dashed var(--gold);border-radius:14px;padding:38px 20px;text-align:center;cursor:pointer;transition:background .15s}
+.dropzone:hover,.dropzone.drag{background:rgba(200,134,10,.08)}
+.dz-icon{font-size:34px;margin-bottom:8px}
+.dz-title{font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:14px}
+.dz-hint{color:var(--ink-muted);font-size:13px;margin-top:4px}
+.file-chip{display:flex;align-items:center;gap:10px;background:var(--navy);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px}
+.file-chip .fname{font-weight:500;word-break:break-all}
+.file-chip .fsize{color:var(--ink-muted);font-size:12px;margin-left:auto;white-space:nowrap}
+.file-chip .fx{background:none;border:none;color:var(--red);font-size:18px;line-height:1}
+textarea.notes{width:100%;min-height:84px;margin-top:16px;padding:13px 14px;background:var(--navy);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);font-family:var(--body);font-size:14px;resize:vertical}
+textarea.notes:focus{outline:none;border-color:var(--gold)}
+.btn-gold{display:inline-block;margin-top:18px;padding:15px 34px;background:var(--gold);color:var(--navy-2);border:none;border-radius:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:13px}
+.btn-gold:disabled{opacity:.45;cursor:not-allowed}
+.btn-ghost{display:inline-block;margin-top:18px;margin-left:10px;padding:14px 24px;background:transparent;color:var(--gold-2);border:1.5px solid var(--gold);border-radius:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:13px}
+
+/* Progress */
+#progress{display:none;text-align:center;padding:40px 20px}
+.spinner{width:54px;height:54px;border:4px solid var(--line);border-top-color:var(--gold-2);border-radius:50%;margin:0 auto 18px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#progress-msg{color:var(--ink-muted);font-size:14px}
+#progress h3{margin-bottom:8px}
+
+/* Results */
+#results{display:none}
+.pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:999px}
+.pill.high{background:rgba(46,204,113,.15);color:var(--green);border:1px solid rgba(46,204,113,.4)}
+.pill.medium{background:rgba(243,156,18,.15);color:var(--amber);border:1px solid rgba(243,156,18,.4)}
+.pill.low{background:rgba(231,76,60,.15);color:var(--red);border:1px solid rgba(231,76,60,.4)}
+.pill.fed{background:rgba(200,134,10,.18);color:var(--gold-3);border:1px solid var(--gold)}
+.rollup{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0 4px}
+.roll{flex:1;min-width:120px;background:var(--navy);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.roll .n{font-size:26px;font-weight:700;font-family:var(--display)}
+.roll .l{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-muted)}
+.roll.high .n{color:var(--green)} .roll.medium .n{color:var(--amber)} .roll.low .n{color:var(--red)}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px}
+th{text-align:left;color:var(--ink-muted);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 8px;border-bottom:1px solid var(--line)}
+td{padding:11px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.nopr td{background:rgba(231,76,60,.06)}
+.src{color:var(--ink-muted);font-size:12px;display:block;margin-top:3px}
+.tbl-scroll{overflow-x:auto}
+
+.buildup{max-width:440px;margin-left:auto;margin-top:16px}
+.buildup .row{display:flex;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--line);font-size:14px}
+.buildup .row.total{border-top:2px solid var(--gold);border-bottom:none;font-size:19px;font-weight:700;color:var(--gold-3);padding-top:12px}
+.warn-box{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.4);border-radius:10px;padding:14px 16px;font-size:13.5px;margin-top:14px}
+.gold-box{background:rgba(200,134,10,.1);border:1px solid var(--gold);border-radius:10px;padding:14px 16px;font-size:13.5px;margin-top:14px}
+ul.plain{list-style:none}
+ul.plain li{padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+ul.plain li:last-child{border-bottom:none}
+.cat-tag{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-2);border:1px solid var(--line);padding:2px 8px;border-radius:999px;margin-right:8px;white-space:nowrap}
+.footer-note{color:var(--ink-muted);font-size:12.5px;text-align:center;padding:26px 18px 46px;max-width:760px;margin:0 auto}
+
+@media print{
+  body{background:#fff;color:#111}
+  .topbar,.dropzone,.btn-gold,.btn-ghost,#upload-card .sub,textarea.notes,.footer-note{display:none!important}
+  .card{border:1px solid #ccc;background:#fff;break-inside:avoid}
+  .roll,.file-chip,.buildup .row{background:#fff;border-color:#ccc}
+  td,th{border-color:#ddd}
+}
+@media(max-width:640px){
+  .card{padding:18px}
+  .buildup{max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div class="login-screen" id="login">
+  <div class="login-card">
+    <div class="login-logo">SANI</div>
+    <div class="login-sub">Bid Analyzer · Admin Only</div>
+    <input type="password" class="login-input" id="pass" placeholder="Password" onkeydown="if(event.key==='Enter')checkPass()">
+    <button class="login-btn" onclick="checkPass()">Enter</button>
+    <div class="login-err" id="login-err">Wrong password.</div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+  <div class="topbar">
+    <div class="wrap">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="brand"><span>SANI</span> BUILDING CORP</div>
+        <div class="badge-tool">Bid Analyzer</div>
+      </div>
+      <div style="display:flex;gap:16px;align-items:center">
+        <a href="/dashboard.html">Dashboard</a>
+        <a href="#" onclick="logout();return false;">Log out</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="section wrap">
+
+    <!-- UPLOAD -->
+    <div class="card" id="upload-card">
+      <h2>Analyze a <em>Bid Package</em></h2>
+      <div class="sub">Upload an RFQ / SOW / drawings PDF. The AI extracts scope, quantities and compliance requirements — prices come ONLY from your Price Book (Supabase → price_book table).</div>
+
+      <div class="dropzone" id="dz" onclick="document.getElementById('file-input').click()">
+        <div class="dz-icon">📐</div>
+        <div class="dz-title">Tap to add bid PDF</div>
+        <div class="dz-hint">One PDF up to 30MB / 100 pages — SOW, drawings, schedules all in one file works best</div>
+      </div>
+      <input type="file" id="file-input" accept="application/pdf" style="display:none" onchange="pickFile(event)">
+      <div id="file-chip-holder"></div>
+
+      <textarea class="notes" id="notes" placeholder="Optional notes for the AI — e.g. 'Federal correctional facility, occupied housing area, work hours 7AM–3PM, quote firm-fixed price Net 30'"></textarea>
+
+      <button class="btn-gold" id="analyze-btn" onclick="startAnalysis()" disabled>Analyze Bid →</button>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="card" id="progress">
+      <div class="spinner"></div>
+      <h3>Reading the bid package…</h3>
+      <div id="progress-msg">Uploading document</div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results"></div>
+
+  </div>
+
+  <div class="footer-note">
+    ⚠ This tool produces a <b>draft takeoff and cost buildup for your review</b> — it is not a final bid.
+    Verify every Low/Medium confidence quantity against the drawings, confirm all "Not in Price Book" items,
+    and for federal work confirm Davis-Bacon wage rates at sam.gov before submitting any number.
+  </div>
+</div>
+
+<script>
+/* ============ AUTH (same password + session as dashboard) ============ */
+const DASHBOARD_PASSWORD = "L0nd0n12@";
+function checkPass(){
+  const v = document.getElementById("pass").value;
+  if(v === DASHBOARD_PASSWORD){
+    sessionStorage.setItem("sbc-auth","1");
+    showApp();
+  } else {
+    document.getElementById("login-err").style.display = "block";
+  }
+}
+function logout(){
+  sessionStorage.removeItem("sbc-auth");
+  location.reload();
+}
+function showApp(){
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+if(sessionStorage.getItem("sbc-auth") === "1") showApp();
+
+/* ============ FILE PICK ============ */
+let pickedFile = null;
+const dz = document.getElementById("dz");
+["dragover","dragenter"].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.add("drag");}));
+["dragleave","drop"].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.remove("drag");}));
+dz.addEventListener("drop",ev=>{
+  const f = ev.dataTransfer.files && ev.dataTransfer.files[0];
+  if(f) setFile(f);
+});
+function pickFile(ev){
+  const f = ev.target.files && ev.target.files[0];
+  if(f) setFile(f);
+}
+function setFile(f){
+  if(f.type !== "application/pdf" && !/\.pdf$/i.test(f.name)){
+    alert("Please upload a PDF. If you have DWG drawings or Word docs, export/print them to PDF first.");
+    return;
+  }
+  if(f.size > 30*1024*1024){
+    alert("PDF is over 30MB. Compress it (e.g. smallpdf.com) and try again.");
+    return;
+  }
+  pickedFile = f;
+  document.getElementById("file-chip-holder").innerHTML =
+    '<div class="file-chip"><span>📄</span><span class="fname">'+esc(f.name)+'</span>'+
+    '<span class="fsize">'+(f.size/1024/1024).toFixed(1)+' MB</span>'+
+    '<button class="fx" onclick="clearFile()">✕</button></div>';
+  document.getElementById("analyze-btn").disabled = false;
+}
+function clearFile(){
+  pickedFile = null;
+  document.getElementById("file-input").value = "";
+  document.getElementById("file-chip-holder").innerHTML = "";
+  document.getElementById("analyze-btn").disabled = true;
+}
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function money(n){return n==null?"—":"$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+/* ============ ANALYSIS FLOW: upload → trigger → poll ============ */
+async function startAnalysis(){
+  if(!pickedFile) return;
+  const btn = document.getElementById("analyze-btn");
+  btn.disabled = true;
+  document.getElementById("upload-card").style.display = "none";
+  document.getElementById("results").style.display = "none";
+  document.getElementById("progress").style.display = "block";
+  setMsg("Uploading document to secure storage…");
+
+  try{
+    // 1) Get signed upload URL (bypasses Netlify 6MB limit — file goes straight to Supabase)
+    const r1 = await fetch("/.netlify/functions/upload-bid-file",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({fileName:pickedFile.name})
+    });
+    const d1 = await r1.json();
+    if(!d1.signedUrl) throw new Error(d1.error || "Could not get upload URL");
+
+    // 2) PUT the PDF directly to Supabase
+    const r2 = await fetch(d1.signedUrl,{
+      method:"PUT",
+      headers:{"Content-Type":"application/pdf","x-upsert":"true"},
+      body:pickedFile
+    });
+    if(!r2.ok) throw new Error("Upload to storage failed ("+r2.status+")");
+
+    // 3) Trigger background analysis
+    const jobId = "bid-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+    setMsg("Document uploaded. Starting AI takeoff — this takes 1–3 minutes for a full SOW…");
+    fetch("/.netlify/functions/analyze-bid-background",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        jobId, fileUrl:d1.publicUrl, fileName:pickedFile.name,
+        notes:document.getElementById("notes").value
+      })
+    }).catch(function(){}); // background fn — fire & forget, we poll for result
+
+    // 4) Poll
+    await pollJob(jobId);
+  }catch(err){
+    showError(err.message);
+  }
+}
+
+function setMsg(m){document.getElementById("progress-msg").textContent = m;}
+
+async function pollJob(jobId){
+  const started = Date.now();
+  const MAX_MS = 10*60*1000; // 10 min ceiling
+  while(Date.now()-started < MAX_MS){
+    await new Promise(r=>setTimeout(r,5000));
+    const secs = Math.round((Date.now()-started)/1000);
+    setMsg("AI is reading drawings and extracting quantities… "+secs+"s");
+    try{
+      const r = await fetch("/.netlify/functions/get-bid-analysis?id="+encodeURIComponent(jobId)+"&t="+Date.now());
+      const d = await r.json();
+      if(d.status === "done" && d.result){ renderResults(d.result); return; }
+      if(d.status === "error"){ showError(d.error || "Analysis failed"); return; }
+    }catch(e){ /* transient network — keep polling */ }
+  }
+  showError("Timed out after 10 minutes. Check Netlify function logs for analyze-bid-background, then try again.");
+}
+
+function showError(msg){
+  document.getElementById("progress").style.display = "none";
+  document.getElementById("upload-card").style.display = "block";
+  document.getElementById("analyze-btn").disabled = !pickedFile;
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  res.innerHTML = '<div class="card"><div class="warn-box"><b>Analysis failed:</b> '+esc(msg)+'</div></div>';
+}
+
+/* ============ RENDER RESULTS ============ */
+function renderResults(R){
+  document.getElementById("progress").style.display = "none";
+  document.getElementById("upload-card").style.display = "block";
+  document.getElementById("analyze-btn").disabled = !pickedFile;
+
+  const c = R.confidence_rollup || {high:0,medium:0,low:0};
+  const P = R.pricing || {};
+  let h = "";
+
+  // --- Summary card ---
+  h += '<div class="card"><h2>Project <em>Summary</em></h2>';
+  h += '<div style="margin:6px 0 12px">'+(R.is_federal?'<span class="pill fed">⚑ Federal Project</span> ':'')+
+       (R.quote_due?'<span class="pill medium">Quote due: '+esc(R.quote_due)+'</span> ':'')+
+       (R.payment_terms?'<span class="pill high">'+esc(R.payment_terms)+'</span>':'')+'</div>';
+  h += '<p style="font-size:15px">'+esc(R.project_summary)+'</p>';
+  if((R.agency_signals||[]).length) h += '<p style="color:var(--ink-muted);font-size:13px;margin-top:8px">Signals: '+esc(R.agency_signals.join(", "))+'</p>';
+  h += '<div class="rollup">'+
+    '<div class="roll high"><div class="n">'+c.high+'</div><div class="l">High confidence</div></div>'+
+    '<div class="roll medium"><div class="n">'+c.medium+'</div><div class="l">Medium — verify</div></div>'+
+    '<div class="roll low"><div class="n">'+c.low+'</div><div class="l">Low — must check</div></div></div>';
+  h += '<button class="btn-ghost" onclick="window.print()">🖨 Print / Save PDF</button></div>';
+
+  // --- Line items ---
+  h += '<div class="card"><h2>Takeoff &amp; <em>Line Items</em></h2><div class="sub">Every quantity shows its source page. Prices come only from your Price Book — the AI never sets a price.</div><div class="tbl-scroll"><table><tr><th>Item</th><th class="num">Qty</th><th>Unit</th><th>Conf.</th><th class="num">Material</th><th class="num">Labor</th><th class="num">Total</th></tr>';
+  (R.line_items||[]).forEach(function(li){
+    const nop = !li.priced;
+    h += '<tr'+(nop?' class="nopr"':'')+'><td><b>'+esc(li.description)+'</b>'+
+      '<span class="src">CSI '+esc(li.csi_code||"—")+' · '+esc(li.source||"")+
+      ((li.assumptions||[]).length?' · <i>Assumed: '+esc(li.assumptions.join("; "))+'</i>':'')+
+      (nop?' · <b style="color:var(--red)">NOT IN PRICE BOOK — not in total</b>':'')+'</span></td>'+
+      '<td class="num">'+esc(li.qty)+'</td><td>'+esc(li.unit||"")+'</td>'+
+      '<td><span class="pill '+esc(li.confidence)+'">'+esc(li.confidence)+'</span></td>'+
+      '<td class="num">'+money(li.material_cost)+'</td>'+
+      '<td class="num">'+money(li.labor_cost)+(li.labor_hours?'<span class="src">'+li.labor_hours+' hrs</span>':'')+'</td>'+
+      '<td class="num"><b>'+money(li.line_total)+'</b></td></tr>';
+  });
+  h += '</table></div>';
+
+  // --- Cost buildup ---
+  h += '<div class="buildup">'+
+    row("Direct cost subtotal", money(P.direct_subtotal))+
+    row("Overhead ("+P.overhead_pct+"%)", money(P.overhead))+
+    row("Profit ("+P.profit_pct+"%)", money(P.profit))+
+    row("Contingency ("+P.contingency_pct+"%) <span class=\"src\">"+esc(P.contingency_reason||"")+"</span>", money(P.contingency))+
+    '<div class="row total"><span>Draft Bid Total</span><span>'+money(P.bid_total)+'</span></div></div>';
+  if(P.incomplete) h += '<div class="warn-box">⚠ '+esc(P.incomplete_note)+'</div>';
+  h += '</div>';
+
+  function row(l,v){return '<div class="row"><span>'+l+'</span><span>'+v+'</span></div>';}
+
+  // --- Needs pricing ---
+  if((R.needs_pricing||[]).length){
+    h += '<div class="card"><h2>Add to <em>Price Book</em></h2><div class="sub">These items had no matching rate. Add them in Supabase → Table Editor → price_book, then re-run the analysis to include them in the total.</div><ul class="plain">';
+    R.needs_pricing.forEach(function(n){
+      h += '<li><span class="cat-tag">CSI '+esc(n.suggested_csi||"?")+'</span>'+esc(n.description)+' — '+esc(n.qty)+' '+esc(n.unit)+'</li>';
+    });
+    h += '</ul></div>';
+  }
+
+  // --- Compliance ---
+  if((R.compliance_checklist||[]).length || R.davis_bacon){
+    h += '<div class="card"><h2>Compliance <em>Checklist</em></h2><div class="sub">Extracted from the fine print — deadlines and rules that can disqualify a bid or blow up a job.</div>';
+    if(R.davis_bacon && R.davis_bacon.applies){
+      h += '<div class="gold-box"><b>⚑ Davis-Bacon prevailing wages apply.</b> '+esc(R.davis_bacon.note||"")+' Update labor_rate values in the price book with the sam.gov wage determination before finalizing.</div>';
+    }
+    h += '<ul class="plain">';
+    (R.compliance_checklist||[]).forEach(function(cc){
+      h += '<li><span class="cat-tag">'+esc(cc.category||"item")+'</span>'+esc(cc.requirement)+
+           (cc.source?'<span class="src">'+esc(cc.source)+'</span>':'')+'</li>';
+    });
+    h += '</ul>';
+    if((R.work_constraints||[]).length){
+      h += '<div class="gold-box"><b>Site constraints affecting labor productivity:</b><br>'+esc(R.work_constraints.join(" · "))+'</div>';
+    }
+    h += '</div>';
+  }
+
+  // --- RFIs / Missing info ---
+  const rfis = (R.line_items||[]).filter(function(li){return li.rfi_draft;});
+  if(rfis.length || (R.missing_information||[]).length){
+    h += '<div class="card"><h2>Missing Info &amp; <em>RFI Drafts</em></h2><div class="sub">Send these questions to the contracting officer / GC before you commit to a firm-fixed price.</div><ul class="plain">';
+    rfis.forEach(function(li){ h += '<li><span class="cat-tag">RFI</span>'+esc(li.rfi_draft)+'<span class="src">re: '+esc(li.description)+'</span></li>'; });
+    (R.missing_information||[]).forEach(function(m){ h += '<li><span class="cat-tag">Missing</span>'+esc(m)+'</li>'; });
+    h += '</ul></div>';
+  }
+
+  // --- Assumptions log ---
+  if((R.assumptions_log||[]).length){
+    h += '<div class="card"><h2>Assumptions <em>Log</em></h2><div class="sub">Every interpretation the AI made. Read this list — it IS the trust check. If an assumption is wrong, the number above it is wrong.</div><ul class="plain">';
+    R.assumptions_log.forEach(function(a){ h += '<li>'+esc(a)+'</li>'; });
+    h += '</ul></div>';
+  }
+
+  h += '<div class="card" style="text-align:center;color:var(--ink-muted);font-size:12.5px">Generated '+esc(new Date(R.generated_at).toLocaleString())+' · '+esc(R.file_name||"")+' · Model: '+esc(R.model||"")+'</div>';
+
+  const res = document.getElementById("results");
+  res.innerHTML = h;
+  res.style.display = "block";
+  res.scrollIntoView({behavior:"smooth"});
+}
+</script>
+</body>
+</html>
