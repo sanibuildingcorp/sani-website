@@ -2668,6 +2668,7 @@ const TABS = [
   { id: "paid", label: "Paid" },
   { id: "declined", label: "Declined" },
   { id: "handyman", label: "🔧 Handyman" },
+  { id: "visits", label: "📅 Visits" },
   { id: "seo", label: "🧠 SEO Brain" },
   { id: "content", label: "✍️ Content" },
   { id: "images", label: "🎨 Images" },
@@ -2676,6 +2677,7 @@ const TABS = [
 ];
 
 let handymanBookings = [];
+let visits = [];
 let visitorsLiveCount = 0;
 let estimates = [];
 let activeTab = "all";
@@ -2791,6 +2793,7 @@ function renderTabs() {
   TABS.forEach(function(t) { if (t.id !== "all") counts[t.id] = 0; });
   estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
   counts.handyman = handymanBookings.length;
+  counts.visits = visits.filter(function(v){ return !v.done; }).length;
   counts.seo = seoInsightCount;
   counts.visitors = visitorsLiveCount;
   document.getElementById("tabs-row").innerHTML = TABS.map(function(t) {
@@ -2820,9 +2823,10 @@ async function loadEstimates() {
   const host = document.getElementById("list-host");
   host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
   try {
-    const [estimateRes, handymanRes] = await Promise.all([
+    const [estimateRes, handymanRes, visitsRes] = await Promise.all([
       fetch("/.netlify/functions/list-estimates").catch(function(e) { console.error("Estimates load failed:", e); return null; }),
-      fetch("/.netlify/functions/handyman-get").catch(function(e) { console.error("Handyman load failed:", e); return null; })
+      fetch("/.netlify/functions/handyman-get").catch(function(e) { console.error("Handyman load failed:", e); return null; }),
+      fetch("/.netlify/functions/visits").catch(function(e) { console.error("Visits load failed:", e); return null; })
     ]);
 
     if (estimateRes && estimateRes.ok) {
@@ -2833,6 +2837,10 @@ async function loadEstimates() {
       const data = await handymanRes.json();
       handymanBookings = data.bookings || [];
     }
+    if (visitsRes && visitsRes.ok) {
+      const data = await visitsRes.json();
+      visits = data.visits || [];
+    }
 
     renderTabs();
     renderList();
@@ -2842,8 +2850,113 @@ async function loadEstimates() {
   }
 }
 
+
+/* ===== SITE VISITS ===== */
+function visitDayKey(dt){ return (dt||"").slice(0,10); }
+function todayKey(off){ var d=new Date(); d.setDate(d.getDate()+(off||0)); return d.toISOString().slice(0,10); }
+function fmtVisitTime(dt){
+  if(!dt) return "";
+  var d=new Date(dt);
+  return d.toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+}
+function gcalLink(v){
+  var d=new Date(v.datetime); var e=new Date(d.getTime()+60*60*1000);
+  function z(x){return x.toISOString().replace(/[-:]/g,"").split(".")[0];}
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE"
+    +"&text="+encodeURIComponent("Site visit: "+v.customer)
+    +"&dates="+z(d)+"/"+z(e)
+    +"&location="+encodeURIComponent(v.address||"")
+    +"&details="+encodeURIComponent((v.reason||"")+(v.ref?(" · "+v.ref):""));
+}
+function renderVisitsTab(){
+  var host=document.getElementById("list-host");
+  var open=visits.filter(function(v){return !v.done;});
+  var done=visits.filter(function(v){return v.done;});
+  var tk=todayKey(0), tm=todayKey(1);
+  function group(label,items,color){
+    if(!items.length) return "";
+    return '<div style="font-family:inherit;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:'+color+';margin:22px 4px 10px;font-weight:700">'+label+' · '+items.length+'</div>'
+      + items.map(visitCard).join("");
+  }
+  function visitCard(v){
+    var maps="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(v.address||"");
+    return '<div class="est-card" style="cursor:default">'
+      +'<div class="est-main">'
+      +'<div class="est-title">'+esc(v.customer)+(v.ref?' <span style="font-size:12px;color:#8a93a3;font-weight:400">· '+esc(v.ref)+'</span>':'')+'</div>'
+      +'<div style="margin:6px 0 2px;font-size:14px;color:#c9a84c;font-weight:600">🕐 '+esc(fmtVisitTime(v.datetime))+'</div>'
+      +(v.address?'<div style="font-size:13.5px;margin:3px 0"><a href="'+maps+'" target="_blank" style="color:#7fa8e0;text-decoration:none">📍 '+esc(v.address)+'</a></div>':'')
+      +(v.reason?'<div style="font-size:13px;color:#a7aebb;margin:3px 0">Why: '+esc(v.reason)+'</div>':'')
+      +(v.notes?'<div style="font-size:12.5px;color:#8a93a3;margin:3px 0">'+esc(v.notes)+'</div>':'')
+      +'<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
+      +(!v.done?'<button class="topbar-btn" onclick="markVisitDone(\''+v.id+'\',true)">✓ Done</button>':'<button class="topbar-btn" onclick="markVisitDone(\''+v.id+'\',false)">↩ Reopen</button>')
+      +'<a class="topbar-btn" style="text-decoration:none" target="_blank" href="'+gcalLink(v)+'">📆 Calendar</a>'
+      +'<button class="topbar-btn" onclick="deleteVisit(\''+v.id+'\')" style="color:#e07a7a">🗑 Delete</button>'
+      +'</div></div></div>';
+  }
+  var estOpts=estimates.map(function(e){
+    var nm=(e.customer&&e.customer.name)||""; var ad=(e.customer&&e.customer.address)||(e.request&&e.request.address)||"";
+    return '<option value="'+esc(e.ref)+'" data-name="'+esc(nm)+'" data-addr="'+esc(ad)+'">'+esc(e.ref+" — "+nm)+'</option>';
+  }).join("");
+  host.innerHTML =
+    '<div class="est-card" style="cursor:default"><div class="est-main">'
+    +'<div class="est-title">📅 Schedule a site visit</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:14px">'
+    +'<select id="v-est" onchange="visitFromEstimate(this)" style="padding:11px;border-radius:8px;background:#0d1626;color:#fff;border:1px solid rgba(255,255,255,.18)"><option value="">Link to estimate (optional)</option>'+estOpts+'</select>'
+    +'<input id="v-cust" placeholder="Customer name *" style="padding:11px;border-radius:8px;background:#0d1626;color:#fff;border:1px solid rgba(255,255,255,.18)">'
+    +'<input id="v-addr" placeholder="Address" style="padding:11px;border-radius:8px;background:#0d1626;color:#fff;border:1px solid rgba(255,255,255,.18)">'
+    +'<input id="v-when" type="datetime-local" style="padding:11px;border-radius:8px;background:#0d1626;color:#fff;border:1px solid rgba(255,255,255,.18)">'
+    +'<input id="v-why" placeholder="Why (e.g. measure bathroom, confirm scope)" style="padding:11px;border-radius:8px;background:#0d1626;color:#fff;border:1px solid rgba(255,255,255,.18);grid-column:1/-1">'
+    +'</div>'
+    +'<button class="topbar-btn" onclick="createVisit()" style="margin-top:12px;background:#c9a84c;color:#0d1b2a;font-weight:700">+ Add visit</button>'
+    +'<span id="v-msg" style="margin-left:10px;font-size:13px;color:#8a93a3"></span>'
+    +'</div></div>'
+    + group("⚠ Today", open.filter(function(v){return visitDayKey(v.datetime)===tk;}), "#e0a13f")
+    + group("→ Tomorrow", open.filter(function(v){return visitDayKey(v.datetime)===tm;}), "#7fa8e0")
+    + group("Upcoming", open.filter(function(v){return visitDayKey(v.datetime)>tm;}), "#8a93a3")
+    + group("Overdue / past", open.filter(function(v){return visitDayKey(v.datetime)<tk;}), "#e07a7a")
+    + group("✓ Completed", done.slice(-10).reverse(), "#5f9e77")
+    + (visits.length===0?'<div class="empty"><div class="empty-icon">📅</div><h3>No visits scheduled</h3><p>When a customer agrees after the first estimate and a site visit is needed, add it here.</p></div>':"");
+}
+function visitFromEstimate(sel){
+  var o=sel.options[sel.selectedIndex]; if(!o||!o.value) return;
+  document.getElementById("v-cust").value=o.dataset.name||"";
+  document.getElementById("v-addr").value=o.dataset.addr||"";
+}
+async function createVisit(){
+  var msg=document.getElementById("v-msg");
+  var v={ customer:document.getElementById("v-cust").value.trim(),
+          address:document.getElementById("v-addr").value.trim(),
+          datetime:document.getElementById("v-when").value,
+          reason:document.getElementById("v-why").value.trim(),
+          ref:document.getElementById("v-est").value };
+  if(!v.customer||!v.datetime){ msg.textContent="Name and date/time required"; return; }
+  msg.textContent="Saving…";
+  try{
+    var r=await fetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create",visit:v})});
+    var d=await r.json();
+    if(!r.ok) throw new Error(d.error||"Failed");
+    visits.push(d.visit); renderTabs(); renderVisitsTab();
+  }catch(e){ msg.textContent="✕ "+e.message; }
+}
+async function markVisitDone(id,done){
+  await fetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"update",id:id,patch:{done:done}})});
+  var v=visits.find(function(x){return x.id===id;}); if(v) v.done=done;
+  renderTabs(); renderVisitsTab();
+}
+async function deleteVisit(id){
+  if(!confirm("Delete this visit?")) return;
+  await fetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"delete",id:id})});
+  visits=visits.filter(function(x){return x.id!==id;});
+  renderTabs(); renderVisitsTab();
+}
+
 function renderList() {
   const host = document.getElementById("list-host");
+
+  if (activeTab === "visits") {
+    renderVisitsTab();
+    return;
+  }
 
   if (activeTab === "handyman") {
     renderHandymanList();
