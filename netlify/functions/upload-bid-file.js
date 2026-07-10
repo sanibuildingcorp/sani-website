@@ -1,8 +1,10 @@
-// netlify/functions/upload-bid-file.js
+// netlify/functions/upload-bid-file.js — v1.1
 // Creates a SIGNED upload URL for Supabase Storage (bucket: bid-documents)
 // so the browser can upload large bid PDFs / drawings DIRECTLY to Supabase,
 // bypassing Netlify's 6MB request limit entirely.
-// Returns: { signedUrl, publicUrl, path }
+// v1.1: bucket is PRIVATE — we return only the storage path; read access is
+// granted per-request via short-lived signed URLs (see analyze/get functions).
+// Returns: { signedUrl, path }
 
 const BUCKET = "bid-documents";
 
@@ -44,12 +46,11 @@ exports.handler = async function (event) {
     const data = await res.json();
     // data.url is relative like "/object/upload/sign/bid-documents/bids/...?token=..."
     const signedUrl = `${SUPABASE_URL}/storage/v1${data.url}`;
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 
     return {
       statusCode: 200,
       headers: cors(),
-      body: JSON.stringify({ success: true, signedUrl, publicUrl, path })
+      body: JSON.stringify({ success: true, signedUrl, path })
     };
   } catch (err) {
     console.error("upload-bid-file error:", err.message);
