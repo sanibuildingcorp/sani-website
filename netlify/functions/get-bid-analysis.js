@@ -1,6 +1,8 @@
-// netlify/functions/get-bid-analysis.js
+// netlify/functions/get-bid-analysis.js — v1.1
 // Polls a bid analysis job. GET ?id=<jobId>
-// Returns { status: "processing"|"done"|"error", result?, error? }
+// Returns { status, result?, error?, file_signed_url? }
+// v1.1: when done, also returns a fresh 1-hour signed read URL for the
+// (private) bid PDF so the UI's "View source page" links work.
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
@@ -15,7 +17,7 @@ exports.handler = async function (event) {
     if (!SUPABASE_URL || !KEY) throw new Error("Supabase env vars not set");
 
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/bid_jobs?id=eq.${encodeURIComponent(id)}&select=id,status,result,error,file_name,created_at`,
+      `${SUPABASE_URL}/rest/v1/bid_jobs?id=eq.${encodeURIComponent(id)}&select=id,status,result,error,file_name,file_path,created_at`,
       { headers: { "apikey": KEY, "Authorization": `Bearer ${KEY}` } }
     );
     if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
@@ -26,10 +28,27 @@ exports.handler = async function (event) {
       return { statusCode: 200, headers: cors(), body: JSON.stringify({ status: "processing" }) };
     }
     const row = rows[0];
+
+    // v1.1: fresh signed read URL for View Source links (private bucket)
+    let fileSignedUrl = null;
+    if (row.status === "done" && row.file_path) {
+      try {
+        const sres = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/bid-documents/${row.file_path}`, {
+          method: "POST",
+          headers: { "apikey": KEY, "Authorization": `Bearer ${KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ expiresIn: 3600 })
+        });
+        if (sres.ok) {
+          const sdata = await sres.json();
+          fileSignedUrl = `${SUPABASE_URL}/storage/v1${sdata.signedURL}`;
+        }
+      } catch (e) { /* non-fatal — links just won't render */ }
+    }
+
     return {
       statusCode: 200,
       headers: cors(),
-      body: JSON.stringify({ status: row.status, result: row.result || null, error: row.error || null, file_name: row.file_name })
+      body: JSON.stringify({ status: row.status, result: row.result || null, error: row.error || null, file_name: row.file_name, file_signed_url: fileSignedUrl })
     };
   } catch (err) {
     console.error("get-bid-analysis error:", err.message);
