@@ -106,6 +106,17 @@ ul.plain li:last-child{border-bottom:none}
 .cat-tag{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-2);border:1px solid var(--line);padding:2px 8px;border-radius:999px;margin-right:8px;white-space:nowrap}
 .footer-note{color:var(--ink-muted);font-size:12.5px;text-align:center;padding:26px 18px 46px;max-width:760px;margin:0 auto}
 
+/* PDF source viewer modal (v1.2) */
+#pdf-modal{display:none;position:fixed;inset:0;background:rgba(5,13,26,.88);z-index:999;padding:20px;overflow:auto}
+#pdf-modal .pm-box{max-width:960px;margin:0 auto;background:var(--card);border:1px solid var(--gold);border-radius:14px;overflow:hidden}
+#pdf-modal .pm-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#pdf-modal .pm-title{font-weight:700;font-size:14px}
+#pdf-modal .pm-quote{color:var(--gold-2);font-size:12.5px;font-style:italic}
+#pdf-modal .pm-head a{color:var(--gold-2);font-size:13px;margin-left:auto;text-decoration:none;white-space:nowrap}
+#pdf-modal .pm-close{background:none;border:1.5px solid var(--line);color:var(--ink);border-radius:8px;padding:4px 12px;font-size:14px}
+#pdf-modal .pm-body{padding:12px;text-align:center;background:#222;overflow:auto}
+#pdf-modal canvas{max-width:100%;height:auto;border-radius:4px}
+#pdf-modal .pm-note{padding:10px;color:var(--ink-muted);font-size:12.5px}
 @media print{
   body{background:#fff;color:#111}
   .topbar,.dropzone,.btn-gold,.btn-ghost,#upload-card .sub,textarea.notes,.footer-note{display:none!important}
@@ -179,6 +190,20 @@ ul.plain li:last-child{border-bottom:none}
 
   </div>
 
+  <!-- PDF source viewer (v1.2) -->
+  <div id="pdf-modal" onclick="if(event.target===this)closePdf()">
+    <div class="pm-box">
+      <div class="pm-head">
+        <span class="pm-title" id="pm-title">Source</span>
+        <span class="pm-quote" id="pm-quote"></span>
+        <a id="pm-open" href="#" target="_blank" rel="noopener">Open full PDF ↗</a>
+        <button class="pm-close" onclick="closePdf()">✕</button>
+      </div>
+      <div class="pm-body"><canvas id="pm-canvas"></canvas></div>
+      <div class="pm-note" id="pm-note"></div>
+    </div>
+  </div>
+
   <div class="footer-note">
     ⚠ This tool produces a <b>draft takeoff and cost buildup for your review</b> — it is not a final bid.
     Verify every Low/Medium confidence quantity against the drawings, confirm all "Not in Price Book" items,
@@ -186,6 +211,7 @@ ul.plain li:last-child{border-bottom:none}
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 /* ============ AUTH (same password + session as dashboard) ============ */
 const DASHBOARD_PASSWORD = "L0nd0n12@";
@@ -321,11 +347,14 @@ function showError(msg){
 
 /* ============ RENDER RESULTS ============ */
 function renderResults(R, pdfUrl){
-  function srcLink(srcText){
+  window.__pdfUrl = pdfUrl || null;
+  window.__lineItems = R.line_items || [];
+  window.__pdfDoc = null; // lazy-loaded on first View click
+  function srcLink(srcText, idx){
     if(!pdfUrl) return "";
     var m = /p\.?\s*(\d+)/i.exec(srcText || "");
-    var pg = m ? m[1] : "1";
-    return ' <a href="'+esc(pdfUrl)+'#page='+pg+'" target="_blank" rel="noopener" style="color:var(--gold-2);font-weight:700;text-decoration:none">📄 View p.'+pg+'</a>';
+    var pg = m ? parseInt(m[1],10) : 1;
+    return ' <a href="#" onclick="viewSource('+pg+','+idx+');return false" style="color:var(--gold-2);font-weight:700;text-decoration:none">🔎 View p.'+pg+'</a>';
   }
   document.getElementById("progress").style.display = "none";
   document.getElementById("upload-card").style.display = "block";
@@ -378,10 +407,10 @@ function renderResults(R, pdfUrl){
 
   // --- Line items ---
   h += '<div class="card"><h2>Takeoff &amp; <em>Line Items</em></h2><div class="sub">Every quantity shows its source page. Prices come only from your Price Book — the AI never sets a price.</div><div class="tbl-scroll"><table><tr><th>Item</th><th class="num">Qty</th><th>Unit</th><th>Conf.</th><th class="num">Material</th><th class="num">Labor</th><th class="num">Total</th></tr>';
-  (R.line_items||[]).forEach(function(li){
+  (R.line_items||[]).forEach(function(li, liIdx){
     const nop = !li.priced;
     h += '<tr'+(nop?' class="nopr"':'')+'><td><b>'+esc(li.description)+'</b>'+
-      '<span class="src">CSI '+esc(li.csi_code||"—")+' · '+esc(li.source||"")+srcLink(li.source)+
+      '<span class="src">CSI '+esc(li.csi_code||"—")+' · '+esc(li.source||"")+srcLink(li.source, liIdx)+
       ((li.assumptions||[]).length?' · <i>Assumed: '+esc(li.assumptions.join("; "))+'</i>':'')+
       (nop?' · <b style="color:var(--red)">NOT IN PRICE BOOK — not in total</b>':'')+'</span></td>'+
       '<td class="num">'+esc(li.qty)+'</td><td>'+esc(li.unit||"")+'</td>'+
@@ -454,6 +483,81 @@ function renderResults(R, pdfUrl){
   res.style.display = "block";
   res.scrollIntoView({behavior:"smooth"});
 }
+
+/* ============ PDF SOURCE VIEWER (v1.2) ============
+   Renders the cited page and highlights the AI's verbatim source_quote
+   using the PDF's OWN text coordinates — the highlight comes from the
+   document, never from an AI guess. Drawing-only pages show without
+   highlight (no text layer to match). */
+if(window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+
+function norm(t){return String(t||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
+
+async function viewSource(pageNum, idx){
+  if(!window.__pdfUrl || !window.pdfjsLib) return;
+  const li = (window.__lineItems||[])[idx] || {};
+  const quote = li.source_quote || "";
+  const modal = document.getElementById("pdf-modal");
+  modal.style.display = "block";
+  document.getElementById("pm-title").textContent = "Page "+pageNum+" — "+(li.description||"source").slice(0,60);
+  document.getElementById("pm-quote").textContent = quote ? '"'+quote+'"' : "";
+  document.getElementById("pm-open").href = window.__pdfUrl + "#page=" + pageNum;
+  document.getElementById("pm-note").textContent = "Loading page…";
+
+  try{
+    if(!window.__pdfDoc){
+      window.__pdfDoc = await pdfjsLib.getDocument({url: window.__pdfUrl}).promise;
+    }
+    const doc = window.__pdfDoc;
+    const pg = Math.min(Math.max(1, pageNum), doc.numPages);
+    const page = await doc.getPage(pg);
+
+    const boxW = Math.min(920, (document.querySelector("#pdf-modal .pm-box").clientWidth || 900) - 24);
+    const base = page.getViewport({scale: 1});
+    const scale = boxW / base.width;
+    const vp = page.getViewport({scale: scale * (window.devicePixelRatio || 1)});
+
+    const canvas = document.getElementById("pm-canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = vp.width; canvas.height = vp.height;
+    canvas.style.width = Math.floor(vp.width / (window.devicePixelRatio||1)) + "px";
+    await page.render({canvasContext: ctx, viewport: vp}).promise;
+
+    // Highlight: match quote tokens against the page's real text items
+    let hits = 0;
+    if(quote){
+      const tokens = norm(quote).split(" ").filter(function(w){return w.length >= 3;});
+      const tc = await page.getTextContent();
+      ctx.fillStyle = "rgba(240,165,0,0.38)";
+      ctx.strokeStyle = "rgba(200,134,10,0.9)";
+      tc.items.forEach(function(it){
+        if(!it.str || it.str.trim().length < 2) return;
+        const s2 = norm(it.str);
+        let score = 0;
+        tokens.forEach(function(t){ if(s2.indexOf(t) !== -1) score++; });
+        const match = tokens.length ? (score >= Math.min(2, tokens.length) || (score >= 1 && s2.length <= 30)) : false;
+        if(!match || score === 0) return;
+        const tx = pdfjsLib.Util.transform(vp.transform, it.transform);
+        const fh = Math.hypot(tx[2], tx[3]);
+        const w = (it.width || 0) * vp.scale;
+        if(w < 2 || fh < 2) return;
+        ctx.fillRect(tx[4] - 2, tx[5] - fh - 2, w + 4, fh * 1.35 + 4);
+        ctx.strokeRect(tx[4] - 2, tx[5] - fh - 2, w + 4, fh * 1.35 + 4);
+        hits++;
+      });
+    }
+    document.getElementById("pm-note").textContent = hits
+      ? "🟡 " + hits + " highlighted match(es) for the source phrase — highlight positions come from the PDF's own text layer."
+      : (quote ? "Phrase not found on this page as searchable text (common on drawing sheets) — showing the cited page." : "Showing the cited page.");
+  }catch(err){
+    document.getElementById("pm-note").textContent = "Could not render the PDF here ("+err.message+"). Use 'Open full PDF' above.";
+  }
+}
+
+function closePdf(){ document.getElementById("pdf-modal").style.display = "none"; }
+document.addEventListener("keydown", function(e){ if(e.key === "Escape") closePdf(); });
 </script>
 </body>
 </html>
