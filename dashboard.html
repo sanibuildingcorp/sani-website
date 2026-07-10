@@ -2792,6 +2792,7 @@ function renderTabs() {
   const counts = { all: estimates.length };
   TABS.forEach(function(t) { if (t.id !== "all") counts[t.id] = 0; });
   estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
+  counts.sent = estimates.filter(function(e){ return ["sent","opened","question"].indexOf(e.status) !== -1; }).length;
   counts.handyman = handymanBookings.length;
   counts.visits = visits.filter(function(v){ return !v.done; }).length;
   counts.seo = seoInsightCount;
@@ -2985,7 +2986,9 @@ function renderList() {
 
   const filtered = activeTab === "all"
     ? estimates
-    : estimates.filter(function(e) { return e.status === activeTab; });
+    : activeTab === "sent"
+      ? estimates.filter(function(e) { return ["sent","opened","question"].indexOf(e.status) !== -1; })
+      : estimates.filter(function(e) { return e.status === activeTab; });
 
   if (filtered.length === 0) {
     host.innerHTML =
@@ -5703,6 +5706,7 @@ function sbcOpenDrawer() {
     if (typeof estimates !== 'undefined' && estimates) {
       counts.all = estimates.length;
       estimates.forEach(function(e) { if (e.status && counts[e.status] !== undefined) counts[e.status]++; });
+      counts.sent = estimates.filter(function(e){ return ["sent","opened","question"].indexOf(e.status) !== -1; }).length;
     }
     if (typeof handymanBookings !== 'undefined' && handymanBookings) counts.handyman = handymanBookings.length;
     if (typeof visits !== 'undefined' && visits) counts.visits = visits.filter(function(v){ return !v.done; }).length;
