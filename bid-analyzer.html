@@ -263,7 +263,7 @@ async function startAnalysis(){
       body:JSON.stringify({fileName:pickedFile.name})
     });
     const d1 = await r1.json();
-    if(!d1.signedUrl) throw new Error(d1.error || "Could not get upload URL");
+    if(!d1.signedUrl || !d1.path) throw new Error(d1.error || "Could not get upload URL");
 
     // 2) PUT the PDF directly to Supabase
     const r2 = await fetch(d1.signedUrl,{
@@ -279,7 +279,7 @@ async function startAnalysis(){
     fetch("/.netlify/functions/analyze-bid-background",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
-        jobId, fileUrl:d1.publicUrl, fileName:pickedFile.name,
+        jobId, filePath:d1.path, fileName:pickedFile.name,
         notes:document.getElementById("notes").value
       })
     }).catch(function(){}); // background fn — fire & forget, we poll for result
@@ -303,7 +303,7 @@ async function pollJob(jobId){
     try{
       const r = await fetch("/.netlify/functions/get-bid-analysis?id="+encodeURIComponent(jobId)+"&t="+Date.now());
       const d = await r.json();
-      if(d.status === "done" && d.result){ renderResults(d.result); return; }
+      if(d.status === "done" && d.result){ renderResults(d.result, d.file_signed_url || null); return; }
       if(d.status === "error"){ showError(d.error || "Analysis failed"); return; }
     }catch(e){ /* transient network — keep polling */ }
   }
@@ -320,7 +320,13 @@ function showError(msg){
 }
 
 /* ============ RENDER RESULTS ============ */
-function renderResults(R){
+function renderResults(R, pdfUrl){
+  function srcLink(srcText){
+    if(!pdfUrl) return "";
+    var m = /p\.?\s*(\d+)/i.exec(srcText || "");
+    var pg = m ? m[1] : "1";
+    return ' <a href="'+esc(pdfUrl)+'#page='+pg+'" target="_blank" rel="noopener" style="color:var(--gold-2);font-weight:700;text-decoration:none">📄 View p.'+pg+'</a>';
+  }
   document.getElementById("progress").style.display = "none";
   document.getElementById("upload-card").style.display = "block";
   document.getElementById("analyze-btn").disabled = !pickedFile;
@@ -342,12 +348,40 @@ function renderResults(R){
     '<div class="roll low"><div class="n">'+c.low+'</div><div class="l">Low — must check</div></div></div>';
   h += '<button class="btn-ghost" onclick="window.print()">🖨 Print / Save PDF</button></div>';
 
+  // --- Bid Health (v1.1) ---
+  if(R.bid_health){
+    const B = R.bid_health;
+    const ready = B.status === "READY FOR FINAL REVIEW";
+    h += '<div class="card"><h2>Bid <em>Health</em></h2>'+
+      '<div style="margin:8px 0 4px"><span class="pill '+(ready?'high':'low')+'" style="font-size:13px;padding:6px 14px">'+esc(B.status)+'</span></div>'+
+      '<p style="color:var(--ink-muted);font-size:13.5px;margin-bottom:10px">'+esc(B.status_detail||"")+'</p>'+
+      '<div class="rollup">'+
+      '<div class="roll '+(B.pricing_completeness_pct===100?'high':'low')+'"><div class="n">'+B.pricing_completeness_pct+'%</div><div class="l">Pricing complete</div></div>'+
+      '<div class="roll high"><div class="n">'+B.high_confidence_pct+'%</div><div class="l">High confidence</div></div>'+
+      '<div class="roll '+(B.open_rfis?'medium':'high')+'"><div class="n">'+B.open_rfis+'</div><div class="l">Open RFIs</div></div>'+
+      '<div class="roll '+(B.needs_pricing_count?'low':'high')+'"><div class="n">'+B.needs_pricing_count+'</div><div class="l">Missing rates</div></div>'+
+      '</div></div>';
+  }
+
+  // --- Schedule roll-up (v1.1) ---
+  if(R.schedule && R.schedule.total_labor_hours > 0){
+    const S = R.schedule;
+    h += '<div class="card"><h2>Crew &amp; <em>Duration</em></h2>'+
+      '<div class="rollup">'+
+      '<div class="roll"><div class="n" style="color:var(--gold-3)">'+S.total_labor_hours+'</div><div class="l">Labor hours (priced)</div></div>'+
+      '<div class="roll"><div class="n" style="color:var(--gold-3)">'+S.crew_size+'</div><div class="l">Crew size</div></div>'+
+      '<div class="roll"><div class="n" style="color:var(--gold-3)">'+S.duration_working_days+'</div><div class="l">Working days</div></div>'+
+      '<div class="roll"><div class="n" style="color:var(--gold-3)">'+S.duration_weeks+'</div><div class="l">Weeks (5-day)</div></div>'+
+      '</div>'+
+      '<p style="color:var(--ink-muted);font-size:12.5px;margin-top:10px">'+esc(S.note||"")+'</p></div>';
+  }
+
   // --- Line items ---
   h += '<div class="card"><h2>Takeoff &amp; <em>Line Items</em></h2><div class="sub">Every quantity shows its source page. Prices come only from your Price Book — the AI never sets a price.</div><div class="tbl-scroll"><table><tr><th>Item</th><th class="num">Qty</th><th>Unit</th><th>Conf.</th><th class="num">Material</th><th class="num">Labor</th><th class="num">Total</th></tr>';
   (R.line_items||[]).forEach(function(li){
     const nop = !li.priced;
     h += '<tr'+(nop?' class="nopr"':'')+'><td><b>'+esc(li.description)+'</b>'+
-      '<span class="src">CSI '+esc(li.csi_code||"—")+' · '+esc(li.source||"")+
+      '<span class="src">CSI '+esc(li.csi_code||"—")+' · '+esc(li.source||"")+srcLink(li.source)+
       ((li.assumptions||[]).length?' · <i>Assumed: '+esc(li.assumptions.join("; "))+'</i>':'')+
       (nop?' · <b style="color:var(--red)">NOT IN PRICE BOOK — not in total</b>':'')+'</span></td>'+
       '<td class="num">'+esc(li.qty)+'</td><td>'+esc(li.unit||"")+'</td>'+
