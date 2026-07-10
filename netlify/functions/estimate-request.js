@@ -202,7 +202,7 @@ async function sendContractorEmail(resendKey, contractorEmail, data) {
 </body></html>`;
 
   return sendResend(resendKey, {
-    from: "Sani Building Corp <onboarding@resend.dev>",
+    from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
     to: [contractorEmail],
     reply_to: data.email,
     subject: `🆕 ${data.service} — ${data.name} (${data.ref})`,
@@ -245,7 +245,7 @@ async function sendCustomerConfirmation(resendKey, contractorEmail, data) {
 </body></html>`;
 
   return sendResend(resendKey, {
-    from: "Sani Building Corp <onboarding@resend.dev>",
+    from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
     to: [data.email],
     reply_to: contractorEmail,
     subject: `We got your request — Sani Building Corp (${data.ref})`,
