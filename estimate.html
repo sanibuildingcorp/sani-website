@@ -225,7 +225,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 
     <!-- STEP 3: Property Type -->
     <div class="step" data-step="3">
-      <div class="eyebrow">Step 3</div>
+      <div class="eyebrow">Step 5</div>
       <h2 class="title">What type of property?</h2>
       <p class="subtitle">Different buildings have different rules.</p>
       <div class="option-stack">
@@ -237,14 +237,14 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
         <button class="option-btn" data-value="Rental / Investment property" onclick="selectOption(this,'propertyType')"><span>Rental or Investment property</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
       </div>
       <div class="step-nav">
-        <button class="btn-back" onclick="goBackToAI()">← Back</button>
+        <button class="btn-back" onclick="goToStep(5)">← Back</button>
         <button class="btn-continue" id="continue-3" disabled onclick="goToStep(4)">Continue →</button>
       </div>
     </div>
 
     <!-- STEP 4: Description -->
     <div class="step" data-step="4">
-      <div class="eyebrow">Step 4</div>
+      <div class="eyebrow">Step 6</div>
       <h2 class="title">Anything else we should know?</h2>
       <p class="subtitle">Style preferences, deadlines, special requirements — whatever helps.</p>
       <div class="input-group">
@@ -253,13 +253,13 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
       </div>
       <div class="step-nav">
         <button class="btn-back" onclick="goToStep(3)">← Back</button>
-        <button class="btn-continue" onclick="saveDesc();goToStep(5)">Continue →</button>
+        <button class="btn-continue" onclick="saveDesc();goToStep(7)">Continue →</button>
       </div>
     </div>
 
     <!-- STEP 5: Photos -->
     <div class="step" data-step="5">
-      <div class="eyebrow">Step 5 · Optional</div>
+      <div class="eyebrow">Step 3 · Optional</div>
       <h2 class="title">Got any photos?</h2>
       <p class="subtitle">Photos help us spot details and price it right.</p>
       <label for="photo-input" class="upload-zone">
@@ -269,16 +269,16 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
       </label>
       <input type="file" id="photo-input" accept="image/*" multiple onchange="handlePhotos(event)">
       <div class="photo-preview-grid" id="photo-preview"></div>
-      <button class="skip-link" onclick="formData.photos=[];renderPhotoPreview();goToStep(7)">No photos right now — continue</button>
+      <button class="skip-link" onclick="formData.photos=[];renderPhotoPreview();goToStep(3)">No photos right now — continue</button>
       <div class="step-nav">
-        <button class="btn-back" onclick="goToStep(4)">← Back</button>
+        <button class="btn-back" onclick="goBackToAI()">← Back</button>
         <button class="btn-continue" onclick="proceedFromPhotos()">Continue →</button>
       </div>
     </div>
 
     <!-- STEP 6: AI Photo Analysis -->
     <div class="step" data-step="6">
-      <div class="eyebrow">Step 6 · AI Analysis</div>
+      <div class="eyebrow">Step 4 · AI Analysis</div>
       <h2 class="title" id="analysis-title">Analyzing your photos...</h2>
       <p class="subtitle" id="analysis-subtitle">Our AI is reviewing each photo to identify the issue and suggest next steps.</p>
       <div id="analysis-scanning">
@@ -309,7 +309,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
       </div>
       <div class="step-nav">
         <button class="btn-back" onclick="goToStep(5)">← Back</button>
-        <button class="btn-continue" id="continue-6" onclick="goToStep(7)">Continue →</button>
+        <button class="btn-continue" id="continue-6" onclick="goToStep(3)">Continue →</button>
       </div>
     </div>
 
@@ -326,7 +326,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
         <button class="option-btn" data-value="Just exploring — no rush" onclick="selectOption(this,'timeline')"><span>Just exploring</span><span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
       </div>
       <div class="step-nav">
-        <button class="btn-back" onclick="goToStep(5)">← Back</button>
+        <button class="btn-back" onclick="goToStep(4)">← Back</button>
         <button class="btn-continue" id="continue-7" disabled onclick="goToStep(8)">Continue →</button>
       </div>
     </div>
@@ -453,11 +453,11 @@ async function startStep2(){
 async function loadNextAIQuestion(){
   showStep('ai-loading');
   try{
-    const res=await fetch('/.netlify/functions/estimate-ai-question',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:formData.service,serviceLabel:formData.serviceLabel,answers:formData.serviceAnswers,questionCount:aiQuestionCount})});
+    const res=await fetch('/.netlify/functions/estimate-ai-question',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:formData.service,serviceLabel:formData.serviceLabel,serviceCount:(formData.service||'').split(',').filter(Boolean).length||1,answers:formData.serviceAnswers,questionCount:aiQuestionCount})});
     const data=await res.json();
-    if(data.done||data.fallback){goToStep(3);return;}
+    if(data.done||data.fallback){goToStep(5);return;}
     currentAIQuestion=data;renderAIQuestion(data);showStep(2);
-  }catch(e){console.error(e);goToStep(3);}
+  }catch(e){console.error(e);goToStep(5);}
 }
 function renderAIQuestion(q){
   document.getElementById('step2-title').textContent=q.label;
@@ -634,7 +634,7 @@ function showSuccess(ref){
   goToStep('success');
 }
 const MAX_PHOTOS_TO_ANALYZE=4;
-function proceedFromPhotos(){if(formData.photos.length===0){goToStep(7);return;}goToStep(6);startPhotoAnalysis();}
+function proceedFromPhotos(){if(formData.photos.length===0){goToStep(3);return;}goToStep(6);startPhotoAnalysis();}
 async function startPhotoAnalysis(){
   formData.photoAnalysis=[];
   document.getElementById('analysis-scanning').style.display='block';
