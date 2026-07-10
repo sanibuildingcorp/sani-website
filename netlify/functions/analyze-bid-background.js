@@ -93,6 +93,7 @@ RESPOND WITH ONLY VALID JSON (no markdown fences, no commentary) in exactly this
       "unit": "EA",
       "takeoff_type": "count|linear|area",
       "source": "SOW.pdf p.2, Schedule of Supplies line 1",
+      "source_quote": "a 3-8 word phrase copied EXACTLY, character-for-character, from the document at that spot (used to visually highlight the source). No paraphrasing.",
       "confidence": "high|medium|low",
       "price_book_item_code": "matching item_code or null",
       "assumptions": ["assumption applied to get this quantity, if any"],
