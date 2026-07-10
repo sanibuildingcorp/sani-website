@@ -14,7 +14,8 @@ exports.handler = async function (event) {
 
   try {
     const body = JSON.parse(event.body);
-    const { service, serviceLabel, answers, questionCount } = body;
+    const { service, serviceLabel, answers, questionCount, serviceCount } = body;
+    const svcN = Math.max(1, Math.min(parseInt(serviceCount) || 1, 5));
 
     if (!service) {
       return {
@@ -35,8 +36,8 @@ exports.handler = async function (event) {
 
     // Decide if we should keep asking or stop
     // Min 2 questions, max 5 questions per service
-    const minQs = 2;
-    const maxQs = 5;
+    const minQs = Math.min(1 + svcN, 4);            // 1 svc: 2 · 2 svc: 3 · 3+: 4
+    const maxQs = Math.min(3 + 2 * svcN, 9);        // 1 svc: 5 · 2 svc: 7 · 3+: 9
     const askedCount = questionCount || 0;
 
     const answersStr = Object.entries(answers || {})
@@ -52,6 +53,7 @@ ${answersStr || "(none yet)"}
 
 QUESTIONS ALREADY ASKED: ${askedCount}
 MINIMUM: ${minQs}, MAXIMUM: ${maxQs}
+The customer selected ${svcN} service(s): ${serviceLabel}. If more than one service, make sure your questions cover EACH selected service before finishing — do not focus on only one.
 
 Return ONLY valid JSON, no markdown, no backticks, no explanation. Use this exact structure:
 
