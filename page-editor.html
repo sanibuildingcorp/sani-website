@@ -57,6 +57,11 @@ select,#page-input{padding:9px 12px;background:var(--card);border:1.5px solid va
 .msg.err{background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.4);color:#ff9a8c}
 .msg.warn{background:rgba(240,165,0,.1);border:1px solid var(--gold);color:var(--gold-3)}
 .new-preview{width:100%;border-radius:10px;border:1px solid var(--gold);margin-bottom:12px;display:none}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-x{background:none;border:1.5px solid var(--line);color:var(--ink);border-radius:8px;padding:3px 12px;font-size:16px;line-height:1.4}
+.panel.collapsed{display:none}
+#panel-fab{display:none;position:fixed;right:14px;bottom:14px;z-index:60;padding:13px 18px;background:var(--gold);color:var(--navy-2);border:none;border-radius:999px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+body.panel-closed #panel-fab{display:block}
 @media(max-width:820px){.main{flex-direction:column}.panel{width:100%;border-left:none;border-top:1px solid var(--line);max-height:46vh}}
 </style>
 </head>
@@ -86,8 +91,8 @@ select,#page-input{padding:9px 12px;background:var(--card);border:1.5px solid va
     <iframe id="page-frame" title="page"></iframe>
     <div id="frame-hint">Pick a page above and click <b>&nbsp;Load Page&nbsp;</b> — then click any photo on the page to replace it.</div>
   </div>
-  <div class="panel">
-    <h2>Replace <em>Photo</em></h2>
+  <div class="panel" id="panel">
+    <div class="panel-head"><h2>Replace <em>Photo</em></h2><button class="panel-x" onclick="togglePanel(false)" title="Hide panel to see the whole page">✕</button></div>
     <div class="sub" id="panel-sub">Click a photo on the page. Gold outline = replaceable. Page links are disabled while editing.</div>
     <img class="cur-photo" id="cur-photo" alt="current photo">
     <div class="fld" id="ref-fld" style="display:none"><label>Current reference in HTML</label><div class="ref-line" id="cur-ref"></div></div>
@@ -100,6 +105,8 @@ select,#page-input{padding:9px 12px;background:var(--card);border:1.5px solid va
     <div class="msg" id="msg"></div>
   </div>
 </div>
+
+<button id="panel-fab" onclick="togglePanel(true)">🖼 Photo Panel</button>
 
 <script>
 /* ============ AUTH (same session as dashboard) ============ */
@@ -195,7 +202,13 @@ function armFrame(f){
 }
 
 /* ============ SELECT + REPLACE ============ */
+function togglePanel(open){
+  document.getElementById("panel").classList.toggle("collapsed", !open);
+  document.body.classList.toggle("panel-closed", !open);
+}
+
 function selectImg(img){
+  togglePanel(true);
   // clear previous highlight + revert its unpublished preview, if any
   if(selectedImg){ try{
     selectedImg.style.outline = "3px dashed rgba(240,165,0,.85)";
