@@ -238,7 +238,9 @@ function selectImg(img){
   // Same repo path if already local (keeps shared folders working); else a new local path
   let path = ref.split("?")[0].split("#")[0].replace(/^\/+/,"");
   if(!/^images\//i.test(path) || /^https?:/i.test(ref)){
-    path = "images/" + (curSlug === "index" ? "home" : curSlug.replace(/[^a-z0-9\-]/gi,"-")) + "/photo-" + Date.now().toString(36) + ".jpg";
+    const folder = "images/" + (curSlug === "index" ? "home" : curSlug.replace(/[^a-z0-9\-]/gi,"-"));
+    const isHero = !!(img.closest && (img.closest(".page-hero") || img.closest(".hero"))) || /hero/i.test(img.className);
+    path = folder + (isHero ? "/hero.jpg" : "/photo-" + Date.now().toString(36) + ".jpg");
   }
   document.getElementById("new-path").value = path;
 }
