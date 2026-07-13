@@ -1,5 +1,7 @@
 // netlify/functions/update-customer.js
 // Updates customer contact info (name / email / phone / address) on an estimate record.
+// Also accepts an optional `description` to correct/expand the customer's job
+// description (saved to record.request.description).
 // Used by the dashboard's "Edit Customer Info" panel.
 
 const { getStore } = require("@netlify/blobs");
@@ -13,7 +15,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { ref, customer } = JSON.parse(event.body || "{}");
+    const { ref, customer, description } = JSON.parse(event.body || "{}");
     if (!ref || !customer || typeof customer !== "object") {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref or customer" }) };
     }
@@ -31,13 +33,17 @@ exports.handler = async function (event) {
       phone: clean(customer.phone),
       address: clean(customer.address),
     });
+    if (description !== undefined) {
+      record.request = record.request || {};
+      record.request.description = String(description == null ? "" : description).trim().slice(0, 3000);
+    }
     record.updatedAt = new Date().toISOString();
     await store.setJSON(ref, record);
 
     return {
       statusCode: 200,
       headers: cors(),
-      body: JSON.stringify({ success: true, customer: record.customer }),
+      body: JSON.stringify({ success: true, customer: record.customer, description: (record.request || {}).description }),
     };
   } catch (err) {
     console.error("update-customer error:", err.message);
