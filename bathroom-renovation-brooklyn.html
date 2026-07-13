@@ -27,7 +27,8 @@
 <style>
 /* PAGE-SPECIFIC STYLES (kept) */
 .page-hero{background:url('images/bathroom-renovation-brooklyn/hero.jpg'),url('https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1200&q=80');background-size:cover;background-position:center;padding:160px 28px 100px;text-align:center;color:#fff;position:relative;text-shadow:0 2px 14px rgba(0,0,0,0.55)}
-.page-hero-content{max-width:900px;margin:0 auto}
+.page-hero::before{content:"";position:absolute;inset:0;background:rgba(5,13,26,0.30);pointer-events:none}
+.page-hero-content{max-width:900px;margin:0 auto;position:relative;z-index:1}
 .hero-eyebrow{display:inline-block;color:var(--gold-light);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:500;margin-bottom:18px;padding:6px 16px;border:1px solid rgba(240,165,0,0.4);border-radius:30px}
 .page-hero h1{font-family:'Playfair Display',serif;font-size:clamp(32px,5vw,56px);font-weight:700;line-height:1.1;margin-bottom:18px;text-shadow:0 2px 18px rgba(0,0,0,0.6)}
 .page-hero h1 em{font-style:italic;color:var(--gold-light)}
