@@ -151,10 +151,26 @@ function armFrame(f){
   const doc = f.contentDocument;
   if(!doc){ showMsg("err","Frame blocked — open this tool on sanibuildingcorp.com itself."); return; }
 
-  // Block navigation while editing (links, buttons) — photos only
+  // Block navigation while editing (links, buttons) — photos only.
+  // Coordinate hit-test: galleries often place caption/overlay layers ON TOP of
+  // the photo, so e.target isn't the <img>. We select whichever editable photo
+  // sits under the click point, regardless of what layer caught the event.
   doc.addEventListener("click", function(e){
     e.preventDefault(); e.stopPropagation();
-    const img = e.target.closest ? e.target.closest("img") : null;
+    let img = e.target.closest ? e.target.closest("img") : null;
+    if(!(img && img.__sbcEditable)){
+      img = null;
+      let best = Infinity;
+      const x = e.clientX, y = e.clientY;
+      doc.querySelectorAll("img").forEach(function(cand){
+        if(!cand.__sbcEditable) return;
+        const r = cand.getBoundingClientRect();
+        if(x >= r.left && x <= r.right && y >= r.top && y <= r.bottom){
+          const area = (r.right - r.left) * (r.bottom - r.top);
+          if(area < best){ best = area; img = cand; }
+        }
+      });
+    }
     if(img && img.__sbcEditable) selectImg(img);
   }, true);
 
