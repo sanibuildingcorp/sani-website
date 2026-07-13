@@ -221,7 +221,9 @@ function selectImg(img){
   img.style.outline = "4px solid #2ecc71";
   newImageData = null;
 
-  const ref = img.getAttribute("src") || "";
+  // If a fallback swapped the src at load time, the original local path was
+  // preserved in data-sbc-ref — use it so publish targets the real slot.
+  const ref = (img.dataset && img.dataset.sbcRef) || img.getAttribute("src") || "";
   document.getElementById("cur-photo").src = img.src;
   document.getElementById("cur-photo").style.display = "block";
   document.getElementById("cur-ref").textContent = ref;
