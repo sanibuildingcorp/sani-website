@@ -409,6 +409,59 @@
 </section>
 
 <!-- Footer loaded from partials/footer.html via partials/site.js -->
+
+<!-- ═══ SBC MOBILE UX PACK: sticky call bar + hero read-more + subtle hero overlay ═══ -->
+<style id="sbc-uxpack-css">
+.mobile-bar{position:fixed;left:0;right:0;bottom:0;z-index:950;display:none;grid-template-columns:1fr 1fr;box-shadow:0 -6px 20px rgba(0,0,0,.2)}
+.mobile-bar a{display:flex;align-items:center;gap:10px;padding:11px 12px;text-decoration:none}
+.mb-call{background:#0a1628;justify-content:center}
+.mb-est{background:#c8860a}
+.mb-ic{flex-shrink:0;display:flex;align-items:center}
+.mobile-bar svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mb-tx b{display:block;color:#fff;font-size:15px;font-weight:700;line-height:1.15}
+.mb-tx span{display:block;color:rgba(255,255,255,.82);font-size:11px;line-height:1.15;margin-top:1px}
+.sbc-readmore{display:none;background:none;border:none;color:#ffb627;font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.5px;cursor:pointer;margin:0 0 22px;text-decoration:underline;text-underline-offset:3px}
+section.page-hero{position:relative;overflow:hidden}
+section.page-hero::before{content:"";position:absolute;inset:0;background:rgba(5,13,26,.30);pointer-events:none;z-index:1}
+section.page-hero>*:not(img){position:relative;z-index:2}
+section.page-hero>img{z-index:0}
+@media(max-width:760px){
+  .mobile-bar{display:grid}
+  body{padding-bottom:64px}
+  section.page-hero p.sbc-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px}
+  section.page-hero p.sbc-clamp.sbc-open{display:block;-webkit-line-clamp:unset;overflow:visible}
+}
+</style>
+<div class="mobile-bar">
+  <a href="tel:3322770990" class="mb-call">
+    <span class="mb-ic"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 2 2 0 015 7.6h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></span>
+    <span class="mb-tx"><b>Call Now</b><span>332-277-0990</span></span>
+  </a>
+  <a href="/estimate" class="mb-est">
+    <span class="mb-ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span>
+    <span class="mb-tx"><b>Get Free Estimate</b><span>Takes about 30 seconds</span></span>
+  </a>
+</div>
+<script id="sbc-uxpack-js">
+(function(){
+  var p = document.querySelector("section.page-hero p");
+  if(!p) return;
+  p.classList.add("sbc-clamp");
+  var b = document.createElement("button");
+  b.className = "sbc-readmore"; b.type = "button"; b.textContent = "Read more ↓";
+  p.insertAdjacentElement("afterend", b);
+  b.onclick = function(){
+    var o = p.classList.toggle("sbc-open");
+    b.textContent = o ? "Show less ↑" : "Read more ↓";
+  };
+  function chk(){
+    if(p.classList.contains("sbc-open")) return;
+    b.style.display = (p.scrollHeight - p.clientHeight > 8) ? "inline-block" : "none";
+  }
+  chk(); window.addEventListener("resize", chk);
+})();
+</script>
+
 <div id="site-footer"></div>
 
 <!-- Loads menu/footer partials + mobile menu functions -->
