@@ -2672,6 +2672,7 @@ const TABS = [
   { id: "seo", label: "🧠 SEO Brain" },
   { id: "content", label: "✍️ Content" },
   { id: "images", label: "🎨 Images" },
+  { id: "pageeditor", label: "🖼 Page Editor" },
   { id: "keywords", label: "🔢 Keywords" },
   { id: "visitors", label: "👁 Live Visitors" },
 ];
@@ -2976,6 +2977,11 @@ function renderList() {
 
   if (activeTab === "images") {
     renderImageStudio();
+    return;
+  }
+
+  if (activeTab === "pageeditor") {
+    renderPageEditor();
     return;
   }
 
@@ -5010,6 +5016,19 @@ function renderImageStudio() {
     '<iframe src="/image-studio.html" style="width:100%;height:78vh;border:1px solid var(--line);border-radius:14px;background:var(--bg)" title="Image Studio"></iframe>';
 }
 
+function renderPageEditor() {
+  const host = document.getElementById("list-host");
+  host.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">' +
+      '<div>' +
+        '<div style="font-family:var(--display);font-size:22px;letter-spacing:1.5px;color:var(--gold)">🖼 PAGE PHOTO EDITOR</div>' +
+        '<div style="font-size:12px;color:var(--ink-muted);margin-top:2px">See the live page, click any photo, preview the replacement in place, then publish it to the site.</div>' +
+      '</div>' +
+      '<a href="/page-editor.html" target="_blank" class="topbar-btn" style="text-decoration:none">↗ Open Full Screen</a>' +
+    '</div>' +
+    '<iframe src="/page-editor.html" style="width:100%;height:78vh;border:1px solid var(--line);border-radius:14px;background:var(--bg)" title="Page Photo Editor"></iframe>';
+}
+
 /* ════════════════════════════════════════════════════════════════════
    KEYWORD VOLUMES TAB
    ════════════════════════════════════════════════════════════════════ */
@@ -5689,6 +5708,7 @@ var SBC_TABS = [
   {id:'seo',      icon:'🧠', label:'SEO Brain'},
   {id:'content',  icon:'✍️',  label:'Content'},
   {id:'images',   icon:'🎨', label:'Images'},
+  {id:'pageeditor', icon:'🖼', label:'Page Editor'},
   {id:'keywords', icon:'🔢', label:'Keyword Volumes'},
   {id:'visitors', icon:'👁',  label:'Live Visitors'},
 ];
