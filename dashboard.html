@@ -6883,6 +6883,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     <div class="sbc-ec-field"><label>Phone</label><input id="sbc-ec-phone" type="tel" placeholder="(347) 555-0199"></div>
     <div class="sbc-ec-field"><label>Address</label><input id="sbc-ec-address" type="text" placeholder="Street, Borough, NY"></div>
     <div class="sbc-ec-field"><label>Description (what the customer wrote — you can correct/expand it)</label><textarea id="sbc-ec-desc" placeholder="Describe the job…"></textarea></div>
+    <div id="sbc-ec-answers"></div>
     <div class="sbc-ec-err" id="sbc-ec-err"></div>
     <button class="sbc-ec-save" id="sbc-ec-save" onclick="sbcSaveCustomer()">💾 Save Changes</button>
   </div>
@@ -6891,6 +6892,8 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 (function(){
   if (window.__sbcEditCust) return;
   window.__sbcEditCust = true;
+
+  function ecEsc(t){ return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   window.sbcEditCustomer = function(){
     var r = (typeof currentRecord !== 'undefined') ? currentRecord : null;
@@ -6901,6 +6904,17 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     document.getElementById('sbc-ec-phone').value = c.phone || '';
     document.getElementById('sbc-ec-address').value = c.address || '';
     document.getElementById('sbc-ec-desc').value = (r.request && r.request.description) || '';
+    var ans = (r.request && r.request.serviceAnswers) || {};
+    var ansKeys = Object.keys(ans);
+    var ansHtml = '';
+    if (ansKeys.length) {
+      ansHtml = '<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-muted);font-weight:600;margin:2px 0 10px;padding-top:10px;border-top:1px solid rgba(13,27,42,0.1)">Question answers (these size the AI price)</div>';
+      ansKeys.forEach(function(k){
+        ansHtml += '<div class="sbc-ec-field"><label>' + ecEsc(k.replace(/-/g,' ').replace(/_/g,' ')) + '</label>' +
+          '<input type="text" class="sbc-ec-ans" data-key="' + ecEsc(k) + '" value="' + ecEsc(ans[k]) + '"></div>';
+      });
+    }
+    document.getElementById('sbc-ec-answers').innerHTML = ansHtml;
     document.getElementById('sbc-ec-err').style.display = 'none';
     document.getElementById('sbc-ec-overlay').classList.add('show');
     document.body.style.overflow = 'hidden';
@@ -6921,6 +6935,10 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       address: document.getElementById('sbc-ec-address').value.trim()
     };
     var description = document.getElementById('sbc-ec-desc').value.trim();
+    var serviceAnswers = {};
+    document.querySelectorAll('#sbc-ec-answers .sbc-ec-ans').forEach(function(inp){
+      serviceAnswers[inp.getAttribute('data-key')] = inp.value.trim();
+    });
     if(!customer.name && !customer.email){
       err.textContent = 'Enter at least a name or an email.';
       err.style.display = 'block';
@@ -6931,7 +6949,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     fetch('/.netlify/functions/update-customer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ref: r.ref, customer: customer, description: description })
+      body: JSON.stringify({ ref: r.ref, customer: customer, description: description, serviceAnswers: serviceAnswers })
     })
     .then(function(res){ return res.json().then(function(d){ return { ok: res.ok, d: d }; }); })
     .then(function(out){
@@ -6940,6 +6958,9 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       currentRecord.customer = out.d.customer || customer;
       currentRecord.request = currentRecord.request || {};
       currentRecord.request.description = (out.d.description !== undefined) ? out.d.description : description;
+      if (Object.keys(serviceAnswers).length) {
+        currentRecord.request.serviceAnswers = out.d.serviceAnswers || Object.assign({}, currentRecord.request.serviceAnswers || {}, serviceAnswers);
+      }
       sbcCloseEditCustomer();
       if(typeof renderEdit === 'function') renderEdit();
       if(typeof loadEstimates === 'function') loadEstimates();
