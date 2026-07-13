@@ -196,8 +196,14 @@ function armFrame(f){
 
 /* ============ SELECT + REPLACE ============ */
 function selectImg(img){
-  // clear previous highlight
-  if(selectedImg){ try{ selectedImg.style.outline = "3px dashed rgba(240,165,0,.85)"; }catch(e){} }
+  // clear previous highlight + revert its unpublished preview, if any
+  if(selectedImg){ try{
+    selectedImg.style.outline = "3px dashed rgba(240,165,0,.85)";
+    if(selectedImg.__sbcPreviewed && selectedImg.__sbcOrigSrc){
+      selectedImg.src = selectedImg.__sbcOrigSrc;
+      selectedImg.__sbcPreviewed = false;
+    }
+  }catch(e){} }
   selectedImg = img;
   img.style.outline = "4px solid #2ecc71";
   newImageData = null;
@@ -241,8 +247,14 @@ function fileChosen(ev){
       const kb = Math.round(newImageData.length * 0.75 / 1024);
       const prev = document.getElementById("new-preview");
       prev.src = newImageData; prev.style.display = "block";
+      // LIVE PREVIEW: show the new photo on the page card itself (not live yet)
+      if(selectedImg){
+        if(!selectedImg.__sbcOrigSrc) selectedImg.__sbcOrigSrc = selectedImg.src;
+        selectedImg.src = newImageData;
+        selectedImg.__sbcPreviewed = true;
+      }
       document.getElementById("pub-btn").disabled = false;
-      showMsg("warn","New photo ready (~"+kb+" KB after optimization). Check the path + alt text, then Publish.");
+      showMsg("warn","👁 Previewing on the page card (~"+kb+" KB) — NOT live yet. Like it? Check path + alt text, then Publish. Pick a different file or another photo to undo.");
     };
     im.src = e.target.result;
   };
@@ -267,6 +279,7 @@ async function publish(){
     });
     const d = await res.json();
     if(!res.ok || d.error) throw new Error(d.error || ("Publish failed ("+res.status+")"));
+    if(selectedImg){ selectedImg.__sbcPreviewed = false; selectedImg.__sbcOrigSrc = null; }
     showMsg(d.warning ? "warn" : "ok",
       (d.warning ? "⚠ " + d.warning : "✓ Published! Image committed and page updated.") +
       " Netlify deploys in ~40s — then Cloudflare → Purge Everything, and press Load Page to see it live.");
