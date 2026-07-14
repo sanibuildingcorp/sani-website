@@ -3336,6 +3336,7 @@ function renderEdit() {
       '</div>' +
       '<div class="tot-line grand"><span>GRAND TOTAL</span><span id="tot-grand">$0.00</span></div>' +
       '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
+      '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
     '</div>' +
     '<div class="modal-actions">' +
       '<button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>' +
@@ -4169,6 +4170,20 @@ async function toggleInvoicePaid(invoiceNumber, makePaid) {
 
 /* Manual "Ask for Review" — opens a prefilled text (or email) to the customer.
    Nothing sends automatically; the contractor presses send. */
+/* Scope of Work link — the same quote page with every price hidden (?sow=1).
+   For building management / property managers who need the scope of work but
+   must not see the pricing between contractor and customer. */
+function copyScopeLink() {
+  if (!currentRecord || !currentRecord.ref) { toast("Open an estimate first", true); return; }
+  var url = "https://www.sanibuildingcorp.com/quote.html?ref=" + encodeURIComponent(currentRecord.ref) + "&sow=1";
+  function done(){ toast("\u2713 Scope of Work link copied \u2014 no prices shown"); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(function(){ window.prompt("Copy this Scope of Work link:", url); });
+  } else {
+    window.prompt("Copy this Scope of Work link:", url);
+  }
+}
+
 function askForReview() {
   var cust = (currentRecord && currentRecord.customer) || {};
   var name = (cust.name || "").trim();
