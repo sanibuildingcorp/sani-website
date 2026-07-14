@@ -292,7 +292,9 @@
 
 <!-- Footer loaded from partials/footer.html via partials/site.js -->
 
-<!-- ═══ SBC MOBILE UX PACK: sticky call bar + hero read-more + subtle hero overlay ═══ -->
+
+
+<!-- ═══ SBC MOBILE UX PACK v2: sticky call bar + standard-hero read-more/overlay ═══ -->
 <style id="sbc-uxpack-css">
 .mobile-bar{position:fixed;left:0;right:0;bottom:0;z-index:950;display:none;grid-template-columns:1fr 1fr;box-shadow:0 -6px 20px rgba(0,0,0,.2)}
 .mobile-bar a{display:flex;align-items:center;gap:10px;padding:11px 12px;text-decoration:none}
@@ -303,15 +305,14 @@
 .mb-tx b{display:block;color:#fff;font-size:15px;font-weight:700;line-height:1.15}
 .mb-tx span{display:block;color:rgba(255,255,255,.82);font-size:11px;line-height:1.15;margin-top:1px}
 .sbc-readmore{display:none;background:none;border:none;color:#ffb627;font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.5px;cursor:pointer;margin:0 0 22px;text-decoration:underline;text-underline-offset:3px}
-section.page-hero{position:relative;overflow:hidden}
-section.page-hero::before{content:"";position:absolute;inset:0;background:rgba(5,13,26,.30);pointer-events:none;z-index:1}
-section.page-hero>*:not(img){position:relative;z-index:2}
-section.page-hero>img{z-index:0}
+section.page-hero.sbc-std{position:relative;overflow:hidden}
+section.page-hero.sbc-std::before{content:"";position:absolute;inset:0;background:rgba(5,13,26,.30);pointer-events:none;z-index:1}
+section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
 @media(max-width:760px){
   .mobile-bar{display:grid}
   body{padding-bottom:64px}
-  section.page-hero p.sbc-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px}
-  section.page-hero p.sbc-clamp.sbc-open{display:block;-webkit-line-clamp:unset;overflow:visible}
+  section.page-hero.sbc-std .page-hero-content p.sbc-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px}
+  section.page-hero.sbc-std .page-hero-content p.sbc-clamp.sbc-open{display:block;-webkit-line-clamp:unset;overflow:visible}
 }
 </style>
 <div class="mobile-bar">
@@ -326,7 +327,15 @@ section.page-hero>img{z-index:0}
 </div>
 <script id="sbc-uxpack-js">
 (function(){
-  var p = document.querySelector("section.page-hero p");
+  var h = document.querySelector("section.page-hero");
+  if(!h) return;
+  var c = null;
+  for(var i=0;i<h.children.length;i++){
+    if(h.children[i].classList && h.children[i].classList.contains("page-hero-content")){ c = h.children[i]; break; }
+  }
+  if(!c) return; /* custom/split hero designs: leave untouched */
+  h.classList.add("sbc-std");
+  var p = c.querySelector("p");
   if(!p) return;
   p.classList.add("sbc-clamp");
   var b = document.createElement("button");
