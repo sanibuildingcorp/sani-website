@@ -305,7 +305,6 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
 .wp-lightbox-close:hover{background:rgba(255,255,255,.26)}
 
 /* Sticky mobile call bar */
-.callbar{display:none}
 
 @media (max-width:920px){
   .hero-grid{grid-template-columns:1fr;gap:34px}
@@ -325,8 +324,6 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
   .spec-grid{grid-template-columns:1fr}
   .concept-inner{flex-direction:column}
   .concept-arrow{transform:rotate(90deg)}
-  .callbar{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:900;gap:10px;padding:10px 14px;background:rgba(10,22,40,.96);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.12)}
-  .callbar .btn{flex:1;padding:13px}
   body{padding-bottom:64px}
 }
 @media (prefers-reduced-motion:reduce){
@@ -715,12 +712,6 @@ h1,h2,h3{font-family:'Playfair Display',Georgia,serif;line-height:1.12;color:var
 </section>
 
 </main>
-
-<!-- Sticky mobile call bar -->
-<div class="callbar">
-  <a href="tel:3322770990" class="btn btn-gold">📞 Call</a>
-  <a href="#quote" class="btn btn-ghost">Free estimate</a>
-</div>
 
 <!-- Footer loaded from partials/footer.html via partials/site.js -->
 
