@@ -1000,6 +1000,33 @@ function showError() {
   document.getElementById("state-error").style.display="block";
 }
 
+var SOW_MODE = /[?&]sow=1/.test(location.search);
+
+function applySowMode() {
+  if (!SOW_MODE) return;
+  document.title = "Scope of Work \u2014 Sani Building Corp";
+  ["totals-only-wrap","lineitems-wrap","finishes-wrap","materials-wrap",
+   "actions-row","review-notice","breakdown-wrap"].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+  var tot = document.getElementById("est-total");
+  if (tot) { var row = tot.closest(".info-row"); if (row) row.style.display = "none"; }
+  var sp = document.getElementById("status-pill");
+  if (sp) { var row2 = sp.closest(".info-row"); if (row2) row2.style.display = "none"; }
+  var h = document.querySelector(".hero h1");
+  if (h && !document.getElementById("sow-badge")) {
+    var b = document.createElement("div");
+    b.id = "sow-badge";
+    b.style.cssText = "display:inline-block;margin-top:10px;padding:6px 14px;border:1.5px solid var(--gold-2,#c9a84c);border-radius:999px;font-size:11px;font-weight:800;letter-spacing:2px;color:var(--gold-2,#b8720a);text-transform:uppercase";
+    b.textContent = "Scope of Work \u00b7 For Building Management Review";
+    h.insertAdjacentElement("afterend", b);
+  }
+  document.querySelectorAll("body *").forEach(function(el){
+    if (el.children.length === 0 && /\$\s?[0-9]/.test(el.textContent)) el.style.display = "none";
+  });
+}
+
 function render() {
   const est     = record.estimate||{};
   const customer= record.customer||{};
@@ -1173,6 +1200,7 @@ function selectFinish(gid, oid) {
   renderTotalsSection();
 }
 function renderTotalsSection() {
+  if (SOW_MODE) setTimeout(applySowMode, 0);
   const calc = baseCalc;
   if (!calc) return;
   const delta = finishDelta();
