@@ -4,9 +4,18 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 
 **Legend:** ✅ DONE · 🔎 VERIFY (confirm after commit/crawl) · ⏳ PENDING (fix queued)
 
-*Updated Jul 7 2026 (image split — see section below). Prior update: Jun 27 2026 (batch 3) — by Claude. Authority Score 7; money keywords page 4–8. Priority per Jun 2026 core updates: consolidate thin/duplicate pages + topical depth, not new pages. **License rule enforced** — all “Licensed” claims stripped, “Fully insured” used.*
+*Updated Jul 17 2026 (Brooklyn bathroom remodel retarget + IndexNow auto-submit; per no-new-pages strategy, handyman-manhattan/commercial-handyman remain shelved). Prior update: Jul 7 2026 (image split — see section below). Prior update: Jun 27 2026 (batch 3) — by Claude. Authority Score 7; money keywords page 4–8. Priority per Jun 2026 core updates: consolidate thin/duplicate pages + topical depth, not new pages. **License rule enforced** — all “Licensed” claims stripped, “Fully insured” used.*
 
 ## Confirmed by Perplexity re-audit (post 21:46 commit): 5 FIXED, 0 regressions.
+
+-----
+
+## Technical / indexing
+
+|Item                     |Status   |Notes                                                                                                                     |
+|-------------------------|---------|---------------------------------------------------------------------------------------------------------------------------|
+|Bing Webmaster Tools     |✅ DONE   |Verified Jul 17 via GSC import; both sitemaps Success (39 URLs); Site Scan queued.                                        |
+|IndexNow auto-submit     |⏳ PENDING|Wix-era feed died Jun 2026. Fix delivered Jul 17: key file `a7ebddc053e946f89c2a38f825fdd941.txt` (site root) + `netlify/functions/deploy-succeeded.mjs` — pings Bing with all sitemap URLs on every deploy. Commit both.|
 
 -----
 
@@ -39,7 +48,7 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 |------------------------------------------|---------|-----------------------------------------------------------------------------------------------------------------|
 |/handyman                                 |✅ DONE   |Retargeted Brooklyn; title 57 / meta 159; 46 links → clean.                                                      |
 |/bathroom-renovation                      |✅ DONE   |title 54 / meta 158; all-borough/commercial intent; links clean.                                                 |
-|/bathroom-renovation-brooklyn             |✅ DONE   |title 49 / meta 154; links clean. Sole Brooklyn target.                                                          |
+|/bathroom-renovation-brooklyn             |🔎 VERIFY |**Retargeted Jul 17 to “bathroom remodeling brooklyn” (720/mo, KD 17; competitor #1 proves winnable).** New title/H1/meta/schema/headings; URL unchanged. Confirm after commit + crawl.|
 |/bathroom-renovation-manhattan            |✅ DONE   |title 50 / meta 153; links clean.                                                                                |
 |/bathroom-renovation-queens               |✅ DONE   |title 47 / meta 152; links clean.                                                                                |
 |/bathroom-floor-tile-installation         |✅ DONE   |title 51 / meta 150; links clean.                                                                                |
