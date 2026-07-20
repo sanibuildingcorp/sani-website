@@ -280,6 +280,7 @@ body {
 .badge.declined { background: var(--bad-bg); color: var(--bad); }
 .badge.invoiced { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
 .badge.paid { background: var(--good-bg); color: var(--good); }
+.badge.completed { background: rgba(13, 148, 136, 0.15); color: #14b8a6; }
 
 /* ============ HANDYMAN BOOKING CARDS ============ */
 .handyman-card {
@@ -2499,6 +2500,7 @@ button[onclick*="addRenderToQuote"],button[onclick*="saveContractorNotes"]{color
 /* Status badges readable on white */
 .badge.sent,.badge.h-new{color:#2563eb !important;background:rgba(37,99,235,0.10) !important}
 .badge.invoiced{color:#7c3aed !important;background:rgba(124,58,237,0.10) !important}
+.badge.completed{color:#0f766e !important;background:rgba(13,148,136,0.10) !important}
 .badge.h-confirmed{color:#15803d !important}
 .badge.h-in-progress{color:#b45309 !important}
 /* Drawer + send-link tweaks on white */
@@ -2666,6 +2668,7 @@ const TABS = [
   { id: "accepted", label: "Accepted" },
   { id: "invoiced", label: "Invoiced" },
   { id: "paid", label: "Paid" },
+  { id: "completed", label: "Completed" },
   { id: "declined", label: "Declined" },
   { id: "handyman", label: "🔧 Handyman" },
   { id: "visits", label: "📅 Visits" },
@@ -3340,6 +3343,9 @@ function renderEdit() {
     '</div>' +
     '<div class="modal-actions">' +
       '<button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>' +
+      (currentRecord && currentRecord.status === 'completed'
+        ? '<button class="btn-secondary" onclick="markCompleted(false)">↩ Reopen</button>'
+        : '<button class="btn-secondary" onclick="markCompleted(true)">🏁 Mark Completed</button>') +
       '<div class="modal-actions-right">' +
         '<button class="btn-secondary" onclick="openInvoiceModal()">💳 Send Invoice</button>' +
         '<button class="btn-secondary" onclick="saveDraft()">💾 Save Draft</button>' +
@@ -4138,6 +4144,34 @@ function refreshInvoiceHistory() {
   const prior = (currentRecord.invoices || []).reduce(function(s, inv) { return s + (Number(inv.amount) || 0); }, 0);
   const remaining = Math.max(0, t.grand - prior);
   renderInvoiceModal(t, prior, remaining);
+}
+
+/* Mark the whole project completed / reopen it. Uses save-estimate's status field. */
+async function markCompleted(done) {
+  if (!currentRecord) return;
+  var name = (currentRecord.customer && currentRecord.customer.name) || currentRecord.ref;
+  if (done && !confirm("Mark this project as COMPLETED?\n\n" + name + " will move to the Completed tab.")) return;
+  if (!done && !confirm("Reopen this project? It will go back to Accepted status.")) return;
+  var newStatus = done ? "completed" : "accepted";
+  try {
+    var r = await fetch("/.netlify/functions/save-estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: currentRecord.ref, status: newStatus,
+        estimate: { completedAt: done ? new Date().toISOString() : null } }),
+    });
+    if (!r.ok) { var e = await r.json().catch(function(){return {};}); throw new Error(e.error || "Update failed"); }
+    currentRecord.status = newStatus;
+    if (currentRecord.estimate) currentRecord.estimate.completedAt = done ? new Date().toISOString() : null;
+    estimates.forEach(function(x){ if (x.ref === currentRecord.ref) x.status = newStatus; });
+    toast(done ? "🏁 Project marked completed" : "↩ Project reopened");
+    closeEdit();
+    renderTabs();
+    renderList();
+  } catch (e) {
+    console.error(e);
+    toast("Update failed: " + e.message, true);
+  }
 }
 
 /* Mark a sent invoice paid / unpaid (calls mark-invoice-paid.js) */
@@ -5658,7 +5692,7 @@ window.addEventListener('appinstalled', function() {
 window.addEventListener('load', function() {
   if (location.hash) {
     var tabId = location.hash.replace('#', '');
-    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','declined','handyman','seo','content','images','keywords','visitors'];
+    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','completed','declined','handyman','seo','content','images','keywords','visitors'];
     if (validTabs.includes(tabId)) {
       activeTab = tabId;
     }
@@ -5716,6 +5750,7 @@ var SBC_TABS = [
   {id:'accepted', icon:'✅', label:'Accepted'},
   {id:'invoiced', icon:'💳', label:'Invoiced'},
   {id:'paid',     icon:'💰', label:'Paid'},
+  {id:'completed',icon:'🏁', label:'Completed'},
   {id:'declined', icon:'❌', label:'Declined'},
   null,
   {id:'handyman', icon:'🔧', label:'Handyman'},
