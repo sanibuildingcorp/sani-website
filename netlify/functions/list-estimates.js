@@ -49,6 +49,10 @@ exports.handler = async function (event) {
       updatedAt: e.updatedAt,
       sentAt: e.sentAt,
       acceptedAt: e.acceptedAt,
+      unpaidTotal: (e.invoices || [])
+        .filter((inv) => inv.status !== "paid")
+        .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0),
+      unpaidCount: (e.invoices || []).filter((inv) => inv.status !== "paid").length,
     }));
 
     return {
