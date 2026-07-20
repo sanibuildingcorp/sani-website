@@ -281,6 +281,7 @@ body {
 .badge.invoiced { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
 .badge.paid { background: var(--good-bg); color: var(--good); }
 .badge.completed { background: rgba(13, 148, 136, 0.15); color: #14b8a6; }
+.badge.unpaid-warn { background: rgba(239, 68, 68, 0.14); color: #ef4444; font-weight: 800; }
 
 /* ============ HANDYMAN BOOKING CARDS ============ */
 .handyman-card {
@@ -2501,6 +2502,7 @@ button[onclick*="addRenderToQuote"],button[onclick*="saveContractorNotes"]{color
 .badge.sent,.badge.h-new{color:#2563eb !important;background:rgba(37,99,235,0.10) !important}
 .badge.invoiced{color:#7c3aed !important;background:rgba(124,58,237,0.10) !important}
 .badge.completed{color:#0f766e !important;background:rgba(13,148,136,0.10) !important}
+.badge.unpaid-warn{color:#dc2626 !important;background:rgba(239,68,68,0.10) !important}
 .badge.h-confirmed{color:#15803d !important}
 .badge.h-in-progress{color:#b45309 !important}
 /* Drawer + send-link tweaks on white */
@@ -2793,7 +2795,7 @@ function normalizeDisplayFlags(est) {
 
 /* ===== TABS ===== */
 function renderTabs() {
-  const counts = { all: estimates.length };
+  const counts = { all: estimates.filter(function(e){ return e.status !== "completed"; }).length };
   TABS.forEach(function(t) { if (t.id !== "all") counts[t.id] = 0; });
   estimates.forEach(function(e) { if (counts[e.status] !== undefined) counts[e.status]++; });
   counts.sent = estimates.filter(function(e){ return ["sent","opened","question"].indexOf(e.status) !== -1; }).length;
@@ -2994,7 +2996,7 @@ function renderList() {
   }
 
   const filtered = activeTab === "all"
-    ? estimates
+    ? estimates.filter(function(e) { return e.status !== "completed"; })
     : activeTab === "sent"
       ? estimates.filter(function(e) { return ["sent","opened","question"].indexOf(e.status) !== -1; })
       : estimates.filter(function(e) { return e.status === activeTab; });
@@ -3029,6 +3031,7 @@ function renderList() {
           '</div>' +
           '<div class="est-badges">' +
             '<span class="badge ' + e.status + '">' + e.status + '</span>' +
+            (Number(e.unpaidTotal) > 0 ? '<span class="badge unpaid-warn">⚠ UNPAID ' + fmt(e.unpaidTotal) + '</span>' : '') +
             '<span style="font-size:11px;color:var(--ink-muted);letter-spacing:1px">' + esc(e.ref) + '</span>' +
           '</div>' +
         '</div>' +
@@ -4193,7 +4196,24 @@ async function toggleInvoicePaid(invoiceNumber, makePaid) {
         inv.paidAt = data.paidAt;
       }
     });
-    currentRecord.status = data.recordStatus;
+    if (currentRecord.status === "completed") {
+      // Project is completed — keep it completed; re-assert status server-side
+      fetch("/.netlify/functions/save-estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: currentRecord.ref, status: "completed" }),
+      }).catch(function(){});
+    } else {
+      currentRecord.status = data.recordStatus;
+      estimates.forEach(function(x){ if (x.ref === currentRecord.ref) x.status = data.recordStatus; });
+    }
+    // Recompute unpaid summary for the list card badge
+    var _unpaidInvs = (currentRecord.invoices || []).filter(function(i){ return i.status !== "paid"; });
+    var _unpaidTot = _unpaidInvs.reduce(function(s2, i){ return s2 + (Number(i.amount) || 0); }, 0);
+    estimates.forEach(function(x){
+      if (x.ref === currentRecord.ref) { x.unpaidTotal = _unpaidTot; x.unpaidCount = _unpaidInvs.length; }
+    });
+    renderList();
     toast(makePaid ? "✓ Marked paid (" + invoiceNumber + ")" : "Marked unpaid (" + invoiceNumber + ")");
     refreshInvoiceHistory();
   } catch (e) {
@@ -5771,10 +5791,10 @@ function sbcOpenDrawer() {
 
   // Build nav
   // Calculate counts from live data
-  var counts = {all:0,new:0,drafted:0,sent:0,accepted:0,invoiced:0,paid:0,declined:0,handyman:0,seo:0,content:0,visitors:0,visits:0};
+  var counts = {all:0,new:0,drafted:0,sent:0,accepted:0,invoiced:0,paid:0,completed:0,declined:0,handyman:0,seo:0,content:0,visitors:0,visits:0};
   try {
     if (typeof estimates !== 'undefined' && estimates) {
-      counts.all = estimates.length;
+      counts.all = estimates.filter(function(e){ return e.status !== 'completed'; }).length;
       estimates.forEach(function(e) { if (e.status && counts[e.status] !== undefined) counts[e.status]++; });
       counts.sent = estimates.filter(function(e){ return ["sent","opened","question"].indexOf(e.status) !== -1; }).length;
     }
