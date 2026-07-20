@@ -3062,13 +3062,19 @@ async function openEdit(ref) {
 
   try {
     const r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref));
-    if (!r.ok) throw new Error("Load failed");
+    if (!r.ok) throw new Error("Load failed (" + r.status + ")");
     currentRecord = await r.json();
     if (!currentRecord.estimate) currentRecord.estimate = {};
     normalizeDisplayFlags(currentRecord.estimate);
     renderEdit();
   } catch (e) {
-    card.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>' + esc(e.message) + '</h3><button class="btn-secondary" onclick="closeEdit()">Close</button></div>';
+    card.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>' + esc(e.message) + '</h3>'
+      + '<p style="font-size:12.5px;color:var(--ink-muted,#8a9bb0);margin:6px 0 14px">Ref ' + esc(ref) + ' — this record won\'t open. You can retry or delete it.</p>'
+      + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">'
+      + '<button class="btn-secondary" onclick="openEdit(\'' + esc(ref) + '\')">↻ Retry</button>'
+      + '<button class="btn-danger" onclick="deleteEstimateByRef(\'' + esc(ref) + '\')">🗑 Delete This Estimate</button>'
+      + '<button class="btn-secondary" onclick="closeEdit()">Close</button>'
+      + '</div></div>';
   }
 }
 function closeEdit() {
@@ -4069,6 +4075,24 @@ async function sendToCustomer() {
     await loadEstimates();
   } catch (e) {
     toast("Send failed: " + e.message, true);
+  }
+}
+
+async function deleteEstimateByRef(ref) {
+  if (!ref) return;
+  if (!confirm("Delete estimate " + ref + "? This cannot be undone.")) return;
+  try {
+    const r = await fetch("/.netlify/functions/delete-estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: ref }),
+    });
+    if (!r.ok) throw new Error("Delete failed");
+    toast("Deleted " + ref);
+    closeEdit();
+    await loadEstimates();
+  } catch (e) {
+    toast("Delete failed: " + e.message, true);
   }
 }
 
