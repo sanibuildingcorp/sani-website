@@ -53,6 +53,7 @@ exports.handler = async function (event) {
         .filter((inv) => inv.status !== "paid")
         .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0),
       unpaidCount: (e.invoices || []).filter((inv) => inv.status !== "paid").length,
+      invoiceCount: (e.invoices || []).length,
     }));
 
     return {
