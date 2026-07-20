@@ -4185,7 +4185,7 @@ function detailInvoicesHtml(r) {
 /* Delete one invoice (accidental duplicates). Destructive — double confirmed. */
 async function deleteInvoice(invoiceNumber, amount) {
   if (!currentRecord) return;
-  if (!confirm("Delete invoice " + invoiceNumber + " (" + fmt(amount) + ")?\n\nThis permanently removes it from your records. If the customer already received this invoice by email, let them know to disregard that invoice number.")) return;
+  if (!confirm("Delete invoice " + invoiceNumber + " (" + fmt(amount) + ")?")) return;
   try {
     var r = await fetch("/.netlify/functions/delete-invoice", {
       method: "POST",
