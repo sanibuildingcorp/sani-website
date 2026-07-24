@@ -1883,6 +1883,14 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 /* Card body: hairline separator between photo and text */
 .svc-card .svc-body{border-top:1px solid rgba(10,22,40,.08) !important;}
 
+/* Real <img> photo cards (Image Studio editable) — img fills the media box, corners stay on the frame */
+.svc-bg{position:relative !important;overflow:hidden !important;background-image:none !important;}
+.svc-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .55s cubic-bezier(.2,.6,.2,1);}
+.svc-card:hover .svc-bg{transform:none !important;}
+@media (prefers-reduced-motion: no-preference){
+  .svc-card:hover .svc-bg-img{transform:scale(1.035);}
+}
+
 /* Trust card + rating chip: align radii with the tighter language */
 .hero-stats{border-radius:10px !important;border-top:2px solid rgba(200,134,10,.55) !important;}
 .hero-rating{border-radius:8px !important;}
@@ -2104,7 +2112,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
     </div>
     <div class="svc-grid">
       <a href="/bathroom-renovation" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/home/bathroom.jpg'),url('images/home/marble-mosaic-shower-1.jpg')"></div>
+        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/bathroom.jpg" alt="Bathroom renovation project in Brooklyn NYC by Sani Building Corp"></div>
         <div class="svc-body">
           <span class="svc-num">01 — BATHROOM</span>
           <h3 class="svc-title">Bathroom<br>Renovation</h3>
@@ -2112,7 +2120,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         </div>
       </a>
       <a href="/kitchen-cabinet-installation" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/services/kitchen.jpg'),url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=85')"></div>
+        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/services/kitchen.jpg" alt="Kitchen cabinet installation project in NYC"></div>
         <div class="svc-body">
           <span class="svc-num">02 — CABINETS</span>
           <h3 class="svc-title">Kitchen Cabinet<br>Installation</h3>
@@ -2120,7 +2128,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         </div>
       </a>
       <a href="/painting" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/services/painting.jpg'),url('https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1200&q=85')"></div>
+        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/services/painting.jpg" alt="Interior painting services in Brooklyn and Manhattan"></div>
         <div class="svc-body">
           <span class="svc-num">03 — PAINTING</span>
           <h3 class="svc-title">Painting<br>Services</h3>
@@ -2128,7 +2136,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         </div>
       </a>
       <a href="/flooring" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/services/flooring.jpg'),url('https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1200&q=85')"></div>
+        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/services/flooring.jpg" alt="Hardwood flooring installation in NYC"></div>
         <div class="svc-body">
           <span class="svc-num">04 — FLOORING</span>
           <h3 class="svc-title">Flooring<br>Installation</h3>
@@ -2136,7 +2144,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         </div>
       </a>
       <a href="/carpentry" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/services/carpentry.jpg'),url('https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=1200&q=85')"></div>
+        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/services/carpentry.jpg" alt="Custom carpentry and millwork in NYC"></div>
         <div class="svc-body">
           <span class="svc-num">05 — CARPENTRY</span>
           <h3 class="svc-title">Carpentry<br>& Millwork</h3>
@@ -2144,7 +2152,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         </div>
       </a>
       <a href="/water-damage" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/home/water-damage.jpg'),url('https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=1200&q=85')"></div>
+        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/water-damage.jpg" alt="Water damage restoration in Brooklyn NYC"></div>
         <div class="svc-body">
           <span class="svc-num">06 — RESTORATION</span>
           <h3 class="svc-title">Water Damage<br>Restoration</h3>
@@ -2152,7 +2160,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         </div>
       </a>
       <a href="/handyman" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/home/handyman.jpg'),url('images/handyman/same-day-handyman-services-in-nyc-fast-r-2.jpg')"></div>
+        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/handyman.jpg" alt="Same-day handyman service in Brooklyn NYC" onerror="this.onerror=null;this.src='images/handyman/same-day-handyman-services-in-nyc-fast-r-2.jpg'"></div>
         <div class="svc-body">
           <span class="svc-num">07 — HANDYMAN</span>
           <h3 class="svc-title">Handyman<br>Same-Day Service</h3>
@@ -2160,7 +2168,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         </div>
       </a>
       <a href="/commercial-tile-installation" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/home/tile.jpg'),url('images/home/marble-mosaic-shower-1.jpg')"></div>
+        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/tile.jpg" alt="Commercial and residential tile installation in NYC" onerror="this.onerror=null;this.src='images/home/marble-mosaic-shower-1.jpg'"></div>
         <div class="svc-body">
           <span class="svc-num">08 — TILE</span>
           <h3 class="svc-title">Tile<br>Installation</h3>
@@ -2168,7 +2176,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         </div>
       </a>
       <a href="/deck-building" class="svc-card">
-        <div class="svc-bg" style="background-image:url('images/home/deck.jpg'),url('images/home/project-7.jpg')"></div>
+        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/deck.jpg" alt="Deck building and renovation in NYC" onerror="this.onerror=null;this.src='images/home/project-7.jpg'"></div>
         <div class="svc-body">
           <span class="svc-num">09 — DECKS</span>
           <h3 class="svc-title">Deck Building<br>& Renovation</h3>
