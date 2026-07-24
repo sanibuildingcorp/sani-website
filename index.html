@@ -1891,6 +1891,11 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
   .svc-card:hover .svc-bg-img{transform:scale(1.035);}
 }
 
+/* Strip cards as real <img> photos (Studio editable) */
+.strip-bg{overflow:hidden !important;background-image:none !important;}
+.strip-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+
+
 /* Trust card + rating chip: align radii with the tighter language */
 .hero-stats{border-radius:10px !important;border-top:2px solid rgba(200,134,10,.55) !important;}
 .hero-rating{border-radius:8px !important;}
@@ -1989,85 +1994,85 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
     <div class="strip-inner">
       <!-- SET 1 (10 services) -->
       <a href="/kitchen-cabinet-installation" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/kitchen.jpg'),url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/kitchen.jpg" alt="Kitchen renovation in NYC"></div>
         <div class="strip-label">Kitchen Cabinet<br>Installation</div>
       </a>
       <a href="/bathroom-renovation" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/bathroom.jpg'),url('images/home/marble-mosaic-shower-1.jpg')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/bathroom.jpg" alt="Bathroom renovation in Brooklyn NYC"></div>
         <div class="strip-label">Bathroom<br>Renovations</div>
       </a>
       <a href="/painting" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/interior.jpg'),url('images/home/nyc-luxury-livingroom.jpg')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/interior.jpg" alt="Interior renovation in NYC apartment"></div>
         <div class="strip-label">Interior<br>Renovations</div>
       </a>
       <a href="/services" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/exterior.jpg'),url('https://images.unsplash.com/photo-1592595896616-c37162298647?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/exterior.jpg" alt="Exterior renovation and facade work in NYC"></div>
         <div class="strip-label">Exterior<br>Renovations</div>
       </a>
       <a href="/painting" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/painting.jpg'),url('https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/painting.jpg" alt="Professional painting services in NYC"></div>
         <div class="strip-label">Painting<br>Services</div>
       </a>
       <a href="/flooring" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/flooring.jpg'),url('https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/flooring.jpg" alt="Flooring installation in NYC"></div>
         <div class="strip-label">Flooring<br>Installation</div>
       </a>
       <a href="/carpentry" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/carpentry.jpg'),url('https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/carpentry.jpg" alt="Carpentry and millwork in NYC"></div>
         <div class="strip-label">Carpentry<br>&amp; Millwork</div>
       </a>
       <a href="/water-damage" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/water-damage.jpg'),url('https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/water-damage.jpg" alt="Water damage restoration in NYC"></div>
         <div class="strip-label">Water Damage<br>Repair</div>
       </a>
       <a href="/handyman" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/handyman.jpg'),url('https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/handyman.jpg" alt="Handyman services in Brooklyn NYC"></div>
         <div class="strip-label">Handyman<br>Services</div>
       </a>
       <a href="/services" class="strip-item">
-        <div class="strip-bg" style="background-image:url('images/services-strip/repairs.jpg'),url('images/home/craftsmanship-tile-cutting.jpg')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/repairs.jpg" alt="Same-day repairs in NYC"></div>
         <div class="strip-label">Repairs &amp;<br>Maintenance</div>
       </a>
 
       <!-- SET 2 (duplicate for seamless infinite loop) -->
       <a href="/kitchen-cabinet-installation" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/kitchen.jpg'),url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/kitchen.jpg" alt="Kitchen renovation in NYC"></div>
         <div class="strip-label">Kitchen Cabinet<br>Installation</div>
       </a>
       <a href="/bathroom-renovation" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/bathroom.jpg'),url('images/home/marble-mosaic-shower-1.jpg')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/bathroom.jpg" alt="Bathroom renovation in Brooklyn NYC"></div>
         <div class="strip-label">Bathroom<br>Renovations</div>
       </a>
       <a href="/painting" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/interior.jpg'),url('images/home/nyc-luxury-livingroom.jpg')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/interior.jpg" alt="Interior renovation in NYC apartment"></div>
         <div class="strip-label">Interior<br>Renovations</div>
       </a>
       <a href="/services" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/exterior.jpg'),url('https://images.unsplash.com/photo-1592595896616-c37162298647?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/exterior.jpg" alt="Exterior renovation and facade work in NYC"></div>
         <div class="strip-label">Exterior<br>Renovations</div>
       </a>
       <a href="/painting" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/painting.jpg'),url('https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/painting.jpg" alt="Professional painting services in NYC"></div>
         <div class="strip-label">Painting<br>Services</div>
       </a>
       <a href="/flooring" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/flooring.jpg'),url('https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/flooring.jpg" alt="Flooring installation in NYC"></div>
         <div class="strip-label">Flooring<br>Installation</div>
       </a>
       <a href="/carpentry" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/carpentry.jpg'),url('https://images.unsplash.com/photo-1572297870735-b0a3c12d8e7e?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/carpentry.jpg" alt="Carpentry and millwork in NYC"></div>
         <div class="strip-label">Carpentry<br>&amp; Millwork</div>
       </a>
       <a href="/water-damage" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/water-damage.jpg'),url('https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/water-damage.jpg" alt="Water damage restoration in NYC"></div>
         <div class="strip-label">Water Damage<br>Repair</div>
       </a>
       <a href="/handyman" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/handyman.jpg'),url('https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=85')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/handyman.jpg" alt="Handyman services in Brooklyn NYC"></div>
         <div class="strip-label">Handyman<br>Services</div>
       </a>
       <a href="/services" class="strip-item" aria-hidden="true">
-        <div class="strip-bg" style="background-image:url('images/services-strip/repairs.jpg'),url('images/home/craftsmanship-tile-cutting.jpg')"></div>
+        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/repairs.jpg" alt="Same-day repairs in NYC"></div>
         <div class="strip-label">Repairs &amp;<br>Maintenance</div>
       </a>
     </div>
