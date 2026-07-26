@@ -96,6 +96,14 @@
   #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--navy-3);border:1px solid var(--gold);color:var(--ink);padding:12px 20px;border-radius:999px;font-size:13px;transition:transform .3s;z-index:90;max-width:90%}
   #toast.show{transform:translateX(-50%) translateY(0)}
   .muted{color:var(--ink-muted)}
+  /* ── Publish queue ─────────────────────────── */
+  .q-panel{margin-top:16px;border:1px solid var(--gold);border-radius:10px;padding:14px;background:rgba(200,134,10,.05)}
+  .q-head{font-weight:700;color:var(--gold);font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .q-head #q-count{background:var(--gold);color:#0a1628;border-radius:999px;padding:1px 9px;font-size:12px}
+  .q-note{color:var(--ink-muted);font-weight:400;font-size:11px}
+  .q-item{display:flex;align-items:center;gap:10px;margin-top:10px;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--navy-3)}
+  .q-item img{width:52px;height:40px;object-fit:cover;border-radius:5px;flex-shrink:0}
+  .q-item .q-path{font-size:11.5px;color:var(--ink);word-break:break-all;flex:1;line-height:1.35}
   /* ── Crop tool ─────────────────────────────── */
   .crop-modal{display:none;position:fixed;inset:0;z-index:2000;background:rgba(4,10,20,.92);padding:18px;overflow:auto}
   .crop-modal.open{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
@@ -307,6 +315,7 @@ body{padding-bottom:90px}
       <img id="preview" alt="generated preview">
       <div class="actions">
         <button class="btn-ghost btn" onclick="openCrop()">✂️ Adjust Crop</button>
+        <button class="btn-ghost btn" onclick="addToQueue()">➕ Add to Queue</button>
         <button class="btn-ghost btn" onclick="generate()">↻ Regenerate</button>
         <button class="btn" id="pub-btn" onclick="publish()">✅ Approve &amp; Publish</button>
       </div>
@@ -1000,6 +1009,72 @@ function applyCrop(){
   };
   img.src = crop.base;
 }
+/* ── Publish Queue: many photos → ONE commit → ONE deploy ── */
+var pubQueue = [];
+function qValidPath(p){ return /^images\/[A-Za-z0-9_\-\/]+\.(jpg|jpeg|png|webp)$/i.test(p) && p.indexOf("..") === -1; }
+function addToQueue(){
+  if(!currentImage){ toast("Load a photo first"); return; }
+  var path = document.getElementById("path").value.trim().replace(/^\/+/, "").split("?")[0];
+  if(!qValidPath(path)){ toast("Set a valid images/... path first"); return; }
+  for(var i=0;i<pubQueue.length;i++){
+    if(pubQueue[i].path === path){ pubQueue[i].dataUrl = currentImage; renderQueue(); toast("♻️ Replaced in queue: " + path); dismissPreview(); return; }
+  }
+  if(pubQueue.length >= 15){ toast("Queue full (15) — publish this batch first"); return; }
+  pubQueue.push({ path: path, dataUrl: currentImage });
+  renderQueue();
+  toast("➕ Added — load the next photo");
+  dismissPreview();
+}
+function removeFromQueue(i){ pubQueue.splice(i,1); renderQueue(); }
+function clearQueue(){ pubQueue = []; renderQueue(); }
+function renderQueue(){
+  var panel = document.getElementById("q-panel");
+  var list = document.getElementById("q-list");
+  document.getElementById("q-count").textContent = pubQueue.length;
+  document.getElementById("q-done").textContent = "";
+  hideErr("q-err");
+  if(pubQueue.length === 0){ panel.style.display = "none"; list.innerHTML = ""; return; }
+  panel.style.display = "block";
+  var h = "";
+  for(var i=0;i<pubQueue.length;i++){
+    h += '<div class="q-item"><img src="' + pubQueue[i].dataUrl + '"><div class="q-path">' + pubQueue[i].path +
+         '</div><button class="x-btn" onclick="removeFromQueue(' + i + ')" title="Remove">\u2715</button></div>';
+  }
+  list.innerHTML = h;
+}
+async function publishQueue(){
+  if(pubQueue.length === 0){ toast("Queue is empty"); return; }
+  var btn = document.getElementById("q-pub-btn");
+  btn.disabled = true;
+  hideErr("q-err");
+  try {
+    var files = [];
+    for(var i=0;i<pubQueue.length;i++){
+      btn.textContent = "Compressing " + (i+1) + "/" + pubQueue.length + "\u2026";
+      var opt = await optimize(pubQueue[i].dataUrl);
+      files.push({ path: pubQueue[i].path, imageBase64: opt });
+    }
+    btn.textContent = "Publishing " + files.length + " photos\u2026";
+    var r = await fetch("/.netlify/functions/publish-image-to-page", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ files: files })
+    });
+    var d = await r.json().catch(function(){ return {}; });
+    if(!r.ok || !d.success){ throw new Error(d.error || ("HTTP " + r.status)); }
+    document.getElementById("q-done").textContent = "\u2705 " + d.message + " Then Cloudflare \u2192 Purge Everything.";
+    pubQueue = [];
+    document.getElementById("q-list").innerHTML = "";
+    document.getElementById("q-count").textContent = "0";
+    toast("\ud83d\ude80 Batch published — one commit, one deploy");
+  } catch(e){
+    var er = document.getElementById("q-err");
+    er.textContent = "Batch failed: " + e.message + " — nothing was published, your queue is safe.";
+    er.style.display = "block";
+  }
+  btn.disabled = false;
+  btn.textContent = "\ud83d\ude80 Publish All \u2014 1 Commit";
+}
 </script>
 <div id="thumb-viewer" onclick="closeThumbView()" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(5,13,26,.92);align-items:center;justify-content:center;padding:20px">
   <img id="thumb-viewer-img" src="" style="max-width:94vw;max-height:88vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
@@ -1009,6 +1084,17 @@ function applyCrop(){
   <span id="bulk-count" class="bulk-note">Photos ready to publish</span>
   <button id="bulk-go" class="bulk-go" onclick="publishAll()">&#128640; Approve &amp; Publish All</button>
   <button class="bulk-clear" onclick="bulkClear()">Clear</button>
+</div>
+
+<div class="q-panel" id="q-panel" style="display:none">
+  <div class="q-head">📦 Publish Queue <span id="q-count">0</span> <span class="q-note">All photos publish in ONE commit → one deploy</span></div>
+  <div id="q-list"></div>
+  <div class="actions" style="margin-top:12px">
+    <button class="btn-ghost btn" onclick="clearQueue()">Clear</button>
+    <button class="btn" id="q-pub-btn" onclick="publishQueue()">🚀 Publish All — 1 Commit</button>
+  </div>
+  <div class="err" id="q-err"></div>
+  <div class="hint" id="q-done"></div>
 </div>
 
 <div class="crop-modal" id="crop-modal">
