@@ -109,6 +109,7 @@
   .crop-modal.open{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
   .crop-stage{position:relative;overflow:hidden;background:#000;border:1px solid var(--line);border-radius:8px;touch-action:none;max-width:92vw}
   .crop-stage img{position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none;pointer-events:none;max-width:none}
+  #crop-bg{width:100%;height:100%;object-fit:cover;filter:blur(16px) brightness(.7);transform:scale(1.1)}
   .crop-stage::after{content:'';position:absolute;inset:0;pointer-events:none;border:1.5px solid rgba(255,182,39,.9);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
   .crop-grid{position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(255,255,255,.18) 0 0) 33.33% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.18) 0 0) 66.66% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.18) 0 0) 0 33.33%/100% 1px no-repeat,linear-gradient(rgba(255,255,255,.18) 0 0) 0 66.66%/100% 1px no-repeat}
   .crop-aspects{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
@@ -915,17 +916,33 @@ function layoutCrop(){
   crop.fw = fw; crop.fh = fh;
   var st = document.getElementById("crop-stage");
   st.style.width = fw + "px"; st.style.height = fh + "px";
-  crop.min = Math.max(fw / crop.iw, fh / crop.ih);
+  crop.min = Math.max(fw / crop.iw, fh / crop.ih);   // cover (fill frame)
+  crop.fit = Math.min(fw / crop.iw, fh / crop.ih);   // fit (whole photo visible)
+  document.getElementById("crop-bg").src = crop.base;
+  cropFill();
+}
+function cropFill(){
   crop.s = crop.min;
-  crop.tx = (fw - crop.iw * crop.s) / 2;
-  crop.ty = (fh - crop.ih * crop.s) / 2;
-  var z = document.getElementById("crop-zoom"); z.value = 100;
-  document.getElementById("crop-zoom-val").textContent = "1.0\u00d7";
-  renderCrop();
+  crop.tx = (crop.fw - crop.iw * crop.s) / 2;
+  crop.ty = (crop.fh - crop.ih * crop.s) / 2;
+  syncZoomUI(); renderCrop();
+}
+function cropFit(){
+  crop.s = crop.fit;
+  crop.tx = (crop.fw - crop.iw * crop.s) / 2;
+  crop.ty = (crop.fh - crop.ih * crop.s) / 2;
+  syncZoomUI(); renderCrop();
+}
+function syncZoomUI(){
+  var v = Math.round(crop.s / crop.min * 100);
+  document.getElementById("crop-zoom").value = Math.max(30, Math.min(300, v));
+  document.getElementById("crop-zoom-val").textContent = (crop.s / crop.min).toFixed(2).replace(/0$/,"") + "\u00d7";
 }
 function clampCrop(){
-  crop.tx = Math.min(0, Math.max(crop.fw - crop.iw * crop.s, crop.tx));
-  crop.ty = Math.min(0, Math.max(crop.fh - crop.ih * crop.s, crop.ty));
+  if(crop.iw * crop.s <= crop.fw){ crop.tx = (crop.fw - crop.iw * crop.s) / 2; }
+  else { crop.tx = Math.min(0, Math.max(crop.fw - crop.iw * crop.s, crop.tx)); }
+  if(crop.ih * crop.s <= crop.fh){ crop.ty = (crop.fh - crop.ih * crop.s) / 2; }
+  else { crop.ty = Math.min(0, Math.max(crop.fh - crop.ih * crop.s, crop.ty)); }
 }
 function renderCrop(){
   clampCrop();
@@ -941,7 +958,7 @@ function setAspect(btn){
 }
 function cropZoom(v){
   var factor = v / 100;
-  var ns = crop.min * factor;
+  var ns = Math.max(crop.fit, crop.min * factor);
   var cx = crop.fw / 2, cy = crop.fh / 2;
   crop.tx = cx - (cx - crop.tx) * (ns / crop.s);
   crop.ty = cy - (cy - crop.ty) * (ns / crop.s);
@@ -969,7 +986,7 @@ function cropZoom(v){
       var a = crop.ptrs[ids[0]], b = crop.ptrs[ids[1]];
       var d = Math.hypot(a.x - b.x, a.y - b.y);
       if(crop.lastDist){
-        var ns = Math.min(crop.min * 3, Math.max(crop.min, crop.s * (d / crop.lastDist)));
+        var ns = Math.min(crop.min * 3, Math.max(crop.fit, crop.s * (d / crop.lastDist)));
         var r = st.getBoundingClientRect();
         var mx = (a.x + b.x) / 2 - r.left, my = (a.y + b.y) / 2 - r.top;
         crop.tx = mx - (mx - crop.tx) * (ns / crop.s);
@@ -993,19 +1010,27 @@ function cropZoom(v){
 function applyCrop(){
   var img = new Image();
   img.onload = function(){
-    var sx = -crop.tx / crop.s, sy = -crop.ty / crop.s;
-    var sw = crop.fw / crop.s, sh = crop.fh / crop.s;
-    sx = Math.max(0, Math.min(crop.iw - 1, sx));
-    sy = Math.max(0, Math.min(crop.ih - 1, sy));
-    sw = Math.min(crop.iw - sx, sw); sh = Math.min(crop.ih - sy, sh);
+    var outW = Math.round(Math.min(1800, Math.max(1000, crop.fw / crop.s)));
+    var outH = Math.round(outW / crop.ar);
+    var k = outW / crop.fw;
     var c = document.createElement("canvas");
-    c.width = Math.round(sw); c.height = Math.round(sh);
-    c.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    c.width = outW; c.height = outH;
+    var ctx = c.getContext("2d");
+    var zoomedOut = (crop.iw * crop.s < crop.fw - 1) || (crop.ih * crop.s < crop.fh - 1);
+    if(zoomedOut){
+      // blurred cover fill behind the photo
+      var cs = Math.max(outW / crop.iw, outH / crop.ih) * 1.1;
+      var bw = crop.iw * cs, bh = crop.ih * cs;
+      try { ctx.filter = "blur(" + Math.round(outW * 0.025) + "px) brightness(0.7)"; } catch(e){}
+      ctx.drawImage(img, (outW - bw) / 2, (outH - bh) / 2, bw, bh);
+      try { ctx.filter = "none"; } catch(e){}
+    }
+    ctx.drawImage(img, crop.tx * k, crop.ty * k, crop.iw * crop.s * k, crop.ih * crop.s * k);
     currentImage = c.toDataURL("image/jpeg", 0.93);
     document.getElementById("preview").src = currentImage;
     updateSizeEstimate();
     closeCrop();
-    toast("\u2702\uFE0F Crop applied \u2014 this exact area will publish");
+    toast("\u2702\uFE0F Applied \u2014 exactly this frame will publish");
   };
   img.src = crop.base;
 }
@@ -1105,9 +1130,13 @@ async function publishQueue(){
     <button data-ar="1" onclick="setAspect(this)">Square</button>
     <button data-ar="0.75" onclick="setAspect(this)">Tall 3:4</button>
   </div>
-  <div class="crop-stage" id="crop-stage"><img id="crop-img" alt=""><div class="crop-grid"></div></div>
-  <div class="crop-zoom">Zoom <input type="range" id="crop-zoom" min="100" max="300" value="100" oninput="cropZoom(this.value)"> <span id="crop-zoom-val">1.0×</span></div>
-  <div class="crop-hint">Drag the photo to choose which area shows on the page. The gold frame is exactly what publishes.</div>
+  <div class="crop-stage" id="crop-stage"><img id="crop-bg" alt=""><img id="crop-img" alt=""><div class="crop-grid"></div></div>
+  <div class="crop-zoom">Zoom <input type="range" id="crop-zoom" min="30" max="300" value="100" oninput="cropZoom(this.value)"> <span id="crop-zoom-val">1.0×</span></div>
+  <div class="crop-aspects">
+    <button onclick="cropFit()">⤢ Show Full Photo</button>
+    <button onclick="cropFill()">⛶ Fill Frame</button>
+  </div>
+  <div class="crop-hint">Drag to move · pinch or slide to zoom. Zoom out to show the FULL photo (edges fill with a soft blur), or zoom in to a specific area. The gold frame is exactly what publishes.</div>
   <div class="crop-actions">
     <button class="btn-ghost btn" onclick="closeCrop()">Cancel</button>
     <button class="btn" onclick="applyCrop()">✂️ Apply Crop</button>
