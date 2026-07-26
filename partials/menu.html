@@ -77,7 +77,15 @@
             </div>
           </div>
           <a href="/water-damage">💧 Water Damage Restoration</a>
-          <a href="/handyman">🔧 Handyman Services</a>
+          <div class="has-sub">
+            <a href="/handyman">🔧 Handyman Services</a>
+            <div class="sub-menu">
+              <span class="sub-label">Handyman Services</span>
+              <a href="/handyman">All NYC · Same-Day</a>
+              <span class="sub-label">By Location</span>
+              <a href="/handyman-manhattan">Manhattan · Commercial &amp; After-Hours</a>
+            </div>
+          </div>
           <div class="has-sub has-sub-bottom">
             <a href="/services">📍 Renovations by Area</a>
             <div class="sub-menu">
@@ -148,7 +156,7 @@
       <a href="/flooring" class="m-item"><span class="m-item-label"><span class="icon">🪵</span>Flooring Installation</span></a>
       <button class="m-item" onclick="mobileOpen('carpentry')"><span class="m-item-label"><span class="icon">🔨</span>Carpentry &amp; Millwork</span><span class="chev">›</span></button>
       <a href="/water-damage" class="m-item"><span class="m-item-label"><span class="icon">💧</span>Water Damage Restoration</span></a>
-      <a href="/handyman" class="m-item"><span class="m-item-label"><span class="icon">🔧</span>Handyman Services</span></a>
+      <button class="m-item" onclick="mobileOpen('handyman')"><span class="m-item-label"><span class="icon">🔧</span>Handyman Services</span><span class="chev">›</span></button>
       <button class="m-item" onclick="mobileOpen('areas')"><span class="m-item-label"><span class="icon">📍</span>Renovations by Area</span><span class="chev">›</span></button>
       <a href="/services" class="m-item gold"><span class="m-item-label">→ View All Services</span></a>
     </div>
@@ -186,6 +194,17 @@
     </div>
 
     <!-- LEVEL 2 — Painting -->
+    <div class="m-panel" data-level="2" id="panel-handyman">
+      <div class="m-panel-header">
+        <button class="m-back" onclick="mobileBack('handyman')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+        <span class="m-panel-title">🔧 Handyman</span>
+      </div>
+      <span class="m-section-label">Handyman Services</span>
+      <a href="/handyman" class="m-item"><span class="m-item-label">All NYC · Same-Day Service</span></a>
+      <span class="m-section-label">By Location</span>
+      <a href="/handyman-manhattan" class="m-item"><span class="m-item-label">Manhattan · Commercial &amp; After-Hours</span></a>
+    </div>
+
     <div class="m-panel" data-level="2" id="panel-painting">
       <div class="m-panel-header">
         <button class="m-back" onclick="mobileBack('painting')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
