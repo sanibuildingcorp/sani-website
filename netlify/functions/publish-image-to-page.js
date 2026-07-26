@@ -29,6 +29,65 @@ exports.handler = async function (event) {
   try { body = JSON.parse(event.body || "{}"); }
   catch (e) { return json(400, { error: "Invalid request body" }); }
 
+  // ── BATCH MODE: { files: [{ path, imageBase64 }, ...] } → ONE commit, ONE deploy ──
+  if (Array.isArray(body.files)) {
+    const gh = {
+      Authorization: "Bearer " + token,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "Sani-Image-Studio",
+      "X-GitHub-Api-Version": "2022-11-28",
+    };
+    const files = body.files;
+    if (files.length === 0) return json(400, { error: "Queue is empty" });
+    if (files.length > 15) return json(400, { error: "Max 15 photos per batch — publish in two batches." });
+    const clean = [];
+    for (let i = 0; i < files.length; i++) {
+      const p = String(files[i].path || "").trim().replace(/^\/+/, "").split("?")[0].split("#")[0];
+      if (p.indexOf("..") !== -1 || !/^images\/[A-Za-z0-9_\-\/]+\.(jpg|jpeg|png|webp)$/i.test(p)) {
+        return json(400, { error: "Bad path in queue item " + (i + 1) + ": " + p });
+      }
+      let b64 = String(files[i].imageBase64 || "");
+      const bi = b64.indexOf("base64,");
+      if (bi !== -1) b64 = b64.slice(bi + 7);
+      b64 = b64.replace(/\s+/g, "");
+      if (b64.length < 100) return json(400, { error: "Image data missing for " + p });
+      clean.push({ path: p, b64: b64 });
+    }
+    try {
+      const base = "https://api.github.com/repos/" + GH_OWNER + "/" + GH_REPO;
+      const hdr = Object.assign({}, gh, { "Content-Type": "application/json" });
+      const refRes = await fetch(base + "/git/ref/heads/" + GH_BRANCH, { headers: gh });
+      if (!refRes.ok) return json(refRes.status, { error: "Couldn't read branch ref (" + refRes.status + ")" });
+      const headSha = (await refRes.json()).object.sha;
+      const comRes = await fetch(base + "/git/commits/" + headSha, { headers: gh });
+      if (!comRes.ok) return json(comRes.status, { error: "Couldn't read head commit" });
+      const baseTree = (await comRes.json()).tree.sha;
+      const treeItems = [];
+      for (const f of clean) {
+        const bRes = await fetch(base + "/git/blobs", { method: "POST", headers: hdr, body: JSON.stringify({ content: f.b64, encoding: "base64" }) });
+        if (!bRes.ok) return json(bRes.status, { error: "Blob upload failed for " + f.path });
+        treeItems.push({ path: f.path, mode: "100644", type: "blob", sha: (await bRes.json()).sha });
+      }
+      const tRes = await fetch(base + "/git/trees", { method: "POST", headers: hdr, body: JSON.stringify({ base_tree: baseTree, tree: treeItems }) });
+      if (!tRes.ok) return json(tRes.status, { error: "Tree creation failed" });
+      const treeSha = (await tRes.json()).sha;
+      const msg = "Image Studio batch: " + clean.length + " photo" + (clean.length > 1 ? "s" : "");
+      const cRes = await fetch(base + "/git/commits", { method: "POST", headers: hdr, body: JSON.stringify({ message: msg, tree: treeSha, parents: [headSha] }) });
+      if (!cRes.ok) return json(cRes.status, { error: "Commit creation failed" });
+      const newSha = (await cRes.json()).sha;
+      const uRes = await fetch(base + "/git/refs/heads/" + GH_BRANCH, { method: "PATCH", headers: hdr, body: JSON.stringify({ sha: newSha }) });
+      if (!uRes.ok) return json(uRes.status, { error: "Branch update failed — nothing was published, try again." });
+      return json(200, {
+        success: true,
+        batch: clean.length,
+        paths: clean.map(function (f) { return f.path; }),
+        message: clean.length + " photos published in ONE commit — one deploy, live in ~1 minute.",
+      });
+    } catch (err) {
+      return json(500, { error: err.message });
+    }
+  }
+
   const rawNewPath = String(body.newPath || "").trim().replace(/^\/+/, "");
   const filePath = rawNewPath.split("?")[0].split("#")[0];
   if (filePath.indexOf("..") !== -1 || !/^images\/[A-Za-z0-9_\-\/]+\.(jpg|jpeg|png|webp)$/i.test(filePath)) {
