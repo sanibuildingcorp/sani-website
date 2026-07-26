@@ -96,6 +96,20 @@
   #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--navy-3);border:1px solid var(--gold);color:var(--ink);padding:12px 20px;border-radius:999px;font-size:13px;transition:transform .3s;z-index:90;max-width:90%}
   #toast.show{transform:translateX(-50%) translateY(0)}
   .muted{color:var(--ink-muted)}
+  /* ── Crop tool ─────────────────────────────── */
+  .crop-modal{display:none;position:fixed;inset:0;z-index:2000;background:rgba(4,10,20,.92);padding:18px;overflow:auto}
+  .crop-modal.open{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+  .crop-stage{position:relative;overflow:hidden;background:#000;border:1px solid var(--line);border-radius:8px;touch-action:none;max-width:92vw}
+  .crop-stage img{position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none;pointer-events:none;max-width:none}
+  .crop-stage::after{content:'';position:absolute;inset:0;pointer-events:none;border:1.5px solid rgba(255,182,39,.9);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+  .crop-grid{position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(255,255,255,.18) 0 0) 33.33% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.18) 0 0) 66.66% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.18) 0 0) 0 33.33%/100% 1px no-repeat,linear-gradient(rgba(255,255,255,.18) 0 0) 0 66.66%/100% 1px no-repeat}
+  .crop-aspects{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .crop-aspects button{background:var(--navy-3);border:1px solid var(--line);color:var(--ink);font-size:12px;padding:7px 13px;border-radius:999px;cursor:pointer;font-family:inherit}
+  .crop-aspects button.on{border-color:var(--gold);color:var(--gold);font-weight:700}
+  .crop-zoom{display:flex;align-items:center;gap:10px;color:var(--ink-muted);font-size:12px;width:min(92vw,420px)}
+  .crop-zoom input{flex:1}
+  .crop-actions{display:flex;gap:10px}
+  .crop-hint{color:var(--ink-muted);font-size:11.5px;text-align:center;max-width:340px}
 </style>
 <style>
 .slot{position:relative}
@@ -292,6 +306,7 @@ body{padding-bottom:90px}
       </div>
       <img id="preview" alt="generated preview">
       <div class="actions">
+        <button class="btn-ghost btn" onclick="openCrop()">✂️ Adjust Crop</button>
         <button class="btn-ghost btn" onclick="generate()">↻ Regenerate</button>
         <button class="btn" id="pub-btn" onclick="publish()">✅ Approve &amp; Publish</button>
       </div>
@@ -866,6 +881,125 @@ function toast(msg){
   var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
   clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); }, 2600);
 }
+/* ── Crop tool: drag to position, zoom slider + pinch, aspect presets ── */
+var crop = { ar: 4/3, s: 1, min: 1, tx: 0, ty: 0, iw: 0, ih: 0, fw: 0, fh: 0, base: null, ptrs: {}, lastDist: 0 };
+
+function openCrop(){
+  if(!currentImage){ toast("Load a photo first"); return; }
+  crop.base = currentImage;
+  var im = new Image();
+  im.onload = function(){
+    crop.iw = im.width; crop.ih = im.height;
+    document.getElementById("crop-img").src = crop.base;
+    document.getElementById("crop-modal").classList.add("open");
+    layoutCrop();
+  };
+  im.src = crop.base;
+}
+function closeCrop(){ document.getElementById("crop-modal").classList.remove("open"); }
+
+function layoutCrop(){
+  var maxW = Math.min(window.innerWidth * 0.92, 520);
+  var maxH = window.innerHeight * 0.52;
+  var fw = maxW, fh = fw / crop.ar;
+  if(fh > maxH){ fh = maxH; fw = fh * crop.ar; }
+  crop.fw = fw; crop.fh = fh;
+  var st = document.getElementById("crop-stage");
+  st.style.width = fw + "px"; st.style.height = fh + "px";
+  crop.min = Math.max(fw / crop.iw, fh / crop.ih);
+  crop.s = crop.min;
+  crop.tx = (fw - crop.iw * crop.s) / 2;
+  crop.ty = (fh - crop.ih * crop.s) / 2;
+  var z = document.getElementById("crop-zoom"); z.value = 100;
+  document.getElementById("crop-zoom-val").textContent = "1.0\u00d7";
+  renderCrop();
+}
+function clampCrop(){
+  crop.tx = Math.min(0, Math.max(crop.fw - crop.iw * crop.s, crop.tx));
+  crop.ty = Math.min(0, Math.max(crop.fh - crop.ih * crop.s, crop.ty));
+}
+function renderCrop(){
+  clampCrop();
+  document.getElementById("crop-img").style.transform =
+    "translate(" + crop.tx + "px," + crop.ty + "px) scale(" + crop.s + ")";
+}
+function setAspect(btn){
+  var bs = document.querySelectorAll("#crop-aspects button");
+  for(var i=0;i<bs.length;i++){ bs[i].classList.remove("on"); }
+  btn.classList.add("on");
+  crop.ar = parseFloat(btn.getAttribute("data-ar"));
+  layoutCrop();
+}
+function cropZoom(v){
+  var factor = v / 100;
+  var ns = crop.min * factor;
+  var cx = crop.fw / 2, cy = crop.fh / 2;
+  crop.tx = cx - (cx - crop.tx) * (ns / crop.s);
+  crop.ty = cy - (cy - crop.ty) * (ns / crop.s);
+  crop.s = ns;
+  document.getElementById("crop-zoom-val").textContent = factor.toFixed(1) + "\u00d7";
+  renderCrop();
+}
+(function(){
+  var st = document.getElementById("crop-stage");
+  if(!st) return;
+  st.addEventListener("pointerdown", function(e){
+    st.setPointerCapture(e.pointerId);
+    crop.ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+  });
+  st.addEventListener("pointermove", function(e){
+    if(!crop.ptrs[e.pointerId]) return;
+    var ids = Object.keys(crop.ptrs);
+    if(ids.length === 1){
+      var p = crop.ptrs[e.pointerId];
+      crop.tx += e.clientX - p.x; crop.ty += e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+      renderCrop();
+    } else if(ids.length === 2){
+      crop.ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var a = crop.ptrs[ids[0]], b = crop.ptrs[ids[1]];
+      var d = Math.hypot(a.x - b.x, a.y - b.y);
+      if(crop.lastDist){
+        var ns = Math.min(crop.min * 3, Math.max(crop.min, crop.s * (d / crop.lastDist)));
+        var r = st.getBoundingClientRect();
+        var mx = (a.x + b.x) / 2 - r.left, my = (a.y + b.y) / 2 - r.top;
+        crop.tx = mx - (mx - crop.tx) * (ns / crop.s);
+        crop.ty = my - (my - crop.ty) * (ns / crop.s);
+        crop.s = ns;
+        var zv = Math.round(crop.s / crop.min * 100);
+        document.getElementById("crop-zoom").value = Math.min(300, zv);
+        document.getElementById("crop-zoom-val").textContent = (zv/100).toFixed(1) + "\u00d7";
+        renderCrop();
+      }
+      crop.lastDist = d;
+    }
+  });
+  function up(e){
+    delete crop.ptrs[e.pointerId];
+    if(Object.keys(crop.ptrs).length < 2){ crop.lastDist = 0; }
+  }
+  st.addEventListener("pointerup", up);
+  st.addEventListener("pointercancel", up);
+})();
+function applyCrop(){
+  var img = new Image();
+  img.onload = function(){
+    var sx = -crop.tx / crop.s, sy = -crop.ty / crop.s;
+    var sw = crop.fw / crop.s, sh = crop.fh / crop.s;
+    sx = Math.max(0, Math.min(crop.iw - 1, sx));
+    sy = Math.max(0, Math.min(crop.ih - 1, sy));
+    sw = Math.min(crop.iw - sx, sw); sh = Math.min(crop.ih - sy, sh);
+    var c = document.createElement("canvas");
+    c.width = Math.round(sw); c.height = Math.round(sh);
+    c.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    currentImage = c.toDataURL("image/jpeg", 0.93);
+    document.getElementById("preview").src = currentImage;
+    updateSizeEstimate();
+    closeCrop();
+    toast("\u2702\uFE0F Crop applied \u2014 this exact area will publish");
+  };
+  img.src = crop.base;
+}
 </script>
 <div id="thumb-viewer" onclick="closeThumbView()" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(5,13,26,.92);align-items:center;justify-content:center;padding:20px">
   <img id="thumb-viewer-img" src="" style="max-width:94vw;max-height:88vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
@@ -875,6 +1009,23 @@ function toast(msg){
   <span id="bulk-count" class="bulk-note">Photos ready to publish</span>
   <button id="bulk-go" class="bulk-go" onclick="publishAll()">&#128640; Approve &amp; Publish All</button>
   <button class="bulk-clear" onclick="bulkClear()">Clear</button>
+</div>
+
+<div class="crop-modal" id="crop-modal">
+  <div class="crop-aspects" id="crop-aspects">
+    <button data-ar="1.7778" onclick="setAspect(this)">Wide 16:9</button>
+    <button data-ar="1.3333" class="on" onclick="setAspect(this)">Standard 4:3</button>
+    <button data-ar="1.2195" onclick="setAspect(this)">Card</button>
+    <button data-ar="1" onclick="setAspect(this)">Square</button>
+    <button data-ar="0.75" onclick="setAspect(this)">Tall 3:4</button>
+  </div>
+  <div class="crop-stage" id="crop-stage"><img id="crop-img" alt=""><div class="crop-grid"></div></div>
+  <div class="crop-zoom">Zoom <input type="range" id="crop-zoom" min="100" max="300" value="100" oninput="cropZoom(this.value)"> <span id="crop-zoom-val">1.0×</span></div>
+  <div class="crop-hint">Drag the photo to choose which area shows on the page. The gold frame is exactly what publishes.</div>
+  <div class="crop-actions">
+    <button class="btn-ghost btn" onclick="closeCrop()">Cancel</button>
+    <button class="btn" onclick="applyCrop()">✂️ Apply Crop</button>
+  </div>
 </div>
 </body>
 </html>
