@@ -1911,7 +1911,10 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 
 <!-- ══════════ HERO ══════════ -->
 <section class="hero">
-  <div class="hero-image"></div>
+    <div class="hero-image">
+      <img class="hero-img" src="images/hero/home-hero.png?v=20260708" data-sbc-ref="images/hero/home-hero.png" alt="Sani Building Corp renovation project in Brooklyn, NYC" fetchpriority="high" decoding="async">
+      <div class="hero-scrim"></div>
+    </div>
   <div class="hero-content">
     <div class="hero-eyebrow">
       <span>Brooklyn &middot; Manhattan &middot; All NYC Boroughs</span>
@@ -3310,57 +3313,62 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
 }
 
 /* ══════════════════════════════════════════════════════════════
-   HERO IMAGE — SINGLE SOURCE OF TRUTH  (Jul 27 2026)
-   Replaces 19 competing .hero-image rules. 12 of those layered TWO
-   photos (home-hero.png over nyc-luxury-livingroom.jpg), and the
-   mobile rules used background-size:auto 80-85% + no-repeat, so the
-   lower photo showed through around the upper one — that produced
-   the visible collage seams. From here: ONE photo, always cover.
-   Change the photo in --hero-photo only. Do not add .hero-image
-   rules above this block; they will be overridden.
+   HERO IMAGE — SINGLE SOURCE OF TRUTH  (Jul 27 2026, rev 2)
+   The hero photo is now a REAL image element (.hero-img) so Image
+   Studio can see and replace it. .hero-image paints NO photo at
+   all any more — that kills all 19 legacy rules, including the 12
+   that layered home-hero.png over nyc-luxury-livingroom.jpg and
+   the mobile auto-80%/auto-85% sizing that let the lower photo
+   show through. All tinting lives in .hero-scrim.
+   To change the photo: swap the image source (or use Image Studio).
    ══════════════════════════════════════════════════════════════ */
 .hero-image{
+  background-image:none !important;
   background-color:#0a1628 !important;
-  background-image:
-    linear-gradient(90deg,
-      rgba(255,255,255,.62) 0%,
-      rgba(255,255,255,.34) 30%,
-      rgba(255,255,255,.12) 50%,
-      rgba(255,255,255,.02) 68%,
-      rgba(255,255,255,0) 84%),
-    var(--hero-photo) !important;
-  background-size:cover !important;
-  background-position:center center !important;
-  background-repeat:no-repeat !important;
+  overflow:hidden !important;
+}
+.hero-image::before,
+.hero-image::after{display:none !important;content:none !important}
+.hero-image .hero-img{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+  z-index:0 !important;
+  display:block !important;
+}
+.hero-image .hero-scrim{
+  position:absolute !important;
+  inset:0 !important;
+  z-index:1 !important;
+  pointer-events:none !important;
+  background:linear-gradient(90deg,
+    rgba(255,255,255,.60) 0%,
+    rgba(255,255,255,.34) 30%,
+    rgba(255,255,255,.12) 50%,
+    rgba(255,255,255,.02) 68%,
+    rgba(255,255,255,0) 84%) !important;
 }
 @media(max-width:900px){
-  .hero-image{
-    background-image:
-      linear-gradient(162deg,
-        rgba(255,255,255,.95) 0%,
-        rgba(255,255,255,.88) 34%,
-        rgba(255,255,255,.58) 58%,
-        rgba(255,255,255,.22) 78%,
-        rgba(255,255,255,.06) 100%),
-      var(--hero-photo) !important;
-    background-size:cover !important;
-    background-position:center center !important;
-    background-repeat:no-repeat !important;
+  .hero-image .hero-scrim{
+    background:linear-gradient(165deg,
+      rgba(255,255,255,.90) 0%,
+      rgba(255,255,255,.78) 30%,
+      rgba(255,255,255,.46) 56%,
+      rgba(255,255,255,.16) 78%,
+      rgba(255,255,255,0) 100%) !important;
   }
 }
 @media(max-width:560px){
-  .hero-image{
-    background-image:
-      linear-gradient(168deg,
-        rgba(255,255,255,.96) 0%,
-        rgba(255,255,255,.91) 40%,
-        rgba(255,255,255,.66) 64%,
-        rgba(255,255,255,.30) 84%,
-        rgba(255,255,255,.10) 100%),
-      var(--hero-photo) !important;
-    background-size:cover !important;
-    background-position:center center !important;
-    background-repeat:no-repeat !important;
+  .hero-image .hero-scrim{
+    background:linear-gradient(170deg,
+      rgba(255,255,255,.92) 0%,
+      rgba(255,255,255,.82) 34%,
+      rgba(255,255,255,.54) 60%,
+      rgba(255,255,255,.22) 82%,
+      rgba(255,255,255,.04) 100%) !important;
   }
 }
 </style>
