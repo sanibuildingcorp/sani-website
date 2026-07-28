@@ -1,5 +1,6 @@
-// netlify/functions/estimate-ai-question.js
-// AI generates the next question card based on customer's answers so far.
+// netlify/functions/estimate-ai-question.js  (v2 - Jul 27 2026)
+// AI reads the customer's own description FIRST, then asks only the follow-ups
+// that are actually still missing for an accurate estimate.
 // Returns JSON describing the question to display (label, type, options).
 
 const https = require("https");
@@ -14,7 +15,7 @@ exports.handler = async function (event) {
 
   try {
     const body = JSON.parse(event.body);
-    const { service, serviceLabel, answers, questionCount, serviceCount } = body;
+    const { service, serviceLabel, answers, questionCount, serviceCount, description, photoCount } = body;
     const svcN = Math.max(1, Math.min(parseInt(serviceCount) || 1, 5));
 
     if (!service) {
@@ -36,28 +37,39 @@ exports.handler = async function (event) {
 
     // Decide if we should keep asking or stop
     // Min 2 questions, max 5 questions per service
-    const minQs = Math.min(1 + svcN, 4);            // 1 svc: 2 · 2 svc: 3 · 3+: 4
-    const maxQs = Math.min(3 + 2 * svcN, 9);        // 1 svc: 5 · 2 svc: 7 · 3+: 9
+    // The customer has already written a description, so keep follow-ups short.
+    // A detailed description should end the flow almost immediately.
+    const desc = String(description || "").trim();
+    const minQs = 0;                                 // a complete description can need nothing
+    const maxQs = Math.min(2 + svcN, 4);             // 1 svc: 3 · 2 svc: 4 · cap 4
     const askedCount = questionCount || 0;
 
     const answersStr = Object.entries(answers || {})
       .map(([k, v]) => `${k}: ${v}`)
       .join("\n");
 
-    const prompt = `You are a contractor's intake assistant for Sani Building Corp in NYC. Your job: ask ONE smart next question to gather what's needed for an accurate construction estimate.
+    const prompt = `You are a contractor's intake assistant for Sani Building Corp in NYC. The customer has ALREADY described their project in their own words. Read it carefully, then ask ONE short follow-up question - but only about something genuinely missing that is needed to price the job.
 
 SERVICE SELECTED: ${serviceLabel || service}
 
-ANSWERS SO FAR:
+THE CUSTOMER'S OWN DESCRIPTION:
+"""
+${desc || "(they did not write one)"}
+"""
+
+PHOTOS/FILES ATTACHED: ${photoCount || 0}
+
+FOLLOW-UP ANSWERS SO FAR:
 ${answersStr || "(none yet)"}
 
 QUESTIONS ALREADY ASKED: ${askedCount}
-MINIMUM: ${minQs}, MAXIMUM: ${maxQs}
-The customer selected ${svcN} service(s): ${serviceLabel}. If more than one service, make sure your questions cover EACH selected service before finishing — do not focus on only one.
+MAXIMUM ALLOWED: ${maxQs}
+
+READ THE DESCRIPTION FIRST. If it already tells you the scope, size, location and condition, return {"done": true} immediately - do not ask filler questions. Never ask for something the customer already wrote. The customer selected ${svcN} service(s): ${serviceLabel}.
 
 Return ONLY valid JSON, no markdown, no backticks, no explanation. Use this exact structure:
 
-If you have enough info OR have asked ${maxQs} questions, return:
+If the description already covers what you need, OR you have asked ${maxQs} questions, return:
 {"done": true}
 
 Otherwise return next question:
@@ -77,15 +89,15 @@ RULES:
 - Options array empty/omitted if type=text
 - NO "replace fixtures" question for bathroom
 - NO "tools" question for handyman
-- TV Wall is about DECORATIVE feature walls (wood panels, stone, shelves) NOT mounting/cables
 - For Stair service: include noise fix as a sub-option, not separate service
-- Ask about scope, size, materials, condition, special requirements
-- Avoid asking what was already answered
-- Be specific to the service — bathroom asks about tile/fixtures/scope, painting asks about rooms/prep/walls, etc.
-- After ${minQs} questions, return done:true if you have enough OR keep asking if critical info missing
+- Prioritise the gaps that most affect price: approximate size/area, how many rooms or units, current condition, building type and access, whether the space is occupied or in use, and any deadline
+- For commercial jobs also consider: after-hours or overnight access, and whether a certificate of insurance is required
+- NEVER ask anything the description already answers
+- If photos were attached, do not ask them to describe what a photo would obviously show
+- Prefer tappable options over free text - typing is what makes people quit
 - ALWAYS done:true after ${maxQs} questions
 
-Now respond with the next question or done:true.`;
+Now respond with the single most useful missing question, or done:true.`;
 
     const requestData = JSON.stringify({
       model: "claude-sonnet-4-5-20250929",
