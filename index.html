@@ -3308,6 +3308,61 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
   .hero h1{color:#050d1a !important;text-shadow:0 1px 1px rgba(255,255,255,.14) !important;}
   .hero-sub{color:#071324 !important;text-shadow:0 0 2px #fff,0 0 4px #fff,0 0 6px #fff,0 0 10px rgba(255,255,255,.98),0 0 18px rgba(255,255,255,.95),0 0 30px rgba(255,255,255,.9),0 0 46px rgba(255,255,255,.8) !important;}
 }
+
+/* ══════════════════════════════════════════════════════════════
+   HERO IMAGE — SINGLE SOURCE OF TRUTH  (Jul 27 2026)
+   Replaces 19 competing .hero-image rules. 12 of those layered TWO
+   photos (home-hero.png over nyc-luxury-livingroom.jpg), and the
+   mobile rules used background-size:auto 80-85% + no-repeat, so the
+   lower photo showed through around the upper one — that produced
+   the visible collage seams. From here: ONE photo, always cover.
+   Change the photo in --hero-photo only. Do not add .hero-image
+   rules above this block; they will be overridden.
+   ══════════════════════════════════════════════════════════════ */
+.hero-image{
+  background-color:#0a1628 !important;
+  background-image:
+    linear-gradient(90deg,
+      rgba(255,255,255,.62) 0%,
+      rgba(255,255,255,.34) 30%,
+      rgba(255,255,255,.12) 50%,
+      rgba(255,255,255,.02) 68%,
+      rgba(255,255,255,0) 84%),
+    var(--hero-photo) !important;
+  background-size:cover !important;
+  background-position:center center !important;
+  background-repeat:no-repeat !important;
+}
+@media(max-width:900px){
+  .hero-image{
+    background-image:
+      linear-gradient(162deg,
+        rgba(255,255,255,.95) 0%,
+        rgba(255,255,255,.88) 34%,
+        rgba(255,255,255,.58) 58%,
+        rgba(255,255,255,.22) 78%,
+        rgba(255,255,255,.06) 100%),
+      var(--hero-photo) !important;
+    background-size:cover !important;
+    background-position:center center !important;
+    background-repeat:no-repeat !important;
+  }
+}
+@media(max-width:560px){
+  .hero-image{
+    background-image:
+      linear-gradient(168deg,
+        rgba(255,255,255,.96) 0%,
+        rgba(255,255,255,.91) 40%,
+        rgba(255,255,255,.66) 64%,
+        rgba(255,255,255,.30) 84%,
+        rgba(255,255,255,.10) 100%),
+      var(--hero-photo) !important;
+    background-size:cover !important;
+    background-position:center center !important;
+    background-repeat:no-repeat !important;
+  }
+}
 </style>
 
 </body>
