@@ -3345,30 +3345,31 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
   z-index:1 !important;
   pointer-events:none !important;
   background:linear-gradient(90deg,
-    rgba(255,255,255,.60) 0%,
-    rgba(255,255,255,.34) 30%,
-    rgba(255,255,255,.12) 50%,
-    rgba(255,255,255,.02) 68%,
-    rgba(255,255,255,0) 84%) !important;
+    rgba(255,255,255,.52) 0%,
+    rgba(255,255,255,.30) 28%,
+    rgba(255,255,255,.10) 48%,
+    rgba(255,255,255,0) 70%) !important;
 }
+/* Mobile: scrim sits BEHIND THE TEXT COLUMN ONLY (left side).
+   A top-down wash made the whole upper half white. */
 @media(max-width:900px){
   .hero-image .hero-scrim{
-    background:linear-gradient(165deg,
-      rgba(255,255,255,.90) 0%,
-      rgba(255,255,255,.78) 30%,
-      rgba(255,255,255,.46) 56%,
-      rgba(255,255,255,.16) 78%,
-      rgba(255,255,255,0) 100%) !important;
+    background:linear-gradient(90deg,
+      rgba(255,255,255,.72) 0%,
+      rgba(255,255,255,.54) 34%,
+      rgba(255,255,255,.26) 58%,
+      rgba(255,255,255,.06) 78%,
+      rgba(255,255,255,0) 92%) !important;
   }
 }
 @media(max-width:560px){
   .hero-image .hero-scrim{
-    background:linear-gradient(170deg,
-      rgba(255,255,255,.92) 0%,
-      rgba(255,255,255,.82) 34%,
-      rgba(255,255,255,.54) 60%,
-      rgba(255,255,255,.22) 82%,
-      rgba(255,255,255,.04) 100%) !important;
+    background:linear-gradient(90deg,
+      rgba(255,255,255,.76) 0%,
+      rgba(255,255,255,.58) 36%,
+      rgba(255,255,255,.28) 60%,
+      rgba(255,255,255,.08) 80%,
+      rgba(255,255,255,0) 94%) !important;
   }
 }
 </style>
