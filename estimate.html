@@ -87,6 +87,9 @@ p.subtitle{font-size:14px;color:var(--gray);line-height:1.6;margin-bottom:24px;m
 .review-row + .review-row{border-top:1px solid rgba(201,168,76,.1)}
 .review-label{color:var(--gray);text-transform:uppercase;letter-spacing:.5px;font-size:11px;font-weight:600;flex-shrink:0;padding-top:2px}
 .review-value{color:var(--cream);text-align:right;font-weight:500;line-height:1.5;word-break:break-word}
+.file-thumb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;padding:8px;background:rgba(255,255,255,.06);border-radius:8px;text-align:center}
+.file-ico{font-size:22px}
+.file-name{font-size:10px;line-height:1.25;word-break:break-word;opacity:.8}
 .step-nav{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:28px;gap:12px}
 .btn-back{background:none;border:none;color:var(--gray);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;padding:10px 4px;transition:color .18s}
 .btn-back:hover{color:var(--cream)}
@@ -199,7 +202,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
       <div class="service-grid" id="service-grid"></div>
       <div class="step-nav">
         <button class="btn-back" disabled>Back</button>
-        <button class="btn-continue" id="continue-1" disabled onclick="startStep2()">Continue →</button>
+        <button class="btn-continue" id="continue-1" disabled onclick="goToStep(8)">Continue →</button>
       </div>
     </div>
 
@@ -209,8 +212,9 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
       <h2 class="title" id="step2-title">A few quick questions</h2>
       <p class="subtitle">Just enough so we can give you real numbers.</p>
       <div id="ai-question-container"></div>
+      <div style="text-align:center;margin:10px 0 2px"><button class="skip-link" onclick="goToStep(9)">Skip these &mdash; send my request</button></div>
       <div class="step-nav">
-        <button class="btn-back" onclick="goToStep(1)">← Back</button>
+        <button class="btn-back" onclick="goToStep(5)">← Back</button>
         <button class="btn-continue" id="continue-2" disabled onclick="answerAIQuestion()">Continue →</button>
       </div>
     </div>
@@ -248,8 +252,8 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
       <h2 class="title">Anything else we should know?</h2>
       <p class="subtitle">Style preferences, deadlines, special requirements — whatever helps.</p>
       <div class="input-group">
-        <label class="input-label" for="description-field">In your own words</label>
-        <textarea class="textarea-field" id="description-field" placeholder="For example: 'Looking for modern minimal look. Building requires weekday work 9–5 only.'"></textarea>
+        <label class="input-label" for="description-field-retired">In your own words</label>
+        <textarea class="textarea-field" id="description-field-retired" placeholder="(retired step)"></textarea>
       </div>
       <div class="step-nav">
         <button class="btn-back" onclick="goToStep(3)">← Back</button>
@@ -259,20 +263,23 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 
     <!-- STEP 5: Photos -->
     <div class="step" data-step="5">
-      <div class="eyebrow">Step 3 · Optional</div>
-      <h2 class="title">Got any photos?</h2>
-      <p class="subtitle">Photos help us spot details and price it right.</p>
+      <div class="eyebrow">Step 3 of 5</div>
+      <h2 class="title">Tell us about the project</h2>
+      <p class="subtitle">A short description, plus any photos or drawings you already have.</p>
+      <div class="input-group">
+        <label class="input-label" for="description-field">In your own words <span class="req">*</span></label>
+        <textarea class="textarea-field" id="description-field" oninput="saveDesc();updateStep5()" placeholder="For example: 'Kitchen floor grout is cracked and stained, about 400 sq ft of quarry tile. Restaurant, needs to be done overnight before our next inspection.'"></textarea>
+      </div>
       <label for="photo-input" class="upload-zone">
         <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        <div class="upload-title">Tap to add photos</div>
-        <div class="upload-hint">Up to 8 photos</div>
+        <div class="upload-title">Tap to add photos or files</div>
+        <div class="upload-hint">Photos, PDFs or drawings — up to 8, 15&nbsp;MB each (optional)</div>
       </label>
-      <input type="file" id="photo-input" accept="image/*" multiple onchange="handlePhotos(event)">
+      <input type="file" id="photo-input" accept="image/*,application/pdf,.pdf,.heic,.heif" multiple onchange="handlePhotos(event)">
       <div class="photo-preview-grid" id="photo-preview"></div>
-      <button class="skip-link" onclick="formData.photos=[];renderPhotoPreview();goToStep(3)">No photos right now — continue</button>
       <div class="step-nav">
-        <button class="btn-back" onclick="goBackToAI()">← Back</button>
-        <button class="btn-continue" onclick="proceedFromPhotos()">Continue →</button>
+        <button class="btn-back" onclick="goToStep(8)">← Back</button>
+        <button class="btn-continue" id="continue-5" disabled onclick="saveDesc();startStep2()">Continue →</button>
       </div>
     </div>
 
@@ -333,7 +340,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 
     <!-- STEP 8: Contact -->
     <div class="step" data-step="8">
-      <div class="eyebrow">Step 8 · Almost done</div>
+      <div class="eyebrow">Step 2 of 5</div>
       <h2 class="title">Where should we send your estimate?</h2>
       <p class="subtitle">We'll respond within one business day.</p>
       <div class="input-group">
@@ -355,19 +362,19 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
         <input type="text" class="input-field" id="address-field" placeholder="e.g. Park Slope, Brooklyn" oninput="updateContact()" autocomplete="street-address">
       </div>
       <div class="step-nav">
-        <button class="btn-back" onclick="goToStep(7)">← Back</button>
-        <button class="btn-continue" id="continue-8" disabled onclick="goToStep(9)">Review →</button>
+        <button class="btn-back" onclick="goToStep(1)">← Back</button>
+        <button class="btn-continue" id="continue-8" disabled onclick="goToStep(5)">Continue →</button>
       </div>
     </div>
 
     <!-- STEP 9: Review -->
     <div class="step" data-step="9">
-      <div class="eyebrow">Step 9 · One last look</div>
+      <div class="eyebrow">Step 5 of 5</div>
       <h2 class="title">Does this look right?</h2>
       <p class="subtitle">When you're ready, send it over.</p>
       <div id="review-content"></div>
       <div class="step-nav">
-        <button class="btn-back" onclick="goToStep(8)">← Back</button>
+        <button class="btn-back" onclick="goToStep(2)">← Back</button>
         <button class="btn-continue submit" id="submit-btn" onclick="submitForm()">Send My Project →</button>
       </div>
     </div>
@@ -393,7 +400,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 <footer class="estimate-footer">
   <div class="trust-row">
     <div class="trust-item">🛡 Fully Insured</div>
-    <div class="trust-item">⭐ 4.9 · 62 reviews</div>
+    <div class="trust-item">⭐ 4.9 · 66 reviews</div>
     <div class="trust-item">📍 NYC Metro</div>
   </div>
   <p>Questions? <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a></p>
@@ -406,9 +413,12 @@ const formData={service:null,serviceLabel:null,serviceAnswers:{},propertyType:nu
 // review screen, the submit payload, and the dashboard. Without this it stays empty.
 function saveDesc(){var e=document.getElementById('description-field');if(e)formData.description=e.value.trim();}
 let currentStep=1,currentAIQuestion=null,aiQuestionCount=0;
-const TOTAL_STEPS=9;
-const STEP_LABELS={1:'Project Type',2:'Project Details',3:'Property',4:'About the Job',5:'Photos',6:'AI Analysis',7:'Timeline',8:'Contact',9:'Review'};
-const SERVICES=[{id:'bathroom',label:'Bathroom'},{id:'painting',label:'Painting'},{id:'flooring',label:'Flooring'},{id:'carpentry',label:'Carpentry'},{id:'water-damage',label:'Water Damage'},{id:'handyman',label:'Handyman'},{id:'deck',label:'Deck'},{id:'stair',label:'Stairs'},{id:'tv-wall',label:'TV Wall'},{id:'restoration',label:'Restoration'},{id:'general',label:'General Renovation'},{id:'other',label:'Other / Not Listed'}];
+const TOTAL_STEPS=5;
+// data-step -> number the customer sees. Steps 3 (Property), 4 (old About), 6 (AI analysis)
+// and 7 (Timeline) are retired from the flow - markup kept, never navigated to.
+const DISPLAY_STEP={1:1,8:2,5:3,2:4,9:5};
+const STEP_LABELS={1:'What You Need',8:'Your Contact',5:'Describe & Upload',2:'A Few Follow-Ups',9:'Review & Send'};
+const SERVICES=[{id:'bathroom',label:'Bathroom'},{id:'painting',label:'Painting'},{id:'flooring',label:'Flooring'},{id:'carpentry',label:'Carpentry'},{id:'water-damage',label:'Water Damage'},{id:'handyman',label:'Handyman'},{id:'deck',label:'Deck'},{id:'stair',label:'Stairs'},{id:'restoration',label:'Restoration'},{id:'general',label:'General Renovation'},{id:'other',label:'Other / Not Listed'}];
 const ICONS={
 'bathroom':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-2.5 1V13h17"/><path d="M21 13v4a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-4"/><path d="m6 20-1 2M18 20l1 2"/></svg>',
 'painting':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11h2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9h2"/><rect x="8" y="2" width="8" height="9" rx="1"/><path d="M12 16v6"/></svg>',
@@ -418,7 +428,6 @@ const ICONS={
 'handyman':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
 'deck':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="3"/><path d="M5 14v8M9 14v8M15 14v8M19 14v8M3 7h18M3 4h18"/></svg>',
 'stair':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4v-4h4v-4h4V8h4V4"/></svg>',
-'tv-wall':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 8h18M8 3v18M16 3v18"/></svg>',
 'restoration':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
 'general':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></svg>',
 'other':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></svg>'
@@ -444,20 +453,20 @@ function selectService(el){
 // ===== AI Step 2 =====
 async function startStep2(){
   formData.serviceAnswers={};aiQuestionCount=0;currentStep=2;hideSiteMenu();
-  document.getElementById('progress-fill').style.width='25%';
-  document.getElementById('step-num').textContent='2';
-  document.getElementById('step-label').textContent='Project Details';
-  document.getElementById('step2-eyebrow').textContent='Step 2 · '+formData.serviceLabel;
+  document.getElementById('progress-fill').style.width='80%';
+  document.getElementById('step-num').textContent='4';
+  document.getElementById('step-label').textContent='A Few Follow-Ups';
+  document.getElementById('step2-eyebrow').textContent='Step 4 of 5';
   await loadNextAIQuestion();
 }
 async function loadNextAIQuestion(){
   showStep('ai-loading');
   try{
-    const res=await fetch('/.netlify/functions/estimate-ai-question',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:formData.service,serviceLabel:formData.serviceLabel,serviceCount:(formData.service||'').split(',').filter(Boolean).length||1,answers:formData.serviceAnswers,questionCount:aiQuestionCount})});
+    const res=await fetch('/.netlify/functions/estimate-ai-question',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:formData.service,serviceLabel:formData.serviceLabel,serviceCount:(formData.service||'').split(',').filter(Boolean).length||1,description:formData.description||'',photoCount:(formData.photos||[]).length,answers:formData.serviceAnswers,questionCount:aiQuestionCount})});
     const data=await res.json();
-    if(data.done||data.fallback){goToStep(5);return;}
+    if(data.done||data.fallback){goToStep(9);return;}
     currentAIQuestion=data;renderAIQuestion(data);showStep(2);
-  }catch(e){console.error(e);goToStep(5);}
+  }catch(e){console.error(e);goToStep(9);}
 }
 function renderAIQuestion(q){
   document.getElementById('step2-title').textContent=q.label;
@@ -533,18 +542,45 @@ async function compressImage(file,maxWidth,quality){
     };reader.readAsDataURL(file);
   });
 }
+const MAX_UPLOAD_BYTES=15*1024*1024;
+function readAsDataUrl(file){
+  return new Promise(function(resolve,reject){
+    const r=new FileReader();
+    r.onload=function(ev){resolve(ev.target.result);};
+    r.onerror=function(){reject(new Error('read failed'));};
+    r.readAsDataURL(file);
+  });
+}
 async function handlePhotos(e){
   const files=Array.from(e.target.files).slice(0,8-formData.photos.length);
   const uz=document.querySelector('.upload-title');const ot=uz?uz.textContent:'';
-  if(uz)uz.textContent='Processing photos...';
+  if(uz)uz.textContent='Processing...';
   for(const file of files){
-    try{const c=await compressImage(file,1200,0.85);formData.photos.push({name:file.name,data:c});renderPhotoPreview();}
-    catch(err){const r=new FileReader();r.onload=function(ev){formData.photos.push({name:file.name,data:ev.target.result});renderPhotoPreview();};r.readAsDataURL(file);}
+    if(file.size>MAX_UPLOAD_BYTES){alert('"'+file.name+'" is larger than 15 MB. Please send that one by email instead.');continue;}
+    const isImage=(file.type||'').indexOf('image/')===0;
+    try{
+      const data=isImage?await compressImage(file,1600,0.85):await readAsDataUrl(file);
+      formData.photos.push({name:file.name,data:data,kind:isImage?'image':'file'});
+    }catch(err){
+      try{const raw=await readAsDataUrl(file);formData.photos.push({name:file.name,data:raw,kind:isImage?'image':'file'});}
+      catch(e2){console.error('could not read',file.name,e2);}
+    }
+    renderPhotoPreview();
   }
   if(uz)uz.textContent=ot;e.target.value='';
 }
+function updateStep5(){
+  const t=document.getElementById('description-field');
+  const btn=document.getElementById('continue-5');
+  if(btn)btn.disabled=!(t&&t.value.trim().length>=10);
+}
 function renderPhotoPreview(){
-  document.getElementById('photo-preview').innerHTML=formData.photos.map((p,i)=>`<div class="photo-thumb"><img src="${p.data}" alt=""><button class="photo-remove" onclick="formData.photos.splice(${i},1);renderPhotoPreview()">×</button></div>`).join('');
+  document.getElementById('photo-preview').innerHTML=formData.photos.map(function(p,i){
+    const body=(p.kind==='file')
+      ? `<div class="file-thumb"><span class="file-ico">\u{1F4CE}</span><span class="file-name">${esc(p.name||'file')}</span></div>`
+      : `<img src="${p.data}" alt="">`;
+    return `<div class="photo-thumb">${body}<button class="photo-remove" onclick="formData.photos.splice(${i},1);renderPhotoPreview()">\u00D7</button></div>`;
+  }).join('');
 }
 function showStep(s){document.querySelectorAll('.step').forEach(x=>x.classList.remove('active'));document.querySelector(`[data-step="${s}"]`).classList.add('active');}
 function goToStep(s){
@@ -554,8 +590,9 @@ function goToStep(s){
   if(s==='success')document.querySelector('.progress').style.display='none';
   if(typeof s==='number'){
     currentStep=s;
-    document.getElementById('progress-fill').style.width=(s/TOTAL_STEPS*100)+'%';
-    document.getElementById('step-num').textContent=s;
+    const ds=DISPLAY_STEP[s]||1;
+    document.getElementById('progress-fill').style.width=(ds/TOTAL_STEPS*100)+'%';
+    document.getElementById('step-num').textContent=ds;
     document.getElementById('step-label').textContent=STEP_LABELS[s]||'';
   }
   window.scrollTo({top:0,behavior:'smooth'});
@@ -634,7 +671,8 @@ function showSuccess(ref){
   goToStep('success');
 }
 const MAX_PHOTOS_TO_ANALYZE=4;
-function proceedFromPhotos(){if(formData.photos.length===0){goToStep(3);return;}goToStep(6);startPhotoAnalysis();}
+// AI photo analysis retired from the flow (Zura, Jul 27) - upload only.
+function proceedFromPhotos(){saveDesc();goToStep(9);}
 async function startPhotoAnalysis(){
   formData.photoAnalysis=[];
   document.getElementById('analysis-scanning').style.display='block';
