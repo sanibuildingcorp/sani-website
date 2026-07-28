@@ -87,6 +87,10 @@ p.subtitle{font-size:14px;color:var(--gray);line-height:1.6;margin-bottom:24px;m
 .review-row + .review-row{border-top:1px solid rgba(201,168,76,.1)}
 .review-label{color:var(--gray);text-transform:uppercase;letter-spacing:.5px;font-size:11px;font-weight:600;flex-shrink:0;padding-top:2px}
 .review-value{color:var(--cream);text-align:right;font-weight:500;line-height:1.5;word-break:break-word}
+.opt{font-weight:400;opacity:.55;font-size:.86em}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip-row .option-btn{width:auto;flex:0 1 auto;padding:10px 14px;font-size:14px;margin:0}
+.chip-row .option-btn .option-check{margin-left:8px}
 .file-thumb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;padding:8px;background:rgba(255,255,255,.06);border-radius:8px;text-align:center}
 .file-ico{font-size:22px}
 .file-name{font-size:10px;line-height:1.25;word-break:break-word;opacity:.8}
@@ -186,8 +190,8 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 <div class="wrap">
   <div class="progress">
     <div class="progress-meta">
-      <div class="progress-step" id="step-label">Project Type</div>
-      <div class="progress-count"><span id="step-num">1</span> of 9</div>
+      <div class="progress-step" id="step-label">What You Need</div>
+      <div class="progress-count"><span id="step-num">1</span> of <span id="step-total">5</span></div>
     </div>
     <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
   </div>
@@ -514,8 +518,8 @@ function goBackToAI(){startStep2();}
 function selectOption(el,field){
   el.parentElement.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');formData[field]=el.dataset.value;
-  if(field==='propertyType')document.getElementById('continue-3').disabled=false;
-  if(field==='timeline')document.getElementById('continue-7').disabled=false;
+  const legacyBtn={propertyType:'continue-3',timeline:'continue-7'}[field];
+  if(legacyBtn){const b=document.getElementById(legacyBtn);if(b)b.disabled=false;}
 }
 function updateContact(){
   formData.name=document.getElementById('name-field').value.trim();
@@ -603,11 +607,11 @@ function renderReview(){
     <div class="review-block">
       <div class="review-row"><span class="review-label">Project</span><span class="review-value">${esc(formData.serviceLabel)||'—'}</span></div>
       ${sa?`<div class="review-row"><span class="review-label">Details</span><span class="review-value">${esc(sa)}</span></div>`:''}
-      <div class="review-row"><span class="review-label">Property</span><span class="review-value">${esc(formData.propertyType)||'—'}</span></div>
+      ${formData.propertyType?`<div class="review-row"><span class="review-label">Property</span><span class="review-value">${esc(formData.propertyType)}</span></div>`:''}
       ${formData.description?`<div class="review-row"><span class="review-label">Notes</span><span class="review-value">${esc(formData.description)}</span></div>`:''}
       ${formData.photos.length?`<div class="review-row"><span class="review-label">Photos</span><span class="review-value">${formData.photos.length} attached</span></div>`:''}
       ${formData.photoAnalysis.length?`<div class="review-row"><span class="review-label">AI Analysis</span><span class="review-value">${formData.photoAnalysis.map(a=>esc(a.detected||'—')).join(' · ')}</span></div>`:''}
-      <div class="review-row"><span class="review-label">Timeline</span><span class="review-value">${esc(formData.timeline)||'—'}</span></div>
+      ${formData.timeline?`<div class="review-row"><span class="review-label">Timeline</span><span class="review-value">${esc(formData.timeline)}</span></div>`:''}
     </div>
     <div class="review-block">
       <div class="review-row"><span class="review-label">Name</span><span class="review-value">${esc(formData.name)||'—'}</span></div>
