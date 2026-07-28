@@ -19,6 +19,24 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 
 -----
 
+## Jul 27 2026 batch C - ESTIMATE FUNNEL (from Zura screenshots)
+
+**Root cause of "people start the form but never finish and never call":** contact details are captured at **step 8 of 9**. Anyone who quits before step 8 leaves **no name and no phone at all**, so the abandon alert fires with nothing callable in it.
+
+Committed step order: 1 project type - 2 project details - 3 property type - 4 anything else - 5 photos - 6 AI analysis - 7 timeline - **8 contact info** - 9 review & send.
+
+|Item|Status|Notes|
+|---|---|---|
+|/estimate|VERIFY|**TV RULE VIOLATION FIXED Jul 27.** "TV Wall" was a live selectable project type in the wizard (options array + SVG icon entry) - both removed, zero "TV" on the page now. Stale trust bar **"4.9 - 62 reviews" -> 66** (was 4 behind the rest of the site). Validated: JS 1/1 node-check, div balance 0, zero "licensed".|
+|/estimate FINAL ORDER (v3)|VERIFY|**Jul 27 - description-first AI, per Zura.** Flow: **1 What You Need -> 2 Your Contact -> 3 Describe & Upload -> 4 AI Follow-Ups -> 5 Review & Send.** The AI question step was moved to AFTER the description so it reads what the customer actually wrote instead of guessing from the service tile. `DISPLAY_STEP={1:1,8:2,5:3,2:4,9:5}`. Client now posts `description` + `photoCount` to the AI endpoint. AI "done"/fallback/error all exit to step 5 (send), not backwards. Project-type tile grid KEPT as step 1 (labels the lead, feeds the AI context).|
+|netlify/functions/estimate-ai-question.js|PENDING COMMIT|**v2 required for the new flow.** Now receives and reads `description` + `photoCount`; prompt instructs it to read the description first and return `{done:true}` immediately if nothing is missing. Question budget cut from min 2 / max 9 to **min 0 / max 4** (1 svc: 3). Gap priorities added (size/area, rooms, condition, building type & access, occupied, deadline; commercial: after-hours access + COI). Told never to ask what the description already answers, and to prefer tappable options over free text. **Removed a "TV Wall" instruction from the prompt - TV RULE violation living in a deployed function.** node --check pass.|
+|/estimate REBUILT to 5 steps|SUPERSEDED|**DONE Jul 27 (spec corrected by Zura).** 9 steps -> **5**: 1 What You Need -> **2 Your Contact** -> 3 Quick Details -> 4 Describe & Upload -> 5 Review & Send. Contact moved from step 8 to step 2 so any drop-off after step 2 still leaves a callable lead. Engine: TOTAL_STEPS 9->5 + `DISPLAY_STEP={1:1,8:2,2:3,5:4,9:5}` so data-step IDs are untouched (no DOM reorder, no broken handlers). **Fixed: progress bar previously ran 1-2-5-6-3-4-7-8-9 and jumped backwards mid-form.** Retired from flow (markup kept): 3 Property, 4 old About, 6 AI Analysis, 7 Timeline. **Per Zura: name + phone + email + address ALL remain required; description is now REQUIRED (min 10 chars) and merged onto the upload step.** AI photo analyzer removed from the flow - upload only. Uploads now accept **photos OR files** (PDF drawings etc), 15 MB cap, non-images stored uncompressed and shown as file chips. Validated: JS 1/1 node-check, div balance 0, zero TV, zero "licensed", reviews 66.|
+|netlify/functions/upload-photo.js|PENDING COMMIT|**v2 required or file uploads silently fail.** v1 regex only matched `data:image/...`, so a PDF drawing returned 400 and was dropped without warning. v2 allowlists any image plus pdf/dwg/dxf/doc/docx, adds a 15 MB server-side cap, clearer error. node --check pass. **Commit alongside estimate.html.**|
+|/estimate step order|DONE|**Highest-value conversion fix available.** Move name + phone from step 8 to step 2 so an abandoned form still yields a callable lead. Trace carefully: DOM `data-step` order does NOT match displayed step numbers (3rd section renders "Step 5").|
+|/estimate length|PENDING|9 steps is far past contractor norm (3-5). Merge/drop candidates: property type, "anything else", timeline.|
+|Lead email routing|PENDING|Requests split across two inboxes (contact@ and sanibuildingcorp@gmail.com). Consolidate to one destination.|
+|Visit alerts|NOTE|"Visitor on your website" emails include Zura's own visits + bots, creating a false sense of traffic. Silence own device with `?owner=1` once per device.|
+
 ## Jul 27 2026 batch — CANNIBALIZATION / RANKING AUDIT (this session)
 
 **Live Semrush finding (Jul 27):** only **14 of 40 sitemap pages rank for ANY keyword**. 26 pages are organically invisible, including `/bathroom-renovation-manhattan`, `/painting`, `/painting-manhattan`, `/deck-building`, `/kitchen-cabinet-installation` (+ Brooklyn/Queens variants), `/services`, all 3 stair pages except `/stair-restoration`, and every Long Island / Bronx / Staten Island location page.
