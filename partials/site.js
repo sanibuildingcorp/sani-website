@@ -24,18 +24,29 @@ function setupGATracking(){window.gtag&&(document.querySelectorAll('a[href^="tel
         body:JSON.stringify(payload),keepalive:true}).catch(function(){});
     }
 
-    /* one visit email per session */
-    if(!sessionStorage.getItem("sbc_visit_alerted")){
-      sessionStorage.setItem("sbc_visit_alerted","1");
-      send({type:"visit",page:p,source:src});
-    }
+    /* visit email: one per PAGE per session — each new page they open alerts,
+       repeat loads of the same page stay quiet */
+    (function(){
+      var seen=[];
+      try{seen=JSON.parse(sessionStorage.getItem("sbc_visit_alerted")||"[]");}catch(err){seen=[];}
+      if(Object.prototype.toString.call(seen)!=="[object Array]")seen=[];
+      if(seen.indexOf(p)>-1)return;
+      seen.push(p);
+      try{sessionStorage.setItem("sbc_visit_alerted",JSON.stringify(seen));}catch(err){}
+      send({type:"visit",page:p,source:src,pages:trail});
+    })();
 
-    /* CALL CLICK: any tap on a tel: link, one email per session */
+    /* CALL CLICK: any tap on a tel: link — one email per PAGE per session,
+       so repeat taps on the same page stay quiet but a call from a new page alerts again */
     document.addEventListener("click",function(e){
       var a=e.target&&e.target.closest?e.target.closest('a[href^="tel:"]'):null;
       if(!a)return;
-      if(sessionStorage.getItem("sbc_call_alerted"))return;
-      sessionStorage.setItem("sbc_call_alerted","1");
+      var done=[];
+      try{done=JSON.parse(sessionStorage.getItem("sbc_call_alerted")||"[]");}catch(err){done=[];}
+      if(Object.prototype.toString.call(done)!=="[object Array]")done=[];
+      if(done.indexOf(location.pathname)>-1)return;
+      done.push(location.pathname);
+      try{sessionStorage.setItem("sbc_call_alerted",JSON.stringify(done));}catch(err){}
       var t=[];try{t=JSON.parse(sessionStorage.getItem("sbc_pages")||"[]");}catch(err){}
       send({type:"call",page:location.pathname,source:src,pages:t});
     },true);
