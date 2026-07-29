@@ -1,5 +1,5 @@
 // ============================================================
-//  form-alert.js  (v2 - Jul 28 2026)  →  netlify/functions/form-alert.js
+//  form-alert.js  (v4 - Jul 29 2026)  →  netlify/functions/form-alert.js
 //  Sends Zura an instant email when someone STARTS or ABANDONS
 //  the estimate form, or (type:"visit") browses the site.
 //
@@ -60,12 +60,13 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const type = ["abandon","visit","test"].includes(data.type) ? data.type : "start";
+  const type = ["abandon","visit","call","test"].includes(data.type) ? data.type : "start";
 
-  // ---- BOT LABELING (visit alerts only) ----------------------------
-  // Per Zura (Jul 29): send EVERY visit alert, but label bots/crawlers in
-  // the subject so human visitors stand out. Form start/abandon alerts are
-  // always plain - a bot does not fill forms.
+  // ---- BOT GATE (v4, Zura Jul 29: "I don't need to see robot") -----
+  // Bot/datacenter visits send NO email. They are still recorded in
+  // Supabase by track-visit, so nothing is lost - just not in the inbox.
+  // "visit" and "call" alerts both carry Where + Network for humans.
+  // Form start/abandon alerts are never filtered.
   const reqHeaders = event.headers || {};
   const ua = String(reqHeaders["user-agent"] || reqHeaders["User-Agent"] || "");
   const clientIp = String(
@@ -74,12 +75,16 @@ exports.handler = async (event) => {
   ).trim();
 
   let visitorGeo = {};
-  let isBotVisit = false;
-  let botReason = "";
-  if (type === "visit") {
-    if (!ua || BOT_UA.test(ua)) { isBotVisit = true; botReason = "crawler user-agent"; }
+  if (type === "visit" || type === "call") {
+    if (type === "visit" && (!ua || BOT_UA.test(ua))) {
+      return { statusCode: 200, headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ result: "SKIPPED", reason: "crawler user-agent" }) };
+    }
     visitorGeo = await lookupIp(clientIp);
-    if (visitorGeo.isHosting) { isBotVisit = true; botReason = botReason ? botReason + " + datacenter IP" : "datacenter/hosting IP"; }
+    if (type === "visit" && visitorGeo.isHosting) {
+      return { statusCode: 200, headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ result: "SKIPPED", reason: "datacenter/hosting IP", org: visitorGeo.org || null }) };
+    }
   }
   const src = String(data.source || "direct").slice(0, 120);
   const step = parseInt(data.step, 10) || 1;
@@ -104,18 +109,23 @@ exports.handler = async (event) => {
   const isStart = type === "start";
   const subject =
     type === "test" ? "\u2705 TEST — form-alert is working" :
-    type === "visit" ? (isBotVisit ? "\uD83E\uDD16 Bot/crawler — " : "\uD83D\uDC40 Visitor on your website — ") + (page || "/") :
+    type === "visit" ? "\uD83D\uDC40 Visitor on your website — " + (page || "/") :
+    type === "call" ? "\uD83D\uDCDE CALL CLICK — someone is calling you from " + (page || "/") :
     isStart ? "\uD83D\uDFE2 Someone started the estimate form"
             : "\uD83D\uDFE1 Estimate form abandoned at step " + step;
 
+  const pagesTrail = Array.isArray(data.pages)
+    ? data.pages.slice(0, 20).map(function(x){ return String(x).slice(0, 80); }).join(" \u2192 ")
+    : "";
+
   const rows = [];
   rows.push(row("Time", nyTime + " (NY)"));
-  if (type === "visit") {
+  if (type === "visit" || type === "call") {
     const place = [visitorGeo.city, visitorGeo.region].filter(Boolean).join(", ");
     if (place) rows.push(row("Where", place + (visitorGeo.country ? " (" + visitorGeo.country + ")" : "")));
     if (visitorGeo.org) rows.push(row("Network", visitorGeo.org));
-    if (isBotVisit) rows.push(row("Why flagged as bot", botReason));
-    rows.push(row("Page they opened", page || "/"));
+    rows.push(row(type === "call" ? "Called from page" : "Page they opened", page || "/"));
+    if (pagesTrail) rows.push(row("Pages this visit", pagesTrail));
     rows.push(row("Came from", src));
   } else if (type !== "test") {
     rows.push(row("Came from page", src));
