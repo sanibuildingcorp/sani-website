@@ -62,8 +62,10 @@ exports.handler = async (event) => {
 
   const type = ["abandon","visit","test"].includes(data.type) ? data.type : "start";
 
-  // ---- BOT GATE (visit alerts only) --------------------------------
-  // Form start/abandon alerts always go through - a bot does not fill forms.
+  // ---- BOT LABELING (visit alerts only) ----------------------------
+  // Per Zura (Jul 29): send EVERY visit alert, but label bots/crawlers in
+  // the subject so human visitors stand out. Form start/abandon alerts are
+  // always plain - a bot does not fill forms.
   const reqHeaders = event.headers || {};
   const ua = String(reqHeaders["user-agent"] || reqHeaders["User-Agent"] || "");
   const clientIp = String(
@@ -72,17 +74,12 @@ exports.handler = async (event) => {
   ).trim();
 
   let visitorGeo = {};
+  let isBotVisit = false;
+  let botReason = "";
   if (type === "visit") {
-    if (!ua || BOT_UA.test(ua)) {
-      return { statusCode: 200, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ result: "SKIPPED", reason: "bot user-agent" }) };
-    }
+    if (!ua || BOT_UA.test(ua)) { isBotVisit = true; botReason = "crawler user-agent"; }
     visitorGeo = await lookupIp(clientIp);
-    if (visitorGeo.isHosting) {
-      return { statusCode: 200, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ result: "SKIPPED", reason: "hosting/datacenter network",
-                               org: visitorGeo.org || null }) };
-    }
+    if (visitorGeo.isHosting) { isBotVisit = true; botReason = botReason ? botReason + " + datacenter IP" : "datacenter/hosting IP"; }
   }
   const src = String(data.source || "direct").slice(0, 120);
   const step = parseInt(data.step, 10) || 1;
@@ -107,7 +104,7 @@ exports.handler = async (event) => {
   const isStart = type === "start";
   const subject =
     type === "test" ? "\u2705 TEST — form-alert is working" :
-    type === "visit" ? "\uD83D\uDC40 Visitor on your website — " + (page || "/") :
+    type === "visit" ? (isBotVisit ? "\uD83E\uDD16 Bot/crawler — " : "\uD83D\uDC40 Visitor on your website — ") + (page || "/") :
     isStart ? "\uD83D\uDFE2 Someone started the estimate form"
             : "\uD83D\uDFE1 Estimate form abandoned at step " + step;
 
@@ -116,6 +113,8 @@ exports.handler = async (event) => {
   if (type === "visit") {
     const place = [visitorGeo.city, visitorGeo.region].filter(Boolean).join(", ");
     if (place) rows.push(row("Where", place + (visitorGeo.country ? " (" + visitorGeo.country + ")" : "")));
+    if (visitorGeo.org) rows.push(row("Network", visitorGeo.org));
+    if (isBotVisit) rows.push(row("Why flagged as bot", botReason));
     rows.push(row("Page they opened", page || "/"));
     rows.push(row("Came from", src));
   } else if (type !== "test") {
