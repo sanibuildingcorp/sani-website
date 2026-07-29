@@ -19,6 +19,16 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 
 -----
 
+## Jul 28 2026 - INDEXING / DEPLOY PROCEDURE
+
+**GSC "Request indexing" has no bulk option** - roughly 10-12 URLs/day, one at a time. The supported bulk signal is the **sitemap**, and Google largely discounts a sitemap whose `lastmod` values have not moved.
+
+|Item|Status|Notes|
+|---|---|---|
+|sitemap.xml|VERIFY|**REGENERATED Jul 28.** 35 of 40 URLs still carried `lastmod 2026-06-28` (a month stale) while every page changed today. All 40 now `2026-07-28`. changefreq/priority preserved. XML validated with ElementTree: 40 `<url>`, 40 `<loc>`.|
+|**GSC: 48 NOT INDEXED vs 33 indexed**|**INVESTIGATE**|Screenshot Jul 28 (GSC data as of 7/23), "All known pages": **48 not indexed across 7 reasons**, only 33 indexed. Sitemap contains 40 URLs, so Google knows ~81 URLs - i.e. **~41 URLs outside the sitemap**, almost certainly the legacy structures already spotted: old `/contact/` trailing-slash pages, `.html` variants (`deck-renovation.html`, `renovation-contractor-suffolk-county.html` were both seen ranking), and the old site's URL scheme carrying phone **(888) 898-7107**. **Open Pages > the 7 reasons and read the URL lists before doing anything else** - this is a bigger indexing story than any single page edit.|
+|Deploy order|PROCEDURE|1. Commit 41 files (40 pages + partials/footer.html) + sitemap.xml. 2. Cloudflare **Purge Everything**. 3. GSC > Sitemaps > resubmit `sitemap.xml`. 4. Spend the daily Request-Indexing quota only on genuinely changed money pages: index, bathroom-renovation-queens, tile-grouting-restoration, bathroom-floor-tile-installation. 5. Optional: enable **Cloudflare IndexNow** (one toggle) to push Bing/Yandex.|
+
 ## Jul 28 2026 - ENTITY CONSOLIDATION SWEEP (all 40 pages) - DONE
 
 **Zura's instruction: "All pages are one business with multiple services and does not split for separate businesses." That is now what the markup says.**
