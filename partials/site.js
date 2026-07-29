@@ -1,18 +1,220 @@
-function setupGATracking(){window.gtag&&(document.querySelectorAll('a[href^="tel:"]').forEach(function(e){e.dataset.gaTracked||(e.dataset.gaTracked="1",e.addEventListener("click",function(){gtag("event","phone_click",{event_category:"engagement",event_label:e.getAttribute("href").replace("tel:",""),value:1})}))}),document.querySelectorAll('a[href^="mailto:"]').forEach(function(e){e.dataset.gaTracked||(e.dataset.gaTracked="1",e.addEventListener("click",function(){gtag("event","email_click",{event_category:"engagement",event_label:e.getAttribute("href").replace("mailto:",""),value:1})}))}),document.querySelectorAll("form").forEach(function(e){if(!e.dataset.gaTracked){var t=((e.id||"")+" "+(e.action||"")+" "+(e.className||"")).toLowerCase();(t.indexOf("estimate")>-1||t.indexOf("handyman")>-1||t.indexOf("contact")>-1||t.indexOf("lead")>-1)&&(e.dataset.gaTracked="1",e.addEventListener("submit",function(){gtag("event","lead_form_submit",{event_category:"conversion",event_label:window.location.pathname,value:10})}))}}),document.querySelectorAll('a[href*="estimate"]').forEach(function(e){e.dataset.gaTracked||(e.dataset.gaTracked="1",e.addEventListener("click",function(){gtag("event","cta_click",{event_category:"engagement",event_label:e.textContent.trim().substring(0,50),value:1})}))}))}function toggleMobileMenu(){var e=document.getElementById("mobileMenu"),t=document.getElementById("hamburger");e.classList.toggle("open"),t.classList.toggle("active"),e.classList.contains("open")||resetMobilePanels()}!function(){var e=document.createElement("script");e.async=!0,e.src="https://www.googletagmanager.com/gtag/js?id=G-QQF68GFQNX",document.head.appendChild(e),window.dataLayer=window.dataLayer||[],window.gtag=function(){dataLayer.push(arguments)},gtag("js",new Date),gtag("config","G-QQF68GFQNX",{anonymize_ip:!0,cookie_flags:"SameSite=None;Secure"})}(),function(){"use strict";function e(e,t){return fetch(e).then(function(e){return e.text()}).then(function(e){var a=document.getElementById(t);a&&(a.innerHTML=e)}).catch(function(t){console.warn("Partial failed:",e,t)})}function t(){return Promise.all([e("partials/menu.html","site-menu"),e("partials/footer.html","site-footer")]).then(function(){document.body.classList.add("site-ready"),setupGATracking()})}"loading"===document.readyState?document.addEventListener("DOMContentLoaded",function(){t(),setupGATracking()}):(t(),setupGATracking())}();var mobileStack=[];function mobileOpen(e){var t=0===mobileStack.length?"root":mobileStack[mobileStack.length-1],a=document.getElementById("panel-"+t),n=document.getElementById("panel-"+e);n&&("root"===t?a.classList.add("pushed"):(a.classList.remove("active"),a.classList.add("prev")),n.classList.add("active"),mobileStack.push(e))}function mobileBack(e){var t=document.getElementById("panel-"+e);mobileStack.pop();var a=0===mobileStack.length?"root":mobileStack[mobileStack.length-1],n=document.getElementById("panel-"+a);t.classList.remove("active"),"root"===a?n.classList.remove("pushed"):(n.classList.remove("prev"),n.classList.add("active"))}function resetMobilePanels(){mobileStack=[],document.querySelectorAll(".m-panel").forEach(function(e){e.classList.remove("active","prev","pushed")});var e=document.getElementById("panel-root");e&&e.classList.add("active")}document.addEventListener("click",function(e){var t=document.getElementById("mobileMenu"),a=document.getElementById("hamburger");t&&a&&t.classList.contains("open")&&!t.contains(e.target)&&!a.contains(e.target)&&(t.classList.remove("open"),a.classList.remove("active"),resetMobilePanels())}),function(){var e,t="/.netlify/functions/track-visit",a=!1;try{e=sessionStorage.getItem("sbc_sid")}catch(e){}if(!e){e="s_"+Date.now().toString(36)+Math.random().toString(36).slice(2,8),a=!0;try{sessionStorage.setItem("sbc_sid",e)}catch(e){}}function n(e){try{return new URLSearchParams(location.search).get(e)||""}catch(e){return""}}var i={source:n("utm_source"),medium:n("utm_medium"),campaign:n("utm_campaign")};function o(n){var o,c={sid:e,type:n,path:location.pathname,title:document.title,referrer:document.referrer||"",utmSource:i.source,utmMedium:i.medium,utmCampaign:i.campaign,device:(o=navigator.userAgent||"",/iPad|Tablet|PlayBook|Silk/i.test(o)?"tablet":/Mobi|Android|iPhone|iPod|Opera Mini|IEMobile/i.test(o)||window.matchMedia&&window.matchMedia("(max-width:768px)").matches?"mobile":"desktop"),first:a};a=!1;try{var r=JSON.stringify(c);navigator.sendBeacon?navigator.sendBeacon(t,new Blob([r],{type:"application/json"})):fetch(t,{method:"POST",headers:{"Content-Type":"application/json"},body:r,keepalive:!0})}catch(e){}}o("pageview"),setInterval(function(){"visible"===document.visibilityState&&o("heartbeat")},2e4),document.addEventListener("visibilitychange",function(){"visible"===document.visibilityState&&o("heartbeat")})}();
+// ============================================================
+//  form-alert.js  (v4 - Jul 29 2026)  →  netlify/functions/form-alert.js
+//  Sends Zura an instant email when someone STARTS or ABANDONS
+//  the estimate form, or (type:"visit") browses the site.
+//
+//  v2 adds BOT FILTERING for "visit" alerts. Audit of 749 sessions
+//  over 30 days found 74% came from datacenters (Ashburn VA, Newark,
+//  Washington VA) and ZERO from New York City. Those alerts were
+//  crawlers, not customers. Now a visit alert is only sent when the
+//  visitor passes both checks:
+//    1. user-agent is not a known bot/crawler/headless client
+//    2. the IP does not belong to a hosting/cloud network (ASN org)
+//  Form "start"/"abandon" alerts are NEVER filtered - those are real
+//  human interactions with the form.
+//
+//  v2 also puts the visitor's CITY in the email, which is the single
+//  most useful thing to know (a Brooklyn visitor matters; Ashburn does not).
+//  Uses existing env vars: RESEND_API_KEY, CONTRACTOR_EMAIL
+// ============================================================
+const https = require("https");
 
-/* ===== SBC VISIT ALERT — one email per visitor session. Owner devices: open any page with ?owner=1 once to silence. ===== */
-(function(){
-  try{
-    var q=new URLSearchParams(location.search);
-    if(q.get("owner")==="1"){localStorage.setItem("sbc_owner","1");}
-    if(localStorage.getItem("sbc_owner")==="1")return;
-    var p=location.pathname;
-    if(/dashboard|image-studio|seo-content|keyword-volumes|quote|invoice|contract|agreement/.test(p))return;
-    if(sessionStorage.getItem("sbc_visit_alerted"))return;
-    sessionStorage.setItem("sbc_visit_alerted","1");
-    var src="direct";
-    try{if(document.referrer){var u=new URL(document.referrer);src=(u.hostname.indexOf("sanibuildingcorp")>-1)?u.pathname:u.hostname;}}catch(e){}
-    fetch("/.netlify/functions/form-alert",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({type:"visit",page:p,source:src}),keepalive:true}).catch(function(){});
-  }catch(e){}
-})();
+// --- Known bot / crawler / automation user-agents -----------------
+const BOT_UA = /(bot|crawl|spider|slurp|headless|phantom|puppeteer|playwright|selenium|scrapy|curl|wget|python-requests|axios|go-http|java\/|libwww|okhttp|apache-http|monitor|uptime|pingdom|lighthouse|pagespeed|gtmetrix|preview|fetcher|archiver|facebookexternalhit|whatsapp|telegram|slackbot|discord|embedly|semrush|ahrefs|moz\.com|majestic|dotbot|petalbot|bytespider|amazonbot|gptbot|claudebot|anthropic|perplexity|ccbot|applebot|yandex|baidu|sogou|duckduckbot|bingbot|googlebot|adsbot|mediapartners)/i;
+
+// --- Networks that host servers, not customers --------------------
+const HOSTING_ORG = /(amazon|aws|google|microsoft|azure|cloudflare|digitalocean|linode|akamai|fastly|ovh|hetzner|vultr|oracle|alibaba|tencent|rackspace|equinix|leaseweb|contabo|scaleway|choopa|quadranet|colocation|datacenter|data center|hosting|server|vpn|proxy|m247|zenlayer|cogent|level3|gtt)/i;
+
+// Look up the visitor's network + city. Best effort, never blocks the response.
+async function lookupIp(ip) {
+  if (!ip) return {};
+  try {
+    const r = await fetch("https://ipwho.is/" + encodeURIComponent(ip));
+    if (!r.ok) return {};
+    const d = await r.json();
+    if (!d || d.success === false) return {};
+    const conn = d.connection || {};
+    return {
+      city: d.city || null,
+      region: d.region || null,
+      country: d.country || null,
+      org: conn.org || conn.isp || null,
+      asn: conn.asn || null,
+      isHosting: d.type === "hosting" ||
+                 HOSTING_ORG.test(String(conn.org || "")) ||
+                 HOSTING_ORG.test(String(conn.isp || ""))
+    };
+  } catch (e) { return {}; }
+}
+
+exports.handler = async (event) => {
+  let data = {};
+  if (event.httpMethod === "GET") {
+    if ((event.queryStringParameters || {}).test !== "1") {
+      return { statusCode: 405, body: "Method Not Allowed" };
+    }
+    data = { type: "test" };
+  } else if (event.httpMethod === "POST") {
+    try { data = JSON.parse(event.body || "{}"); } catch (e) { data = {}; }
+  } else {
+    return { statusCode: 405, body: "Method Not Allowed" };
+  }
+
+  const type = ["abandon","visit","call","test"].includes(data.type) ? data.type : "start";
+
+  // ---- BOT GATE (v4, Zura Jul 29: "I don't need to see robot") -----
+  // Bot/datacenter visits send NO email. They are still recorded in
+  // Supabase by track-visit, so nothing is lost - just not in the inbox.
+  // "visit" and "call" alerts both carry Where + Network for humans.
+  // Form start/abandon alerts are never filtered.
+  const reqHeaders = event.headers || {};
+  const ua = String(reqHeaders["user-agent"] || reqHeaders["User-Agent"] || "");
+  const clientIp = String(
+    reqHeaders["x-nf-client-connection-ip"] ||
+    (reqHeaders["x-forwarded-for"] || "").split(",")[0] || ""
+  ).trim();
+
+  let visitorGeo = {};
+  if (type === "visit" || type === "call") {
+    if (type === "visit" && (!ua || BOT_UA.test(ua))) {
+      return { statusCode: 200, headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ result: "SKIPPED", reason: "crawler user-agent" }) };
+    }
+    visitorGeo = await lookupIp(clientIp);
+    if (type === "visit" && visitorGeo.isHosting) {
+      return { statusCode: 200, headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ result: "SKIPPED", reason: "datacenter/hosting IP", org: visitorGeo.org || null }) };
+    }
+  }
+  const src = String(data.source || "direct").slice(0, 120);
+  const step = parseInt(data.step, 10) || 1;
+  const name = String(data.name || "").slice(0, 80);
+  const phone = String(data.phone || "").slice(0, 40);
+  const service = String(data.service || "").slice(0, 80);
+
+  const resendKey = process.env.RESEND_API_KEY;
+  const to = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+  if (!resendKey) {
+    return { statusCode: 200, headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ result: "FAILED", error: "RESEND_API_KEY env var is missing in Netlify" }) };
+  }
+
+  const nyTime = new Date().toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit",
+  });
+
+  const page = String(data.page || "").slice(0, 120);
+  const isStart = type === "start";
+  const subject =
+    type === "test" ? "\u2705 TEST — form-alert is working" :
+    type === "visit" ? "\uD83D\uDC40 Visitor on your website — " + (page || "/") :
+    type === "call" ? "\uD83D\uDCDE CALL CLICK — someone is calling you from " + (page || "/") :
+    isStart ? "\uD83D\uDFE2 Someone started the estimate form"
+            : "\uD83D\uDFE1 Estimate form abandoned at step " + step;
+
+  const pagesTrail = Array.isArray(data.pages)
+    ? data.pages.slice(0, 20).map(function(x){ return String(x).slice(0, 80); }).join(" \u2192 ")
+    : "";
+
+  const rows = [];
+  rows.push(row("Time", nyTime + " (NY)"));
+  if (type === "visit" || type === "call") {
+    const place = [visitorGeo.city, visitorGeo.region].filter(Boolean).join(", ");
+    if (place) rows.push(row("Where", place + (visitorGeo.country ? " (" + visitorGeo.country + ")" : "")));
+    if (visitorGeo.org) rows.push(row("Network", visitorGeo.org));
+    rows.push(row(type === "call" ? "Called from page" : "Page they opened", page || "/"));
+    if (pagesTrail) rows.push(row("Pages this visit", pagesTrail));
+    rows.push(row("Came from", src));
+  } else if (type !== "test") {
+    rows.push(row("Came from page", src));
+    rows.push(row(isStart ? "Reached step" : "Quit at step", String(step) + " of 5"));
+  }
+  if (service) rows.push(row("Service picked", service));
+  if (name) rows.push(row("Name (partial lead!)", name));
+  if (phone) rows.push(row("Phone (partial lead!)", phone));
+
+  const html =
+    '<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">' +
+    '<div style="background:#0a1628;padding:18px 22px;border-radius:10px 10px 0 0">' +
+    '<span style="color:#f0a500;font-size:16px;font-weight:bold">Sani Building Corp — Live Form Alert</span></div>' +
+    '<div style="border:1px solid #e5e5e5;border-top:0;border-radius:0 0 10px 10px;padding:20px 22px">' +
+    '<p style="font-size:15px;margin:0 0 14px"><strong>' +
+    (type === "test" ? "This is a test. Email delivery from form-alert works — alerts will arrive at this inbox." :
+     type === "visit" ? "Someone is browsing your website right now." :
+     isStart ? "A visitor just started filling the free-estimate form." :
+      "A visitor left the estimate form without finishing.") +
+    "</strong></p><table style=\"font-size:14px;border-collapse:collapse;width:100%\">" +
+    rows.join("") + "</table>" +
+    (phone ? '<p style="margin:16px 0 0;font-size:14px;color:#2d8a2d"><strong>They left a phone number — call them back!</strong></p>' : "") +
+    '<p style="margin:16px 0 0;font-size:12px;color:#999">Automatic alert from sanibuildingcorp.com/estimate</p>' +
+    "</div></div>";
+
+  function row(k, v) {
+    return '<tr><td style="padding:5px 10px 5px 0;color:#777;white-space:nowrap">' + k +
+      '</td><td style="padding:5px 0;color:#0a1628"><strong>' + esc(v) + "</strong></td></tr>";
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  let sendResult = { sent: false, error: null };
+  try {
+    const r = await sendResend(resendKey, {
+      from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
+      to: [to],
+      subject: subject,
+      html: html,
+    });
+    sendResult.sent = true;
+    sendResult.resend = r.slice(0, 200);
+  } catch (e) {
+    sendResult.error = e.message;
+    console.error("form-alert email failed:", e.message);
+  }
+  if (type === "test") {
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        test: true,
+        emailSentTo: to,
+        fromAddress: "estimates@sanibuildingcorp.com",
+        result: sendResult.sent ? "SUCCESS — check inbox AND spam/Promotions" : "FAILED",
+        error: sendResult.error,
+      }, null, 2),
+    };
+  }
+  return { statusCode: 200, body: "ok" };
+};
+
+function sendResend(apiKey, payload) {
+  const data = JSON.stringify(payload);
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "api.resend.com",
+        port: 443,
+        path: "/emails",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(data),
+          Authorization: `Bearer ${apiKey}`,
+        },
+      },
+      (res) => {
+        let body = "";
+        res.on("data", (c) => (body += c));
+        res.on("end", () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(body);
+          else reject(new Error("Resend " + res.statusCode + ": " + body));
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(data);
+    req.end();
+  });
+}
