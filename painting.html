@@ -113,9 +113,38 @@
 <div id="site-menu"></div>
 
 <!-- HERO -->
+<script>
+/* Ken Burns hero slideshow (TEST - painting page). Activates only when 2+ slides load. */
+var sbcSlides=0;
+function sbcSlideOk(){sbcSlides++;sbcSlideCheck();}
+function sbcSlideCheck(){
+  var h=document.getElementById("kbHero");if(!h)return;
+  var n=h.querySelectorAll(".kb-slide").length;
+  if(sbcSlides>=2&&n>=2){h.classList.add("slideshow");h.style.setProperty("--slides",n);}
+  else{h.classList.remove("slideshow");}
+}
+document.addEventListener("DOMContentLoaded",function(){
+  var h=document.getElementById("kbHero");if(!h)return;
+  var v=h.querySelector(".kb-video");if(!v)return;
+  /* Respect reduce-motion: no video, slideshow rules handle the static frame */
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){v.remove();return;}
+  v.addEventListener("canplay",function(){
+    h.classList.add("video-live");
+    var pr=v.play();if(pr&&pr.catch)pr.catch(function(){});
+  });
+  v.addEventListener("error",function(){v.remove();h.classList.remove("video-live");});
+  var s=v.querySelector("source");
+  if(s)s.addEventListener("error",function(){v.remove();h.classList.remove("video-live");});
+});
+</script>
 <section class="page-hero">
-  <div class="page-hero-bg">
-    <img src="images/painting/hero.jpg" alt="Professional painting services NYC Brooklyn" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?w=1600&q=80'">
+  <div class="page-hero-bg" id="kbHero">
+    <img class="kb-slide" src="images/painting/hero.jpg" data-sbc-ref="images/painting/hero.jpg" alt="Professional painting services NYC Brooklyn" onload="sbcSlideOk()" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?w=1600&q=80'">
+    <img class="kb-slide" src="images/home/nyc-luxury-livingroom.jpg" data-sbc-ref="images/home/nyc-luxury-livingroom.jpg" alt="Freshly painted luxury NYC living room by Sani Building Corp" decoding="async" onload="sbcSlideOk()" onerror="this.remove();sbcSlideCheck()">
+    <img class="kb-slide" src="images/painting/hero-3.jpg" data-sbc-ref="images/painting/hero-3.jpg" alt="Interior painting project by Sani Building Corp in NYC" decoding="async" onload="sbcSlideOk()" onerror="this.remove();sbcSlideCheck()">
+    <video class="kb-video" muted playsinline loop autoplay preload="metadata" poster="images/painting/hero-poster.jpg" aria-hidden="true" tabindex="-1">
+      <source src="videos/painting-hero.mp4" type="video/mp4">
+    </video>
   </div>
   <div class="page-hero-grid"></div>
   <div class="page-hero-overlay"></div>
@@ -385,6 +414,36 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
   section.page-hero.sbc-std .page-hero-content p.sbc-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px}
   section.page-hero.sbc-std .page-hero-content p.sbc-clamp.sbc-open{display:block;-webkit-line-clamp:unset;overflow:visible}
 }
+
+/* ══ PAGE-HERO KEN BURNS SLIDESHOW (Jul 29 2026, test on /painting) ══ */
+.page-hero-bg .kb-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1}
+.page-hero-bg.slideshow .kb-slide{
+  opacity:0;
+  animation:sbcKenBurns calc(var(--slides,3)*8s) ease-in-out infinite;
+  will-change:opacity,transform;
+}
+.page-hero-bg.slideshow .kb-slide:nth-of-type(1){animation-delay:0s}
+.page-hero-bg.slideshow .kb-slide:nth-of-type(2){animation-delay:8s}
+.page-hero-bg.slideshow .kb-slide:nth-of-type(3){animation-delay:16s}
+@keyframes sbcKenBurns{
+  0%{opacity:0;transform:scale(1) translate(0,0)}
+  6%{opacity:1}
+  33.33%{opacity:1;transform:scale(1.08) translate(-1.5%,-1%)}
+  41%{opacity:0;transform:scale(1.1) translate(-2%,-1.2%)}
+  100%{opacity:0;transform:scale(1) translate(0,0)}
+}
+.page-hero-bg:not(.slideshow) .kb-slide~.kb-slide{display:none}
+@media (prefers-reduced-motion: reduce){
+  .page-hero-bg.slideshow .kb-slide{animation:none;opacity:0}
+  .page-hero-bg.slideshow .kb-slide:first-of-type{opacity:1}
+}
+
+/* ══ HERO VIDEO LAYER (test) — plays above the Ken Burns slides once ready;
+   slides keep animating until canplay, and take over permanently on any error ══ */
+.page-hero-bg .kb-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .8s ease}
+.page-hero-bg.video-live .kb-video{opacity:1}
+.page-hero-bg.video-live .kb-slide{animation-play-state:paused}
+@media (prefers-reduced-motion: reduce){.page-hero-bg .kb-video{display:none}}
 </style>
 <div class="mobile-bar">
   <a href="tel:3322770990" class="mb-call">
