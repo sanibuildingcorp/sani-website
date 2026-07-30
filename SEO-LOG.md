@@ -26,6 +26,21 @@
 |commercial-tile-installation.html|+1 intro sentence: contiguous "porcelain tile installation" (1,000/mo) + "large format tile installation". Additive — existing "commercial tile installation" target untouched. FAQ 8=8 ✓|VERIFY|
 |bathroom-floor-tile-installation.html|Same additive porcelain/large-format sentence. FAQ 13=13 ✓|VERIFY|
 
+### Batch 2 EXECUTED (Jul 30 - ALL remaining current-page updates; 3 new pages deferred per Zura):
+|Page|Change|
+|---|---|
+|handyman.html|+FAQ claiming the "[service] handyman" pattern: drywall handyman (3,600 KD11), sheetrock repair, handyman for kitchen cabinets/flooring, faucet replacement, same-day. FAQ 13=13|
+|handyman-manhattan.html|+FAQ: commercial drywall-handyman for offices/stores, sheetrock patching, punch-list, COI. FAQ 9=9|
+|kitchen-cabinet-installation-manhattan.html|Title -> "Kitchen Cabinet Installation & Remodeling Manhattan \| Sani" (claims kitchen remodeling manhattan 320/mo KD8); intro adds contiguous "kitchen remodeling in Manhattan"; +duration FAQ (720/mo KD12: cabinets 2-5 days, full remodel 3-6 wks, co-op access factors). FAQ 7=7|
+|kitchen-cabinet-installation.html|+cost FAQ in the 4,400/mo phrasing - honest "depends on cabinets/counters/scope, five figures for full remodels, line-by-line free estimate" - NO invented price. FAQ 11=11|
+|water-damage.html|+"How do I get insurance to pay" FAQ (590/mo) - document-first guidance, adjuster-format estimates, no coverage promises. The $25.85-CPC page. FAQ 10=10|
+|flooring.html|Intro adds "flooring contractors near you" + hardwood/vinyl plank installation phrasing. FAQ 8=8|
+|deck-building.html|Intro adds "deck builders/deck contractors/composite deck installation" phrasing (page remains a later merge candidate). FAQ 6=6|
+|bathroom-renovation.html|Cost-Q REWORDED to the exact 2,400/mo phrase "How much does it cost to renovate a bathroom in NYC?" (visible+schema, x2). Audit found June work already covered near-me/small-bathroom/walk-in-shower Qs. FAQ 10=10|
+|renovation-contractor-brooklyn + -manhattan|**NO COMMIT NEEDED** - audit showed contiguous "general contractor in <boro>" already present from June work; outputs identical to deployed.|
+
+**Commit list Batch 1+2 (12 files):** carpentry, bathroom-wall-panels, commercial-tile-installation, bathroom-floor-tile-installation, handyman, handyman-manhattan, kitchen-cabinet-installation-manhattan, kitchen-cabinet-installation, water-damage, flooring, deck-building, bathroom-renovation + SEO-LOG.md. Then Purge Everything.
+
 ### Roadmap QUEUED (per reports, reconciled — nothing undoes Jul 27-29 work):
 1. **Handyman-phrasing program** on handyman.html + handyman-manhattan: add "[service] handyman" / "handyman for [task]" wording (drywall handyman 3,600 KD11; sheetrock/faucet/cabinet variants; same-day urgency line). NEXT BATCH.
 2. **Cost-FAQ program** (reports' #1 content lever): map Part-3 question phrasing to pages that have real published prices — "how much does it cost to renovate a bathroom" 2,400/mo, "how long does a bathroom renovation take" 1,000/mo, "how much does a kitchen remodel cost" 4,400/mo, handyman hourly 880/mo, painting per-room 720/mo. Use ONLY prices already published/confirmed by Zura.
