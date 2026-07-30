@@ -135,6 +135,16 @@ document.addEventListener("DOMContentLoaded",function(){
   v.addEventListener("error",function(){v.remove();h.classList.remove("video-live");});
   var s=v.querySelector("source");
   if(s)s.addEventListener("error",function(){v.remove();h.classList.remove("video-live");});
+  /* iOS pauses video on phone lock / app switch and does not always resume.
+     Nudge it back to life whenever the page becomes visible again. */
+  function resume(){
+    if(!document.hidden&&document.body.contains(v)&&v.paused){
+      var pr=v.play();if(pr&&pr.catch)pr.catch(function(){});
+    }
+  }
+  document.addEventListener("visibilitychange",resume);
+  window.addEventListener("pageshow",resume);
+  window.addEventListener("focus",resume);
 });
 </script>
 <section class="page-hero">
