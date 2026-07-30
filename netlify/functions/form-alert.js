@@ -1,5 +1,5 @@
 // ============================================================
-//  form-alert.js  (v5 - Jul 29 2026)  →  netlify/functions/form-alert.js
+//  form-alert.js  (v6 - Jul 29 2026)  →  netlify/functions/form-alert.js
 //  Sends Zura an instant email when someone STARTS or ABANDONS
 //  the estimate form, or (type:"visit") browses the site.
 //
@@ -23,6 +23,11 @@ const https = require("https");
 const BOT_UA = /(bot|crawl|spider|slurp|headless|phantom|puppeteer|playwright|selenium|scrapy|curl|wget|python-requests|axios|go-http|java\/|libwww|okhttp|apache-http|monitor|uptime|pingdom|lighthouse|pagespeed|gtmetrix|preview|fetcher|archiver|facebookexternalhit|whatsapp|telegram|slackbot|discord|embedly|semrush|ahrefs|moz\.com|majestic|dotbot|petalbot|bytespider|amazonbot|gptbot|claudebot|anthropic|perplexity|ccbot|applebot|yandex|baidu|sogou|duckduckbot|bingbot|googlebot|adsbot|mediapartners)/i;
 
 // --- Networks that host servers, not customers --------------------
+// iCloud Private Relay / privacy-proxy egress: Cloudflare, Akamai, Fastly, Apple.
+// These carry REAL iPhone/Safari users - proven Jul 29 when a genuine Manhattan
+// painting lead (Google -> /painting-manhattan -> /contact -> submitted form)
+// was flagged "datacenter/hosting IP" because Private Relay exits via Cloudflare.
+const PRIVATE_RELAY = /(cloudflare|akamai|fastly|apple|icloud)/i;
 const HOSTING_ORG = /(amazon|aws|google|microsoft|azure|cloudflare|digitalocean|linode|akamai|fastly|ovh|hetzner|vultr|oracle|alibaba|tencent|rackspace|equinix|leaseweb|contabo|scaleway|choopa|quadranet|colocation|datacenter|data center|hosting|server|vpn|proxy|m247|zenlayer|cogent|level3|gtt)/i;
 
 // Look up the visitor's network + city. Best effort, never blocks the response.
@@ -79,7 +84,14 @@ exports.handler = async (event) => {
   if (type === "visit" || type === "call") {
     if (!ua || BOT_UA.test(ua)) { isBotVisit = true; botReason = "crawler user-agent"; }
     visitorGeo = await lookupIp(clientIp);
-    if (visitorGeo.isHosting) { isBotVisit = true; botReason = botReason ? botReason + " + datacenter IP" : "datacenter/hosting IP"; }
+    const org = String(visitorGeo.org || "");
+    const isPrivateRelay = PRIVATE_RELAY.test(org) && !BOT_UA.test(ua) && !!ua;
+    if (isPrivateRelay) {
+      // Real person behind a privacy proxy (usually an iPhone). Never label as bot.
+      visitorGeo.privacyNote = "iCloud Private Relay / privacy proxy - likely a real iPhone user; city shown is the relay exit, not their location";
+    } else if (visitorGeo.isHosting) {
+      isBotVisit = true; botReason = botReason ? botReason + " + datacenter IP" : "datacenter/hosting IP";
+    }
   }
   const src = String(data.source || "direct").slice(0, 120);
   const step = parseInt(data.step, 10) || 1;
@@ -119,6 +131,7 @@ exports.handler = async (event) => {
     const place = [visitorGeo.city, visitorGeo.region].filter(Boolean).join(", ");
     if (place) rows.push(row("Where", place + (visitorGeo.country ? " (" + visitorGeo.country + ")" : "")));
     if (visitorGeo.org) rows.push(row("Network", visitorGeo.org));
+    if (visitorGeo.privacyNote) rows.push(row("Privacy network", visitorGeo.privacyNote));
     if (isBotVisit) rows.push(row("Why flagged as bot", botReason));
     rows.push(row(type === "call" ? "Called from page" : "Page they opened", page || "/"));
     if (pagesTrail) rows.push(row("Pages this visit", pagesTrail));
