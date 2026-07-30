@@ -1,3 +1,17 @@
+# ⛔ PRIORITY RULE — READ FIRST, EVERY SESSION (Zura mandate, Jul 30 2026)
+
+**Before ANY change to ANY page — including one-line edits (titles, meta, FAQ text, prices) — ALWAYS check FIRST, in this order:**
+
+1. **Semrush live keyword data** for that exact URL — `resource_organic` (target_type: url) for what the page ranks on, `phrase_these` for volumes of any term being added/removed
+2. **Google Search Console** — queries/impressions for the page, where relevant
+3. **Current committed file** — raw.githubusercontent.com/sanibuildingcorp/sani-website/main/<file> (never edit a stale copy)
+
+**No edit ships without keyword verification. This check has PRIORITY over speed. A "quick fix" that skips it is not allowed.**
+
+*Why this rule exists:* on Jul 30 2026 a title was shortened without checking keywords and the word "Renovation" was deleted — the stem of the page's single biggest keyword (bathroom renovation brooklyn, 480/mo; renovation family ~990/mo, equal to the remodeling family). Zura caught it; Semrush data proved him right. Final title: "Bathroom Remodeling & Renovation Brooklyn | Sani Building Corp" (62 chars, both stems kept).
+
+---
+
 # SEO-LOG.md — Sani Building Corp
 
 Single source of truth for on-page SEO. **Continuity protocol:** read this first every new chat. Self-directed work touches only PENDING/VERIFY rows; a direct Zura request always overrides and is done immediately regardless of status.
@@ -27,7 +41,8 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 |---|---|---|
 |34 pages: canonical address restored|VERIFY|Every business node / @id reference now carries the canonical PostalAddress (2954 Brighton 12th St, Brooklyn NY 11235, US) - ~90 bytes/page, @id consolidation untouched. All 34 files fetched FRESH from deployed main (painting video + pricing + resume fix confirmed intact) then patched + validated (JSON-LD parses, div balance). **Commit all 34 in one batch; expect the 31 errors -> 0 on next Semrush recrawl.** NOTE: outputs/index.html is now the deployed index + address fix WITHOUT the staged slideshow - homepage slideshow will be rebuilt on top when Zura's real-photo video is ready.|
 |Broken internal images: 142 pages|KNOWN - uploads|The long-standing empty photo slots (~144 flags). Not a code fix - fill via Image Studio.|
-|Low text/HTML 3 pages - long title 1|MINOR - later|Identify in next self-audit pass.|
+|Long title (rev 2 - Zura enforced SEO WORKFLOW MANDATE)|FIXED|**Zura caught that rev 1 was cut without checking keywords - and the data proved him right.** Live Semrush for the URL: the renovation family (~990/mo: bathroom renovation brooklyn 480 #33, renovations 320 #26, heights renovation 50 #11) EQUALS the remodeling family (~1,020/mo) - rev 1's 49-char title had deleted "Renovation", the stem of the page's single biggest keyword. Final: **"Bathroom Remodeling & Renovation Brooklyn | Sani Building Corp" (62 chars rendered)** - both stems + Brooklyn + brand, under Semrush's 70-char warning line, only true filler ("Experts") dropped. og/twitter matched; H1/schema untouched. (supersedes rev 1: /bathroom-renovation-brooklyn title was **81 chars** ("...Remodel & Renovation Experts | Sani Building Corp") - Google truncates ~60 and may rewrite, costing control of the strongest page's SERP snippet. Now **"Bathroom Remodeling Brooklyn | Sani Building Corp" (49 chars)** - exact ranking phrase kept first; og:/twitter: titles matched; H1 and schema untouched. Include in the 34-file commit (file already staged with the address fix).|
+|Low text/HTML 3 pages|MINOR - later|Identify in next self-audit pass.|
 |Site Health 91% (top-10 sites: 92%) - AI Search Health 99%, ChatGPT-User/OAI-SearchBot/Googlebot all allowed|GOOD|The open-robots strategy validated by Semrush's own AI-search check.|
 
 ## Jul 29 2026 - HERO KEN BURNS SLIDESHOW (Zura request: "slow motion slideshow videos")
