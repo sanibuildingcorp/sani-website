@@ -12,6 +12,29 @@
 
 ---
 
+## Jul 30 2026 — PERPLEXITY DEEP KEYWORD STRATEGY: VERIFIED + EXECUTION STARTED
+
+**Zura's two Perplexity reports (Master Keyword List + Deep Competitor Strategy) read in full; every pivotal number re-verified against live Semrush before any edit (PRIORITY RULE). Data quality: GOOD — matches Claude's own pulls. Two rule conflicts skipped: "licensed handyman brooklyn" (LICENSE RULE) and "mr handyman" (competitor brand).**
+
+**Verified keyword board (Semrush live Jul 30):** carpentry services near me **12,100 KD19 $4.23**; kitchen and bath remodeling 4,400 KD30 $11.61; drywall handyman 3,600 KD11 $7.16; entry door installation 1,600 KD37 $12.41; porcelain tile installation 1,000 KD33; handyman nyc 720 KD36; general contractor nyc 590 KD40; handyman brooklyn 390 KD22; kitchen remodeling manhattan 320 **KD8**; door installation nyc 260 **KD9**; water damage restoration brooklyn 260 KD24 **$25.85 CPC**. ⚠ bathroom wall panels 6,600 KD31 but **CPC $0.87 = product-shopper intent (same trap as grout color sealing)** — phrase kept prominent with installer framing, page NOT rebuilt to chase DIY browsers.
+
+### Batch 1 EXECUTED (staged in outputs):
+|Page|Change|Status|
+|---|---|---|
+|carpentry.html|**Claims the 12,100/mo near-me family.** Title → "NY Carpentry Services \| Custom Woodwork NYC \| Sani Building Corp" (64ch — keeps the #51 "ny carpentry" stem, adds "carpentry services"); H1 → "Carpentry Services NYC — Crown Molding, Trim & Custom Built-Ins"; meta adds "near you… Small jobs welcome"; +1 FAQ (visible+schema): small-jobs/carpenter-handyman/near-you phrasing. FAQ 9=9 ✓|VERIFY|
+|bathroom-wall-panels.html|Title → "Bathroom Wall Panels **Installation** NYC \| No Demolition \| Sani" (60ch); H1 → "…Supplied & Installed — Refresh Without Demolition". Captures the installer-intent slice of 6,600/mo without chasing product shoppers. FAQ 11=11 ✓|VERIFY|
+|commercial-tile-installation.html|+1 intro sentence: contiguous "porcelain tile installation" (1,000/mo) + "large format tile installation". Additive — existing "commercial tile installation" target untouched. FAQ 8=8 ✓|VERIFY|
+|bathroom-floor-tile-installation.html|Same additive porcelain/large-format sentence. FAQ 13=13 ✓|VERIFY|
+
+### Roadmap QUEUED (per reports, reconciled — nothing undoes Jul 27-29 work):
+1. **Handyman-phrasing program** on handyman.html + handyman-manhattan: add "[service] handyman" / "handyman for [task]" wording (drywall handyman 3,600 KD11; sheetrock/faucet/cabinet variants; same-day urgency line). NEXT BATCH.
+2. **Cost-FAQ program** (reports' #1 content lever): map Part-3 question phrasing to pages that have real published prices — "how much does it cost to renovate a bathroom" 2,400/mo, "how long does a bathroom renovation take" 1,000/mo, "how much does a kitchen remodel cost" 4,400/mo, handyman hourly 880/mo, painting per-room 720/mo. Use ONLY prices already published/confirmed by Zura.
+3. **NEW pages (need Zura's go, one at a time):** /handyman-brooklyn (390 KD22 — reports call it the top new-page candidate); Door Installation page (entry door installation 1,600 + door installation nyc 260 KD9 + metal door 110 — matches handwritten service list); **Kitchen & Bath Remodeling NYC hub** (4,400 KD30 — elementsknb pattern; complements, never replaces, existing pages).
+4. Neighborhood micro-pages (bk-handyman pattern) — LATER, selectively, after authority grows; not a mass build at AS 7.
+5. IKEA furniture assembly as named service — ASK ZURA if he wants this work.
+6. Thin long-tail review (odd LI town staircase matches) — fold into the 2-3-week zombie-merge pass.
+7. NOT adopted: "licensed handyman" keywords (LICENSE RULE); wall-panels page rebuild around product-shopper volume.
+
 # SEO-LOG.md — Sani Building Corp
 
 Single source of truth for on-page SEO. **Continuity protocol:** read this first every new chat. Self-directed work touches only PENDING/VERIFY rows; a direct Zura request always overrides and is done immediately regardless of status.
