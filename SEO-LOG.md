@@ -19,6 +19,29 @@ Single source of truth for on-page SEO. **Continuity protocol:** read this first
 
 -----
 
+## Jul 30 2026 - SEMRUSH AUDIT: 31 INVALID STRUCTURED DATA = SWEEP SIDE EFFECT, FIXED
+
+**Cause is our own Jul 28 entity sweep:** stripping `address` from provider blocks (dedupe-to-@id) left LocalBusiness-typed nodes that validators check standalone - Semrush flags "address: a value is required" on exactly the pages whose only business node is a provider. Google resolves the @id, but per-node validators don't.
+
+|Item|Status|Notes|
+|---|---|---|
+|34 pages: canonical address restored|VERIFY|Every business node / @id reference now carries the canonical PostalAddress (2954 Brighton 12th St, Brooklyn NY 11235, US) - ~90 bytes/page, @id consolidation untouched. All 34 files fetched FRESH from deployed main (painting video + pricing + resume fix confirmed intact) then patched + validated (JSON-LD parses, div balance). **Commit all 34 in one batch; expect the 31 errors -> 0 on next Semrush recrawl.** NOTE: outputs/index.html is now the deployed index + address fix WITHOUT the staged slideshow - homepage slideshow will be rebuilt on top when Zura's real-photo video is ready.|
+|Broken internal images: 142 pages|KNOWN - uploads|The long-standing empty photo slots (~144 flags). Not a code fix - fill via Image Studio.|
+|Low text/HTML 3 pages - long title 1|MINOR - later|Identify in next self-audit pass.|
+|Site Health 91% (top-10 sites: 92%) - AI Search Health 99%, ChatGPT-User/OAI-SearchBot/Googlebot all allowed|GOOD|The open-robots strategy validated by Semrush's own AI-search check.|
+
+## Jul 29 2026 - HERO KEN BURNS SLIDESHOW (Zura request: "slow motion slideshow videos")
+
+**Chose Ken Burns photo slideshow over true video background** - delivers the slow-motion effect with ~zero weight vs a 3-8MB MP4, keeps Image Studio editability, keeps the scrim/text system, iOS-safe.
+
+|Item|Status|Notes|
+|---|---|---|
+|index.html hero slideshow|VERIFY|3 slide slots, each a real `<img class="hero-img hero-slide">` with data-sbc-ref: (1) images/hero/home-hero.png (current), (2) images/home/nyc-luxury-livingroom.jpg (exists in repo - slideshow works DAY ONE), (3) images/hero/hero-3.jpg (**needs upload**; self-removes via onerror until then, no navy gap). 24s cycle (8s/slide), cross-fade + 1->1.08 zoom-drift. Controller enables animation only when >=2 slides actually load - one surviving slide = static hero, never blank. `prefers-reduced-motion` -> static first slide. Scrim untouched on top. Validated: JSON-LD valid, div 0, styles balanced, inline JS 4/4 node-check, zero licensed/TV.|
+|/painting hero slideshow (TEST)|VERIFY|**Per Zura: test on /painting before homepage.** Same Ken Burns system fitted to the `.page-hero-bg` structure: 3 `kb-slide` imgs - (1) images/painting/hero.jpg (existing, keeps its Unsplash fallback so it always loads), (2) images/home/nyc-luxury-livingroom.jpg (committed - motion works day one), (3) images/painting/hero-3.jpg (upload slot, self-removes until committed). Existing grid/overlay/accent layers untouched above the slides. Same 24s cycle, controller requires 2+ loaded slides, reduced-motion safe. File also carries the $3-$10 borough pricing - one commit covers both. Validated: FAQ 11=11, JSON-LD valid, div 0, controller node-check PASS.|
+|/painting VIDEO hero (test)|VERIFY|**Gemini test video added Jul 29 on top of the slideshow.** Optimized 2.6MB->0.96MB (audio stripped, faststart, CRF27, 1280x720x10s loop) + 76KB poster. Layering: video reveals (0.8s fade) only on `canplay`; until then and on ANY error the Ken Burns slides run - hero can never be blank. Reduced-motion removes the video entirely. **Commit 3 files: painting.html + `videos/painting-hero.mp4` (new folder) + `images/painting/hero-poster.jpg`.** NOTE: AI-generated footage is a placeholder for testing only - Zura will regenerate from his own job photos before this pattern goes to the homepage. Video not Studio-editable (photos slides are).|
+|Homepage slideshow|STAGED - not for this commit|index.html slideshow version remains in outputs. **Deploy painting.html ONLY for the test**; roll the homepage after Zura approves the effect.|
+|Slide photos|ACTION - Zura|Slides 1-2 can be replaced in **Image Studio** individually (real imgs). Slide 3 activates once images/hero/hero-3.jpg is committed. **Slide 1 is still the TV-mounting stock collage** - replace with a real finished room (the white herringbone bathroom from Facebook), wide/landscape, and the slideshow instantly looks like your portfolio in motion.|
+
 ## Jul 29 2026 - PAINTING-MANHATTAN PRICE CONFLICT (Zura caught it)
 
 |Item|Status|Notes|
