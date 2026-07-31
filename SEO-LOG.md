@@ -41,6 +41,14 @@
 
 **Commit list Batch 1+2 (12 files):** carpentry, bathroom-wall-panels, commercial-tile-installation, bathroom-floor-tile-installation, handyman, handyman-manhattan, kitchen-cabinet-installation-manhattan, kitchen-cabinet-installation, water-damage, flooring, deck-building, bathroom-renovation + SEO-LOG.md. Then Purge Everything.
 
+### services.html EXPANDED (Jul 30 - Zura caught: services page listed only 6 of ~15 services)
+|Item|Detail|
+|---|---|
+|9 new cards (SERVICE 07-15)|Handyman -> /handyman; Tile Installation -> /bathroom-floor-tile-installation; Commercial Tile -> /commercial-tile-installation; Grout Repair & Regrouting -> /tile-grouting-restoration; Bathroom Wall Panels -> /bathroom-wall-panels; Decks & Patios -> /deck-renovation (renovation chosen over merge-candidate deck-building); Stair Restoration -> /stair-restoration (the ranking stair page); Exterior Carpentry -> /exterior-carpentry; General Contracting & Full Renovations -> /renovation-contractor-brooklyn. Exact design-system clone (alternating svc-row/rev, Playfair, gold accents). 15 cards total, div/a balance 0, JSON-LD valid.|
+|Doors & drywall|No dedicated pages yet (doors page deferred) - named inside the Handyman card copy ("drywall and sheetrock, doors, faucets") so every handwritten service is now findable from /services.|
+|NEW photo slots|images/services/bg-8.jpg ... bg-16.jpg (9 slots, onerror-hidden until uploaded - no broken icons). ADDED to the photo-upload queue alongside bg-2..bg-7.|
+|Internal-linking win|/services now passes link equity to the tile cluster, wall-panels, stairs and handyman pages that previously had zero links from the services hub - supports every Batch 1-2 keyword target.|
+
 ### Roadmap QUEUED (per reports, reconciled — nothing undoes Jul 27-29 work):
 1. **Handyman-phrasing program** on handyman.html + handyman-manhattan: add "[service] handyman" / "handyman for [task]" wording (drywall handyman 3,600 KD11; sheetrock/faucet/cabinet variants; same-day urgency line). NEXT BATCH.
 2. **Cost-FAQ program** (reports' #1 content lever): map Part-3 question phrasing to pages that have real published prices — "how much does it cost to renovate a bathroom" 2,400/mo, "how long does a bathroom renovation take" 1,000/mo, "how much does a kitchen remodel cost" 4,400/mo, handyman hourly 880/mo, painting per-room 720/mo. Use ONLY prices already published/confirmed by Zura.
