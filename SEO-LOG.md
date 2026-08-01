@@ -49,6 +49,13 @@
 |NEW photo slots|images/services/bg-8.jpg ... bg-16.jpg (9 slots, onerror-hidden until uploaded - no broken icons). ADDED to the photo-upload queue alongside bg-2..bg-7.|
 |Internal-linking win|/services now passes link equity to the tile cluster, wall-panels, stairs and handyman pages that previously had zero links from the services hub - supports every Batch 1-2 keyword target.|
 
+### CRAWLER-HEALTH SWEEP (Jul 30, post-batches - Zura request)
+**All 40 pages fetched + audited: canonicals 40/40 (old "4 missing" item RESOLVED), zero canonical mismatches, JSON-LD 40/40 valid, FAQ visible=schema 40/40 IN SYNC sitewide, address present wherever a business node exists (gallery = ImageGallery schema, none needed by design), zero titles >70ch, meta+og 40/40.** robots.txt verified healthy (AI bots allowed, admin/customer-doc paths blocked, /videos/ NOT blocked, Sitemap line present); llms.txt exists. Deployed spot-checks confirmed Batches 1+2 + services expansion are LIVE.
+|Item|Status|
+|---|---|
+|sitemap.xml|VERIFY - COMMIT|All 40 lastmod 2026-07-28 -> **2026-07-30** (address batch + keyword batches + services page all changed Jul 30). XML validated. After commit+purge: **GSC -> Sitemaps -> resubmit**, then Request Indexing on the top changed URLs: /services, /carpentry, /handyman, /kitchen-cabinet-installation-manhattan, /bathroom-renovation-brooklyn, /painting.|
+|onboarding@resend.dev|QUEUED|Internal handyman alert still sent from Resend sandbox sender - switch to estimates@ next time handyman-submit.js is touched.|
+
 ### Roadmap QUEUED (per reports, reconciled — nothing undoes Jul 27-29 work):
 1. **Handyman-phrasing program** on handyman.html + handyman-manhattan: add "[service] handyman" / "handyman for [task]" wording (drywall handyman 3,600 KD11; sheetrock/faucet/cabinet variants; same-day urgency line). NEXT BATCH.
 2. **Cost-FAQ program** (reports' #1 content lever): map Part-3 question phrasing to pages that have real published prices — "how much does it cost to renovate a bathroom" 2,400/mo, "how long does a bathroom renovation take" 1,000/mo, "how much does a kitchen remodel cost" 4,400/mo, handyman hourly 880/mo, painting per-room 720/mo. Use ONLY prices already published/confirmed by Zura.
