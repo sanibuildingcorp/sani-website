@@ -53,27 +53,44 @@ exports.handler = async function (event) {
   }
   const pick = (o, keys) => { for (const k of keys) { if (o && o[k]) return o[k]; } return ""; };
 
-  // ── Renovation estimates ──
+  // ── Renovation estimates (lightweight shape: customer{}, request{}, estimate{}) ──
   for (const e of (est && est.estimates) || []) {
-    const email = pick(e, ["email", "customerEmail", "clientEmail"]) || pick(e.customer || {}, ["email"]);
-    const c = touch(email, pick(e, ["name", "customerName", "clientName"]) || pick(e.customer || {}, ["name"]),
-                    pick(e, ["phone", "customerPhone"]) || pick(e.customer || {}, ["phone"]));
+    const cust = e.customer || {};
+    const c = touch(cust.email || e.email, cust.name || e.name, cust.phone || e.phone);
+    const req = e.request || {}, est2 = e.estimate || {};
+    const lines = [];
+    if (est2.projectTitle) lines.push(est2.projectTitle);
+    const spec = [req.service, req.propertyType, req.timeline].filter(Boolean).join(" · ");
+    if (spec) lines.push(spec);
+    if (Number(est2.grandTotal) > 0) lines.push("Estimate total: $" + Number(est2.grandTotal).toLocaleString());
+    if (req.photoCount) lines.push(req.photoCount + " photo(s) attached");
     add(c, "estimate", {
       kind: "estimate",
       title: "📐 Estimate request" + (e.status ? " · " + e.status : ""),
-      detail: [pick(e, ["projectType", "service", "scope"]), pick(e, ["borough", "location"])].filter(Boolean).join(" · "),
+      detail: lines.join("\n"),
       ref: e.ref || "",
-      at: e.submittedAt || e.createdAt || e.created_at || "",
+      at: e.submittedAt || e.createdAt || "",
     });
   }
 
-  // ── Handyman bookings ──
+  // ── Handyman bookings (full Supabase rows — surface the project details) ──
   for (const b of (hm && (hm.bookings || hm.data)) || []) {
-    const c = touch(pick(b, ["email", "customer_email"]), pick(b, ["name", "customer_name"]), pick(b, ["phone", "customer_phone"]));
+    const c = touch(pick(b, ["customer_email", "email"]), pick(b, ["customer_name", "name"]), pick(b, ["customer_phone", "phone"]));
+    const lines = [];
+    const desc = b.job_summary || b.customer_description || "";
+    if (desc) lines.push(desc);
+    if (b.customer_address) lines.push("📍 " + b.customer_address);
+    const when = [b.urgency ? "Urgency: " + b.urgency : "", b.preferred_date || "", b.preferred_time || ""].filter(Boolean).join(" · ");
+    if (when) lines.push("⏰ " + when);
+    if (b.estimated_labor_min || b.estimated_labor_max)
+      lines.push("💰 Labor est: $" + (b.estimated_labor_min || "?") + "–$" + (b.estimated_labor_max || "?") +
+                 (b.estimated_time_min ? " · " + b.estimated_time_min + "–" + (b.estimated_time_max || b.estimated_time_min) + "h" : ""));
+    if (b.agreement_status) lines.push("✍️ Agreement: " + b.agreement_status);
+    if (b.contractor_notes) lines.push("📝 " + b.contractor_notes);
     add(c, "handyman", {
       kind: "handyman",
-      title: "🔧 Handyman booking · " + (pick(b, ["service_name", "service"]) || "request") + (b.status ? " · " + b.status : ""),
-      detail: pick(b, ["description", "details", "notes", "message"]),
+      title: "🔧 " + (pick(b, ["service_name", "service"]) || "Handyman") + (b.status ? " · " + b.status : ""),
+      detail: lines.join("\n"),
       ref: b.ref || "",
       at: pick(b, ["submitted_at", "created_at", "createdAt"]),
     });
