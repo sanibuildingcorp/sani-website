@@ -2674,6 +2674,7 @@ const TABS = [
   { id: "declined", label: "Declined" },
   { id: "leads", label: "📥 Leads" },
   { id: "handyman", label: "🔧 Handyman" },
+  { id: "customers", label: "👤 Customers" },
   { id: "visits", label: "📅 Visits" },
   { id: "seo", label: "🧠 SEO Brain" },
   { id: "content", label: "✍️ Content" },
@@ -2970,6 +2971,11 @@ function renderList() {
 
   if (activeTab === "handyman") {
     renderHandymanList();
+    return;
+  }
+
+  if (activeTab === "customers") {
+    renderCustomersTab();
     return;
   }
 
@@ -5922,6 +5928,7 @@ var SBC_TABS = [
   {id:'leads',    icon:'📥', label:'Website Leads'},
   null,
   {id:'handyman', icon:'🔧', label:'Handyman'},
+  {id:'customers', icon:'👤', label:'Customers'},
   {id:'visits',   icon:'📅', label:'Visits'},
   {id:'seo',      icon:'🧠', label:'SEO Brain'},
   {id:'content',  icon:'✍️',  label:'Content'},
@@ -7455,6 +7462,101 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 })();
 </script>
 <!-- ===== END CONTRACT PANEL ===== -->
+
+<script>
+/* ═══════════ CUSTOMERS TAB — unified inbox + per-customer history (Jul 30 2026) ═══════════ */
+var custCache = null, custOpenEmail = null;
+function sbcKey(){ var k=sessionStorage.getItem('sbcKey'); if(!k){ k=prompt('Dashboard send key (DASHBOARD_KEY):')||''; if(k) sessionStorage.setItem('sbcKey',k); } return k; }
+async function renderCustomersTab(){
+  var host=document.getElementById('list-host');
+  if(!custCache){
+    host.innerHTML='<div class="empty"><div class="empty-icon">⟳</div><h3>Loading customers…</h3></div>';
+    try{
+      var r=await fetch('/.netlify/functions/inbox-list');
+      var data=await r.json();
+      if(!r.ok) throw new Error(data.error||'Load failed');
+      custCache=data.customers||[];
+    }catch(e){
+      host.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><h3>'+esc(e.message)+'</h3><button class="topbar-btn" onclick="custCache=null;renderCustomersTab()">Retry</button></div>';
+      return;
+    }
+  }
+  if(activeTab!=='customers') return;
+  if(custOpenEmail){ renderCustomerDetail(custOpenEmail); return; }
+  if(!custCache.length){ host.innerHTML='<div class="empty"><div class="empty-icon">👤</div><h3>No customers yet</h3><p>Estimates, handyman bookings and website leads all appear here automatically.</p></div>'; return; }
+  var html='<div style="display:flex;flex-direction:column;gap:10px">';
+  custCache.forEach(function(c,idx){
+    var last=c.timeline&&c.timeline[0];
+    html+='<div onclick="custOpenEmail=custCache['+idx+'].email;renderCustomersTab()" style="background:#fff;border:1px solid rgba(13,27,42,0.1);border-radius:12px;padding:14px 16px;cursor:pointer">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">'
+      +'<strong style="font-size:15px">'+esc(c.name||c.email)+'</strong>'
+      +'<span style="font-size:11px;color:#7a879b">'+esc((c.lastActivity||'').slice(0,10))+'</span></div>'
+      +'<div style="font-size:12px;color:#44536a;margin-top:2px">'+esc(c.email)+(c.phone?' · '+esc(c.phone):'')+'</div>'
+      +'<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+      +(c.sources||[]).map(function(s){return '<span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;background:rgba(184,147,10,0.12);color:#96770a;border-radius:20px;padding:2px 10px">'+esc(s)+'</span>';}).join('')
+      +'<span style="font-size:10px;color:#7a879b;padding:2px 4px">'+(c.timeline?c.timeline.length:0)+' events</span>'
+      +'</div>'
+      +(last?'<div style="font-size:12px;color:#44536a;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(last.title||'')+'</div>':'')
+      +'</div>';
+  });
+  host.innerHTML=html+'</div>';
+}
+function renderCustomerDetail(email){
+  var host=document.getElementById('list-host');
+  var c=(custCache||[]).find(function(x){return x.email===email;});
+  if(!c){ custOpenEmail=null; renderCustomersTab(); return; }
+  var html='<div style="max-width:760px">'
+    +'<button class="topbar-btn" onclick="custOpenEmail=null;renderCustomersTab()">← All customers</button>'
+    +'<div style="background:#fff;border:1px solid rgba(13,27,42,0.1);border-radius:14px;padding:18px;margin-top:12px">'
+    +'<h2 style="margin:0 0 4px;font-size:20px">'+esc(c.name||c.email)+'</h2>'
+    +'<div style="font-size:13px;color:#44536a">'+esc(c.email)+(c.phone?' · <a href="tel:'+esc(c.phone)+'" style="color:#96770a">'+esc(c.phone)+'</a>':'')+'</div>'
+    +'</div>'
+    +'<div style="background:#fff;border:1px solid rgba(13,27,42,0.1);border-radius:14px;padding:18px;margin-top:12px">'
+    +'<h3 style="margin:0 0 10px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#7a879b">Send a message</h3>'
+    +'<input id="cust-subj" placeholder="Subject" value="Sani Building Corp — about your request" style="width:100%;padding:11px 12px;border:1px solid rgba(13,27,42,0.15);border-radius:10px;font-size:14px;margin-bottom:8px;font-family:inherit;box-sizing:border-box">'
+    +'<textarea id="cust-body" rows="5" placeholder="Write to '+esc(c.name||'the customer')+'… (sent from estimates@sanibuildingcorp.com, a copy lands in your Gmail)" style="width:100%;padding:11px 12px;border:1px solid rgba(13,27,42,0.15);border-radius:10px;font-size:14px;font-family:inherit;box-sizing:border-box"></textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:8px;align-items:center">'
+    +'<button class="topbar-btn" id="cust-send-btn" onclick="custSend(custOpenEmail)">Send email</button>'
+    +'<span id="cust-send-msg" style="font-size:12px;color:#7a879b"></span></div>'
+    +'</div>'
+    +'<h3 style="margin:18px 0 8px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#7a879b">History — every request &amp; message</h3>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;padding-bottom:40px">';
+  (c.timeline||[]).forEach(function(t){
+    var col=t.kind==='out'?'#96770a':(t.kind==='estimate'?'#2f6db5':(t.kind==='handyman'?'#3d8a4f':'#7a879b'));
+    html+='<div style="background:#fff;border-left:3px solid '+col+';border-radius:0 10px 10px 0;padding:12px 14px;border-top:1px solid rgba(13,27,42,0.06);border-right:1px solid rgba(13,27,42,0.06);border-bottom:1px solid rgba(13,27,42,0.06)">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px"><strong style="font-size:13px">'+esc(t.title||t.kind)+'</strong>'
+      +'<span style="font-size:11px;color:#7a879b;white-space:nowrap">'+esc((t.at||'').replace('T',' ').slice(0,16))+'</span></div>'
+      +(t.detail?'<div style="font-size:12px;color:#44536a;margin-top:5px;white-space:pre-wrap">'+esc(String(t.detail).slice(0,600))+'</div>':'')
+      +(t.ref?'<div style="font-size:11px;color:#7a879b;margin-top:4px">'+esc(t.ref)+'</div>':'')
+      +'</div>';
+  });
+  host.innerHTML=html+'</div></div>';
+}
+async function custSend(email){
+  var body=document.getElementById('cust-body').value.trim();
+  var subj=document.getElementById('cust-subj').value.trim();
+  var msg=document.getElementById('cust-send-msg');
+  var btn=document.getElementById('cust-send-btn');
+  if(!body){ msg.textContent='Write a message first.'; return; }
+  btn.disabled=true; msg.textContent='Sending…';
+  try{
+    var c=(custCache||[]).find(function(x){return x.email===email;})||{};
+    var r=await fetch('/.netlify/functions/send-reply',{method:'POST',
+      headers:{'Content-Type':'application/json','x-sbc-key':sbcKey()},
+      body:JSON.stringify({email:email,name:c.name||'',subject:subj,body:body})});
+    var data=await r.json();
+    if(!r.ok){ if(r.status===401) sessionStorage.removeItem('sbcKey'); throw new Error(data.error||'Send failed'); }
+    msg.textContent='✓ Sent & saved to history';
+    c.timeline=c.timeline||[];
+    c.timeline.unshift({kind:'out',title:'📧 You: '+subj,detail:body,at:new Date().toISOString()});
+    document.getElementById('cust-body').value='';
+    setTimeout(function(){ renderCustomerDetail(email); },700);
+  }catch(e){
+    msg.textContent='⚠️ '+e.message;
+  }
+  btn.disabled=false;
+}
+</script>
 
 </body>
 </html>
