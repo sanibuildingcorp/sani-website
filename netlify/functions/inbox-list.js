@@ -8,17 +8,31 @@
 // GET → { customers: [ { email, name, phone, sources[], lastActivity, timeline[] } ] }
 // Read-only. Sources that fail are skipped, never fatal.
 
-const BASE = process.env.URL || "https://www.sanibuildingcorp.com";
+// Call our own functions on the NETLIFY-DIRECT host, not the public domain:
+// the public domain sits behind Cloudflare, which can block server-to-server
+// fetches from datacenter IPs (symptom: every source empty -> "No customers yet").
+const BASES = [
+  "https://velvety-horse-2aa6e3.netlify.app",
+  process.env.URL || "https://www.sanibuildingcorp.com",
+];
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
   if (event.httpMethod !== "GET")     return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
 
+  const dbg = {};
+  const src = (name, path) => getJsonAny(path).then(
+    (v) => { dbg[name] = "ok"; return v; },
+    (e) => { dbg[name] = String(e.message || e).slice(0, 120); return null; }
+  );
   const [est, hm, leads, outMsgs] = await Promise.all([
-    getJson(BASE + "/.netlify/functions/list-estimates").catch(() => null),
-    getJson(BASE + "/.netlify/functions/handyman-get").catch(() => null),
-    getJson(BASE + "/.netlify/functions/contact-leads").catch(() => null),
-    supabaseGet("/rest/v1/lead_messages?order=created_at.desc&limit=500").catch(() => null),
+    src("estimates", "/.netlify/functions/list-estimates"),
+    src("handyman",  "/.netlify/functions/handyman-get"),
+    src("leads",     "/.netlify/functions/contact-leads"),
+    supabaseGet("/rest/v1/lead_messages?order=created_at.desc&limit=500").then(
+      (v) => { dbg.messages = "ok"; return v; },
+      (e) => { dbg.messages = String(e.message || e).slice(0, 120); return null; }
+    ),
   ]);
 
   const customers = {}; // key: lower(email)
@@ -97,13 +111,19 @@ exports.handler = async function (event) {
   });
   list.sort((a, b) => new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0));
 
-  return { statusCode: 200, headers: cors(), body: JSON.stringify({ customers: list }) };
+  return { statusCode: 200, headers: cors(), body: JSON.stringify({ customers: list, sources: dbg }) };
 };
 
-async function getJson(url) {
-  const r = await fetch(url, { headers: { accept: "application/json" } });
-  if (!r.ok) throw new Error("HTTP " + r.status + " for " + url);
-  return r.json();
+async function getJsonAny(path) {
+  let lastErr;
+  for (const base of BASES) {
+    try {
+      const r = await fetch(base + path, { headers: { accept: "application/json" } });
+      if (!r.ok) throw new Error("HTTP " + r.status + " @ " + base);
+      return await r.json();
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("all bases failed");
 }
 async function supabaseGet(path) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SECRET_KEY;
