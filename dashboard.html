@@ -7567,6 +7567,7 @@ function renderCustomerDetail(email){
     if(!groups[k]){ groups[k]={items:[],head:null,last:t.at||''}; order.push(k); }
     groups[k].items.push(t);
     if(t.kind!=='in'&&t.kind!=='out'&&!groups[k].head) groups[k].head=t;   // the request itself
+    if(t.kind==='in'&&t.mid&&(!groups[k].midAt||(t.at||'')>groups[k].midAt)){ groups[k].mid=t.mid; groups[k].midAt=t.at||''; }
     if((t.at||'')>groups[k].last) groups[k].last=t.at||'';
   });
   order.sort(function(a,b){ return groups[b].last<groups[a].last?-1:1; });
@@ -7584,7 +7585,7 @@ function renderCustomerDetail(email){
       +'</div>'
       +'<div style="display:flex;gap:8px;align-items:center">'
       +(head&&head.at?'<span style="font-size:11px;color:#7a879b;white-space:nowrap">'+esc((head.at||'').replace('T',' ').slice(0,16))+'</span>':'')
-      +'<button class="topbar-btn" style="font-size:11px;padding:5px 10px;white-space:nowrap" onclick="custReplyAbout(\''+esc(gRef)+'\',\''+esc(String(gTitle).replace(/[\'\"\\]/g,'').slice(0,60))+'\')">↩ Reply about this</button>'
+      +'<button class="topbar-btn" style="font-size:11px;padding:5px 10px;white-space:nowrap" onclick="custReplyAbout(\''+esc(gRef)+'\',\''+esc(String(gTitle).replace(/[^\\x20-\\x7E]/g,'').replace(/[\'\"\\]/g,'').trim().slice(0,60))+'\',\''+esc(String(g.mid||'').replace(/[\'\"\\<>]/g,''))+'\')">↩ Reply about this</button>'
       +'</div></div>'
       +(head&&head.detail?'<div style="font-size:12px;color:#44536a;margin-top:6px;white-space:pre-wrap">'+esc(String(head.detail).slice(0,600))+'</div>':'');
     if(msgs.length){
@@ -7608,9 +7609,11 @@ function renderCustomerDetail(email){
   host.innerHTML=html+'</div></div>';
   if(window.__custPendingSubj){ var sj=document.getElementById('cust-subj'); if(sj) sj.value=window.__custPendingSubj; window.__custPendingSubj=null; }
 }
-function custReplyAbout(ref,title){
+function custReplyAbout(ref,title,mid){
+  window.__custReplyMid = mid || '';
   var sj=document.getElementById('cust-subj'), bd=document.getElementById('cust-body');
-  var subject='Sani Building Corp — '+(title||'your request')+(ref?' · '+ref:'');
+  title=String(title||'').replace(/^(Contact form|Estimate request|Customer:|You:)\s*[·:\-]?\s*/i,'').trim();
+  var subject='Re: '+(title||'your request')+(ref?' · '+ref:'');
   if(sj){ sj.value=subject; }
   if(bd){ bd.focus(); }
   var comp=sj&&sj.closest?sj.closest('div'):null;
@@ -7633,7 +7636,7 @@ async function custSend(email){
     var c=(custCache||[]).find(function(x){return x.email===email;})||{};
     var r=await fetch('/.netlify/functions/send-reply',{method:'POST',
       headers:{'Content-Type':'application/json','x-sbc-key':key},
-      body:JSON.stringify({email:email,name:c.name||'',subject:subj,body:body})});
+      body:JSON.stringify({email:email,name:c.name||'',subject:subj,body:body,replyToMid:window.__custReplyMid||''})});
     var data=await r.json();
     if(!r.ok){
       if(r.status===401){ sessionStorage.removeItem('sbcKey');localStorage.removeItem('sbcKey'); if(keyRow)keyRow.style.display='flex'; msg.textContent='🔑 Key not accepted — check it and try again.'; btn.disabled=false; return; }
