@@ -1,6 +1,8 @@
 // netlify/functions/send-reply.js
 // SEND A REPLY FROM THE DASHBOARD (v2 — Aug 2 2026)
-// POST { email, name?, subject, body }  with header  x-sbc-key: <DASHBOARD_KEY>
+// POST { email, name?, subject, body, replyToMid? }  with header  x-sbc-key: <DASHBOARD_KEY>
+// replyToMid = Message-ID of the customer email being answered -> In-Reply-To/References
+// headers make Gmail stack the reply into the SAME conversation on the customer side.
 //  1. Auth: header must match process.env.DASHBOARD_KEY (set in Netlify env) — blocks open-relay abuse.
 //  2. Sends via Resend from contact@sanibuildingcorp.com (customer-facing address; Workspace alias of
 //     info@, so replies land in the one inbox), BCC to CONTRACTOR_EMAIL (Gmail receipt).
@@ -20,6 +22,8 @@ exports.handler = async function (event) {
   const email = String(p.email || "").trim().toLowerCase();
   const name = String(p.name || "").trim().slice(0, 120);
   const subject = String(p.subject || "Sani Building Corp").trim().slice(0, 200);
+  let replyToMid = String(p.replyToMid || "").trim().slice(0, 250);
+  if (replyToMid && !/^<.*>$/.test(replyToMid)) replyToMid = "<" + replyToMid.replace(/^<|>$/g, "") + ">";
   const body = String(p.body || "").trim();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err(400, "Invalid recipient email");
   if (!body) return err(400, "Empty message");
@@ -45,6 +49,7 @@ exports.handler = async function (event) {
     body: JSON.stringify({
       from: "Sani Building Corp <contact@sanibuildingcorp.com>",
       to: [email],
+      headers: replyToMid ? { "In-Reply-To": replyToMid, "References": replyToMid } : undefined,
       bcc: bcc,
       reply_to: "contact@sanibuildingcorp.com",
       subject: subject,
