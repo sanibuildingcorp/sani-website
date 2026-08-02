@@ -137,3 +137,10 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
   .footer-grid{grid-template-columns:1fr;gap:32px}
   footer{padding:60px 24px 24px}
 }
+
+/* Mobile drawer "Prefer to talk first?" footer (Aug 2 2026) */
+.m-talk-label{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.4);text-align:center;margin-bottom:12px}
+.m-talk-row{display:flex;gap:10px}
+.m-talk-row .m-phone-mobile{flex:1;font-size:14px;letter-spacing:1px}
+.m-talk-note{font-size:12px;color:rgba(255,255,255,.5);text-align:center;margin-top:12px;line-height:1.6}
+.m-talk-note a{color:var(--gold-light);text-decoration:none;border-bottom:1px solid rgba(240,165,0,.4)}
