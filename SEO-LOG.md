@@ -46,6 +46,10 @@
 - Every failure path returns 200 with a console log, so a Resend or Supabase outage can never make Netlify mark the submission as failed.
 - `node --check` PASS; zero "licensed"; zero "TV"; no sandbox sender.
 
+**CONFIRMED WORKING — Aug 2, 09:48 ET:** Zura's live /contact submission produced the owner notification AND the customer "Request Received" confirmation (screenshot-verified). The core business problem — customers hearing nothing after submitting — is CLOSED.
+
+**Remaining minor item + fix (same day):** the confirmation wasn't being logged to Supabase `lead_messages` (dashboard Customers timeline). Supabase's API access log at the exact submission second (13:48 UTC) showed the Resend call arriving but the v1 `https.request` Supabase write never reaching Supabase at all, from the same invocation. Also disproved an earlier theory: `track-visit.js` uses global `fetch` for its hundreds of daily Supabase writes, so `fetch` IS available in this runtime. **send-confirmation.js v2** therefore switches its logging to the exact track-visit fetch pattern, surfaces real error text instead of swallowing it, and adds a browser diagnostic `?logtest=1` (on the velvety-horse netlify.app host) that performs only the lead_messages insert and prints the raw outcome. `submission-created.js` v4.1 helper aligned to the same pattern. Verification pending: tap logtest, then confirm a row lands in lead_messages after the next real submission. Note for future debugging: `lead_messages` has RLS enabled with zero policies — inserts rely on the service key's RLS bypass, same as `visit_sessions`.
+
 **FINAL FIX — Aug 2 (afternoon): Netlify's `submission-created` trigger confirmed dead on this site; replaced with direct client->function call.**
 
 Evidence chain (all verified, zero guesses):
