@@ -125,6 +125,21 @@ exports.handler = async function (event) {
             ip: ip,
             depositPaidClaimed: depositPaidClaimed === true
           });
+
+          // ── Customer copy: the page promises "A copy has been sent to your email" — honor it ──
+          try {
+            await sendResend(process.env.RESEND_API_KEY, {
+              from: "Sani Building Corp <contact@sanibuildingcorp.com>",
+              to: [agreement.customer_email],
+              bcc: process.env.CONTRACTOR_EMAIL ? [process.env.CONTRACTOR_EMAIL] : undefined,
+              reply_to: "contact@sanibuildingcorp.com",
+              subject: `✅ Signed: ${agreement.service_name || "Service Agreement"} · ${agreement.booking_ref || ""}`,
+              html: customerCopyHtml(agreement),
+              text: "Your signed Sani Building Corp service agreement is confirmed."
+                + (agreement.appointment_date ? " Appointment: " + agreement.appointment_date + (agreement.appointment_time ? " " + agreement.appointment_time : "") + "." : "")
+                + " Questions? (332) 277-0990 · contact@sanibuildingcorp.com"
+            });
+          } catch (e) { console.error("customer copy failed", e); }
         } catch (e) {
           console.error("Contractor notification failed:", e.message);
         }
@@ -328,7 +343,7 @@ async function notifyContractor({ type, agreement, signatureType, signatureData,
   }
 
   await sendResend(resendKey, {
-    from: "Sani Building Corp <onboarding@resend.dev>",
+    from: "Sani Building Corp <contact@sanibuildingcorp.com>",
     to: [contractorEmail],
     reply_to: agreement.customer_email,
     subject: subject,
@@ -427,4 +442,26 @@ function cors() {
 function esc(t) {
   if (t == null) return "";
   return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+
+function customerCopyHtml(a) {
+  var esc = function (s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+  var when = [a.appointment_date, a.appointment_time].filter(Boolean).join(" · ");
+  return '<div style="font-family:Georgia,serif;max-width:640px;margin:0 auto;color:#1c2733">'
+    + '<div style="background:#0d1b2a;padding:22px 28px;border-top:3px solid #b8930a;text-align:center">'
+    + '<span style="color:#b8930a;font-size:18px;letter-spacing:4px;font-family:Arial,sans-serif;font-weight:bold">SANI BUILDING CORP</span>'
+    + '<div style="color:#9fb0c3;font-size:11px;letter-spacing:3px;margin-top:6px">AGREEMENT SIGNED ✓</div></div>'
+    + '<div style="padding:26px 28px;background:#fdfcf9;border:1px solid #eee;border-top:none">'
+    + '<p style="margin:0 0 14px">Hi ' + esc((a.customer_name || "").split(" ")[0] || "there") + ',</p>'
+    + '<p style="margin:0 0 16px;line-height:1.6">Thank you — your service agreement is signed and your appointment is confirmed. This email is your copy for your records.</p>'
+    + '<table style="width:100%;font-size:14px;line-height:1.8">'
+    + '<tr><td style="color:#7a879b;width:130px">Reference</td><td><strong>' + esc(a.booking_ref) + '</strong></td></tr>'
+    + '<tr><td style="color:#7a879b">Service</td><td>' + esc(a.service_name) + '</td></tr>'
+    + (when ? '<tr><td style="color:#7a879b">Appointment</td><td>' + esc(when) + '</td></tr>' : "")
+    + '</table>'
+    + '<p style="margin:20px 0 0;line-height:1.5;font-size:14px">Need to reschedule or ask anything? Just reply to this email.<br>— Sani Building Corp<br>'
+    + '<a href="tel:+13322770990" style="color:#96770a;text-decoration:none">(332) 277-0990</a> · '
+    + '<a href="https://www.sanibuildingcorp.com" style="color:#96770a;text-decoration:none">sanibuildingcorp.com</a></p>'
+    + '</div></div>';
 }
