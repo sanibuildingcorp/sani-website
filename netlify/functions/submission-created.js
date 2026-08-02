@@ -1,5 +1,13 @@
 // netlify/functions/submission-created.js
-// CUSTOMER CONFIRMATION FOR NETLIFY FORMS — v2 (Aug 2 2026)
+// CUSTOMER CONFIRMATION FOR NETLIFY FORMS — v3 (Aug 2 2026)
+//
+// v3 changes vs v2:
+//   • EVERY invocation now writes a breadcrumb row to Supabase lead_messages
+//     BEFORE attempting the email (subject "DEBUG: ...") — so an empty table now
+//     proves Netlify never triggered the function, while a breadcrumb without a
+//     confirmation email isolates the failure to the Resend send.
+//   • ALL Supabase writes now use https.request instead of global fetch — v2's
+//     logging used fetch, which would fail silently on an older Node runtime.
 //
 // v2 changes vs v1:
 //   • Resend send switched from global fetch() to https.request() — the exact pattern
@@ -75,6 +83,15 @@ exports.handler = async function (event) {
   const data = payload.data || {};
   const formName = payload.form_name || data["form-name"] || "form";
 
+  // v3 BREADCRUMB: prove the trigger fired, before anything can fail.
+  await supabasePost("lead_messages", {
+    lead_email: String(data.email || "unknown@unknown").trim().toLowerCase() || "unknown@unknown",
+    lead_name: "DEBUG",
+    direction: "out",
+    subject: "DEBUG: submission-created invoked",
+    body: "form=" + formName + " at " + new Date().toISOString(),
+  });
+
   if (String(data["bot-field"] || "").trim()) {
     return json(200, { skipped: "honeypot filled", form: formName });
   }
@@ -112,36 +129,15 @@ exports.handler = async function (event) {
   }
 
   // Log to the dashboard timeline — never fatal, the email is already out.
-  let logged = true;
-  try {
-    const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SECRET_KEY;
-    if (url && key) {
-      const res = await fetch(url + "/rest/v1/lead_messages", {
-        method: "POST",
-        headers: {
-          apikey: key,
-          Authorization: "Bearer " + key,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({
-          lead_email: email,
-          lead_name: fullName || null,
-          direction: "out",
-          subject: "Request Received - Sani Building Corp",
-          body: "Auto-confirmation sent for " + formName + " submission.",
-        }),
-      });
-      if (!res.ok) logged = false;
-    } else {
-      logged = false;
-    }
-  } catch {
-    logged = false;
-  }
+  const logRes = await supabasePost("lead_messages", {
+    lead_email: email,
+    lead_name: fullName || null,
+    direction: "out",
+    subject: "Request Received - Sani Building Corp",
+    body: "Auto-confirmation sent for " + formName + " submission.",
+  });
 
-  return json(200, { sent: true, to: email, form: formName, logged: logged });
+  return json(200, { sent: true, to: email, form: formName, logged: logRes.ok });
 };
 
 // ════════════════════════════════════════════════════════════════════
@@ -245,6 +241,42 @@ function postResend(apiKey, payload) {
     );
     req.on("error", function (e) { resolve({ ok: false, status: 0, body: String(e) }); });
     req.setTimeout(9000, function () { req.destroy(); resolve({ ok: false, status: 0, body: "Resend timeout" }); });
+    req.write(body);
+    req.end();
+  });
+}
+
+function supabasePost(path, row) {
+  return new Promise(function (resolve) {
+    const base = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SECRET_KEY;
+    if (!base || !key) return resolve({ ok: false, status: 0 });
+    let host;
+    try { host = new URL(base).hostname; } catch { return resolve({ ok: false, status: 0 }); }
+    const body = JSON.stringify(row);
+    const req = https.request(
+      {
+        hostname: host,
+        port: 443,
+        path: "/rest/v1/" + path,
+        method: "POST",
+        headers: {
+          apikey: key,
+          Authorization: "Bearer " + key,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      function (res) {
+        res.resume();
+        res.on("end", function () {
+          resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode });
+        });
+      }
+    );
+    req.on("error", function () { resolve({ ok: false, status: 0 }); });
+    req.setTimeout(8000, function () { req.destroy(); resolve({ ok: false, status: 0 }); });
     req.write(body);
     req.end();
   });
