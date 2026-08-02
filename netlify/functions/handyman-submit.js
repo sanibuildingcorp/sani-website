@@ -404,7 +404,7 @@ async function sendContractorEmail(booking, photoUrls) {
 </body></html>`;
 
   await sendResend(resendKey, {
-    from: "Sani Building Corp <onboarding@resend.dev>",
+    from: "Sani Building Corp <contact@sanibuildingcorp.com>",
     to: [contractorEmail],
     reply_to: booking.customer_email,
     subject: `🔧 NEW HANDYMAN: ${booking.service_name} · ${booking.confidence_label.toUpperCase()} · ${booking.customer_name}`,
