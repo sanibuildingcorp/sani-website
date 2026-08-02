@@ -1,0 +1,180 @@
+// netlify/functions/submission-created.js
+// CUSTOMER CONFIRMATION FOR NETLIFY FORMS (NEW — Aug 2 2026)
+//
+// WHY THIS EXISTS: contact.html (form "estimate") and index.html (form "free-estimate")
+// are plain Netlify Forms. Netlify emails the OWNER a notification but has no
+// autoresponder — so until now the customer received nothing after submitting.
+// The handyman AI wizard already sends its own confirmation (handyman-submit.js);
+// this function covers the two plain forms only.
+//
+// HOW IT FIRES: Netlify automatically invokes a function named exactly
+// "submission-created" after every verified form submission. No front-end change,
+// no wiring — commit the file into netlify/functions/ and it is live.
+//
+// WHAT IT DOES:
+//   1. Reads the submission payload and extracts the customer's name/email/details
+//      (handles BOTH form field shapes).
+//   2. Emails the customer a branded confirmation from contact@sanibuildingcorp.com
+//      (Resend, domain-verified), BCC to CONTRACTOR_EMAIL so you keep a receipt.
+//   3. Logs it to Supabase lead_messages so it appears in that customer's dashboard
+//      timeline (non-fatal — the email has already gone if this step fails).
+//
+// Verified before writing: no submission-created.js existed in netlify/functions/.
+
+exports.handler = async function (event) {
+  let payload;
+  try {
+    payload = (JSON.parse(event.body || "{}") || {}).payload || {};
+  } catch {
+    return { statusCode: 200, body: "bad json — ignored" };
+  }
+
+  const data = payload.data || {};
+  const formName = payload.form_name || data["form-name"] || "form";
+
+  // Honeypot filled = bot. Say nothing, send nothing.
+  if (String(data["bot-field"] || "").trim()) {
+    return { statusCode: 200, body: "honeypot — ignored" };
+  }
+
+  const email = String(data.email || payload.email || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { statusCode: 200, body: "no valid customer email — nothing sent" };
+  }
+
+  // contact.html uses "name"; index.html uses first_name + last_name.
+  const fullName =
+    String(data.name || payload.name || "").trim() ||
+    [data.first_name, data.last_name].filter(Boolean).join(" ").trim();
+  const firstName = (fullName || "there").split(" ")[0];
+
+  // contact.html: service / message / borough. index.html: scope[] / details / home_type.
+  const scope = data["scope[]"];
+  const service =
+    String(data.service || "").trim() ||
+    (Array.isArray(scope) ? scope.join(", ") : String(scope || "").trim());
+  const details = String(data.message || data.details || "").trim();
+  const address = String(data.address || "").trim();
+  const area = String(data.borough || data.home_type || "").trim();
+  const phone = String(data.phone || "").trim();
+
+  const rows = [
+    service && ["Service", service],
+    area && ["Property / Area", area],
+    address && ["Address", address],
+    phone && ["Phone", phone],
+  ].filter(Boolean);
+
+  const summary = rows.length
+    ? '<div style="background:#faf8f4;border-radius:10px;padding:18px;margin:20px 0">' +
+      '<div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:10px">Your Request</div>' +
+      '<div style="font-size:14px;color:#333;line-height:1.9">' +
+      rows.map((r) => "<strong>" + esc(r[0]) + ":</strong> " + esc(r[1])).join("<br>") +
+      "</div></div>"
+    : "";
+
+  const notes = details
+    ? '<div style="background:#fff8e8;border:1px solid #c9a84c;border-radius:8px;padding:14px 16px;margin:20px 0">' +
+      '<div style="font-size:11px;color:#b8930a;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">What You Told Us</div>' +
+      '<div style="font-size:14px;color:#444;line-height:1.6;white-space:pre-wrap">' + esc(details) + "</div></div>"
+    : "";
+
+  const html =
+    '<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#f5f0e8;font-family:Arial,sans-serif;color:#333">' +
+    '<div style="max-width:600px;margin:0 auto">' +
+    '<div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:32px 24px;border-radius:12px 12px 0 0;text-align:center">' +
+    '<div style="font-size:22px;letter-spacing:3px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>' +
+    '<div style="font-size:11px;letter-spacing:2px;color:#aaa;margin-top:6px">REQUEST RECEIVED</div></div>' +
+    '<div style="background:#fff;padding:30px 28px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 12px 12px">' +
+    '<h1 style="color:#0d1b2a;font-size:22px;margin:0 0 14px">Hi ' + esc(firstName) + ",</h1>" +
+    '<p style="font-size:15px;color:#555;line-height:1.6">Thanks for reaching out to Sani Building Corp. Your request has landed with us and a real person from our Brooklyn office will get back to you within a few hours &mdash; often much sooner.</p>' +
+    summary +
+    notes +
+    '<div style="background:#e8f5e8;border-left:4px solid #2ecc71;padding:16px 18px;margin:20px 0;border-radius:0 8px 8px 0">' +
+    '<div style="font-size:11px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:8px">What happens next</div>' +
+    '<div style="font-size:14px;color:#333;line-height:1.9">' +
+    "1. We review what you sent<br>2. We call or email with honest guidance on scope and timeline<br>3. You get a clear written estimate &mdash; free, detailed, no pressure" +
+    "</div></div>" +
+    '<p style="font-size:14px;color:#555;line-height:1.6">Photos help a lot. If you have any, just reply to this email and attach them &mdash; it usually gets you a sharper number faster.</p>' +
+    '<p style="font-size:13px;color:#777;margin-top:20px">Need us sooner? Call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>' +
+    '<div style="margin-top:32px;padding-top:20px;border-top:1px solid #eee;text-align:center">' +
+    '<div style="color:#888;font-size:11px;letter-spacing:2px;text-transform:uppercase">Sani Building Corp</div>' +
+    '<div style="font-size:12px;color:#888;margin-top:4px">Fully Insured &middot; 4.9 &#9733; &middot; NYC Metro &middot; Since 2015</div>' +
+    "</div></div></div></body></html>";
+
+  const text =
+    "Hi " + firstName + ",\n\n" +
+    "Thanks for reaching out to Sani Building Corp. Your request has landed with us and a real person from our Brooklyn office will get back to you within a few hours.\n\n" +
+    (rows.length ? rows.map((r) => r[0] + ": " + r[1]).join("\n") + "\n\n" : "") +
+    (details ? "What you told us:\n" + details + "\n\n" : "") +
+    "What happens next:\n1. We review what you sent\n2. We call or email with honest guidance on scope and timeline\n3. You get a clear written estimate - free, detailed, no pressure\n\n" +
+    "Photos help - reply to this email and attach them.\n\n" +
+    "Need us sooner? Call (332) 277-0990.\n\n" +
+    "- Sani Building Corp\nFully Insured | 4.9 stars | NYC Metro | Since 2015\nsanibuildingcorp.com";
+
+  const contractorEmail = process.env.CONTRACTOR_EMAIL || "info@sanibuildingcorp.com";
+  const subject = "Request Received - Sani Building Corp";
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + process.env.RESEND_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Sani Building Corp <contact@sanibuildingcorp.com>",
+        to: [email],
+        bcc: contractorEmail ? [contractorEmail] : undefined,
+        reply_to: "contact@sanibuildingcorp.com",
+        subject: subject,
+        html: html,
+        text: text,
+      }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      console.log("submission-created: Resend failed", res.status, t.slice(0, 300));
+      return { statusCode: 200, body: "resend failed (logged)" };
+    }
+  } catch (e) {
+    console.log("submission-created: send threw", String(e).slice(0, 300));
+    return { statusCode: 200, body: "send threw (logged)" };
+  }
+
+  // Log to the dashboard timeline — never fatal, the email is already out.
+  try {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SECRET_KEY;
+    if (url && key) {
+      await fetch(url + "/rest/v1/lead_messages", {
+        method: "POST",
+        headers: {
+          apikey: key,
+          Authorization: "Bearer " + key,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          lead_email: email,
+          lead_name: fullName || null,
+          direction: "out",
+          subject: subject,
+          body: "Auto-confirmation sent for " + formName + " submission.",
+        }),
+      });
+    }
+  } catch (e) {
+    console.log("submission-created: log skipped", String(e).slice(0, 200));
+  }
+
+  return { statusCode: 200, body: "confirmation sent to " + email };
+};
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
