@@ -1,5 +1,5 @@
 // netlify/functions/inbox-sync.js
-// GMAIL → DASHBOARD SYNC (v2, Aug 2 2026 — verbose counters, contact-leads in known set, insert errors surfaced) — the missing half of the two-way CRM.
+// GMAIL → DASHBOARD SYNC (v3, Aug 2 2026 — proper MIME parsing via mailparser: human-readable bodies) — the missing half of the two-way CRM.
 //
 // WHAT IT DOES: connects to the info@sanibuildingcorp.com mailbox over IMAP
 // (Google App Password — no OAuth dance), reads recent inbox mail, and files
@@ -26,6 +26,7 @@
 // Diagnostics: GET ?ping=1 → env/deploy status (no mailbox touch).
 
 const { ImapFlow } = require("imapflow");
+const { simpleParser } = require("mailparser");
 
 const OWN_PATTERNS = [
   "@sanibuildingcorp.com", "sanibuildingcorp@gmail.com",
@@ -37,7 +38,7 @@ exports.handler = async function (event) {
   const q = event.queryStringParameters || {};
   if (q.ping === "1") {
     return json(200, {
-      ok: true, function: "inbox-sync", version: "v2 Aug 2 2026", node: process.version,
+      ok: true, function: "inbox-sync", version: "v3 Aug 2 2026", node: process.version,
       hasGmailUser: !!process.env.GMAIL_USER,
       hasGmailAppPassword: !!process.env.GMAIL_APP_PASSWORD,
       hasSupabase: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY),
@@ -89,7 +90,7 @@ exports.handler = async function (event) {
       uids = uids.slice(-60); // newest 60 max per run
       for (let i = uids.length - 1; i >= 0; i--) {
         if (Date.now() > deadline) break;
-        const msg = await client.fetchOne(uids[i], { envelope: true, bodyStructure: false, source: false, bodyParts: ["text"] });
+        const msg = await client.fetchOne(uids[i], { envelope: true });
         if (!msg || !msg.envelope) continue;
         seen++;
         const fromObj = (msg.envelope.from && msg.envelope.from[0]) || {};
@@ -99,10 +100,20 @@ exports.handler = async function (event) {
         if (!known.has(fromAddr)) { skippedUnknown++; continue; }
 
         const mid = String(msg.envelope.messageId || "").slice(0, 250) || ("uid-" + uids[i] + "-" + fromAddr);
+        // Download + parse the actual message only for matched customers (cheap: few per run)
         let bodyText = "";
         try {
-          const part = msg.bodyParts && msg.bodyParts.get && msg.bodyParts.get("text");
-          if (part) bodyText = part.toString("utf-8");
+          const dl = await client.download(uids[i]);
+          if (dl && dl.content) {
+            const chunks = []; let size = 0;
+            for await (const ch of dl.content) {
+              size += ch.length;
+              if (size > 300 * 1024) break; // cap 300KB
+              chunks.push(ch);
+            }
+            const parsed = await simpleParser(Buffer.concat(chunks));
+            bodyText = parsed.text || String(parsed.html || "").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ");
+          }
         } catch (_) {}
         bodyText = cleanBody(bodyText).slice(0, 4000);
 
