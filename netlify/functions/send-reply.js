@@ -1,8 +1,9 @@
 // netlify/functions/send-reply.js
-// SEND A REPLY FROM THE DASHBOARD (Jul 30 2026)
+// SEND A REPLY FROM THE DASHBOARD (v2 — Aug 2 2026)
 // POST { email, name?, subject, body }  with header  x-sbc-key: <DASHBOARD_KEY>
 //  1. Auth: header must match process.env.DASHBOARD_KEY (set in Netlify env) — blocks open-relay abuse.
-//  2. Sends via Resend from estimates@sanibuildingcorp.com, BCC to CONTRACTOR_EMAIL (Gmail receipt).
+//  2. Sends via Resend from contact@sanibuildingcorp.com (customer-facing address; Workspace alias of
+//     info@, so replies land in the one inbox), BCC to CONTRACTOR_EMAIL (Gmail receipt).
 //  3. Logs the message to Supabase lead_messages so it appears in the customer's dashboard history forever.
 
 exports.handler = async function (event) {
@@ -42,10 +43,10 @@ exports.handler = async function (event) {
     method: "POST",
     headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
+      from: "Sani Building Corp <contact@sanibuildingcorp.com>",
       to: [email],
       bcc: bcc,
-      reply_to: "estimates@sanibuildingcorp.com",
+      reply_to: "contact@sanibuildingcorp.com",
       subject: subject,
       html: html,
       text: (name ? "Hi " + name.split(" ")[0] + ",\n\n" : "") + body + "\n\n— Sani Building Corp\n(332) 277-0990 · sanibuildingcorp.com",
