@@ -7464,7 +7464,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 <script>
 /* ═══════════ CUSTOMERS TAB — unified inbox + per-customer history (Jul 30 2026) ═══════════ */
 var custCache = null, custOpenEmail = null, custFilter = '', custView = [], custRestoreFocus = false;
-function sbcKey(){ var k=sessionStorage.getItem('sbcKey'); if(!k){ k=prompt('Dashboard send key (DASHBOARD_KEY):')||''; if(k) sessionStorage.setItem('sbcKey',k); } return k; }
+function sbcKey(){ var k=localStorage.getItem('sbcKey')||sessionStorage.getItem('sbcKey'); if(!k){ k=prompt('Dashboard send key (DASHBOARD_KEY) — asked once, remembered on this device:')||''; if(k) localStorage.setItem('sbcKey',k); } return k; }
 var custSyncState='';
 async function custSyncInbox(silent){
   custSyncState = silent ? '' : 'Syncing inbox…';
@@ -7474,7 +7474,7 @@ async function custSyncInbox(silent){
     var d=await r.json();
     if(r.ok && d.ok){ custSyncState = d.newMessages>0 ? ('✓ '+d.newMessages+' new email'+(d.newMessages===1?'':'s')+' pulled in') : '✓ Inbox up to date'; }
     else { custSyncState = d.skipped ? '📮 '+d.skipped : (d.error ? '⚠️ '+String(d.error).slice(0,120) : ''); }
-    if(r.status===401) sessionStorage.removeItem('sbcKey');
+    if(r.status===401) sessionStorage.removeItem('sbcKey');localStorage.removeItem('sbcKey');
     if(d.newMessages>0){ custCache=null; }
   }catch(e){ custSyncState='⚠️ Sync failed: '+e.message; }
   el=document.getElementById('cust-sync-note'); if(el) el.textContent=custSyncState;
@@ -7571,7 +7571,7 @@ async function custSend(email){
       headers:{'Content-Type':'application/json','x-sbc-key':sbcKey()},
       body:JSON.stringify({email:email,name:c.name||'',subject:subj,body:body})});
     var data=await r.json();
-    if(!r.ok){ if(r.status===401) sessionStorage.removeItem('sbcKey'); throw new Error(data.error||'Send failed'); }
+    if(!r.ok){ if(r.status===401) sessionStorage.removeItem('sbcKey');localStorage.removeItem('sbcKey'); throw new Error(data.error||'Send failed'); }
     msg.textContent='✓ Sent & saved to history';
     c.timeline=c.timeline||[];
     c.timeline.unshift({kind:'out',title:'📧 You: '+subj,detail:body,at:new Date().toISOString()});
