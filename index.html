@@ -2895,6 +2895,23 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
     })
     .then(function(res){
       if(!res.ok)throw new Error('Bad response: '+res.status);
+      /* Send the customer their confirmation email directly (Netlify's own
+         submission-created trigger is unreliable on this site — see SEO-LOG.md). */
+      try{
+        if(!(fd.get('bot-field')||'').trim()){
+          var scope=fd.getAll('scope[]')||[];
+          fetch('/.netlify/functions/send-confirmation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+            form:'free-estimate',
+            name:(((fd.get('first_name')||'')+' '+(fd.get('last_name')||'')).trim()),
+            email:(fd.get('email')||'').trim(),
+            phone:(fd.get('phone')||'').trim(),
+            service:scope.join(', '),
+            area:(fd.get('home_type')||'').trim(),
+            address:(fd.get('address')||'').trim(),
+            details:(fd.get('details')||'').trim()
+          })}).catch(function(){});
+        }
+      }catch(_){}
       form.querySelectorAll('.cf-field,.scope-section,.cf-submit,.cf-hp').forEach(function(el){el.style.display='none';});
       if(ok){
         ok.classList.add('show');

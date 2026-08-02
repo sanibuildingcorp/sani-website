@@ -222,7 +222,24 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 
 <script>
 const form = document.getElementById("estimateForm");
-if(form){form.addEventListener("submit",async function(e){e.preventDefault();const data=new FormData(form);try{await fetch("/",{method:"POST",body:data});form.style.display="none";document.getElementById("successMsg").style.display="block";}catch(err){form.submit();}});}
+if(form){form.addEventListener("submit",async function(e){e.preventDefault();const data=new FormData(form);try{await fetch("/",{method:"POST",body:data});
+/* Send the customer their confirmation email directly (Netlify's own
+   submission-created trigger is unreliable on this site — see SEO-LOG.md). */
+try{
+  if(!(data.get("bot-field")||"").trim()){
+    fetch("/.netlify/functions/send-confirmation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      form:"estimate",
+      name:(data.get("name")||"").trim(),
+      email:(data.get("email")||"").trim(),
+      phone:(data.get("phone")||"").trim(),
+      service:(data.get("service")||"").trim(),
+      area:(data.get("borough")||"").trim(),
+      address:(data.get("address")||"").trim(),
+      details:(data.get("message")||"").trim()
+    })}).catch(function(){});
+  }
+}catch(_){}
+form.style.display="none";document.getElementById("successMsg").style.display="block";}catch(err){form.submit();}});}
 </script>
 
 <!-- Footer loaded from partials/footer.html via partials/site.js -->
