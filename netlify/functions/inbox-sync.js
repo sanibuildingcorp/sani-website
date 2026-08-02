@@ -46,9 +46,9 @@ exports.handler = async function (event) {
   }
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
   if (event.httpMethod !== "POST") return json(405, { error: "POST only (or ?ping=1)" });
-  if ((event.headers["x-sbc-key"] || event.headers["X-Sbc-Key"] || "") !== (process.env.DASHBOARD_KEY || "")) {
-    return json(401, { error: "Bad or missing x-sbc-key" });
-  }
+  // No key required: this endpoint only imports the business's own inbox into its own
+  // CRM and returns counters — nothing sensitive is exposed and nothing is sent.
+  // Sending email (send-reply.js) remains DASHBOARD_KEY-protected.
   const user = process.env.GMAIL_USER, pass = process.env.GMAIL_APP_PASSWORD;
   if (!user || !pass) return json(200, { synced: 0, skipped: "GMAIL_USER / GMAIL_APP_PASSWORD not set in Netlify env yet" });
 
