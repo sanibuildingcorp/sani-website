@@ -491,6 +491,13 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 .area-pill.featured:hover{background:var(--gold-bright)}
 
 /* ══════════ CONTACT FORM (split layout) ══════════ */
+.cf-choice{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+.cf-choice-primary{display:block;background:var(--gold);color:#0a1628;text-align:center;padding:20px 24px;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:background .2s,transform .15s}
+.cf-choice-primary span{display:block;font-size:11px;font-weight:500;letter-spacing:1px;text-transform:none;margin-top:5px;color:rgba(10,22,40,.7)}
+.cf-choice-primary:hover{background:#ffb627;transform:translateY(-1px)}
+.cf-choice-secondary{display:block;text-align:center;padding:15px 24px;font-size:14px;color:var(--gray);text-decoration:none;border:1.5px solid var(--border);transition:border-color .2s,color .2s}
+.cf-choice-secondary b{color:var(--gold2,#c8860a);font-weight:600}
+.cf-choice-secondary:hover{border-color:var(--gold)}
 .contact-section{background:#fff;padding:120px 36px;position:relative;overflow:hidden}
 .contact-grid{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:1.05fr .95fr;gap:0;align-items:stretch;background:var(--light);box-shadow:0 30px 80px -40px rgba(0,0,0,0.25)}
 
@@ -2529,79 +2536,64 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
       <h3>Request a <em>Free Estimate</em></h3>
       <p class="form-sub">Tell us about your project and we'll get back to you within 24 hours with a transparent quote.</p>
 
-      <form class="contact-form" name="free-estimate" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="estimateForm">
-        <input type="hidden" name="form-name" value="free-estimate">
+      <form class="contact-form" name="estimate" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="estimateForm">
+        <input type="hidden" name="form-name" value="estimate">
         <p class="cf-hp"><label>Don't fill this out: <input name="bot-field"></label></p>
 
         <div class="cf-field">
-          <label for="cf-first-name">First Name <span class="req">*</span></label>
-          <input id="cf-first-name" type="text" name="first_name" placeholder="First Name" required>
+          <label for="cf-name">Full Name <span class="req">*</span></label>
+          <input id="cf-name" type="text" name="name" placeholder="John Smith" required>
         </div>
-        <div class="cf-field">
-          <label for="cf-last-name">Last Name <span class="req">*</span></label>
-          <input id="cf-last-name" type="text" name="last_name" placeholder="Last Name" required>
-        </div>
-
         <div class="cf-field">
           <label for="cf-phone">Phone <span class="req">*</span></label>
           <input id="cf-phone" type="tel" name="phone" placeholder="(347) 555-0199" required>
         </div>
-        <div class="cf-field">
+
+        <div class="cf-field full">
           <label for="cf-email">Email <span class="req">*</span></label>
           <input id="cf-email" type="email" name="email" placeholder="you@email.com" required>
         </div>
 
         <div class="cf-field">
-          <label for="cf-address">Address <span class="req">*</span></label>
-          <input id="cf-address" type="text" name="address" placeholder="Street, Borough" required>
-        </div>
-        <div class="cf-field">
-          <label for="cf-start-date">Estimated Start Date</label>
-          <input id="cf-start-date" type="date" name="start_date">
-        </div>
-
-        <div class="cf-field">
-          <label for="cf-home-type">Type of Home <span class="req">*</span></label>
-          <select id="cf-home-type" name="home_type" required>
-            <option value="">Select one…</option>
-            <option>Private Home</option>
-            <option>Co-Op</option>
-            <option>Condo</option>
-            <option>Brownstone / Townhouse</option>
-            <option>Multi-Unit Building</option>
-            <option>Commercial</option>
+          <label for="cf-service">Service Needed <span class="req">*</span></label>
+          <select id="cf-service" name="service" required>
+            <option value="" disabled selected>Select a service</option>
+            <option>Bathroom Renovation</option>
+            <option>Kitchen Renovation</option>
+            <option>Painting Services</option>
+            <option>Flooring Installation</option>
+            <option>Carpentry / Millwork</option>
+            <option>Water Damage Restoration</option>
+            <option>Handyman Services</option>
+            <option>Full Gut Renovation</option>
+            <option>Other</option>
           </select>
         </div>
         <div class="cf-field">
-          <label for="cf-sqft">Approx. Sq. Footage</label>
-          <input id="cf-sqft" type="text" name="sqft" placeholder="e.g. 850 sq ft">
-        </div>
-
-        <div class="scope-section">
-          <span class="scope-label">Scope of Work <span class="req">*</span></span>
-          <div class="scope-options">
-            <label><input type="checkbox" name="scope[]" value="Kitchen Renovation"> Kitchen Renovation</label>
-            <label><input type="checkbox" name="scope[]" value="Bathroom Renovation"> Bathroom Renovation</label>
-            <label><input type="checkbox" name="scope[]" value="Painting"> Painting</label>
-            <label><input type="checkbox" name="scope[]" value="Flooring"> Flooring</label>
-            <label><input type="checkbox" name="scope[]" value="Carpentry"> Carpentry & Millwork</label>
-            <label><input type="checkbox" name="scope[]" value="Full Apartment Renovation"> Full Apartment Renovation</label>
-            <label><input type="checkbox" name="scope[]" value="Water Damage Repair"> Water Damage Repair</label>
-            <label><input type="checkbox" name="scope[]" value="Other"> Other</label>
-          </div>
+          <label for="cf-borough">Borough / Area <span class="req">*</span></label>
+          <select id="cf-borough" name="borough" required>
+            <option value="" disabled selected>Select area</option>
+            <option>Brooklyn</option>
+            <option>Manhattan</option>
+            <option>Queens</option>
+            <option>Bronx</option>
+            <option>Long Island</option>
+            <option>Staten Island</option>
+            <option>Other</option>
+          </select>
         </div>
 
         <div class="cf-field full">
-          <label for="cf-budget">Budget (optional)</label>
-          <input id="cf-budget" type="text" name="budget" placeholder="e.g. $20,000">
+          <label for="cf-address">Property Address</label>
+          <input id="cf-address" type="text" name="address" placeholder="123 Main St, Brooklyn, NY">
         </div>
 
         <div class="cf-field full">
-          <label for="cf-details">Project Details (optional)</label>
-          <textarea id="cf-details" name="details" rows="4" placeholder="Tell us more about your project, timeline, or any specific needs…"></textarea>
+          <label for="cf-message">Describe Your Project <span class="req">*</span></label>
+          <textarea id="cf-message" name="message" rows="4" placeholder="Tell us about your project - size, current condition, timeline..." required></textarea>
         </div>
 
-        <div class="cf-success" id="cfSuccess">✓ <strong>Request received!</strong> Thank you — we'll get back to you within 24 hours with your free estimate. For urgent jobs, call <a href="tel:3322770990" style="color:inherit;font-weight:700">332-277-0990</a>.</div>
+        <div class="cf-success" id="cfSuccess">✓ <strong>Request received!</strong> Thank you — we'll get back to you within a few hours with your free estimate. For urgent jobs, call <a href="tel:3322770990" style="color:inherit;font-weight:700">332-277-0990</a>.</div>
         <div class="cf-error" id="cfError">Something went wrong sending your request. Please try again, or call us directly at <a href="tel:3322770990" style="color:inherit;font-weight:700">332-277-0990</a>.</div>
 
         <div class="cf-submit">
@@ -2901,20 +2893,19 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
          submission-created trigger is unreliable on this site — see SEO-LOG.md). */
       try{
         if(!(fd.get('bot-field')||'').trim()){
-          var scope=fd.getAll('scope[]')||[];
           fetch('/.netlify/functions/send-confirmation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-            form:'free-estimate',
-            name:(((fd.get('first_name')||'')+' '+(fd.get('last_name')||'')).trim()),
+            form:'estimate',
+            name:(fd.get('name')||'').trim(),
             email:(fd.get('email')||'').trim(),
             phone:(fd.get('phone')||'').trim(),
-            service:scope.join(', '),
-            area:(fd.get('home_type')||'').trim(),
+            service:(fd.get('service')||'').trim(),
+            area:(fd.get('borough')||'').trim(),
             address:(fd.get('address')||'').trim(),
-            details:(fd.get('details')||'').trim()
+            details:(fd.get('message')||'').trim()
           })}).catch(function(){});
         }
       }catch(_){}
-      form.querySelectorAll('.cf-field,.scope-section,.cf-submit,.cf-hp').forEach(function(el){el.style.display='none';});
+      form.querySelectorAll('.cf-field,.cf-submit,.cf-hp').forEach(function(el){el.style.display='none';});
       if(ok){
         ok.classList.add('show');
         ok.scrollIntoView({behavior:'smooth',block:'center'});
