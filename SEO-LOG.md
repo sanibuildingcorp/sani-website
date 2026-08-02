@@ -29,6 +29,25 @@
 |Pending-commit functions from the Jul queue|✅ ALL NOW COMMITTED|`form-alert.js` v3 (Bot/crawler label + "Why flagged"), `estimate-ai-question.js` v2 (`description` + `photoCount`), `upload-photo.js` v2 (pdf/dwg allowlist + 15 MB cap) — all three verified live in repo, log rows can move off PENDING COMMIT.|
 |`GBP-STATE.md`|❌ **404 — still not committed**|Third session in a row. GBP continuity keeps resetting because this file does not exist in the repo. Commit whenever it is next rebuilt.|
 
+### CONTACT-FORM CONFIRMATION — MISSING, NOW BUILT (Aug 2, from Zura's test)
+
+**Symptom Zura reported:** test submission -> he received two owner emails, the customer received nothing.
+
+**Diagnosis (verified against committed files, not assumed):**
+- `contact.html` = Netlify Form `name="estimate"`; `index.html` = Netlify Form `name="free-estimate"`. Both `data-netlify="true"`, both POST to `/`. **Netlify Forms notifies the site owner only — it has no autoresponder.** No customer-confirmation code existed anywhere for either form. Working as built; the feature was simply never built.
+- The handyman AI wizard is NOT affected: `handyman-submit.js` -> `sendCustomerEmail()` already emails the customer (BCC owner) with a hard guard that throws on a missing/invalid customer address.
+- **The two owner emails** both came from sender `www.sanibuildingcorp.com` = Netlify Forms notifications, one of them mislabeled "Handyman Booking". That is **two notification rules configured in the Netlify UI**, not duplicated code. Fix at Netlify -> Forms -> Form notifications (delete the spare). No repo change.
+
+**Built:** `netlify/functions/submission-created.js` (NEW — verified no equivalent existed). Netlify auto-invokes any function named exactly `submission-created` after every verified form submission, so it needs **no front-end change and no wiring** — commit and it is live for both forms at once.
+- Honeypot guard (`bot-field` filled -> silent no-op); invalid/missing email -> silent no-op.
+- Handles BOTH field shapes: `name` vs `first_name`+`last_name`; `service` vs `scope[]`; `message` vs `details`; `borough` vs `home_type`.
+- Sends from **contact@sanibuildingcorp.com**, `reply_to` contact@, BCC `CONTRACTOR_EMAIL` — navy/gold branded HTML **plus a plain-text part** (deliverability), request summary, "what happens next" 3-step, photo-reply nudge, footer reads **"Fully Insured"** (LICENSE RULE), zero "TV".
+- Logs an outbound row to Supabase `lead_messages` so the confirmation shows on the customer's dashboard timeline — non-fatal.
+- Every failure path returns 200 with a console log, so a Resend or Supabase outage can never make Netlify mark the submission as failed.
+- `node --check` PASS; zero "licensed"; zero "TV"; no sandbox sender.
+
+**Open follow-ups spotted on /contact while verifying (NOT changed — need PRIORITY RULE keyword check first):** contact card still shows `sanibuildingcorp@gmail.com` instead of contact@; trust bar reads "62+ Google Reviews" (site standard is 66); contact-card hours "Mon-Sat 8:00 AM - 9:00 PM" contradict the footer partial (Mon-Fri 8-6 / Sat 8-4 / Sun 8-4) and the `openingHoursSpecification` on index.
+
 **Delivered Aug 2:** `netlify/functions/send-reply.js` **v2** — `from` and `reply_to` switched to `contact@sanibuildingcorp.com` (Resend is domain-verified, so any @sanibuildingcorp.com sender is valid; contact@ is a Workspace alias of info@, so customer replies still land in the one inbox). Auth, HTML template, plain-text part, BCC receipt and `lead_messages` logging unchanged. `node --check` PASS; zero "licensed".
 
 *Note: the live domain returns 403 to datacenter IPs (Cloudflare), so deploy verification in this session was done against the GitHub source of truth, not the live URL.*
