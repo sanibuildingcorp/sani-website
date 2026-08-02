@@ -239,7 +239,10 @@ try{
     })}).catch(function(){});
   }
 }catch(_){}
-form.style.display="none";document.getElementById("successMsg").style.display="block";}catch(err){form.submit();}});}
+form.style.display="none";var sm=document.getElementById("successMsg");sm.style.display="block";
+/* Bring the green confirmation into view — without this the viewport stays
+   where the (now-hidden) tall form was, leaving the message off-screen. */
+sm.scrollIntoView({behavior:"smooth",block:"center"});}catch(err){form.submit();}});}
 </script>
 
 <!-- Footer loaded from partials/footer.html via partials/site.js -->
