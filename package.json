@@ -4,6 +4,7 @@
   "description": "Netlify functions for Sani Building Corp",
   "dependencies": {
     "@netlify/blobs": "^8.1.0",
-    "imapflow": "^1.0.164"
+    "imapflow": "^1.0.164",
+    "mailparser": "^3.7.1"
   }
 }
