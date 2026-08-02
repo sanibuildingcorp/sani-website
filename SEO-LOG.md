@@ -12,6 +12,29 @@
 
 ---
 
+## Aug 2 2026 — DEPLOY VERIFICATION OF THE AUG-1 HANDOFF CHECKLIST
+
+**Every file on the Aug-1 handoff commit checklist was re-fetched from `raw.githubusercontent.com/.../main/` and inspected. Result: 7 of 8 confirmed committed; 1 stale.**
+
+|File|Repo status|Evidence|
+|---|---|---|
+|`dashboard.html` (343,379 B)|✅ COMMITTED|Customers tab present ×8; `inbox-list`, `send-reply`, `x-sbc-key`, `DASHBOARD_KEY` all referenced.|
+|`netlify/functions/inbox-list.js` (7,205 B)|✅ COMMITTED — **v3**|Header dated Jul 30; `velvety-horse-2aa6e3` Cloudflare-bypass base present; merges `list-estimates` + `handyman-get` + `contact-leads` + `lead_messages`; project details (`address`, `urgency`) in timeline.|
+|`netlify/functions/send-reply.js` (4,574 B)|⚠️ **STALE — v1 still deployed**|Header still says Jul 30; sends `from`/`reply_to` **estimates@**, not contact@. The Aug-1 sender change was written into this log (line ~79) but the file itself was never re-committed. **v2 re-delivered Aug 2 — commit it.**|
+|`netlify/functions/handyman-agreement.js` (22,056 B)|✅ COMMITTED|Sender fixed to `contact@` ×4 (no sandbox sender); customer signed-copy email present at the `to: [agreement.customer_email]` block with `bcc: CONTRACTOR_EMAIL`; owner alert also from contact@.|
+|`netlify/functions/handyman-submit.js` (25,460 B)|✅ COMMITTED|`contact@` sender present, `CONTRACTOR_EMAIL` ×2, no `onboarding@resend.dev`.|
+|`agreement.html` (41,599 B)|✅ COMMITTED|Zero occurrences of "hourly rate" (contradictory clause removed); zero "licensed" — LICENSE RULE clean.|
+|`sitemap.xml` (7,572 B)|✅ COMMITTED|40 `<loc>`, all 40 `<lastmod>` = `2026-07-30`. GSC resubmit + Request Indexing still outstanding (human task).|
+|`SEO-LOG.md`|✅ COMMITTED|Contains the Aug-1 email-architecture + agreement-bug sections.|
+|Pending-commit functions from the Jul queue|✅ ALL NOW COMMITTED|`form-alert.js` v3 (Bot/crawler label + "Why flagged"), `estimate-ai-question.js` v2 (`description` + `photoCount`), `upload-photo.js` v2 (pdf/dwg allowlist + 15 MB cap) — all three verified live in repo, log rows can move off PENDING COMMIT.|
+|`GBP-STATE.md`|❌ **404 — still not committed**|Third session in a row. GBP continuity keeps resetting because this file does not exist in the repo. Commit whenever it is next rebuilt.|
+
+**Delivered Aug 2:** `netlify/functions/send-reply.js` **v2** — `from` and `reply_to` switched to `contact@sanibuildingcorp.com` (Resend is domain-verified, so any @sanibuildingcorp.com sender is valid; contact@ is a Workspace alias of info@, so customer replies still land in the one inbox). Auth, HTML template, plain-text part, BCC receipt and `lead_messages` logging unchanged. `node --check` PASS; zero "licensed".
+
+*Note: the live domain returns 403 to datacenter IPs (Cloudflare), so deploy verification in this session was done against the GitHub source of truth, not the live URL.*
+
+---
+
 ## Jul 30 2026 — PERPLEXITY DEEP KEYWORD STRATEGY: VERIFIED + EXECUTION STARTED
 
 **Zura's two Perplexity reports (Master Keyword List + Deep Competitor Strategy) read in full; every pivotal number re-verified against live Semrush before any edit (PRIORITY RULE). Data quality: GOOD — matches Claude's own pulls. Two rule conflicts skipped: "licensed handyman brooklyn" (LICENSE RULE) and "mr handyman" (competitor brand).**
