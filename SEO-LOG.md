@@ -69,6 +69,18 @@
 |Amanda = COMMERCIAL client|NOTE|Gmail (now connected via MCP) shows the full thread: **YUMIKO flagship store, 169 Amsterdam Ave Manhattan** - door repair, $300, same-day crew, agreement wording negotiated. The handyman-manhattan commercial strategy landing its target audience. ⚠ Zura's Gmail signature says **info@sanibuildingcorp.com** - verify that address actually routes (site/Resend use estimates@/contact@); if info@ isn't set up in Cloudflare Email Routing, customer replies to it vanish.|
 |**ZURA SETUP (one-time, 3 steps)**|(1) Netlify -> Site configuration -> Environment variables -> Add **DASHBOARD_KEY** = any strong secret (this is what the dashboard prompts for). (2) Commit dashboard.html to root + inbox-list.js & send-reply.js into netlify/functions/. (3) Purge. NOTE: contact-leads needs NETLIFY_AUTH_TOKEN env (falls back to MY_BLOBS_TOKEN) - if the Website Leads tab already shows leads today, the Customers tab will get them too.|
 
+### EMAIL ARCHITECTURE — RESOLVED END-TO-END (Aug 1 2026)
+**The "mixed emails" problem is structurally fixed. Final architecture:**
+|Piece|State|
+|---|---|
+|Google Workspace user **info@sanibuildingcorp.com** (paid, active)|THE inbox. Primary + aliases **Contact@** + **estimates@** (S verified) + estimate@ (typo-catcher). All site/signature/system addresses now deliver here.|
+|Free Gmail sanibuildingcorp@gmail.com|Forwards -> info@ (confirmed via banner; verification link fetched by Claude from the info@ inbox through the Gmail connector). Keeps copy.|
+|Cloudflare Email Routing|**ABANDONED permanently** - Workspace owns the MX (aspmx.l.google.com stays). Never click "Add missing records". Resend records live correctly on send. subdomain.|
+|Dashboard send-reply|Speaks as **contact@** (Resend domain-verified) -> replies thread into the same Workspace history.|
+|Inbox organization|Labels in BOTH accounts: 👤 Customers + 🔴 Needs Reply (info@). Tagged: RK Best, Paula, Noah, Drew, Frank/Morgan (🔴) + Steve, Daniel, Robert Tan, HFH (👤).|
+|PENDING (2 min)|Netlify env **CONTRACTOR_EMAIL -> info@sanibuildingcorp.com** + trigger deploy, so handyman/tracking alerts land in the one inbox. SPF root record text still unverified (must contain include:_spf.google.com) - check next Cloudflare visit.|
+|UNANSWERED-LEAD TRIAGE (Aug 1)|🔴 RK Best/Kamran (resend proposal AS PDF - asked twice), Paula Renolds (deck, fresh), Noah Wunsch (Manhattan co-op tile - reply "fully insured" per LICENSE RULE), Drew Rolle ($750 scope Q), Frank Navarro (linen closet quote). HFH vendor onboarding = institutional pipeline, nudge if quiet.|
+
 ### Roadmap QUEUED (per reports, reconciled — nothing undoes Jul 27-29 work):
 1. **Handyman-phrasing program** on handyman.html + handyman-manhattan: add "[service] handyman" / "handyman for [task]" wording (drywall handyman 3,600 KD11; sheetrock/faucet/cabinet variants; same-day urgency line). NEXT BATCH.
 2. **Cost-FAQ program** (reports' #1 content lever): map Part-3 question phrasing to pages that have real published prices — "how much does it cost to renovate a bathroom" 2,400/mo, "how long does a bathroom renovation take" 1,000/mo, "how much does a kitchen remodel cost" 4,400/mo, handyman hourly 880/mo, painting per-room 720/mo. Use ONLY prices already published/confirmed by Zura.
