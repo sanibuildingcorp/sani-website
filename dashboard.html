@@ -7465,6 +7465,21 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 /* ═══════════ CUSTOMERS TAB — unified inbox + per-customer history (Jul 30 2026) ═══════════ */
 var custCache = null, custOpenEmail = null, custFilter = '', custView = [], custRestoreFocus = false;
 function sbcKey(){ var k=sessionStorage.getItem('sbcKey'); if(!k){ k=prompt('Dashboard send key (DASHBOARD_KEY):')||''; if(k) sessionStorage.setItem('sbcKey',k); } return k; }
+var custSyncState='';
+async function custSyncInbox(silent){
+  custSyncState = silent ? '' : 'Syncing inbox…';
+  var el=document.getElementById('cust-sync-note'); if(el) el.textContent=custSyncState;
+  try{
+    var r=await fetch('/.netlify/functions/inbox-sync',{method:'POST',headers:{'x-sbc-key':sbcKey()}});
+    var d=await r.json();
+    if(r.ok && d.ok){ custSyncState = d.newMessages>0 ? ('✓ '+d.newMessages+' new email'+(d.newMessages===1?'':'s')+' pulled in') : '✓ Inbox up to date'; }
+    else { custSyncState = d.skipped ? '📮 '+d.skipped : (d.error ? '⚠️ '+String(d.error).slice(0,120) : ''); }
+    if(r.status===401) sessionStorage.removeItem('sbcKey');
+    if(d.newMessages>0){ custCache=null; }
+  }catch(e){ custSyncState='⚠️ Sync failed: '+e.message; }
+  el=document.getElementById('cust-sync-note'); if(el) el.textContent=custSyncState;
+  if(custCache===null) renderCustomersTab();
+}
 async function renderCustomersTab(){
   var host=document.getElementById('list-host');
   if(!custCache){
@@ -7491,7 +7506,8 @@ async function renderCustomersTab(){
   var html='<div style="display:flex;flex-direction:column;gap:10px">'
     +'<div style="display:flex;gap:8px;align-items:center">'
     +'<input id="cust-search" placeholder="🔍 Find a customer — name, email or phone…" value="'+esc(custFilter)+'" oninput="custFilter=this.value;custRestoreFocus=true;renderCustomersTab()" style="flex:1;padding:12px 14px;border:1px solid rgba(13,27,42,0.15);border-radius:12px;font-size:14px;font-family:inherit;box-sizing:border-box;background:#fff">'
-    +'<span style="font-size:12px;color:#7a879b;white-space:nowrap">'+custView.length+' of '+custCache.length+'</span></div>'
+    +'<span style="font-size:12px;color:#7a879b;white-space:nowrap">'+custView.length+' of '+custCache.length+'</span><button class="topbar-btn" style="font-size:11px;padding:6px 10px;white-space:nowrap" onclick="custSyncInbox(false)">📥 Sync inbox</button></div>'
+    +'<div id="cust-sync-note" style="font-size:11px;color:#7a879b;min-height:14px">'+esc(custSyncState||'')+'</div>'
     +(custView.length?'':'<div class="empty" style="padding:30px 0"><div class="empty-icon">🔍</div><h3>No match</h3><p>Try part of a name, email, or phone number.</p></div>');
   custView.forEach(function(c,idx){
     var last=c.timeline&&c.timeline[0];
@@ -7509,6 +7525,7 @@ async function renderCustomersTab(){
   });
   host.innerHTML=html+'</div>';
   if(custRestoreFocus){ var se=document.getElementById('cust-search'); if(se){ se.focus(); se.setSelectionRange(se.value.length,se.value.length); } custRestoreFocus=false; }
+  if(!window.__custSyncedOnce){ window.__custSyncedOnce=true; custSyncInbox(true); }
 }
 function renderCustomerDetail(email){
   var host=document.getElementById('list-host');
@@ -7531,7 +7548,7 @@ function renderCustomerDetail(email){
     +'<h3 style="margin:18px 0 8px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#7a879b">History — every request &amp; message</h3>'
     +'<div style="display:flex;flex-direction:column;gap:8px;padding-bottom:40px">';
   (c.timeline||[]).forEach(function(t){
-    var col=t.kind==='out'?'#96770a':(t.kind==='estimate'?'#2f6db5':(t.kind==='handyman'?'#3d8a4f':'#7a879b'));
+    var col=t.kind==='in'?'#8a2f7d':(t.kind==='out'?'#96770a':(t.kind==='estimate'?'#2f6db5':(t.kind==='handyman'?'#3d8a4f':'#7a879b')));
     html+='<div style="background:#fff;border-left:3px solid '+col+';border-radius:0 10px 10px 0;padding:12px 14px;border-top:1px solid rgba(13,27,42,0.06);border-right:1px solid rgba(13,27,42,0.06);border-bottom:1px solid rgba(13,27,42,0.06)">'
       +'<div style="display:flex;justify-content:space-between;gap:10px"><strong style="font-size:13px">'+esc(t.title||t.kind)+'</strong>'
       +'<span style="font-size:11px;color:#7a879b;white-space:nowrap">'+esc((t.at||'').replace('T',' ').slice(0,16))+'</span></div>'
