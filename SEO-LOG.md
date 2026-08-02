@@ -46,6 +46,20 @@
 - Every failure path returns 200 with a console log, so a Resend or Supabase outage can never make Netlify mark the submission as failed.
 - `node --check` PASS; zero "licensed"; zero "TV"; no sandbox sender.
 
+**TWO-WAY CRM: GMAIL → DASHBOARD SYNC BUILT — Aug 2 (Zura: "I need to see incoming emails in customer conversations").**
+
+Architecture (chosen for zero-OAuth simplicity on Zura's side): **IMAP with a Google App Password**, not the Gmail API.
+- **netlify/functions/inbox-sync.js (NEW):** connects to imap.gmail.com as GMAIL_USER, scans INBOX (last 14 days, newest 60/run, 8s internal budget so a partial sync just continues next call), and files messages **from known customers only** into lead_messages with direction="in". Known customer = email present in lead_messages (every form submitter is, via confirmation logs) ∪ bookings.customer_email — this filter is the spam wall (Verizon/Google invoices never enter the CRM). Quoted history and ">"-lines stripped so timelines show just the reply. Dedupe via new `lead_messages.message_id` column + partial unique index (migration applied live via Supabase MCP) with PostgREST `on_conflict=message_id` + ignore-duplicates — resync can never duplicate. Auth: POST with x-sbc-key=DASHBOARD_KEY; GET ?ping=1 diagnostics. If Gmail creds not yet set, returns a friendly "not set" note instead of erroring.
+- **package.json:** + `imapflow` dependency.
+- **inbox-list.js v4:** lead_messages mapping is now direction-aware — direction=in renders kind "in" / "📩 Customer: subj" / source chip "emailed"; DEBUG breadcrumb rows excluded from timelines.
+- **dashboard.html:** timeline color for inbound (purple #8a2f7d); "📥 Sync inbox" button beside the search bar with a status note ("✓ 2 new emails pulled in" / "✓ Inbox up to date" / setup hint); auto-sync fires once per dashboard session when Customers opens, and a sync that finds new mail auto-refreshes the list. div-delta still −2 baseline, all inline scripts node --check pass.
+
+**Zura's one-time setup (required before first sync):**
+1. myaccount.google.com → Security → 2-Step Verification (must be ON for info@sanibuildingcorp.com).
+2. myaccount.google.com/apppasswords → create app password "Sani Dashboard" → copy the 16 characters.
+3. Netlify → velvety-horse-2aa6e3 → Environment variables → add `GMAIL_USER` = info@sanibuildingcorp.com and `GMAIL_APP_PASSWORD` = the 16 chars (functions scope) → **Trigger deploy** (env changes need a redeploy).
+Commit: inbox-sync.js + inbox-list.js + package.json to netlify/functions/… (package.json to ROOT), dashboard.html to root.
+
 **DASHBOARD CONSOLIDATION — Aug 2 (Zura: "which of the two to keep, make it more powerful").** Decision: KEEP the Customers unified inbox (inbox-list.js v3 already merges estimates + handyman + website leads + sent messages per person); RETIRE the duplicate Leads tab. Surgical edits to dashboard.html (all three lists kept in sync per standing rule): "📥 Leads" removed from desktop TABS, from mobile SBC_TABS drawer, and from validTabs; renderLeadsTab left in place but unreachable (harmless, minimal diff). Customers upgrades: (1) live **search box** — filters by name, email, or phone (digits-only matching for phone), shows "N of M", keeps keyboard focus while typing, no-match empty state; (2) card open now uses the filtered view; (3) composer note corrected to "sent from contact@sanibuildingcorp.com" (send-reply v2 sender). Validation: div-delta unchanged at the known −2 baseline, all inline scripts node --check pass (0 fails before and after), zero "licensed". Commit dashboard.html to root; no function changes needed. NOTE for next build: replies customers send land in the Gmail inbox, not yet inside the dashboard thread — that's the queued "Inbound Gmail → dashboard sync" project, unchanged.
 
 **CRITICAL FIX + FORM RENAME — Aug 2 (evening):**
