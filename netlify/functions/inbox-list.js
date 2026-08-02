@@ -122,6 +122,7 @@ exports.handler = async function (event) {
       detail: m.body || "",
       ref: "",
       at: m.created_at || "",
+      mid: inbound ? (m.message_id || "") : "",
     });
   }
 
