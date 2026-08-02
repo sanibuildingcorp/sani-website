@@ -4,7 +4,8 @@
 //   • Renovation estimates  (Netlify Blobs, via sibling list-estimates)
 //   • Handyman bookings     (Supabase,      via sibling handyman-get)
 //   • Website contact leads (Netlify Forms, via sibling contact-leads)
-//   • Outbound messages     (Supabase table lead_messages — written by send-reply)
+//   • Outbound messages     (Supabase lead_messages, direction=out — send-reply & confirmations)
+//   • Inbound customer email (Supabase lead_messages, direction=in  — written by inbox-sync)
 // GET → { customers: [ { email, name, phone, sources[], lastActivity, timeline[] } ] }
 // Read-only. Sources that fail are skipped, never fatal.
 
@@ -109,12 +110,15 @@ exports.handler = async function (event) {
     });
   }
 
-  // ── Outbound messages (dashboard replies) ──
+  // ── Messages (dashboard replies OUT + synced customer emails IN) ──
   for (const m of (Array.isArray(outMsgs) ? outMsgs : []) ) {
-    const c = touch(m.lead_email, m.lead_name, "");
-    add(c, "replied", {
-      kind: "out",
-      title: "📧 You: " + (m.subject || "message"),
+    if (m.lead_name === "DEBUG") continue;                  // breadcrumb rows, not conversation
+    const inbound = m.direction === "in";
+    const c = touch(m.lead_email, inbound ? m.lead_name : "", "");
+    if (!inbound && m.lead_name && c && !c.name) c.name = m.lead_name;
+    add(c, inbound ? "emailed" : "replied", {
+      kind: inbound ? "in" : "out",
+      title: (inbound ? "📩 Customer: " : "📧 You: ") + (m.subject || "message"),
       detail: m.body || "",
       ref: "",
       at: m.created_at || "",
