@@ -7464,13 +7464,13 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 <script>
 /* ═══════════ CUSTOMERS TAB — unified inbox + per-customer history (Jul 30 2026) ═══════════ */
 var custCache = null, custOpenEmail = null, custFilter = '', custView = [], custRestoreFocus = false;
-function sbcKey(){ var k=localStorage.getItem('sbcKey')||sessionStorage.getItem('sbcKey'); if(!k){ k=prompt('Dashboard send key (DASHBOARD_KEY) — asked once, remembered on this device:')||''; if(k) localStorage.setItem('sbcKey',k); } return k; }
+function sbcKey(){ return localStorage.getItem('sbcKey')||sessionStorage.getItem('sbcKey')||''; }
 var custSyncState='';
 async function custSyncInbox(silent){
   custSyncState = silent ? '' : 'Syncing inbox…';
   var el=document.getElementById('cust-sync-note'); if(el) el.textContent=custSyncState;
   try{
-    var r=await fetch('/.netlify/functions/inbox-sync',{method:'POST',headers:{'x-sbc-key':sbcKey()}});
+    var r=await fetch('/.netlify/functions/inbox-sync',{method:'POST'});
     var d=await r.json();
     if(r.ok && d.ok){
       custSyncState = (d.newMessages>0 ? ('✓ '+d.newMessages+' new email'+(d.newMessages===1?'':'s')+' pulled in') : '✓ Inbox up to date')
@@ -7545,6 +7545,9 @@ function renderCustomerDetail(email){
     +'<h3 style="margin:0 0 10px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#7a879b">Send a message</h3>'
     +'<input id="cust-subj" placeholder="Subject" value="Sani Building Corp — about your request" style="width:100%;padding:11px 12px;border:1px solid rgba(13,27,42,0.15);border-radius:10px;font-size:14px;margin-bottom:8px;font-family:inherit;box-sizing:border-box">'
     +'<textarea id="cust-body" rows="5" placeholder="Write to '+esc(c.name||'the customer')+'… (sent from contact@sanibuildingcorp.com — a copy lands in your inbox)" style="width:100%;padding:11px 12px;border:1px solid rgba(13,27,42,0.15);border-radius:10px;font-size:14px;font-family:inherit;box-sizing:border-box"></textarea>'
+    +'<div id="cust-key-row" style="display:'+(sbcKey()?'none':'flex')+';gap:8px;margin-top:8px;align-items:center">'
+    +'<input id="cust-key-input" type="password" placeholder="🔑 Send key — enter once, remembered on this device" style="flex:1;padding:10px 12px;border:1px solid rgba(184,147,10,0.5);border-radius:10px;font-size:13px;font-family:inherit;box-sizing:border-box;background:#fffdf5">'
+    +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:8px;align-items:center">'
     +'<button class="topbar-btn" id="cust-send-btn" onclick="custSend(custOpenEmail)">Send email</button>'
     +'<span id="cust-send-msg" style="font-size:12px;color:#7a879b"></span></div>'
@@ -7568,14 +7571,25 @@ async function custSend(email){
   var msg=document.getElementById('cust-send-msg');
   var btn=document.getElementById('cust-send-btn');
   if(!body){ msg.textContent='Write a message first.'; return; }
+  var key=sbcKey();
+  var keyRow=document.getElementById('cust-key-row'), keyInput=document.getElementById('cust-key-input');
+  if(!key){
+    key=(keyInput&&keyInput.value||'').trim();
+    if(!key){ if(keyRow)keyRow.style.display='flex'; msg.textContent='🔑 Enter the send key above (one time).'; return; }
+  }
   btn.disabled=true; msg.textContent='Sending…';
   try{
     var c=(custCache||[]).find(function(x){return x.email===email;})||{};
     var r=await fetch('/.netlify/functions/send-reply',{method:'POST',
-      headers:{'Content-Type':'application/json','x-sbc-key':sbcKey()},
+      headers:{'Content-Type':'application/json','x-sbc-key':key},
       body:JSON.stringify({email:email,name:c.name||'',subject:subj,body:body})});
     var data=await r.json();
-    if(!r.ok){ if(r.status===401) sessionStorage.removeItem('sbcKey');localStorage.removeItem('sbcKey'); throw new Error(data.error||'Send failed'); }
+    if(!r.ok){
+      if(r.status===401){ sessionStorage.removeItem('sbcKey');localStorage.removeItem('sbcKey'); if(keyRow)keyRow.style.display='flex'; msg.textContent='🔑 Key not accepted — check it and try again.'; btn.disabled=false; return; }
+      throw new Error(data.error||'Send failed');
+    }
+    localStorage.setItem('sbcKey',key);
+    if(keyRow)keyRow.style.display='none';
     msg.textContent='✓ Sent & saved to history';
     c.timeline=c.timeline||[];
     c.timeline.unshift({kind:'out',title:'📧 You: '+subj,detail:body,at:new Date().toISOString()});
