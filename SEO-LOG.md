@@ -81,6 +81,21 @@
 |PENDING (2 min)|Netlify env **CONTRACTOR_EMAIL -> info@sanibuildingcorp.com** + trigger deploy, so handyman/tracking alerts land in the one inbox. SPF root record text still unverified (must contain include:_spf.google.com) - check next Cloudflare visit.|
 |UNANSWERED-LEAD TRIAGE (Aug 1)|🔴 RK Best/Kamran (resend proposal AS PDF - asked twice), Paula Renolds (deck, fresh), Noah Wunsch (Manhattan co-op tile - reply "fully insured" per LICENSE RULE), Drew Rolle ($750 scope Q), Frank Navarro (linen closet quote). HFH vendor onboarding = institutional pipeline, nudge if quiet.|
 
+### AGREEMENT EMAIL BUGS — FOUND BY ZURA'S TEST, FIXED (Aug 1)
+Zura signed + requested changes on a test agreement (SBC-H-260714-3G4W): **no email arrived to him — and the customer copy never existed.**
+|Bug|Cause|Fix|
+|---|---|---|
+|Owner notifications dead|handyman-agreement.js + handyman-submit.js sent from **onboarding@resend.dev** (Resend sandbox = only delivers to the Resend account owner's address). Worked while CONTRACTOR_EMAIL=@gmail; **broke the moment it was switched to info@** per the new architecture.|Both functions now send from **contact@sanibuildingcorp.com** (domain-verified) — works to any recipient.|
+|"A copy has been sent to your email" was FALSE|No customer send existed in the code at all - every signing customer was promised a copy that never came.|On sign, customer now receives a branded signed-confirmation (ref, service, appointment; BCC contractor; reply-to contact@). Non-fatal try/catch so signing can never break on email failure.|
+**COMMIT: netlify/functions/handyman-agreement.js + handyman-submit.js** -> redeploy -> re-run the sign test; expect: owner alert at info@ + customer copy + BCC receipt.
+
+### AGREEMENT TERMS — BASIC VERSION (Zura request, Aug 1)
+|Item|Detail|
+|---|---|
+|agreement.html terms rewritten|**"Hourly Rate Work" REMOVED** - it contradicted the "$300 Fixed price - no surprises" box on the same page. New basic 6-term set, all fixed-price consistent: Fixed Price (labor+standard materials included) - Scope Changes (approval BEFORE extra work) - 24h Cancellation - Payment on completion - 30-Day Warranty - Access. Customer-friendly plain language. Validated: tags balanced, zero licensed/TV.|
+|Original archived|Delivered as **agreement-ORIGINAL-backup.html** - Zura keeps it in Drive/locally, does NOT commit it (as a live page it would need robots blocking). Git history also preserves every prior version of agreement.html permanently - nothing is ever lost.|
+|COMMIT|agreement.html only.|
+
 ### Roadmap QUEUED (per reports, reconciled — nothing undoes Jul 27-29 work):
 1. **Handyman-phrasing program** on handyman.html + handyman-manhattan: add "[service] handyman" / "handyman for [task]" wording (drywall handyman 3,600 KD11; sheetrock/faucet/cabinet variants; same-day urgency line). NEXT BATCH.
 2. **Cost-FAQ program** (reports' #1 content lever): map Part-3 question phrasing to pages that have real published prices — "how much does it cost to renovate a bathroom" 2,400/mo, "how long does a bathroom renovation take" 1,000/mo, "how much does a kitchen remodel cost" 4,400/mo, handyman hourly 880/mo, painting per-room 720/mo. Use ONLY prices already published/confirmed by Zura.
