@@ -2672,7 +2672,6 @@ const TABS = [
   { id: "paid", label: "Paid" },
   { id: "completed", label: "Completed" },
   { id: "declined", label: "Declined" },
-  { id: "leads", label: "📥 Leads" },
   { id: "handyman", label: "🔧 Handyman" },
   { id: "customers", label: "👤 Customers" },
   { id: "visits", label: "📅 Visits" },
@@ -5865,7 +5864,7 @@ window.addEventListener('appinstalled', function() {
 window.addEventListener('load', function() {
   if (location.hash) {
     var tabId = location.hash.replace('#', '');
-    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','completed','declined','leads','handyman','seo','content','images','keywords','visitors'];
+    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','completed','declined','handyman','seo','content','images','keywords','visitors'];
     if (validTabs.includes(tabId)) {
       activeTab = tabId;
     }
@@ -5925,7 +5924,6 @@ var SBC_TABS = [
   {id:'paid',     icon:'💰', label:'Paid'},
   {id:'completed',icon:'🏁', label:'Completed'},
   {id:'declined', icon:'❌', label:'Declined'},
-  {id:'leads',    icon:'📥', label:'Website Leads'},
   null,
   {id:'handyman', icon:'🔧', label:'Handyman'},
   {id:'customers', icon:'👤', label:'Customers'},
@@ -7465,7 +7463,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 
 <script>
 /* ═══════════ CUSTOMERS TAB — unified inbox + per-customer history (Jul 30 2026) ═══════════ */
-var custCache = null, custOpenEmail = null;
+var custCache = null, custOpenEmail = null, custFilter = '', custView = [], custRestoreFocus = false;
 function sbcKey(){ var k=sessionStorage.getItem('sbcKey'); if(!k){ k=prompt('Dashboard send key (DASHBOARD_KEY):')||''; if(k) sessionStorage.setItem('sbcKey',k); } return k; }
 async function renderCustomersTab(){
   var host=document.getElementById('list-host');
@@ -7484,10 +7482,20 @@ async function renderCustomersTab(){
   if(activeTab!=='customers') return;
   if(custOpenEmail){ renderCustomerDetail(custOpenEmail); return; }
   if(!custCache.length){ host.innerHTML='<div class="empty"><div class="empty-icon">👤</div><h3>No customers yet</h3><p>Estimates, handyman bookings and website leads all appear here automatically.</p></div>'; return; }
-  var html='<div style="display:flex;flex-direction:column;gap:10px">';
-  custCache.forEach(function(c,idx){
+  var q=(custFilter||'').toLowerCase().trim();
+  custView = q ? custCache.filter(function(c){
+    return String(c.name||'').toLowerCase().indexOf(q)>-1
+        || String(c.email||'').toLowerCase().indexOf(q)>-1
+        || String(c.phone||'').replace(/[^0-9]/g,'').indexOf(q.replace(/[^0-9]/g,'')||'\u0000')>-1;
+  }) : custCache;
+  var html='<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +'<input id="cust-search" placeholder="🔍 Find a customer — name, email or phone…" value="'+esc(custFilter)+'" oninput="custFilter=this.value;custRestoreFocus=true;renderCustomersTab()" style="flex:1;padding:12px 14px;border:1px solid rgba(13,27,42,0.15);border-radius:12px;font-size:14px;font-family:inherit;box-sizing:border-box;background:#fff">'
+    +'<span style="font-size:12px;color:#7a879b;white-space:nowrap">'+custView.length+' of '+custCache.length+'</span></div>'
+    +(custView.length?'':'<div class="empty" style="padding:30px 0"><div class="empty-icon">🔍</div><h3>No match</h3><p>Try part of a name, email, or phone number.</p></div>');
+  custView.forEach(function(c,idx){
     var last=c.timeline&&c.timeline[0];
-    html+='<div onclick="custOpenEmail=custCache['+idx+'].email;renderCustomersTab()" style="background:#fff;border:1px solid rgba(13,27,42,0.1);border-radius:12px;padding:14px 16px;cursor:pointer">'
+    html+='<div onclick="custOpenEmail=custView['+idx+'].email;renderCustomersTab()" style="background:#fff;border:1px solid rgba(13,27,42,0.1);border-radius:12px;padding:14px 16px;cursor:pointer">'
       +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">'
       +'<strong style="font-size:15px">'+esc(c.name||c.email)+'</strong>'
       +'<span style="font-size:11px;color:#7a879b">'+esc((c.lastActivity||'').slice(0,10))+'</span></div>'
@@ -7500,6 +7508,7 @@ async function renderCustomersTab(){
       +'</div>';
   });
   host.innerHTML=html+'</div>';
+  if(custRestoreFocus){ var se=document.getElementById('cust-search'); if(se){ se.focus(); se.setSelectionRange(se.value.length,se.value.length); } custRestoreFocus=false; }
 }
 function renderCustomerDetail(email){
   var host=document.getElementById('list-host');
@@ -7514,7 +7523,7 @@ function renderCustomerDetail(email){
     +'<div style="background:#fff;border:1px solid rgba(13,27,42,0.1);border-radius:14px;padding:18px;margin-top:12px">'
     +'<h3 style="margin:0 0 10px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#7a879b">Send a message</h3>'
     +'<input id="cust-subj" placeholder="Subject" value="Sani Building Corp — about your request" style="width:100%;padding:11px 12px;border:1px solid rgba(13,27,42,0.15);border-radius:10px;font-size:14px;margin-bottom:8px;font-family:inherit;box-sizing:border-box">'
-    +'<textarea id="cust-body" rows="5" placeholder="Write to '+esc(c.name||'the customer')+'… (sent from estimates@sanibuildingcorp.com, a copy lands in your Gmail)" style="width:100%;padding:11px 12px;border:1px solid rgba(13,27,42,0.15);border-radius:10px;font-size:14px;font-family:inherit;box-sizing:border-box"></textarea>'
+    +'<textarea id="cust-body" rows="5" placeholder="Write to '+esc(c.name||'the customer')+'… (sent from contact@sanibuildingcorp.com — a copy lands in your inbox)" style="width:100%;padding:11px 12px;border:1px solid rgba(13,27,42,0.15);border-radius:10px;font-size:14px;font-family:inherit;box-sizing:border-box"></textarea>'
     +'<div style="display:flex;gap:8px;margin-top:8px;align-items:center">'
     +'<button class="topbar-btn" id="cust-send-btn" onclick="custSend(custOpenEmail)">Send email</button>'
     +'<span id="cust-send-msg" style="font-size:12px;color:#7a879b"></span></div>'
