@@ -7552,18 +7552,69 @@ function renderCustomerDetail(email){
     +'<button class="topbar-btn" id="cust-send-btn" onclick="custSend(custOpenEmail)">Send email</button>'
     +'<span id="cust-send-msg" style="font-size:12px;color:#7a879b"></span></div>'
     +'</div>'
-    +'<h3 style="margin:18px 0 8px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#7a879b">History — every request &amp; message</h3>'
-    +'<div style="display:flex;flex-direction:column;gap:8px;padding-bottom:40px">';
+    +'<h3 style="margin:18px 0 8px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#7a879b">Conversations — grouped by request</h3>'
+    +'<div style="display:flex;flex-direction:column;gap:14px;padding-bottom:40px">';
+
+  /* ── Thread the timeline: everything sharing an SBC request number lives in one box ── */
+  function refOf(t){
+    if(t.ref) return String(t.ref);
+    var m=String(t.title||'').match(/SBC[-A-Z0-9]{6,}/i);
+    return m?m[0].toUpperCase():'';
+  }
+  var groups={}, order=[];
   (c.timeline||[]).forEach(function(t){
-    var col=t.kind==='in'?'#8a2f7d':(t.kind==='out'?'#96770a':(t.kind==='estimate'?'#2f6db5':(t.kind==='handyman'?'#3d8a4f':'#7a879b')));
-    html+='<div style="background:#fff;border-left:3px solid '+col+';border-radius:0 10px 10px 0;padding:12px 14px;border-top:1px solid rgba(13,27,42,0.06);border-right:1px solid rgba(13,27,42,0.06);border-bottom:1px solid rgba(13,27,42,0.06)">'
-      +'<div style="display:flex;justify-content:space-between;gap:10px"><strong style="font-size:13px">'+esc(t.title||t.kind)+'</strong>'
-      +'<span style="font-size:11px;color:#7a879b;white-space:nowrap">'+esc((t.at||'').replace('T',' ').slice(0,16))+'</span></div>'
-      +(t.detail?'<div style="font-size:12px;color:#44536a;margin-top:5px;white-space:pre-wrap">'+esc(String(t.detail).slice(0,600))+'</div>':'')
-      +(t.ref?'<div style="font-size:11px;color:#7a879b;margin-top:4px">'+esc(t.ref)+'</div>':'')
-      +'</div>';
+    var k=refOf(t)||'_general';
+    if(!groups[k]){ groups[k]={items:[],head:null,last:t.at||''}; order.push(k); }
+    groups[k].items.push(t);
+    if(t.kind!=='in'&&t.kind!=='out'&&!groups[k].head) groups[k].head=t;   // the request itself
+    if((t.at||'')>groups[k].last) groups[k].last=t.at||'';
+  });
+  order.sort(function(a,b){ return groups[b].last<groups[a].last?-1:1; });
+
+  order.forEach(function(k){
+    var g=groups[k];
+    var head=g.head;
+    var gTitle=head?(head.title||'Request'):'💬 General conversation';
+    var gRef=(k==='_general')?'':k;
+    var msgs=g.items.filter(function(t){return t.kind==='in'||t.kind==='out';});
+    html+='<div style="background:#fbfaf7;border:1px solid rgba(13,27,42,0.12);border-radius:14px;padding:12px 12px 10px">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">'
+      +'<div style="min-width:0"><strong style="font-size:13.5px">'+esc(gTitle)+'</strong>'
+      +(gRef?'<div style="font-size:11px;color:#7a879b;margin-top:2px">'+esc(gRef)+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:8px;align-items:center">'
+      +(head&&head.at?'<span style="font-size:11px;color:#7a879b;white-space:nowrap">'+esc((head.at||'').replace('T',' ').slice(0,16))+'</span>':'')
+      +'<button class="topbar-btn" style="font-size:11px;padding:5px 10px;white-space:nowrap" onclick="custReplyAbout(\''+esc(gRef)+'\',\''+esc(String(gTitle).replace(/[\'\"\\]/g,'').slice(0,60))+'\')">↩ Reply about this</button>'
+      +'</div></div>'
+      +(head&&head.detail?'<div style="font-size:12px;color:#44536a;margin-top:6px;white-space:pre-wrap">'+esc(String(head.detail).slice(0,600))+'</div>':'');
+    if(msgs.length){
+      html+='<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">';
+      msgs.forEach(function(t){
+        var col=t.kind==='in'?'#8a2f7d':'#96770a';
+        html+='<div style="background:#fff;border-left:3px solid '+col+';border-radius:0 10px 10px 0;padding:10px 12px;border-top:1px solid rgba(13,27,42,0.06);border-right:1px solid rgba(13,27,42,0.06);border-bottom:1px solid rgba(13,27,42,0.06)">'
+          +'<div style="display:flex;justify-content:space-between;gap:10px"><strong style="font-size:12.5px">'+esc(t.title||t.kind)+'</strong>'
+          +'<span style="font-size:11px;color:#7a879b;white-space:nowrap">'+esc((t.at||'').replace('T',' ').slice(0,16))+'</span></div>'
+          +(t.detail?'<div style="font-size:12px;color:#44536a;margin-top:4px;white-space:pre-wrap">'+esc(String(t.detail).slice(0,600))+'</div>':'')
+          +'</div>';
+      });
+      html+='</div>';
+    }
+    /* non-message extras that share the ref (e.g. agreement events) */
+    g.items.filter(function(t){return t!==head&&t.kind!=='in'&&t.kind!=='out';}).forEach(function(t){
+      html+='<div style="font-size:11.5px;color:#7a879b;margin-top:8px">• '+esc(t.title||t.kind)+' · '+esc((t.at||'').replace('T',' ').slice(0,16))+'</div>';
+    });
+    html+='</div>';
   });
   host.innerHTML=html+'</div></div>';
+  if(window.__custPendingSubj){ var sj=document.getElementById('cust-subj'); if(sj) sj.value=window.__custPendingSubj; window.__custPendingSubj=null; }
+}
+function custReplyAbout(ref,title){
+  var sj=document.getElementById('cust-subj'), bd=document.getElementById('cust-body');
+  var subject='Sani Building Corp — '+(title||'your request')+(ref?' · '+ref:'');
+  if(sj){ sj.value=subject; }
+  if(bd){ bd.focus(); }
+  var comp=sj&&sj.closest?sj.closest('div'):null;
+  try{ (comp||sj).scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
 }
 async function custSend(email){
   var body=document.getElementById('cust-body').value.trim();
