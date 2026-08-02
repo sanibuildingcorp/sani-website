@@ -1,82 +1,177 @@
 // netlify/functions/submission-created.js
-// CUSTOMER CONFIRMATION FOR NETLIFY FORMS (NEW — Aug 2 2026)
+// CUSTOMER CONFIRMATION FOR NETLIFY FORMS — v2 (Aug 2 2026)
 //
-// WHY THIS EXISTS: contact.html (form "estimate") and index.html (form "free-estimate")
-// are plain Netlify Forms. Netlify emails the OWNER a notification but has no
-// autoresponder — so until now the customer received nothing after submitting.
-// The handyman AI wizard already sends its own confirmation (handyman-submit.js);
-// this function covers the two plain forms only.
+// v2 changes vs v1:
+//   • Resend send switched from global fetch() to https.request() — the exact pattern
+//     used by handyman-submit.js and handyman-agreement.js, which are proven to deliver.
+//   • Added TWO browser-openable diagnostic endpoints (see below) so a silent failure
+//     can never happen again — same trick that debugged form-alert.js.
+//   • Errors now surface in the response body instead of only in the function log.
 //
-// HOW IT FIRES: Netlify automatically invokes a function named exactly
-// "submission-created" after every verified form submission. No front-end change,
-// no wiring — commit the file into netlify/functions/ and it is live.
+// HOW IT FIRES NORMALLY: Netlify automatically invokes a function named exactly
+// "submission-created" after every verified Netlify Forms submission. Covers both
+// contact.html (form "estimate") and index.html (form "free-estimate").
+// The handyman AI wizard sends its own confirmation and is untouched by this.
 //
-// WHAT IT DOES:
-//   1. Reads the submission payload and extracts the customer's name/email/details
-//      (handles BOTH form field shapes).
-//   2. Emails the customer a branded confirmation from contact@sanibuildingcorp.com
-//      (Resend, domain-verified), BCC to CONTRACTOR_EMAIL so you keep a receipt.
-//   3. Logs it to Supabase lead_messages so it appears in that customer's dashboard
-//      timeline (non-fatal — the email has already gone if this step fails).
-//
-// Verified before writing: no submission-created.js existed in netlify/functions/.
+// DIAGNOSTICS (open in any browser, no form needed):
+//   1) /.netlify/functions/submission-created?ping=1
+//      -> JSON: is the function deployed, is RESEND_API_KEY visible, what Node version,
+//         is CONTRACTOR_EMAIL set. If this 404s, the function is not deployed.
+//   2) /.netlify/functions/submission-created?test=1&email=YOUR@EMAIL.COM
+//      -> Sends a real sample confirmation to that address and returns Resend's
+//         actual response. If this delivers but real submissions do not, the problem
+//         is the Netlify Forms trigger, not this code or Resend.
+
+const https = require("https");
 
 exports.handler = async function (event) {
+  const q = event.queryStringParameters || {};
+
+  // ── DIAGNOSTIC 1: is this thing even deployed? ──
+  if (q.ping === "1") {
+    return json(200, {
+      ok: true,
+      function: "submission-created",
+      version: "v2 Aug 2 2026",
+      node: process.version,
+      hasResendKey: !!process.env.RESEND_API_KEY,
+      contractorEmail: process.env.CONTRACTOR_EMAIL || "(not set — will fall back)",
+      hasSupabase: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY),
+    });
+  }
+
+  // ── DIAGNOSTIC 2: send a real sample confirmation, bypassing the form trigger ──
+  if (q.test === "1") {
+    const to = String(q.email || "").trim();
+    if (!validEmail(to)) return json(400, { error: "Add &email=you@example.com to the URL" });
+    const r = await sendConfirmation({
+      email: to,
+      fullName: "Test Customer",
+      service: "Bathroom Renovation",
+      area: "Brooklyn",
+      address: "2954 Brighton 12th Street, Brooklyn NY",
+      phone: "(332) 277-0990",
+      details: "This is a test of the automatic customer confirmation email.",
+      formName: "manual-test",
+    });
+    return json(r.ok ? 200 : 502, {
+      sentTo: to,
+      resendStatus: r.status,
+      resendResponse: String(r.body || "").slice(0, 500),
+      note: r.ok
+        ? "Accepted by Resend. If it does not arrive, check spam and the Resend dashboard."
+        : "Resend rejected it — the message above is the reason.",
+    });
+  }
+
+  // ── NORMAL PATH: fired by Netlify after a form submission ──
   let payload;
   try {
     payload = (JSON.parse(event.body || "{}") || {}).payload || {};
   } catch {
-    return { statusCode: 200, body: "bad json — ignored" };
+    return json(200, { skipped: "unparseable body" });
   }
 
   const data = payload.data || {};
   const formName = payload.form_name || data["form-name"] || "form";
 
-  // Honeypot filled = bot. Say nothing, send nothing.
   if (String(data["bot-field"] || "").trim()) {
-    return { statusCode: 200, body: "honeypot — ignored" };
+    return json(200, { skipped: "honeypot filled", form: formName });
   }
 
   const email = String(data.email || payload.email || "").trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { statusCode: 200, body: "no valid customer email — nothing sent" };
+  if (!validEmail(email)) {
+    return json(200, { skipped: "no valid customer email", form: formName });
   }
 
   // contact.html uses "name"; index.html uses first_name + last_name.
   const fullName =
     String(data.name || payload.name || "").trim() ||
     [data.first_name, data.last_name].filter(Boolean).join(" ").trim();
-  const firstName = (fullName || "there").split(" ")[0];
 
   // contact.html: service / message / borough. index.html: scope[] / details / home_type.
   const scope = data["scope[]"];
   const service =
     String(data.service || "").trim() ||
     (Array.isArray(scope) ? scope.join(", ") : String(scope || "").trim());
-  const details = String(data.message || data.details || "").trim();
-  const address = String(data.address || "").trim();
-  const area = String(data.borough || data.home_type || "").trim();
-  const phone = String(data.phone || "").trim();
 
+  const r = await sendConfirmation({
+    email: email,
+    fullName: fullName,
+    service: service,
+    area: String(data.borough || data.home_type || "").trim(),
+    address: String(data.address || "").trim(),
+    phone: String(data.phone || "").trim(),
+    details: String(data.message || data.details || "").trim(),
+    formName: formName,
+  });
+
+  if (!r.ok) {
+    console.log("submission-created: Resend failed", r.status, String(r.body).slice(0, 300));
+    return json(200, { sent: false, resendStatus: r.status, reason: String(r.body).slice(0, 300) });
+  }
+
+  // Log to the dashboard timeline — never fatal, the email is already out.
+  let logged = true;
+  try {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SECRET_KEY;
+    if (url && key) {
+      const res = await fetch(url + "/rest/v1/lead_messages", {
+        method: "POST",
+        headers: {
+          apikey: key,
+          Authorization: "Bearer " + key,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          lead_email: email,
+          lead_name: fullName || null,
+          direction: "out",
+          subject: "Request Received - Sani Building Corp",
+          body: "Auto-confirmation sent for " + formName + " submission.",
+        }),
+      });
+      if (!res.ok) logged = false;
+    } else {
+      logged = false;
+    }
+  } catch {
+    logged = false;
+  }
+
+  return json(200, { sent: true, to: email, form: formName, logged: logged });
+};
+
+// ════════════════════════════════════════════════════════════════════
+// Build + send the confirmation. Uses https.request — same proven path
+// as handyman-submit.js / handyman-agreement.js.
+// ════════════════════════════════════════════════════════════════════
+async function sendConfirmation(o) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { ok: false, status: 0, body: "RESEND_API_KEY not set in Netlify env" };
+
+  const firstName = (o.fullName || "there").split(" ")[0];
   const rows = [
-    service && ["Service", service],
-    area && ["Property / Area", area],
-    address && ["Address", address],
-    phone && ["Phone", phone],
+    o.service && ["Service", o.service],
+    o.area && ["Property / Area", o.area],
+    o.address && ["Address", o.address],
+    o.phone && ["Phone", o.phone],
   ].filter(Boolean);
 
   const summary = rows.length
     ? '<div style="background:#faf8f4;border-radius:10px;padding:18px;margin:20px 0">' +
       '<div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:10px">Your Request</div>' +
       '<div style="font-size:14px;color:#333;line-height:1.9">' +
-      rows.map((r) => "<strong>" + esc(r[0]) + ":</strong> " + esc(r[1])).join("<br>") +
+      rows.map(function (r) { return "<strong>" + esc(r[0]) + ":</strong> " + esc(r[1]); }).join("<br>") +
       "</div></div>"
     : "";
 
-  const notes = details
+  const notes = o.details
     ? '<div style="background:#fff8e8;border:1px solid #c9a84c;border-radius:8px;padding:14px 16px;margin:20px 0">' +
       '<div style="font-size:11px;color:#b8930a;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">What You Told Us</div>' +
-      '<div style="font-size:14px;color:#444;line-height:1.6;white-space:pre-wrap">' + esc(details) + "</div></div>"
+      '<div style="font-size:14px;color:#444;line-height:1.6;white-space:pre-wrap">' + esc(o.details) + "</div></div>"
     : "";
 
   const html =
@@ -105,71 +200,67 @@ exports.handler = async function (event) {
   const text =
     "Hi " + firstName + ",\n\n" +
     "Thanks for reaching out to Sani Building Corp. Your request has landed with us and a real person from our Brooklyn office will get back to you within a few hours.\n\n" +
-    (rows.length ? rows.map((r) => r[0] + ": " + r[1]).join("\n") + "\n\n" : "") +
-    (details ? "What you told us:\n" + details + "\n\n" : "") +
+    (rows.length ? rows.map(function (r) { return r[0] + ": " + r[1]; }).join("\n") + "\n\n" : "") +
+    (o.details ? "What you told us:\n" + o.details + "\n\n" : "") +
     "What happens next:\n1. We review what you sent\n2. We call or email with honest guidance on scope and timeline\n3. You get a clear written estimate - free, detailed, no pressure\n\n" +
     "Photos help - reply to this email and attach them.\n\n" +
     "Need us sooner? Call (332) 277-0990.\n\n" +
     "- Sani Building Corp\nFully Insured | 4.9 stars | NYC Metro | Since 2015\nsanibuildingcorp.com";
 
   const contractorEmail = process.env.CONTRACTOR_EMAIL || "info@sanibuildingcorp.com";
-  const subject = "Request Received - Sani Building Corp";
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + process.env.RESEND_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Sani Building Corp <contact@sanibuildingcorp.com>",
-        to: [email],
-        bcc: contractorEmail ? [contractorEmail] : undefined,
-        reply_to: "contact@sanibuildingcorp.com",
-        subject: subject,
-        html: html,
-        text: text,
-      }),
-    });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      console.log("submission-created: Resend failed", res.status, t.slice(0, 300));
-      return { statusCode: 200, body: "resend failed (logged)" };
-    }
-  } catch (e) {
-    console.log("submission-created: send threw", String(e).slice(0, 300));
-    return { statusCode: 200, body: "send threw (logged)" };
-  }
+  return postResend(key, {
+    from: "Sani Building Corp <contact@sanibuildingcorp.com>",
+    to: [o.email],
+    bcc: [contractorEmail],
+    reply_to: "contact@sanibuildingcorp.com",
+    subject: "Request Received - Sani Building Corp",
+    html: html,
+    text: text,
+  });
+}
 
-  // Log to the dashboard timeline — never fatal, the email is already out.
-  try {
-    const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SECRET_KEY;
-    if (url && key) {
-      await fetch(url + "/rest/v1/lead_messages", {
+function postResend(apiKey, payload) {
+  const body = JSON.stringify(payload);
+  return new Promise(function (resolve) {
+    const req = https.request(
+      {
+        hostname: "api.resend.com",
+        port: 443,
+        path: "/emails",
         method: "POST",
         headers: {
-          apikey: key,
-          Authorization: "Bearer " + key,
+          Authorization: "Bearer " + apiKey,
           "Content-Type": "application/json",
-          Prefer: "return=minimal",
+          "Content-Length": Buffer.byteLength(body),
         },
-        body: JSON.stringify({
-          lead_email: email,
-          lead_name: fullName || null,
-          direction: "out",
-          subject: subject,
-          body: "Auto-confirmation sent for " + formName + " submission.",
-        }),
-      });
-    }
-  } catch (e) {
-    console.log("submission-created: log skipped", String(e).slice(0, 200));
-  }
+      },
+      function (res) {
+        let chunks = "";
+        res.on("data", function (c) { chunks += c; });
+        res.on("end", function () {
+          resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, body: chunks });
+        });
+      }
+    );
+    req.on("error", function (e) { resolve({ ok: false, status: 0, body: String(e) }); });
+    req.setTimeout(9000, function () { req.destroy(); resolve({ ok: false, status: 0, body: "Resend timeout" }); });
+    req.write(body);
+    req.end();
+  });
+}
 
-  return { statusCode: 200, body: "confirmation sent to " + email };
-};
+function validEmail(s) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || "").trim());
+}
+
+function json(code, obj) {
+  return {
+    statusCode: code,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(obj, null, 2),
+  };
+}
 
 function esc(s) {
   return String(s)
