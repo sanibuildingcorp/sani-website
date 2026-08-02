@@ -1,5 +1,11 @@
 // netlify/functions/send-confirmation.js
-// CUSTOMER CONFIRMATION — CALLED DIRECTLY BY THE WEBSITE (v1, Aug 2 2026)
+// CUSTOMER CONFIRMATION — CALLED DIRECTLY BY THE WEBSITE (v2, Aug 2 2026)
+//
+// v2: Supabase logging switched from https.request to global fetch — the exact
+// mechanism track-visit.js uses successfully hundreds of times a day. (Supabase's
+// own API access log proved the v1 https.request write never arrived while the
+// Resend call from the same invocation did.) Also adds ?logtest=1 which performs
+// ONLY the lead_messages insert and returns the raw outcome in the browser.
 //
 // WHY THIS EXISTS: Netlify's built-in "submission-created" trigger silently
 // stopped invoking our function (a known, long-standing Netlify platform bug —
@@ -61,6 +67,18 @@ exports.handler = async function (event) {
       contractorEmail: process.env.CONTRACTOR_EMAIL || "(not set — will fall back)",
       hasSupabase: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY),
     });
+  }
+
+  // ── DIAGNOSTIC 1.5: test ONLY the Supabase timeline logging ──
+  if (q.logtest === "1") {
+    const r = await supabasePost("lead_messages", {
+      lead_email: "logtest@sanibuildingcorp.com",
+      lead_name: "DEBUG",
+      direction: "out",
+      subject: "DEBUG: logtest",
+      body: "Manual logging test at " + new Date().toISOString(),
+    });
+    return json(r.ok ? 200 : 502, { logWrite: r });
   }
 
   // ── DIAGNOSTIC 2: send a real sample confirmation, bypassing the form trigger ──
@@ -238,40 +256,28 @@ function postResend(apiKey, payload) {
   });
 }
 
-function supabasePost(path, row) {
-  return new Promise(function (resolve) {
-    const base = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SECRET_KEY;
-    if (!base || !key) return resolve({ ok: false, status: 0 });
-    let host;
-    try { host = new URL(base).hostname; } catch { return resolve({ ok: false, status: 0 }); }
-    const body = JSON.stringify(row);
-    const req = https.request(
-      {
-        hostname: host,
-        port: 443,
-        path: "/rest/v1/" + path,
-        method: "POST",
-        headers: {
-          apikey: key,
-          Authorization: "Bearer " + key,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-          "Content-Length": Buffer.byteLength(body),
-        },
+async function supabasePost(path, row) {
+  // Same mechanism as track-visit.js (proven in production): global fetch + full URL.
+  const base = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!base || !key) return { ok: false, status: 0, err: "SUPABASE_URL or SUPABASE_SECRET_KEY not set" };
+  try {
+    const res = await fetch(String(base).replace(/\/+$/, "") + "/rest/v1/" + path, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: "Bearer " + key,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
       },
-      function (res) {
-        res.resume();
-        res.on("end", function () {
-          resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode });
-        });
-      }
-    );
-    req.on("error", function () { resolve({ ok: false, status: 0 }); });
-    req.setTimeout(8000, function () { req.destroy(); resolve({ ok: false, status: 0 }); });
-    req.write(body);
-    req.end();
-  });
+      body: JSON.stringify(row),
+    });
+    let detail = "";
+    if (!res.ok) detail = (await res.text().catch(function () { return ""; })).slice(0, 300);
+    return { ok: res.ok, status: res.status, err: detail };
+  } catch (e) {
+    return { ok: false, status: 0, err: String(e).slice(0, 300) };
+  }
 }
 
 function validEmail(s) {

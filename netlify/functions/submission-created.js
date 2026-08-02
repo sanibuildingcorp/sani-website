@@ -14,8 +14,6 @@
 // Supabase lead_messages — and because this file sends nothing, customers can
 // never receive duplicate confirmations.
 
-const https = require("https");
-
 exports.handler = async function (event) {
   let payload;
   try {
@@ -39,36 +37,23 @@ exports.handler = async function (event) {
   return { statusCode: 200, body: "logged" };
 };
 
-function supabasePost(path, row) {
-  return new Promise(function (resolve) {
-    const base = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SECRET_KEY;
-    if (!base || !key) return resolve({ ok: false });
-    let host;
-    try { host = new URL(base).hostname; } catch { return resolve({ ok: false }); }
-    const body = JSON.stringify(row);
-    const req = https.request(
-      {
-        hostname: host,
-        port: 443,
-        path: "/rest/v1/" + path,
-        method: "POST",
-        headers: {
-          apikey: key,
-          Authorization: "Bearer " + key,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-          "Content-Length": Buffer.byteLength(body),
-        },
+async function supabasePost(path, row) {
+  const base = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!base || !key) return { ok: false };
+  try {
+    const res = await fetch(String(base).replace(/\/+$/, "") + "/rest/v1/" + path, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: "Bearer " + key,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
       },
-      function (res) {
-        res.resume();
-        res.on("end", function () { resolve({ ok: res.statusCode >= 200 && res.statusCode < 300 }); });
-      }
-    );
-    req.on("error", function () { resolve({ ok: false }); });
-    req.setTimeout(8000, function () { req.destroy(); resolve({ ok: false }); });
-    req.write(body);
-    req.end();
-  });
+      body: JSON.stringify(row),
+    });
+    return { ok: res.ok };
+  } catch {
+    return { ok: false };
+  }
 }
