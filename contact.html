@@ -90,6 +90,9 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   div[style*="position:sticky"]{position:static!important}
   .page-hero-content{padding:40px 20px 44px!important}
   .page-hero h1{font-size:32px!important}
+  /* iOS zoom fix: Safari auto-zooms (and stays zoomed, skewing the page) when a
+     focused field's text is under 16px. Mobile-only; desktop unchanged. */
+  #estimateForm input,#estimateForm select,#estimateForm textarea{font-size:16px!important}
   div[style*="gap:64px"]{gap:24px!important}
   div[style*="gap:48px"]{gap:20px!important}
   div[style*="padding:80px 28px"]{padding:48px 20px!important}
