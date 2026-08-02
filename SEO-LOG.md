@@ -46,6 +46,32 @@
 - Every failure path returns 200 with a console log, so a Resend or Supabase outage can never make Netlify mark the submission as failed.
 - `node --check` PASS; zero "licensed"; zero "TV"; no sandbox sender.
 
+**FINAL FIX — Aug 2 (afternoon): Netlify's `submission-created` trigger confirmed dead on this site; replaced with direct client->function call.**
+
+Evidence chain (all verified, zero guesses):
+1. `?test=1` on the browser-invocable twin (`confirmation-test.js`) → **Resend 200, id 54463afe...** → both customer + BCC copies arrived at 09:29. Code, RESEND_API_KEY, contact@ sender: ALL WORKING.
+2. Two real /contact submissions (09:33, 09:35) after v3 (which wrote an unconditional DB breadcrumb on every invocation) → owner notifications arrived, **zero breadcrumbs in lead_messages** → Netlify never invoked the function. Netlify's own support forum documents this exact failure mode for years ("no logs, simply isn't executing", frequently on custom-domain sites) with no reliable self-serve fix.
+3. Note for the future: the earlier HTTP 403 on `?ping=1` was Netlify's hard block on directly invoking any function NAMED `submission-created` — that 403 actually proves deployment (404 = not deployed). Env vars all verified present with functions+runtime scope via Netlify MCP.
+
+Architecture now (mirrors the proven handyman client->function pattern):
+- **`netlify/functions/send-confirmation.js` (NEW):** accepts JSON POST {email,name,service,area,address,phone,details,form} from the pages; sends branded confirmation from contact@ (BCC CONTRACTOR_EMAIL), plain-text part included, logs to lead_messages via https.request; keeps ?ping=1 / ?test=1 browser diagnostics. "Fully Insured", zero TV.
+- **`contact.html` + `index.html`:** after the successful Netlify Forms POST, fire-and-forget fetch to send-confirmation with the form's fields (honeypot-guarded, wrapped in try/catch so it can never break the visible success flow). Verified via diff: ONLY the handler blocks changed; tag balance 0/0, JSON-LD valid, zero "licensed"/"TV", partials untouched. PRIORITY-RULE note: no keyword-bearing content touched (pure JS wiring), fresh files fetched from GitHub before editing.
+- **`submission-created.js` v4:** stripped to a LOG-ONLY breadcrumb (sends nothing) — acts as a detector if Netlify's trigger ever revives, and guarantees no customer can ever receive a double confirmation.
+- `confirmation-test.js` is superseded by send-confirmation.js — Zura can delete it from netlify/functions/ whenever convenient (harmless if left).
+
+Also confirmed working during testing: duplicate owner notifications = two identical rules in Netlify → Forms → Form notifications (both "Email Contact@... on new submission from any form") — Zura saw both on screen; delete one via its Options menu. Not code.
+
+**v2 — Aug 2, after Zura's second test still produced 2 owner emails + 0 customer email.** v1 was confirmed committed (raw fetch 200, 9,044 B) so the file was live; the failure was silent. v2 removes the guesswork:
+- Resend send switched from global `fetch()` to **`https.request()`** — the identical pattern in `handyman-submit.js` / `handyman-agreement.js`, which demonstrably deliver. (`fetch` is available in this runtime — `form-alert.js` uses it for ipwho.is — so this is belt-and-braces, not the presumed cause.)
+- **Two browser-openable diagnostics** so a silent failure can't recur:
+  - `/.netlify/functions/submission-created?ping=1` → JSON with `node` version, `hasResendKey`, `contractorEmail`, `hasSupabase`. **404 here = the function is not deployed** (bundling/deploy issue, not code).
+  - `/.netlify/functions/submission-created?test=1&email=YOU@X.COM` → sends a real sample confirmation and **returns Resend's actual status + response body on screen**, bypassing the Netlify Forms trigger entirely.
+- Decision tree: ping 404 → deploy problem · ping OK + test fails → Resend/env problem, reason shown on screen · ping OK + test delivers but form submissions don't → **the Netlify Forms `submission-created` trigger is not firing**, which is a Netlify-side setting, not repo code.
+- Normal path now returns a JSON result object (`sent`/`skipped`/`reason`) instead of a bare string, so Netlify's function log shows what happened per submission.
+- Still: `node --check` PASS, zero "licensed", zero "TV", "Fully Insured" in footer, sends from contact@.
+
+**Two-owner-emails issue is NOT code.** Both notifications come from sender `www.sanibuildingcorp.com` = Netlify Forms notification rules, one mislabeled "Handyman Booking". Repo contains exactly two Netlify forms (`estimate` on contact.html, `free-estimate` on index.html) and neither can send twice. Fix in **Netlify → Forms → (form) → Settings & usage → Form notifications → delete the duplicate rule.** Unchanged as of Zura's 00:26 test.
+
 **Open follow-ups spotted on /contact while verifying (NOT changed — need PRIORITY RULE keyword check first):** contact card still shows `sanibuildingcorp@gmail.com` instead of contact@; trust bar reads "62+ Google Reviews" (site standard is 66); contact-card hours "Mon-Sat 8:00 AM - 9:00 PM" contradict the footer partial (Mon-Fri 8-6 / Sat 8-4 / Sun 8-4) and the `openingHoursSpecification` on index.
 
 **Delivered Aug 2:** `netlify/functions/send-reply.js` **v2** — `from` and `reply_to` switched to `contact@sanibuildingcorp.com` (Resend is domain-verified, so any @sanibuildingcorp.com sender is valid; contact@ is a Workspace alias of info@, so customer replies still land in the one inbox). Auth, HTML template, plain-text part, BCC receipt and `lead_messages` logging unchanged. `node --check` PASS; zero "licensed".
