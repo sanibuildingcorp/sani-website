@@ -132,8 +132,8 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
       <h2 style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;margin-bottom:8px">Tell Us About Your <em>Project</em></h2>
       <p style="font-size:14px;color:var(--gray);margin-bottom:32px;line-height:1.7">We&apos;ll review your project and get back to you within a few hours with a free, no-obligation estimate.</p>
 
-      <form name="estimate" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="estimateForm" style="display:grid;gap:20px">
-        <input type="hidden" name="form-name" value="estimate">
+      <form name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="estimateForm" style="display:grid;gap:20px">
+        <input type="hidden" name="form-name" value="contact">
         <p style="display:none"><input name="bot-field"></p>
         <div class="form-row-2">
           <div>
@@ -231,7 +231,7 @@ if(form){form.addEventListener("submit",async function(e){e.preventDefault();con
 try{
   if(!(data.get("bot-field")||"").trim()){
     fetch("/.netlify/functions/send-confirmation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-      form:"estimate",
+      form:"contact",
       name:(data.get("name")||"").trim(),
       email:(data.get("email")||"").trim(),
       phone:(data.get("phone")||"").trim(),

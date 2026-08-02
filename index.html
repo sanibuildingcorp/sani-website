@@ -2536,8 +2536,8 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
       <h3>Request a <em>Free Estimate</em></h3>
       <p class="form-sub">Tell us about your project and we'll get back to you within 24 hours with a transparent quote.</p>
 
-      <form class="contact-form" name="estimate" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="estimateForm">
-        <input type="hidden" name="form-name" value="estimate">
+      <form class="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="estimateForm">
+        <input type="hidden" name="form-name" value="contact">
         <p class="cf-hp"><label>Don't fill this out: <input name="bot-field"></label></p>
 
         <div class="cf-field">
@@ -2898,7 +2898,7 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
       try{
         if(!(fd.get('bot-field')||'').trim()){
           fetch('/.netlify/functions/send-confirmation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-            form:'estimate',
+            form:'contact',
             name:(fd.get('name')||'').trim(),
             email:(fd.get('email')||'').trim(),
             phone:(fd.get('phone')||'').trim(),
