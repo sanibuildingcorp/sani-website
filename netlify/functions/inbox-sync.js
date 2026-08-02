@@ -1,5 +1,5 @@
 // netlify/functions/inbox-sync.js
-// GMAIL → DASHBOARD SYNC (v1, Aug 2 2026) — the missing half of the two-way CRM.
+// GMAIL → DASHBOARD SYNC (v2, Aug 2 2026 — verbose counters, contact-leads in known set, insert errors surfaced) — the missing half of the two-way CRM.
 //
 // WHAT IT DOES: connects to the info@sanibuildingcorp.com mailbox over IMAP
 // (Google App Password — no OAuth dance), reads recent inbox mail, and files
@@ -37,7 +37,7 @@ exports.handler = async function (event) {
   const q = event.queryStringParameters || {};
   if (q.ping === "1") {
     return json(200, {
-      ok: true, function: "inbox-sync", version: "v1 Aug 2 2026", node: process.version,
+      ok: true, function: "inbox-sync", version: "v2 Aug 2 2026", node: process.version,
       hasGmailUser: !!process.env.GMAIL_USER,
       hasGmailAppPassword: !!process.env.GMAIL_APP_PASSWORD,
       hasSupabase: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY),
@@ -56,13 +56,17 @@ exports.handler = async function (event) {
   // 1) Known-customer set (this is the spam wall)
   let known;
   try {
-    const [msgs, bookings] = await Promise.all([
+    const [msgs, bookings, leads] = await Promise.all([
       sbGet("/rest/v1/lead_messages?select=lead_email&limit=1000"),
       sbGet("/rest/v1/bookings?select=customer_email&limit=1000"),
+      fetch("https://velvety-horse-2aa6e3.netlify.app/.netlify/functions/contact-leads")
+        .then((r) => (r.ok ? r.json() : { leads: [] }))
+        .catch(() => ({ leads: [] })),
     ]);
     known = new Set([]
       .concat((msgs || []).map((r) => norm(r.lead_email)))
       .concat((bookings || []).map((r) => norm(r.customer_email)))
+      .concat(((leads && leads.leads) || []).map((l) => norm((l.data || l).email)))
       .filter(Boolean));
   } catch (e) {
     return json(502, { error: "Supabase read failed: " + String(e.message || e).slice(0, 200) });
@@ -74,7 +78,7 @@ exports.handler = async function (event) {
     auth: { user: user, pass: pass },
     logger: false,
   });
-  let seen = 0, inserted = 0, matchedButDupe = 0;
+  let seen = 0, inserted = 0, matchedButDupe = 0, skippedOwn = 0, skippedUnknown = 0, insertErrors = [];
   try {
     await client.connect();
     const lock = await client.getMailboxLock("INBOX");
@@ -91,8 +95,8 @@ exports.handler = async function (event) {
         const fromObj = (msg.envelope.from && msg.envelope.from[0]) || {};
         const fromAddr = norm((fromObj.address || ""));
         if (!fromAddr) continue;
-        if (OWN_PATTERNS.some((p) => fromAddr.indexOf(p) > -1)) continue;
-        if (!known.has(fromAddr)) continue;
+        if (OWN_PATTERNS.some((p) => fromAddr.indexOf(p) > -1)) { skippedOwn++; continue; }
+        if (!known.has(fromAddr)) { skippedUnknown++; continue; }
 
         const mid = String(msg.envelope.messageId || "").slice(0, 250) || ("uid-" + uids[i] + "-" + fromAddr);
         let bodyText = "";
@@ -112,7 +116,9 @@ exports.handler = async function (event) {
           created_at: msg.envelope.date ? new Date(msg.envelope.date).toISOString() : new Date().toISOString(),
         };
         const res = await sbInsertIgnoreDupes("lead_messages", row);
-        if (res.inserted) inserted++; else matchedButDupe++;
+        if (res.inserted) inserted++;
+        else if (res.status === 409 || res.status === 200 || res.status === 204) matchedButDupe++;
+        else insertErrors.push("HTTP " + res.status + " " + String(res.detail || "").slice(0, 160));
       }
     } finally {
       lock.release();
@@ -123,7 +129,12 @@ exports.handler = async function (event) {
     return json(502, { error: "IMAP: " + String(e.message || e).slice(0, 250), hint: "Check GMAIL_APP_PASSWORD (needs 2-Step Verification on the Google account) and that IMAP is enabled in Gmail settings." });
   }
 
-  return json(200, { ok: true, scanned: seen, newMessages: inserted, alreadySynced: matchedButDupe, knownCustomers: known.size });
+  return json(200, {
+    ok: true, scanned: seen, newMessages: inserted, alreadySynced: matchedButDupe,
+    skippedOwnOrSystem: skippedOwn, skippedNotACustomer: skippedUnknown,
+    knownCustomers: known.size,
+    insertErrors: insertErrors.slice(0, 3),
+  });
 };
 
 function norm(s) { return String(s || "").trim().toLowerCase(); }
@@ -159,7 +170,9 @@ async function sbInsertIgnoreDupes(table, row) {
     },
     body: JSON.stringify(row),
   });
-  return { inserted: r.status === 201, status: r.status };
+  let detail = "";
+  if (r.status >= 400) detail = await r.text().catch(function () { return ""; });
+  return { inserted: r.status === 201, status: r.status, detail: detail };
 }
 function cors() {
   return { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, GET, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, x-sbc-key", "Content-Type": "application/json" };
