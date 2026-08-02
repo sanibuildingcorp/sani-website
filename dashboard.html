@@ -7472,7 +7472,11 @@ async function custSyncInbox(silent){
   try{
     var r=await fetch('/.netlify/functions/inbox-sync',{method:'POST',headers:{'x-sbc-key':sbcKey()}});
     var d=await r.json();
-    if(r.ok && d.ok){ custSyncState = d.newMessages>0 ? ('✓ '+d.newMessages+' new email'+(d.newMessages===1?'':'s')+' pulled in') : '✓ Inbox up to date'; }
+    if(r.ok && d.ok){
+      custSyncState = (d.newMessages>0 ? ('✓ '+d.newMessages+' new email'+(d.newMessages===1?'':'s')+' pulled in') : '✓ Inbox up to date')
+        + ' · scanned '+(d.scanned||0)+' · from customers '+((d.newMessages||0)+(d.alreadySynced||0))+' · other senders '+(d.skippedNotACustomer||0)
+        + (d.insertErrors && d.insertErrors.length ? ' · ⚠️ save error: '+d.insertErrors[0] : '');
+    }
     else { custSyncState = d.skipped ? '📮 '+d.skipped : (d.error ? '⚠️ '+String(d.error).slice(0,120) : ''); }
     if(r.status===401) sessionStorage.removeItem('sbcKey');localStorage.removeItem('sbcKey');
     if(d.newMessages>0){ custCache=null; }
