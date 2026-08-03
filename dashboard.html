@@ -6929,6 +6929,23 @@ function showSendLinkSuccess(msg) {
 
 <script>
 function sbcOpenNewInv(){
+  /* Prefill from whatever is open: a handyman booking first, else the open customer. */
+  try{
+    var put=function(id,v){ var el=document.getElementById(id); if(el&&v) el.value=v; };
+    var b=(typeof currentHandymanBooking!=='undefined')?currentHandymanBooking:null;
+    if(b){
+      put('sbc-ni-name', b.customer_name||'');
+      put('sbc-ni-email', b.customer_email||'');
+      put('sbc-ni-phone', b.customer_phone||'');
+      put('sbc-ni-address', b.customer_address||'');
+      var jt=(b.service_name||b.service_title||'General Repairs');
+      put('sbc-ni-title', jt+(b.ref?(' — '+b.ref):''));
+      var sv=document.getElementById('sbc-ni-service'); if(sv) sv.value='Handyman';
+    } else if(typeof custOpenEmail!=='undefined' && custOpenEmail && Array.isArray(custCache)){
+      var c=custCache.find(function(x){return x.email===custOpenEmail;});
+      if(c){ put('sbc-ni-name',c.name||''); put('sbc-ni-email',c.email||''); put('sbc-ni-phone',c.phone||''); }
+    }
+  }catch(e){}
   document.getElementById('sbc-newinv-modal').style.display='flex';
   document.body.style.overflow='hidden';
 }
