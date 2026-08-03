@@ -6986,6 +6986,9 @@ function sbcCreateInv(){
     btn.disabled=false;btn.textContent='Create & Open Editor';
     if(!res.ok)throw new Error(res.d.error||'Create failed');
     sbcCloseNewInv();
+    /* If a booking (or other) window is open underneath, close it so the
+       invoice editor doesn't open hidden behind it. */
+    try{ var hm=document.getElementById('handyman-modal'); if(hm&&hm.classList.contains('show')&&typeof closeHandymanModal==='function') closeHandymanModal(); }catch(e){}
     ['sbc-ni-name','sbc-ni-email','sbc-ni-phone','sbc-ni-address','sbc-ni-title'].forEach(function(id){document.getElementById(id).value='';});
     if(typeof toast==='function')toast('✓ Created '+res.d.ref);
     if(typeof loadEstimates==='function'){
