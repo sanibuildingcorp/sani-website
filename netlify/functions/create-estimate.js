@@ -1,7 +1,9 @@
 // netlify/functions/create-estimate.js
 // Creates a NEW estimate record manually from the dashboard
 // (for invoices/quotes that didn't come through the customer form).
-// Standalone — does not modify any existing function.
+// v2 (Aug 3 2026): accepts optional booking context — description, scopeOfWork,
+// summary, and prefilled labor/materials lines — so an invoice created from a
+// completed handyman booking arrives with the whole job already in it.
 
 const { getStore } = require("@netlify/blobs");
 
@@ -44,21 +46,21 @@ exports.handler = async function (event) {
       },
       request: {
         service: String(body.service || "Manual Invoice").trim(),
-        description: "Created manually from dashboard",
+        description: String(body.description || "Created manually from dashboard").slice(0, 2000),
         photoCount: 0,
         photos: [],
       },
       estimate: {
         projectTitle: String(body.projectTitle || "").trim(),
-        summary: "",
-        scopeOfWork: "",
-        timelineText: "",
+        summary: String(body.summary || "").slice(0, 1000),
+        scopeOfWork: String(body.scopeOfWork || "").slice(0, 4000),
+        timelineText: String(body.timelineText || "").slice(0, 300),
         notes: "",
         markupPct: 0,
         showLaborCost: true,
         showMaterialsCost: false,
-        labor: [],
-        materials: [],
+        labor: sanitizeLines(body.labor),
+        materials: sanitizeLines(body.materials),
         quotePhotos: [],
       },
     };
@@ -79,6 +81,18 @@ exports.handler = async function (event) {
     return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
   }
 };
+
+function sanitizeLines(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.slice(0, 20).map(function (l) {
+    return {
+      item: String((l && l.item) || "").slice(0, 300),
+      qty: Number((l && l.qty)) || 1,
+      unit: String((l && l.unit) || "ea").slice(0, 12),
+      rate: Number((l && l.rate)) || 0,
+    };
+  }).filter(function (l) { return l.item; });
+}
 
 function cors() {
   return {
