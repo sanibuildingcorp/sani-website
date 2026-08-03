@@ -57,17 +57,22 @@ exports.handler = async function (event) {
   // 1) Known-customer set (this is the spam wall)
   let known;
   try {
-    const [msgs, bookings, leads] = await Promise.all([
+    const [msgs, bookings, leads, ests] = await Promise.all([
       sbGet("/rest/v1/lead_messages?select=lead_email&limit=1000"),
       sbGet("/rest/v1/bookings?select=customer_email&limit=1000"),
       fetch("https://velvety-horse-2aa6e3.netlify.app/.netlify/functions/contact-leads")
         .then((r) => (r.ok ? r.json() : { leads: [] }))
         .catch(() => ({ leads: [] })),
+      fetch("https://velvety-horse-2aa6e3.netlify.app/.netlify/functions/list-estimates")
+        .then((r) => (r.ok ? r.json() : {}))
+        .catch(() => ({})),
     ]);
+    const estArr = (ests && (ests.records || ests.estimates || ests.list)) || (Array.isArray(ests) ? ests : []);
     known = new Set([]
       .concat((msgs || []).map((r) => norm(r.lead_email)))
       .concat((bookings || []).map((r) => norm(r.customer_email)))
       .concat(((leads && leads.leads) || []).map((l) => norm((l.data || l).email)))
+      .concat(estArr.map((e) => norm(((e && e.customer) || {}).email || (e && e.email))))
       .filter(Boolean));
   } catch (e) {
     return json(502, { error: "Supabase read failed: " + String(e.message || e).slice(0, 200) });
