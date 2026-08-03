@@ -1210,7 +1210,7 @@ function renderTotalsSection() {
   document.getElementById("est-total").textContent = fmt(grand);
   updatePrimaryAction();
 
-  if (calc.bothHidden) {
+  if (calc.bothHidden && !((record && record.estimate) || {}).showSectionSubtotals) {
     document.getElementById("lineitems-wrap").style.display="none";
     document.getElementById("totals-only-wrap").style.display="block";
     document.getElementById("totals-only-amount").textContent = fmt(grand);
@@ -1224,6 +1224,44 @@ function renderTotalsSection() {
     return '<div class="line-items-row"><span class="li-label">'+label+'</span><span class="li-dots"></span><span class="li-value">'+value+'</span></div>';
   }
   let rowsHtml = "";
+  const est0 = (record && record.estimate) || {};
+  if (est0.showSectionSubtotals === true) {
+    /* ── Per-service subtotals: group every labor+materials line by trade keyword ── */
+    const mk = 1 + ((Number(est0.markupPct) || 0) / 100);
+    function sectionOf(name) {
+      const n = String(name || "").toLowerCase();
+      if (/window/.test(n)) return "Windows";
+      if (/bathroom|shower|vanity|toilet|waterproof|grout|linen|mirror/.test(n)) return "Bathroom";
+      if (/paint|prime/.test(n)) return "Painting";
+      if (/floor|hardwood|underlayment|leveling|subfloor/.test(n)) return "Flooring";
+      if (/tile/.test(n)) return "Bathroom";
+      if (/plumb|electric/.test(n)) return "Bathroom";
+      return "General";
+    }
+    const secs = {}, orderS = [];
+    []
+      .concat(est0.labor || [], est0.materials || [])
+      .forEach(function (l) {
+        const k = sectionOf(l.item);
+        if (!(k in secs)) { secs[k] = 0; orderS.push(k); }
+        secs[k] += (Number(l.qty) || 0) * (Number(l.rate) || 0);
+      });
+    const pref = ["Bathroom", "Flooring", "Painting", "Windows", "General"];
+    orderS.sort(function (a, b) { return pref.indexOf(a) - pref.indexOf(b); });
+    let secGrand = 0;
+    orderS.forEach(function (k) {
+      const v = secs[k] * mk;
+      secGrand += v;
+      rowsHtml += row(k, fmt(v));
+    });
+    const grandSec = secGrand + delta + matTotal;
+    if (delta !== 0)  rowsHtml += row('Selected finishes', fmtSigned(delta));
+    if (matTotal > 0) rowsHtml += row('Selected materials', fmtSigned(matTotal));
+    rowsHtml += '<div class="line-items-row grand-total"><span class="li-label">TOTAL</span><span class="li-dots"></span><span class="li-value">'+fmt(grandSec)+'</span></div>';
+    document.getElementById("est-total").textContent = fmt(grandSec);
+    document.getElementById("lineitems-body").innerHTML = rowsHtml;
+    return;
+  }
   if (calc.showLabor) {
     const laborLabel = (calc.showLabor && !calc.showMaterials) ? 'Labor only' : 'Labor';
     rowsHtml += row(laborLabel, fmt(calc.shownLabor));
