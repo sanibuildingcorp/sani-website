@@ -4032,6 +4032,7 @@ function gatherForm() {
     markupPct: parseFloat(document.getElementById("f-markup").value) || 0,
     showLaborCost: currentRecord.estimate.showLaborCost !== false,
     showMaterialsCost: currentRecord.estimate.showMaterialsCost === true,
+    showSectionSubtotals: currentRecord.estimate.showSectionSubtotals === true,
     labor: currentRecord.estimate.labor || [],
     materials: currentRecord.estimate.materials || [],
     quotePhotos: currentRecord.estimate.quotePhotos || [],
