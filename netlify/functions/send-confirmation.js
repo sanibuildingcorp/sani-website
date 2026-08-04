@@ -61,7 +61,7 @@ exports.handler = async function (event) {
     return json(200, {
       ok: true,
       function: "submission-created",
-      version: "v2 Aug 2 2026",
+      version: "v2.1 Aug 4 2026",
       node: process.version,
       hasResendKey: !!process.env.RESEND_API_KEY,
       contractorEmail: process.env.CONTRACTOR_EMAIL || "(not set — will fall back)",
@@ -139,9 +139,12 @@ exports.handler = async function (event) {
   }
 
   // Log to the dashboard timeline — never fatal, the email is already out.
+  // (v2.1: was `fullName` — an undefined variable here, which crashed the function
+  //  AFTER the email went out, so no submission ever got logged. Test paths never
+  //  hit this line, which is why ?logtest kept passing.)
   const logRes = await supabasePost("lead_messages", {
     lead_email: email,
-    lead_name: fullName || null,
+    lead_name: String(data.name || "").trim() || null,
     direction: "out",
     subject: "Request Received - Sani Building Corp",
     body: "Auto-confirmation sent for " + formName + " submission.",
