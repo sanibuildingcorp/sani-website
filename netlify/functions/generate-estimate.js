@@ -106,6 +106,8 @@ exports.handler = async function (event) {
 
     const prompt = `You are an estimator for Sani Building Corp, an NYC-metro general contractor (Manhattan, Brooklyn, Queens, Bronx, Staten Island, Long Island, Nassau). You build detailed estimates from customer requests.
 
+STRICT WORDING RULE: NEVER use the word "licensed" or any licensing claim anywhere in your output (summary, scope, notes, line items). When describing credentials or quality assurance, say "fully insured" and/or "experienced trades" instead — e.g. "All work performed to NYC building code standards by experienced, fully insured trades." This rule has no exceptions.
+
 CUSTOMER REQUEST:
 Service: ${request.service || "General"}
 Property: ${request.propertyType || "Not specified"}
