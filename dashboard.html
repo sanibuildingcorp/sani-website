@@ -2709,6 +2709,7 @@ function showApp() {
   if (fab) fab.style.display = "flex";
   renderTabs();
   loadEstimates();
+  custWarm();
 }
 if (sessionStorage.getItem("sbc-auth") === "1") showApp();
 
@@ -2798,6 +2799,7 @@ function renderTabs() {
   counts.invoiced = estimates.filter(function(e){ return (e.invoiceCount || 0) > 0; }).length;
   counts.paid = estimates.filter(function(e){ return (e.invoiceCount || 0) > 0 && (e.unpaidCount || 0) === 0; }).length;
   counts.handyman = handymanBookings.length;
+  counts.customers = Array.isArray(custCache) ? custCache.length : 0;
   counts.visits = visits.filter(function(v){ return !v.done; }).length;
   counts.seo = seoInsightCount;
   counts.visitors = visitorsLiveCount;
@@ -2824,6 +2826,16 @@ function renderTabs() {
 }
 
 /* ===== LIST ===== */
+async function custWarm(){
+  /* Background-load the customer directory once at startup so the tab badge
+     shows the real count before the tab is ever opened. */
+  if (custCache) { renderTabs(); return; }
+  try{
+    var r=await fetch('/.netlify/functions/inbox-list');
+    var d=await r.json();
+    if (r.ok && Array.isArray(d.customers)) { custCache=d.customers; renderTabs(); }
+  }catch(e){}
+}
 async function loadEstimates() {
   const host = document.getElementById("list-host");
   host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
@@ -5940,6 +5952,7 @@ function sbcOpenDrawer() {
       counts.paid = estimates.filter(function(e){ return (e.invoiceCount || 0) > 0 && (e.unpaidCount || 0) === 0; }).length;
     }
     if (typeof handymanBookings !== 'undefined' && handymanBookings) counts.handyman = handymanBookings.length;
+    if (typeof custCache !== 'undefined' && Array.isArray(custCache)) counts.customers = custCache.length;
     if (typeof visits !== 'undefined' && visits) counts.visits = visits.filter(function(v){ return !v.done; }).length;
     if (typeof seoInsightCount !== 'undefined') counts.seo = seoInsightCount || 0;
     if (typeof visitorsLiveCount !== 'undefined') counts.visitors = visitorsLiveCount || 0;
