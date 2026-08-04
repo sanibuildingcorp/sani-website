@@ -1239,8 +1239,14 @@ function renderTotalsSection() {
       return "General";
     }
     const secs = {}, orderS = [];
-    []
-      .concat(est0.labor || [], est0.materials || [])
+    /* Respect the "what to show" choices: sections are built only from the
+       cost types the contractor chose to display, so the page total always
+       matches the emailed total. If both are hidden, fall back to all-in. */
+    const inclL = (est0.showLaborCost !== false), inclM = (est0.showMaterialsCost === true);
+    const basis = (!inclL && !inclM)
+      ? [].concat(est0.labor || [], est0.materials || [])
+      : [].concat(inclL ? (est0.labor || []) : [], inclM ? (est0.materials || []) : []);
+    basis
       .forEach(function (l) {
         const k = sectionOf(l.item);
         if (!(k in secs)) { secs[k] = 0; orderS.push(k); }
