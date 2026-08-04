@@ -1282,7 +1282,7 @@ function renderTotalsSection() {
   if (calc.showLabor && calc.showMaterials) {
     noteHtml='<div class="included-note"><strong>✓ All materials included</strong> — paint, fixtures, hardware, and supplies are covered in the price above.</div>';
   } else if (!calc.showLabor && calc.showMaterials && calc.hasLabor) {
-    noteHtml='<div class="included-note"><strong>✓ Labor included</strong> — all work is covered in the price above.</div>';
+    noteHtml='<div class="included-note"><strong>Materials cost only</strong> — labor is quoted separately and is not included in this amount.</div>';
   }
   document.getElementById("included-note-wrap").innerHTML = noteHtml;
 }
