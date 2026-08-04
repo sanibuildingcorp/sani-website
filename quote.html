@@ -925,7 +925,7 @@ function renderBreakdowns(est0){
     var rows=lines.map(function(l){
       var t=(Number(l.qty)||0)*(Number(l.rate)||0)*mk;
       var qty=(Number(l.qty)||0), unit=String(l.unit||'');
-      return '<div class="line-items-row" style="font-size:13px"><span class="li-label">'+escapeHtml(String(l.item||''))+' <span style="color:#9aa;font-size:11px">('+qty+' '+escapeHtml(unit)+')</span></span><span class="li-dots"></span><span class="li-value">'+fmt(t)+'</span></div>';
+      return '<div class="line-items-row" style="font-size:13px"><span class="li-label">'+esc(String(l.item||''))+' <span style="color:#9aa;font-size:11px">('+qty+' '+esc(unit)+')</span></span><span class="li-dots"></span><span class="li-value">'+fmt(t)+'</span></div>';
     }).join('');
     return '<div style="margin:0 0 18px"><div style="font-size:11px;letter-spacing:2px;color:#8a6d1a;text-transform:uppercase;margin-bottom:8px">'+title+'</div>'+rows+'</div>';
   }
