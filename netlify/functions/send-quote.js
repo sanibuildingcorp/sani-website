@@ -64,6 +64,13 @@ exports.handler = async function (event) {
     const photoCount = [...(reqData.photos || []), ...(est.quotePhotos || [])].filter((p) => p && p.data).length;
     const issuedDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
+    // What kind of cost is this number? Same truth-labels as quote.html.
+    const _inclL = est.showLaborCost !== false;
+    const _inclM = est.showMaterialsCost === true;
+    let costTypeLabel = "";
+    if (_inclM && !_inclL)       costTypeLabel = "Materials cost only — labor quoted separately";
+    else if (_inclL && !_inclM && (est.materials || []).length > 0) costTypeLabel = "Labor cost only — materials not included";
+
     // ── PERSONAL-STYLE EMAIL ─────────────────────────────────────────────────
     // Reads like a note Zurabi typed himself. Minimal HTML = Primary tab.
     const textBody =
@@ -71,6 +78,7 @@ exports.handler = async function (event) {
       `Thank you for reaching out about your ${projectTitle}. I've finished your estimate — here it is:\n\n` +
       `Estimate #${ref}\n` +
       `Total: ${fmt(total)}\n` +
+      (costTypeLabel ? `${costTypeLabel}\n` : "") +
       (est.timelineText ? `Timeline: ${est.timelineText}\n` : "") +
       (photoCount > 0 ? `(${photoCount} project photo${photoCount > 1 ? "s" : ""} included on the page)\n` : "") +
       `\nView the full estimate here:\n${quoteUrl}\n\n` +
@@ -100,6 +108,7 @@ exports.handler = async function (event) {
       <div style="padding:18px">
         <div style="font-size:13px;color:#777;margin-bottom:4px">Issued ${issuedDate}</div>
         <div style="font-size:30px;font-weight:bold;color:#0a1628">${fmt(total)}</div>
+        ${costTypeLabel ? `<div style="font-size:13px;color:#8a6d1a;background:#fdf6e3;border:1px solid #ecd9a0;border-radius:7px;padding:7px 12px;margin-top:10px;display:inline-block"><strong>${escapeHtml(costTypeLabel.split(" — ")[0])}</strong> — ${escapeHtml(costTypeLabel.split(" — ")[1])}</div>` : ""}
         ${est.timelineText ? `<div style="font-size:13px;color:#555;margin-top:8px">Timeline: ${escapeHtml(est.timelineText)}</div>` : ""}
       </div>
     </div>
