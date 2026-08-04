@@ -3270,10 +3270,7 @@ function renderEdit() {
         '<input type="text" id="f-notes" value="' + esc(est.notes || "") + '" placeholder="Reminders, assumptions, things to verify">' +
       '</div>' +
     '</div>' +
-    '<div class="form-section" id="materials-section" style="display:none">' +
-      '<h3 style="display:flex;align-items:center;justify-content:space-between">🛒 MATERIALS SHOPPING LIST <button class="btn-ai" id="find-materials-btn" onclick="findMaterials()" style="font-size:11px;padding:7px 14px;letter-spacing:1px">🛒 Find Materials</button></h3>' +
-      '<div id="materials-result"></div>' +
-    '</div>' +
+
     '<div class="form-section">' +
       '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
       ((req.photos && req.photos.length > 0) ?
@@ -3283,49 +3280,6 @@ function renderEdit() {
       '<label for="quote-photo-input" style="display:block;border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;font-size:13px;color:var(--ink-muted);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.color=\'var(--gold)\'" onmouseout="this.style.borderColor=\'var(--line)\';this.style.color=\'var(--ink-muted)\'">📸 Add photos to include in the quote (up to 6)</label>' +
       '<input type="file" id="quote-photo-input" accept="image/*" multiple style="display:none" onchange="handleQuotePhotos(event)">' +
       '<div id="quote-photo-preview" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px"></div>' +
-      '</div>' +
-    '</div>' +
-    '<div style="background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.03));border:1.5px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:22px">' +
-      '<div style="font-family:var(--display);font-size:15px;letter-spacing:2px;color:var(--gold);margin-bottom:4px">✨ AI RENOVATION RENDER</div>' +
-      '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:14px">Select a photo, then generate a photorealistic visualization of the finished renovation</div>' +
-      ((req.photos && req.photos.length > 0) ?
-        '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Select a photo to render from:</div>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap" id="render-photo-selector">' +
-          (req.photos || []).slice(0, 6).map(function(p, i) {
-            return '<div onclick="selectRenderPhoto(' + i + ',this)" data-idx="' + i + '" style="width:72px;height:72px;border-radius:8px;overflow:hidden;border:2.5px solid var(--line);cursor:pointer;transition:all .2s;flex-shrink:0" onmouseover="this.style.borderColor=\'var(--gold)\'" onmouseout="if(!this.classList.contains(\'rp-selected\'))this.style.borderColor=\'var(--line)\'">' +
-              '<img src="' + esc(p.data) + '" style="width:100%;height:100%;object-fit:cover">' +
-            '</div>';
-          }).join('') +
-        '</div></div>'
-        : '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;padding:10px;background:#fafbfd;border-radius:8px;border:1px solid var(--line-soft)">📷 No customer photos — render will be based on the project scope only</div>'
-      ) +
-      '<div style="margin-bottom:12px">' +
-        '<div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:6px">Custom prompt (optional)</div>' +
-        '<textarea id="render-custom-prompt" placeholder="e.g. Modern bathroom with white marble tiles, gold fixtures, rainfall shower. Bright and luxurious." rows="3" style="width:100%;background:#fbfcfe;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;color:var(--ink);resize:vertical;line-height:1.5" onfocus="this.style.borderColor=\'var(--gold)\'" onblur="this.style.borderColor=\'var(--line)\'"></textarea>' +
-        '<div style="font-size:11px;color:var(--ink-muted);margin-top:4px">Leave blank to auto-generate from project scope + selected photo</div>' +
-      '</div>' +
-      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-        '<button class="btn-ai" id="render-btn" onclick="generateRender()" style="white-space:nowrap">✨ Generate Render</button>' +
-        '<div style="font-size:11px;color:var(--ink-muted)" id="render-photo-hint">' +
-          (req.photos && req.photos.length > 0 ? 'Click a photo above to select it for analysis' : '') +
-        '</div>' +
-      '</div>' +
-      '<div id="render-result" style="margin-top:16px;display:none">' +
-        '<div id="render-loading" style="text-align:center;padding:32px;display:none">' +
-          '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px"><div style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite"></div><div style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.15s"></div><div style="width:10px;height:10px;background:var(--gold);border-radius:50%;animation:pulse 1.2s ease-in-out infinite;animation-delay:.3s"></div></div>' +
-          '<div style="font-family:var(--display);font-size:13px;letter-spacing:2px;color:var(--gold)" id="render-status">Analyzing photo...</div>' +
-          '<div style="font-size:11px;color:var(--ink-muted);margin-top:6px">This takes about 15–20 seconds</div>' +
-        '</div>' +
-        '<div id="render-image-wrap" style="display:none;position:relative">' +
-          '<button onclick="dismissRender()" title="Dismiss render" style="position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;font-size:18px;line-height:1;z-index:3">×</button>' +
-          '<img id="render-image" src="" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" alt="AI Renovation Render">' +
-          '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
-            '<button onclick="addRenderToQuote()" style="padding:9px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">+ Add to Quote Photos</button>' +
-            '<button onclick="generateRender()" style="padding:9px 16px;background:var(--card-2);border:1px solid var(--line);color:var(--ink-soft);border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">↻ Regenerate</button>' +
-            '<button onclick="openLightbox(document.getElementById(\'render-image\').src)" style="padding:9px 16px;background:var(--card-2);border:1px solid var(--line);color:var(--ink-soft);border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">⛶ Fullscreen</button>' +
-          '</div>' +
-          '<div id="render-space-desc" style="font-size:11px;color:var(--ink-muted);margin-top:8px;font-style:italic;display:none"></div>' +
-        '</div>' +
       '</div>' +
     '</div>' +
     '<div class="cv-panel">' +
@@ -3396,7 +3350,7 @@ function renderEdit() {
   renderQuotePhotoPreview();
   selectedRenderPhotoData = null;
   currentRenderBase64 = null;
-  const matSection = document.getElementById("materials-section");
+  const matSection = (document.getElementById("materials-section")||{style:{}});
   if (matSection) {
     const hasContent = (est.scopeOfWork && est.scopeOfWork.trim()) || (est.materials && est.materials.length > 0);
     matSection.style.display = hasContent ? "block" : "none";
@@ -3756,7 +3710,7 @@ function updateCvPreview() {
     html += '<div class="cv-preview-note"><strong>✓ All materials included</strong> in the total price.</div>';
   }
   if (!cv.showLabor && cv.showMaterials && t.labor > 0) {
-    html += '<div class="cv-preview-note"><strong>✓ Labor included</strong> in the total price.</div>';
+    html += '<div class="cv-preview-note"><strong>Materials cost only</strong> — labor not included in this amount.</div>';
   }
   body.innerHTML = html;
 }
@@ -6555,8 +6509,6 @@ function showSendLinkSuccess(msg) {
 
     html+='<div class="sbcf-foot">'
       +'<button class="sbcf-add-group" onclick="sbcfAddGroup()">+ Add finish group</button>'
-      +'<button class="sbcf-render-use" onclick="sbcfUseInRender()">✨ Use defaults in AI render</button>'
-      +'<button class="sbcf-render-use" id="sbcf-detect-btn" onclick="sbcfDetectFromRender()">🔎 Detect finishes from render</button>'
     +'</div>';
     return html;
   }
@@ -6711,6 +6663,7 @@ function showSendLinkSuccess(msg) {
 
 /* ===== 🛒 CUSTOMER-SELECTABLE MATERIALS (uses bare currentRecord) ===== */
 (function(){
+  return; /* CUSTOMER-SELECTABLE MATERIALS removed per Zura (depended on Find Materials) */
   if (window.__sbcMaterials) return;
   window.__sbcMaterials = true;
 
