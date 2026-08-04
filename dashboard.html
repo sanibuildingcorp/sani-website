@@ -2674,13 +2674,8 @@ const TABS = [
   { id: "declined", label: "Declined" },
   { id: "handyman", label: "🔧 Handyman" },
   { id: "customers", label: "👤 Customers" },
-  { id: "visits", label: "📅 Visits" },
-  { id: "seo", label: "🧠 SEO Brain" },
-  { id: "content", label: "✍️ Content" },
   { id: "images", label: "🎨 Images" },
   { id: "pageeditor", label: "🖼 Page Editor" },
-  { id: "keywords", label: "🔢 Keywords" },
-  { id: "visitors", label: "👁 Live Visitors" },
 ];
 
 let handymanBookings = [];
@@ -5860,7 +5855,7 @@ window.addEventListener('appinstalled', function() {
 window.addEventListener('load', function() {
   if (location.hash) {
     var tabId = location.hash.replace('#', '');
-    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','completed','declined','handyman','seo','content','images','keywords','visitors'];
+    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','completed','declined','handyman','images'];
     if (validTabs.includes(tabId)) {
       activeTab = tabId;
     }
@@ -5923,13 +5918,8 @@ var SBC_TABS = [
   null,
   {id:'handyman', icon:'🔧', label:'Handyman'},
   {id:'customers', icon:'👤', label:'Customers'},
-  {id:'visits',   icon:'📅', label:'Visits'},
-  {id:'seo',      icon:'🧠', label:'SEO Brain'},
-  {id:'content',  icon:'✍️',  label:'Content'},
   {id:'images',   icon:'🎨', label:'Images'},
   {id:'pageeditor', icon:'🖼', label:'Page Editor'},
-  {id:'keywords', icon:'🔢', label:'Keyword Volumes'},
-  {id:'visitors', icon:'👁',  label:'Live Visitors'},
 ];
 
 function sbcOpenDrawer() {
