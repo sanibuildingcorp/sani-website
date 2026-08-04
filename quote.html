@@ -782,6 +782,7 @@ body {
       <div id="lineitems-wrap" style="display:none">
         <div class="section-label">Line Items</div>
         <div class="line-items-box" id="lineitems-body"></div>
+        <div id="breakdown-wrap"></div>
         <div id="included-note-wrap"></div>
       </div>
 
@@ -913,6 +914,26 @@ let finishSel = {};
 // Materials options state (customer-selectable)
 let customerMaterials = [];
 let matSel = {};
+
+function renderBreakdowns(est0){
+  var host=document.getElementById('breakdown-wrap'); if(!host) return;
+  var mk=1+((Number(est0.markupPct)||0)/100);
+  var inclL=(est0.showLaborCost!==false), inclM=(est0.showMaterialsCost===true);
+  var bothHidden=(!inclL&&!inclM);
+  function block(title,lines){
+    if(!lines||!lines.length) return '';
+    var rows=lines.map(function(l){
+      var t=(Number(l.qty)||0)*(Number(l.rate)||0)*mk;
+      var qty=(Number(l.qty)||0), unit=String(l.unit||'');
+      return '<div class="line-items-row" style="font-size:13px"><span class="li-label">'+escapeHtml(String(l.item||''))+' <span style="color:#9aa;font-size:11px">('+qty+' '+escapeHtml(unit)+')</span></span><span class="li-dots"></span><span class="li-value">'+fmt(t)+'</span></div>';
+    }).join('');
+    return '<div style="margin:0 0 18px"><div style="font-size:11px;letter-spacing:2px;color:#8a6d1a;text-transform:uppercase;margin-bottom:8px">'+title+'</div>'+rows+'</div>';
+  }
+  var html='';
+  if(est0.showLaborLines===true && (inclL||bothHidden)) html+=block('Labor breakdown', est0.labor||[]);
+  if(est0.showMaterialLines===true && (inclM||bothHidden)) html+=block('Materials breakdown', est0.materials||[]);
+  host.innerHTML=html;
+}
 
 function fmt(n) {
   return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1225,6 +1246,7 @@ function renderTotalsSection() {
   }
   let rowsHtml = "";
   const est0 = (record && record.estimate) || {};
+  renderBreakdowns(est0);
   if (est0.showSectionSubtotals === true) {
     /* ── Per-service subtotals: group every labor+materials line by trade keyword ── */
     const mk = 1 + ((Number(est0.markupPct) || 0) / 100);
