@@ -790,7 +790,7 @@ body {
         <div class="totals-only">
           <div class="label">Your Estimate</div>
           <div class="amount" id="totals-only-amount">$0.00</div>
-          <div class="note">All-inclusive · No hidden fees</div>
+          <div class="note" id="est-total-note">All-inclusive · No hidden fees</div>
         </div>
       </div>
 
@@ -1266,6 +1266,18 @@ function renderTotalsSection() {
     rowsHtml += '<div class="line-items-row grand-total"><span class="li-label">TOTAL</span><span class="li-dots"></span><span class="li-value">'+fmt(grandSec)+'</span></div>';
     document.getElementById("est-total").textContent = fmt(grandSec);
     document.getElementById("lineitems-body").innerHTML = rowsHtml;
+    var secNote='', secSub='All-inclusive · No hidden fees';
+    if (inclM && !inclL) {
+      secNote='<div class="included-note"><strong>Materials cost only</strong> — each amount above covers materials for that service. Labor is quoted separately.</div>';
+      secSub='Materials cost only · labor quoted separately';
+    } else if (inclL && !inclM) {
+      secNote='<div class="included-note"><strong>Labor cost only</strong> — each amount above covers labor for that service. Materials are not included.</div>';
+      secSub='Labor cost only · materials not included';
+    } else {
+      secNote='<div class="included-note"><strong>✓ All-inclusive per service</strong> — each amount covers labor and materials for that service.</div>';
+    }
+    var inw=document.getElementById("included-note-wrap"); if(inw) inw.innerHTML=secNote;
+    var tn=document.getElementById("est-total-note"); if(tn) tn.textContent=secSub;
     return;
   }
   if (calc.showLabor) {
@@ -1291,6 +1303,12 @@ function renderTotalsSection() {
     noteHtml='<div class="included-note"><strong>Materials cost only</strong> — labor is quoted separately and is not included in this amount.</div>';
   }
   document.getElementById("included-note-wrap").innerHTML = noteHtml;
+  var tn2=document.getElementById("est-total-note");
+  if (tn2) {
+    if (calc.showMaterials && !calc.showLabor)      tn2.textContent='Materials cost only · labor quoted separately';
+    else if (calc.showLabor && !calc.showMaterials && calc.hasMaterials) tn2.textContent='Labor cost only · materials not included';
+    else tn2.textContent='All-inclusive · No hidden fees';
+  }
 }
 function getFinishSelections() {
   return (finishGroups||[]).map(function(g){
