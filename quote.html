@@ -922,12 +922,18 @@ function renderBreakdowns(est0){
   var bothHidden=(!inclL&&!inclM);
   function block(title,lines){
     if(!lines||!lines.length) return '';
-    var rows=lines.map(function(l){
+    var rows=lines.map(function(l,i){
       var t=(Number(l.qty)||0)*(Number(l.rate)||0)*mk;
       var qty=(Number(l.qty)||0), unit=String(l.unit||'');
-      return '<div class="line-items-row" style="font-size:13px"><span class="li-label">'+esc(String(l.item||''))+' <span style="color:#9aa;font-size:11px">('+qty+' '+esc(unit)+')</span></span><span class="li-dots"></span><span class="li-value">'+fmt(t)+'</span></div>';
+      return '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:9px 0'+(i?';border-top:1px solid rgba(13,27,42,.07)':'')+'">'
+        +'<span style="flex:1 1 auto;min-width:0;font-size:13.5px;color:var(--ink-soft);line-height:1.45">'+esc(String(l.item||''))
+        +' <span style="color:#9aa6b4;font-size:11.5px;white-space:nowrap">· '+qty+' '+esc(unit)+'</span></span>'
+        +'<span style="flex:0 0 auto;font-weight:600;color:var(--ink);font-size:13.5px;white-space:nowrap">'+fmt(t)+'</span>'
+        +'</div>';
     }).join('');
-    return '<div style="margin:0 0 18px"><div style="font-size:11px;letter-spacing:2px;color:#8a6d1a;text-transform:uppercase;margin-bottom:8px">'+title+'</div>'+rows+'</div>';
+    return '<div style="background:#fff;border:1px solid var(--line, #e6e0d6);border-radius:14px;padding:16px 18px;margin:0 0 18px">'
+      +'<div style="font-size:11px;letter-spacing:2px;color:#8a6d1a;text-transform:uppercase;margin-bottom:6px">'+title+'</div>'
+      +rows+'</div>';
   }
   var html='';
   if(est0.showLaborLines===true && (inclL||bothHidden)) html+=block('Labor breakdown', est0.labor||[]);
