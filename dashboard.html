@@ -2711,7 +2711,14 @@ function showApp() {
   loadEstimates();
   custWarm();
 }
-if (sessionStorage.getItem("sbc-auth") === "1") showApp();
+/* Auto-login moved to the END of the LAST script block on this page.
+   Running it here fired showApp() before later declarations existed, throwing
+   "Cannot access uninitialized variable", aborting the rest of the script and
+   leaving the page as header + footer with no tabs. Two separate hazards:
+     - consts later in THIS block (invoiceState, SERVICE_ICONS, CURRENT_PRICING_MODE...)
+     - custCache, declared with var in the LAST block, used by custWarm()
+   Both are only safe once every script block on the page has executed.
+   DO NOT MOVE THIS BACK UP. */
 
 /* ===== UTILS ===== */
 function fmt(n) {
@@ -7689,6 +7696,24 @@ async function custSend(email){
     msg.textContent='⚠️ '+e.message;
   }
   btn.disabled=false;
+}
+
+/* ===== AUTO-LOGIN - MUST REMAIN THE LAST THING ON THE PAGE =====
+   Every script block has now run, so every const, let and var is initialized and
+   showApp() can safely call renderTabs(), loadEstimates() and custWarm().
+   The try/catch is a seatbelt: if one of them ever fails again, the user still gets
+   a usable dashboard instead of a blank page, and the real error lands in the console. */
+try {
+  if (sessionStorage.getItem("sbc-auth") === "1") showApp();
+} catch (e) {
+  console.error("auto-login showApp failed:", e);
+  try {
+    var _ls = document.getElementById("login-screen"); if (_ls) _ls.style.display = "none";
+    var _app = document.getElementById("app"); if (_app) _app.classList.add("show");
+    var _fab = document.getElementById("send-link-fab"); if (_fab) _fab.style.display = "flex";
+    renderTabs();
+    loadEstimates();
+  } catch (e2) { console.error("fallback render failed:", e2); }
 }
 </script>
 
