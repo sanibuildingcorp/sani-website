@@ -441,6 +441,93 @@ body {
 }
 .included-note strong { color: var(--good); }
 
+/* SUPPLIED BY CUSTOMER / EXCLUSIONS / OPTIONS  (v3) */
+.sbc-list {
+  background: #fff;
+  border: 1px solid var(--line, #e6e2d8);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.sbc-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line, #e6e2d8);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink, #1a1a1a);
+}
+.sbc-row:last-child { border-bottom: none; }
+.sbc-mark {
+  flex: none;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+.sbc-supplied .sbc-mark { color: var(--gold-2, #b8720a); }
+.sbc-excluded .sbc-mark { color: var(--ink-muted, #8a8578); }
+.sbc-body { flex: 1; min-width: 0; }
+.sbc-item { font-weight: 600; }
+.sbc-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--ink-muted, #8a8578);
+  font-weight: 400;
+}
+.sbc-tag {
+  flex: none;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ink-muted, #8a8578);
+  padding-top: 2px;
+  white-space: nowrap;
+}
+.sbc-hint {
+  font-size: 13px;
+  color: var(--ink-soft, #444);
+  line-height: 1.55;
+  margin: -6px 0 12px;
+}
+.sbc-opt {
+  background: #fff;
+  border: 1px solid var(--line, #e6e2d8);
+  border-radius: 12px;
+  padding: 15px 17px;
+  margin-bottom: 10px;
+}
+.sbc-opt:last-child { margin-bottom: 0; }
+.sbc-opt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sbc-opt-label {
+  font-family: var(--display);
+  font-size: 16px;
+  color: var(--ink, #1a1a1a);
+  font-weight: 600;
+}
+.sbc-opt-price {
+  font-family: var(--display);
+  font-size: 17px;
+  color: var(--gold-2, #b8720a);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sbc-opt-desc {
+  margin-top: 7px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-soft, #444);
+}
+@media print {
+  .sbc-list, .sbc-opt { break-inside: avoid; }
+}
+
 /* NOTES */
 .notes-box {
   background: #faf8f4;
@@ -795,6 +882,27 @@ body {
         </div>
       </div>
 
+      <!-- SUPPLIED BY CUSTOMER -->
+      <div id="supplied-wrap" style="display:none">
+        <div class="section-label">Supplied By You</div>
+        <div class="sbc-hint">You're providing these items yourself, so they are <strong>not charged</strong> in the price above. Installation is still included.</div>
+        <div class="sbc-list" id="supplied-body"></div>
+      </div>
+
+      <!-- NOT INCLUDED -->
+      <div id="exclusions-wrap" style="display:none">
+        <div class="section-label">Not Included In This Price</div>
+        <div class="sbc-hint">So there are no surprises later, here is exactly what this quote does <strong>not</strong> cover.</div>
+        <div class="sbc-list" id="exclusions-body"></div>
+      </div>
+
+      <!-- OPTIONAL ALTERNATES -->
+      <div id="options-wrap" style="display:none">
+        <div class="section-label">Options To Choose From</div>
+        <div class="sbc-hint">Priced separately from the total above &mdash; let us know which you'd prefer and we'll fold it into your final quote.</div>
+        <div id="options-body"></div>
+      </div>
+
       <!-- NOTES -->
       <div id="notes-wrap" style="display:none">
         <div class="notes-box">
@@ -1033,7 +1141,7 @@ function applySowMode() {
   if (!SOW_MODE) return;
   document.title = "Scope of Work \u2014 Sani Building Corp";
   ["totals-only-wrap","lineitems-wrap","finishes-wrap","materials-wrap",
-   "actions-row","review-notice","breakdown-wrap"].forEach(function(id){
+   "actions-row","review-notice","breakdown-wrap","options-wrap"].forEach(function(id){
     var el = document.getElementById(id);
     if (el) el.style.display = "none";
   });
@@ -1127,6 +1235,7 @@ function render() {
   renderMaterials();
 
   renderTotalsSection();
+  renderSuppliedAndExclusions(est);
 
   // NOTES
   if (reqData.description) {
@@ -1256,7 +1365,12 @@ function renderTotalsSection() {
   if (est0.showSectionSubtotals === true) {
     /* ── Per-service subtotals: group every labor+materials line by trade keyword ── */
     const mk = 1 + ((Number(est0.markupPct) || 0) / 100);
-    function sectionOf(name) {
+    function sectionOf(name, line) {
+      /* v3: the estimator now writes an explicit section on every line.
+         Older estimates have no section, so fall back to keyword matching. */
+      if (line && line.section && String(line.section).trim()) {
+        return String(line.section).trim();
+      }
       const n = String(name || "").toLowerCase();
       if (/window/.test(n)) return "Windows";
       if (/bathroom|shower|vanity|toilet|waterproof|grout|linen|mirror/.test(n)) return "Bathroom";
@@ -1276,12 +1390,19 @@ function renderTotalsSection() {
       : [].concat(inclL ? (est0.labor || []) : [], inclM ? (est0.materials || []) : []);
     basis
       .forEach(function (l) {
-        const k = sectionOf(l.item);
+        const k = sectionOf(l.item, l);
         if (!(k in secs)) { secs[k] = 0; orderS.push(k); }
         secs[k] += (Number(l.qty) || 0) * (Number(l.rate) || 0);
       });
-    const pref = ["Bathroom", "Flooring", "Painting", "Windows", "General"];
-    orderS.sort(function (a, b) { return pref.indexOf(a) - pref.indexOf(b); });
+    const pref = ["Bathroom", "Kitchen", "Flooring", "Painting", "Carpentry", "Windows"];
+    /* Known trades first, then any custom section the estimator invented,
+       and the "General" catch-all always last. */
+    function prefIdx(x) {
+      if (x === "General") return 999;
+      const i = pref.indexOf(x);
+      return i === -1 ? 500 : i;
+    }
+    orderS.sort(function (a, b) { return prefIdx(a) - prefIdx(b); });
     let secGrand = 0;
     orderS.forEach(function (k) {
       const v = secs[k] * mk;
@@ -1338,6 +1459,75 @@ function renderTotalsSection() {
     else tn2.textContent='All-inclusive · No hidden fees';
   }
 }
+/* ── v3: supplied-by-customer, exclusions, and priced alternates ─────────────
+   All three are optional. Estimates created before v3 simply have empty arrays
+   and every block below stays hidden, so old quotes render exactly as before. */
+function renderSuppliedAndExclusions(est) {
+  est = est || {};
+
+  /* Supplied by the customer — acknowledged, never charged. */
+  var supplied = (est.customerSupplied || []).filter(function (x) {
+    return x && (typeof x === "string" ? x.trim() : String(x.item || "").trim());
+  });
+  var supWrap = document.getElementById("supplied-wrap");
+  var supBody = document.getElementById("supplied-body");
+  if (supWrap && supBody && supplied.length) {
+    supBody.innerHTML = supplied.map(function (x) {
+      var item = typeof x === "string" ? x : (x.item || "");
+      var note = typeof x === "string" ? "" : (x.note || "");
+      var sec  = typeof x === "string" ? "" : (x.section || "");
+      return '<div class="sbc-row sbc-supplied">'
+        + '<span class="sbc-mark">&#10003;</span>'
+        + '<span class="sbc-body"><span class="sbc-item">' + escHtml(item) + '</span>'
+        + (note ? '<span class="sbc-note">' + escHtml(note) + '</span>' : '')
+        + '</span>'
+        + (sec ? '<span class="sbc-tag">' + escHtml(sec) + '</span>' : '')
+        + '</div>';
+    }).join("");
+    supWrap.style.display = "block";
+  } else if (supWrap) {
+    supWrap.style.display = "none";
+  }
+
+  /* Not included in this price. */
+  var excl = (est.exclusions || []).map(function (x) {
+    return typeof x === "string" ? x.trim() : String((x && x.item) || "").trim();
+  }).filter(Boolean);
+  var exWrap = document.getElementById("exclusions-wrap");
+  var exBody = document.getElementById("exclusions-body");
+  if (exWrap && exBody && excl.length) {
+    exBody.innerHTML = excl.map(function (x) {
+      return '<div class="sbc-row sbc-excluded">'
+        + '<span class="sbc-mark">&mdash;</span>'
+        + '<span class="sbc-body">' + escHtml(x) + '</span>'
+        + '</div>';
+    }).join("");
+    exWrap.style.display = "block";
+  } else if (exWrap) {
+    exWrap.style.display = "none";
+  }
+
+  /* Priced alternates. Hidden on the no-prices scope-of-work link. */
+  var opts = (est.options || []).filter(function (o) { return o && o.label; });
+  var opWrap = document.getElementById("options-wrap");
+  var opBody = document.getElementById("options-body");
+  if (opWrap && opBody && opts.length && !SOW_MODE) {
+    opBody.innerHTML = opts.map(function (o) {
+      var price = Number(o.price) || 0;
+      return '<div class="sbc-opt">'
+        + '<div class="sbc-opt-head">'
+        + '<span class="sbc-opt-label">' + escHtml(o.label) + '</span>'
+        + (price > 0 ? '<span class="sbc-opt-price">' + fmt(price) + '</span>' : '')
+        + '</div>'
+        + (o.description ? '<div class="sbc-opt-desc">' + escHtml(o.description) + '</div>' : '')
+        + '</div>';
+    }).join("");
+    opWrap.style.display = "block";
+  } else if (opWrap) {
+    opWrap.style.display = "none";
+  }
+}
+
 function getFinishSelections() {
   return (finishGroups||[]).map(function(g){
     const sel = selectedOpt(g);
