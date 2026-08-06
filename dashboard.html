@@ -3983,19 +3983,45 @@ async function generateAI(isRegenerate) {
     function aiChk(id) { var el = document.getElementById(id); return el ? el.checked : true; }
     var extraEl = document.getElementById("ai-extra-request");
     var extraRequest = extraEl ? extraEl.value.trim() : "";
-    const r = await fetch("/.netlify/functions/generate-estimate", {
+    /* Netlify kills a normal function at 10 seconds and returns an HTML timeout page,
+       which the browser reports as "The string did not match the expected pattern".
+       A *-background function runs up to 15 minutes instead: it answers 202 straight
+       away, does the AI work, and writes aiStatus onto the record. We poll for that. */
+    const ref = currentRecord.ref;
+    const payload = JSON.stringify({
+      ref: ref,
+      usePhotoAnalysis: aiChk("use-photo-analysis"),
+      useDescription: aiChk("use-description"),
+      useAnswers: aiChk("use-answers"),
+      extraRequest: extraRequest
+    });
+
+    const kick = await fetch("/.netlify/functions/generate-estimate-background", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ref: currentRecord.ref,
-        usePhotoAnalysis: aiChk("use-photo-analysis"),
-        useDescription: aiChk("use-description"),
-        useAnswers: aiChk("use-answers"),
-        extraRequest: extraRequest
-      }),
+      body: payload,
     });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || "AI generation failed");
+    if (kick.status !== 202 && !kick.ok) throw new Error("Could not start the estimator (" + kick.status + ")");
+
+    // Poll every 3s for up to 3 minutes.
+    let data = null;
+    for (let i = 0; i < 60; i++) {
+      await new Promise(function (res) { setTimeout(res, 3000); });
+      btn.innerHTML = '<span class="ai-spin"></span> Generating… ' + ((i + 1) * 3) + 's';
+      let rec;
+      try {
+        const pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+        if (!pr.ok) continue;
+        rec = await pr.json();
+      } catch (_) { continue; }
+      const st = rec && rec.aiStatus;
+      if (st === "error") throw new Error(rec.aiError || "The estimator reported an error");
+      if (st === "done" && rec.estimate && (rec.estimate.labor || []).length) {
+        data = { estimate: rec.estimate, status: rec.status };
+        break;
+      }
+    }
+    if (!data) throw new Error("Timed out after 3 minutes — check Netlify function logs");
 
     const prevShowLabor = currentRecord.estimate && currentRecord.estimate.showLaborCost;
     const prevShowMat = currentRecord.estimate && currentRecord.estimate.showMaterialsCost;
