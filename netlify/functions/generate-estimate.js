@@ -312,180 +312,203 @@ CORE ANALYSIS RULES:
 12. Ask only questions that materially change scope, labor, materials, schedule, risk or price.
 13. Do not ask low-impact cosmetic questions merely to fill a form.
 14. Use one status:
-   READY_TO_ESTIMATE
-   PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS
-   NEEDS_CUSTOMER_QUESTIONS
-   SITE_VISIT_REQUIRED
-15. A detailed multi-trade description with usable measurements may be priced preliminarily even if a few noncritical items remain unknown.
-16. Do not use the smallest possible interpretation when the request clearly describes a larger project. Use the most reasonable professional interpretation supported by all evidence.
-17. Identify work normally required to complete each requested result, including protection, demolition, preparation, installation, connections, finishing, debris removal and cleanup.
-18. If a customer asks for alternatives, clearly identify the base scope and each alternate.
+   READY_TO_ESTIMATE — major scope, quantities, supply responsibility and site conditions are sufficiently clear.
+   PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS — a useful estimate is possible but defined assumptions are required.
+   NEEDS_CUSTOMER_QUESTIONS — critical information is missing and would materially change the estimate.
+   SITE_VISIT_REQUIRED — online information cannot responsibly establish scope/price.
+15. Never choose the smallest possible interpretation just to lower price. Use the most reasonable professional interpretation supported by the full record.
+16. If the customer requested alternatives (for example replace all windows vs replace some and repair others), preserve EACH option separately.
+17. Identify customer exclusions exactly. If the customer says kitchen is excluded, do not include kitchen painting/flooring/etc.
+18. Keep questions homeowner-friendly and include "Not sure" where appropriate.
 
-Return ONLY valid JSON with this exact structure:
+Return JSON only with EXACT top-level structure:
 {
   "project_summary": "",
   "project_type": "repair | partial renovation | full renovation | installation | replacement | restoration | mixed",
   "selected_trades": [],
   "confirmed_scope": [
-    {"trade":"","scope_items":[],"quantities":{},"customer_exclusions":[]}
+    { "trade": "", "scope_items": [], "quantities": {}, "customer_exclusions": [] }
   ],
   "inferred_scope": [
-    {"trade":"","item":"","reason":"","requires_confirmation":false}
+    { "trade": "", "item": "", "reason": "", "requires_confirmation": true }
   ],
   "customer_supplied_finish_materials": [],
   "contractor_supplied_finish_materials": [],
   "contractor_supplied_rough_materials": [],
   "site_conditions": {
-    "occupied_status":"","floor_number":"","elevator_access":"","walk_up":"",
-    "work_hours":"","debris_access":"","parking_loading":"",
-    "building_requirements":"","protection_requirements":""
+    "occupied_status": "",
+    "floor_number": "",
+    "elevator_access": "",
+    "walk_up": "",
+    "work_hours": "",
+    "debris_access": "",
+    "parking_loading": "",
+    "building_requirements": "",
+    "protection_requirements": ""
   },
   "quantities": {},
   "assumptions": [],
   "exclusions": [],
   "conflicts": [
-    {"issue":"","likely_interpretation":"","needs_confirmation":false}
+    { "issue": "", "likely_interpretation": "", "needs_confirmation": true }
   ],
   "missing_information": [
-    {"question":"","reason_needed":"","priority":"critical | pricing | site_condition | optional","affected_trade":""}
+    { "question": "", "reason_needed": "", "priority": "critical | pricing | site_condition | optional", "affected_trade": "" }
   ],
   "clarification_questions": [
-    {"id":"","question":"","helper_text":"","type":"single_select | multi_select | number | short_text | photo_request","options":[],"affected_trade":"","pricing_importance":"critical | high | medium"}
+    {
+      "id": "",
+      "question": "",
+      "helper_text": "",
+      "type": "single_select | multi_select | number | short_text | photo_request",
+      "options": [],
+      "affected_trade": "",
+      "pricing_importance": "critical | high | medium"
+    }
   ],
   "pricing_readiness": {
-    "status":"READY_TO_ESTIMATE | PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS | NEEDS_CUSTOMER_QUESTIONS | SITE_VISIT_REQUIRED",
-    "confidence_score":0,
-    "reason":""
+    "status": "READY_TO_ESTIMATE | PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS | NEEDS_CUSTOMER_QUESTIONS | SITE_VISIT_REQUIRED",
+    "confidence_score": 0,
+    "reason": ""
   }
 }`;
 }
 
 function buildEstimatePrompt(input, analysis) {
-  return `You are the Senior Construction Estimator for Sani Building Corp, an experienced, fully insured NYC-metro renovation and repair contractor.
+  return `You are the Senior Construction Estimator for Sani Building Corp in the NYC metro area.
 
-Create a realistic contractor estimate from the STRUCTURED PROJECT ANALYSIS below. Do not price directly from the customer's long paragraph without following the structured analysis.
+You receive a STRUCTURED project understanding prepared by another AI. Price the WHOLE documented project accurately and conservatively enough to protect the contractor while remaining market-realistic. Do not manufacture work that is unsupported.
 
-STRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.
+STRICT WORDING RULE: Never use the word "licensed" or make a licensing claim.
 
-RAW INPUT FOR REFERENCE:
+CUSTOMER / REQUEST INPUT:
 ${JSON.stringify(input, null, 2)}
 
-STRUCTURED PROJECT ANALYSIS — SOURCE OF TRUTH:
+STRUCTURED PROJECT UNDERSTANDING:
 ${JSON.stringify(analysis, null, 2)}
 
 ESTIMATING METHOD:
-1. Create a complete trade package for EVERY selected trade.
-2. For each trade include all applicable phases: protection, mobilization, demolition/removal, disposal, preparation, rough work, installation, finishing, testing, touch-ups and cleanup.
-3. Do not add unrelated upgrades. Include normal enabling work required to complete the expressly requested result.
-4. Separate finish materials from rough/installation materials.
-5. Customer-supplied items receive no material charge, but installation labor and all needed rough/installation materials remain included.
-6. Use crew-day/production logic for substantial projects. Do not compress a full bathroom or multi-room renovation into a few token hours.
-7. Use quantities and dimensions from the analysis. Reconcile overlapping measurements; do not double count.
-8. Include NYC access impacts supported by the input: walk-up handling, floor protection, debris movement, occupied-space protection, restricted access and coordination.
-9. Include supervision/project coordination for multi-trade work.
-10. Include delivery, material handling and final cleaning when applicable.
-11. Keep explicit exclusions and customer carve-outs excluded.
-12. Alternatives requested by the customer go in options and are not added to the base total unless the base scope expressly selects one.
-13. For an alternate, provide a COMPLETE alternate price, including labor, materials, disposal and finishing required for that alternate.
-14. Do not choose the cheapest interpretation merely to reduce the number. Use the reasonable professional interpretation documented in the analysis.
-15. Do not inflate quantities. Accuracy means complete scope at realistic production rates, not padding.
-16. Use current NYC-metro contractor selling rates. Rates must support overhead and field realities; markup is applied separately.
-17. Apply markup to labor and materials through markupPct. Default to ${DEFAULT_MARKUP}% unless contractor house rules specify otherwise.
-18. If pricing readiness is PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS, generate a preliminary estimate and clearly list assumptions internally.
-19. If critical information is missing, still draft only the reliably priceable scope and set estimateStatus accordingly. Never pretend a precise final price is guaranteed.
+1. Build the estimate TRADE BY TRADE. Every selected trade must receive appropriate labor and necessary contractor-supplied rough/installation materials.
+2. For substantial renovations, use production/crew logic instead of compressing the job into a few generic hourly lines.
+3. Separate meaningful operations: protection/setup, demo/removal, disposal/handling, preparation, rough work, installation, finish work, cleanup, project coordination.
+4. Every labor and material line MUST contain "section" equal to the appropriate trade (Bathroom, Flooring, Painting, Windows, Carpentry, etc.).
+5. Customer-supplied finish materials: DO NOT charge purchase price for the finish product itself. DO include:
+   - installation labor
+   - delivery/handling if contractor responsibility
+   - rough and connection materials
+   - waterproofing/backer board/thinset/grout/sealant as applicable
+   - plumbing fittings/connectors
+   - wiring/boxes/fasteners as applicable
+   - floor prep/adhesive/consumables
+   - protection and disposal
+6. Bathroom renovation generally requires separate consideration of:
+   - protection
+   - demolition/removal
+   - debris handling/disposal
+   - plumbing disconnect/rough/connection work where applicable
+   - shower base/pan and drain preparation
+   - waterproofing
+   - wall/floor substrate prep
+   - tile installation
+   - grout/sealant
+   - vanity/toilet/fixture installation
+   - shower glass installation/fabrication if contractor supplied
+   - electrical/light work if requested
+   - paint/finish work if requested
+   - cleanup
+7. Flooring generally requires existing-floor removal if requested, debris disposal, subfloor evaluation/preparation, installation, cuts/fitting/transitions and cleanup. Do not add underlayment when customer explicitly says none.
+8. Painting must account for measured/estimated paintable area, prep, patching, protection, coats and included trim/doors/ceilings. Honor excluded rooms.
+9. Window replacement must include removal, disposal, opening prep, installation, insulation/sealant/flashing/weatherproofing and finish work appropriate to the request.
+10. Walk-up/access conditions require realistic carrying, debris movement and loading labor when documented.
+11. Multi-trade projects require project coordination/supervision when warranted.
+12. Do not use a "smallest reasonable interpretation" rule. Detailed customer information should produce a detailed estimate.
+13. Do not inflate by adding arbitrary contingency inside labor quantities. Use reasonable NYC production rates and the provided markup field.
+14. Do not double-mark up individual line rates. Return base contractor cost/rate and markupPct separately.
+15. If required information is unknown but analysis permits a preliminary estimate, state the assumption instead of silently choosing the cheapest interpretation.
+16. Preserve customer-requested alternate options OUTSIDE the base estimate. Option prices must include complete incremental labor/material effect for that option.
+17. Do not put customer-supplied finish purchases in materials. Record them under customerSupplied.
+18. Do not omit low-visibility but real work such as setup, protection, hauling, cleanup or sealants.
 
-BASE NYC SELLING-RATE GUIDANCE (house rules override):
-- General labor / helper: $65-$90 per hour
-- Carpenter / finish installer: $95-$135 per hour
-- Tile installer: $105-$145 per hour
-- Plumber: $125-$175 per hour
-- Electrician: $125-$175 per hour
-- Painter: $60-$90 per hour
-- Demolition worker: $65-$90 per hour each
-- Project supervision / coordination: $95-$140 per hour
-Use crew days where clearer: qty is total crew-days and rate is total cost per crew-day.
+NYC-METRO LABOR GUIDANCE (use professional judgment, not blindly):
+- General labor / demolition / helper: often $60-$90/hr contractor cost basis
+- Painter / finisher: often $65-$90/hr
+- Skilled carpenter / tile installer / flooring installer: often $90-$135/hr
+- Plumber / electrician / specialist: often $120-$175/hr
+- Project coordination / supervisor: often $95-$150/hr
+These are guidelines only; complexity, access and skill level matter.
 
-COMPLETENESS REQUIREMENTS:
-- Every selected trade must have at least one labor line unless explicitly excluded.
-- Every installation of a customer-supplied item must have matching labor.
-- Rough/installation materials must remain even when finish items are customer-supplied.
-- Include protection and cleanup for renovation work.
-- Include demolition/disposal where removal is requested.
-- Include access/handling when supported by site conditions.
-- Include plumbing, electrical, waterproofing and glass installation when requested.
-- Large multi-trade projects may require dozens of lines. Never force them into a 4-10 line limit.
-
-Return ONLY valid JSON with this shape:
+OUTPUT JSON ONLY:
 {
-  "projectTitle":"",
-  "summary":"",
-  "scopeOfWork":"",
-  "estimateStatus":"READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED",
-  "labor":[
-    {"item":"","qty":1,"unit":"hrs | days | crew-days | ea | sqft | lf","rate":0,"section":""}
+  "projectTitle": "",
+  "summary": "2-4 customer-friendly sentences",
+  "estimateStatus": "READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED",
+  "labor": [
+    { "section": "Bathroom", "item": "Bathroom demolition and debris loading", "qty": 24, "unit": "hrs", "rate": 75 }
   ],
-  "materials":[
-    {"item":"","qty":1,"unit":"ea | sqft | lf | gal | bag | box | allowance","rate":0,"section":""}
+  "materials": [
+    { "section": "Bathroom", "item": "Waterproofing membrane and accessories", "qty": 1, "unit": "allowance", "rate": 650 }
   ],
-  "customerSupplied":[
-    {"item":"","section":"","note":"Installation labor and required rough materials remain included"}
+  "customerSupplied": [
+    { "section": "Bathroom", "item": "Vanity", "note": "Purchase price excluded; installation and required connections included" }
   ],
-  "exclusions":[],
-  "options":[
-    {"label":"","description":"","price":0,"section":""}
+  "exclusions": [],
+  "options": [
+    { "section": "Windows", "label": "Option A — Replace all windows", "description": "", "price": 0 }
   ],
-  "timelineText":"",
-  "markupPct":${DEFAULT_MARKUP},
-  "assumptions":[],
-  "internalScopeChecklist":[
-    {"trade":"","required_items":[],"covered":true,"missing":[]}
+  "timelineText": "",
+  "markupPct": 25,
+  "assumptions": [],
+  "internalScopeChecklist": [
+    { "trade": "Bathroom", "covered": true, "notes": "" }
   ],
-  "notes":""
+  "notes": "Internal estimator notes only"
 }`;
 }
 
 function buildRepairPrompt(input, analysis, estimate, validation) {
-  return `You are repairing an incomplete or unrealistic renovation estimate for Sani Building Corp.
+  return `You are performing a mandatory estimate QA repair for Sani Building Corp.
 
-STRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.
+STRICT WORDING RULE: Never use the word "licensed" or make a licensing claim.
+
+The previous estimate failed deterministic validation. Repair omissions; do not simply raise prices arbitrarily.
 
 CUSTOMER INPUT:
 ${JSON.stringify(input, null, 2)}
 
-PROJECT ANALYSIS:
+PROJECT UNDERSTANDING:
 ${JSON.stringify(analysis, null, 2)}
 
-FAILED ESTIMATE:
+FAILED DRAFT:
 ${JSON.stringify(estimate, null, 2)}
 
-VALIDATION FAILURES:
+VALIDATION RESULTS:
 ${JSON.stringify(validation, null, 2)}
 
-Rebuild the estimate completely. Correct every validation failure. Do not merely add a note. Add the missing labor, rough materials, access, disposal, supervision or trade lines. Preserve customer exclusions and do not charge for customer-supplied finish items. Use realistic NYC production and crew-day logic. Return ONLY JSON in exactly the same estimate shape as the failed estimate.`;
+REPAIR RULES:
+- Correct every failure specifically.
+- Ensure every selected trade has labor and appropriate rough/installation materials.
+- Preserve all customer exclusions and customer-supplied finish materials.
+- Customer-supplied finish materials still need installation labor and supporting materials.
+- Add missing protection, demolition, disposal, handling, preparation, cleanup and coordination only where the documented scope requires them.
+- Recalculate quantities/durations using realistic crew/production logic.
+- Preserve alternate options outside the base total.
+- Do not solve a low-total warning by adding a fake lump sum or arbitrary "contingency" line.
+- Return the COMPLETE replacement estimate, not a patch.
+
+Use exactly the same JSON schema as the original estimate request and return JSON only.`;
 }
 
 function normalizeProjectAnalysis(raw, input) {
   const selectedTrades = unique([
-    ...(Array.isArray(raw.selected_trades) ? raw.selected_trades : []),
+    ...toStringArray(raw.selected_trades),
     ...input.request.selectedServices,
   ].map(titleCase).filter(Boolean));
 
   const missing = Array.isArray(raw.missing_information) ? raw.missing_information : [];
-  let questions = Array.isArray(raw.clarification_questions) ? raw.clarification_questions : [];
-  if (!questions.length) {
-    questions = missing
-      .filter((m) => ["critical", "pricing", "site_condition"].includes(String(m.priority || "").toLowerCase()))
-      .slice(0, 5)
-      .map((m, i) => ({
-        id: `q${i + 1}`,
-        question: cleanText(m.question),
-        helper_text: cleanText(m.reason_needed),
-        type: "short_text",
-        options: [],
-        affected_trade: titleCase(m.affected_trade || "General"),
-        pricing_importance: String(m.priority || "medium").toLowerCase() === "critical" ? "critical" : "high",
-      }));
-  }
+  const questions = (Array.isArray(raw.clarification_questions) ? raw.clarification_questions : [])
+    .filter((q) => q && cleanText(q.question))
+    .filter((q) => cleanText(q.pricing_importance).toLowerCase() !== "low")
+    .slice(0, 5);
 
   const readiness = raw.pricing_readiness || {};
   const allowedStatus = [
@@ -496,7 +519,7 @@ function normalizeProjectAnalysis(raw, input) {
   ];
 
   return {
-    project_summary: cleanText(raw.project_summary),
+    project_summary: cleanText(raw.project_summary || input.request.description || input.request.service),
     project_type: cleanText(raw.project_type || "mixed"),
     selected_trades: selectedTrades.length ? selectedTrades : [titleCase(input.request.service || "General")],
     confirmed_scope: Array.isArray(raw.confirmed_scope) ? raw.confirmed_scope : [],
@@ -739,13 +762,123 @@ function finalizeCustomerPresentation(estimate, analysis, input) {
 
   const conciseSummary = `${tradeNames.length ? tradeNames.join(", ") : "Renovation"} work${location}. ${statusText}`;
 
+  const serviceBreakdown = buildServiceBreakdown(estimate, analysis, sections);
+
   return {
     ...estimate,
     summary: cleanText(estimate.summary).length > 420 ? conciseSummary : (cleanText(estimate.summary) || conciseSummary),
     scopeSections: sections,
+    serviceBreakdown,
     scopeOfWork: scopeText,
-    customerPresentationVersion: "v6-deterministic",
+
+    // Customer-view defaults: show the complete project price and separate
+    // service subtotals, while keeping internal labor/material economics hidden.
+    // The dashboard can still turn any of these on for a specific customer.
+    showLaborCost: false,
+    showMaterialsCost: false,
+    showSectionSubtotals: true,
+    showLaborLines: false,
+    showMaterialLines: false,
+    customerViewMode: "service_summary",
+    customerPresentationVersion: "v7-service-proposal",
   };
+}
+
+function buildServiceBreakdown(estimate, analysis, sections) {
+  const markupMultiplier = 1 + (positiveNumber(estimate.markupPct) / 100);
+  const knownTitles = sections.map((s) => titleCase(s.title || "General"));
+
+  const serviceMap = new Map();
+  const order = [];
+  const ensure = (name) => {
+    const title = titleCase(name || "General") || "General";
+    if (!serviceMap.has(title)) {
+      serviceMap.set(title, {
+        title,
+        included: [],
+        customerSupplies: [],
+        notIncluded: [],
+        subtotal: 0,
+        options: [],
+      });
+      order.push(title);
+    }
+    return serviceMap.get(title);
+  };
+
+  sections.forEach((section) => {
+    ensure(section.title).included.push(...(section.items || []));
+  });
+
+  const addLine = (line) => {
+    const section = titleCase(line.section || inferTradeForItem(line.item, knownTitles) || "General") || "General";
+    ensure(section).subtotal += positiveNumber(line.qty) * positiveNumber(line.rate) * markupMultiplier;
+  };
+  (estimate.labor || []).forEach(addLine);
+  (estimate.materials || []).forEach(addLine);
+
+  (estimate.customerSupplied || []).forEach((entry) => {
+    const item = typeof entry === "string" ? entry : entry.item;
+    if (!cleanText(item)) return;
+    const section = typeof entry === "object" && entry.section
+      ? entry.section
+      : inferTradeForItem(item, knownTitles);
+    ensure(section || "General").customerSupplies.push(cleanText(item));
+  });
+
+  const assignExclusion = (text) => {
+    const item = cleanText(text);
+    if (!item) return;
+    const section = inferProposalSection(item, knownTitles);
+    ensure(section || "General").notIncluded.push(item);
+  };
+  (estimate.exclusions || []).forEach(assignExclusion);
+  (analysis.confirmed_scope || []).forEach((block) => {
+    (block.customer_exclusions || []).forEach((item) => {
+      const target = block.trade || inferTradeForItem(item, knownTitles);
+      ensure(target || "General").notIncluded.push(cleanText(item));
+    });
+  });
+
+  (estimate.options || []).forEach((option) => {
+    const section = option.section || inferProposalSection(`${option.label} ${option.description || ""}`, knownTitles);
+    ensure(section || "General").options.push(option);
+  });
+
+  return order.map((name) => {
+    const service = serviceMap.get(name);
+    return {
+      ...service,
+      included: unique(service.included.map(cleanText).filter(Boolean)),
+      customerSupplies: unique(service.customerSupplies.map(cleanText).filter(Boolean)),
+      notIncluded: unique(service.notIncluded.map(cleanText).filter(Boolean)),
+      subtotal: roundCurrency(service.subtotal),
+    };
+  }).filter((service) =>
+    service.included.length ||
+    service.customerSupplies.length ||
+    service.notIncluded.length ||
+    service.subtotal > 0 ||
+    service.options.length
+  );
+}
+
+
+function inferProposalSection(item, trades) {
+  const text = String(item || "").toLowerCase();
+  const mappings = [
+    ["window", "Windows"],
+    ["paint", "Painting"], ["primer", "Painting"], ["ceiling", "Painting"],
+    ["hardwood", "Flooring"], ["flooring", "Flooring"], ["subfloor", "Flooring"], ["baseboard", "Flooring"],
+    ["bath", "Bathroom"], ["tile", "Bathroom"], ["vanity", "Bathroom"], ["toilet", "Bathroom"],
+    ["faucet", "Bathroom"], ["shower", "Bathroom"], ["mirror", "Bathroom"], ["plumb", "Bathroom"],
+    ["waterproof", "Bathroom"], ["glass enclosure", "Bathroom"],
+    ["cabinet", "Kitchen"], ["countertop", "Kitchen"],
+  ];
+  for (const [token, trade] of mappings) {
+    if (text.includes(token)) return trades.find((t) => sameTrade(t, trade)) || trade;
+  }
+  return "General";
 }
 
 function buildScopeSections(estimate, analysis) {
@@ -862,31 +995,36 @@ function callOpenAI(apiKey, prompt) {
         res.on("data", (chunk) => chunks.push(chunk));
         res.on("end", () => {
           const body = Buffer.concat(chunks).toString("utf8");
-          if (res.statusCode < 200 || res.statusCode >= 300) {
-            return reject(stageError("openai_api", `OpenAI ${res.statusCode}: ${body.slice(0, 500)}`));
-          }
-          try {
-            const json = JSON.parse(body);
-            const direct = cleanText(json.output_text);
-            if (direct) return resolve(direct);
-            const text = (json.output || [])
-              .flatMap((item) => item.content || [])
-              .filter((part) => part.type === "output_text" || part.type === "text")
-              .map((part) => part.text || "")
-              .join("");
-            if (!text) return reject(stageError("openai_api", "OpenAI returned no output text"));
-            resolve(text);
-          } catch (error) {
-            reject(stageError("openai_api", `Invalid OpenAI response: ${body.slice(0, 300)}`));
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              const json = JSON.parse(body);
+              const text = extractOpenAIText(json);
+              if (!text) return reject(new Error(`OpenAI returned no text: ${body.slice(0, 400)}`));
+              resolve(text);
+            } catch (error) {
+              reject(new Error(`Bad OpenAI response: ${body.slice(0, 400)}`));
+            }
+          } else {
+            reject(new Error(`OpenAI ${res.statusCode}: ${body.slice(0, 500)}`));
           }
         });
       }
     );
-    req.on("timeout", () => req.destroy(stageError("openai_api", "OpenAI request timed out")));
-    req.on("error", (error) => reject(error.stage ? error : stageError("openai_api", error.message)));
+    req.on("error", reject);
     req.write(payload);
     req.end();
   });
+}
+
+function extractOpenAIText(json) {
+  if (typeof json.output_text === "string" && json.output_text.trim()) return json.output_text;
+  const chunks = [];
+  (json.output || []).forEach((item) => {
+    (item.content || []).forEach((part) => {
+      if (typeof part.text === "string") chunks.push(part.text);
+    });
+  });
+  return chunks.join("\n");
 }
 
 function callClaude(apiKey, prompt, maxTokens) {
@@ -943,27 +1081,29 @@ function parseAiJson(text, label) {
     .replace(/^```\s*/i, "")
     .replace(/```\s*$/i, "")
     .trim();
+
   try {
     return JSON.parse(cleaned);
-  } catch (firstError) {
-    const start = cleaned.indexOf("{");
-    const end = cleaned.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      try {
-        return JSON.parse(cleaned.slice(start, end + 1));
-      } catch (_) {
-        // fall through
-      }
+  } catch (error) {
+    const first = cleaned.indexOf("{");
+    const last = cleaned.lastIndexOf("}");
+    if (first >= 0 && last > first) {
+      try { return JSON.parse(cleaned.slice(first, last + 1)); } catch (_) {}
     }
-    throw new Error(`AI returned invalid JSON for ${label}: ${cleaned.slice(0, 500)}`);
+    console.error(`AI ${label} raw response:`, cleaned.slice(0, 2500));
+    throw new Error(`AI returned invalid JSON for ${label}`);
   }
 }
 
+function safeJsonParse(value, fallback) {
+  try { return value ? JSON.parse(value) : fallback; } catch (_) { return fallback; }
+}
+
 function mapReadinessToEstimateStatus(status) {
-  if (status === "READY_TO_ESTIMATE") return "READY";
   if (status === "SITE_VISIT_REQUIRED") return "SITE_VISIT_REQUIRED";
   if (status === "NEEDS_CUSTOMER_QUESTIONS") return "NEEDS_CLARIFICATION";
-  return "PRELIMINARY";
+  if (status === "PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS") return "PRELIMINARY";
+  return "READY";
 }
 
 function inferTradeForItem(item, trades) {
@@ -1016,34 +1156,30 @@ function titleCase(value) {
 }
 
 function toStringArray(value) {
-  return (Array.isArray(value) ? value : [])
-    .map((item) => cleanText(typeof item === "string" ? item : item && (item.item || item.text)))
-    .filter(Boolean);
+  return (Array.isArray(value) ? value : []).map((v) => cleanText(v)).filter(Boolean);
 }
 
 function unique(values) {
-  return [...new Set(values)];
+  const seen = new Set();
+  return values.filter((v) => {
+    const key = String(v).toLowerCase().trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function positiveNumber(value) {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : 0;
 }
 
 function roundCurrency(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
 }
 
-function safeJsonParse(value, fallback) {
-  try {
-    return JSON.parse(value || "{}");
-  } catch (_) {
-    return fallback;
-  }
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function jsonResponse(statusCode, body) {
