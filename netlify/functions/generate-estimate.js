@@ -1,5 +1,5 @@
 // netlify/functions/generate-estimate.js
-// Smart Renovation Estimator v5.1 — Aug 6, 2026
+// Smart Renovation Estimator v6 — Aug 6, 2026
 //
 // Pipeline:
 // 1) Read and structure the full customer request.
@@ -8,12 +8,15 @@
 // 4) Validate trade coverage, installation labor, rough materials and total realism.
 // 5) Save both the internal project analysis and the estimate draft to Netlify Blobs.
 //
+// V6 uses OpenAI for structured project understanding, Claude for estimating,
+// and deterministic JavaScript for the customer-facing scope.
 // Backwards compatible with the existing dashboard response shape.
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 
-const MODEL = process.env.ESTIMATOR_MODEL || "claude-sonnet-4-5-20250929";
+const CLAUDE_MODEL = process.env.ESTIMATOR_MODEL || "claude-sonnet-4-5-20250929";
+const OPENAI_ANALYSIS_MODEL = process.env.ESTIMATOR_ANALYSIS_MODEL || "gpt-5-mini";
 const DEFAULT_MARKUP = 25;
 
 exports.handler = async function handler(event) {
@@ -29,8 +32,11 @@ exports.handler = async function handler(event) {
     const ref = String(body.ref || "").trim();
     if (!ref) return jsonResponse(400, { error: "Missing ref" });
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return jsonResponse(500, { error: "ANTHROPIC_API_KEY not set" });
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!anthropicKey && !openaiKey) {
+      return jsonResponse(500, { error: "No AI provider configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY." });
+    }
 
     // Load the request through a resilient storage adapter. It first uses
     // Netlify Blobs and, if the legacy Blob context rejects its credentials,
@@ -44,12 +50,16 @@ exports.handler = async function handler(event) {
 
     // PASS 1: Understand the project before pricing it.
     const analysisPrompt = buildProjectAnalysisPrompt(input);
-    const rawAnalysis = await callClaude(apiKey, analysisPrompt, 6000);
+    const rawAnalysis = openaiKey
+      ? await callOpenAI(openaiKey, analysisPrompt)
+      : await callClaude(anthropicKey, analysisPrompt, 6000);
     const projectAnalysis = normalizeProjectAnalysis(parseAiJson(rawAnalysis, "project analysis"), input);
 
     // PASS 2: Price the structured scope, not the raw paragraph alone.
     const estimatePrompt = buildEstimatePrompt(input, projectAnalysis);
-    const rawEstimate = await callClaude(apiKey, estimatePrompt, 8000);
+    const rawEstimate = anthropicKey
+      ? await callClaude(anthropicKey, estimatePrompt, 8000)
+      : await callOpenAI(openaiKey, estimatePrompt);
     let estimate = normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis);
 
     // Deterministic validation catches omissions even when the model misses them.
@@ -58,11 +68,14 @@ exports.handler = async function handler(event) {
     // One automatic repair pass when the draft is incomplete or suspiciously low.
     if (!validation.passed) {
       const repairPrompt = buildRepairPrompt(input, projectAnalysis, estimate, validation);
-      const rawRepair = await callClaude(apiKey, repairPrompt, 8000);
+      const rawRepair = anthropicKey
+        ? await callClaude(anthropicKey, repairPrompt, 8000)
+        : await callOpenAI(openaiKey, repairPrompt);
       estimate = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);
       validation = validateEstimate(estimate, projectAnalysis, input);
     }
 
+    estimate = finalizeCustomerPresentation(estimate, projectAnalysis, input);
     estimate.validation = validation;
     estimate.pricingReadiness = projectAnalysis.pricing_readiness;
     estimate.clarificationQuestions = projectAnalysis.clarification_questions;
@@ -89,6 +102,11 @@ exports.handler = async function handler(event) {
       projectAnalysis: record.projectAnalysis,
       status: record.status,
       warning: persistenceWarning,
+      aiProviders: {
+        understanding: openaiKey ? `OpenAI ${OPENAI_ANALYSIS_MODEL}` : `Anthropic ${CLAUDE_MODEL}`,
+        estimating: anthropicKey ? `Anthropic ${CLAUDE_MODEL}` : `OpenAI ${OPENAI_ANALYSIS_MODEL}`,
+        customerPresentation: "Deterministic Sani Building Corp template",
+      },
       requiresClarification:
         ["NEEDS_CUSTOMER_QUESTIONS", "SITE_VISIT_REQUIRED"].includes(
           projectAnalysis.pricing_readiness.status
@@ -197,6 +215,7 @@ function stageError(stage, message) {
 function inferFailureStage(message) {
   const text = String(message || "").toLowerCase();
   if (/load estimate|blob|siteid|expected pattern|storage/.test(text)) return "load_estimate";
+  if (/openai/.test(text)) return "openai_api";
   if (/claude|anthropic|timed out|api key/.test(text)) return "claude_api";
   if (/invalid json|returned invalid json|parse/.test(text)) return "ai_json";
   if (/save|persist/.test(text)) return "save_estimate";
@@ -702,9 +721,177 @@ function calculateSubtotal(estimate) {
   return labor + materials;
 }
 
+
+function finalizeCustomerPresentation(estimate, analysis, input) {
+  const sections = buildScopeSections(estimate, analysis);
+  const scopeText = sections
+    .map((section) => `${section.title.toUpperCase()}:\n${section.items.map((item) => `• ${item}`).join("\n")}`)
+    .join("\n\n");
+
+  const tradeNames = sections.map((s) => s.title).filter(Boolean);
+  const address = cleanText(input.customer.address);
+  const location = address ? ` at ${address}` : "";
+  const statusText = estimate.estimateStatus === "PRELIMINARY"
+    ? "This is a preliminary estimate based on the information provided and listed assumptions."
+    : estimate.estimateStatus === "SITE_VISIT_REQUIRED"
+      ? "A site visit is required before final pricing can be confirmed."
+      : "The estimate is based on the confirmed scope and quantities provided.";
+
+  const conciseSummary = `${tradeNames.length ? tradeNames.join(", ") : "Renovation"} work${location}. ${statusText}`;
+
+  return {
+    ...estimate,
+    summary: cleanText(estimate.summary).length > 420 ? conciseSummary : (cleanText(estimate.summary) || conciseSummary),
+    scopeSections: sections,
+    scopeOfWork: scopeText,
+    customerPresentationVersion: "v6-deterministic",
+  };
+}
+
+function buildScopeSections(estimate, analysis) {
+  const sectionOrder = [];
+  const grouped = new Map();
+
+  const ensure = (name) => {
+    const title = titleCase(name || "General") || "General";
+    if (!grouped.has(title)) {
+      grouped.set(title, []);
+      sectionOrder.push(title);
+    }
+    return grouped.get(title);
+  };
+
+  // Labor descriptions are the most useful customer-facing scope source.
+  estimate.labor.forEach((line) => {
+    const item = customerFriendlyScopeItem(line.item);
+    if (item) ensure(line.section).push(item);
+  });
+
+  // Add confirmed scope facts only when not already represented.
+  (analysis.confirmed_scope || []).forEach((block) => {
+    const section = titleCase(block.trade || "General") || "General";
+    (block.scope_items || []).forEach((raw) => {
+      const item = customerFriendlyScopeItem(raw);
+      if (item) ensure(section).push(item);
+    });
+  });
+
+  // Add material-system details that matter to the customer, but never prices/quantities here.
+  estimate.materials.forEach((line) => {
+    if (!/(waterproof|membrane|backer|thinset|grout|primer|paint|sealant|insulation|flashing|underlayment|leveling|fastener|protection)/i.test(line.item)) return;
+    const item = `Provide and use ${sentenceCase(line.item)}`;
+    ensure(line.section).push(item);
+  });
+
+  return sectionOrder.map((title) => {
+    const items = unique(grouped.get(title).map(normalizeScopeSentence))
+      .filter(Boolean)
+      .filter((item, index, arr) => arr.findIndex((other) => scopeSentencesEquivalent(item, other)) === index)
+      .slice(0, 12);
+    return { title, items };
+  }).filter((section) => section.items.length);
+}
+
+function customerFriendlyScopeItem(value) {
+  let text = cleanText(value)
+    .replace(/^labor\s*[-:]\s*/i, "")
+    .replace(/\s*\([^)]*hours?[^)]*\)\s*/ig, " ")
+    .replace(/\s*@\s*\$?[\d,.]+.*$/i, "")
+    .replace(/\bqty\.?\s*\d+(?:\.\d+)?\b/ig, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  if (!text) return "";
+  if (/^(project management|supervision|coordination)$/i.test(text)) return "Coordinate trades, scheduling, deliveries, and quality control";
+  if (/^(cleanup|final cleanup)$/i.test(text)) return "Complete final cleanup and remove construction debris";
+  return normalizeScopeSentence(text);
+}
+
+function normalizeScopeSentence(value) {
+  let text = cleanText(value).replace(/[.;,:\-–—]+$/g, "").trim();
+  if (!text) return "";
+  text = text.charAt(0).toUpperCase() + text.slice(1);
+  return text;
+}
+
+function sentenceCase(value) {
+  const text = cleanText(value).replace(/[.;,:]+$/g, "");
+  if (!text) return "";
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+function scopeSentencesEquivalent(a, b) {
+  const normalize = (v) => importantWords(v).sort().join(" ");
+  const aa = normalize(a);
+  const bb = normalize(b);
+  return aa === bb || (aa.length > 12 && bb.length > 12 && (aa.includes(bb) || bb.includes(aa)));
+}
+
+function callOpenAI(apiKey, prompt) {
+  const payload = JSON.stringify({
+    model: OPENAI_ANALYSIS_MODEL,
+    store: false,
+    input: [
+      {
+        role: "system",
+        content: [{ type: "input_text", text: "Return one valid JSON object only. Do not use markdown or commentary." }],
+      },
+      {
+        role: "user",
+        content: [{ type: "input_text", text: prompt }],
+      },
+    ],
+    text: { format: { type: "json_object" }, verbosity: "low" },
+  });
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "api.openai.com",
+        port: 443,
+        path: "/v1/responses",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(payload),
+          Authorization: `Bearer ${apiKey}`,
+        },
+        timeout: 90000,
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          const body = Buffer.concat(chunks).toString("utf8");
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            return reject(stageError("openai_api", `OpenAI ${res.statusCode}: ${body.slice(0, 500)}`));
+          }
+          try {
+            const json = JSON.parse(body);
+            const direct = cleanText(json.output_text);
+            if (direct) return resolve(direct);
+            const text = (json.output || [])
+              .flatMap((item) => item.content || [])
+              .filter((part) => part.type === "output_text" || part.type === "text")
+              .map((part) => part.text || "")
+              .join("");
+            if (!text) return reject(stageError("openai_api", "OpenAI returned no output text"));
+            resolve(text);
+          } catch (error) {
+            reject(stageError("openai_api", `Invalid OpenAI response: ${body.slice(0, 300)}`));
+          }
+        });
+      }
+    );
+    req.on("timeout", () => req.destroy(stageError("openai_api", "OpenAI request timed out")));
+    req.on("error", (error) => reject(error.stage ? error : stageError("openai_api", error.message)));
+    req.write(payload);
+    req.end();
+  });
+}
+
 function callClaude(apiKey, prompt, maxTokens) {
   const payload = JSON.stringify({
-    model: MODEL,
+    model: CLAUDE_MODEL,
     max_tokens: maxTokens,
     temperature: 0.1,
     messages: [{ role: "user", content: prompt }],
