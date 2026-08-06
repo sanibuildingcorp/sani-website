@@ -3201,17 +3201,6 @@ function renderEdit() {
         '<div class="cust-field"><span class="lbl">Photos</span><span class="val">' + (req.photoCount || 0) + '</span></div>' +
       '</div>' +
       (req.description ? '<div class="cust-field" style="margin-top:8px"><span class="lbl">Description</span><span class="val" style="font-size:13px;line-height:1.6;white-space:pre-wrap">' + esc(req.description) + '</span></div>' : "") +
-      /* Materials the customer said THEY are buying (final step of the intake form).
-         The estimator already prices these at $0 and keeps the labor — this row exists
-         so Zura can verify that list before he clicks Generate. */
-      ((Array.isArray(req.customerSupplies) && req.customerSupplies.length)
-        ? '<div class="cust-field" style="margin-top:8px;padding:10px 12px;background:#fff6e0;border-left:3px solid #c8860a;border-radius:6px">' +
-            '<span class="lbl" style="color:#8a6a1a">Customer supplies (not charged)</span>' +
-            '<span class="val" style="font-size:13px;line-height:1.7;font-weight:600">' +
-              esc(req.customerSupplies.join(" \u00b7 ")) +
-            '</span>' +
-          '</div>'
-        : "") +
       (answersHtml ? '<div class="answers-list">' + answersHtml + '</div>' : "") +
       (photosHtml ? '<div class="cust-photos">' + photosHtml + '</div>' : "") +
       analysisHtml +
