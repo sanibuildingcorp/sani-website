@@ -61,7 +61,7 @@ exports.handler = async function (event) {
 BEFORE YOU WRITE ANYTHING, CHECK YOUR QUESTION AGAINST THIS LIST. If it falls into any of these, you MUST return {"done": true} instead. These are not preferences, they are hard bans:
 1. WHO SUPPLIES THE MATERIALS. Never ask it. Not "who is supplying the tile", not "are you providing the fixtures", not "which fixtures are you supplying", not any wording of it. The form has a dedicated final step that collects this properly. Asking here duplicates it and wastes the customer's patience.
 2. QUALITY LEVEL, GRADE OR TIER. Never ask budget vs mid-range vs high-end vs luxury, or "what quality fixtures". Everyone says high-end and it tells us nothing. Assume mid-range; the contractor adjusts.
-3. BRAND OR COLOUR. Never ask. That is a conversation after they become a lead.
+3. BRAND, COLOUR OR PAINT FINISH. Never ask which sheen (matte, eggshell, satin, semi-gloss) or which colour or brand. They all cost the same to buy and the same to apply. That is a conversation after they become a lead.
 4. ANYTHING THE CUSTOMER ALREADY ANSWERED, in their description or in earlier answers.
 Asking a banned question loses the customer. Returning done:true never does.
 
@@ -203,6 +203,8 @@ const BANNED_PATTERNS = [
   /\b(budget[\s-]?friendly|mid[\s-]?range|high[\s-]?end|premium|luxury|designer)\b/i,
   /\bbrand\b/i,
   /\bcolou?r\b/i,
+  /\bpaint\s+(finish|sheen)\b/i,                                    // matte vs eggshell: same price
+  /\b(matte|eggshell|satin|semi[\s-]?gloss|sheen)\b/i,
 ];
 
 function isBannedQuestion(q) {
