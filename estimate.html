@@ -464,6 +464,9 @@ const formData={service:null,serviceLabel:null,serviceAnswers:{},customerSupplie
 // review screen, the submit payload, and the dashboard. Without this it stays empty.
 function saveDesc(){var e=document.getElementById('description-field');if(e)formData.description=e.value.trim();}
 let currentStep=1,currentAIQuestion=null,aiQuestionCount=0;
+/* Every question label the AI has already shown. Sent back so the server can refuse
+   a reworded repeat of a topic it already covered. */
+let askedQuestionLabels=[];
 const TOTAL_STEPS=5;
 // data-step -> number the customer sees. Steps 3 (Property), 4 (old About), 6 (AI analysis)
 // and 7 (Timeline) are retired from the flow - markup kept, never navigated to.
@@ -513,13 +516,14 @@ async function startStep2(){
 async function loadNextAIQuestion(){
   showStep('ai-loading');
   try{
-    const res=await fetch('/.netlify/functions/estimate-ai-question',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:formData.service,serviceLabel:formData.serviceLabel,serviceCount:(formData.service||'').split(',').filter(Boolean).length||1,description:formData.description||'',photoCount:(formData.photos||[]).length,answers:formData.serviceAnswers,questionCount:aiQuestionCount})});
+    const res=await fetch('/.netlify/functions/estimate-ai-question',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:formData.service,serviceLabel:formData.serviceLabel,serviceCount:(formData.service||'').split(',').filter(Boolean).length||1,description:formData.description||'',photoCount:(formData.photos||[]).length,answers:formData.serviceAnswers,questionCount:aiQuestionCount,askedLabels:askedQuestionLabels})});
     const data=await res.json();
     if(data.done||data.fallback){goToStep('supplies');return;}
     currentAIQuestion=data;renderAIQuestion(data);showStep(2);
   }catch(e){console.error(e);goToStep('supplies');}
 }
 function renderAIQuestion(q){
+  if(q&&q.label&&askedQuestionLabels.indexOf(q.label)===-1)askedQuestionLabels.push(q.label);
   document.getElementById('step2-title').textContent=q.label;
   const c=document.getElementById('ai-question-container');
   document.getElementById('continue-2').disabled=true;
