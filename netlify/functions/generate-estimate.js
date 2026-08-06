@@ -1,5 +1,5 @@
 // netlify/functions/generate-estimate.js
-// Smart Renovation Estimator v4 — Aug 6, 2026
+// Smart Renovation Estimator v5 — Aug 6, 2026
 //
 // Pipeline:
 // 1) Read and structure the full customer request.
@@ -32,10 +32,10 @@ exports.handler = async function handler(event) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return jsonResponse(500, { error: "ANTHROPIC_API_KEY not set" });
 
-    // In a deployed Netlify Function, use the site runtime context directly.
-    // Passing undefined siteID/token values can make @netlify/blobs throw
-    // DOMException: "The string did not match the expected pattern."
-    const store = getStore("estimates");
+    // Open the same Netlify Blobs store used by the existing dashboard.
+    // Legacy Netlify Functions do not always receive automatic Blob context,
+    // so v5 supports both automatic runtime credentials and explicit env vars.
+    const store = openEstimateStore();
 
     const record = await store.get(ref, { type: "json" });
     if (!record) return jsonResponse(404, { error: "Estimate not found" });
@@ -84,10 +84,50 @@ exports.handler = async function handler(event) {
         ),
     });
   } catch (err) {
-    console.error("generate-estimate v4 error:", err && err.stack ? err.stack : err);
-    return jsonResponse(500, { error: err.message || "Estimate generation failed" });
+    console.error("generate-estimate v5 error:", err && err.stack ? err.stack : err);
+    const message = err && err.message ? err.message : "Estimate generation failed";
+    const blobConfigError = /environment has not been configured|siteID|site id|blobs|expected pattern/i.test(message);
+    return jsonResponse(500, {
+      error: blobConfigError
+        ? "Estimate storage is not connected. In Netlify, add NETLIFY_SITE_ID and NETLIFY_AUTH_TOKEN (or NETLIFY_BLOBS_TOKEN) to Environment Variables with Functions scope, then redeploy."
+        : message,
+      stage: blobConfigError ? "estimate_storage" : "estimate_generation",
+    });
   }
 };
+
+function openEstimateStore() {
+  const siteID = firstEnv([
+    "NETLIFY_SITE_ID",
+    "SITE_ID",
+    "BLOBS_SITE_ID",
+    "MY_SITE_ID",
+  ]);
+  const token = firstEnv([
+    "NETLIFY_BLOBS_TOKEN",
+    "BLOBS_TOKEN",
+    "NETLIFY_AUTH_TOKEN",
+    "MY_BLOBS_TOKEN",
+  ]);
+
+  // Explicit credentials are the most dependable option for a CommonJS
+  // background/legacy function. Never pass undefined values to getStore.
+  if (siteID && token) {
+    return getStore({ name: "estimates", siteID, token });
+  }
+
+  // On newer Netlify runtimes, the SDK receives the site context automatically.
+  // This keeps the function compatible without forcing duplicate credentials.
+  return getStore("estimates");
+}
+
+function firstEnv(names) {
+  for (const name of names) {
+    const value = cleanText(process.env[name]);
+    if (value) return value;
+  }
+  return "";
+}
 
 function buildEstimatorInput(record, body) {
   const customer = record.customer || {};
