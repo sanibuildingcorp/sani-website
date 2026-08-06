@@ -467,6 +467,9 @@ let currentStep=1,currentAIQuestion=null,aiQuestionCount=0;
 /* Every question label the AI has already shown. Sent back so the server can refuse
    a reworded repeat of a topic it already covered. */
 let askedQuestionLabels=[];
+/* questionId -> trade label ("Bathroom", "Painting"...). Sent with the request so the
+   estimator can file every answer under the right service section. */
+let answerTopics={};
 const TOTAL_STEPS=5;
 // data-step -> number the customer sees. Steps 3 (Property), 4 (old About), 6 (AI analysis)
 // and 7 (Timeline) are retired from the flow - markup kept, never navigated to.
@@ -524,6 +527,12 @@ async function loadNextAIQuestion(){
 }
 function renderAIQuestion(q){
   if(q&&q.label&&askedQuestionLabels.indexOf(q.label)===-1)askedQuestionLabels.push(q.label);
+  /* Trade header. On a multi-service job this tells the customer which part of their
+     project they are answering about, and tells Zura the same when he reads it back. */
+  var tl=(q&&q.topicLabel)?String(q.topicLabel):'Project Details';
+  var eb=document.getElementById('step2-eyebrow');if(eb)eb.textContent=tl;
+  var sl=document.getElementById('step-label');if(sl)sl.textContent=tl;
+  if(q&&q.questionId)answerTopics[q.questionId]=tl;
   document.getElementById('step2-title').textContent=q.label;
   const c=document.getElementById('ai-question-container');
   document.getElementById('continue-2').disabled=true;
@@ -787,7 +796,7 @@ async function submitForm(){
   });
 
   btn.textContent='Sending...';
-  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,customerSupplies:allSupplies(),propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,photoAnalysis:analysisLite,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
+  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,customerSupplies:allSupplies(),answerTopics:answerTopics,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,photoAnalysis:analysisLite,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
   try{
     const res=await fetch('/.netlify/functions/estimate-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!res.ok){let m='Server error '+res.status;if(res.status===413)m='Photos too large.';btn.disabled=false;btn.textContent='Try Again';alert('Something went wrong: '+m+'\n\nRef: '+ref+'. Call (332) 277-0990.');return;}

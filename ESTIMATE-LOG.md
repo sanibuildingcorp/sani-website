@@ -199,6 +199,18 @@ Painting, Carpentry, Windows), then any custom section, with **"General" always 
 - Added paint-finish/sheen to the ban list.
 - Added `SUPPLY_FROM_DESCRIPTION` keyword rules (windows etc.).
 - Added **one-question-per-trade-topic** enforcement via `askedLabels`.
+- **Trade header on every question** (Zura's request). The function returns `topic` +
+  `topicLabel` with each question; the form shows it in the eyebrow and progress label,
+  so a multi-service customer sees BATHROOM / PAINTING / WINDOWS above the question
+  instead of a generic "Project Details". Reuses `TOPIC_PATTERNS` so there is ONE
+  definition of what counts as a trade (also used by the duplicate blocker).
+  Fallbacks: a generic question (size, access, damage) on a SINGLE-service request
+  shows that service; on a multi-service request it shows "Project Details".
+- **Answers are now filed by trade.** `answerTopics` (questionId -> trade) is recorded in
+  the form, saved by `estimate-request.js` into `request.answerTopics`, and
+  `generate-estimate.js` groups the answers by trade in the prompt, telling the model to
+  reuse those trade names as the `section` on the matching lines. This closes the loop:
+  intake trade -> answer -> line `section` -> per-service subtotal on the quote.
 
 ---
 
@@ -269,6 +281,7 @@ so junk from old runs can look odd. Self-clears as bad questions stop being aske
 | Supplied item still priced | `request.customerSupplies` → the `suppliedBlock` in `generate-estimate.js` |
 | Supply item missing from the grid | `SUPPLY_CATALOG` (by service) + `SUPPLY_FROM_DESCRIPTION` (by keyword) |
 | Sections wrong on the quote | `section` on the lines, then `sectionOf()` in `quote.html` |
+| Wrong/missing trade header on a question | `TOPIC_PATTERNS` + `TOPIC_LABELS` in `estimate-ai-question.js` |
 | Price far too high | Sizing rules in the `generate-estimate.js` prompt; check the smallest-reasonable-interpretation rule and `extraRequest` |
 | Quote shows nothing new after a commit | **Cloudflare → Caching → Purge Everything** |
 | Confirmation email never arrives | Netlify `submission-created` trigger silently never fires on this site — use the direct client-to-function pattern |
