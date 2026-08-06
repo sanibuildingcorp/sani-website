@@ -16,6 +16,7 @@ exports.handler = async function (event) {
   try {
     const body = JSON.parse(event.body);
     const { service, serviceLabel, answers, questionCount, serviceCount, description, photoCount } = body;
+    const askedLabels = Array.isArray(body.askedLabels) ? body.askedLabels.filter(Boolean).map(String) : [];
     const svcN = Math.max(1, Math.min(parseInt(serviceCount) || 1, 5));
 
     if (!service) {
@@ -52,6 +53,11 @@ exports.handler = async function (event) {
       return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ done: true }) };
     }
 
+    // One question per trade, per session. The model kept rewording the same question
+    // ("what flooring is installed" then "what's on the floors being replaced") and
+    // burning slots on a topic it had already covered.
+    const coveredTopics = topicsIn(askedLabels.join(" "));
+
     const answersStr = Object.entries(answers || {})
       .map(([k, v]) => `${k}: ${v}`)
       .join("\n");
@@ -78,6 +84,9 @@ FOLLOW-UP ANSWERS SO FAR:
 ${answersStr || "(none yet)"}
 
 QUESTIONS ALREADY ASKED: ${askedCount}
+EXACT QUESTIONS YOU HAVE ALREADY ASKED (never ask about any of these subjects again, however you reword it):
+${askedLabels.length ? askedLabels.map((l) => "- " + l).join("\n") : "(none yet)"}
+TRADES ALREADY COVERED: ${coveredTopics.join(", ") || "(none yet)"}
 MAXIMUM ALLOWED: ${maxQs}
 
 READ THE DESCRIPTION FIRST. If it already tells you the scope, size, location and condition, return {"done": true} immediately - do not ask filler questions. Never ask for something the customer already wrote. The customer selected ${svcN} service(s): ${serviceLabel}.
@@ -175,6 +184,16 @@ Now respond with the single most useful missing question, or done:true.`;
       return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ done: true }) };
     }
 
+    // Same trade twice = a reworded duplicate. Two answers about one thing is worse
+    // than no answer, because the contractor cannot tell which one is true.
+    if (!question.done) {
+      const newTopics = topicsIn(String(question.label || "") + " " + (Array.isArray(question.options) ? question.options.join(" ") : ""));
+      if (newTopics.some((t) => coveredTopics.indexOf(t) !== -1)) {
+        console.log("Blocked duplicate-topic question:", question.label);
+        return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ done: true }) };
+      }
+    }
+
     return {
       statusCode: 200,
       headers: corsHeaders(),
@@ -206,6 +225,27 @@ const BANNED_PATTERNS = [
   /\bpaint\s+(finish|sheen)\b/i,                                    // matte vs eggshell: same price
   /\b(matte|eggshell|satin|semi[\s-]?gloss|sheen)\b/i,
 ];
+
+// Trade topics. Generic questions (size, access, occupancy, deadline) are intentionally
+// absent — those are fine to ask alongside a trade question.
+const TOPIC_PATTERNS = [
+  { key: "flooring",  re: /\b(floor|flooring|floors|hardwood|laminate|subfloor|carpet|underlayment)\b/i },
+  { key: "windows",   re: /\b(window|windows|sash|glazing)\b/i },
+  { key: "painting",  re: /\b(paint|painting|primer|priming)\b/i },
+  { key: "tile",      re: /\b(tile|tiles|grout|backsplash)\b/i },
+  { key: "bathroom",  re: /\b(bathroom|shower|bathtub|tub|vanity|toilet)\b/i },
+  { key: "kitchen",   re: /\b(kitchen|cabinet|cabinets|countertop)\b/i },
+  { key: "doors",     re: /\b(door|doors)\b/i },
+  { key: "electrical",re: /\b(electric|electrical|outlet|wiring)\b/i },
+  { key: "plumbing",  re: /\b(plumb|plumbing|pipe|drain)\b/i },
+  { key: "deck",      re: /\b(deck|decking|railing)\b/i },
+  { key: "stairs",    re: /\b(stair|stairs|tread|riser)\b/i },
+];
+
+function topicsIn(text) {
+  const t = String(text || "");
+  return TOPIC_PATTERNS.filter((p) => p.re.test(t)).map((p) => p.key);
+}
 
 function isBannedQuestion(q) {
   const hay = [
