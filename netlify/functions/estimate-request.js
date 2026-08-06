@@ -18,7 +18,7 @@ exports.handler = async function (event) {
     const body = JSON.parse(event.body);
     const {
       ref, name, phone, email, address,
-      service, serviceId, serviceAnswers,
+      service, serviceId, serviceAnswers, customerSupplies,
       propertyType, description, timeline,
       photoCount, photos, photoAnalysis, submittedAt,
     } = body;
@@ -41,6 +41,11 @@ exports.handler = async function (event) {
         customer: { name, phone, email, address },
         request: {
           service, serviceId, serviceAnswers,
+          // Main materials the customer said they are buying themselves (final form step).
+          // The estimator prices these at $0 and keeps the labor to install them.
+          customerSupplies: Array.isArray(customerSupplies)
+            ? customerSupplies.filter((x) => x && String(x).trim()).map((x) => String(x).trim())
+            : [],
           propertyType, description, timeline,
           photoCount: photoCount || 0,
           photos: photos || [],
@@ -56,6 +61,9 @@ exports.handler = async function (event) {
           scopeOfWork: "",
           labor: [],
           materials: [],
+          customerSupplied: [],
+          exclusions: [],
+          options: [],
           timelineText: "",
           markupPct: 25,
           notes: "",
@@ -156,6 +164,15 @@ async function sendContractorEmail(resendKey, contractorEmail, data) {
     )
     .join("");
 
+  const suppliesList = Array.isArray(data.customerSupplies)
+    ? data.customerSupplies.filter((x) => x && String(x).trim())
+    : [];
+  const suppliesRow = suppliesList.length
+    ? `<tr><td style="padding:6px 10px;color:#888;width:160px;background:#fff6e0"><strong>Customer supplies</strong></td><td style="padding:6px 10px;background:#fff6e0"><strong>${escapeHtml(
+        suppliesList.join(" \u00b7 ")
+      )}</strong></td></tr>`
+    : "";
+
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
 <body style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;padding:20px;color:#333;line-height:1.6">
 <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:24px;border-radius:10px 10px 0 0;text-align:center">
@@ -182,7 +199,7 @@ async function sendContractorEmail(resendKey, contractorEmail, data) {
     <tr><td style="padding:6px 10px;width:160px;color:#888;background:#faf8f4"><strong>Service</strong></td><td style="padding:6px 10px;font-weight:600">${escapeHtml(data.service)}</td></tr>
     <tr><td style="padding:6px 10px;color:#888;background:#faf8f4"><strong>Property</strong></td><td style="padding:6px 10px">${escapeHtml(data.propertyType || "—")}</td></tr>
     <tr><td style="padding:6px 10px;color:#888;background:#faf8f4"><strong>Timeline</strong></td><td style="padding:6px 10px;color:#b8720a;font-weight:600">${escapeHtml(data.timeline || "—")}</td></tr>
-    ${answerRows}
+    ${suppliesRow}${answerRows}
   </table>
 
   ${data.description ? `<div style="background:#f8f8f8;border-radius:8px;padding:14px;margin-bottom:14px"><strong style="color:#888;font-size:11px;letter-spacing:1px;text-transform:uppercase">Customer Notes</strong><div style="margin-top:8px;font-size:14px;white-space:pre-wrap">${escapeHtml(data.description)}</div></div>` : ""}

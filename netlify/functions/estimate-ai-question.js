@@ -89,8 +89,13 @@ RULES:
 - Options array empty/omitted if type=text
 - NO "replace fixtures" question for bathroom
 - NO "tools" question for handyman
+- NEVER ask about quality level, grade, tier or finish level (e.g. "budget vs mid-range vs high-end", "what quality fixtures", "standard or premium"). Everyone answers "high-end" and it tells us nothing. Price mid-range by default and let the contractor adjust.
+- NEVER ask which brand, colour, style or finish they want. That is a conversation for after they are a lead, not a reason to lose them on a form.
+- NEVER ask who is supplying the materials, or whether they are providing anything themselves. A dedicated final step already collects that. Asking it here duplicates that step.
+- If the customer has already said they are supplying an item, do NOT ask any question about that item (its grade, brand, size or type). They are buying it — it is not ours to specify.
 - For Stair service: include noise fix as a sub-option, not separate service
 - Prioritise the gaps that most affect price: approximate size/area, how many rooms or units, current condition, building type and access, whether the space is occupied or in use, and any deadline
+- THE TEST for every question: does the answer change the PRICE by real money, and is there no other way to get it? If not, do not ask it — return done:true instead. A shorter form wins more work than a perfectly specified one.
 - For commercial jobs also consider: after-hours or overnight access, and whether a certificate of insurance is required
 - NEVER ask anything the description already answers
 - If photos were attached, do not ask them to describe what a photo would obviously show
