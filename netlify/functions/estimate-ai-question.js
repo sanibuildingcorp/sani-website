@@ -41,14 +41,29 @@ exports.handler = async function (event) {
     // A detailed description should end the flow almost immediately.
     const desc = String(description || "").trim();
     const minQs = 0;                                 // a complete description can need nothing
-    const maxQs = Math.min(2 + svcN, 4);             // 1 svc: 3 · 2 svc: 4 · cap 4
+    // The form ends with a dedicated "what are you supplying?" step, so the AI
+    // follow-ups are deliberately short. Typing and tapping is what makes people quit.
+    const maxQs = Math.min(1 + svcN, 3);             // 1 svc: 2 · 2 svc: 3 · cap 3
     const askedCount = questionCount || 0;
+
+    // HARD STOP. The prompt used to be the only thing holding the limit and the model
+    // simply asked more anyway. Enforce it here, before spending an API call.
+    if (askedCount >= maxQs) {
+      return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ done: true }) };
+    }
 
     const answersStr = Object.entries(answers || {})
       .map(([k, v]) => `${k}: ${v}`)
       .join("\n");
 
     const prompt = `You are a contractor's intake assistant for Sani Building Corp in NYC. The customer has ALREADY described their project in their own words. Read it carefully, then ask ONE short follow-up question - but only about something genuinely missing that is needed to price the job.
+
+BEFORE YOU WRITE ANYTHING, CHECK YOUR QUESTION AGAINST THIS LIST. If it falls into any of these, you MUST return {"done": true} instead. These are not preferences, they are hard bans:
+1. WHO SUPPLIES THE MATERIALS. Never ask it. Not "who is supplying the tile", not "are you providing the fixtures", not "which fixtures are you supplying", not any wording of it. The form has a dedicated final step that collects this properly. Asking here duplicates it and wastes the customer's patience.
+2. QUALITY LEVEL, GRADE OR TIER. Never ask budget vs mid-range vs high-end vs luxury, or "what quality fixtures". Everyone says high-end and it tells us nothing. Assume mid-range; the contractor adjusts.
+3. BRAND OR COLOUR. Never ask. That is a conversation after they become a lead.
+4. ANYTHING THE CUSTOMER ALREADY ANSWERED, in their description or in earlier answers.
+Asking a banned question loses the customer. Returning done:true never does.
 
 SERVICE SELECTED: ${serviceLabel || service}
 
@@ -152,6 +167,14 @@ Now respond with the single most useful missing question, or done:true.`;
 
     const question = JSON.parse(jsonMatch[0]);
 
+    // The prompt asks the model not to raise banned topics. It sometimes does anyway,
+    // so this is the backstop: anything matching gets dropped and the flow moves on.
+    // Ending the questions early is always safer than asking a question that loses a lead.
+    if (!question.done && isBannedQuestion(question)) {
+      console.log("Blocked banned intake question:", question.label);
+      return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ done: true }) };
+    }
+
     return {
       statusCode: 200,
       headers: corsHeaders(),
@@ -167,6 +190,29 @@ Now respond with the single most useful missing question, or done:true.`;
     };
   }
 };
+
+// Topics the intake form must never ask about. Checked against the question text AND
+// its options, because the label can look innocent while the options are all grade tiers.
+// Deliberately NOT banned: material type (vinyl vs fibreglass vs wood), size, quantity,
+// condition and access — those move the price by real money.
+const BANNED_PATTERNS = [
+  /\bsuppl(y|ies|ying|ied|ier)\b/i,                                  // who supplies / are you supplying
+  /\bwho\s+(is|will|are|would)\b[\s\S]{0,40}\b(provid|bring|buy|purchas)/i,
+  /\bare you (providing|purchasing|buying)\b/i,
+  /\b(quality|grade|tier)\b/i,                                       // quality level questions
+  /\b(budget[\s-]?friendly|mid[\s-]?range|high[\s-]?end|premium|luxury|designer)\b/i,
+  /\bbrand\b/i,
+  /\bcolou?r\b/i,
+];
+
+function isBannedQuestion(q) {
+  const hay = [
+    String((q && q.label) || ""),
+    String((q && q.questionId) || ""),
+    Array.isArray(q && q.options) ? q.options.join(" ") : "",
+  ].join(" ");
+  return BANNED_PATTERNS.some((re) => re.test(hay));
+}
 
 function corsHeaders() {
   return {
