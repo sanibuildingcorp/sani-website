@@ -1,5 +1,5 @@
 // netlify/functions/generate-estimate.js
-// Smart Renovation Estimator v5 — Aug 6, 2026
+// Smart Renovation Estimator v5.1 — Aug 6, 2026
 //
 // Pipeline:
 // 1) Read and structure the full customer request.
@@ -32,13 +32,13 @@ exports.handler = async function handler(event) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return jsonResponse(500, { error: "ANTHROPIC_API_KEY not set" });
 
-    // Open the same Netlify Blobs store used by the existing dashboard.
-    // Legacy Netlify Functions do not always receive automatic Blob context,
-    // so v5 supports both automatic runtime credentials and explicit env vars.
-    const store = openEstimateStore();
-
-    const record = await store.get(ref, { type: "json" });
-    if (!record) return jsonResponse(404, { error: "Estimate not found" });
+    // Load the request through a resilient storage adapter. It first uses
+    // Netlify Blobs and, if the legacy Blob context rejects its credentials,
+    // falls back to the site's already-deployed get-estimate function.
+    const storage = await loadEstimateRecord(ref, event, body);
+    const store = storage.store;
+    const record = storage.record;
+    if (!record) return jsonResponse(404, { error: "Estimate not found", stage: "load_estimate" });
 
     const input = buildEstimatorInput(record, body);
 
@@ -71,13 +71,24 @@ exports.handler = async function handler(event) {
     record.estimate = estimate;
     record.status = record.status === "new" ? "drafted" : record.status;
     record.updatedAt = new Date().toISOString();
-    await store.setJSON(ref, record);
+    let persistenceWarning = null;
+    if (store) {
+      try {
+        await store.setJSON(ref, record);
+      } catch (saveError) {
+        console.error("generate-estimate v5.1 save warning:", saveError && saveError.stack ? saveError.stack : saveError);
+        persistenceWarning = "The AI draft was generated, but the function could not automatically save it to storage. Review the draft and use the dashboard Save action.";
+      }
+    } else {
+      persistenceWarning = "The AI draft was generated through the storage fallback. Review the draft and use the dashboard Save action.";
+    }
 
     return jsonResponse(200, {
       success: true,
       estimate: record.estimate,
       projectAnalysis: record.projectAnalysis,
       status: record.status,
+      warning: persistenceWarning,
       requiresClarification:
         ["NEEDS_CUSTOMER_QUESTIONS", "SITE_VISIT_REQUIRED"].includes(
           projectAnalysis.pricing_readiness.status
@@ -86,39 +97,110 @@ exports.handler = async function handler(event) {
   } catch (err) {
     console.error("generate-estimate v5 error:", err && err.stack ? err.stack : err);
     const message = err && err.message ? err.message : "Estimate generation failed";
-    const blobConfigError = /environment has not been configured|siteID|site id|blobs|expected pattern/i.test(message);
+    const stage = (err && err.stage) || inferFailureStage(message);
     return jsonResponse(500, {
-      error: blobConfigError
-        ? "Estimate storage is not connected. In Netlify, add NETLIFY_SITE_ID and NETLIFY_AUTH_TOKEN (or NETLIFY_BLOBS_TOKEN) to Environment Variables with Functions scope, then redeploy."
-        : message,
-      stage: blobConfigError ? "estimate_storage" : "estimate_generation",
+      error: message,
+      stage,
+      help: stage === "load_estimate"
+        ? "The request could not be loaded from storage. The function tried both Netlify Blobs and the existing get-estimate endpoint."
+        : stage === "claude_api"
+          ? "Claude could not complete the request. Check the model name, API key, account credit, or request size."
+          : stage === "ai_json"
+            ? "Claude responded, but the returned JSON was incomplete or malformed. Retry once; the raw response is logged in Netlify."
+            : "Review the Netlify function log for the exact stage and message.",
     });
   }
 };
 
-function openEstimateStore() {
-  const siteID = firstEnv([
-    "NETLIFY_SITE_ID",
-    "SITE_ID",
-    "BLOBS_SITE_ID",
-    "MY_SITE_ID",
-  ]);
-  const token = firstEnv([
-    "NETLIFY_BLOBS_TOKEN",
-    "BLOBS_TOKEN",
-    "NETLIFY_AUTH_TOKEN",
-    "MY_BLOBS_TOKEN",
-  ]);
+async function loadEstimateRecord(ref, event, body) {
+  let blobError = null;
 
-  // Explicit credentials are the most dependable option for a CommonJS
-  // background/legacy function. Never pass undefined values to getStore.
-  if (siteID && token) {
-    return getStore({ name: "estimates", siteID, token });
+  // Attempt 1: automatic Netlify runtime context. This is the preferred path
+  // whenever the deployed function receives NETLIFY_BLOBS_CONTEXT.
+  try {
+    const automaticStore = getStore("estimates");
+    const automaticRecord = await automaticStore.get(ref, { type: "json" });
+    if (automaticRecord) return { store: automaticStore, record: automaticRecord, source: "blobs_auto" };
+  } catch (error) {
+    blobError = error;
+    console.error("Blob automatic-context read failed:", error && error.stack ? error.stack : error);
   }
 
-  // On newer Netlify runtimes, the SDK receives the site context automatically.
-  // This keeps the function compatible without forcing duplicate credentials.
-  return getStore("estimates");
+  // Attempt 2: explicit legacy-function credentials. Only attempt this when
+  // both values are present and the site ID has a valid UUID shape.
+  const siteID = firstEnv(["MY_SITE_ID", "NETLIFY_SITE_ID", "SITE_ID", "BLOBS_SITE_ID"]);
+  const token = firstEnv(["MY_BLOBS_TOKEN", "NETLIFY_BLOBS_TOKEN", "BLOBS_TOKEN", "NETLIFY_AUTH_TOKEN"]);
+  if (siteID && token && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(siteID)) {
+    try {
+      const explicitStore = getStore({ name: "estimates", siteID, token });
+      const explicitRecord = await explicitStore.get(ref, { type: "json" });
+      if (explicitRecord) return { store: explicitStore, record: explicitRecord, source: "blobs_explicit" };
+    } catch (error) {
+      blobError = error;
+      console.error("Blob explicit-credential read failed:", error && error.stack ? error.stack : error);
+    }
+  }
+
+  // Attempt 3: call the existing get-estimate function, which already knows
+  // how this project reads estimate records. This avoids making the AI
+  // generator dependent on a second copy of the storage configuration.
+  try {
+    const record = await fetchExistingEstimateFunction(ref, event, body);
+    if (record) return { store: null, record, source: "get_estimate_function" };
+  } catch (error) {
+    console.error("get-estimate fallback failed:", error && error.stack ? error.stack : error);
+    const original = blobError && blobError.message ? blobError.message : "unknown Blob configuration error";
+    throw stageError("load_estimate", `Could not load estimate ${ref}. Blob error: ${original}. Fallback error: ${error.message}`);
+  }
+
+  if (blobError) throw stageError("load_estimate", blobError.message || "Estimate storage read failed");
+  return { store: null, record: null, source: "none" };
+}
+
+function fetchExistingEstimateFunction(ref, event, body) {
+  const host = cleanText((event.headers || {}).host || process.env.URL || "www.sanibuildingcorp.com")
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/$/, "");
+  const query = `/\.netlify/functions/get-estimate?ref=${encodeURIComponent(ref)}`.replace('/\\.netlify','/.netlify');
+  const incomingHeaders = event.headers || {};
+  const dashboardKey = incomingHeaders["x-dashboard-key"] || incomingHeaders["X-Dashboard-Key"] || body.dashboardKey || body.key || "";
+
+  return new Promise((resolve, reject) => {
+    const headers = { Accept: "application/json" };
+    if (dashboardKey) headers["x-dashboard-key"] = dashboardKey;
+    const req = https.request({ hostname: host, port: 443, path: query, method: "GET", headers }, (res) => {
+      const chunks = [];
+      res.on("data", (chunk) => chunks.push(chunk));
+      res.on("end", () => {
+        const text = Buffer.concat(chunks).toString("utf8");
+        let parsed;
+        try { parsed = text ? JSON.parse(text) : {}; }
+        catch (_) { return reject(new Error(`get-estimate returned non-JSON (${res.statusCode}): ${text.slice(0, 250)}`)); }
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          return reject(new Error(parsed.error || `get-estimate returned HTTP ${res.statusCode}`));
+        }
+        resolve(parsed.record || parsed.estimateRecord || parsed.data || parsed);
+      });
+    });
+    req.setTimeout(20000, () => req.destroy(new Error("get-estimate fallback timed out")));
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+function stageError(stage, message) {
+  const error = new Error(message);
+  error.stage = stage;
+  return error;
+}
+
+function inferFailureStage(message) {
+  const text = String(message || "").toLowerCase();
+  if (/load estimate|blob|siteid|expected pattern|storage/.test(text)) return "load_estimate";
+  if (/claude|anthropic|timed out|api key/.test(text)) return "claude_api";
+  if (/invalid json|returned invalid json|parse/.test(text)) return "ai_json";
+  if (/save|persist/.test(text)) return "save_estimate";
+  return "estimate_generation";
 }
 
 function firstEnv(names) {
