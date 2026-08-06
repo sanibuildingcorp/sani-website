@@ -69,6 +69,7 @@ BEFORE YOU WRITE ANYTHING, CHECK YOUR QUESTION AGAINST THIS LIST. If it falls in
 2. QUALITY LEVEL, GRADE OR TIER. Never ask budget vs mid-range vs high-end vs luxury, or "what quality fixtures". Everyone says high-end and it tells us nothing. Assume mid-range; the contractor adjusts.
 3. BRAND, COLOUR OR PAINT FINISH. Never ask which sheen (matte, eggshell, satin, semi-gloss) or which colour or brand. They all cost the same to buy and the same to apply. That is a conversation after they become a lead.
 4. ANYTHING THE CUSTOMER ALREADY ANSWERED, in their description or in earlier answers.
+5. WHETHER INSTALLATION OR LABOUR IS NEEDED. Never ask it. Installation is always included — that is the whole job. A customer supplying their own vanity, tile or flooring still needs it installed; supplying an item removes the MATERIAL cost, never the LABOUR. Asking invites them to decline work they actually want.
 Asking a banned question loses the customer. Returning done:true never does.
 
 SERVICE SELECTED: ${serviceLabel || service}
@@ -238,6 +239,14 @@ const BANNED_PATTERNS = [
   /\bcolou?r\b/i,
   /\bpaint\s+(finish|sheen)\b/i,                                    // matte vs eggshell: same price
   /\b(matte|eggshell|satin|semi[\s-]?gloss|sheen)\b/i,
+  // "Does the vanity need installation labor?" — installation is ALWAYS included.
+  // A customer supplying an item never removes our labor, and offering them the choice
+  // can only delete real money from the quote.
+  /\binstall(ation)?\s+(labor|labour)\b/i,
+  /\bpre-?installed\b/i,
+  /\bneeds?\s+(installation|installing|to be installed)\b/i,
+  /\bneed us to install\b/i,
+  /\b(labor|labour)\s+(needed|required)\b/i,
 ];
 
 // Trade topics. Generic questions (size, access, occupancy, deadline) are intentionally
