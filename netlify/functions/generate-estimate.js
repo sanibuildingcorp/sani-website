@@ -1,7 +1,17 @@
 // netlify/functions/generate-estimate.js
-// AI scope + line-item generator.
+// AI scope + line-item generator.  (v3 — Aug 5 2026)
 // Reads the customer's V3 request from Blobs, asks Claude to draft scope + pricing,
 // saves the draft back to Blobs, returns it to the dashboard.
+//
+// v3 ADDS (all backwards compatible — older estimates still render unchanged):
+//   section          on every labor/material line — explicit service grouping, so the
+//                    quote page no longer has to guess sections from keywords.
+//   customerSupplied[]  items the CUSTOMER buys. Priced at $0, labeled, still installed.
+//   exclusions[]     plain-language "not included in this price" list.
+//   options[]        priced alternates (e.g. "Option A: replace all windows" vs
+//                    "Option B: acoustic masters + repair rest"). NOT in the grand total.
+//   houseRules       optional standing contractor rules injected into the prompt
+//                    (rates, standard exclusions, wording). Sent by the dashboard.
 //
 // The dashboard can include/exclude each input before generating:
 //   usePhotoAnalysis (default FALSE) — AI photo-analysis findings. OFF for pricing by
@@ -39,6 +49,8 @@ exports.handler = async function (event) {
     const includeDescription = body.useDescription !== false;
     const includeAnswers = body.useAnswers !== false;
     const extraRequest = (body.extraRequest || "").trim();
+    // Standing contractor rules (rates / standard exclusions / wording). Optional.
+    const houseRules = (body.houseRules || "").trim();
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -77,6 +89,18 @@ exports.handler = async function (event) {
       ? `Approx. size given by customer: ${request.sqft}`
       : "";
 
+    // ---- Materials the customer said they will supply themselves ----
+    // Comes from the intake form's supplies step (array of item names) when present.
+    // Falls back to nothing; the AI can still detect supplied items from the text.
+    const suppliedList = Array.isArray(request.customerSupplies)
+      ? request.customerSupplies.filter((s) => s && String(s).trim())
+      : [];
+    const suppliedBlock = suppliedList.length
+      ? `\n\nMATERIALS THE CUSTOMER IS SUPPLYING THEMSELVES (confirmed on the intake form — these are AUTHORITATIVE):\n${suppliedList
+          .map((s) => `- ${s}`)
+          .join("\n")}\nDo NOT put a price on any of these. Put each one in "customerSupplied" instead. KEEP the labor to install them.`
+      : "";
+
     // ---- AI photo analysis (optional, OFF by default) ----
     // The photo analysis is saved with the request and shown in the dashboard for the
     // contractor. It is NOT used for pricing unless the dashboard sends usePhotoAnalysis:true.
@@ -104,9 +128,14 @@ exports.handler = async function (event) {
       ? `\n\nCONTRACTOR NOTES, MEASUREMENTS & CORRECTIONS (added by the contractor — CONFIRMED and AUTHORITATIVE; these OVERRIDE the customer's description wherever they conflict). They may add work, remove work, or correct the SIZE of the job (for example an exact area like "total ~50 sq ft", or the real number of walls / rooms / units). Size all labor and materials to match these:\n${extraRequest}`
       : "";
 
+    // ---- Standing house rules (contractor's own rates / exclusions / wording) ----
+    const houseBlock = houseRules
+      ? `\n\nCONTRACTOR'S STANDING HOUSE RULES (this contractor's own rates, standard exclusions and wording — these OVERRIDE the generic NYC pricing guidelines below wherever they conflict):\n${houseRules}`
+      : "";
+
     const prompt = `You are an estimator for Sani Building Corp, an NYC-metro general contractor (Manhattan, Brooklyn, Queens, Bronx, Staten Island, Long Island, Nassau). You build detailed estimates from customer requests.
 
-STRICT WORDING RULE: NEVER use the word "licensed" or any licensing claim anywhere in your output (summary, scope, notes, line items). When describing credentials or quality assurance, say "fully insured" and/or "experienced trades" instead — e.g. "All work performed to NYC building code standards by experienced, fully insured trades." This rule has no exceptions.
+STRICT WORDING RULE: NEVER use the word "licensed" or any licensing claim anywhere in your output (summary, scope, notes, line items, exclusions, options). When describing credentials or quality assurance, say "fully insured" and/or "experienced trades" instead — e.g. "All work performed to NYC building code standards by experienced, fully insured trades." This rule has no exceptions.
 
 CUSTOMER REQUEST:
 Service: ${request.service || "General"}
@@ -116,7 +145,7 @@ Address: ${customer.address || "Not specified"}
 ${descLine}
 ${sqftLine}
 
-${answersBlock}${analysisBlock}${extraBlock}
+${answersBlock}${suppliedBlock}${analysisBlock}${extraBlock}${houseBlock}
 
 SIZING RULES (read first — this is the #1 cause of over-quoting, so follow it strictly):
 - If ANY specific measurement or quantity is given (sq ft, linear ft, number of walls / rooms / units), price STRICTLY to that number. Labor hours and material quantities must scale to the measured size. A small measured area means a small estimate — e.g. a 50 sq ft drywall+paint patch is a few hundred dollars, not thousands.
@@ -124,10 +153,24 @@ SIZING RULES (read first — this is the #1 cause of over-quoting, so follow it 
 - If the size is vague and NO measurement is given anywhere, assume the SMALLEST reasonable interpretation, price for that, and clearly state the assumption in "notes" (e.g. "Assumed ~X sq ft / 1 room — confirm on site"). Never price for the maximum just because the description sounds big.
 - Do NOT pad hours or quantities for safety margin. Margin comes from the markup percentage, not from inflated line items.
 
+NEGATIVE-INSTRUCTION SCAN (do this before you price anything — these are the instructions that cost money when missed):
+Re-read every word the customer wrote and hunt specifically for what must be LEFT OUT. People bury these in the middle of a sentence. Look for:
+- "I'm providing / I'll supply / owner supplies / I already bought" → goes in customerSupplied, priced at $0, labor KEPT.
+- "no ___", "not needed", "excluded", "except", "skip", "leave the existing ___" → do NOT price it. Put it in exclusions so the customer sees you read them.
+- Rooms or areas carved out ("kitchen excluded", "bathroom not included in the flooring") → subtract that area before you calculate quantities.
+- Anything staying in place ("existing shower pan remains", "fixtures stay in current locations") → no demo, no replacement, no rough-in for that item.
+Missing one of these is worse than a rough price: it tells the customer you did not read their message.
+
+SECTIONS (required):
+Give EVERY labor line and EVERY material line a "section" — the service it belongs to, in Title Case. Use the customer's own service names where possible (e.g. "Bathroom", "Flooring", "Painting", "Windows", "Kitchen", "Carpentry"). If the whole job is one service, use that one name on every line. Never invent a section that has no work in it. Consistency matters: the exact same section string must be reused on every line belonging to that service, because the customer's quote groups and subtotals by this field.
+
+OPTIONS:
+Only create "options" if the customer explicitly asked for alternates / "price both ways" / "Option A and Option B". Each option is priced on its own and is NOT part of the main total — the customer picks one. If they did not ask for alternates, return an empty array.
+
 YOUR TASK:
 Generate a realistic, professional estimate draft for this NYC-area project, sized per the rules above. Use current NYC labor and material rates. Be specific — itemize labor by trade/task and materials by what's actually needed. Do not add work nobody described.
 
-PRICING GUIDELINES (NYC market 2026):
+PRICING GUIDELINES (NYC market 2026 — the contractor's house rules above override these):
 - General handyman labor: $75-95/hr
 - Skilled trades (plumber/electrician/tile setter): $110-150/hr
 - Painter: $55-75/hr
@@ -143,10 +186,19 @@ OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact s
   "summary": "2-3 sentence summary the customer will see at the top of their quote. Confident, clear, no jargon.",
   "scopeOfWork": "Full scope of work as a single string with line breaks. Cover demolition (if any), prep, main work in trade order, finishing, cleanup. Customer reads this — be clear but professional.",
   "labor": [
-    {"item": "Specific labor task description", "qty": 1, "unit": "hrs", "rate": 85}
+    {"item": "Specific labor task description", "qty": 1, "unit": "hrs", "rate": 85, "section": "Bathroom"}
   ],
   "materials": [
-    {"item": "Specific material with brief spec", "qty": 1, "unit": "ea", "rate": 50}
+    {"item": "Specific material with brief spec", "qty": 1, "unit": "ea", "rate": 50, "section": "Bathroom"}
+  ],
+  "customerSupplied": [
+    {"item": "What the customer is buying themselves", "section": "Bathroom", "note": "Installation included in our price"}
+  ],
+  "exclusions": [
+    "Short plain-language line describing something NOT included in this price"
+  ],
+  "options": [
+    {"label": "Option A - Replace all windows", "description": "What this option covers, in plain words", "price": 12500, "section": "Windows"}
   ],
   "timelineText": "Estimated duration in plain words (e.g. '5-7 business days')",
   "markupPct": 25,
@@ -157,6 +209,10 @@ IMPORTANT:
 - Use realistic NYC rates, but price ONLY the work and size described/measured — do not pad the scope.
 - 4-10 labor items, 4-12 material items is typical for a normal single-room job; fewer for small measured jobs.
 - Unit options: hrs, days, ea, sqft, lf (linear foot), gal, box
+- EVERY labor and material line MUST have a "section". No exceptions.
+- customerSupplied items carry NO price and NO qty — they are a visible acknowledgement, not a charge. Never also list them under materials.
+- exclusions: 3-8 short lines. Always include the things this customer specifically said to leave out, plus genuine standard ones for this job (e.g. permits and filings, asbestos or lead abatement, concealed conditions found behind walls or floors, appliance purchase). Keep each under 15 words. Do not use the word "licensed".
+- options: empty array unless the customer asked for alternates.
 - If size info is missing, make the smallest conservative assumption and note it in "notes".
 - Return ONLY the JSON. No preamble. No code fences.`;
 
@@ -177,13 +233,51 @@ IMPORTANT:
       };
     }
 
+    // ---- Normalise the new v3 fields so the dashboard never sees a surprise shape ----
+    const cleanLines = (arr) =>
+      (Array.isArray(arr) ? arr : []).map((l) => ({
+        item: String(l.item || "").trim(),
+        qty: Number(l.qty) || 0,
+        unit: String(l.unit || "ea").trim(),
+        rate: Number(l.rate) || 0,
+        section: String(l.section || "General").trim() || "General",
+      }));
+
+    const cleanSupplied = (Array.isArray(parsed.customerSupplied) ? parsed.customerSupplied : [])
+      .map((s) => {
+        if (typeof s === "string") return { item: s.trim(), section: "General", note: "" };
+        return {
+          item: String(s.item || "").trim(),
+          section: String(s.section || "General").trim() || "General",
+          note: String(s.note || "").trim(),
+        };
+      })
+      .filter((s) => s.item);
+
+    const cleanExclusions = (Array.isArray(parsed.exclusions) ? parsed.exclusions : [])
+      .map((x) => (typeof x === "string" ? x : String(x && x.item ? x.item : "")).trim())
+      .filter(Boolean)
+      .slice(0, 12);
+
+    const cleanOptions = (Array.isArray(parsed.options) ? parsed.options : [])
+      .map((o) => ({
+        label: String(o.label || "").trim(),
+        description: String(o.description || "").trim(),
+        price: Number(o.price) || 0,
+        section: String(o.section || "General").trim() || "General",
+      }))
+      .filter((o) => o.label);
+
     // Save to Blobs as a draft
     record.estimate = {
       projectTitle: parsed.projectTitle || `${request.service} - ${customer.name || ""}`,
       summary: parsed.summary || "",
       scopeOfWork: parsed.scopeOfWork || "",
-      labor: Array.isArray(parsed.labor) ? parsed.labor : [],
-      materials: Array.isArray(parsed.materials) ? parsed.materials : [],
+      labor: cleanLines(parsed.labor),
+      materials: cleanLines(parsed.materials),
+      customerSupplied: cleanSupplied,
+      exclusions: cleanExclusions,
+      options: cleanOptions,
       timelineText: parsed.timelineText || "",
       markupPct: typeof parsed.markupPct === "number" ? parsed.markupPct : 25,
       notes: parsed.notes || "",
@@ -207,7 +301,7 @@ IMPORTANT:
 function callClaude(apiKey, prompt) {
   const payload = JSON.stringify({
     model: "claude-sonnet-4-5-20250929",
-    max_tokens: 3000,
+    max_tokens: 4000,
     messages: [{ role: "user", content: prompt }],
   });
 
