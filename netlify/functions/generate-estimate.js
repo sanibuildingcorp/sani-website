@@ -43,25 +43,38 @@ exports.handler = async function handler(event) {
 
     const input = buildEstimatorInput(record, body);
 
-    // PASS 1: Understand the project before pricing it.
-    const analysisPrompt = buildProjectAnalysisPrompt(input);
-    const rawAnalysis = await callClaude(apiKey, analysisPrompt, 6000);
-    const projectAnalysis = normalizeProjectAnalysis(parseAiJson(rawAnalysis, "project analysis"), input);
+    // PASS 1 is built LOCALLY, not by the model. Every field the estimator and the
+    // validator actually consume (selected trades, customer-supplied items, site
+    // access, quantities) already exists in the request — spending an API call to
+    // restate it cost ~30s and blew Netlify's function timeout, which the browser
+    // then reported as "The string did not match the expected pattern" (a timeout
+    // page is not JSON). One AI call is the entire time budget. Do not add more.
+    const projectAnalysis = normalizeProjectAnalysis(buildLocalAnalysis(input), input);
 
-    // PASS 2: Price the structured scope, not the raw paragraph alone.
+    // PASS 2: the one and only model call — price the structured scope.
     const estimatePrompt = buildEstimatePrompt(input, projectAnalysis);
-    const rawEstimate = await callClaude(apiKey, estimatePrompt, 8000);
+    const rawEstimate = await callClaude(apiKey, estimatePrompt, 6000);
     let estimate = normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis);
 
-    // Deterministic validation catches omissions even when the model misses them.
+    // Deterministic validation — local, instant, free. This is what catches the
+    // compressed-labor / suspiciously-low drafts.
     let validation = validateEstimate(estimate, projectAnalysis, input);
 
-    // One automatic repair pass when the draft is incomplete or suspiciously low.
-    if (!validation.passed) {
+    // Optional second pass to auto-repair a failed draft. OFF by default because it
+    // doubles the runtime and risks the timeout again. Turn on with the Netlify env
+    // var ESTIMATE_REPAIR_PASS=1 only if generation is comfortably fast.
+    if (!validation.passed && process.env.ESTIMATE_REPAIR_PASS === "1") {
       const repairPrompt = buildRepairPrompt(input, projectAnalysis, estimate, validation);
-      const rawRepair = await callClaude(apiKey, repairPrompt, 8000);
+      const rawRepair = await callClaude(apiKey, repairPrompt, 6000);
       estimate = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);
       validation = validateEstimate(estimate, projectAnalysis, input);
+    }
+
+    // When repair is off, surface the problems where Zura will actually see them.
+    if (!validation.passed) {
+      const flagged = validation.failures.map((f) => "\u2022 " + f).join("\n");
+      estimate.notes = ("CHECK BEFORE SENDING - automatic review flagged:\n" + flagged +
+        (estimate.notes ? "\n\n" + estimate.notes : "")).slice(0, 4000);
     }
 
     estimate.validation = validation;
@@ -145,6 +158,59 @@ function normalizeSelectedServices(request) {
   if (Array.isArray(request.selectedServices)) candidates.push(...request.selectedServices);
   if (typeof request.service === "string") candidates.push(...request.service.split(/[,/&]+/));
   return unique(candidates.map(cleanText).filter(Boolean));
+}
+
+// Builds the structured analysis from data already in the request. No API call.
+// normalizeProjectAnalysis() merges in selectedServices and customerSupplies itself,
+// so this only needs to supply what cannot be derived there.
+function buildLocalAnalysis(input) {
+  const req = input.request || {};
+  const text = [req.description, req.extraRequest, JSON.stringify(req.groupedAnswers || {})]
+    .filter(Boolean)
+    .join(" ");
+
+  const walkUp = /walk.?up|no elevator/i.test(text)
+    ? "yes"
+    : /elevator/i.test(text)
+    ? "no"
+    : "";
+  const floorMatch = text.match(/\b(\d{1,2})(?:st|nd|rd|th)\s+floor\b/i);
+
+  const projectType = /gut|full renovation|complete renovation|full gut/i.test(text)
+    ? "full renovation"
+    : /renovat|remodel/i.test(text)
+    ? "partial renovation"
+    : /replace|replacement/i.test(text)
+    ? "replacement"
+    : /install/i.test(text)
+    ? "installation"
+    : /repair|patch|fix/i.test(text)
+    ? "repair"
+    : "mixed";
+
+  return {
+    project_summary: cleanText(req.description).slice(0, 600),
+    project_type: projectType,
+    selected_trades: [],                 // filled from selectedServices
+    customer_supplied_finish_materials: [], // filled from customerSupplies
+    site_conditions: {
+      occupied_status: /occupied|we live|tenant/i.test(text) ? "occupied" : "",
+      floor_number: floorMatch ? floorMatch[1] : "",
+      elevator_access: /elevator/i.test(text) ? "yes" : "",
+      walk_up: walkUp,
+      work_hours: "",
+      debris_access: walkUp === "yes" ? "carry down stairs" : "",
+      parking_loading: "",
+      building_requirements: "",
+      protection_requirements: "",
+    },
+    exclusions: [],
+    pricing_readiness: {
+      status: "PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS",
+      confidence_score: 70,
+      reason: "Priced from the written scope and contractor corrections; confirm site conditions on walkthrough.",
+    },
+  };
 }
 
 function buildProjectAnalysisPrompt(input) {
