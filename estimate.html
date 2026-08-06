@@ -688,13 +688,29 @@ const SUPPLY_CATALOG={
   'general':['Tile','Paint','Flooring material','Vanity, sink or toilet','Cabinets & countertops','Light fixtures'],
   'other':['Materials for the job']
 };
+/* Some big-ticket items have no service button of their own (there is no "Windows"
+   service, for example), so a customer can describe window or cabinet work and never
+   be offered the matching supply box. These keyword rules close that gap by reading
+   what they actually wrote. Deliberately few and deliberately obvious. */
+const SUPPLY_FROM_DESCRIPTION=[
+  {re:/\bwindows?\b/i,                       items:['Windows']},
+  {re:/\b(interior |exterior )?doors?\b/i,   items:['Doors']},
+  {re:/\bcabinet|countertop|kitchen\b/i,     items:['Cabinets & countertops']},
+  {re:/\bappliance/i,                        items:['Appliances']},
+  {re:/\blight(ing| fixture)|chandelier/i,   items:['Light fixtures']},
+  {re:/\bradiator|baseboard heat/i,          items:['Radiator covers']}
+];
 function suppliesForSelection(){
   const ids=String(formData.service||'').split(',').map(x=>x.trim()).filter(Boolean);
   const seen={},out=[];
+  function add(item){ if(!seen[item]){seen[item]=1;out.push(item);} }
   (ids.length?ids:['general']).forEach(function(id){
-    (SUPPLY_CATALOG[id]||SUPPLY_CATALOG['general']).forEach(function(item){
-      if(!seen[item]){seen[item]=1;out.push(item);}
-    });
+    (SUPPLY_CATALOG[id]||SUPPLY_CATALOG['general']).forEach(add);
+  });
+  /* Anything they described but did not pick a service for */
+  const said=String(formData.description||'')+' '+Object.values(formData.serviceAnswers||{}).join(' ');
+  SUPPLY_FROM_DESCRIPTION.forEach(function(rule){
+    if(rule.re.test(said))rule.items.forEach(add);
   });
   return out.slice(0,10);   /* hard cap — a long list is a list nobody reads */
 }
