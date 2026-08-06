@@ -18,7 +18,7 @@ exports.handler = async function (event) {
     const body = JSON.parse(event.body);
     const {
       ref, name, phone, email, address,
-      service, serviceId, serviceAnswers, customerSupplies,
+      service, serviceId, serviceAnswers, customerSupplies, answerTopics,
       propertyType, description, timeline,
       photoCount, photos, photoAnalysis, submittedAt,
     } = body;
@@ -46,6 +46,9 @@ exports.handler = async function (event) {
           customerSupplies: Array.isArray(customerSupplies)
             ? customerSupplies.filter((x) => x && String(x).trim()).map((x) => String(x).trim())
             : [],
+          // questionId -> trade ("Bathroom", "Painting"...). Lets the estimator file each
+          // answer under the right service instead of guessing from the wording.
+          answerTopics: answerTopics && typeof answerTopics === "object" ? answerTopics : {},
           propertyType, description, timeline,
           photoCount: photoCount || 0,
           photos: photos || [],

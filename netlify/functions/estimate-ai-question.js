@@ -194,6 +194,20 @@ Now respond with the single most useful missing question, or done:true.`;
       }
     }
 
+    // Tag the question with its trade so the form can show "BATHROOM" / "PAINTING"
+    // above it, and so the answer is filed under the right trade later.
+    if (!question.done) {
+      const mine = topicsIn(
+        String(question.label || "") + " " +
+        (Array.isArray(question.options) ? question.options.join(" ") : "")
+      );
+      // A generic question (size, access, occupancy) has no trade. On a single-service
+      // request fall back to that service so the header is never blank.
+      const single = svcN === 1 ? String(serviceLabel || "").trim() : "";
+      question.topic = mine[0] || "";
+      question.topicLabel = (mine[0] && TOPIC_LABELS[mine[0]]) || single || "Project Details";
+    }
+
     return {
       statusCode: 200,
       headers: corsHeaders(),
@@ -241,6 +255,22 @@ const TOPIC_PATTERNS = [
   { key: "deck",      re: /\b(deck|decking|railing)\b/i },
   { key: "stairs",    re: /\b(stair|stairs|tread|riser)\b/i },
 ];
+
+// Shown to the customer at the top of the question card, and stored against their
+// answer so the estimator knows which trade each answer belongs to.
+const TOPIC_LABELS = {
+  flooring: "Flooring",
+  windows: "Windows",
+  painting: "Painting",
+  tile: "Tile",
+  bathroom: "Bathroom",
+  kitchen: "Kitchen",
+  doors: "Doors",
+  electrical: "Electrical",
+  plumbing: "Plumbing",
+  deck: "Deck",
+  stairs: "Stairs",
+};
 
 function topicsIn(text) {
   const t = String(text || "");

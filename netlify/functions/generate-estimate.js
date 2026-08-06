@@ -70,13 +70,27 @@ exports.handler = async function (event) {
 
     // ---- Question answers (optional) ----
     const answers = request.serviceAnswers || {};
-    const answersText = Object.entries(answers)
+    // The intake form tags every answer with the trade it belongs to. Group by trade so
+    // the estimator knows which service each answer sizes — and which "section" to use.
+    const answerTopics = (request.answerTopics && typeof request.answerTopics === "object")
+      ? request.answerTopics
+      : {};
+    const grouped = {};
+    Object.entries(answers)
       .filter(([_, v]) => v && String(v).trim())
-      .map(([k, v]) => `- ${k.replace(/-/g, " ")}: ${v}`)
-      .join("\n");
+      .forEach(([k, v]) => {
+        const trade = String(answerTopics[k] || "General").trim() || "General";
+        if (!grouped[trade]) grouped[trade] = [];
+        grouped[trade].push(`- ${k.replace(/-/g, " ")}: ${v}`);
+      });
+    const answersText = Object.keys(grouped).length
+      ? Object.entries(grouped)
+          .map(([trade, rows]) => `${trade.toUpperCase()}:\n${rows.join("\n")}`)
+          .join("\n\n")
+      : "";
 
     const answersBlock = includeAnswers
-      ? `CUSTOMER ANSWERS TO QUESTIONS:\n${answersText || "(no specific answers)"}`
+      ? `CUSTOMER ANSWERS TO QUESTIONS (grouped by trade — use these trade names as the "section" on the matching lines):\n${answersText || "(no specific answers)"}`
       : `CUSTOMER ANSWERS TO QUESTIONS:\n(excluded by contractor — do not use)`;
 
     // ---- Description (optional) ----
