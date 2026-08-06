@@ -178,6 +178,37 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 @media(max-width:640px){.scan-stage{width:200px;height:200px}.scan-photo{inset:24px}.analysis-row{flex-direction:column;gap:4px}.analysis-row-value{text-align:left}.analysis-row-label{min-width:0}}
 </style>
 <link rel="stylesheet" href="partials/site.css">
+<!-- Loaded AFTER partials/site.css on purpose.
+     site.css sets body{color:#0e0e0e} and re-declares --gray / --border / --navy / --gold
+     in its own :root, which wins over the wizard palette above and turned the question
+     headings near-black on the navy card. This block restores the wizard's own colours.
+     Scoped to .topbar and .wrap only, so the shared menu and footer partials are untouched. -->
+<style>
+.topbar,.wrap{
+  --navy:#0d1b2a;
+  --navy2:#1a2d42;
+  --gold:#c9a84c;
+  --gold-dark:#9a6f2a;
+  --cream:#f5f0e8;
+  --gray:#a8bacd;
+  --border:rgba(201,168,76,0.2);
+}
+/* Default text inside the wizard is light again */
+.topbar,.wrap,.wrap .card,.wrap .step{color:var(--cream)}
+
+/* Only h1.title had a colour rule, so every h2.title inherited body's near-black */
+.wrap h1.title,.wrap h2.title{color:var(--cream)}
+
+/* Secondary text: readable on navy without shouting */
+.wrap p.subtitle,.wrap .multi-hint,.wrap .progress-count,.wrap .skip-link{color:#b6c6d6}
+.wrap .skip-link:hover{color:var(--gold)}
+
+/* Option buttons, inputs and labels stay light */
+.wrap .option-btn,.wrap .service-btn,.wrap .input-label,.wrap .textarea-field,.wrap .input-field{color:var(--cream)}
+.wrap .textarea-field::placeholder,.wrap .input-field::placeholder{color:rgba(245,240,232,.42)}
+.wrap label{color:inherit}
+.wrap .opt{opacity:.72}
+</style>
 <meta name="robots" content="noindex,follow">
 <link rel="canonical" href="https://www.sanibuildingcorp.com/estimate">
 </head>
@@ -216,10 +247,26 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
       <h2 class="title" id="step2-title">A few quick questions</h2>
       <p class="subtitle">Just enough so we can give you real numbers.</p>
       <div id="ai-question-container"></div>
-      <div style="text-align:center;margin:10px 0 2px"><button class="skip-link" onclick="goToStep(9)">Skip these &mdash; send my request</button></div>
+      <div style="text-align:center;margin:10px 0 2px"><button class="skip-link" onclick="goToStep('supplies')">Skip these &mdash; send my request</button></div>
       <div class="step-nav">
         <button class="btn-back" onclick="goToStep(5)">← Back</button>
         <button class="btn-continue" id="continue-2" disabled onclick="answerAIQuestion()">Continue →</button>
+      </div>
+    </div>
+
+    <!-- FINAL STEP: what the customer is supplying themselves -->
+    <div class="step" data-step="supplies">
+      <div class="eyebrow">Last One</div>
+      <h2 class="title">Are you supplying any of these yourself?</h2>
+      <p class="subtitle">Tap anything you're buying yourself so we leave it out of your price. Leave it blank if you'd like us to supply it &mdash; installation is included either way.</p>
+      <div id="supplies-container"></div>
+      <div class="input-group" style="margin-top:16px">
+        <label class="input-label">Anything else you're supplying?</label>
+        <input type="text" class="input-field" id="supplies-other" placeholder="Optional &mdash; tell us here" oninput="suppliesOtherChanged(this.value)">
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="goToStep(5)">&larr; Back</button>
+        <button class="btn-continue" id="continue-supplies" onclick="goToStep(9)">Continue &rarr;</button>
       </div>
     </div>
 
@@ -412,7 +459,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 
 <script src="partials/site.js"></script>
 <script>
-const formData={service:null,serviceLabel:null,serviceAnswers:{},propertyType:null,description:'',photos:[],photoAnalysis:[],timeline:null,name:'',phone:'',email:'',address:''};
+const formData={service:null,serviceLabel:null,serviceAnswers:{},customerSupplies:[],customerSuppliesOther:'',propertyType:null,description:'',photos:[],photoAnalysis:[],timeline:null,name:'',phone:'',email:'',address:''};
 // Capture the "In your own words" textarea (Step 4) into formData so it reaches the
 // review screen, the submit payload, and the dashboard. Without this it stays empty.
 function saveDesc(){var e=document.getElementById('description-field');if(e)formData.description=e.value.trim();}
@@ -468,9 +515,9 @@ async function loadNextAIQuestion(){
   try{
     const res=await fetch('/.netlify/functions/estimate-ai-question',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:formData.service,serviceLabel:formData.serviceLabel,serviceCount:(formData.service||'').split(',').filter(Boolean).length||1,description:formData.description||'',photoCount:(formData.photos||[]).length,answers:formData.serviceAnswers,questionCount:aiQuestionCount})});
     const data=await res.json();
-    if(data.done||data.fallback){goToStep(9);return;}
+    if(data.done||data.fallback){goToStep('supplies');return;}
     currentAIQuestion=data;renderAIQuestion(data);showStep(2);
-  }catch(e){console.error(e);goToStep(9);}
+  }catch(e){console.error(e);goToStep('supplies');}
 }
 function renderAIQuestion(q){
   document.getElementById('step2-title').textContent=q.label;
@@ -589,6 +636,7 @@ function renderPhotoPreview(){
 function showStep(s){document.querySelectorAll('.step').forEach(x=>x.classList.remove('active'));document.querySelector(`[data-step="${s}"]`).classList.add('active');}
 function goToStep(s){
   showStep(s);
+  if(s==='supplies')renderSupplies();
   if(s===9)renderReview();
   if(s===1)showSiteMenu();else hideSiteMenu();
   if(s==='success')document.querySelector('.progress').style.display='none';
@@ -608,6 +656,7 @@ function renderReview(){
       <div class="review-row"><span class="review-label">Project</span><span class="review-value">${esc(formData.serviceLabel)||'—'}</span></div>
       ${sa?`<div class="review-row"><span class="review-label">Details</span><span class="review-value">${esc(sa)}</span></div>`:''}
       ${formData.propertyType?`<div class="review-row"><span class="review-label">Property</span><span class="review-value">${esc(formData.propertyType)}</span></div>`:''}
+      ${allSupplies().length?`<div class="review-row"><span class="review-label">You supply</span><span class="review-value">${esc(allSupplies().join(' · '))}</span></div>`:''}
       ${formData.description?`<div class="review-row"><span class="review-label">Notes</span><span class="review-value">${esc(formData.description)}</span></div>`:''}
       ${formData.photos.length?`<div class="review-row"><span class="review-label">Photos</span><span class="review-value">${formData.photos.length} attached</span></div>`:''}
       ${formData.photoAnalysis.length?`<div class="review-row"><span class="review-label">AI Analysis</span><span class="review-value">${formData.photoAnalysis.map(a=>esc(a.detected||'—')).join(' · ')}</span></div>`:''}
@@ -619,6 +668,64 @@ function renderReview(){
       <div class="review-row"><span class="review-label">Email</span><span class="review-value">${esc(formData.email)||'—'}</span></div>
       ${formData.address?`<div class="review-row"><span class="review-label">Address</span><span class="review-value">${esc(formData.address)}</span></div>`:''}
     </div>`;
+}
+/* ── FINAL QUESTION: materials the customer supplies themselves ──────────────
+   Deliberately a fixed list, not AI-generated: the strings flow straight into the
+   estimate, so they must be identical every time. MAIN products only — the things
+   a customer plausibly buys and that move the price. Never trade supplies
+   (thinset, grout, tape, adhesive, fasteners) — those are always ours.
+   To add or remove an item, just edit the arrays below. */
+const SUPPLY_CATALOG={
+  'bathroom':['Wall & floor tile','Vanity & sink','Toilet','Faucet & shower trim','Shower door / glass enclosure','Mirror & light fixture'],
+  'painting':['Paint'],
+  'flooring':['Flooring material','Baseboards / trim'],
+  'carpentry':['Lumber & wood material','Cabinets','Hardware (handles, hinges)'],
+  'water-damage':['Paint','Flooring material'],
+  'handyman':['Parts or fixtures for the job'],
+  'deck':['Decking boards','Railing material'],
+  'stair':['Treads & risers','Railing material'],
+  'restoration':['Tile','Paint'],
+  'general':['Tile','Paint','Flooring material','Vanity, sink or toilet','Cabinets & countertops','Light fixtures'],
+  'other':['Materials for the job']
+};
+function suppliesForSelection(){
+  const ids=String(formData.service||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const seen={},out=[];
+  (ids.length?ids:['general']).forEach(function(id){
+    (SUPPLY_CATALOG[id]||SUPPLY_CATALOG['general']).forEach(function(item){
+      if(!seen[item]){seen[item]=1;out.push(item);}
+    });
+  });
+  return out.slice(0,10);   /* hard cap — a long list is a list nobody reads */
+}
+function renderSupplies(){
+  const c=document.getElementById('supplies-container');
+  if(!c)return;
+  const chk='<span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
+  const items=suppliesForSelection();
+  c.innerHTML='<div class="option-stack">'+items.map(function(item){
+    const on=formData.customerSupplies.indexOf(item)!==-1;
+    return '<button class="option-btn'+(on?' selected':'')+'" data-value="'+esc(item)+'" onclick="toggleSupply(this)"><span>'+esc(item)+'</span>'+chk+'</button>';
+  }).join('')+'</div>';
+  const o=document.getElementById('supplies-other');
+  if(o)o.value=formData.customerSuppliesOther||'';
+  /* This screen is the last follow-up, so keep the progress bar on that step. */
+  const ds=DISPLAY_STEP[2]||4;
+  const pf=document.getElementById('progress-fill');if(pf)pf.style.width=(ds/TOTAL_STEPS*100)+'%';
+  const sn=document.getElementById('step-num');if(sn)sn.textContent=ds;
+  const sl=document.getElementById('step-label');if(sl)sl.textContent='Last One';
+}
+function toggleSupply(el){
+  const v=el.dataset.value;
+  const i=formData.customerSupplies.indexOf(v);
+  if(i===-1){formData.customerSupplies.push(v);el.classList.add('selected');}
+  else{formData.customerSupplies.splice(i,1);el.classList.remove('selected');}
+}
+function suppliesOtherChanged(v){formData.customerSuppliesOther=String(v||'').trim();}
+function allSupplies(){
+  const out=formData.customerSupplies.slice();
+  if(formData.customerSuppliesOther)out.push(formData.customerSuppliesOther);
+  return out;
 }
 function esc(s){if(!s)return'';return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function generateRef(){const d=new Date();return 'SBC-'+d.getFullYear().toString().slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+Math.random().toString(36).slice(2,6).toUpperCase();}
@@ -660,7 +767,7 @@ async function submitForm(){
   });
 
   btn.textContent='Sending...';
-  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,photoAnalysis:analysisLite,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
+  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,customerSupplies:allSupplies(),propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,photoAnalysis:analysisLite,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
   try{
     const res=await fetch('/.netlify/functions/estimate-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!res.ok){let m='Server error '+res.status;if(res.status===413)m='Photos too large.';btn.disabled=false;btn.textContent='Try Again';alert('Something went wrong: '+m+'\n\nRef: '+ref+'. Call (332) 277-0990.');return;}
