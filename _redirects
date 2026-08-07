@@ -3,10 +3,9 @@
 # Last updated: Aug 2026
 # ═══════════════════════════════════════════════════════════════════
 
-# ─── DASHBOARD ───
-# Serve the production dashboard directly. This preserves Safari full-page
-# screenshots and avoids wrapper/iframe/script-injection rendering problems.
-/dashboard          /dashboard.html   200!
+# Dashboard uses the real dashboard.html directly. Customer Scope Control is
+# injected by a Netlify Edge Function, so there is no iframe/shell wrapper.
+/dashboard          /dashboard.html   200
 
 # ─── FORCE ALL NETLIFY URLs → REAL DOMAIN (PREVENTS DUPLICATE CONTENT) ───
 https://velvety-horse-2aa6e3.netlify.app/*  https://www.sanibuildingcorp.com/:splat  301!
@@ -21,7 +20,7 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 /about-nyc-renovation-contractor                 /about                              301
 /contact-nyc-renovation-contractor               /contact                            301
 /bathroom-renovation/tile-installation-brooklyn  /bathroom-floor-tile-installation   301
-/lobby-restoration                               /renovation-contractor-manhattan                           301
+/lobby-restoration                               /renovation-contractor-manhattan    301
 
 # ─── KITCHEN RENAME — old kitchen-renovation URLs → new kitchen-cabinet-installation ───
 /kitchen-renovation                       /kitchen-cabinet-installation            301
