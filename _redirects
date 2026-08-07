@@ -1,7 +1,13 @@
 # ═══════════════════════════════════════════════════════════════════
 # SANI BUILDING CORP — Netlify Redirects
-# Last updated: June 2026
+# Last updated: Aug 2026
 # ═══════════════════════════════════════════════════════════════════
+
+# ─── DASHBOARD SHELL (scope editor injection) ───
+# Keep /dashboard.html as the untouched core dashboard. /dashboard is the
+# production entry point and is force-rewritten to the shell, which loads the
+# core in a same-origin iframe and injects Customer Scope Control safely.
+/dashboard          /dashboard-shell.html   200!
 
 # ─── FORCE ALL NETLIFY URLs → REAL DOMAIN (PREVENTS DUPLICATE CONTENT) ───
 https://velvety-horse-2aa6e3.netlify.app/*  https://www.sanibuildingcorp.com/:splat  301!
