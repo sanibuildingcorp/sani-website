@@ -35,10 +35,10 @@ jobs:
             estimate.options=Array.isArray(estimate.options)?estimate.options:[];
             const mm=1+num(estimate.markupPct||RULES.markupDefault)/100;
             let hasBase=[...(estimate.labor||[]),...(estimate.materials||[])].some(isWindowLine);
-            const optionA=estimate.options.find(o=>canonicalService(o.section,\`${'${o.label||\'\'}'} ${'${o.description||\'\'}'}\`,[])==='Windows'&&optionLetter(o)==='A');
+            const optionA=estimate.options.find(o=>canonicalService(o.section,`${o.label||''} ${o.description||''}`,[])==='Windows'&&optionLetter(o)==='A');
             if(!hasBase&&optionA&&num(optionA.price)>0){
               const preMarkup=money(num(optionA.price)/mm);
-              estimate.materials.push({section:'Windows',item:\`${'${text(optionA.label)||\'Window Option A\'}'} — selected base allowance\`,qty:1,unit:'allowance',rate:preMarkup});
+              estimate.materials.push({section:'Windows',item:`${text(optionA.label)||'Window Option A'} — selected base allowance`,qty:1,unit:'allowance',rate:preMarkup});
               estimate.options=estimate.options.filter(o=>o!==optionA);hasBase=true;
               adj.push({type:'BASE_OPTION_PROMOTED',service:'Windows',option:'A',customerPrice:money(optionA.price),baseCost:preMarkup});
             }
@@ -47,13 +47,13 @@ jobs:
               const laborRate=typicalRate(estimate.labor,95);
               const hours=Math.max(12,Math.ceil(count*3.5));
               const unitAllowance=count>=1?900:0;
-              estimate.labor.push({section:'Windows',item:\`Window Option A — remove, prep openings and install ${'${count}'} specified aluminum replacement windows\`,qty:hours,unit:'hrs',rate:laborRate});
-              estimate.materials.push({section:'Windows',item:\`Window Option A — ${'${count}'} specified aluminum replacement windows allowance\`,qty:count,unit:'ea',rate:unitAllowance});
+              estimate.labor.push({section:'Windows',item:`Window Option A — remove, prep openings and install ${count} specified aluminum replacement windows`,qty:hours,unit:'hrs',rate:laborRate});
+              estimate.materials.push({section:'Windows',item:`Window Option A — ${count} specified aluminum replacement windows allowance`,qty:count,unit:'ea',rate:unitAllowance});
               hasBase=true;
               adj.push({type:'WINDOW_BASE_SYNTHESIZED',service:'Windows',option:'A',windowCount:count,laborHours:hours,laborRate,unitMaterialAllowance:unitAllowance,reason:'Customer explicitly requested Option A but AI returned no usable base window price.'});
             }
-            estimate.options=estimate.options.filter(o=>!(canonicalService(o.section,\`${'${o.label||\'\'}'} ${'${o.description||\'\'}'}\`,[])==='Windows'&&optionLetter(o)==='A'));
-            const hasB=estimate.options.some(o=>canonicalService(o.section,\`${'${o.label||\'\'}'} ${'${o.description||\'\'}'}\`,[])==='Windows'&&optionLetter(o)==='B');
+            estimate.options=estimate.options.filter(o=>!(canonicalService(o.section,`${o.label||''} ${o.description||''}`,[])==='Windows'&&optionLetter(o)==='A'));
+            const hasB=estimate.options.some(o=>canonicalService(o.section,`${o.label||''} ${o.description||''}`,[])==='Windows'&&optionLetter(o)==='B');
             if(!hasB){
               const raw=requestEvidence(input,analysis);const count=parseWindowCounts(input,analysis)||8;
               const premiumCount=/two master bedroom|2 master bedroom|two.*acoustic|2.*acoustic/.test(raw)?2:Math.min(2,count);
@@ -64,12 +64,12 @@ jobs:
               adj.push({type:'WINDOW_ALTERNATIVE_SYNTHESIZED',service:'Windows',option:'B',customerPrice:money(rawCost*mm)});
             }
             estimate.optionSelections=estimate.optionSelections||{};
-            estimate.optionSelections.Windows={selected:'Option A',baseIncluded:true,alternatives:estimate.options.filter(o=>canonicalService(o.section,\`${'${o.label||\'\'}'} ${'${o.description||\'\'}'}\`,[])==='Windows').map(o=>({label:o.label,description:o.description,price:money(o.price)}))};
+            estimate.optionSelections.Windows={selected:'Option A',baseIncluded:true,alternatives:estimate.options.filter(o=>canonicalService(o.section,`${o.label||''} ${o.description||''}`,[])==='Windows').map(o=>({label:o.label,description:o.description,price:money(o.price)}))};
           }`;
-          const re=/function ensureWindowOptionEngine[\\s\\S]*?(?=function genericOperation)/;
+          const re=/function ensureWindowOptionEngine[\s\S]*?(?=function genericOperation)/;
           if(!re.test(s))throw new Error('ensureWindowOptionEngine block not found');
           s=s.replace(re,replacement+'\n');
-          s=s.replace(/deterministic-v1\\.4/g,'deterministic-v1.5').replace(/version:'v1\\.4'/g,"version:'v1.5'");
+          s=s.replace(/deterministic-v1\.4/g,'deterministic-v1.5').replace(/version:'v1\.4'/g,"version:'v1.5'");
           fs.writeFileSync(p,s);
           NODE
       - name: Regression test Windows options
@@ -95,3 +95,4 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m 'Fix Windows Option A/B deterministic pricing v1.5 [skip ci]'
           git push origin main
+# trigger 2026-08-07 13:58 ET
