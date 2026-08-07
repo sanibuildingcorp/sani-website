@@ -1,15 +1,14 @@
 [build]
   functions = "netlify/functions"
 
-# Inject Customer Scope Control directly into the real dashboard response.
-# This keeps dashboard.html itself untouched while avoiding iframe/shell issues.
-[[edge_functions]]
-  path = "/dashboard"
-  function = "inject-dashboard-scope"
-
-[[edge_functions]]
-  path = "/dashboard.html"
-  function = "inject-dashboard-scope"
+# Serve /dashboard through a top-level shell that writes the real dashboard HTML
+# into the same document, then loads Customer Scope Control. This keeps Safari
+# full-page screenshots working (no iframe) and avoids editing the huge dashboard.html.
+[[redirects]]
+  from = "/dashboard"
+  to = "/dashboard-shell.html"
+  status = 200
+  force = true
 
 [[headers]]
   for = "/*"
@@ -22,6 +21,11 @@
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/dashboard-shell.html"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
 
 [[headers]]
   for = "/js/customer-scope-control.js"
