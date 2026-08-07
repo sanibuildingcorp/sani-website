@@ -1,0 +1,75 @@
+name: Clean Customer Scope V1.6
+on:
+  push:
+    paths:
+      - '.github/trigger-clean-customer-scope-v16.txt'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch quote customer wording
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('quote.html')
+          s=p.read_text()
+          marker="/* Published Customer Scope (set in the dashboard's Customer Scope Control)."
+          helper=r'''function cleanCustomerService(s){
+ const t=C(s.title),sup=U(s.customerSupplies),ni=U(s.notIncluded).filter(x=>!/option\s*b/i.test(C(x)));
+ if(t==='Bathroom')s.included=[
+  'Protect bathroom, floors and access path before work begins',
+  'Remove existing bathroom finishes and fixtures as required; bag and dispose of demolition debris',
+  'Inspect the existing shower pan and drain; existing pan remains unless a hidden condition is found and approved',
+  'Prepare wall substrates; install backer board and waterproof shower wet areas',
+  'Install specified 24×48 wall tile and bathroom floor tile with grout, sealant and finish work',
+  'Install and connect customer-supplied vanity/sink/faucet, toilet and shower trim in their existing locations',
+  'Measure, fabricate and install the frameless shower glass enclosure with minimal hardware',
+  'Complete final caulking, touch-ups, cleanup and protection'
+ ];
+ else if(t==='Flooring')s.included=[
+  'Protect adjacent surfaces and receive/inspect customer-supplied flooring',
+  'Inspect and prepare the existing floor surface for installation',
+  'Install approximately 640 SF of customer-supplied engineered hardwood flooring',
+  'Complete cuts and fitting at doors, walls and transitions',
+  'Install 1/4-round trim where required',
+  'Final flooring cleanup and protection'
+ ];
+ else if(t==='Painting')s.included=[
+  'Protect floors, fixtures and adjacent finished surfaces',
+  'Minor patching, sanding and surface preparation as required for painting',
+  'Spot-prime repaired areas as needed',
+  'Apply customer-supplied Sherwin-Williams finish paint to approximately 2,600 SF of included walls and ceilings',
+  'Paint included doors and trim; bathroom walls/ceiling included except tiled shower surfaces',
+  'Final touch-ups and cleanup'
+ ];
+ else if(t==='Windows')s.included=[
+  'Option A (base estimate): remove and dispose of the specified existing aluminum windows',
+  'Prepare existing window openings for replacement installation',
+  'Supply and install the specified standard aluminum replacement windows',
+  'Complete interior/exterior trim, casing, caulking and weather-sealing as required',
+  'Test window operation and complete final adjustments and cleanup'
+ ];
+ s.included=U(s.included);s.customerSupplies=sup;s.notIncluded=ni;return s
+}
+'''
+          if 'function cleanCustomerService(s)' not in s:
+              if marker not in s: raise SystemExit('marker missing')
+              s=s.replace(marker,helper+marker,1)
+          old="return pubScope(e,active)}"
+          new="if(deterministic)active=active.map(cleanCustomerService);return pubScope(e,active)}"
+          if new not in s:
+              if old not in s: raise SystemExit('return marker missing')
+              s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'sani-estimator-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add quote.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Clean customer-facing scope wording V1.6'
+          git push
