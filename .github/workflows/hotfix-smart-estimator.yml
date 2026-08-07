@@ -127,7 +127,6 @@ const DEFAULT_HOUSE_RULES = `SANI BUILDING CORP PRODUCTION RULES:
               assert norm_anchor in s
               s = s.replace(norm_anchor, guard + norm_anchor, 1)
 
-          # Apply after each model normalization, before validation.
           s = s.replace('let estimate = normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis);',
                         'let estimate = removeDoubleCountedAlternates(normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis));', 1)
           s = s.replace('estimate = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);',
@@ -155,8 +154,6 @@ const DEFAULT_HOUSE_RULES = `SANI BUILDING CORP PRODUCTION RULES:
           new = '''function scopeSectionOf(line) {
   var n = String((line && line.item) || "").toLowerCase();
   var explicit = line && line.section && String(line.section).trim() ? String(line.section).trim() : "";
-  // Obvious item semantics override a bad AI section. In particular, bathroom tile
-  // must never become Flooring merely because the phrase contains "floor".
   if (/bathroom|shower|vanity|toilet|waterproof|grout|tile setter|wall and floor tile|linen|mirror|plumb|glass enclosure|shower pan|bath demo|bathroom demolition/.test(n)) return "Bathroom";
   if (/window/.test(n)) return "Windows";
   if (/paint|prime/.test(n)) return "Painting";
@@ -196,8 +193,7 @@ const DEFAULT_HOUSE_RULES = `SANI BUILDING CORP PRODUCTION RULES:
     var target = svc(scopeUniqueServices()[0] || "General");
     exList.forEach(function (x) { push(target.excluded, (x && x.item) || x); });
   }'''
-          new = '''  // Plain labor/customer-supply/exclusion classification is LEGACY FALLBACK ONLY.
-  // V7 serviceBreakdown is authoritative and must not be polluted by a second keyword pass.
+          new = '''  // Legacy fallback only. Structured V7 serviceBreakdown is authoritative.
   if (!hasStructuredBreakdown) {
     (est.labor || []).forEach(function (l) { push(svc(scopeSectionOf(l)).included, l.item); });
     (est.customerSupplied || []).forEach(function (x) {
@@ -238,3 +234,5 @@ const DEFAULT_HOUSE_RULES = `SANI BUILDING CORP PRODUCTION RULES:
           git add dashboard.html netlify/functions/generate-estimate-background.js
           git commit -m "Hotfix estimator timeout fallback options and scope grouping" || exit 0
           git push origin main
+
+# retrigger 2026-08-07T00:30 ET
