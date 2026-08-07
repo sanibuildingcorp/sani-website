@@ -16,6 +16,7 @@
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
+const { applyDeterministicPricing } = require("./lib/deterministic-pricing");
 
 const CLAUDE_MODEL = process.env.ESTIMATOR_MODEL || "claude-sonnet-4-5-20250929";
 const OPENAI_ANALYSIS_MODEL = process.env.ESTIMATOR_ANALYSIS_MODEL || "gpt-5-mini";
@@ -84,6 +85,11 @@ exports.handler = async function handler(event) {
       estimate = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);
       validation = validateEstimate(estimate, projectAnalysis, input);
     }
+
+    // DETERMINISTIC PRICING GATE: AI interprets scope; Sani rules control production hours,
+    // mutually-exclusive alternatives, service ownership, and estimate health.
+    estimate = applyDeterministicPricing(estimate, projectAnalysis, input);
+    validation = validateEstimate(estimate, projectAnalysis, input);
 
     estimate = finalizeCustomerPresentation(estimate, projectAnalysis, input);
     estimate.validation = validation;
