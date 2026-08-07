@@ -1,0 +1,43 @@
+{
+  "version": "2026-08-07-v1",
+  "description": "Sani Building Corp deterministic estimating guardrails. AI interprets scope; these rules sanity-check production quantities before pricing is accepted.",
+  "productionRates": {
+    "interiorPainting": {
+      "unit": "paintable_sf_per_labor_hour",
+      "baseline": 30,
+      "appliesWhen": "walls/ceilings/trim/doors with normal preparation",
+      "notes": "Use fewer SF per hour (more labor) for heavy patching, occupied spaces, detailed trim, high ceilings or difficult access."
+    },
+    "engineeredHardwood": {
+      "unit": "floor_sf_per_labor_hour",
+      "baseline": 14,
+      "includes": ["cuts", "fitting", "transitions", "quarter-round when specified", "normal material handling"],
+      "notes": "Subfloor repair/leveling, furniture moving, stairs and unusual access are additional."
+    },
+    "largeFormatTile24x48": {
+      "unit": "tile_sf_per_labor_hour",
+      "baseline": 4,
+      "includes": ["layout", "cuts", "aligned grout lines", "setting"],
+      "notes": "Demo, substrate repair, waterproofing and plumbing are separate operations."
+    }
+  },
+  "alternativePricing": {
+    "mutuallyExclusiveOptionsAreAdditive": false,
+    "defaultBaseOption": "A",
+    "rule": "When Option A and Option B are alternatives, only the selected/base option contributes to labor, materials and Grand Total. Other options remain separately quoted."
+  },
+  "serviceOwnership": {
+    "structuredServiceBreakdownIsAuthoritative": true,
+    "legacyKeywordClassificationOnlyWhenStructuredDataMissing": true,
+    "bathroomKeywords": ["bathroom", "shower", "vanity", "toilet", "plumbing", "waterproofing", "backer board", "thinset", "grout", "glass enclosure", "tile setter", "wall tile", "floor tile"],
+    "flooringKeywords": ["engineered hardwood", "hardwood flooring", "flooring installer", "quarter round", "subfloor", "floor prep", "transition"]
+  },
+  "healthChecks": [
+    "every selected trade has labor coverage",
+    "customer-supplied finish purchases are excluded while installation and rough materials remain included",
+    "mutually exclusive options are not double-counted",
+    "production hours meet documented quantity guardrails",
+    "service subtotals reconcile to the project total",
+    "low-confidence assumptions are surfaced for contractor review"
+  ]
+}
