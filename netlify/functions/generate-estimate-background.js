@@ -16,7 +16,7 @@
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
-const { applyDeterministicPricing } = require("./lib/deterministic-pricing");
+const { applyDeterministicPricing, consolidateCustomerPresentation } = require("./lib/deterministic-pricing");
 
 const CLAUDE_MODEL = process.env.ESTIMATOR_MODEL || "claude-sonnet-4-5-20250929";
 const OPENAI_ANALYSIS_MODEL = process.env.ESTIMATOR_ANALYSIS_MODEL || "gpt-5-mini";
@@ -92,6 +92,7 @@ exports.handler = async function handler(event) {
     validation = validateEstimate(estimate, projectAnalysis, input);
 
     estimate = finalizeCustomerPresentation(estimate, projectAnalysis, input);
+    estimate = consolidateCustomerPresentation(estimate, projectAnalysis, input);
     estimate.validation = validation;
     estimate.pricingReadiness = projectAnalysis.pricing_readiness;
     estimate.clarificationQuestions = projectAnalysis.clarification_questions;
