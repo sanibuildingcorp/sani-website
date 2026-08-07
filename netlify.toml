@@ -1,13 +1,14 @@
 [build]
   functions = "netlify/functions"
 
-[[edge_functions]]
-  function = "dashboard-inject"
-  path = "/dashboard"
-
-[[edge_functions]]
-  function = "dashboard-inject"
-  path = "/dashboard.html"
+# Serve the production dashboard through a tiny same-origin shell that loads
+# the existing dashboard.html unchanged and injects only the customer-scope
+# editor script. This avoids rewriting the large dashboard file.
+[[redirects]]
+  from = "/dashboard"
+  to = "/dashboard-shell.html"
+  status = 200
+  force = true
 
 [[headers]]
   for = "/*"
@@ -20,6 +21,16 @@
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/dashboard-shell.html"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
+
+[[headers]]
+  for = "/js/customer-scope-control.js"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
 
 [[headers]]
   for = "/"
