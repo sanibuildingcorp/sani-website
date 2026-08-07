@@ -1,0 +1,490 @@
+ if(newMatSub < -0.005){ warn.textContent = "Too low — labor alone is " + fmt(laborPart*mk) + "."; warn.style.display="block"; return; }
+    _stScaleBucket(est.materials, Math.max(0,newMatSub), "materials");
+  }
+
+  renderLines("labor", est.labor);
+  renderLines("materials", est.materials);
+  attachLineListeners();
+  recalc();
+  closeSetTotalModal();
+  toast("✓ Total set to " + fmt(_stCurrentTotal()));
+}
+
+/* ===== AI GENERATE ===== */
+async function generateAI(isRegenerate) {
+  if (isRegenerate && !confirm("This will replace the current scope and line items with a new AI draft. Continue?")) return;
+  const btn = document.getElementById("gen-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ai-spin"></span> Generating…';
+
+  try {
+    function aiChk(id) { var el = document.getElementById(id); return el ? el.checked : true; }
+    var extraEl = document.getElementById("ai-extra-request");
+    var extraRequest = extraEl ? extraEl.value.trim() : "";
+    /* Netlify kills a normal function at 10 seconds and returns an HTML timeout page,
+       which the browser reports as "The string did not match the expected pattern".
+       A *-background function runs up to 15 minutes instead: it answers 202 straight
+       away, does the AI work, and writes aiStatus onto the record. We poll for that. */
+    const ref = currentRecord.ref;
+    const payload = JSON.stringify({
+      ref: ref,
+      usePhotoAnalysis: aiChk("use-photo-analysis"),
+      useDescription: aiChk("use-description"),
+      useAnswers: aiChk("use-answers"),
+      extraRequest: extraRequest
+    });
+
+    const kick = await fetch("/.netlify/functions/generate-estimate-background", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+    });
+    if (kick.status !== 202 && !kick.ok) throw new Error("Could not start the estimator (" + kick.status + ")");
+
+    /* Poll every 3s for up to 8 minutes. The estimator makes up to three AI calls
+       (project analysis, pricing, optional repair) and a long written scope like a
+       multi-trade apartment can legitimately take several minutes. The background
+       function itself is allowed 15 minutes, so the browser must not give up first. */
+    let data = null;
+    for (let i = 0; i < 160; i++) {
+      await new Promise(function (res) { setTimeout(res, 3000); });
+      btn.innerHTML = '<span class="ai-spin"></span> Generating… ' + ((i + 1) * 3) + 's';
+      let rec;
+      try {
+        const pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+        if (!pr.ok) continue;
+        rec = await pr.json();
+      } catch (_) { continue; }
+      const st = rec && rec.aiStatus;
+      if (st === "error") throw new Error(rec.aiError || "The estimator reported an error");
+      if (st === "done" && rec.estimate && (rec.estimate.labor || []).length) {
+        data = { estimate: rec.estimate, status: rec.status };
+        break;
+      }
+    }
+    if (!data) throw new Error("Timed out after 8 minutes — check Netlify → Logs → Functions → generate-estimate-background");
+
+    /* Regeneration replaces record.estimate wholesale, so snapshot every
+       contractor-owned setting first and put it back afterwards. Without this,
+       pressing Regenerate silently wipes hand-configured Customer View Mode
+       choices, a manually set total, finish groups, contract settings and quote
+       photos - none of which the AI knows anything about.
+       Only keys that actually exist are restored, so a brand-new estimate still
+       takes the estimator's own defaults. */
+    var keepFields = {};
+    if (currentRecord.estimate) {
+      CONTRACTOR_OWNED_ESTIMATE_FIELDS.forEach(function (k) {
+        if (currentRecord.estimate[k] !== undefined && currentRecord.estimate[k] !== null) {
+          keepFields[k] = currentRecord.estimate[k];
+        }
+      });
+    }
+    currentRecord.estimate = data.estimate;
+    Object.keys(keepFields).forEach(function (k) {
+      currentRecord.estimate[k] = keepFields[k];
+    });
+    normalizeDisplayFlags(currentRecord.estimate);
+    currentRecord.status = data.status;
+    renderEdit();
+    toast("✓ AI estimate generated");
+  } catch (e) {
+    console.error(e);
+    btn.disabled = false;
+    btn.textContent = "Generate Estimate";
+    toast("AI generation failed: " + e.message, true);
+  }
+}
+
+/* ===== SAVE / SEND / DELETE ===== */
+/* ==========================================================================
+   CUSTOMER SCOPE CONTROL
+   Contractor-owned, customer-facing wording. Three groups per service:
+     included  - what the price covers
+     supplied  - what the customer buys themselves (never priced here)
+     excluded  - what the price does not cover
+   This section NEVER touches estimate mathematics. Labor and Materials remain
+   the only source of pricing; service subtotals below are read-only and derived
+   from those tables via the existing calcTotal() markup rate.
+   Draft edits live in estimate.manualCustomerScopeDraft and stay private.
+   Only Publish copies them into estimate.publishedCustomerScope.
+   ========================================================================== */
+
+/* Fields the CONTRACTOR owns. The AI owns pricing and scope text; these are the
+   presentation and configuration choices a human made by hand. They must survive
+   an AI regeneration, which replaces record.estimate wholesale.
+   Declared with var, not const, so it is safe no matter where in the script this
+   ends up being read from.
+   NOTE: anything AI-owned (labor, materials, summary, scopeOfWork, serviceBreakdown,
+   scopeSections, exclusions, customerSupplied, options, assumptions, validation,
+   pricingReadiness, clarificationQuestions) is deliberately ABSENT - regenerating
+   is supposed to replace those. */
+var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
+  // Customer Scope Control
+  "manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished",
+  "customerViewPublishedVersion",
+  // Customer View Mode choices
+  "showLaborCost", "showMaterialsCost", "showSectionSubtotals",
+  "showLaborLines", "showMaterialLines",
+  // Manually set money + hand-built extras
+  "customerFinalTotal", "finishGroups", "contract",
+  "quotePhotos", "savedMaterials", "materialsTotalEstimate"
+];
+
+var SCOPE_SHARED_STATUSES = ["sent", "opened", "accepted", "invoiced", "paid", "completed"];
+
+function scopeAlreadyShared() {
+  var st = String((currentRecord && currentRecord.status) || "").toLowerCase();
+  return SCOPE_SHARED_STATUSES.indexOf(st) !== -1;
+}
+
+/* Same trade-matching idea the customer quote page uses, so section names stay
+   consistent between the estimate lines and this panel. */
+function scopeSectionOf(line) {
+  if (line && line.section && String(line.section).trim()) return String(line.section).trim();
+  var n = String((line && line.item) || "").toLowerCase();
+  if (/window/.test(n)) return "Windows";
+  if (/paint|prime/.test(n)) return "Painting";
+  if (/floor|hardwood|laminate|subfloor|underlayment/.test(n)) return "Flooring";
+  if (/cabinet|countertop|kitchen/.test(n)) return "Kitchen";
+  if (/bathroom|shower|vanity|toilet|waterproof|grout|tile|linen|mirror|plumb|electric/.test(n)) return "Bathroom";
+  if (/deck|railing/.test(n)) return "Deck";
+  if (/stair|tread|riser/.test(n)) return "Stairs";
+  if (/carpent|trim|door|molding/.test(n)) return "Carpentry";
+  return "General";
+}
+
+/* Read-only subtotal for one service, derived from the existing line items and
+   the existing markup field. Editing scope text can never move this number. */
+function scopeServiceSubtotal(name) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  /* Use the live markup field when it holds a value, otherwise the saved estimate.
+     An empty field must never silently price the service at 0% markup. */
+  var mEl = document.getElementById("f-markup");
+  var raw = mEl && String(mEl.value).trim() !== "" ? mEl.value : est.markupPct;
+  var pct = Number(raw) || 0;
+  var sum = 0;
+  ["labor", "materials"].forEach(function (kind) {
+    (est[kind] || []).forEach(function (l) {
+      if (scopeSectionOf(l) === name) sum += (Number(l.qty) || 0) * (Number(l.rate) || 0);
+    });
+  });
+  return sum * (1 + pct / 100);
+}
+
+function scopeUniqueServices() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var seen = {}, out = [];
+  ["labor", "materials"].forEach(function (kind) {
+    (est[kind] || []).forEach(function (l) {
+      var k = scopeSectionOf(l);
+      if (!seen[k]) { seen[k] = 1; out.push(k); }
+    });
+  });
+  return out;
+}
+
+/* Seeds the draft from whatever the AI produced. Handles every shape the
+   estimator has emitted: serviceBreakdown, scopeSections, and plain
+   labor/materials/customerSupplied/exclusions. */
+function buildScopeDraftFromAI() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var byName = {};
+  function svc(name) {
+    name = String(name || "General").trim() || "General";
+    if (!byName[name]) byName[name] = { name: name, included: [], supplied: [], excluded: [] };
+    return byName[name];
+  }
+  function push(arr, text) {
+    text = String(text || "").trim();
+    if (text && arr.indexOf(text) === -1) arr.push(text);
+  }
+
+  scopeUniqueServices().forEach(svc);
+
+  /* Preferred: structured breakdown from the estimator.
+     The current estimator (v7 service proposal) emits:
+       { title, included[], customerSupplies[], notIncluded[], subtotal, options[] }
+     Older builds used section/service/name, customerSupplied/supplied and
+     exclusions/excluded. Every name is accepted so old records still seed. */
+  function bText(x) { return (x && (x.item || x.text || x.label)) || x; }
+  var breakdown = [];
+  if (Array.isArray(est.serviceBreakdown)) breakdown = breakdown.concat(est.serviceBreakdown);
+  if (Array.isArray(est.scopeSections)) breakdown = breakdown.concat(est.scopeSections);
+  breakdown.forEach(function (b) {
+    if (!b) return;
+    var t = svc(b.title || b.section || b.service || b.name);
+    (b.included || b.items || b.scope || []).forEach(function (x) { push(t.included, bText(x)); });
+    (b.customerSupplies || b.customerSupplied || b.supplied || []).forEach(function (x) { push(t.supplied, bText(x)); });
+    (b.notIncluded || b.exclusions || b.excluded || []).forEach(function (x) { push(t.excluded, bText(x)); });
+  });
+
+  // Labor lines describe the work that IS included
+  (est.labor || []).forEach(function (l) { push(svc(scopeSectionOf(l)).included, l.item); });
+
+  // Customer-supplied items
+  (est.customerSupplied || []).forEach(function (x) {
+    var name = (x && x.section) || scopeSectionOf(x) || "General";
+    push(svc(name).supplied, (x && x.item) || x);
+  });
+
+  // Exclusions are usually project-wide
+  var exList = est.exclusions || [];
+  if (exList.length) {
+    var target = svc(scopeUniqueServices()[0] || "General");
+    exList.forEach(function (x) { push(target.excluded, (x && x.item) || x); });
+  }
+
+  return { services: Object.keys(byName).map(function (k) { return byName[k]; }) };
+}
+
+function scopeDraft() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  if (!est.manualCustomerScopeDraft || !Array.isArray(est.manualCustomerScopeDraft.services)) {
+    est.manualCustomerScopeDraft = buildScopeDraftFromAI();
+  }
+  return est.manualCustomerScopeDraft;
+}
+
+function renderScopeControl() {
+  var wrap = document.getElementById("scope-control-wrap");
+  if (!wrap || !currentRecord) return;
+  var est = currentRecord.estimate || {};
+  var d = scopeDraft();
+  var shared = scopeAlreadyShared();
+  var published = est.customerScopePublished === true;
+
+  var groups = [
+    { key: "included", label: "✓ INCLUDED", cls: "sc-inc" },
+    { key: "supplied", label: "◆ CUSTOMER SUPPLIES", cls: "sc-sup" },
+    { key: "excluded", label: "— NOT INCLUDED", cls: "sc-exc" }
+  ];
+
+  var html = '<div class="form-section sc-panel">' +
+    '<h3>🧾 CUSTOMER SCOPE CONTROL <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(wording only &mdash; never changes pricing)</span></h3>';
+
+  if (shared) {
+    html += '<div class="sc-warn">This estimate has already been shared with the customer. ' +
+      'Draft edits stay private. Publishing a new scope will immediately change what their existing quote link displays.</div>';
+  }
+  html += '<div class="sc-status">' +
+    (published ? '<span class="sc-pill sc-pill-live">Published scope is live</span>'
+               : '<span class="sc-pill sc-pill-draft">Draft only &mdash; customer still sees the standard quote</span>') +
+    '</div>';
+
+  d.services.forEach(function (svc, si) {
+    html += '<div class="sc-service">' +
+      '<div class="sc-service-head">' +
+        '<input class="sc-service-name" value="' + esc(svc.name) + '" onchange="scopeRenameService(' + si + ', this.value)">' +
+        '<span class="sc-subtotal" title="Calculated from the Labor and Materials tables">' + fmt(scopeServiceSubtotal(svc.name)) + '</span>' +
+      '</div>';
+    groups.forEach(function (g) {
+      var items = svc[g.key] || [];
+      html += '<div class="sc-group ' + g.cls + '">' +
+        '<div class="sc-group-label">' + g.label + '</div>';
+      items.forEach(function (txt, ii) {
+        html += '<div class="sc-row">' +
+          '<input class="sc-item" value="' + esc(txt) + '" onchange="scopeEditItem(' + si + ',\'' + g.key + '\',' + ii + ',this.value)">' +
+          '<select class="sc-move" onchange="scopeMoveItem(' + si + ',\'' + g.key + '\',' + ii + ',this.value);this.selectedIndex=0">' +
+            '<option value="">move…</option>' +
+            (g.key !== "included" ? '<option value="included">→ Included</option>' : '') +
+            (g.key !== "supplied" ? '<option value="supplied">→ Customer supplies</option>' : '') +
+            (g.key !== "excluded" ? '<option value="excluded">→ Not included</option>' : '') +
+            '<option value="__svc">→ another service…</option>' +
+          '</select>' +
+          '<button class="sc-del" onclick="scopeDeleteItem(' + si + ',\'' + g.key + '\',' + ii + ')" title="Delete">✕</button>' +
+        '</div>';
+      });
+      html += '<button class="sc-add" onclick="scopeAddItem(' + si + ',\'' + g.key + '\')">+ Add</button>' +
+        '</div>';
+    });
+    html += '<button class="sc-del-svc" onclick="scopeDeleteService(' + si + ')">Remove this service</button>' +
+      '</div>';
+  });
+
+  html += '<div class="sc-actions">' +
+      '<button class="btn-secondary" onclick="scopeAddService()">+ Add Service</button>' +
+      '<button class="btn-secondary" onclick="scopeRebuildFromAI()">↻ Rebuild Draft from AI</button>' +
+      '<button class="btn-secondary" onclick="scopeSaveDraft()">💾 Save Scope Draft</button>' +
+      '<button class="btn-secondary" onclick="scopePreview()">👁 Preview Draft</button>' +
+      '<button class="btn-primary" onclick="scopePublish()">🚀 Publish Customer Scope</button>' +
+    '</div>' +
+    '<div id="sc-preview" class="sc-preview" style="display:none"></div>' +
+  '</div>';
+
+  wrap.innerHTML = html;
+}
+
+/* ---- mutations (structure changes re-render; text edits do not) ---- */
+function scopeAddItem(si, key) {
+  scopeDraft().services[si][key].push("");
+  renderScopeControl();
+}
+function scopeEditItem(si, key, ii, val) {
+  scopeDraft().services[si][key][ii] = String(val || "");
+}
+function scopeDeleteItem(si, key, ii) {
+  scopeDraft().services[si][key].splice(ii, 1);
+  renderScopeControl();
+}
+function scopeMoveItem(si, key, ii, dest) {
+  if (!dest) return;
+  var d = scopeDraft();
+  var txt = d.services[si][key][ii];
+  if (dest === "__svc") {
+    var names = d.services.map(function (s2, i2) { return (i2 + 1) + ") " + s2.name; }).join("\n");
+    var pick = prompt("Move to which service?\n" + names + "\n\nEnter the number:");
+    var idx = parseInt(pick, 10) - 1;
+    if (isNaN(idx) || !d.services[idx]) return;
+    d.services[si][key].splice(ii, 1);
+    d.services[idx][key].push(txt);
+  } else {
+    d.services[si][key].splice(ii, 1);
+    d.services[si][dest].push(txt);
+  }
+  renderScopeControl();
+}
+function scopeRenameService(si, val) {
+  scopeDraft().services[si].name = String(val || "").trim() || "General";
+}
+function scopeAddService() {
+  var name = prompt("Service name (e.g. Bathroom, Flooring, Painting, Windows):", "");
+  if (!name) return;
+  scopeDraft().services.push({ name: String(name).trim(), included: [], supplied: [], excluded: [] });
+  renderScopeControl();
+}
+function scopeDeleteService(si) {
+  if (!confirm("Remove this service from the customer scope? Pricing is not affected.")) return;
+  scopeDraft().services.splice(si, 1);
+  renderScopeControl();
+}
+function scopeRebuildFromAI() {
+  if (!confirm("Rebuild the draft from the current AI estimate? Your manual scope edits will be replaced. Pricing and any published scope are not affected.")) return;
+  currentRecord.estimate.manualCustomerScopeDraft = buildScopeDraftFromAI();
+  renderScopeControl();
+  toast("✓ Draft rebuilt from AI estimate");
+}
+
+/* ---- save / preview / publish ---- */
+function scopeCleanCopy() {
+  var d = scopeDraft();
+  return {
+    services: d.services.map(function (s2) {
+      function clean(a) { return (a || []).map(function (x) { return String(x || "").trim(); }).filter(Boolean); }
+      return { name: String(s2.name || "General").trim() || "General",
+               included: clean(s2.included), supplied: clean(s2.supplied), excluded: clean(s2.excluded) };
+    }).filter(function (s2) { return s2.included.length || s2.supplied.length || s2.excluded.length; }),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+async function scopeSaveDraft() {
+  currentRecord.estimate.manualCustomerScopeDraft = scopeCleanCopy();
+  await saveDraft();
+  toast("✓ Scope draft saved (private)");
+}
+
+function scopePreview() {
+  var box = document.getElementById("sc-preview");
+  if (!box) return;
+  var d = scopeCleanCopy();
+  var html = '<div class="sc-preview-title">What the customer would see</div>';
+  d.services.forEach(function (s2) {
+    html += '<div class="sc-prev-svc"><div class="sc-prev-name">' + esc(s2.name) +
+      '<span class="sc-prev-total">' + fmt(scopeServiceSubtotal(s2.name)) + '</span></div>';
+    if (s2.included.length) html += '<div class="sc-prev-g"><b>Included</b><ul><li>' + s2.included.map(esc).join("</li><li>") + '</li></ul></div>';
+    if (s2.supplied.length) html += '<div class="sc-prev-g"><b>You supply</b><ul><li>' + s2.supplied.map(esc).join("</li><li>") + '</li></ul></div>';
+    if (s2.excluded.length) html += '<div class="sc-prev-g"><b>Not included</b><ul><li>' + s2.excluded.map(esc).join("</li><li>") + '</li></ul></div>';
+    html += '</div>';
+  });
+  box.innerHTML = html || "<em>Nothing to preview yet.</em>";
+  box.style.display = box.style.display === "none" ? "block" : "none";
+}
+
+async function scopePublish() {
+  var msg = scopeAlreadyShared()
+    ? "This estimate has already been shared. Publishing will IMMEDIATELY change what the customer sees at their existing quote link.\n\nPublish now?"
+    : "Publish this scope to the customer's quote?";
+  if (!confirm(msg)) return;
+  var clean = scopeCleanCopy();
+  currentRecord.estimate.manualCustomerScopeDraft = clean;
+  currentRecord.estimate.publishedCustomerScope = clean;
+  currentRecord.estimate.customerScopePublished = true;
+  await saveDraft();
+  renderScopeControl();
+  toast("✓ Customer scope published");
+}
+
+function gatherForm() {
+  syncLines();
+  var out = {
+    projectTitle: document.getElementById("f-title").value.trim(),
+    summary: document.getElementById("f-summary").value.trim(),
+    scopeOfWork: document.getElementById("f-scope").value.trim(),
+    timelineText: document.getElementById("f-timeline").value.trim(),
+    notes: document.getElementById("f-notes").value.trim(),
+    markupPct: parseFloat(document.getElementById("f-markup").value) || 0,
+    showLaborCost: currentRecord.estimate.showLaborCost !== false,
+    showMaterialsCost: currentRecord.estimate.showMaterialsCost === true,
+    showSectionSubtotals: currentRecord.estimate.showSectionSubtotals === true,
+    showLaborLines: currentRecord.estimate.showLaborLines === true,
+    showMaterialLines: currentRecord.estimate.showMaterialLines === true,
+    labor: currentRecord.estimate.labor || [],
+    materials: currentRecord.estimate.materials || [],
+    quotePhotos: currentRecord.estimate.quotePhotos || [],
+    savedMaterials: currentRecord.estimate.savedMaterials || [],
+    materialsTotalEstimate: currentRecord.estimate.materialsTotalEstimate || 0,
+    /* Customer Scope Control. The draft is private to the contractor; only the
+       published copy is what the customer's quote link renders. Carried through
+       every save so Save Draft / Send to Customer never wipe them. */
+    manualCustomerScopeDraft: currentRecord.estimate.manualCustomerScopeDraft || null,
+    publishedCustomerScope: currentRecord.estimate.publishedCustomerScope || null,
+    customerScopePublished: currentRecord.estimate.customerScopePublished === true,
+  };
+
+  /* Structured data produced by the estimator that this form has no inputs for.
+     gatherForm() rebuilds the estimate object from scratch, so anything not
+     copied here is destroyed the moment the contractor presses Save Draft or
+     Send to Customer - which would silently strip the customer's service cards
+     out of an already-sent quote. Carry every known field through untouched. */
+  var CARRY = [
+    // AI-generated structured data this form has no inputs for
+    "serviceBreakdown", "scopeSections", "customerSupplied", "exclusions", "options",
+    "assumptions", "validation", "pricingReadiness", "clarificationQuestions",
+    "estimateStatus", "customerViewMode", "customerPresentationVersion",
+    "internalScopeChecklist", "projectAnalysis"
+  // plus every contractor-owned setting, from the same single list the AI
+  // regeneration path uses, so the two can never drift apart
+  ].concat(CONTRACTOR_OWNED_ESTIMATE_FIELDS);
+  CARRY.forEach(function (k) {
+    if (currentRecord.estimate[k] !== undefined) out[k] = currentRecord.estimate[k];
+  });
+
+  return out;
+}
+
+async function saveDraft() {
+  const est = gatherForm();
+  try {
+    const r = await fetch("/.netlify/functions/save-estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: currentRecord.ref, estimate: est, status: currentRecord.status === "new" ? "drafted" : currentRecord.status }),
+    });
+    if (!r.ok) throw new Error("Save failed");
+    toast("✓ Draft saved");
+    currentRecord.estimate = est;
+    await loadEstimates();
+  } catch (e) {
+    toast("Save failed: " + e.message, true);
+  }
+}
+
+async function sendToCustomer() {
+  const est = gatherForm();
+  if (!est.projectTitle) { toast("Add a project title first", true); return; }
+  const cv = calcCustomerView(est);
+  if (cv.customerTotal <= 0) { toast("Add labor or materials with prices first", true); return; }
+
+  let visibility;
+  if (est.showLaborCost && est.showMaterialsCost) {
+    visibility = "Labor + Materials (spl
