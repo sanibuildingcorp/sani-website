@@ -1,0 +1,128 @@
+name: Fix estimator scope grouping and production rules
+on:
+  push:
+    paths: [".fix-estimator-run"]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: scope-ui-compact
+          fetch-depth: 0
+      - name: Patch dashboard scope grouping
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('dashboard.html')
+          s=p.read_text()
+          old='''  var breakdown = [];
+  if (Array.isArray(est.serviceBreakdown)) breakdown = breakdown.concat(est.serviceBreakdown);
+  if (Array.isArray(est.scopeSections)) breakdown = breakdown.concat(est.scopeSections);
+  breakdown.forEach(function (b) {
+    if (!b) return;
+    var t = svc(b.title || b.section || b.service || b.name);
+    (b.included || b.items || b.scope || []).forEach(function (x) { push(t.included, bText(x)); });
+    (b.customerSupplies || b.customerSupplied || b.supplied || []).forEach(function (x) { push(t.supplied, bText(x)); });
+    (b.notIncluded || b.exclusions || b.excluded || []).forEach(function (x) { push(t.excluded, bText(x)); });
+  });
+
+  // Labor lines describe the work that IS included
+  (est.labor || []).forEach(function (l) { push(svc(scopeSectionOf(l)).included, l.item); });
+
+  // Customer-supplied items
+  (est.customerSupplied || []).forEach(function (x) {
+    var name = (x && x.section) || scopeSectionOf(x) || "General";
+    push(svc(name).supplied, (x && x.item) || x);
+  });
+
+  // Exclusions are usually project-wide
+  var exList = est.exclusions || [];
+  if (exList.length) {
+    var target = svc(scopeUniqueServices()[0] || "General");
+    exList.forEach(function (x) { push(target.excluded, (x && x.item) || x); });
+  }
+'''
+          new='''  // V7 structured serviceBreakdown is authoritative. Do NOT re-classify its
+  // lines by keywords afterward; words such as "floor" legitimately appear in
+  // bathroom tile work and caused Bathroom work to leak into Flooring.
+  var hasStructuredBreakdown = Array.isArray(est.serviceBreakdown) && est.serviceBreakdown.length > 0;
+  var breakdown = hasStructuredBreakdown
+    ? est.serviceBreakdown
+    : (Array.isArray(est.scopeSections) ? est.scopeSections : []);
+  breakdown.forEach(function (b) {
+    if (!b) return;
+    var t = svc(b.title || b.section || b.service || b.name);
+    (b.included || b.items || b.scope || []).forEach(function (x) { push(t.included, bText(x)); });
+    (b.customerSupplies || b.customerSupplied || b.supplied || []).forEach(function (x) { push(t.supplied, bText(x)); });
+    (b.notIncluded || b.exclusions || b.excluded || []).forEach(function (x) { push(t.excluded, bText(x)); });
+  });
+
+  // Legacy fallback only. Old estimates without structured serviceBreakdown
+  // still get a usable scope from labor/material keywords.
+  if (!hasStructuredBreakdown) {
+    (est.labor || []).forEach(function (l) { push(svc(scopeSectionOf(l)).included, l.item); });
+
+    (est.customerSupplied || []).forEach(function (x) {
+      var name = (x && x.section) || scopeSectionOf(x) || "General";
+      push(svc(name).supplied, (x && x.item) || x);
+    });
+
+    var exList = est.exclusions || [];
+    if (exList.length) {
+      var target = svc(scopeUniqueServices()[0] || "General");
+      exList.forEach(function (x) { push(target.excluded, (x && x.item) || x); });
+    }
+  }
+'''
+          assert old in s, 'dashboard structured scope block not found'
+          s=s.replace(old,new,1)
+          p.write_text(s)
+      - name: Patch estimator prompt rules
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('netlify/functions/generate-estimate-background.js')
+          s=p.read_text()
+          marker='''STRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.'''
+          assert marker in s, 'analysis prompt marker missing'
+          # Add project-analysis awareness of alternatives only once.
+          analysis_add='''\n\nALTERNATIVE / OPTION RULE: When the customer requests mutually exclusive alternatives (for example Window Option A replace all windows versus Option B replace only selected windows and repair others), identify them as alternatives. Never describe both alternatives as simultaneously required base scope.'''
+          if analysis_add.strip() not in s:
+            s=s.replace(marker, marker+analysis_add, 1)
+
+          # Insert hard estimating rules at the start of the pricing prompt body.
+          m=re.search(r'function buildEstimatePrompt\(input, projectAnalysis\) \{\s*return `',s)
+          assert m, 'buildEstimatePrompt return template not found'
+          rules='''SANI BUILDING CORP ESTIMATING RULES — THESE OVERRIDE MODEL SHORTCUTS:\n1. MUTUALLY EXCLUSIVE OPTIONS: Only ONE option may contribute to the base labor/material subtotal. Put alternate choices in the estimate options/serviceBreakdown options data with their own alternate price, but do not also leave their labor or materials in the base labor/material arrays. Example: Window Option A and Window Option B must never both be charged in the grand total.\n2. PRODUCTION HOURS ARE CREW-HOURS / BILLABLE LABOR-HOURS, NOT ELAPSED CALENDAR TIME. Never compress a multi-worker, multi-day task into a small number of hours.\n3. PAINTING BASELINE: full apartment painting that includes walls, ceilings, trim/doors and normal prep should generally budget about 30–36 labor-hours per 1,000 SF of paintable surface unless the scope clearly supports a different rate. For ~2,600 SF, approximately 80–95 labor-hours is the expected sanity range.\n4. ENGINEERED HARDWOOD BASELINE: removal/prep + installation + transitions/quarter-round + normal material receiving/handling should generally budget about 0.07–0.08 labor-hours per SF. For ~640 SF, approximately 44–50 labor-hours is the expected sanity range.\n5. LARGE-FORMAT TILE BASELINE: 24x48-class porcelain/ceramic requiring layout, cuts, aligned grout lines and finish work should generally budget about 0.23–0.28 labor-hours per SF for setter work where conditions are normal. For ~87 SF, approximately 20–24 labor-hours is the expected sanity range.\n6. If customer/project specifics conflict with a baseline above, explain the assumption internally and use the more defensible project-specific quantity. Never silently undercut these production floors merely to make the total look attractive.\n7. Contractor House Rules / Extra Request supplied below are authoritative and should override generic assumptions when they are more specific.\n\n'''
+          insert_at=m.end()
+          if 'SANI BUILDING CORP ESTIMATING RULES — THESE OVERRIDE MODEL SHORTCUTS:' not in s:
+            s=s[:insert_at]+rules+s[insert_at:]
+
+          # Strengthen repair prompt too, so the auto-repair cannot reintroduce double-counted options.
+          rm=re.search(r'function buildRepairPrompt\(input, projectAnalysis, estimate, validation\) \{\s*return `',s)
+          assert rm, 'buildRepairPrompt return template not found'
+          repair='''REPAIR GUARDRAILS:\n- Mutually exclusive alternatives must NOT both remain in base labor/material arrays or the base grand total. Keep one base choice and represent other choices as options/alternates only.\n- Re-check labor-hour realism against Sani production baselines: full painting 30–36 labor-hours/1,000 paintable SF; engineered hardwood with normal prep/trim 0.07–0.08 labor-hours/SF; large-format 24x48 tile setter work 0.23–0.28 labor-hours/SF, unless project facts justify a different rate.\n\n'''
+          rpos=rm.end()
+          if 'REPAIR GUARDRAILS:' not in s:
+            s=s[:rpos]+repair+s[rpos:]
+          p.write_text(s)
+      - name: Verify syntax and invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check netlify/functions/generate-estimate-background.js
+          grep -q 'hasStructuredBreakdown' dashboard.html
+          grep -q 'MUTUALLY EXCLUSIVE OPTIONS' netlify/functions/generate-estimate-background.js
+          grep -q '30–36 labor-hours per 1,000 SF' netlify/functions/generate-estimate-background.js
+          grep -q 'CONTRACTOR_OWNED_ESTIMATE_FIELDS' dashboard.html
+          grep -q 'function scopePublish' dashboard.html
+          git config user.name "SBC Estimator Bot"
+          git config user.email "actions@users.noreply.github.com"
+          rm -f .fix-estimator-run .github/workflows/fix-estimator-scope.yml
+          git add -A
+          git commit -m "Fix scope grouping, option pricing, and production-hour guardrails"
+          git push origin HEAD:scope-ui-compact
