@@ -57,15 +57,16 @@ function buildCustomerView(source, previewDraft) {
 
   if (!scope || !Array.isArray(scope.services)) return data;
 
+  // Customer link gets a concise wording-only copy. The dashboard keeps the full,
+  // editable contractor scope. This never changes pricing or stored source data.
+  estimate.publishedCustomerScope = cleanCustomerScope(scope);
+  estimate.customerScopePublished = true;
+
   // Preserve deterministic pricing and its presentation-version marker.
   // Do NOT rebuild serviceBreakdown from manual scope: manual scope baseSubtotal can
   // be stale and is not the pricing source of truth.
   // quote.html applies publishedCustomerScope wording over the existing priced
   // serviceBreakdown without touching the subtotals.
-  if (previewDraft) {
-    estimate.publishedCustomerScope = JSON.parse(JSON.stringify(scope));
-    estimate.customerScopePublished = true;
-  }
 
   // Prevent legacy AI scope sources from being merged into customer-facing wording.
   // Labor/material lines remain intact so optional detailed breakdowns still work.
@@ -75,6 +76,74 @@ function buildCustomerView(source, previewDraft) {
 
   data.estimate = estimate;
   return data;
+}
+
+function cleanCustomerScope(scope) {
+  const out = JSON.parse(JSON.stringify(scope || {}));
+  out.services = (Array.isArray(out.services) ? out.services : []).map(service => {
+    const title = String(service.name || service.title || "").trim();
+    const included = uniq(service.included || []);
+    service.included = compressIncluded(title, included);
+    service.supplied = uniq(service.supplied || service.customerSupplies || []);
+    service.excluded = uniq(service.excluded || service.notIncluded || []).filter(x => !/^option\s*b\b/i.test(String(x).trim()));
+    return service;
+  });
+  return out;
+}
+
+function compressIncluded(title, lines) {
+  const t = String(title || "").toLowerCase();
+  if (!lines.length) return [];
+
+  const defs = t.includes("bathroom") ? [
+    [/protect|site protection|access path/i, "Protect bathroom, adjacent finishes and access path before work begins"],
+    [/demol|remove existing|debris|disposal/i, "Remove specified existing bathroom finishes/fixtures and dispose of construction debris"],
+    [/shower pan|drain inspect|inspect.*drain|pan inspection/i, "Inspect the existing shower pan and drain; preserve the existing pan unless an approved hidden-condition change is required"],
+    [/substrate|backer|waterproof|membrane/i, "Prepare substrates; install backer board and waterproof shower wet areas as required"],
+    [/tile|grout/i, "Install specified bathroom wall and floor tile, including layout, grout, sealant and finish work"],
+    [/plumb|vanity|toilet|faucet|shower trim/i, "Install and connect customer-supplied bathroom fixtures in their existing plumbing locations"],
+    [/glass|enclosure/i, "Measure, fabricate and install the frameless shower glass enclosure with minimal hardware"],
+    [/clean|touch.?up|caulk|sealant/i, "Complete final caulking, touch-ups, cleanup and protection"]
+  ] : t.includes("floor") ? [
+    [/protect|receive|delivery/i, "Protect adjacent finishes and receive/inspect customer-supplied flooring"],
+    [/inspect|prepare|subfloor|floor prep/i, "Inspect and prepare the existing floor surface for installation"],
+    [/engineered hardwood|hardwood install|flooring install/i, "Install customer-supplied engineered hardwood flooring in the specified areas"],
+    [/cut|fit|doorway|transition/i, "Complete required cuts and fitting at walls, doorways and transitions"],
+    [/quarter.?round|1\/4.?round|trim/i, "Install 1/4-round trim where required"],
+    [/clean|protection/i, "Complete final flooring cleanup and protection"]
+  ] : t.includes("paint") ? [
+    [/protect|mask/i, "Protect floors, fixtures and adjacent finished surfaces"],
+    [/patch|sand|surface prep|preparation/i, "Perform minor patching, sanding and surface preparation as required"],
+    [/prime/i, "Spot-prime repaired areas as needed"],
+    [/paint.*wall|wall.*paint|ceiling|finish coat/i, "Apply customer-supplied finish paint to included walls and ceilings"],
+    [/door|trim/i, "Paint included doors and trim as specified"],
+    [/clean|touch.?up/i, "Complete final touch-ups and cleanup"]
+  ] : t.includes("window") ? [
+    [/remove|disposal|dispose/i, "Option A (base estimate): remove and dispose of the specified existing windows"],
+    [/opening|prepare/i, "Prepare existing window openings for replacement installation"],
+    [/install|replacement window/i, "Supply and install the specified standard aluminum replacement windows"],
+    [/trim|casing|caulk|seal|weather/i, "Complete interior/exterior trim, caulking and weather-sealing as required"],
+    [/test|adjust|operation/i, "Test window operation and complete final adjustments and cleanup"]
+  ] : [];
+
+  if (!defs.length) return lines;
+  const joined = lines.join(" | ");
+  const concise = defs.filter(([re]) => re.test(joined)).map(([, text]) => text);
+  return concise.length ? uniq(concise) : lines;
+}
+
+function uniq(values) {
+  const seen = new Set();
+  const out = [];
+  (Array.isArray(values) ? values : []).forEach(value => {
+    const text = String(value == null ? "" : value).trim();
+    const key = text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    if (text && !seen.has(key)) {
+      seen.add(key);
+      out.push(text);
+    }
+  });
+  return out;
 }
 
 function cors() {
