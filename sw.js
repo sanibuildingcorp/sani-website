@@ -1,14 +1,11 @@
 // SBC Dashboard Service Worker
-// v4 — robust scope-control loader with automatic refresh on activation.
-const CACHE = 'sbc-v4-scope-control';
-const DASHBOARD_EXT = '/js/customer-scope-loader-v2.js?v=2';
+// v5 — native dashboard Scope Control only. No legacy script injection.
+const CACHE = 'sbc-v5-native-scope-control';
 
 self.addEventListener('install', function(e) {
-  e.waitUntil(
-    caches.open(CACHE).then(function(c) {
-      return c.addAll(['/dashboard.html', '/js/customer-scope-loader-v2.js']).catch(function() {});
-    })
-  );
+  // Do not pre-cache dashboard.html. The contractor dashboard must always load
+  // the newest production HTML because its estimator and Scope Control change
+  // frequently.
   self.skipWaiting();
 });
 
@@ -17,49 +14,26 @@ self.addEventListener('activate', function(e) {
     const keys = await caches.keys();
     await Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));
     await self.clients.claim();
-    // Existing open dashboard tabs may still be running the previous HTML response.
-    // Refresh them once so this worker controls the navigation and injects v2.
+
+    // Reload any already-open dashboard once so the legacy injected
+    // customer-scope-loader-v2.js is removed from the live page immediately.
     const clients = await self.clients.matchAll({ type:'window', includeUncontrolled:true });
     await Promise.all(clients.map(function(client){
       try {
         const u = new URL(client.url);
-        if (u.pathname === '/dashboard' || u.pathname === '/dashboard.html') return client.navigate(client.url);
+        if (u.pathname === '/dashboard' || u.pathname === '/dashboard.html') {
+          return client.navigate(client.url);
+        }
       } catch (_) {}
       return Promise.resolve();
     }));
   })());
 });
 
-function injectDashboardExtension(response, request) {
-  if (!response || !response.ok) return Promise.resolve(response);
-  var url = new URL(request.url);
-  if (url.pathname !== '/dashboard' && url.pathname !== '/dashboard.html') return Promise.resolve(response);
-
-  return response.text().then(function(html) {
-    // Strip any previous injected scope-control script tags so only v2 runs.
-    html = html.replace(/<script[^>]+customer-scope-control\.js[^>]*><\/script>\s*/gi, '');
-    html = html.replace(/<script[^>]+customer-scope-loader-v2\.js[^>]*><\/script>\s*/gi, '');
-
-    var tag = '<script src="' + DASHBOARD_EXT + '"></script>';
-    var output = html.indexOf('</body>') !== -1
-      ? html.replace('</body>', tag + '\n</body>')
-      : html + tag;
-
-    var headers = new Headers(response.headers);
-    headers.delete('content-length');
-    headers.set('cache-control','no-store, max-age=0');
-    return new Response(output, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: headers
-    });
-  });
-}
-
 self.addEventListener('fetch', function(e) {
   const url = new URL(e.request.url);
 
-  // Always network-first for API calls and Netlify functions.
+  // API calls and writes always go straight to network.
   if (url.pathname.startsWith('/.netlify/') ||
       url.pathname.startsWith('/api/') ||
       e.request.method !== 'GET') {
@@ -67,22 +41,12 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // Dashboard HTML: always network-first, then inject the isolated extension.
+  // Dashboard HTML is strictly network-first/no-store. Do not inject or cache
+  // any Scope Control extension; dashboard.html owns the feature natively.
   if ((url.pathname === '/dashboard' || url.pathname === '/dashboard.html') &&
-      e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html')) {
-    e.respondWith(
-      fetch(e.request, { cache:'no-store' })
-        .then(function(res) {
-          var cacheCopy = res.clone();
-          caches.open(CACHE).then(function(c) { c.put(e.request, cacheCopy); });
-          return injectDashboardExtension(res, e.request);
-        })
-        .catch(function() {
-          return caches.match(e.request).then(function(cached) {
-            return injectDashboardExtension(cached, e.request);
-          });
-        })
-    );
+      e.request.headers.get('accept') &&
+      e.request.headers.get('accept').includes('text/html')) {
+    e.respondWith(fetch(e.request, { cache:'no-store' }));
     return;
   }
 
@@ -92,13 +56,13 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // Cache-first for static assets.
+  // Static assets can remain cache-first.
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       if (cached) return cached;
       return fetch(e.request).then(function(res) {
         if (res.ok) {
-          var clone = res.clone();
+          const clone = res.clone();
           caches.open(CACHE).then(function(c) { c.put(e.request, clone); });
         }
         return res;
