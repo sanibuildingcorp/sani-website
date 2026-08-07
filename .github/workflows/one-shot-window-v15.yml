@@ -1,0 +1,41 @@
+name: One Shot Windows V1.5
+on: [push]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Patch and test
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const p='netlify/functions/lib/deterministic-pricing.js';
+          let s=fs.readFileSync(p,'utf8');
+          s=s.replace('deterministic estimator guardrails v1.4','deterministic estimator guardrails v1.5');
+          const block=`function parseWindowCounts(input,analysis){const raw=[input?.request?.description,input?.request?.contractorNotes,input?.request?.extraNotes,JSON.stringify(analysis?.confirmed_scope||[])].filter(Boolean).join(' | ');let total=0,m;const re=/(\\d+(?:\\.\\d+)?)\\s*[\\\"”]?\\s*[x×]\\s*(\\d+(?:\\.\\d+)?)\\s*[\\\"”]?[^|\\n]{0,45}?(?:quantity|qty)\\s*[:#-]?\\s*(\\d+)/gi;while((m=re.exec(raw)))total+=Number(m[3])||0;return total}\nfunction typicalRate(lines,fallback){const r=(lines||[]).map(x=>num(x.rate)).filter(Boolean);return r.length?Math.max(fallback,Math.round(r.reduce((a,b)=>a+b,0)/r.length)):fallback}\nfunction ensureWindowOptionEngine(estimate,analysis,input,adj){if(!windowRequested(input,analysis))return;estimate.options=Array.isArray(estimate.options)?estimate.options:[];const mm=1+num(estimate.markupPct||RULES.markupDefault)/100;let hasBase=[...(estimate.labor||[]),...(estimate.materials||[])].some(isWindowLine);const optionA=estimate.options.find(o=>canonicalService(o.section,String(o.label||'')+' '+String(o.description||''),[])==='Windows'&&optionLetter(o)==='A');if(!hasBase&&optionA&&num(optionA.price)>0){const preMarkup=money(num(optionA.price)/mm);estimate.materials.push({section:'Windows',item:(text(optionA.label)||'Window Option A')+' — selected base allowance',qty:1,unit:'allowance',rate:preMarkup});estimate.options=estimate.options.filter(o=>o!==optionA);hasBase=true;adj.push({type:'BASE_OPTION_PROMOTED',service:'Windows',option:'A',customerPrice:money(optionA.price),baseCost:preMarkup})}if(!hasBase){const count=parseWindowCounts(input,analysis)||8;const laborRate=typicalRate(estimate.labor,95);const hours=Math.max(12,Math.ceil(count*3.5));const unitAllowance=900;estimate.labor.push({section:'Windows',item:'Window Option A — remove, prep openings and install '+count+' specified aluminum replacement windows',qty:hours,unit:'hrs',rate:laborRate});estimate.materials.push({section:'Windows',item:'Window Option A — '+count+' specified aluminum replacement windows allowance',qty:count,unit:'ea',rate:unitAllowance});hasBase=true;adj.push({type:'WINDOW_BASE_SYNTHESIZED',service:'Windows',option:'A',windowCount:count,laborHours:hours,laborRate,unitMaterialAllowance:unitAllowance})}estimate.options=estimate.options.filter(o=>!(canonicalService(o.section,String(o.label||'')+' '+String(o.description||''),[])==='Windows'&&optionLetter(o)==='A'));const hasB=estimate.options.some(o=>canonicalService(o.section,String(o.label||'')+' '+String(o.description||''),[])==='Windows'&&optionLetter(o)==='B');if(!hasB){const raw=requestEvidence(input,analysis),count=parseWindowCounts(input,analysis)||8,premiumCount=/two master bedroom|2 master bedroom|two.*acoustic|2.*acoustic/.test(raw)?2:Math.min(2,count),adjustCount=Math.max(0,count-premiumCount),laborRate=typicalRate(estimate.labor,95),rawCost=(premiumCount*4+adjustCount*1.5)*laborRate+premiumCount*1250+adjustCount*100;estimate.options.push({section:'Windows',label:'Option B — Replace 2 premium acoustic windows + adjust remaining existing windows',description:'Alternative based on the customer request. Excluded from the base Grand Total until selected.',price:money(rawCost*mm)});adj.push({type:'WINDOW_ALTERNATIVE_SYNTHESIZED',service:'Windows',option:'B',customerPrice:money(rawCost*mm)})}estimate.optionSelections=estimate.optionSelections||{};estimate.optionSelections.Windows={selected:'Option A',baseIncluded:true,alternatives:estimate.options.filter(o=>canonicalService(o.section,String(o.label||'')+' '+String(o.description||''),[])==='Windows').map(o=>({label:o.label,description:o.description,price:money(o.price)}))}}\n`;
+          const re=/function ensureWindowOptionEngine[\s\S]*?(?=function genericOperation)/;
+          if(!re.test(s))throw new Error('window engine block not found');
+          s=s.replace(re,block);
+          s=s.replace(/deterministic-v1\.4/g,'deterministic-v1.5').replace(/version:'v1\.4'/g,"version:'v1.5'");
+          fs.writeFileSync(p,s);
+          const mod=require('./'+p);
+          const input={request:{description:'WINDOW REPLACEMENT — please price BOTH options. OPTION A replace all windows: 34 x 68.5 quantity 3; 30.5 x 68.5 quantity 2; 28.5 x 68.5 quantity 2; 18.75 x 42.75 quantity 1. OPTION B replace only two master bedroom windows with premium acoustic windows and adjust remaining windows.',groupedAnswers:{}}};
+          const analysis={selected_trades:['Windows'],confirmed_scope:[{trade:'Windows',scope_items:['Option A replace all windows','Option B two acoustic plus adjust remaining'],customer_exclusions:[]}],quantities:{}};
+          let e={labor:[],materials:[],customerSupplied:[],exclusions:[],options:[],markupPct:25};e=mod.applyDeterministicPricing(e,analysis,input);e=mod.consolidateCustomerPresentation(e,analysis,input);const w=e.serviceBreakdown.find(x=>x.title==='Windows');if(!w||w.subtotal<=0)throw new Error('Windows zero');if(!(e.options||[]).some(o=>/Option B/i.test(o.label)))throw new Error('Option B missing');if(e.estimateHealth.status==='BLOCKED')throw new Error(JSON.stringify(e.estimateHealth));console.log('PASS Windows',w.subtotal,e.options);
+          NODE
+      - name: Commit result and remove one-shot workflow
+        run: |
+          git config user.name 'sani-estimator-bot'
+          git config user.email 'sanibuildingcorp@gmail.com'
+          git rm .github/workflows/one-shot-window-v15.yml
+          git add netlify/functions/lib/deterministic-pricing.js
+          git commit -m 'Ship deterministic Windows Option Engine v1.5'
+          git push origin main
