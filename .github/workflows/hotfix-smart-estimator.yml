@@ -1,9 +1,9 @@
-name: Hotfix Smart Estimator
+name: Deploy Claude Estimator Timeout Fix
 
 on:
   push:
     paths:
-      - '.github/workflows/hotfix-smart-estimator.yml'
+      - '.estimator-hotfix-trigger'
 
 permissions:
   contents: write
@@ -15,224 +15,46 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Patch estimator and scope grouping
+
+      - name: Apply Claude dashboard and estimator timeout changes
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          # ---------- estimator ----------
-          p = Path('netlify/functions/generate-estimate-background.js')
-          s = p.read_text()
-
-          # 1) Keep Claude alive long enough for a background function.
-          old = 'req.setTimeout(110000, () => req.destroy(new Error("Claude request timed out")));'
-          new = 'req.setTimeout(240000, () => req.destroy(new Error("Claude request timed out after 4 minutes")));'
-          assert old in s, 'Claude 110s timeout pattern not found'
-          s = s.replace(old, new, 1)
-
-          # OpenAI timeout hardening too.
-          s = s.replace('timeout: 90000,', 'timeout: 240000,', 1)
-          openai_anchor = '    req.on("error", reject);\n    req.write(payload);\n    req.end();\n  });\n}\n\nfunction extractOpenAIText'
-          if 'OpenAI request timed out after 4 minutes' not in s:
-              repl = '    req.setTimeout(240000, () => req.destroy(new Error("OpenAI request timed out after 4 minutes")));\n    req.on("error", reject);\n    req.write(payload);\n    req.end();\n  });\n}\n\nfunction extractOpenAIText'
-              assert openai_anchor in s, 'OpenAI request anchor not found'
-              s = s.replace(openai_anchor, repl, 1)
-
-          # 2) Automatic fallback: Claude failure must not kill the whole estimate when OpenAI is available.
-          old = '''    const rawEstimate = anthropicKey
-      ? await callClaude(anthropicKey, estimatePrompt, 8000)
-      : await callOpenAI(openaiKey, estimatePrompt);'''
-          new = '''    const rawEstimate = await callEstimatorProvider(anthropicKey, openaiKey, estimatePrompt, 8000);'''
-          assert old in s, 'rawEstimate provider block not found'
-          s = s.replace(old, new, 1)
-
-          old = '''      const rawRepair = anthropicKey
-        ? await callClaude(anthropicKey, repairPrompt, 8000)
-        : await callOpenAI(openaiKey, repairPrompt);'''
-          new = '''      const rawRepair = await callEstimatorProvider(anthropicKey, openaiKey, repairPrompt, 8000);'''
-          assert old in s, 'rawRepair provider block not found'
-          s = s.replace(old, new, 1)
-
-          helper_anchor = 'function callClaude(apiKey, prompt, maxTokens) {'
-          helper = '''async function callEstimatorProvider(anthropicKey, openaiKey, prompt, maxTokens) {
-  if (anthropicKey) {
-    try {
-      return await callClaude(anthropicKey, prompt, maxTokens);
-    } catch (error) {
-      if (!openaiKey) throw error;
-      console.warn("Claude estimator failed; falling back to OpenAI:", error && error.message ? error.message : error);
-      return await callOpenAI(openaiKey, prompt);
-    }
-  }
-  if (openaiKey) return await callOpenAI(openaiKey, prompt);
-  throw new Error("No AI estimator provider configured");
-}
-
-'''
-          if 'function callEstimatorProvider(' not in s:
-              assert helper_anchor in s, 'callClaude anchor missing'
-              s = s.replace(helper_anchor, helper + helper_anchor, 1)
-
-          # 3) Sani production rules in every estimate prompt.
-          const_anchor = 'const DEFAULT_MARKUP = 25;'
-          rules = '''const DEFAULT_MARKUP = 25;
-const DEFAULT_HOUSE_RULES = `SANI BUILDING CORP PRODUCTION RULES:
-- Painting with walls + ceilings + trim/doors + normal prep: roughly 30-35 paintable SF per labor-hour. About 2,600 SF is normally about 80-95 labor hours, not 30-40.
-- Engineered hardwood with removal/prep, delivery handling, installation, cuts, quarter-round/transitions and cleanup: roughly 12-16 SF per labor-hour. About 640 SF is normally about 44-50 labor hours.
-- Large-format tile around 24x48 with layout/aligned grout lines, cuts and finish work: roughly 3.5-4.5 SF per labor-hour. About 87 SF is normally about 20-24 labor hours.
-- Mutually exclusive Option A / Option B work must NEVER both be included in the base labor/material total. Keep one base option and put alternate pricing in options[].
-- Never reduce labor hours merely to make a project price look competitive.`;'''
-          if 'DEFAULT_HOUSE_RULES' not in s:
-              assert const_anchor in s
-              s = s.replace(const_anchor, rules, 1)
-
-          old = '      houseRules: cleanText(body.houseRules),'
-          new = '      houseRules: cleanText(body.houseRules) || DEFAULT_HOUSE_RULES,'
-          assert old in s, 'houseRules input line not found'
-          s = s.replace(old, new, 1)
-
-          prompt_anchor = 'NYC-METRO LABOR GUIDANCE (use professional judgment, not blindly):'
-          if 'SANI HOUSE RULES (authoritative production guidance)' not in s:
-              inject = 'SANI HOUSE RULES (authoritative production guidance):\n${input.contractor.houseRules || DEFAULT_HOUSE_RULES}\n\n'
-              assert prompt_anchor in s
-              s = s.replace(prompt_anchor, inject + prompt_anchor, 1)
-
-          # 4) Deterministically keep alternate B out of base totals when A and B are both present.
-          norm_anchor = 'function validateEstimate(estimate, analysis, input) {'
-          guard = r'''function removeDoubleCountedAlternates(estimate) {
-  var all = [...(estimate.labor || []), ...(estimate.materials || [])];
-  var hasA = all.some((l) => /\boption\s*a\b/i.test(l.item || ""));
-  var hasB = all.some((l) => /\boption\s*b\b/i.test(l.item || ""));
-  if (!hasA || !hasB) return estimate;
-
-  var bLabor = (estimate.labor || []).filter((l) => /\boption\s*b\b/i.test(l.item || ""));
-  var bMat = (estimate.materials || []).filter((l) => /\boption\s*b\b/i.test(l.item || ""));
-  var altBase = [...bLabor, ...bMat].reduce((sum, l) => sum + positiveNumber(l.qty) * positiveNumber(l.rate), 0);
-  estimate.labor = (estimate.labor || []).filter((l) => !/\boption\s*b\b/i.test(l.item || ""));
-  estimate.materials = (estimate.materials || []).filter((l) => !/\boption\s*b\b/i.test(l.item || ""));
-  if (altBase > 0 && !(estimate.options || []).some((o) => /\boption\s*b\b/i.test(o.label || ""))) {
-    estimate.options = estimate.options || [];
-    estimate.options.push({
-      section: "Windows",
-      label: "Option B — Alternate window scope",
-      description: "Alternate scope requested by customer; not included in the base estimate total.",
-      price: roundCurrency(altBase * (1 + positiveNumber(estimate.markupPct) / 100)),
-    });
-  }
-  return estimate;
-}
-
-'''
-          if 'function removeDoubleCountedAlternates(' not in s:
-              assert norm_anchor in s
-              s = s.replace(norm_anchor, guard + norm_anchor, 1)
-
-          s = s.replace('let estimate = normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis);',
-                        'let estimate = removeDoubleCountedAlternates(normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis));', 1)
-          s = s.replace('estimate = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);',
-                        'estimate = removeDoubleCountedAlternates(normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis));', 1)
-
-          p.write_text(s)
-
-          # ---------- dashboard scope control ----------
+          # Claude file 1: dashboard.html
           p = Path('dashboard.html')
           s = p.read_text()
-
-          old = '''function scopeSectionOf(line) {
-  if (line && line.section && String(line.section).trim()) return String(line.section).trim();
-  var n = String((line && line.item) || "").toLowerCase();
-  if (/window/.test(n)) return "Windows";
-  if (/paint|prime/.test(n)) return "Painting";
-  if (/floor|hardwood|laminate|subfloor|underlayment/.test(n)) return "Flooring";
-  if (/cabinet|countertop|kitchen/.test(n)) return "Kitchen";
-  if (/bathroom|shower|vanity|toilet|waterproof|grout|tile|linen|mirror|plumb|electric/.test(n)) return "Bathroom";
-  if (/deck|railing/.test(n)) return "Deck";
-  if (/stair|tread|riser/.test(n)) return "Stairs";
-  if (/carpent|trim|door|molding/.test(n)) return "Carpentry";
-  return "General";
-}'''
-          new = '''function scopeSectionOf(line) {
-  var n = String((line && line.item) || "").toLowerCase();
-  var explicit = line && line.section && String(line.section).trim() ? String(line.section).trim() : "";
-  if (/bathroom|shower|vanity|toilet|waterproof|grout|tile setter|wall and floor tile|linen|mirror|plumb|glass enclosure|shower pan|bath demo|bathroom demolition/.test(n)) return "Bathroom";
-  if (/window/.test(n)) return "Windows";
-  if (/paint|prime/.test(n)) return "Painting";
-  if (/engineered hardwood|hardwood|flooring installer|laminate|subfloor|underlayment|quarter.?round|baseboard/.test(n)) return "Flooring";
-  if (/cabinet|countertop|kitchen/.test(n)) return "Kitchen";
-  if (/deck|railing/.test(n)) return "Deck";
-  if (/stair|tread|riser/.test(n)) return "Stairs";
-  if (/carpent|trim|door|molding/.test(n)) return "Carpentry";
-  if (explicit) return explicit;
-  return "General";
-}'''
-          assert old in s, 'scopeSectionOf old function not found'
+          old = '''    // Poll every 3s for up to 3 minutes.\n    let data = null;\n    for (let i = 0; i < 60; i++) {'''
+          new = '''    /* Poll every 3s for up to 8 minutes. The estimator makes up to three AI calls\n       (project analysis, pricing, optional repair) and a long written scope like a\n       multi-trade apartment can legitimately take several minutes. The background\n       function itself is allowed 15 minutes, so the browser must not give up first. */\n    let data = null;\n    for (let i = 0; i < 160; i++) {'''
+          assert old in s, 'dashboard 3-minute polling block not found'
           s = s.replace(old, new, 1)
+          old2 = '    if (!data) throw new Error("Timed out after 3 minutes — check Netlify function logs");'
+          new2 = '    if (!data) throw new Error("Timed out after 8 minutes — check Netlify → Logs → Functions → generate-estimate-background");'
+          assert old2 in s, 'dashboard 3-minute timeout message not found'
+          s = s.replace(old2, new2, 1)
+          p.write_text(s)
 
-          old = '''  var breakdown = [];
-  if (Array.isArray(est.serviceBreakdown)) breakdown = breakdown.concat(est.serviceBreakdown);
-  if (Array.isArray(est.scopeSections)) breakdown = breakdown.concat(est.scopeSections);'''
-          new = '''  var breakdown = [];
-  var hasStructuredBreakdown = Array.isArray(est.serviceBreakdown) && est.serviceBreakdown.length > 0;
-  if (hasStructuredBreakdown) breakdown = est.serviceBreakdown.slice();
-  else if (Array.isArray(est.scopeSections)) breakdown = est.scopeSections.slice();'''
-          assert old in s, 'breakdown merge block not found'
+          # Claude file 2: generate-estimate-background.js
+          p = Path('netlify/functions/generate-estimate-background.js')
+          s = p.read_text()
+          old = '        timeout: 90000,'
+          new = '''        // Background functions get 15 minutes. These limits were sized for a\n        // synchronous 10s function and were killing long estimates at ~110s.\n        timeout: 240000,'''
+          assert old in s, 'OpenAI 90s timeout not found'
           s = s.replace(old, new, 1)
-
-          old = '''  // Labor lines describe the work that IS included
-  (est.labor || []).forEach(function (l) { push(svc(scopeSectionOf(l)).included, l.item); });
-
-  // Customer-supplied items
-  (est.customerSupplied || []).forEach(function (x) {
-    var name = (x && x.section) || scopeSectionOf(x) || "General";
-    push(svc(name).supplied, (x && x.item) || x);
-  });
-
-  // Exclusions are usually project-wide
-  var exList = est.exclusions || [];
-  if (exList.length) {
-    var target = svc(scopeUniqueServices()[0] || "General");
-    exList.forEach(function (x) { push(target.excluded, (x && x.item) || x); });
-  }'''
-          new = '''  // Legacy fallback only. Structured V7 serviceBreakdown is authoritative.
-  if (!hasStructuredBreakdown) {
-    (est.labor || []).forEach(function (l) { push(svc(scopeSectionOf(l)).included, l.item); });
-    (est.customerSupplied || []).forEach(function (x) {
-      var name = (x && x.section) || scopeSectionOf(x) || "General";
-      push(svc(name).supplied, (x && x.item) || x);
-    });
-    var exList = est.exclusions || [];
-    if (exList.length) {
-      var target = svc(scopeUniqueServices()[0] || "General");
-      exList.forEach(function (x) { push(target.excluded, (x && x.item) || x); });
-    }
-  }'''
-          assert old in s, 'legacy append block not found'
-          s = s.replace(old, new, 1)
-
+          old2 = '    req.setTimeout(110000, () => req.destroy(new Error("Claude request timed out")));'
+          new2 = '    req.setTimeout(240000, () => req.destroy(new Error("Claude request timed out after 4 minutes")));'
+          assert old2 in s, 'Claude 110s timeout not found'
+          s = s.replace(old2, new2, 1)
           p.write_text(s)
           PY
 
-      - name: Syntax check
-        run: |
-          node --check netlify/functions/generate-estimate-background.js
-          python3 - <<'PY'
-          import re, subprocess, pathlib, tempfile
-          html=pathlib.Path('dashboard.html').read_text()
-          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S|re.I)
-          for i,code in enumerate(scripts):
-              f=tempfile.NamedTemporaryFile('w',suffix='.js',delete=False)
-              f.write(code); f.close()
-              r=subprocess.run(['node','--check',f.name],capture_output=True,text=True)
-              assert r.returncode==0, f'Dashboard script {i} syntax failed: {r.stderr}'
-          print('dashboard scripts OK:', len(scripts))
-          PY
+      - name: Syntax check estimator
+        run: node --check netlify/functions/generate-estimate-background.js
 
-      - name: Commit hotfix
+      - name: Commit Claude files
         run: |
-          git config user.name "sani-estimator-hotfix"
+          git config user.name "sani-claude-deploy"
           git config user.email "actions@users.noreply.github.com"
           git add dashboard.html netlify/functions/generate-estimate-background.js
-          git commit -m "Hotfix estimator timeout fallback options and scope grouping" || exit 0
+          git commit -m "Deploy Claude estimator timeout and polling fix" || exit 0
           git push origin main
-
-# retrigger 2026-08-07T00:30 ET
