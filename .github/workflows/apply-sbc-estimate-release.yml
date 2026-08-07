@@ -1,0 +1,39 @@
+name: Apply SBC estimate release
+
+on:
+  push:
+    paths:
+      - ".sbc-deploy/TRIGGER"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rebuild and verify production files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d .sbc-deploy || exit 0
+          cat .sbc-deploy/dashboard.xz64.part* | base64 -d | xz -d > dashboard.html
+          cat .sbc-deploy/quote.xz64.part* | base64 -d | xz -d > quote.html
+          cat .sbc-deploy/generate.xz64.part* | base64 -d | xz -d > netlify/functions/generate-estimate-background.js
+          echo "40ecd2f910ed19d2978beb9ee4551c22  dashboard.html" | md5sum -c -
+          echo "157abc84ae6466f44eca7f4da44e2aa5  quote.html" | md5sum -c -
+          echo "99f7814fa634b65a2d4554830f57cc89  netlify/functions/generate-estimate-background.js" | md5sum -c -
+      - name: Commit matched release and clean staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .sbc-deploy
+          rm -f .github/workflows/apply-sbc-estimate-release.yml
+          git config user.name "SBC Release Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Add Customer Scope Control and publish-safe estimate presentation"
+          git push
