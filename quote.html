@@ -24,14 +24,40 @@ function calc(e){let l=A(e.labor).reduce((s,x)=>s+LT(x),0),m=A(e.materials).redu
 function friendly(item){let t=C(item).replace(/^labor\s*[-:]\s*/i,'').replace(/\s*@\s*\$?[\d,.]+.*$/,'').replace(/\s{2,}/g,' ');if(!t)return'';if(/bathroom demolition/i.test(t))return'Protect the work area; remove existing bathroom finishes and fixtures as specified; load and dispose of debris';if(/tile install/i.test(t))return'Prepare substrates and install bathroom wall and floor tile; complete grout, sealant, and finish work';if(/plumb.*shower|shower.*plumb|vanity.*toilet|toilet.*vanity/i.test(t))return'Install and connect shower valve/trim, vanity/sink/faucet, and toilet in their existing plumbing locations';if(/glass enclosure|shower glass/i.test(t))return'Fabricate and install the frameless shower glass enclosure as specified';if(/engineered hardwood/i.test(t))return'Prepare the installation area and install engineered hardwood flooring, including cuts, fitting, transitions, and finish details';if(/interior paint|painter/i.test(t))return'Prepare and paint included interior walls, ceilings, doors, and trim, including minor patching, sanding, spot priming, touch-ups, and cleanup';if(/project management|supervision|coordination/i.test(t))return'Project coordination, scheduling, deliveries, and quality control';if(/cleanup|final clean/i.test(t))return'Final cleanup and removal of construction debris';return t.charAt(0).toUpperCase()+t.slice(1)}
 function laborLike(l){return !/allowance|material|membrane|thinset|grout|paint supplies|sealant|insulation|flashing/i.test(N(l.item))}
 function build(e){const names=['Bathroom','Flooring','Painting','Windows'],map=new Map(names.map(n=>[n,{title:n,included:[],customerSupplies:[],notIncluded:[],subtotal:0,options:[]}])) ;const get=n=>map.get(n)||map.get('Bathroom');const c=calc(e);let general=0,optionTotals={A:0,B:0};
-A(e.serviceBreakdown).forEach(s=>{let t=trade(s.title||s.service,s.title||s.service);if(!map.has(t))return;let o=get(t);o.included.push(...A(s.included));o.customerSupplies.push(...A(s.customerSupplies||s.customerSupplied));o.notIncluded.push(...A(s.notIncluded||s.exclusions));o.options.push(...A(s.options))});
+A(e.serviceBreakdown).forEach(s=>{let nm=s.title||s.service||s.section||s.name;let t=trade(nm,nm);if(!map.has(t))return;let o=get(t);o.included.push(...A(s.included||s.items||s.scope));o.customerSupplies.push(...A(s.customerSupplies||s.customerSupplied||s.supplied));o.notIncluded.push(...A(s.notIncluded||s.exclusions||s.excluded));o.options.push(...A(s.options))});
 A(e.scopeSections).forEach(s=>A(s.items).forEach(i=>{let t=trade(i,s.title);if(map.has(t))get(t).included.push(friendly(i))}));
 [...A(e.labor),...A(e.materials)].forEach(l=>{let t=trade(l.item,l.section),val=LT(l)*c.k;if(isOption(l.item)&&t==='Windows'){let k=optionKey(l.item);if(k)optionTotals[k]=(optionTotals[k]||0)+val;return}if(t==='General'){general+=val;return}get(t).subtotal+=val;let x=N(l.item);if(laborLike(l)||/waterproof|membrane|backer|thinset|grout|sealant|insulation|flashing|primer|protection/.test(x))get(t).included.push(friendly(l.item))});
 A(e.customerSupplied).forEach(x=>{let item=typeof x==='string'?x:x.item,t=trade(item,typeof x==='object'?x.section:'');if(map.has(t))get(t).customerSupplies.push(item)});
 A(e.exclusions).forEach(x=>{let t=trade(x,'');if(map.has(t))get(t).notIncluded.push(x)});
 A(e.options).forEach(o=>{let t=trade((o.label||'')+' '+(o.description||''),o.section);if(t==='Windows')get('Windows').options.push({label:o.label,description:o.description,price:+o.price||0})});
 if(optionTotals.A&&!get('Windows').options.some(o=>/option\s*a|option\s*1/i.test(o.label)))get('Windows').options.push({label:'Option A — Replace all specified windows',description:'Complete replacement option based on the estimate line items.',price:optionTotals.A});if(optionTotals.B&&!get('Windows').options.some(o=>/option\s*b|option\s*2/i.test(o.label)))get('Windows').options.push({label:'Option B — Partial replacement / repair option',description:'Alternate window option based on the estimate line items.',price:optionTotals.B});
-let active=names.map(n=>get(n)).filter(s=>s.included.length||s.customerSupplies.length||s.subtotal>0||s.options.length);let base=active.reduce((s,x)=>s+x.subtotal,0);if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);let sum=active.reduce((s,x)=>s+x.subtotal,0);if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});return active}
+let active=names.map(n=>get(n)).filter(s=>s.included.length||s.customerSupplies.length||s.subtotal>0||s.options.length);let base=active.reduce((s,x)=>s+x.subtotal,0);if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);let sum=active.reduce((s,x)=>s+x.subtotal,0);if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});return pubScope(e,active)}
+/* Published Customer Scope (set in the dashboard's Customer Scope Control).
+   When the contractor has explicitly published a scope, its wording replaces the
+   auto-derived Included / Customer Supplies / Not Included lists. Subtotals are
+   deliberately NOT touched: prices always come from the labor and materials lines
+   above. If nothing is published, every existing estimate renders exactly as before. */
+function pubScope(e,active){
+ if(e.customerScopePublished!==true)return active;
+ const p=e.publishedCustomerScope;
+ if(!p||!Array.isArray(p.services)||!p.services.length)return active;
+ const idx=new Map();p.services.forEach(s=>{const k=N(s.name||s.title);if(k)idx.set(k,s)});
+ active.forEach(s=>{
+  const ps=idx.get(N(s.title));if(!ps)return;
+  s.included=U(A(ps.included));
+  s.customerSupplies=U(A(ps.supplied||ps.customerSupplies));
+  s.notIncluded=U(A(ps.excluded||ps.notIncluded));
+  idx.delete(N(s.title));
+ });
+ // Anything the contractor published that has no matching priced service still gets
+ // shown, so published wording is never silently dropped. Subtotal stays 0 so the
+ // customer-facing total is unchanged.
+ idx.forEach(ps=>{
+  const inc=U(A(ps.included)),sup=U(A(ps.supplied||ps.customerSupplies)),ni=U(A(ps.excluded||ps.notIncluded));
+  if(!inc.length&&!sup.length&&!ni.length)return;
+  active.push({title:C(ps.name||ps.title)||'Additional Work',included:inc,customerSupplies:sup,notIncluded:ni,subtotal:0,options:[]});
+ });
+ return active}
 function list(label,cl,a){a=U(a);if(!a.length)return'';return`<div class="label ${cl}">${label}</div><ul class="${cl}list">${a.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`}
 function details(e,s){let z=[];if(e.showLaborLines===true)A(e.labor).filter(x=>trade(x.item,x.section)===s.title&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Labor'}));if(e.showMaterialLines===true)A(e.materials).filter(x=>trade(x.item,x.section)===s.title&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Material'}));return z.length?`<details><summary>View detailed labor & materials (${z.length})</summary><table class="lines">${z.map(x=>`<tr><td>${x.t}</td><td>${E(x.item)}</td><td>${M(LT(x)*calc(e).k)}</td></tr>`).join('')}</table></details>`:''}
 function isV7(e){return C(e.customerPresentationVersion)==='v7-service-proposal'&&(e.customerScopePublished===true||C(e.customerViewPublishedVersion)==='v7')}
