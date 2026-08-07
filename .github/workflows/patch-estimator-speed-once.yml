@@ -1,3 +1,4 @@
+# second push intentionally triggers this one-time workflow
 name: Patch estimator speed and timing once
 on:
   push:
