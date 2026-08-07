@@ -12,7 +12,18 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { ref, estimate, status } = JSON.parse(event.body);
+    const {
+      ref,
+      estimate,
+      status,
+      projectAnalysis,
+      aiStatus,
+      aiJobId,
+      aiError,
+      aiStartedAt,
+      aiFinishedAt,
+    } = JSON.parse(event.body);
+
     if (!ref) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
     }
@@ -26,11 +37,15 @@ exports.handler = async function (event) {
     if (estimate) {
       existing.estimate = { ...existing.estimate, ...estimate };
     }
-    if (status) {
-      existing.status = status;
-    }
-    existing.updatedAt = new Date().toISOString();
+    if (status) existing.status = status;
+    if (projectAnalysis !== undefined) existing.projectAnalysis = projectAnalysis;
+    if (aiStatus !== undefined) existing.aiStatus = aiStatus;
+    if (aiJobId !== undefined) existing.aiJobId = aiJobId;
+    if (aiError !== undefined) existing.aiError = aiError;
+    if (aiStartedAt !== undefined) existing.aiStartedAt = aiStartedAt;
+    if (aiFinishedAt !== undefined) existing.aiFinishedAt = aiFinishedAt;
 
+    existing.updatedAt = new Date().toISOString();
     await store.setJSON(ref, existing);
 
     return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true }) };
