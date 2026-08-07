@@ -4027,8 +4027,12 @@ async function generateAI(isRegenerate) {
        A *-background function runs up to 15 minutes instead: it answers 202 straight
        away, does the AI work, and writes aiStatus onto the record. We poll for that. */
     const ref = currentRecord.ref;
+    // Unique identity for this generation run. Prevents a stale previous aiStatus=done
+    // record from being accepted before the new background job stamps running.
+    const jobId = "ai-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
     const payload = JSON.stringify({
       ref: ref,
+      jobId: jobId,
       usePhotoAnalysis: aiChk("use-photo-analysis"),
       useDescription: aiChk("use-description"),
       useAnswers: aiChk("use-answers"),
@@ -4056,7 +4060,10 @@ async function generateAI(isRegenerate) {
         if (!pr.ok) continue;
         rec = await pr.json();
       } catch (_) { continue; }
-      const st = rec && rec.aiStatus;
+      // Only accept state written by THIS generation click. A previous run may still
+      // be marked done for a few seconds before the background function starts.
+      if (!rec || rec.aiJobId !== jobId) continue;
+      const st = rec.aiStatus;
       if (st === "error") throw new Error(rec.aiError || "The estimator reported an error");
       if (st === "done" && rec.estimate && (rec.estimate.labor || []).length) {
         data = { estimate: rec.estimate, status: rec.status };

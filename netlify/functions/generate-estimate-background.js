@@ -53,6 +53,7 @@ exports.handler = async function handler(event) {
     // Netlify kills a normal function at 10s; a *-background function runs up to 15 min
     // but cannot return a body to the browser, so progress is written onto the record.
     record.aiStatus = "running";
+    record.aiJobId = String(body.jobId || "").trim();
     record.aiError = "";
     record.aiStartedAt = new Date().toISOString();
     if (store) { try { await store.setJSON(ref, record); } catch (_) {} }
@@ -114,6 +115,7 @@ exports.handler = async function handler(event) {
     record.status = record.status === "new" ? "drafted" : record.status;
     record.updatedAt = new Date().toISOString();
     record.aiStatus = "done";
+    record.aiJobId = String(body.jobId || record.aiJobId || "").trim();
     record.aiError = "";
     record.aiFinishedAt = new Date().toISOString();
     let persistenceWarning = null;
@@ -153,6 +155,7 @@ exports.handler = async function handler(event) {
         const s2 = await loadEstimateRecord(failRef, event, safeJsonParse(event.body, {}));
         if (s2 && s2.store && s2.record) {
           s2.record.aiStatus = "error";
+          s2.record.aiJobId = String(safeJsonParse(event.body, {}).jobId || s2.record.aiJobId || "").trim();
           s2.record.aiError = String((err && err.message) || err).slice(0, 300);
           await s2.store.setJSON(failRef, s2.record);
         }
