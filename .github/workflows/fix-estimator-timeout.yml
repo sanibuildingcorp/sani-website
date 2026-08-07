@@ -1,0 +1,88 @@
+name: Fix estimator Claude timeout
+
+on:
+  push:
+    paths:
+      - '.fix-estimator-timeout-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch estimator fallback and timeout
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('netlify/functions/generate-estimate-background.js')
+          s = p.read_text()
+
+          old = '''    const rawEstimate = anthropicKey
+      ? await callClaude(anthropicKey, estimatePrompt, 8000)
+      : await callOpenAI(openaiKey, estimatePrompt);'''
+          new = '''    const rawEstimate = await callPreferredEstimator({
+      anthropicKey,
+      openaiKey,
+      prompt: estimatePrompt,
+      maxTokens: 8000,
+      stage: "estimate",
+    });'''
+          if old not in s:
+              raise SystemExit('rawEstimate block not found')
+          s = s.replace(old, new, 1)
+
+          old = '''      const rawRepair = anthropicKey
+        ? await callClaude(anthropicKey, repairPrompt, 8000)
+        : await callOpenAI(openaiKey, repairPrompt);'''
+          new = '''      const rawRepair = await callPreferredEstimator({
+        anthropicKey,
+        openaiKey,
+        prompt: repairPrompt,
+        maxTokens: 8000,
+        stage: "repair",
+      });'''
+          if old not in s:
+              raise SystemExit('rawRepair block not found')
+          s = s.replace(old, new, 1)
+
+          marker = 'function callClaude(apiKey, prompt, maxTokens) {'
+          helper = '''async function callPreferredEstimator({ anthropicKey, openaiKey, prompt, maxTokens, stage }) {
+  if (anthropicKey) {
+    try {
+      return await callClaude(anthropicKey, prompt, maxTokens);
+    } catch (error) {
+      console.error(`Claude ${stage || "estimate"} failed; trying OpenAI fallback:`, error && error.message ? error.message : error);
+      if (!openaiKey) throw error;
+    }
+  }
+  if (openaiKey) return await callOpenAI(openaiKey, prompt);
+  throw new Error("No AI provider available for estimate generation");
+}
+
+'''
+          if marker not in s:
+              raise SystemExit('callClaude marker not found')
+          s = s.replace(marker, helper + marker, 1)
+
+          old = '    req.setTimeout(110000, () => req.destroy(new Error("Claude request timed out")));'
+          new = '    req.setTimeout(240000, () => req.destroy(new Error("Claude request timed out after 240 seconds")));'
+          if old not in s:
+              raise SystemExit('Claude timeout line not found')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s)
+          PY
+          node --check netlify/functions/generate-estimate-background.js
+      - name: Commit patch
+        run: |
+          git config user.name "sani-estimator-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add netlify/functions/generate-estimate-background.js
+          git commit -m "Harden estimator against Claude timeouts"
+          git push origin main
