@@ -1,6 +1,14 @@
 [build]
   functions = "netlify/functions"
 
+[[edge_functions]]
+  function = "dashboard-inject"
+  path = "/dashboard"
+
+[[edge_functions]]
+  function = "dashboard-inject"
+  path = "/dashboard.html"
+
 [[headers]]
   for = "/*"
   [headers.values]
