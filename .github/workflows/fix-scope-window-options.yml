@@ -21,8 +21,8 @@ jobs:
           p = Path('dashboard.html')
           s = p.read_text()
 
-          old_gate = r'/^v8\.2-deterministic-four-service/.test(String(est.customerPresentationVersion || ""))'
-          new_gate = r'/^(?:v8\.2-deterministic-four-service|deterministic-v1\.5)/.test(String(est.customerPresentationVersion || ""))'
+          old_gate = '/^v8\\.2-deterministic-four-service/.test(String(est.customerPresentationVersion || ""))'
+          new_gate = '/^(?:v8\\.2-deterministic-four-service|deterministic-v1\\.5)/.test(String(est.customerPresentationVersion || ""))'
           count = s.count(old_gate)
           if count != 2:
               raise SystemExit(f'Expected 2 deterministic presentation gates, found {count}')
