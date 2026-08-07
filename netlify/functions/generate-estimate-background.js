@@ -1013,7 +1013,9 @@ function callOpenAI(apiKey, prompt) {
           "Content-Length": Buffer.byteLength(payload),
           Authorization: `Bearer ${apiKey}`,
         },
-        timeout: 90000,
+        // Background functions get 15 minutes. These limits were sized for a
+        // synchronous 10s function and were killing long estimates at ~110s.
+        timeout: 240000,
       },
       (res) => {
         const chunks = [];
@@ -1093,7 +1095,7 @@ function callClaude(apiKey, prompt, maxTokens) {
         });
       }
     );
-    req.setTimeout(110000, () => req.destroy(new Error("Claude request timed out")));
+    req.setTimeout(240000, () => req.destroy(new Error("Claude request timed out after 4 minutes")));
     req.on("error", reject);
     req.write(payload);
     req.end();
