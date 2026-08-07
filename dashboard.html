@@ -4158,6 +4158,15 @@ function scopeSectionOf(line) {
    the existing markup field. Editing scope text can never move this number. */
 function scopeServiceSubtotal(name) {
   var est = (currentRecord && currentRecord.estimate) || {};
+  // Deterministic v8.2 already calculated customer-service subtotals after
+  // allocating General/project costs. Use those exact numbers in Scope Control
+  // instead of re-grouping raw labor/material rows back into pseudo-services.
+  if (/^v8\.2-deterministic-four-service/.test(String(est.customerPresentationVersion || "")) && Array.isArray(est.serviceBreakdown)) {
+    var sb = est.serviceBreakdown.find(function (x) {
+      return String((x && (x.title || x.name || x.section)) || "").trim().toLowerCase() === String(name || "").trim().toLowerCase();
+    });
+    if (sb && Number.isFinite(Number(sb.subtotal))) return Number(sb.subtotal);
+  }
   /* Use the live markup field when it holds a value, otherwise the saved estimate.
      An empty field must never silently price the service at 0% markup. */
   var mEl = document.getElementById("f-markup");
@@ -4208,6 +4217,28 @@ function buildScopeDraftFromAI() {
      Older builds used section/service/name, customerSupplied/supplied and
      exclusions/excluded. Every name is accepted so old records still seed. */
   function bText(x) { return (x && (x.item || x.text || x.label)) || x; }
+
+  // V8.2 deterministic presentation is already the contractor-facing truth:
+  // exactly Bathroom / Flooring / Painting / Windows, with General allocated,
+  // alternatives isolated and duplicates cleaned. Do NOT merge raw labor,
+  // scopeSections, project exclusions or legacy arrays back into this draft,
+  // because doing so recreates General/Carpentry pseudo-services and duplicates.
+  if (/^v8\.2-deterministic-four-service/.test(String(est.customerPresentationVersion || "")) && Array.isArray(est.serviceBreakdown)) {
+    var order = ["Bathroom", "Flooring", "Painting", "Windows"];
+    var direct = {};
+    est.serviceBreakdown.forEach(function (b) {
+      if (!b) return;
+      var name = String(b.title || b.section || b.service || b.name || "").trim();
+      if (order.indexOf(name) === -1) return;
+      var t = { name: name, included: [], supplied: [], excluded: [] };
+      (b.included || b.items || b.scope || []).forEach(function (x) { push(t.included, bText(x)); });
+      (b.customerSupplies || b.customerSupplied || b.supplied || []).forEach(function (x) { push(t.supplied, bText(x)); });
+      (b.notIncluded || b.exclusions || b.excluded || []).forEach(function (x) { push(t.excluded, bText(x)); });
+      direct[name] = t;
+    });
+    return { services: order.filter(function (name) { return direct[name]; }).map(function (name) { return direct[name]; }) };
+  }
+
   var breakdown = [];
   if (Array.isArray(est.serviceBreakdown)) breakdown = breakdown.concat(est.serviceBreakdown);
   if (Array.isArray(est.scopeSections)) breakdown = breakdown.concat(est.scopeSections);
