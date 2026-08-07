@@ -1,0 +1,48 @@
+name: Fix quote deterministic service prices
+on:
+  push:
+    paths:
+      - 'ops/run-quote-service-price-fix.txt'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch quote.html
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('quote.html')
+          s=p.read_text()
+          old="function build(e){const names=['Bathroom','Flooring','Painting','Windows'],map=new Map(names.map(n=>[n,{title:n,included:[],customerSupplies:[],notIncluded:[],subtotal:0,options:[]}])) ;const get=n=>map.get(n)||map.get('Bathroom');const c=calc(e);let general=0,optionTotals={A:0,B:0};"
+          new="function build(e){const names=['Bathroom','Flooring','Painting','Windows'],map=new Map(names.map(n=>[n,{title:n,included:[],customerSupplies:[],notIncluded:[],subtotal:0,options:[]}])) ;const get=n=>map.get(n)||map.get('Bathroom');const c=calc(e),deterministic=/^v8\\.2-deterministic-four-service/.test(C(e.customerPresentationVersion));let general=0,optionTotals={A:0,B:0};"
+          if old not in s: raise SystemExit('build signature not found')
+          s=s.replace(old,new,1)
+          old2="A(e.serviceBreakdown).forEach(s=>{let nm=s.title||s.service||s.section||s.name;let t=trade(nm,nm);if(!map.has(t))return;let o=get(t);o.included.push(...A(s.included||s.items||s.scope));o.customerSupplies.push(...A(s.customerSupplies||s.customerSupplied||s.supplied));o.notIncluded.push(...A(s.notIncluded||s.exclusions||s.excluded));o.options.push(...A(s.options))});"
+          new2="A(e.serviceBreakdown).forEach(s=>{let nm=s.title||s.service||s.section||s.name;let t=trade(nm,nm);if(!map.has(t))return;let o=get(t);o.included.push(...A(s.included||s.items||s.scope));o.customerSupplies.push(...A(s.customerSupplies||s.customerSupplied||s.supplied));o.notIncluded.push(...A(s.notIncluded||s.exclusions||s.excluded));o.options.push(...A(s.options));if(deterministic&&Number.isFinite(Number(s.subtotal)))o.subtotal=+s.subtotal});"
+          if old2 not in s: raise SystemExit('serviceBreakdown reader not found')
+          s=s.replace(old2,new2,1)
+          old3="[...A(e.labor),...A(e.materials)].forEach(l=>{let t=trade(l.item,l.section),val=LT(l)*c.k;if(isOption(l.item)&&t==='Windows'){let k=optionKey(l.item);if(k)optionTotals[k]=(optionTotals[k]||0)+val;return}if(t==='General'){general+=val;return}get(t).subtotal+=val;let x=N(l.item);if(laborLike(l)||/waterproof|membrane|backer|thinset|grout|sealant|insulation|flashing|primer|protection/.test(x))get(t).included.push(friendly(l.item))});"
+          new3="[...A(e.labor),...A(e.materials)].forEach(l=>{let t=trade(l.item,l.section),val=LT(l)*c.k;if(isOption(l.item)&&t==='Windows'){let k=optionKey(l.item);if(k)optionTotals[k]=(optionTotals[k]||0)+val;return}if(!deterministic){if(t==='General'){general+=val;return}get(t).subtotal+=val}let x=N(l.item);if(!deterministic&&(laborLike(l)||/waterproof|membrane|backer|thinset|grout|sealant|insulation|flashing|primer|protection/.test(x)))get(t).included.push(friendly(l.item))});"
+          if old3 not in s: raise SystemExit('labor/material loop not found')
+          s=s.replace(old3,new3,1)
+          old4="let active=names.map(n=>get(n)).filter(s=>s.included.length||s.customerSupplies.length||s.subtotal>0||s.options.length);let base=active.reduce((s,x)=>s+x.subtotal,0);if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);let sum=active.reduce((s,x)=>s+x.subtotal,0);if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});return pubScope(e,active)}"
+          new4="let active=names.map(n=>get(n)).filter(s=>s.included.length||s.customerSupplies.length||s.subtotal>0||s.options.length);if(!deterministic){let base=active.reduce((s,x)=>s+x.subtotal,0);if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);let sum=active.reduce((s,x)=>s+x.subtotal,0);if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}}active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});return pubScope(e,active)}"
+          if old4 not in s: raise SystemExit('active subtotal block not found')
+          s=s.replace(old4,new4,1)
+          old5="function isV7(e){return C(e.customerPresentationVersion)==='v7-service-proposal'&&(e.customerScopePublished===true||C(e.customerViewPublishedVersion)==='v7')}"
+          new5="function isV7(e){const v=C(e.customerPresentationVersion);return (v==='v7-service-proposal'&&(e.customerScopePublished===true||C(e.customerViewPublishedVersion)==='v7'))||/^v8\\.2-deterministic-four-service/.test(v)}"
+          if old5 not in s: raise SystemExit('isV7 gate not found')
+          s=s.replace(old5,new5,1)
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "sani-estimator-bot"
+          git config user.email "sanibuildingcorp@gmail.com"
+          git add quote.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix deterministic service prices on customer quote"
+          git push
