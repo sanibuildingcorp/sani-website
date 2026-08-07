@@ -6,29 +6,28 @@
 <meta name="robots" content="noindex,nofollow">
 <title>SBC Dashboard</title>
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff}#core{display:block;width:100%;height:100%;border:0;background:#fff}
+html,body{margin:0;min-height:100%;background:#fff}
+#sbc-shell-loading{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#44536a;padding:32px;text-align:center}
 </style>
 </head>
 <body>
-<iframe id="core" src="/dashboard.html?core=1" title="SBC Dashboard"></iframe>
+<div id="sbc-shell-loading">Loading dashboard…</div>
 <script>
 (function(){
-  var frame=document.getElementById('core');
-  function inject(){
-    try{
-      var w=frame.contentWindow,d=frame.contentDocument;
-      if(!w||!d)return;
-      if(d.getElementById('sbc-direct-scope-loader'))return;
-      var s=d.createElement('script');
-      s.id='sbc-direct-scope-loader';
-      s.src='/js/customer-scope-control.js?v=direct-20260806-1';
-      s.onload=function(){console.log('SBC customer scope control loaded directly');};
-      s.onerror=function(){console.error('SBC customer scope control failed to load');};
-      (d.head||d.documentElement).appendChild(s);
-    }catch(e){console.error('SBC dashboard shell inject failed',e);}
+  function fail(msg){
+    document.body.innerHTML='<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:32px;color:#8b1e1e"><strong>Dashboard could not load.</strong><br><br>'+String(msg||'Please refresh the page.')+'</div>';
   }
-  frame.addEventListener('load',function(){inject();setTimeout(inject,500);setTimeout(inject,1500);});
-  setInterval(inject,3000);
+  fetch('/dashboard.html?core=2',{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+    .then(function(html){
+      var scopeScript='<script id="sbc-direct-scope-loader" src="/js/customer-scope-control.js?v=direct-20260806-2"><\\/script>';
+      if(html.indexOf('</body>')!==-1) html=html.replace('</body>',scopeScript+'</body>');
+      else html+=scopeScript;
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .catch(function(e){ console.error('SBC dashboard shell load failed',e); fail(e.message); });
 })();
 </script>
 </body>
