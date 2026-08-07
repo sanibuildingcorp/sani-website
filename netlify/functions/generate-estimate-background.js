@@ -58,41 +58,53 @@ exports.handler = async function handler(event) {
     if (store) { try { await store.setJSON(ref, record); } catch (_) {} }
 
     const input = buildEstimatorInput(record, body);
+    const timing = { startedAt: Date.now(), analysisMs: 0, estimateMs: 0, repairMs: 0, deterministicMs: 0, repairUsed: false };
 
     // PASS 1: Understand the project before pricing it.
+    const analysisStarted = Date.now();
     const analysisPrompt = buildProjectAnalysisPrompt(input);
     const rawAnalysis = openaiKey
       ? await callOpenAI(openaiKey, analysisPrompt)
       : await callClaude(anthropicKey, analysisPrompt, 6000);
     const projectAnalysis = normalizeProjectAnalysis(parseAiJson(rawAnalysis, "project analysis"), input);
+    timing.analysisMs = Date.now() - analysisStarted;
 
     // PASS 2: Price the structured scope, not the raw paragraph alone.
+    const estimateStarted = Date.now();
     const estimatePrompt = buildEstimatePrompt(input, projectAnalysis);
     const rawEstimate = anthropicKey
       ? await callClaude(anthropicKey, estimatePrompt, 8000)
       : await callOpenAI(openaiKey, estimatePrompt);
     let estimate = normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis);
+    timing.estimateMs = Date.now() - estimateStarted;
 
-    // Deterministic validation catches omissions even when the model misses them.
+    // Run Sani deterministic rules BEFORE deciding whether another expensive AI call is necessary.
+    // This lets production-hour corrections and option isolation fix ordinary pricing problems locally.
+    let deterministicStarted = Date.now();
+    estimate = applyDeterministicPricing(estimate, projectAnalysis, input);
+    timing.deterministicMs += Date.now() - deterministicStarted;
     let validation = validateEstimate(estimate, projectAnalysis, input);
 
-    // One automatic repair pass when the draft is incomplete or suspiciously low.
+    // Only use the second AI pass when structural scope is still genuinely incomplete AFTER deterministic repair.
     if (!validation.passed) {
+      timing.repairUsed = true;
+      const repairStarted = Date.now();
       const repairPrompt = buildRepairPrompt(input, projectAnalysis, estimate, validation);
       const rawRepair = anthropicKey
         ? await callClaude(anthropicKey, repairPrompt, 8000)
         : await callOpenAI(openaiKey, repairPrompt);
       estimate = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);
+      timing.repairMs = Date.now() - repairStarted;
+      deterministicStarted = Date.now();
+      estimate = applyDeterministicPricing(estimate, projectAnalysis, input);
+      timing.deterministicMs += Date.now() - deterministicStarted;
       validation = validateEstimate(estimate, projectAnalysis, input);
     }
 
-    // DETERMINISTIC PRICING GATE: AI interprets scope; Sani rules control production hours,
-    // mutually-exclusive alternatives, service ownership, and estimate health.
-    estimate = applyDeterministicPricing(estimate, projectAnalysis, input);
-    validation = validateEstimate(estimate, projectAnalysis, input);
-
     estimate = finalizeCustomerPresentation(estimate, projectAnalysis, input);
     estimate = consolidateCustomerPresentation(estimate, projectAnalysis, input);
+    timing.totalMs = Date.now() - timing.startedAt;
+    estimate.generationTiming = { ...timing };
     estimate.validation = validation;
     estimate.pricingReadiness = projectAnalysis.pricing_readiness;
     estimate.clarificationQuestions = projectAnalysis.clarification_questions;
