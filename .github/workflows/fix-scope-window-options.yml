@@ -1,0 +1,64 @@
+name: Fix Scope Window Options
+on:
+  push:
+    paths:
+      - '.scope-fix-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch dashboard scope control
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('dashboard.html')
+          s = p.read_text()
+
+          old_gate = r'/^v8\.2-deterministic-four-service/.test(String(est.customerPresentationVersion || ""))'
+          new_gate = r'/^(?:v8\.2-deterministic-four-service|deterministic-v1\.5)/.test(String(est.customerPresentationVersion || ""))'
+          count = s.count(old_gate)
+          if count != 2:
+              raise SystemExit(f'Expected 2 deterministic presentation gates, found {count}')
+          s = s.replace(old_gate, new_gate)
+
+          old = '''      (b.notIncluded || b.exclusions || b.excluded || []).forEach(function (x) { push(t.excluded, bText(x)); });
+      direct[name] = t;'''
+          new = '''      (b.notIncluded || b.exclusions || b.excluded || []).forEach(function (x) { push(t.excluded, bText(x)); });
+      // Keep priced window alternatives inside the real Windows card instead of
+      // allowing legacy scopeSections to create a second $0 "Window Replacement" service.
+      // Scope Control is wording-only, so alternatives are clearly marked as not
+      // included in the current Grand Total.
+      if (name === "Windows") {
+        (b.options || []).forEach(function (o) {
+          if (!o) return;
+          var label = String(o.label || o.name || o.title || "Alternative").trim();
+          var desc = String(o.description || "").trim();
+          var alt = label + (desc ? " — " + desc : "");
+          var price = Number(o.price);
+          alt += Number.isFinite(price) && price > 0
+            ? " — " + fmt(price) + " alternative (not included in current total)"
+            : " — alternative (not included in current total)";
+          push(t.excluded, alt);
+        });
+      }
+      direct[name] = t;'''
+          if old not in s:
+              raise SystemExit('Direct deterministic service block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "sani-dashboard-bot"
+          git config user.email "sanibuildingcorp@gmail.com"
+          git add dashboard.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix Scope Control duplicate window service"
+          git push origin main
