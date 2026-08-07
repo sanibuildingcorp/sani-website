@@ -1,0 +1,1 @@
+Production redeploy trigger after restoring ESTIMATOR_MODEL to claude-sonnet-4-5-20250929 and fixing gpt-4o-mini Responses API verbosity compatibility.
