@@ -1289,6 +1289,34 @@ body {
 .sc-del{border:none;background:none;color:#c0392b;font-size:14px;cursor:pointer;padding:2px 5px}
 .sc-add{font-size:12px;border:1px dashed var(--line);background:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:var(--ink-muted)}
 .sc-add:hover{border-color:var(--gold);color:var(--gold)}
+.lm-fold{border:1px solid var(--line);border-radius:10px;padding:0;overflow:hidden;background:#fff}
+.lm-fold>summary{list-style:none;cursor:pointer;padding:14px 16px;font-family:inherit;font-size:13px;
+  font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink);display:flex;
+  align-items:center;justify-content:space-between;gap:10px}
+.lm-fold>summary::-webkit-details-marker{display:none}
+.lm-fold>summary::after{content:"\25be";font-size:14px;color:var(--ink-muted);transition:transform .15s}
+.lm-fold[open]>summary::after{transform:rotate(180deg)}
+.lm-hint{font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink-muted)}
+.lm-tools{padding:0 16px 8px}
+.lm-fold .lines-table{margin:0 0 14px}
+.sc-tabs{display:flex;border-bottom:1px solid var(--line);background:#fbfcfd;margin:10px -14px 0;padding:0 4px}
+.sc-tab{flex:1;padding:10px 3px;text-align:center;font-size:11.5px;font-weight:500;color:var(--ink-muted);
+  cursor:pointer;border:0;background:none;border-bottom:2px solid transparent;font-family:inherit;letter-spacing:.02em}
+.sc-tab.on{color:var(--ink);border-bottom-color:var(--gold);background:#fff}
+.sc-tab .n{display:block;font-size:10px;color:#93a1b5;font-weight:400;margin-top:1px}
+.sc-pane{padding:12px 0 2px}
+.sc-kind{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#93a1b5;margin:12px 0 6px}
+.sc-pane .sc-kind:first-child{margin-top:0}
+.sc-empty{font-size:12.5px;color:#93a1b5;padding:4px 0 8px}
+.sc-plh{display:grid;grid-template-columns:1fr 46px 58px 70px 24px;gap:5px;font-size:9.5px;letter-spacing:1px;
+  text-transform:uppercase;color:#93a1b5;margin-bottom:5px}
+.sc-plh span:nth-child(2),.sc-plh span:nth-child(3){text-align:center}
+.sc-plh span:nth-child(4){text-align:right}
+.sc-pl{display:grid;grid-template-columns:1fr 46px 58px 70px 24px;gap:5px;align-items:center;margin-bottom:5px}
+.sc-pl input{border:1px solid var(--line);border-radius:7px;padding:8px 7px;font:inherit;font-size:12.5px;
+  min-width:0;background:#fff;color:var(--ink)}
+.sc-pl input[type=number]{text-align:right}
+.sc-pl-tot{text-align:right;font-weight:700;color:var(--gold);font-size:12.5px}
 .sc-merge-row{margin:10px 0 2px}
 .sc-merge{width:100%;padding:9px 10px;border:1px solid var(--line,#d8dee8);border-radius:8px;background:#fff;font-size:13px;color:var(--ink,#0a1628)}
 .sc-del-svc{font-size:11px;border:none;background:none;color:#c0392b;cursor:pointer;padding:4px 0}
@@ -3292,8 +3320,9 @@ function renderEdit() {
         '<textarea id="f-scope" rows="8" placeholder="DEMOLITION:&#10;- Remove old fixtures&#10;- Haul debris&#10;&#10;INSTALLATION:&#10;- Install new tile&#10;- Mount vanity">' + esc(est.scopeOfWork || "") + '</textarea>' +
       '</div>' +
     '</div>' +
-    '<div class="form-section">' +
-      '<h3>🔨 LABOR <button class="btn-add-row" onclick="addLine(\'labor\')">+ Add Item</button></h3>' +
+    '<details class="form-section lm-fold">' +
+      '<summary>🔨 LABOR <span class="lm-hint">tap to open</span></summary>' +
+      '<div class="lm-tools"><button class="btn-add-row" onclick="addLine(\'labor\')">+ Add Item</button></div>' +
       '<table class="lines-table">' +
         '<thead><tr>' +
           '<th class="col-item">Item</th>' +
@@ -3305,9 +3334,10 @@ function renderEdit() {
         '</tr></thead>' +
         '<tbody id="labor-body"></tbody>' +
       '</table>' +
-    '</div>' +
-    '<div class="form-section">' +
-      '<h3>🧰 MATERIALS <button class="btn-add-row" onclick="addLine(\'materials\')">+ Add Item</button></h3>' +
+    '</details>' +
+    '<details class="form-section lm-fold">' +
+      '<summary>🧰 MATERIALS <span class="lm-hint">tap to open</span></summary>' +
+      '<div class="lm-tools"><button class="btn-add-row" onclick="addLine(\'materials\')">+ Add Item</button></div>' +
       '<table class="lines-table">' +
         '<thead><tr>' +
           '<th class="col-item">Item</th>' +
@@ -3319,7 +3349,7 @@ function renderEdit() {
         '</tr></thead>' +
         '<tbody id="materials-body"></tbody>' +
       '</table>' +
-    '</div>' +
+    '</details>' +
     '<div class="form-row">' +
       '<div class="field">' +
         '<label>Estimated Timeline (customer sees)</label>' +
@@ -3826,12 +3856,14 @@ function addLine(kind) {
   renderLines(kind, arr);
   attachLineListeners();
   recalc();
+  scopeCardsRepaint();
 }
 function deleteLine(kind, idx) {
   currentRecord.estimate[kind].splice(idx, 1);
   renderLines(kind, currentRecord.estimate[kind]);
   attachLineListeners();
   recalc();
+  scopeCardsRepaint();
 }
 function attachLineListeners() {
   document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(function(row) {
@@ -3854,6 +3886,10 @@ function syncLines() {
   ["labor", "materials"].forEach(function(kind) {
     const rows = document.querySelectorAll("#" + kind + "-body tr[data-idx]");
     const prev = (currentRecord.estimate && currentRecord.estimate[kind]) || [];
+    /* If the table has not been painted yet, its body is empty. Rebuilding from an
+       empty DOM would delete every priced line in the record. Leave the array alone
+       instead - there is nothing on screen that could have changed it. */
+    if (!rows.length && prev.length) return;
     const items = [];
     rows.forEach(function(row) {
       const idx = parseInt(row.getAttribute("data-idx"), 10);
@@ -4302,6 +4338,26 @@ function scopeDraft() {
   return est.manualCustomerScopeDraft;
 }
 
+/* Which tab is open on each service card, kept across re-renders so editing a
+   price line does not bounce the card back to a different tab. */
+var SC_TAB = {};
+function scopeSetTab(si, pi) { SC_TAB[si] = pi; renderScopeControl(); }
+
+/* Every labor / materials line that belongs to one service, with its index in the
+   real estimate array so edits write straight back to the source of truth. */
+function scopeLinesFor(name, kind) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var out = [];
+  (est[kind] || []).forEach(function (l, gi) {
+    if (scopeSectionOf(l) === name) out.push({ l: l, gi: gi });
+  });
+  return out;
+}
+
+/* ONE CARD PER SERVICE.
+   Prices and wording used to live in two places - the Labor / Materials tables at
+   the top and the scope cards at the bottom - so the same service was edited in
+   two screens and the two views drifted. Both now render from the same arrays. */
 function renderScopeControl() {
   var wrap = document.getElementById("scope-control-wrap");
   if (!wrap || !currentRecord) return;
@@ -4311,13 +4367,13 @@ function renderScopeControl() {
   var published = est.customerScopePublished === true;
 
   var groups = [
-    { key: "included", label: "✓ INCLUDED", cls: "sc-inc" },
-    { key: "supplied", label: "◆ CUSTOMER SUPPLIES", cls: "sc-sup" },
-    { key: "excluded", label: "— NOT INCLUDED", cls: "sc-exc" }
+    { key: "included", label: "✓ INCLUDED", cls: "sc-inc", tab: "Included", empty: "Nothing listed yet." },
+    { key: "supplied", label: "◆ CUSTOMER SUPPLIES", cls: "sc-sup", tab: "Supplies", empty: "Customer supplies nothing here." },
+    { key: "excluded", label: "— NOT INCLUDED", cls: "sc-exc", tab: "Not incl.", empty: "Nothing excluded yet." }
   ];
 
   var html = '<div class="form-section sc-panel">' +
-    '<h3>🧾 CUSTOMER SCOPE CONTROL <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(wording only &mdash; never changes pricing)</span></h3>';
+    '<h3>🧾 SERVICES <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(price and wording together)</span></h3>';
 
   if (shared) {
     html += '<div class="sc-warn">This estimate has already been shared with the customer. ' +
@@ -4329,15 +4385,55 @@ function renderScopeControl() {
     '</div>';
 
   d.services.forEach(function (svc, si) {
+    var nm = String(svc.name || "").trim();
+    var lab = scopeLinesFor(nm, "labor"), mat = scopeLinesFor(nm, "materials");
+    var open = SC_TAB[si];
+    if (open == null || open < 0 || open > 3) open = 0;
+
     html += '<div class="sc-service">' +
       '<div class="sc-service-head">' +
         '<input class="sc-service-name" value="' + esc(svc.name) + '" onchange="scopeRenameService(' + si + ', this.value)">' +
-        '<span class="sc-subtotal" title="Calculated from the Labor and Materials tables">' + fmt(scopeServiceSubtotal(svc.name)) + '</span>' +
+        '<span class="sc-subtotal" title="Calculated from the price lines in this card">' + fmt(scopeServiceSubtotal(nm)) + '</span>' +
       '</div>';
-    groups.forEach(function (g) {
+
+    /* tab strip */
+    html += '<div class="sc-tabs">' +
+      '<button class="sc-tab' + (open === 0 ? ' on' : '') + '" onclick="scopeSetTab(' + si + ',0)">Prices<span class="n">' + (lab.length + mat.length) + '</span></button>';
+    groups.forEach(function (g, gi2) {
+      html += '<button class="sc-tab' + (open === gi2 + 1 ? ' on' : '') + '" onclick="scopeSetTab(' + si + ',' + (gi2 + 1) + ')">' +
+        g.tab + '<span class="n">' + ((svc[g.key] || []).length) + '</span></button>';
+    });
+    html += '</div>';
+
+    /* pane 0 - price lines */
+    html += '<div class="sc-pane"' + (open === 0 ? '' : ' style="display:none"') + '>';
+    [{ kind: "labor", label: "Labor", rows: lab }, { kind: "materials", label: "Materials", rows: mat }].forEach(function (blk) {
+      html += '<div class="sc-kind">' + blk.label + '</div>';
+      if (!blk.rows.length) {
+        html += '<div class="sc-empty">No ' + blk.label.toLowerCase() + ' lines in this service.</div>';
+      } else {
+        html += '<div class="sc-plh"><span>Item</span><span>Qty</span><span>Rate</span><span>Total</span><span></span></div>';
+        blk.rows.forEach(function (r) {
+          var q = Number(r.l.qty) || 0, rt = Number(r.l.rate) || 0;
+          html += '<div class="sc-pl">' +
+            '<input value="' + esc(r.l.item || "") + '" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'item\',this.value)">' +
+            '<input type="number" step="0.5" min="0" value="' + esc(q) + '" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'qty\',this.value)">' +
+            '<input type="number" step="0.01" min="0" value="' + esc(rt) + '" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'rate\',this.value)">' +
+            '<span class="sc-pl-tot">' + fmt(q * rt) + '</span>' +
+            '<button class="sc-del" onclick="scopePriceDelete(\'' + blk.kind + '\',' + r.gi + ')" title="Delete line">✕</button>' +
+            '</div>';
+        });
+      }
+      html += '<button class="sc-add" onclick="scopePriceAdd(' + si + ',\'' + blk.kind + '\')">+ Add ' + blk.label.toLowerCase() + ' line</button>';
+    });
+    html += '</div>';
+
+    /* panes 1-3 - wording */
+    groups.forEach(function (g, gi2) {
       var items = svc[g.key] || [];
-      html += '<div class="sc-group ' + g.cls + '">' +
+      html += '<div class="sc-pane sc-group ' + g.cls + '"' + (open === gi2 + 1 ? '' : ' style="display:none"') + '>' +
         '<div class="sc-group-label">' + g.label + '</div>';
+      if (!items.length) html += '<div class="sc-empty">' + g.empty + '</div>';
       items.forEach(function (txt, ii) {
         html += '<div class="sc-row">' +
           '<input class="sc-item" value="' + esc(txt) + '" onchange="scopeEditItem(' + si + ',\'' + g.key + '\',' + ii + ',this.value)">' +
@@ -4354,9 +4450,8 @@ function renderScopeControl() {
       html += '<button class="sc-add" onclick="scopeAddItem(' + si + ',\'' + g.key + '\')">+ Add</button>' +
         '</div>';
     });
-    /* Merge the WHOLE card into another service - wording and money together.
-       Deleting a service only removes wording; this also relabels the underlying
-       labor and materials lines so the price travels with it. */
+
+    /* footer */
     var others = d.services.map(function (o, oi) { return { name: o.name, i: oi }; })
                            .filter(function (o) { return o.i !== si; });
     if (others.length) {
@@ -4381,6 +4476,51 @@ function renderScopeControl() {
   '</div>';
 
   wrap.innerHTML = html;
+}
+
+/* Repaint BOTH views from the arrays, then recalculate. renderLines must run
+   before recalc, because recalc calls syncLines which reads the tables - if the
+   tables still showed the old values they would overwrite the edit. */
+/* Repaint the service cards after the TOP tables changed the arrays.
+   Every card handler carries a global index into estimate.labor / estimate.materials.
+   Adding or deleting a row up top shifts those indexes, so without this an edit made
+   in one service card silently rewrote a line belonging to a different service.
+   Kept out of recalc() on purpose: recalc fires on every input event, and
+   re-rendering the panel mid-keystroke would steal focus. */
+function scopeCardsRepaint() {
+  try { if (document.getElementById("scope-control-wrap")) renderScopeControl(); } catch (e) {}
+}
+function scopeLinesRefresh() {
+  var est = currentRecord.estimate || {};
+  renderLines("labor", est.labor || []);
+  renderLines("materials", est.materials || []);
+  attachLineListeners();
+  recalc();
+  renderScopeControl();
+}
+function scopePriceEdit(kind, gi, field, val) {
+  syncLines();
+  var l = (currentRecord.estimate[kind] || [])[gi];
+  if (!l) return;
+  if (field === "qty" || field === "rate") l[field] = parseFloat(val) || 0;
+  else l[field] = String(val == null ? "" : val);
+  scopeLinesRefresh();
+}
+function scopePriceDelete(kind, gi) {
+  if (!confirm("Delete this price line? The estimate total will change.")) return;
+  syncLines();
+  (currentRecord.estimate[kind] || []).splice(gi, 1);
+  scopeLinesRefresh();
+}
+function scopePriceAdd(si, kind) {
+  syncLines();
+  var d = scopeDraft();
+  var nm = String((d.services[si] && d.services[si].name) || "General").trim() || "General";
+  var arr = currentRecord.estimate[kind] || [];
+  arr.push({ item: "", qty: 1, unit: kind === "labor" ? "hrs" : "ea", rate: 0, section: nm });
+  currentRecord.estimate[kind] = arr;
+  SC_TAB[si] = 0;
+  scopeLinesRefresh();
 }
 
 /* ---- mutations (structure changes re-render; text edits do not) ---- */
@@ -4446,6 +4586,25 @@ function scopeMergeService(si, destIdx) {
       if (scopeSectionOf(l) === srcName) { l.section = dstName; moved++; }
     });
   });
+
+  /* Deterministic v8.2 records do not derive subtotals from the lines - they carry
+     them on serviceBreakdown, and scopeServiceSubtotal reads those first. Relabelling
+     the lines alone would leave the destination showing its old figure and the source
+     money stranded, so fold the breakdown rows together as well. */
+  if (Array.isArray(est.serviceBreakdown)) {
+    var nameOf = function (x) { return String((x && (x.title || x.name || x.section)) || "").trim().toLowerCase(); };
+    var srcKey = srcName.toLowerCase(), dstKey = dstName.toLowerCase();
+    var srcRow = est.serviceBreakdown.filter(function (x) { return nameOf(x) === srcKey; })[0];
+    var dstRow = est.serviceBreakdown.filter(function (x) { return nameOf(x) === dstKey; })[0];
+    if (srcRow && dstRow) {
+      dstRow.subtotal = (Number(dstRow.subtotal) || 0) + (Number(srcRow.subtotal) || 0);
+      ["included", "customerSupplies", "notIncluded"].forEach(function (k) {
+        if (Array.isArray(srcRow[k])) dstRow[k] = (dstRow[k] || []).concat(srcRow[k]);
+      });
+      if (Array.isArray(srcRow.options)) dstRow.options = (dstRow.options || []).concat(srcRow.options);
+      est.serviceBreakdown = est.serviceBreakdown.filter(function (x) { return x !== srcRow; });
+    }
+  }
 
   /* 2. Merge the wording, keeping order and dropping exact duplicates. */
   ["included", "supplied", "excluded"].forEach(function (k) {
