@@ -182,8 +182,8 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);-webkit-font-
 
 <div id="toast" class="toast"></div>
 
+<script src="/js/dashboard-auth.js"></script>
 <script>
-const DASHBOARD_PASSWORD = "L0nd0n12@";
 let pages = [];
 let currentDraft = null;
 let currentSelectedKw = [];
@@ -194,9 +194,11 @@ let kwSelected = {};
 document.getElementById("pw-btn").addEventListener("click", tryLogin);
 document.getElementById("pw-input").addEventListener("keypress", function(e){ if(e.key==="Enter") tryLogin(); });
 function tryLogin(){
-  if(document.getElementById("pw-input").value === DASHBOARD_PASSWORD){
-    sessionStorage.setItem("sbc-auth","1"); showApp();
-  } else { document.getElementById("pw-error").textContent = "Incorrect password"; }
+  document.getElementById("pw-error").textContent = "";
+  sbcVerifyPassword(document.getElementById("pw-input").value).then(function(res){
+    if(res.ok){ showApp(); }
+    else { document.getElementById("pw-error").textContent = res.error; }
+  });
 }
 function showApp(){
   document.getElementById("login-screen").style.display="none";
