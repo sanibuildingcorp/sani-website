@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/workflows/apply-market-audit-integration.yml'
+      - '.automation/market-audit-integration.trigger'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -38,8 +39,6 @@ jobs:
 
           d = Path('dashboard.html')
           html = d.read_text()
-
-          # Add an internal-only market audit renderer. It is deliberately non-customer-facing.
           script_marker = '</body>'
           audit_script = r'''
 <script>
@@ -65,22 +64,22 @@ jobs:
     var checks=(a.checks||[]).map(function(c){
       return '<div style="padding:9px 0;border-top:1px solid #e5e7eb"><div style="font-weight:700">'+esc(c.label)+'</div><div style="font-size:12px;color:#64748b;margin-top:3px">Actual '+money(c.actual)+' · Market '+money(c.expectedLow)+'–'+money(c.expectedHigh)+' '+esc(c.unit||'')+' · '+badge(c.status)+'</div></div>';
     }).join('');
+    var flags=(a.accessFlags||[]).map(function(f){ return '<div style="font-size:11px;color:#64748b;margin-top:5px">• '+esc(f.label||f.code||'')+(f.benchmark?' · '+esc(f.benchmark):'')+'</div>'; }).join('');
     var panel=document.createElement('div');
     panel.id='marketAuditPanel';
     panel.style.cssText='margin:14px 0;padding:14px;border:1px solid #b8930a;border-radius:12px;background:#fffdf5;font-family:Inter,-apple-system,sans-serif';
     panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><div style="font-size:10px;letter-spacing:1.6px;color:#96770a;font-weight:800">INTERNAL · NYC MARKET PRICE CHECK</div><div style="font-size:12px;color:#64748b;margin-top:3px">'+esc(a.version||'')+' · '+esc(a.borough||'NYC')+'</div></div>'+badge(a.status)+'</div>'+
-      '<div style="font-size:13px;margin-top:10px;color:#334155">'+esc(a.guidance||'')+'</div>'+checks+
+      '<div style="font-size:13px;margin-top:10px;color:#334155">'+esc(a.guidance||'')+'</div>'+checks+flags+
       '<div style="font-size:11px;color:#64748b;margin-top:9px">Benchmark check only. It does not change customer pricing automatically.</div>';
     anchor.parentNode.insertBefore(panel, anchor);
   };
 
-  // Hook the existing estimate renderer without changing its API.
   var tries=0;
   var timer=setInterval(function(){
     tries++;
     if(window.currentRecord && window.currentRecord.estimate){ window.renderMarketAuditPanel(window.currentRecord.estimate); }
     if(window.currentEstimate){ window.renderMarketAuditPanel(window.currentEstimate); }
-    if(tries>30) clearInterval(timer);
+    if(tries>60) clearInterval(timer);
   },1000);
 })();
 </script>
@@ -98,7 +97,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           s=Path('netlify/functions/generate-estimate-background.js').read_text()
-          assert 'marketAudit' in s
+          assert 'require("./lib/nyc-market-benchmark")' in s
           assert 'estimate.marketAudit = marketAudit' in s
           h=Path('dashboard.html').read_text()
           assert 'renderMarketAuditPanel' in h
@@ -115,5 +114,3 @@ jobs:
             git commit -m "Integrate NYC market audit into estimator dashboard"
             git push
           fi
-
-# trigger: 2026-08-08 market audit integration
