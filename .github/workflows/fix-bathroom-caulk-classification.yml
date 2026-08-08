@@ -1,0 +1,32 @@
+name: Fix bathroom caulk classification
+on:
+  push:
+    paths:
+      - '.github/trigger-bathroom-caulk-classification.txt'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch deterministic service classification
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('netlify/functions/lib/deterministic-pricing.js')
+          s=p.read_text()
+          old="if(/window/.test(i))return 'Windows';if(/paint|painter|primer|spackle/.test(i)&&has('paint'))return 'Painting';"
+          new="if(/window/.test(i))return 'Windows';if(/caulk|sealant/.test(i)&&has('bath')&&!has('floor'))return 'Bathroom';if(/paint|painter|primer|spackle/.test(i)&&has('paint'))return 'Painting';"
+          if old not in s:
+              raise SystemExit('target not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'sani-estimator-bot'
+          git config user.email 'sanibuildingcorp@gmail.com'
+          git add netlify/functions/lib/deterministic-pricing.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'Classify bathroom caulk and sealant under Bathroom'
+          git push
