@@ -1,0 +1,117 @@
+name: Apply market audit integration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-market-audit-integration.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch estimator and dashboard
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          f = Path('netlify/functions/generate-estimate-background.js')
+          s = f.read_text()
+          req = 'const { applyDeterministicPricing, consolidateCustomerPresentation } = require("./lib/deterministic-pricing");'
+          add = req + '\nconst { marketAudit } = require("./lib/nyc-market-benchmark");'
+          if 'require("./lib/nyc-market-benchmark")' not in s:
+              if req not in s:
+                  raise SystemExit('deterministic require marker missing')
+              s = s.replace(req, add, 1)
+
+          marker = '    estimate = consolidateCustomerPresentation(estimate, projectAnalysis, input);\n'
+          insert = marker + '    estimate.marketAudit = marketAudit(estimate, projectAnalysis, input);\n'
+          if 'estimate.marketAudit = marketAudit(' not in s:
+              if marker not in s:
+                  raise SystemExit('consolidation marker missing')
+              s = s.replace(marker, insert, 1)
+          f.write_text(s)
+
+          d = Path('dashboard.html')
+          html = d.read_text()
+
+          # Add an internal-only market audit renderer. It is deliberately non-customer-facing.
+          script_marker = '</body>'
+          audit_script = r'''
+<script>
+(function(){
+  function money(v){ return '$' + (Number(v||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
+  function badge(status){
+    var bg=status==='PASS'?'#dcfce7':status==='BLOCK'?'#fee2e2':status==='REVIEW'?'#fef3c7':'#eef2f7';
+    var fg=status==='PASS'?'#166534':status==='BLOCK'?'#991b1b':status==='REVIEW'?'#92400e':'#475569';
+    return '<span style="display:inline-block;padding:4px 8px;border-radius:999px;background:'+bg+';color:'+fg+';font-weight:800;font-size:11px;letter-spacing:.6px">'+esc(status||'NO DATA')+'</span>';
+  }
+  window.renderMarketAuditPanel = function(estimate){
+    var a = estimate && estimate.marketAudit;
+    var old = document.getElementById('marketAuditPanel');
+    if(old) old.remove();
+    if(!a) return;
+    var anchor = document.querySelector('.customer-view-mode, #customerViewMode, [data-section="customer-view-mode"]');
+    if(!anchor){
+      var txt=[].slice.call(document.querySelectorAll('h2,h3,.section-title,.card-title')).find(function(el){return /customer view mode/i.test(el.textContent||'');});
+      anchor = txt && (txt.closest('.card') || txt.parentElement);
+    }
+    if(!anchor) return;
+    var checks=(a.checks||[]).map(function(c){
+      return '<div style="padding:9px 0;border-top:1px solid #e5e7eb"><div style="font-weight:700">'+esc(c.label)+'</div><div style="font-size:12px;color:#64748b;margin-top:3px">Actual '+money(c.actual)+' · Market '+money(c.expectedLow)+'–'+money(c.expectedHigh)+' '+esc(c.unit||'')+' · '+badge(c.status)+'</div></div>';
+    }).join('');
+    var panel=document.createElement('div');
+    panel.id='marketAuditPanel';
+    panel.style.cssText='margin:14px 0;padding:14px;border:1px solid #b8930a;border-radius:12px;background:#fffdf5;font-family:Inter,-apple-system,sans-serif';
+    panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><div style="font-size:10px;letter-spacing:1.6px;color:#96770a;font-weight:800">INTERNAL · NYC MARKET PRICE CHECK</div><div style="font-size:12px;color:#64748b;margin-top:3px">'+esc(a.version||'')+' · '+esc(a.borough||'NYC')+'</div></div>'+badge(a.status)+'</div>'+
+      '<div style="font-size:13px;margin-top:10px;color:#334155">'+esc(a.guidance||'')+'</div>'+checks+
+      '<div style="font-size:11px;color:#64748b;margin-top:9px">Benchmark check only. It does not change customer pricing automatically.</div>';
+    anchor.parentNode.insertBefore(panel, anchor);
+  };
+
+  // Hook the existing estimate renderer without changing its API.
+  var tries=0;
+  var timer=setInterval(function(){
+    tries++;
+    if(window.currentRecord && window.currentRecord.estimate){ window.renderMarketAuditPanel(window.currentRecord.estimate); }
+    if(window.currentEstimate){ window.renderMarketAuditPanel(window.currentEstimate); }
+    if(tries>30) clearInterval(timer);
+  },1000);
+})();
+</script>
+'''
+          if 'renderMarketAuditPanel' not in html:
+              if script_marker not in html:
+                  raise SystemExit('dashboard body marker missing')
+              html = html.replace(script_marker, audit_script + '\n' + script_marker, 1)
+          d.write_text(html)
+          PY
+      - name: Basic syntax checks
+        run: |
+          node --check netlify/functions/generate-estimate-background.js
+          node --check netlify/functions/lib/nyc-market-benchmark.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('netlify/functions/generate-estimate-background.js').read_text()
+          assert 'marketAudit' in s
+          assert 'estimate.marketAudit = marketAudit' in s
+          h=Path('dashboard.html').read_text()
+          assert 'renderMarketAuditPanel' in h
+          print('market audit integration checks passed')
+          PY
+      - name: Commit integration
+        run: |
+          git config user.name "Sani Estimator Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add netlify/functions/generate-estimate-background.js dashboard.html
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+          else
+            git commit -m "Integrate NYC market audit into estimator dashboard"
+            git push
+          fi
