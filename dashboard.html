@@ -4190,7 +4190,9 @@ var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   "showLaborLines", "showMaterialLines",
   // Manually set money + hand-built extras
   "customerFinalTotal", "finishGroups", "contract",
-  "quotePhotos", "savedMaterials", "materialsTotalEstimate"
+  "quotePhotos", "savedMaterials", "materialsTotalEstimate",
+  // Price lines parked by "Not included" - the money waiting to come back
+  "parkedLines"
 ];
 
 var SCOPE_SHARED_STATUSES = ["sent", "opened", "accepted", "invoiced", "paid", "completed"];
@@ -4334,6 +4336,10 @@ function buildScopeDraftFromAI() {
 function scopeDraft() {
   var est = (currentRecord && currentRecord.estimate) || {};
   if (!est.manualCustomerScopeDraft || !Array.isArray(est.manualCustomerScopeDraft.services)) {
+    /* Silent rebuild path - no prompt is possible here. If money is parked, the wording
+       that owns it is about to be replaced, so give the money back rather than strand
+       it. Restoring is always recoverable; stranding never is. */
+    if ((est.parkedLines || []).length) scopeUnparkAll();
     est.manualCustomerScopeDraft = buildScopeDraftFromAI();
   }
   return est.manualCustomerScopeDraft;
@@ -4535,31 +4541,240 @@ function scopeAddItem(si, key) {
   renderScopeControl();
 }
 function scopeEditItem(si, key, ii, val) {
-  scopeDraft().services[si][key][ii] = String(val || "");
+  var d = scopeDraft(), svc = d.services[si];
+  if (!svc || !svc[key]) return;
+  var was = svc[key][ii];
+  var now = String(val || "");
+  svc[key][ii] = now;
+  if (key !== "excluded") return;
+  var nm = String(svc.name || "").trim();
+  /* Blanking the text is a delete in everything but name. scopeCleanCopy drops empty
+     wording on Save Draft AND on Publish, so re-pointing the parked line at "" would
+     leave money with no line, no wording and no card - unreachable forever. Treat it
+     exactly as scopeDeleteItem treats an explicit delete and hand the money back now.
+     Restoring is always recoverable; stranding never is. */
+  if (!now.trim()) {
+    if (scopeUnparkFor(nm, was) > 0) scopeLinesRefresh();
+    return;
+  }
+  /* Parked money is found by the exclusion's wording. Sharpening that wording is a
+     normal edit, and without this the line becomes unreachable - the money simply
+     never comes back. Re-point it at the new text. */
+  scopeRetargetParked(nm, was, null, now);
 }
 function scopeDeleteItem(si, key, ii) {
-  scopeDraft().services[si][key].splice(ii, 1);
+  var d = scopeDraft(), svc = d.services[si];
+  var txt = svc[key][ii];
+  svc[key].splice(ii, 1);
+  /* Deleting the exclusion wording would otherwise leave its price parked forever -
+     money silently missing from the estimate with nothing on screen explaining it.
+     Put it back and say so. */
+  if (key === "excluded") {
+    if (scopeUnparkFor(String(svc.name || "").trim(), txt) > 0) { scopeLinesRefresh(); return; }
+  }
   renderScopeControl();
 }
+/* ============ PARKED PRICE LINES ============
+   Moving a wording item into "Not included" must take its money out of the
+   estimate, and moving it back must put exactly the same money back. Lines are
+   never deleted - they are PARKED on estimate.parkedLines with the wording that
+   sent them there, then restored byte-for-byte. `parkedLines` is in
+   CONTRACTOR_OWNED_ESTIMATE_FIELDS so Save Draft and Regenerate cannot drop it. */
+
+function scopeNorm(t) {
+  return String(t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+}
+/* Wording and price lines are never worded identically - "Complete bathroom
+   demolition including tub/shower removal, wall/ceiling demo" vs "Complete bathroom
+   demo". Score on shared significant words, require a real overlap, and never guess
+   from one word alone. */
+function scopeMatchScore(wordingText, itemText) {
+  var STOP = { the:1, and:1, a:1, an:1, of:1, to:1, for:1, in:1, on:1, at:1, with:1,
+               all:1, any:1, as:1, is:1, or:1, including:1, include:1, included:1,
+               new:1, per:1, from:1 };
+  var w = scopeNorm(wordingText).split(" ").filter(function (x) { return x.length > 2 && !STOP[x]; });
+  var it = scopeNorm(itemText).split(" ").filter(function (x) { return x.length > 2 && !STOP[x]; });
+  if (!w.length || !it.length) return 0;
+  /* Stem-aware: the wording says "demolition", the price line says "demo". Treat one
+     as a hit for the other when either is a prefix of the other and long enough that
+     the overlap cannot be a coincidence. */
+  function hit(a) {
+    for (var i = 0; i < w.length; i++) {
+      var b = w[i];
+      if (a === b) return true;
+      var short = a.length < b.length ? a : b, lng = a.length < b.length ? b : a;
+      if (short.length >= 4 && lng.indexOf(short) === 0) return true;
+    }
+    return false;
+  }
+  var hits = 0;
+  it.forEach(function (x) { if (hit(x)) hits++; });
+  if (hits < 2) return 0;                 // one word in common is a coincidence
+  return hits / it.length;                // how much of the price line is covered
+}
+/* Every price line in this service that the wording plausibly describes. */
+function scopeFindPricedFor(serviceName, wordingText) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var out = [];
+  ["labor", "materials"].forEach(function (kind) {
+    (est[kind] || []).forEach(function (l, gi) {
+      if (scopeSectionOf(l) !== serviceName) return;
+      var sc = scopeMatchScore(wordingText, l.item);
+      if (sc >= 0.5) out.push({ kind: kind, gi: gi, line: l, score: sc });
+    });
+  });
+  return out;
+}
+function scopeLineValue(l) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var mEl = document.getElementById("f-markup");
+  var raw = mEl && String(mEl.value).trim() !== "" ? mEl.value : est.markupPct;
+  var pct = Number(raw) || 0;
+  return (Number(l.qty) || 0) * (Number(l.rate) || 0) * (1 + pct / 100);
+}
+/* Take the money out. Returns the customer-facing amount removed. */
+function scopeParkFor(serviceName, wordingText) {
+  var est = currentRecord.estimate || {};
+  var hits = scopeFindPricedFor(serviceName, wordingText);
+  if (!hits.length) return 0;
+
+  /* A service card is full of near-identical lines - "Remove existing vanity" and
+     "Remove existing toilet", "wall tile" and "floor tile". When more than one line
+     matches, no scoring rule can know which ones the exclusion really covers, and
+     silently removing the wrong one under-charges the job. One match: act. Several:
+     ask, and show exactly what would go and what it is worth. */
+  if (hits.length > 1) {
+    var lines = hits.map(function (h) { return "\u2022 " + h.line.item + "  " + fmt(scopeLineValue(h.line)); }).join("\n");
+    var sum = hits.reduce(function (a, h) { return a + scopeLineValue(h.line); }, 0);
+    if (!confirm("Remove these price lines from " + serviceName + "?\n\n" + lines +
+                 "\n\nTotal removed: " + fmt(sum) +
+                 "\n\nCancel leaves this item where it is and changes nothing.")) return null;
+  }
+
+  est.parkedLines = est.parkedLines || [];
+  var removed = 0, names = [];
+  hits.sort(function (a, b) { return b.gi - a.gi; });   // splice high index first
+  hits.forEach(function (h) {
+    removed += scopeLineValue(h.line);
+    names.push(h.line.item);
+    est.parkedLines.push({ kind: h.kind, ownerText: String(wordingText || ""),
+                           service: serviceName, idx: h.gi, line: h.line });
+    est[h.kind].splice(h.gi, 1);
+  });
+  if (names.length) toast("Removed " + names.join(", ") + " \u2014 " + fmt(removed));
+  return removed;
+}
+/* Put exactly the same lines back, filed under whichever service the wording now
+   sits in. Returns the amount restored. */
+function scopeUnparkFor(serviceName, wordingText) {
+  var est = currentRecord.estimate || {};
+  var parked = est.parkedLines || [];
+  if (!parked.length) return 0;
+  var key = scopeNorm(wordingText), svcKey = scopeNorm(serviceName);
+  var keep = [], back = 0, names = [];
+  parked.forEach(function (p) {
+    /* Wording alone is not unique - "Final clean up" and "Debris removal" appear on
+       several services at once. Restoring on text alone pulled another service's line
+       into this card and left that service short. Match the owning service too.
+       Whenever a service is renamed, merged or a wording item is moved, p.service is
+       retargeted so this stays true. */
+    if (scopeNorm(p.ownerText) !== key || scopeNorm(p.service) !== svcKey) { keep.push(p); return; }
+    var l = p.line || {};
+    l.section = serviceName;                       // follow the wording
+    est[p.kind] = est[p.kind] || [];
+    /* Back where it came from, so the contractor's table does not reshuffle. */
+    var at = Number(p.idx);
+    if (Number.isFinite(at) && at >= 0 && at <= est[p.kind].length) est[p.kind].splice(at, 0, l);
+    else est[p.kind].push(l);
+    back += scopeLineValue(l);
+    names.push(l.item);
+  });
+  est.parkedLines = keep;
+  if (names.length) toast("Restored " + names.join(", ") + " \u2014 " + fmt(back));
+  return back;
+}
+
+/* Every place a parked line's owner can change identity must retarget it, or the
+   money becomes unreachable. One helper, called from rename / merge / move / edit. */
+function scopeRetargetParked(matchService, matchText, newService, newText) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  (est.parkedLines || []).forEach(function (p) {
+    if (matchService != null && scopeNorm(p.service) !== scopeNorm(matchService)) return;
+    if (matchText != null && scopeNorm(p.ownerText) !== scopeNorm(matchText)) return;
+    if (newService != null) p.service = String(newService || "").trim();
+    if (newText != null) p.ownerText = String(newText || "");
+  });
+}
+/* Put ALL parked money back, whatever service owns it. Used wherever the scope draft
+   is thrown away wholesale - the wording that owns a parked line disappears with it,
+   and money with no line, no card and no wording is unreachable forever. */
+function scopeUnparkAll() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var parked = (est.parkedLines || []).slice();
+  var back = 0;
+  parked.forEach(function (p) { back += scopeUnparkFor(p.service, p.ownerText); });
+  est.parkedLines = [];
+  return back;
+}
+/* Return every parked line owned by one service, used before that service is deleted. */
+function scopeUnparkService(serviceName) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var owned = (est.parkedLines || []).filter(function (p) { return scopeNorm(p.service) === scopeNorm(serviceName); });
+  var back = 0;
+  owned.forEach(function (p) { back += scopeUnparkFor(serviceName, p.ownerText); });
+  return back;
+}
+
 function scopeMoveItem(si, key, ii, dest) {
   if (!dest) return;
   var d = scopeDraft();
-  var txt = d.services[si][key][ii];
+  var svc = d.services[si];
+  var txt = svc[key][ii];
+  var fromName = String(svc.name || "").trim();
+
   if (dest === "__svc") {
     var names = d.services.map(function (s2, i2) { return (i2 + 1) + ") " + s2.name; }).join("\n");
     var pick = prompt("Move to which service?\n" + names + "\n\nEnter the number:");
     var idx = parseInt(pick, 10) - 1;
     if (isNaN(idx) || !d.services[idx]) return;
-    d.services[si][key].splice(ii, 1);
+    svc[key].splice(ii, 1);
     d.services[idx][key].push(txt);
-  } else {
-    d.services[si][key].splice(ii, 1);
-    d.services[si][dest].push(txt);
+    /* Wording moved house. If its money is parked, it stays parked, but it must come
+       back into the NEW service if this item is ever un-excluded. */
+    scopeRetargetParked(fromName, txt, String(d.services[idx].name || "").trim(), null);
+    scopeLinesRefresh();
+    return;
+  }
+
+  if (key !== "excluded" && dest === "excluded") {
+    /* Ask BEFORE moving the wording. The other way round left the item sitting under
+       "Not included" after a cancel while the estimate still charged for it - the
+       customer reads "excluded" and pays for it anyway. That is the exact conflict
+       EXCLUSION_CONFLICT_REMOVED exists to prevent, and nothing downstream can catch
+       it on a manual dashboard edit. */
+    if (scopeParkFor(fromName, txt) === null) { renderScopeControl(); return; }
+    svc[key].splice(ii, 1);
+    svc[dest].push(txt);
+    scopeLinesRefresh();
+    return;
+  }
+
+  svc[key].splice(ii, 1);
+  svc[dest].push(txt);
+
+  if (key === "excluded" && dest !== "excluded") {
+    scopeUnparkFor(fromName, txt);        // back in scope -> exact same money returns
+    scopeLinesRefresh();
+    return;
   }
   renderScopeControl();
 }
 function scopeRenameService(si, val) {
-  scopeDraft().services[si].name = String(val || "").trim() || "General";
+  var svc = scopeDraft().services[si];
+  var was = String(svc.name || "").trim();
+  var now = String(val || "").trim() || "General";
+  svc.name = now;
+  if (was && was !== now) scopeRetargetParked(was, null, now, null);
 }
 function scopeAddService() {
   var name = prompt("Service name (e.g. Bathroom, Flooring, Painting, Windows):", "");
@@ -4597,6 +4812,11 @@ function scopeMergeService(si, destIdx) {
      them on serviceBreakdown, and scopeServiceSubtotal reads those first. Relabelling
      the lines alone would leave the destination showing its old figure and the source
      money stranded, so fold the breakdown rows together as well. */
+  /* Parked money owned by the source service now belongs to the destination. Unpark
+     matches on service as well as wording, so without this the money would be
+     stranded the moment the source card disappears. */
+  scopeRetargetParked(srcName, null, dstName, null);
+
   if (Array.isArray(est.serviceBreakdown)) {
     var nameOf = function (x) { return String((x && (x.title || x.name || x.section)) || "").trim().toLowerCase(); };
     var srcKey = srcName.toLowerCase(), dstKey = dstName.toLowerCase();
@@ -4627,14 +4847,32 @@ function scopeMergeService(si, destIdx) {
   toast("Moved " + srcName + " into " + dstName + " (" + moved + " priced lines)");
 }
 function scopeDeleteService(si) {
-  if (!confirm("Remove this service from the customer scope? Pricing is not affected.")) return;
-  scopeDraft().services.splice(si, 1);
-  renderScopeControl();
+  var d = scopeDraft(), svc = d.services[si];
+  var nm = String((svc && svc.name) || "").trim();
+  /* Any money parked by this service's exclusions would vanish with the card - no
+     line in the estimate, no wording on screen, nothing to explain the shortfall.
+     Give it back first, and say so honestly in the prompt. */
+  var held = (currentRecord.estimate.parkedLines || [])
+    .filter(function (p) { return scopeNorm(p.service) === scopeNorm(nm); }).length;
+  var msg = held
+    ? "Remove \"" + nm + "\" from the customer scope?\n\n" + held +
+      " price line(s) parked by its exclusions will be put back into the estimate."
+    : "Remove this service from the customer scope? Pricing is not affected.";
+  if (!confirm(msg)) return;
+  if (held) scopeUnparkService(nm);
+  d.services.splice(si, 1);
+  scopeLinesRefresh();
 }
 function scopeRebuildFromAI() {
-  if (!confirm("Rebuild the draft from the current AI estimate? Your manual scope edits will be replaced. Pricing and any published scope are not affected.")) return;
+  var held = ((currentRecord.estimate || {}).parkedLines || []).length;
+  var msg = "Rebuild the draft from the current AI estimate? Your manual scope edits will be replaced.";
+  msg += held
+    ? "\n\n" + held + " price line(s) parked by your exclusions will be put back into the estimate, because the wording that removed them is being replaced."
+    : " Pricing and any published scope are not affected.";
+  if (!confirm(msg)) return;
+  if (held) scopeUnparkAll();
   currentRecord.estimate.manualCustomerScopeDraft = buildScopeDraftFromAI();
-  renderScopeControl();
+  scopeLinesRefresh();
   toast("✓ Draft rebuilt from AI estimate");
 }
 
