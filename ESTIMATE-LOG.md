@@ -10,7 +10,7 @@ Companion to `SEO-LOG.md` (pages) and `GBP-STATE.md` (Google Business Profile).
 > **Section 4 — Decisions & Why**; if a decision needs reversing, add a new dated row
 > to Section 6 explaining what changed, don’t silently flip it.
 
-Last updated: **Aug 6 2026**
+Last updated: **Aug 8 2026**
 
 -----
 
@@ -226,6 +226,151 @@ Painting, Carpentry, Windows), then any custom section, with **“General” alw
   reuse those trade names as the `section` on the matching lines. This closes the loop:
   intake trade -> answer -> line `section` -> per-service subtotal on the quote.
 
+### Aug 8 2026 — dashboard security, one-card-per-service, grouping fixed
+
+**Security (closed).** The dashboard password was a `const` in the client JS of six
+public pages. It is now server-side only.
+
+- New `js/dashboard-auth.js` — shared browser helper. `sbcIsAuthed`, `sbcVisitsKey`,
+  `sbcLogout`, `sbcVerifyPassword`. Everything is a `var` or a function declaration so
+  it hoists past Law 4. **The password must never be added to this file.**
+- New `netlify/functions/dashboard-login.js` — checks `DASHBOARD_PASSWORD` with
+  `crypto.timingSafeEqual`, hands back `VISITS_KEY` on success.
+- `dashboard.html`, `bid-analyzer.html`, `page-editor.html`, `seo-content.html`,
+  `keyword-volumes.html`, `image-studio.html` all load the helper; zero occurrences of
+  the old literal remain.
+- **Path trap, cost about an hour:** the two new files were first committed as
+  `netlify/functions/dashboardauth.js` and `dashboardlogin.js` (hyphens dropped by the
+  GitHub upload flow), then as `netlify/functions/js/dashboard-auth.js`. The browser
+  helper belongs at **`js/dashboard-auth.js`**, the function at
+  **`netlify/functions/dashboard-login.js`**. Symptom of getting it wrong: the UNLOCK
+  button sticks on "CHECKING…" forever, because `sbcVerifyPassword` is undefined and
+  `tryLogin()` throws before its `.then()` can reset the button. `_redirects` ends with
+  `/* /404.html 404`, so a missing script returns an HTML page rather than a 404 the
+  console makes obvious.
+- `sw.js` v6: dashboard URLs and `/js/dashboard-auth.js` are matched by **pathname
+  only** and never cached. v5 required an `accept: text/html` header, but
+  `dashboard-shell.html` fetches `/dashboard.html?core=4` with `accept: */*`, so that
+  request fell into the cache-first branch and the installed home-screen app served a
+  frozen dashboard while a normal browser tab loaded the new one.
+
+**The grouping bug — root cause found.** `syncLines()` rebuilt `estimate.labor` and
+`estimate.materials` from the DOM, which carries only item / qty / unit / rate. Every
+other field was destroyed on each Save Draft and each `recalc()` — above all `section`.
+With no `section`, `quote.html` fell back to keyword guessing, General redistribution
+and scaling to the grand total, so the dashboard showed five service cards and the
+customer's quote showed two, for the same money. `syncLines()` now carries the previous
+object across by `data-idx` and overwrites only the four fields the form owns. It also
+returns early when the table body is empty but the array is not — rebuilding from an
+unpainted table would delete every priced line in the record.
+
+**The contractor's grouping is now the customer's grouping.**
+
+- `scopeCleanCopy()` writes `subtotal` on every published service.
+- `quote.html` `pubList()` + `finalizeServices()`: when the published scope carries
+  numeric subtotals they are the ONLY truth — same card names, same order, same prices,
+  no keyword guessing, no redistribution, no rescaling. Estimates published before this
+  change carry no subtotals and fall through to the old
+  `foldZeroPriceServices(pubScope(...))` path untouched.
+- The cards are reconciled to the headline total: if the contractor removed a priced
+  service, the difference is parked on the largest card so the customer never reads a
+  sum that disagrees with their own total.
+
+**One card per service (dashboard).** `renderScopeControl()` rewritten. Each service is
+one card with four tabs — Prices / Included / Supplies / Not incl. — holding its own
+labor and materials lines alongside its wording. The top Labor and Materials tables are
+kept but collapsed into `<details class="lm-fold">`; delete them only once the cards
+have proven themselves. New: `SC_TAB`, `scopeSetTab`, `scopeLinesFor`, `scopePriceEdit`,
+`scopePriceDelete`, `scopePriceAdd`, `scopeLinesRefresh`, `scopeCardsRepaint`.
+
+**`scopeMergeService()` — move a whole service into another.** Relabels `section` on
+every matching line so the price travels with the wording, merges the three wording
+arrays with topic dedupe, drops the source card. On `v8.2-deterministic-four-service`
+records it also folds the source `serviceBreakdown` row into the destination and removes
+it, because `scopeServiceSubtotal()` reads `serviceBreakdown` first on those records —
+relabelling the lines alone left the destination showing its old figure.
+
+**Caught by the Claude Code audit, not by us — read this before touching the cards.**
+Each card handler bakes a *global* index into `estimate.labor` / `estimate.materials`.
+`addLine()` and `deleteLine()` mutate those arrays, and `recalc()` does **not** re-render
+the panel, so after one delete in the top table an edit inside a card silently rewrote a
+line belonging to a **different service**. Both now call `scopeCardsRepaint()`.
+**Never move that call into `recalc()`** — `attachLineListeners()` fires `recalc` on
+every `input` event, and re-rendering mid-keystroke steals focus.
+
+**Known, pre-existing, not fixed:** `foldZeroPriceServices` drops a service whose
+subtotal is *negative* (a credit line). The customer's total stays correct; the credit
+just stops being visible as its own card. Requires a negative rate to reach — the inputs
+carry `min="0"`, which browsers do not enforce against paste. Fix if ever needed:
+`s.subtotal !== 0` in place of `s.subtotal > 0` in `quote.html`.
+
+
+### Aug 8 2026 (later) — parked price lines, and the card visual pass
+
+**"Not included" now moves money, reversibly.** Moving a wording item into Not
+included removes the matching price line from the estimate; moving it back restores
+the identical line — same qty, rate, unit and every AI-written field, because the
+line object itself is stored, not a copy.
+
+Lines are **parked**, never deleted: `estimate.parkedLines[] = { kind, ownerText,
+service, idx, line }`. `parkedLines` is field 16 of
+`CONTRACTOR_OWNED_ESTIMATE_FIELDS`, so Save Draft and Regenerate cannot drop it, and
+`scopeCleanCopy` omits it so it never reaches the customer.
+
+Matching wording to a price line is fuzzy by nature — "Complete bathroom demolition
+including tub/shower removal" vs a line called "Complete bathroom demo".
+`scopeMatchScore` is stem-aware (a word counts when one is a prefix of the other and
+at least 4 chars, so demolition≈demo, flooring≈floor), needs two real words in common,
+and needs half the price line covered. One match acts silently with a toast. **More
+than one match asks**, listing every line and its price — a service card is full of
+siblings ("remove existing vanity" / "remove existing toilet", "wall tile" / "floor
+tile") and no scoring rule can know which the exclusion meant. Cancelling leaves the
+wording *and* the prices untouched: the park runs BEFORE the wording moves, because
+the other order left an item reading "Not included" while the estimate still charged
+for it — the exact conflict `EXCLUSION_CONFLICT_REMOVED` catches on the AI pass, which
+never sees a manual dashboard edit.
+
+**THE ONE LESSON, learned six times in a row.** A parked line is found by its owning
+wording plus its owning service. *Every* path that changes either must retarget the
+parked entry, or the money becomes unreachable — no line in the estimate, no wording on
+screen, no card, nothing to explain the shortfall. All six were found by the Claude Code
+audit, not by us, and each was the same bug wearing different clothes:
+
+1. Editing the exclusion text → `scopeEditItem` retargets `ownerText`
+2. Two services with identical wording ("Final clean up") → unpark keys on
+   `ownerText` AND `service`; restoring on text alone pulled another service's line
+   into the wrong card
+3. Deleting the service card → `scopeDeleteService` unparks first, and its confirm no
+   longer claims "Pricing is not affected"
+4. Renaming a service → `scopeRenameService` retargets `service`
+5. Merging a service → `scopeMergeService` retargets to the destination. **Note the
+   trap:** merge worked before fix 2 only *because* unpark ignored the service. Adding
+   the service check without this would have converted a working path into a new bug
+6. **Rebuild Draft from AI** and `scopeDraft()`'s silent rebuild of a missing/malformed
+   draft → `scopeUnparkAll()` first. The silent path has no prompt, so it errs toward
+   giving money back
+7. **Blanking** the exclusion text rather than deleting it → `scopeCleanCopy` strips
+   empty wording on both Save Draft and Publish, so `""` is a delete in everything but
+   name; `scopeEditItem` unparks instead of retargeting
+
+**Rule for anyone adding to this:** before touching a function that renames, replaces,
+merges or removes scope wording or a service, ask what happens to a parked line owned
+by it. Restoring is always recoverable. Stranding never is.
+
+**Known, not fixed:** typing an exclusion directly with **+ Add** under Not included
+parks nothing — only moving an item in from Included or Customer supplies does. A
+hand-typed "Shower glass not included" can therefore sit beside a live charge for
+shower glass.
+
+**Visual pass on the service cards.** Navy header per card, white service name, gold
+subtotal at 17px, full-width tab strip with a gold active underline, rounder corners
+and a soft shadow. Move-into and Remove sit on one row. Zura asked explicitly for the
+colours only — **no font change**; the dashboard stays on Bebas Neue + Inter and
+Playfair must not be reintroduced here. The stale "Bathroom / Windows / Painting /
+Flooring — grouped automatically from line names" helper text under Customer View Mode
+was replaced, since grouping is no longer automatic.
+
+
 -----
 
 ## 7. OPEN / NOT YET BUILT
@@ -269,6 +414,28 @@ so junk from old runs can look odd. Self-clears as bad questions stop being aske
 
 ## 8. REGRESSION CHECKLIST (run before every estimate-system delivery)
 
+> **Syntax checking is NOT verification.** Execute the changed code path in a Node
+> harness with a stubbed DOM before shipping. Two production breakages passed
+> `node --check` and failed instantly in the browser.
+
+Added Aug 8 2026:
+
+- [ ] `syncLines()` still preserves `section` and every other non-DOM field.
+- [ ] Delete a row from the top Labor table, then edit a price inside a service card —
+      the edit must land on the line you clicked, in the right service.
+- [ ] Move a whole service into another: grand total identical before and after.
+- [ ] Publish, then open the customer link — same card names, order and prices as the
+      dashboard. No `$0.00` card.
+- [ ] An estimate published before Aug 8 2026 still renders the old way.
+- [ ] `grep -c L0nd0n12` on all six admin pages returns 0.
+- [ ] Exclude a wording item, then un-exclude it: the estimate total returns to the
+      exact figure it started at and `parkedLines` is empty.
+- [ ] With money parked, try each of: edit the wording, blank the wording, delete the
+      wording, rename the service, merge the service, delete the service, Rebuild Draft
+      from AI. In every case the money is either still reachable or already returned.
+- [ ] Exclude something that matches two sibling lines: the prompt lists both with
+      prices, and Cancel leaves the wording where it was.
+
 1. `node --check` on every `.js` file and every inline `<script>` block.
 1. Div balance: 0 for `estimate.html` / `quote.html`; **−2 baseline** for `dashboard.html`.
 1. `json.loads` on the JSON shape embedded in the `generate-estimate.js` prompt.
@@ -298,6 +465,13 @@ so junk from old runs can look odd. Self-clears as bad questions stop being aske
 |Wrong/missing trade header on a question|`TOPIC_PATTERNS` + `TOPIC_LABELS` in `estimate-ai-question.js`                                                         |
 |Price far too high                      |Sizing rules in the `generate-estimate.js` prompt; check the smallest-reasonable-interpretation rule and `extraRequest`|
 |Quote shows nothing new after a commit  |**Cloudflare → Caching → Purge Everything**                                                                            |
+|UNLOCK button stuck on “CHECKING…”       |`/js/dashboard-auth.js` is missing or at the wrong path — `_redirects` returns the 404 HTML page, the script never defines `sbcVerifyPassword`|
+|Dashboard works in a browser, not in the home-screen app|Stale service-worker cache — commit `sw.js` v6, purge Cloudflare, delete and re-add the home-screen icon|
+|Dashboard shows 5 service cards, customer sees 2|`section` was stripped off the price lines by `syncLines()`; re-Publish after the Aug 8 fix|
+|Edit in one service card changed a line in another|Stale global index — `addLine`/`deleteLine` must call `scopeCardsRepaint()`|
+|Estimate total dropped and nothing explains it|A price line is parked by a “Not included” wording item — check `estimate.parkedLines`; un-exclude or delete that wording to get it back|
+|Money parked but no wording anywhere on screen |Its owner was renamed, merged, blanked or rebuilt without retargeting — see the Aug 8 log entry, rule at the end|
+|Excluding one item removed a neighbour's price too|`scopeMatchScore` matched siblings; the multi-match prompt should have asked — Cancel and delete the price line by hand instead|
 |Confirmation email never arrives        |Netlify `submission-created` trigger silently never fires on this site — use the direct client-to-function pattern     |
 
 -----
