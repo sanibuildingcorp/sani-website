@@ -39,6 +39,40 @@ function foldZeroPriceServices(list){
  });
  main.included=U(main.included);main.customerSupplies=U(main.customerSupplies);main.notIncluded=U(main.notIncluded);
  return priced}
+/* THE CONTRACTOR'S GROUPING IS THE CUSTOMER'S GROUPING.
+   Customer Scope Control in the dashboard now saves a subtotal on every published
+   service. When those subtotals are present they are the ONLY truth: the customer
+   sees the same card names, in the same order, with the same prices the contractor
+   saw before pressing Publish. No keyword guessing, no General redistribution, no
+   scaling, no folding of extra cards into the biggest one - all of which are what
+   made the dashboard show five services and the quote show two.
+   Older estimates published before this change carry no subtotals; they keep the
+   previous behaviour untouched. */
+function pubList(e){
+ if(e.customerScopePublished!==true)return null;
+ const p=e.publishedCustomerScope;
+ if(!p||!Array.isArray(p.services)||!p.services.length)return null;
+ if(!p.services.some(s=>Number.isFinite(Number(s.subtotal))))return null;
+ return p.services}
+function finalizeServices(e,active){
+ const ps=pubList(e);
+ if(!ps)return foldZeroPriceServices(pubScope(e,active));
+ const byName=new Map(A(active).map(s=>[N(s.title),s]));
+ const out=ps.map(s=>{const m=byName.get(N(s.name||s.title));return{
+  title:String(s.name||s.title||'Service').trim()||'Service',
+  included:U(A(s.included)),
+  customerSupplies:U(A(s.supplied||s.customerSupplies)),
+  notIncluded:U(A(s.excluded||s.notIncluded)),
+  subtotal:Number(s.subtotal)||0,
+  options:m?A(m.options):[]}});
+ /* The cards must always add up to the headline total. If the contractor removed a
+    priced service from the scope, park the difference on the largest card rather
+    than letting the customer read a sum that does not match their own total. */
+ const c=calc(e),sum=out.reduce((a,b)=>a+b.subtotal,0);
+ if(out.length&&c.total>0&&Math.abs(sum-c.total)>=1){
+  const main=out.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),out[0]);
+  main.subtotal+=c.total-sum}
+ return out}
 function build(e){/* Services are whatever this estimate ACTUALLY contains, not a fixed list of four.
  A hardcoded list sent General, Carpentry, Drywall and every other section into
  map.get('Bathroom'), so the customer saw Bathroom $25,628 while the dashboard
@@ -68,7 +102,7 @@ if(!deterministic&&!hasSections){/* legacy records only: no sections to trust, s
  if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);
  let sum=active.reduce((s,x)=>s+x.subtotal,0);
  if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}}
-active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}return foldZeroPriceServices(pubScope(e,active))}
+active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}return finalizeServices(e,active)}
 /* Published Customer Scope (set in the dashboard's Customer Scope Control).
    When the contractor has explicitly published a scope, its wording replaces the
    auto-derived Included / Customer Supplies / Not Included lists. Subtotals are
@@ -103,7 +137,8 @@ function pubScope(e,active){
  });
  return active}
 function list(label,cl,a){a=U(a);if(!a.length)return'';return`<div class="label ${cl}">${label}</div><ul class="${cl}list">${a.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`}
-function details(e,s){let z=[];if(e.showLaborLines===true)A(e.labor).filter(x=>trade(x.item,x.section)===s.title&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Labor'}));if(e.showMaterialLines===true)A(e.materials).filter(x=>trade(x.item,x.section)===s.title&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Material'}));return z.length?`<details><summary>View detailed labor & materials (${z.length})</summary><table class="lines">${z.map(x=>`<tr><td>${x.t}</td><td>${E(x.item)}</td><td>${M(LT(x)*calc(e).k)}</td></tr>`).join('')}</table></details>`:''}
+function inSvc(x,s){const sec=C(x.section);return (sec&&sec===s.title)||trade(x.item,x.section)===s.title}
+function details(e,s){let z=[];if(e.showLaborLines===true)A(e.labor).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Labor'}));if(e.showMaterialLines===true)A(e.materials).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Material'}));return z.length?`<details><summary>View detailed labor & materials (${z.length})</summary><table class="lines">${z.map(x=>`<tr><td>${x.t}</td><td>${E(x.item)}</td><td>${M(LT(x)*calc(e).k)}</td></tr>`).join('')}</table></details>`:''}
 function isV7(e){
  /* Which LAYOUT to render, not which WORDING to use.
     This used to require customerScopePublished===true, which meant a perfectly good
