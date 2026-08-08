@@ -1,0 +1,40 @@
+name: Add Gmail fallback for Send Quote
+on:
+  push:
+    paths:
+      - '.github/trigger-gmail-fallback-send-quote.txt'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch send-quote
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('netlify/functions/send-quote.js')
+          s=p.read_text()
+          if 'const nodemailer = require("nodemailer");' not in s:
+              s=s.replace('const https = require("https");\n', 'const https = require("https");\nconst nodemailer = require("nodemailer");\n', 1)
+          old='''    await sendResend(resendKey, {\n      from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",\n      to: [recipientEmail],\n      reply_to: contractorEmail,\n      subject: `Your estimate for ${escapePlain(projectTitle)} — ${fmt(total)} (#${ref})`,\n      html,\n      text: textBody,\n      headers: {\n        "X-Entity-Ref-ID": ref,\n      },\n    });'''
+          new='''    const mailPayload = {\n      from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",\n      to: [recipientEmail],\n      reply_to: contractorEmail,\n      subject: `Your estimate for ${escapePlain(projectTitle)} — ${fmt(total)} (#${ref})`,\n      html,\n      text: textBody,\n      headers: {\n        "X-Entity-Ref-ID": ref,\n      },\n    };\n\n    let deliveryProvider = "resend";\n    try {\n      await sendResend(resendKey, mailPayload);\n    } catch (mailErr) {\n      const canFallback = /^Resend 429:/.test(String(mailErr && mailErr.message || mailErr)) && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD;\n      if (!canFallback) throw mailErr;\n      console.warn("Resend quota/rate limit reached; falling back to Gmail SMTP");\n      await sendGmail(mailPayload);\n      deliveryProvider = "gmail";\n    }'''
+          if old not in s:
+              raise SystemExit('send block target not found')
+          s=s.replace(old,new,1)
+          s=s.replace('body: JSON.stringify({ success: true, quoteUrl, sentTo: recipientEmail }),','body: JSON.stringify({ success: true, quoteUrl, sentTo: recipientEmail, deliveryProvider }),',1)
+          marker='''function cors() {'''
+          helper='''function sendGmail(payload) {\n  const user = process.env.GMAIL_USER;\n  const pass = process.env.GMAIL_APP_PASSWORD;\n  if (!user || !pass) throw new Error("Gmail fallback credentials are not configured");\n  const transporter = nodemailer.createTransport({\n    service: "gmail",\n    auth: { user, pass },\n  });\n  return transporter.sendMail({\n    from: `Sani Building Corp <${user}>`,\n    to: payload.to,\n    replyTo: payload.reply_to || user,\n    subject: payload.subject,\n    html: payload.html,\n    text: payload.text,\n    headers: payload.headers || {},\n  });\n}\n\n'''
+          if 'function sendGmail(payload)' not in s:
+              s=s.replace(marker,helper+marker,1)
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'sani-estimator-bot'
+          git config user.email 'sanibuildingcorp@gmail.com'
+          git add netlify/functions/send-quote.js package.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Fallback to Gmail when Resend quota is reached'
+          git push
