@@ -65,14 +65,19 @@ function finalizeServices(e,active){
   notIncluded:U(A(s.excluded||s.notIncluded)),
   subtotal:Number(s.subtotal)||0,
   options:m?A(m.options):[]}});
+ /* A published service that carries wording but no priced lines must not reach the
+    customer as a "$0.00" card - that reads as broken. Adding a service and typing
+    wording into it before any price line exists is a normal move in the new card UI,
+    so fold those into the largest priced card exactly as the legacy path does. */
+ const folded=foldZeroPriceServices(out);
  /* The cards must always add up to the headline total. If the contractor removed a
     priced service from the scope, park the difference on the largest card rather
     than letting the customer read a sum that does not match their own total. */
- const c=calc(e),sum=out.reduce((a,b)=>a+b.subtotal,0);
- if(out.length&&c.total>0&&Math.abs(sum-c.total)>=1){
-  const main=out.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),out[0]);
+ const c=calc(e),sum=folded.reduce((a,b)=>a+b.subtotal,0);
+ if(folded.length&&c.total>0&&Math.abs(sum-c.total)>=1){
+  const main=folded.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),folded[0]);
   main.subtotal+=c.total-sum}
- return out}
+ return folded}
 function build(e){/* Services are whatever this estimate ACTUALLY contains, not a fixed list of four.
  A hardcoded list sent General, Carpentry, Drywall and every other section into
  map.get('Bathroom'), so the customer saw Bathroom $25,628 while the dashboard
