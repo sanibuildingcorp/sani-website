@@ -212,20 +212,25 @@ ul.plain li:last-child{border-bottom:none}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="/js/dashboard-auth.js"></script>
 <script>
-/* ============ AUTH (same password + session as dashboard) ============ */
-const DASHBOARD_PASSWORD = "L0nd0n12@";
+/* ============ AUTH (same password + session as dashboard) ============
+   Password is verified by netlify/functions/dashboard-login.js against the
+   DASHBOARD_PASSWORD env var — see /js/dashboard-auth.js. Never hardcode it. */
 function checkPass(){
   const v = document.getElementById("pass").value;
-  if(v === DASHBOARD_PASSWORD){
-    sessionStorage.setItem("sbc-auth","1");
-    showApp();
-  } else {
-    document.getElementById("login-err").style.display = "block";
-  }
+  const err = document.getElementById("login-err");
+  sbcVerifyPassword(v).then(function(res){
+    if(res.ok){
+      showApp();
+    } else {
+      err.textContent = res.error;
+      err.style.display = "block";
+    }
+  });
 }
 function logout(){
-  sessionStorage.removeItem("sbc-auth");
+  sbcLogout();
   location.reload();
 }
 function showApp(){
