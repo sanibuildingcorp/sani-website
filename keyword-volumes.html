@@ -179,8 +179,8 @@
 
 <div id="toast" class="toast"></div>
 
+<script src="/js/dashboard-auth.js"></script>
 <script>
-var PW = "L0nd0n12@";
 var lastRows = [];
 
 var PAGES = {
@@ -255,11 +255,11 @@ if (window.self !== window.top) { showApp(); }
 else if (sessionStorage.getItem("sbc-auth") === "1") { showApp(); }
 
 function tryLogin(){
-  if (document.getElementById("pw").value === PW){
-    sessionStorage.setItem("sbc-auth","1"); showApp();
-  } else {
-    document.getElementById("pw-error").textContent = "Incorrect password";
-  }
+  document.getElementById("pw-error").textContent = "";
+  sbcVerifyPassword(document.getElementById("pw").value).then(function(res){
+    if (res.ok){ showApp(); }
+    else { document.getElementById("pw-error").textContent = res.error; }
+  });
 }
 function showApp(){
   document.getElementById("login-screen").style.display = "none";
