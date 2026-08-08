@@ -551,6 +551,160 @@ function dedupeCustomerSupplied(estimate, adjustments) {
   adjustments.push({ type: 'CUSTOMER_SUPPLIED_DEDUPED', dropped, reason: 'Same item listed more than once under different wording.' });
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   CUSTOMER SCOPE LANGUAGE
+
+   A homeowner does not read "Debris bagging, carrying to street level" and learn
+   anything. They want to know: is the old bathroom taken out and taken away, is the
+   shower waterproofed properly, who is buying the tile, and what could still cost
+   extra. Internal task names are for the contractor's line items; the customer gets
+   outcomes.
+
+   This is deliberately deterministic - a fixed phrase per phase of work, chosen by
+   what the estimate ACTUALLY prices. Not model prose, so it reads the same on every
+   estimate and can never invent work that is not in the price.
+   ═════════════════════════════════════════════════════════════════════════════ */
+const SCOPE_PHASES = [
+  { key: 'protect',    re: /protect|setup|floor covering|dust barrier|masking/i,
+    say: 'Protect your floors, hallways and adjacent finishes before any work starts' },
+  { key: 'demo',       re: /demolition|demo\b|remove existing|tear ?out|strip/i,
+    say: 'Remove the existing bathroom down to the substrate' },
+  { key: 'disposal',   re: /debris|dumpster|disposal|haul|carry|dump fee/i,
+    say: 'Bag, carry out and legally dispose of all construction debris' },
+  { key: 'framing',    re: /framing|metal stud|blocking|stud repair/i,
+    say: 'Repair framing and add blocking where fixtures and grab bars will mount' },
+  { key: 'substrate',  re: /drywall|cement board|backer|durock|sheetrock|substrate/i,
+    say: 'Install new moisture-resistant wall and ceiling substrate' },
+  { key: 'waterproof', re: /waterproof|kerdi|membrane|schluter|redgard/i,
+    say: 'Install a full waterproofing system in the shower and wet areas' },
+  { key: 'plumbing',   re: /plumb|valve|rough-?in|supply line|drain|wax ring/i,
+    say: 'Connect all plumbing and set your fixtures in their existing locations' },
+  { key: 'electrical', re: /electric|wiring|gfci|outlet|light fixture|exhaust fan/i,
+    say: 'Complete electrical connections for lighting, ventilation and outlets' },
+  { key: 'tile',       re: /tile|grout|thinset|mortar/i,
+    say: 'Install wall and floor tile with full grouting, sealing and finish work' },
+  { key: 'fixtures',   re: /vanity|toilet|faucet|shower trim|sink|shower kit|shower pan/i,
+    say: 'Install and connect the vanity, toilet, faucet and shower fittings' },
+  { key: 'accessories',re: /grab bar|mirror|curtain bar|toilet paper|accessor|towel/i,
+    say: 'Mount all bathroom accessories and hardware' },
+  { key: 'door',       re: /door|privacy lock|door stop|frame install/i,
+    say: 'Install the new door, frame and hardware' },
+  { key: 'paint',      re: /paint|primer|prime\b/i,
+    say: 'Prime and paint all new wall and ceiling surfaces' },
+  { key: 'cleanup',    re: /cleanup|clean-?up|final clean|touch-?up|protection removal/i,
+    say: 'Clean the space daily and leave it finished, protected and ready to use' },
+  { key: 'management', re: /coordination|supervision|project management|scheduling/i,
+    say: 'Coordinate and supervise every trade, inspection and delivery' }
+];
+
+/* Exclusions a homeowner genuinely needs to see. Real risks and real money, in plain
+   words - never boundary lines invented to separate one internal section from another. */
+const STANDARD_EXCLUSIONS = [
+  'Permits, filing and inspection fees, if your building or the city requires them',
+  'Hidden conditions found behind walls or under the floor once demolition starts',
+  'Mold, asbestos or lead remediation, if any is discovered',
+  'Structural work beyond ordinary framing repair',
+  'Heating, cooling or ventilation changes not listed above'
+];
+
+/* On a single-room job there is no "outside", so an exclusion that carves out a
+   location is meaningless and reads as though work is being taken away. */
+const LOCATION_CARVE_OUT = /outside|other room|another (room|area)|beyond (this|the) (room|bathroom|kitchen)|elsewhere/i;
+
+function phasesPresent(estimate, sectionName) {
+  const hits = {};
+  ['labor', 'materials'].forEach(kind => {
+    (estimate[kind] || []).forEach(l => {
+      if (sectionName && text(l.section) !== sectionName) return;
+      if (isAlt(l)) return;
+      const t = text(l.item);
+      SCOPE_PHASES.forEach(p => { if (p.re.test(t)) hits[p.key] = true; });
+    });
+  });
+  return SCOPE_PHASES.filter(p => hits[p.key]).map(p => p.say);
+}
+
+function suppliedNames(estimate) {
+  return (estimate.customerSupplied || [])
+    .map(x => text(typeof x === 'string' ? x : (x && x.item) || ''))
+    .filter(Boolean);
+}
+
+/* Rewrites the customer-facing scope into outcomes. Line items, quantities and
+   prices are untouched - this only changes what the customer reads. */
+function buildCustomerScope(estimate, analysis, adjustments) {
+  const sections = [];
+  const seen = {};
+  ['labor', 'materials'].forEach(kind => {
+    (estimate[kind] || []).forEach(l => {
+      if (isAlt(l)) return;
+      const sec = text(l.section) || 'General';
+      if (!seen[sec]) { seen[sec] = true; sections.push(sec); }
+    });
+  });
+  if (!sections.length) return;
+
+  const single = sections.length === 1;
+  const supplied = suppliedNames(estimate);
+
+  /* Exclusions: keep the customer's own carve-outs and real risks, drop the
+     internal boundary lines, then guarantee the standard risk list is present. */
+  const keptExclusions = [];
+  const droppedExclusions = [];
+  (estimate.exclusions || []).forEach(x => {
+    const t = text(typeof x === 'string' ? x : (x && x.item) || '');
+    if (!t) return;
+    if (single && LOCATION_CARVE_OUT.test(t)) { droppedExclusions.push(t); return; }
+    if (/insurance|certificate of insurance|\bcoi\b/i.test(t)) { droppedExclusions.push(t); return; }
+    keptExclusions.push(t);
+  });
+  /* Match by TOPIC, not by wording. "Structural modifications beyond minor metal stud
+     framing repairs" and "Structural work beyond ordinary framing repair" are the same
+     exclusion said twice, and a customer reading both assumes sloppiness. */
+  const EXCLUSION_TOPICS = [
+    { key: 'permit',     re: /permit|filing|expedit|inspection fee/i },
+    { key: 'concealed',  re: /hidden|conceal|behind (the )?wall|under (the )?floor|unforeseen/i },
+    { key: 'hazmat',     re: /mold|asbestos|lead\b|remediation/i },
+    { key: 'structural', re: /structural/i },
+    { key: 'hvac',       re: /hvac|ventilation|ductwork|heating|cooling/i }
+  ];
+  const topicOf = v => (EXCLUSION_TOPICS.find(t => t.re.test(text(v))) || {}).key || '';
+  const covered = {};
+  keptExclusions.forEach(x => { const t = topicOf(x); if (t) covered[t] = true; });
+  STANDARD_EXCLUSIONS.forEach(x => {
+    const t = topicOf(x);
+    if (t && covered[t]) return;      // customer already has this risk covered
+    if (t) covered[t] = true;
+    keptExclusions.push(x);
+  });
+  estimate.exclusions = keptExclusions;
+
+  /* Supplied items are the customer's money, so say so plainly and never price them. */
+  const suppliedLine = supplied.length
+    ? `You are supplying: ${supplied.join(', ')}. Installation is included in the price above; the cost of these items is not.`
+    : '';
+
+  estimate.serviceBreakdown = sections.map(sec => {
+    const included = phasesPresent(estimate, single ? '' : sec);
+    return {
+      title: sec,
+      included,
+      customerSupplies: supplied,
+      notIncluded: keptExclusions,
+      subtotal: 0,
+      options: []
+    };
+  });
+  if (suppliedLine) estimate.customerSuppliedNote = suppliedLine;
+
+  adjustments.push({
+    type: 'CUSTOMER_SCOPE_REWRITTEN',
+    phases: estimate.serviceBreakdown[0] ? estimate.serviceBreakdown[0].included.length : 0,
+    droppedExclusions,
+    reason: 'Customer-facing scope now describes outcomes in plain language instead of internal task names. Location carve-outs removed on single-room jobs because there is no other location in scope.'
+  });
+}
+
 function applyDeterministicPricing(estimate, analysis, input) {
   const out = JSON.parse(JSON.stringify(estimate || {}));
   out.labor = Array.isArray(out.labor) ? out.labor : [];
@@ -582,6 +736,9 @@ function applyDeterministicPricing(estimate, analysis, input) {
     quantities: q,
     adjustments
   };
+  /* Runs last: the scope must describe the FINAL priced work, after every
+     removal, collapse and reconciliation rule above has already run. */
+  buildCustomerScope(out, analysis || {}, adjustments);
   out.estimateHealth = buildHealth(out, analysis || {}, q, adjustments, input || {});
   out.marketAudit = marketAudit(out, analysis || {}, input || {});
   return out;
