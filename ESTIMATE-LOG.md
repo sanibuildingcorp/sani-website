@@ -429,6 +429,72 @@ above — items 1-7 there are the same lesson in a different costume.
 Blocking, and invisible to anything driving the page headlessly.
 
 
+### Aug 8 2026 (final round) — every merge undoable, and editable card totals
+
+**Undo is a stack, not a single slot.** `estimate.lastMerge` became
+`estimate.mergeHistory[]`, each entry with a unique `id`; one **↩ Undo merge of X**
+button renders per pending merge, newest first. `mergeHistory` is in
+`CONTRACTOR_OWNED_ESTIMATE_FIELDS`. `scopeMergeStack()` migrates older records that
+still carry `lastMerge`.
+
+Two design errors had to be corrected to get there, both mine, both found by testing
+rather than by reading:
+
+- **Merges into the same destination blocked each other.** The first version restored
+  the destination's wording from a "before" copy, which wiped whatever the other merges
+  had added. Merging Flooring, Painting AND Carpentry into Bathroom is the ordinary
+  case, not an exotic one. Merges now record `addedToDst` (the wording actually
+  appended, after dedupe) and `addedSubtotal` / `addedRowArrays`, and undo **subtracts
+  its own delta** instead of restoring a snapshot.
+- **A line moved twice could only remember one merge.** Flooring→Bathroom then
+  Bathroom→Painting: the second merge overwrote the first one's stamp. Lines and parked
+  entries now carry a CHAIN, `sbcMergeIds[]`, and undo pops the last id.
+
+`scopeUndoBlockedBy` blocks an undo only when a later merge **consumed this merge's
+destination** — that is the one true conflict, because the card the lines must go back
+into no longer exists. Anything else is independent.
+
+Restored cards land at `Math.min(srcIndex, dstIndex)`. Undo in the order offered and the
+original card order is restored exactly; undo out of order and a card lands beside the
+one it came out of. Cosmetic only — money, wording and subtotals are exact either way.
+
+**Each card's subtotal is an editable field.** `scopeSetServiceTotal(si, raw)` scales
+every labor and materials line in that service by `targetRaw / base`, where `targetRaw`
+is the typed figure divided by the markup multiplier. The grand total follows because it
+is still the sum of the lines — never a number typed over the top. Other cards are
+untouched, parked lines are never scaled (excluded work is not in the estimate), and a
+card with no priced lines is refused with a message rather than silently ignored.
+
+**Input parsing is where this feature bites.** Every one of these was a real defect:
+
+- `Number("")` is `0`, so `"abc"` scaled the card to zero and wiped its prices
+- `"1e9"` survived the digit-strip as `"19"` and quietly set the card to nineteen dollars
+  — the guard tests the ORIGINAL string for letters, not the stripped one
+- `"0.001"` rounded every rate to `0.00` and removed the service from the estimate; the
+  floor is one cent
+- a minus sign is rejected outright rather than stripped, because charging a positive
+  number for something typed as negative is a silent misread
+
+**Rounding drift.** Rounding each rate to the cent leaves a few cents over. A line with
+qty 14 can only move the total in 14c steps, so the remainder is absorbed on ONE line —
+a qty-1 line where one exists (a whole cent of rate is a whole cent of total), otherwise
+four decimals on the largest. Verified across 12 consecutive set-total cycles on awkward
+quantities with zero accumulated drift.
+
+**The interaction that mattered.** On a v8.2 record, setting the total of a card that
+holds a pending merge re-based `serviceBreakdown` without re-basing the delta that undo
+would later subtract. Rows and lines then disagreed per service — published A=150/B=550
+while the lines said A=300/B=400 — **and the customer quote reads the rows, not the
+lines**. `scopeSetServiceTotal` now scales every pending contribution into that card by
+the same factor the row moved by, including the legacy `dstRowBefore` / `srcRow`
+snapshot fields that the older undo branch still reads.
+
+**Copy correction:** the undo dialog used to promise the source returns "exactly as they
+were". Once totals became editable that stopped being true — re-price a combined card and
+both halves carry the change, so the source comes back at its scaled figure. The money is
+conserved and the behaviour is right; the sentence now says so.
+
+
 -----
 
 ## 7. OPEN / NOT YET BUILT
@@ -500,6 +566,17 @@ Added Aug 8 2026:
 - [ ] Merge twice, undo once: the first merge's lines stay merged, no stamps remain.
 - [ ] Rebuild Draft from AI with an undo pending: the undo button disappears and the
       AI wording survives.
+- [ ] Merge three services into one card, then undo them in a different order than they
+      were made: every subtotal is exact and the grand total is unchanged.
+- [ ] Chain a merge (A into B, then B into C) and try to undo the first: it must refuse
+      and name what to undo first.
+- [ ] Type a card total. The lines scale, the grand total follows, other cards do not
+      move, and parked lines are untouched.
+- [ ] Type junk into a card total: `abc`, `1e9`, `0.001`, `-500`. Every one leaves the
+      card exactly as it was.
+- [ ] On a v8.2 record: merge, set the merged card's total, undo. Each card's
+      `serviceBreakdown` row must equal its own lines, and the rows must sum to the
+      headline total.
 
 1. `node --check` on every `.js` file and every inline `<script>` block.
 1. Div balance: 0 for `estimate.html` / `quote.html`; **−2 baseline** for `dashboard.html`.
@@ -541,6 +618,9 @@ Added Aug 8 2026:
 |Undo merge button will not work           |A card of that name already exists — rename or remove it, then undo|
 |Undo merge button vanished                |`lastMerge` was cleared by Rebuild Draft from AI, a silent draft rebuild, or deleting either card. Merges before that are not reversible|
 |Lines returned to a service you had merged away|Stale `sbcPrevSection` stamp from an earlier un-undone merge — fixed Aug 8; only one merge is ever reversible|
+|A card total will not accept what I type   |Junk guard — letters, a minus sign, or under one cent are all rejected; `1e9` and `0.001` are typos, not figures|
+|Card totals and the customer quote disagree|On v8.2 records the quote reads `serviceBreakdown`, not the lines. Setting a total must re-base any pending merge delta into that card — fixed Aug 8|
+|Undo merge says one thing, prices say another|Re-pricing a combined card moves both halves; undo splits by line, it does not rewind. Total is conserved|
 |Confirmation email never arrives        |Netlify `submission-created` trigger silently never fires on this site — use the direct client-to-function pattern     |
 
 -----
