@@ -115,3 +115,5 @@ jobs:
             git commit -m "Integrate NYC market audit into estimator dashboard"
             git push
           fi
+
+# trigger: 2026-08-08 market audit integration
