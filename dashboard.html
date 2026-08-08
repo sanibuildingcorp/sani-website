@@ -4414,9 +4414,15 @@ function scopeCleanCopy() {
   return {
     services: d.services.map(function (s2) {
       function clean(a) { return (a || []).map(function (x) { return String(x || "").trim(); }).filter(Boolean); }
-      return { name: String(s2.name || "General").trim() || "General",
+      /* The subtotal shown on this card in Scope Control travels with the
+         published scope, so quote.html renders the contractor's grouping
+         instead of re-deriving its own from the raw line items. Without this
+         the dashboard showed five services and the customer quote showed two. */
+      var nm2 = String(s2.name || "General").trim() || "General";
+      return { name: nm2,
+               subtotal: Number(scopeServiceSubtotal(nm2)) || 0,
                included: clean(s2.included), supplied: clean(s2.supplied), excluded: clean(s2.excluded) };
-    }).filter(function (s2) { return s2.included.length || s2.supplied.length || s2.excluded.length; }),
+    }).filter(function (s2) { return s2.included.length || s2.supplied.length || s2.excluded.length || s2.subtotal > 0; }),
     updatedAt: new Date().toISOString()
   };
 }
