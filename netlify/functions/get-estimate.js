@@ -57,9 +57,24 @@ function buildCustomerView(source, previewDraft) {
 
   if (!scope || !Array.isArray(scope.services)) return data;
 
+  // Deterministic pricing is the source of truth for which priced services still
+  // exist. Old published wording may contain services that were later consolidated
+  // into another parent service (for example Flooring/Painting into Bathroom). Those
+  // stale zero-value services must never reappear on the customer quote.
+  const deterministic = /^v8\.2-deterministic-four-service/i.test(String(estimate.customerPresentationVersion || ""));
+  let allowedTitles = null;
+  if (deterministic && Array.isArray(estimate.serviceBreakdown)) {
+    allowedTitles = new Set(
+      estimate.serviceBreakdown
+        .filter(s => Number(s && s.subtotal) > 0.005)
+        .map(s => normalizeTitle(s && (s.title || s.service || s.section || s.name)))
+        .filter(Boolean)
+    );
+  }
+
   // Customer link gets a concise wording-only copy. The dashboard keeps the full,
   // editable contractor scope. This never changes pricing or stored source data.
-  estimate.publishedCustomerScope = cleanCustomerScope(scope);
+  estimate.publishedCustomerScope = cleanCustomerScope(scope, allowedTitles);
   estimate.customerScopePublished = true;
 
   // Preserve deterministic pricing and its presentation-version marker.
@@ -78,17 +93,27 @@ function buildCustomerView(source, previewDraft) {
   return data;
 }
 
-function cleanCustomerScope(scope) {
+function cleanCustomerScope(scope, allowedTitles) {
   const out = JSON.parse(JSON.stringify(scope || {}));
-  out.services = (Array.isArray(out.services) ? out.services : []).map(service => {
-    const title = String(service.name || service.title || "").trim();
-    const included = uniq(service.included || []);
-    service.included = compressIncluded(title, included);
-    service.supplied = uniq(service.supplied || service.customerSupplies || []);
-    service.excluded = uniq(service.excluded || service.notIncluded || []).filter(x => !/^option\s*b\b/i.test(String(x).trim()));
-    return service;
-  });
+  out.services = (Array.isArray(out.services) ? out.services : [])
+    .filter(service => {
+      if (!(allowedTitles instanceof Set)) return true;
+      const title = normalizeTitle(service && (service.name || service.title));
+      return title && allowedTitles.has(title);
+    })
+    .map(service => {
+      const title = String(service.name || service.title || "").trim();
+      const included = uniq(service.included || []);
+      service.included = compressIncluded(title, included);
+      service.supplied = uniq(service.supplied || service.customerSupplies || []);
+      service.excluded = uniq(service.excluded || service.notIncluded || []).filter(x => !/^option\s*b\b/i.test(String(x).trim()));
+      return service;
+    });
   return out;
+}
+
+function normalizeTitle(value) {
+  return String(value == null ? "" : value).trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 function compressIncluded(title, lines) {
