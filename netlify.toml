@@ -32,6 +32,12 @@
   [headers.values]
     Cache-Control = "no-store, max-age=0"
 
+# Auth helper — a stale cached copy would break login on every admin page
+[[headers]]
+  for = "/js/dashboard-auth.js"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
+
 [[headers]]
   for = "/"
   [headers.values]
