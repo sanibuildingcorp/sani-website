@@ -416,6 +416,79 @@ function buildHealth(estimate, analysis, q, adjustments, input) {
   };
 }
 
+/* ── Rule: never bill a trade that the exclusions say is not included ──────────
+   The estimator writes line items and exclusions independently, so an estimate can
+   charge 25 hrs of plumbing while its own NOT INCLUDED list says plumbing rough-in
+   is excluded. A customer who reads both loses trust immediately.
+   Resolution: keep the WORK (it was priced deliberately) and drop the contradicting
+   exclusion. Never silently delete revenue here. */
+const EXCLUSION_TRADE_PATTERNS = [
+  { kind: 'plumbing',    re: /\bplumb|\bpipe|\bdrain|\bwaste line|\bsupply line/i },
+  { kind: 'electrical',  re: /\belectric|\bwiring|\boutlet|\bgfci|\bcircuit|\bpanel\b/i },
+  { kind: 'tile',        re: /\btile|\bgrout|\bbacksplash/i },
+  { kind: 'painting',    re: /\bpaint|\bprimer/i },
+  { kind: 'flooring',    re: /\bflooring|\bhardwood|\blaminate|\bunderlayment/i },
+  { kind: 'drywall',     re: /\bdrywall|\bsheetrock|\btaping/i },
+  { kind: 'waterproofing', re: /\bwaterproof|\bkerdi|\bmembrane/i },
+  { kind: 'windows',     re: /\bwindow/i },
+  { kind: 'glazing',     re: /\bglass|\bshower door|\benclosure/i }
+];
+
+function billedTrades(estimate) {
+  const set = {};
+  (estimate.labor || []).forEach(l => {
+    const t = norm(l.item);
+    EXCLUSION_TRADE_PATTERNS.forEach(p => { if (p.re.test(t)) set[p.kind] = true; });
+  });
+  return set;
+}
+
+function reconcileExclusions(estimate, adjustments) {
+  const billed = billedTrades(estimate);
+  const kept = [];
+  const dropped = [];
+  (estimate.exclusions || []).forEach(x => {
+    const t = norm(typeof x === 'string' ? x : (x && x.item) || '');
+    /* An exclusion that carves out a LOCATION rather than a trade is legitimate even
+       when we bill that trade ("flooring outside the bathroom", "work in other rooms"). */
+    const locationCarveOut = /outside|other room|beyond|elsewhere|not in scope|another (room|area)/i.test(t);
+    const conflict = !locationCarveOut && EXCLUSION_TRADE_PATTERNS.some(p => p.re.test(t) && billed[p.kind]);
+    if (conflict) dropped.push(text(x)); else kept.push(x);
+  });
+  if (!dropped.length) return;
+  estimate.exclusions = kept;
+  adjustments.push({
+    type: 'EXCLUSION_CONFLICT_REMOVED',
+    removed: dropped,
+    reason: 'These exclusions named trades that this estimate actually charges for. Charging for work the quote calls excluded is the fastest way to lose a customer.'
+  });
+}
+
+/* ── Rule: no rough-in when the customer says fixtures stay put ────────────────
+   "All plumbing keeps same locations" / "no relocation of plumbing or fixtures"
+   means there is no rough-in to do. Connection, trim, set and test all remain. */
+function capUnneededRoughIn(estimate, input, analysis, adjustments) {
+  const ev = requestEvidence(input || {}, analysis || {});
+  const staysPut = /(no|without)\s+(plumbing\s+)?(re-?rout|relocat)|same location|existing location|remain in (their|the) current location|keeps? same location/i.test(ev);
+  if (!staysPut) return;
+  const removed = [];
+  estimate.labor = (estimate.labor || []).filter(l => {
+    const t = norm(l.item);
+    const isRoughIn = /rough[- ]?in/.test(t);
+    const isTrade = /\bplumb|\belectric/.test(t);
+    /* Keep anything that is connection / set / trim / test work. */
+    const isConnection = /connect|trim|valve trim|set |install fixture|test|inspect/.test(t);
+    if (isRoughIn && isTrade && !isConnection) { removed.push(text(l.item)); return false; }
+    return true;
+  });
+  if (!removed.length) return;
+  adjustments.push({
+    type: 'ROUGH_IN_REMOVED_FIXTURES_STAY',
+    removed,
+    reason: 'The customer stated fixtures remain in their existing locations, so there is no rough-in scope. Connections, trim and testing were kept.'
+  });
+}
+
 function applyDeterministicPricing(estimate, analysis, input) {
   const out = JSON.parse(JSON.stringify(estimate || {}));
   out.labor = Array.isArray(out.labor) ? out.labor : [];
@@ -431,11 +504,14 @@ function applyDeterministicPricing(estimate, analysis, input) {
   normalizeLaborRates(out, adjustments);
   removeOverlappingLabor(out, adjustments);
   capGeneralConditions(out, adjustments);
+  capUnneededRoughIn(out, input || {}, analysis || {}, adjustments);
   ensureWindowOptionEngine(out, analysis || {}, input || {}, adjustments);
   normalizeOwnership(out, analysis || {}, adjustments);
   enforceProductionMinimum(out, 'painting', q.paintingSf ? q.paintingSf / RULES.paintingSfPerHour : 0, `${q.paintingSf} paintable SF ÷ ${RULES.paintingSfPerHour} SF/labor-hour`, adjustments);
   enforceProductionMinimum(out, 'flooring', q.flooringSf ? q.flooringSf / RULES.engineeredHardwoodSfPerHour : 0, `${q.flooringSf} flooring SF ÷ ${RULES.engineeredHardwoodSfPerHour} SF/labor-hour`, adjustments);
   enforceProductionMinimum(out, 'tile', q.tileSf ? q.tileSf / RULES.largeFormatTileSfPerHour : 0, `${q.tileSf} tile SF ÷ ${RULES.largeFormatTileSfPerHour} SF/labor-hour`, adjustments);
+  /* Last, so it sees the final labor list after every other rule has run. */
+  reconcileExclusions(out, adjustments);
   out.deterministicPricing = {
     version: 'v2.0-cost-based',
     pricingBasis: 'Internal loaded labor cost + materials + one dashboard markup',
