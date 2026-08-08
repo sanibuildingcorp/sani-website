@@ -20,11 +20,14 @@ html,body{margin:0;min-height:100%;background:#fff}
   fetch('/dashboard.html?core=4',{cache:'no-store'})
     .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
     .then(function(html){
-      /* Use the robust V2 module: it retries, observes modal DOM changes, and
-         does not depend on renderEdit being defined at one exact moment. */
+      /* Scope Control remains on its proven V2 loader. The market-audit module is
+         a separate read-only internal UI: it never changes price and never loads
+         on customer quote, invoice, or contract pages. */
       var scopeScript='<scr'+'ipt id="sbc-scope-v2-loader" src="/js/customer-scope-loader-v2.js?v=20260806-2155"></scr'+'ipt>';
-      if(html.indexOf('</body>')!==-1) html=html.replace('</body>',scopeScript+'</body>');
-      else html+=scopeScript;
+      var auditScript='<scr'+'ipt id="sbc-market-audit-loader" src="/js/dashboard-market-audit.js?v=20260808-1"></scr'+'ipt>';
+      var loaders=scopeScript+auditScript;
+      if(html.indexOf('</body>')!==-1) html=html.replace('</body>',loaders+'</body>');
+      else html+=loaders;
       document.open();
       document.write(html);
       document.close();
