@@ -6,6 +6,7 @@
 // views the quote page itself.
 
 const https = require("https");
+const nodemailer = require("nodemailer");
 const { getStore } = require("@netlify/blobs");
 
 function isValidEmail(e) {
@@ -134,7 +135,7 @@ exports.handler = async function (event) {
 </body></html>`;
 
     // ── SEND ──────────────────────────────────────────────────────────────────
-    await sendResend(resendKey, {
+    const mailPayload = {
       from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",
       to: [recipientEmail],
       reply_to: contractorEmail,
@@ -144,7 +145,18 @@ exports.handler = async function (event) {
       headers: {
         "X-Entity-Ref-ID": ref,
       },
-    });
+    };
+
+    let deliveryProvider = "resend";
+    try {
+      await sendResend(resendKey, mailPayload);
+    } catch (mailErr) {
+      const canFallback = /^Resend 429:/.test(String(mailErr && mailErr.message || mailErr)) && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD;
+      if (!canFallback) throw mailErr;
+      console.warn("Resend quota/rate limit reached; falling back to Gmail SMTP");
+      await sendGmail(mailPayload);
+      deliveryProvider = "gmail";
+    }
 
     record.includeContractForCustomer = includeContract === true;
     record.status = "sent";
@@ -156,7 +168,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: cors(),
-      body: JSON.stringify({ success: true, quoteUrl, sentTo: recipientEmail }),
+      body: JSON.stringify({ success: true, quoteUrl, sentTo: recipientEmail, deliveryProvider }),
     };
   } catch (err) {
     console.error("send-quote error:", err.message);
@@ -239,6 +251,25 @@ function sendResend(apiKey, payload) {
     req.on("error", reject);
     req.write(data);
     req.end();
+  });
+}
+
+function sendGmail(payload) {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) throw new Error("Gmail fallback credentials are not configured");
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+  return transporter.sendMail({
+    from: `Sani Building Corp <${user}>`,
+    to: payload.to,
+    replyTo: payload.reply_to || user,
+    subject: payload.subject,
+    html: payload.html,
+    text: payload.text,
+    headers: payload.headers || {},
   });
 }
 
