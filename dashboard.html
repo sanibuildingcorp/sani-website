@@ -1318,6 +1318,7 @@ body {
   min-width:0;background:#fff;color:var(--ink)}
 .sc-pl input[type=number]{text-align:right}
 .sc-pl-tot{text-align:right;font-weight:700;color:var(--gold);font-size:12.5px}
+.sc-undo{border-color:var(--gold)!important;color:var(--gold)!important}
 .sc-merge-row{display:flex;gap:8px;align-items:center;padding:0 14px 13px;margin:0}
 .sc-merge{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line,#d8dee8);border-radius:8px;background:#fff;font-size:13px;color:var(--ink,#0a1628);font-family:inherit}
 .sc-del-svc{font-size:13px;border:none;background:none;color:#a32b2b;cursor:pointer;padding:9px 4px;font-family:inherit;white-space:nowrap}
@@ -4192,7 +4193,9 @@ var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   "customerFinalTotal", "finishGroups", "contract",
   "quotePhotos", "savedMaterials", "materialsTotalEstimate",
   // Price lines parked by "Not included" - the money waiting to come back
-  "parkedLines"
+  "parkedLines",
+  // Snapshot that makes the last service merge reversible
+  "lastMerge"
 ];
 
 var SCOPE_SHARED_STATUSES = ["sent", "opened", "accepted", "invoiced", "paid", "completed"];
@@ -4340,6 +4343,7 @@ function scopeDraft() {
        that owns it is about to be replaced, so give the money back rather than strand
        it. Restoring is always recoverable; stranding never is. */
     if ((est.parkedLines || []).length) scopeUnparkAll();
+    est.lastMerge = null;
     est.manualCustomerScopeDraft = buildScopeDraftFromAI();
   }
   return est.manualCustomerScopeDraft;
@@ -4478,6 +4482,7 @@ function renderScopeControl() {
   });
 
   html += '<div class="sc-actions">' +
+      (est.lastMerge ? '<button class="btn-secondary sc-undo" onclick="scopeUndoMerge()">\u21a9 Undo merge of ' + esc(est.lastMerge.srcName) + '</button>' : '') +
       '<button class="btn-secondary" onclick="scopeAddService()">+ Add Service</button>' +
       '<button class="btn-secondary" onclick="scopeRebuildFromAI()">↻ Rebuild Draft from AI</button>' +
       '<button class="btn-secondary" onclick="scopeSaveDraft()">💾 Save Scope Draft</button>' +
@@ -4799,12 +4804,43 @@ function scopeMergeService(si, destIdx) {
                "Its wording and its " + fmt(scopeServiceSubtotal(srcName)) +
                " move together. The estimate total does not change.")) return;
 
-  /* 1. Relabel the priced lines so the money follows the wording. */
+  /* A merge is destructive: the source card is gone and its lines now read as the
+     destination's, so nothing in the record remembers which lines used to be Flooring.
+     Snapshot everything needed to put it back exactly, BEFORE anything changes. */
   var est = currentRecord.estimate || {};
+  var undo = {
+    at: new Date().toISOString(),
+    srcName: srcName, dstName: dstName, srcIndex: si,
+    srcCard: JSON.parse(JSON.stringify(src)),
+    dstWording: { included: (dst.included || []).slice(),
+                  supplied: (dst.supplied || []).slice(),
+                  excluded: (dst.excluded || []).slice() },
+    dstSubtotalBefore: null, srcRow: null
+  };
+
+  /* Stamps are how undo tells the moved things apart. Only ONE merge is ever
+     reversible, so any stamp still lying around is from a merge nobody undid - pure
+     liability. A later undo was sweeping those up and dragging lines back into a
+     service the contractor had deliberately merged away. Clear them first. */
+  ["labor", "materials"].forEach(function (kind) {
+    (est[kind] || []).forEach(function (l) { if (l.sbcPrevSection) delete l.sbcPrevSection; });
+  });
+  (est.parkedLines || []).forEach(function (p) { if (p.sbcPrevService) delete p.sbcPrevService; });
+
+  /* Mark the parked entries this merge is about to move. Recording only their wording
+     was not enough: if the DESTINATION already had a parked line worded the same way
+     ("Final clean up" appears on nearly every service), undo handed the destination's
+     money to the source. Identity, not text. */
+  (est.parkedLines || []).forEach(function (p) {
+    if (scopeNorm(p.service) === scopeNorm(srcName)) p.sbcPrevService = srcName;
+  });
+
+  /* 1. Relabel the priced lines so the money follows the wording. Stamp where each
+     line came from - that stamp is the only way to tell them apart afterwards. */
   var moved = 0;
   ["labor", "materials"].forEach(function (kind) {
     (est[kind] || []).forEach(function (l) {
-      if (scopeSectionOf(l) === srcName) { l.section = dstName; moved++; }
+      if (scopeSectionOf(l) === srcName) { l.sbcPrevSection = srcName; l.section = dstName; moved++; }
     });
   });
 
@@ -4823,6 +4859,14 @@ function scopeMergeService(si, destIdx) {
     var srcRow = est.serviceBreakdown.filter(function (x) { return nameOf(x) === srcKey; })[0];
     var dstRow = est.serviceBreakdown.filter(function (x) { return nameOf(x) === dstKey; })[0];
     if (srcRow && dstRow) {
+      /* Snapshot the destination row WHOLE, not just its subtotal. The merge also
+         appends the source's included / customerSupplies / notIncluded / options, and
+         restoring the number alone left that wording duplicated on the destination
+         after an undo. Positions are kept too, so the rows do not reshuffle. */
+      undo.srcRow = srcRow;
+      undo.srcRowIndex = est.serviceBreakdown.indexOf(srcRow);
+      undo.dstRowBefore = JSON.parse(JSON.stringify(dstRow));
+      undo.dstSubtotalBefore = Number(dstRow.subtotal) || 0;
       dstRow.subtotal = (Number(dstRow.subtotal) || 0) + (Number(srcRow.subtotal) || 0);
       ["included", "customerSupplies", "notIncluded"].forEach(function (k) {
         if (Array.isArray(srcRow[k])) dstRow[k] = (dstRow[k] || []).concat(srcRow[k]);
@@ -4843,8 +4887,83 @@ function scopeMergeService(si, destIdx) {
 
   /* 3. Drop the now-empty source card. */
   d.services.splice(si, 1);
+  est.lastMerge = undo;
   renderScopeControl();
-  toast("Moved " + srcName + " into " + dstName + " (" + moved + " priced lines)");
+  toast("Moved " + srcName + " into " + dstName + " (" + moved + " priced lines) \u2014 undo available");
+}
+
+/* Put the last merge back exactly: the same card, in the same position, with the same
+   wording and the same price lines. Only the most recent merge is reversible - once a
+   second merge happens the first one's lines can no longer be told apart. */
+function scopeUndoMerge() {
+  var est = currentRecord.estimate || {};
+  var u = est.lastMerge;
+  if (!u) return;
+  var d = scopeDraft();
+
+  /* If a card of that name already exists - the contractor recreated it by hand - a
+     second one would report the SAME lines, because subtotals group by name. Both get
+     published, and the customer's price-by-service list shows money that does not
+     exist while the headline total stays right. Refuse rather than corrupt. */
+  if (d.services.some(function (x) { return scopeNorm(x.name) === scopeNorm(u.srcName); })) {
+    alert("There is already a service called \"" + u.srcName + "\".\n\n" +
+          "Undoing would create a second card with the same name, and both would show the same prices. " +
+          "Rename or remove that card first, then undo.");
+    return;
+  }
+
+  if (!confirm("Undo the merge and put \"" + u.srcName + "\" back as its own service?\n\n" +
+               "Its price lines and wording return exactly as they were. The estimate total does not change.")) return;
+
+  /* Lines carry the stamp written at merge time. */
+  var back = 0;
+  ["labor", "materials"].forEach(function (kind) {
+    (est[kind] || []).forEach(function (l) {
+      if (l.sbcPrevSection === u.srcName) { l.section = u.srcName; back++; }
+      if (l.sbcPrevSection) delete l.sbcPrevSection;   // leave nothing behind for a later undo
+    });
+  });
+
+  /* Parked money owned by the source before the merge goes home with it. */
+  (est.parkedLines || []).forEach(function (p) {
+    if (p.sbcPrevService === u.srcName) { p.service = u.srcName; delete p.sbcPrevService; }
+  });
+
+  /* Destination wording exactly as it stood before the merge. */
+  var dst = d.services.filter(function (x) { return scopeNorm(x.name) === scopeNorm(u.dstName); })[0];
+  if (dst && u.dstWording) {
+    dst.included = (u.dstWording.included || []).slice();
+    dst.supplied = (u.dstWording.supplied || []).slice();
+    dst.excluded = (u.dstWording.excluded || []).slice();
+  }
+
+  /* v8.2 breakdown rows split back apart. */
+  if (Array.isArray(est.serviceBreakdown) && u.srcRow) {
+    var nameOf = function (x) { return String((x && (x.title || x.name || x.section)) || "").trim().toLowerCase(); };
+    var dstRow = est.serviceBreakdown.filter(function (x) { return nameOf(x) === u.dstName.toLowerCase(); })[0];
+    if (dstRow && u.dstRowBefore) {
+      /* Restore every key the merge touched, in place, so the same object stays in the
+         array and nothing else that references it is disturbed. */
+      Object.keys(dstRow).forEach(function (k) { if (!(k in u.dstRowBefore)) delete dstRow[k]; });
+      Object.keys(u.dstRowBefore).forEach(function (k) { dstRow[k] = u.dstRowBefore[k]; });
+    } else if (dstRow && u.dstSubtotalBefore != null) {
+      dstRow.subtotal = u.dstSubtotalBefore;
+    }
+    if (!est.serviceBreakdown.some(function (x) { return nameOf(x) === u.srcName.toLowerCase(); })) {
+      var ri = Number(u.srcRowIndex);
+      if (Number.isFinite(ri) && ri >= 0 && ri <= est.serviceBreakdown.length) est.serviceBreakdown.splice(ri, 0, u.srcRow);
+      else est.serviceBreakdown.push(u.srcRow);
+    }
+  }
+
+  /* The card itself, back in the slot it came from. */
+  var at = Number(u.srcIndex);
+  if (!Number.isFinite(at) || at < 0 || at > d.services.length) at = d.services.length;
+  d.services.splice(at, 0, u.srcCard);
+
+  est.lastMerge = null;
+  scopeLinesRefresh();
+  toast("\u21a9 " + u.srcName + " restored (" + back + " priced lines)");
 }
 function scopeDeleteService(si) {
   var d = scopeDraft(), svc = d.services[si];
@@ -4860,6 +4979,11 @@ function scopeDeleteService(si) {
     : "Remove this service from the customer scope? Pricing is not affected.";
   if (!confirm(msg)) return;
   if (held) scopeUnparkService(nm);
+  /* A pending undo that names either card is meaningless once one of them is gone. */
+  var lm = currentRecord.estimate.lastMerge;
+  if (lm && (scopeNorm(lm.srcName) === scopeNorm(nm) || scopeNorm(lm.dstName) === scopeNorm(nm))) {
+    currentRecord.estimate.lastMerge = null;
+  }
   d.services.splice(si, 1);
   scopeLinesRefresh();
 }
@@ -4871,6 +4995,10 @@ function scopeRebuildFromAI() {
     : " Pricing and any published scope are not affected.";
   if (!confirm(msg)) return;
   if (held) scopeUnparkAll();
+  /* The snapshot describes cards that no longer exist. Keeping it would let one click
+     replace the AI's fresh wording with the pre-merge copy and resurrect a card the
+     contractor just chose to discard. */
+  currentRecord.estimate.lastMerge = null;
   currentRecord.estimate.manualCustomerScopeDraft = buildScopeDraftFromAI();
   scopeLinesRefresh();
   toast("✓ Draft rebuilt from AI estimate");
