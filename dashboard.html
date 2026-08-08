@@ -1289,6 +1289,8 @@ body {
 .sc-del{border:none;background:none;color:#c0392b;font-size:14px;cursor:pointer;padding:2px 5px}
 .sc-add{font-size:12px;border:1px dashed var(--line);background:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:var(--ink-muted)}
 .sc-add:hover{border-color:var(--gold);color:var(--gold)}
+.sc-merge-row{margin:10px 0 2px}
+.sc-merge{width:100%;padding:9px 10px;border:1px solid var(--line,#d8dee8);border-radius:8px;background:#fff;font-size:13px;color:var(--ink,#0a1628)}
 .sc-del-svc{font-size:11px;border:none;background:none;color:#c0392b;cursor:pointer;padding:4px 0}
 .sc-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .sc-actions button{flex:1 1 auto;min-width:140px}
@@ -3842,16 +3844,27 @@ function attachLineListeners() {
   });
 }
 function syncLines() {
+  /* Only item / qty / unit / rate exist as inputs on screen. Rebuilding the array
+     from the DOM alone silently deleted every OTHER field the estimator wrote -
+     above all `section`, which is what tells the customer quote which service a
+     price belongs to. Losing it is why the dashboard showed five service cards and
+     the customer quote showed two: with no section, quote.html fell back to keyword
+     guessing and redistribution. Carry the previous object across by data-idx and
+     overwrite only the four fields the form actually owns. */
   ["labor", "materials"].forEach(function(kind) {
     const rows = document.querySelectorAll("#" + kind + "-body tr[data-idx]");
+    const prev = (currentRecord.estimate && currentRecord.estimate[kind]) || [];
     const items = [];
     rows.forEach(function(row) {
-      items.push({
-        item: row.querySelector(".line-item").value,
-        qty: parseFloat(row.querySelector(".line-qty").value) || 0,
-        unit: row.querySelector(".line-unit").value,
-        rate: parseFloat(row.querySelector(".line-rate").value) || 0,
-      });
+      const idx = parseInt(row.getAttribute("data-idx"), 10);
+      const keep = (Number.isFinite(idx) && prev[idx] && typeof prev[idx] === "object") ? prev[idx] : {};
+      const merged = {};
+      Object.keys(keep).forEach(function(k) { merged[k] = keep[k]; });
+      merged.item = row.querySelector(".line-item").value;
+      merged.qty  = parseFloat(row.querySelector(".line-qty").value) || 0;
+      merged.unit = row.querySelector(".line-unit").value;
+      merged.rate = parseFloat(row.querySelector(".line-rate").value) || 0;
+      items.push(merged);
     });
     currentRecord.estimate[kind] = items;
   });
@@ -4341,6 +4354,18 @@ function renderScopeControl() {
       html += '<button class="sc-add" onclick="scopeAddItem(' + si + ',\'' + g.key + '\')">+ Add</button>' +
         '</div>';
     });
+    /* Merge the WHOLE card into another service - wording and money together.
+       Deleting a service only removes wording; this also relabels the underlying
+       labor and materials lines so the price travels with it. */
+    var others = d.services.map(function (o, oi) { return { name: o.name, i: oi }; })
+                           .filter(function (o) { return o.i !== si; });
+    if (others.length) {
+      html += '<div class="sc-merge-row">' +
+        '<select class="sc-merge" onchange="scopeMergeService(' + si + ',this.value);this.selectedIndex=0">' +
+          '<option value="">&#8644; Move whole service into&hellip;</option>' +
+          others.map(function (o) { return '<option value="' + o.i + '">' + esc(o.name) + '</option>'; }).join("") +
+        '</select></div>';
+    }
     html += '<button class="sc-del-svc" onclick="scopeDeleteService(' + si + ')">Remove this service</button>' +
       '</div>';
   });
@@ -4395,6 +4420,46 @@ function scopeAddService() {
   if (!name) return;
   scopeDraft().services.push({ name: String(name).trim(), included: [], supplied: [], excluded: [] });
   renderScopeControl();
+}
+/* Move an entire service into another one: its Included / Customer supplies /
+   Not included wording AND its price. The price moves because every labor and
+   materials line currently filed under the source name is relabelled to the
+   destination name; subtotals are always derived from those lines, so both the
+   dashboard card and the customer quote update together. No amount changes -
+   the grand total is identical before and after. */
+function scopeMergeService(si, destIdx) {
+  if (destIdx === "" || destIdx === null || destIdx === undefined) return;
+  var di = parseInt(destIdx, 10);
+  var d = scopeDraft();
+  var src = d.services[si], dst = d.services[di];
+  if (!src || !dst || si === di) return;
+  var srcName = String(src.name || "").trim(), dstName = String(dst.name || "").trim();
+  if (!confirm("Move everything in \"" + srcName + "\" into \"" + dstName + "\"?\n\n" +
+               "Its wording and its " + fmt(scopeServiceSubtotal(srcName)) +
+               " move together. The estimate total does not change.")) return;
+
+  /* 1. Relabel the priced lines so the money follows the wording. */
+  var est = currentRecord.estimate || {};
+  var moved = 0;
+  ["labor", "materials"].forEach(function (kind) {
+    (est[kind] || []).forEach(function (l) {
+      if (scopeSectionOf(l) === srcName) { l.section = dstName; moved++; }
+    });
+  });
+
+  /* 2. Merge the wording, keeping order and dropping exact duplicates. */
+  ["included", "supplied", "excluded"].forEach(function (k) {
+    var seen = {};
+    dst[k] = (dst[k] || []).concat(src[k] || []).filter(function (t) {
+      var n = String(t || "").trim(); if (!n) return false;
+      var key = n.toLowerCase(); if (seen[key]) return false; seen[key] = 1; return true;
+    });
+  });
+
+  /* 3. Drop the now-empty source card. */
+  d.services.splice(si, 1);
+  renderScopeControl();
+  toast("Moved " + srcName + " into " + dstName + " (" + moved + " priced lines)");
 }
 function scopeDeleteService(si) {
   if (!confirm("Remove this service from the customer scope? Pricing is not affected.")) return;
