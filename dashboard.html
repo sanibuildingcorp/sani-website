@@ -2697,8 +2697,8 @@ button[onclick*="addRenderToQuote"],button[onclick*="saveContractorNotes"]{color
 </div>
 <!-- END SEND CONFIRMATION MODAL -->
 
+<script src="/js/dashboard-auth.js"></script>
 <script>
-const DASHBOARD_PASSWORD = "L0nd0n12@";
 const TABS = [
   { id: "all", label: "All" },
   { id: "new", label: "New" },
@@ -2728,15 +2728,20 @@ document.getElementById("pw-input").addEventListener("keypress", function(e) { i
 
 function tryLogin() {
   const v = document.getElementById("pw-input").value;
-  if (v === DASHBOARD_PASSWORD) {
-    sessionStorage.setItem("sbc-auth", "1");
-    showApp();
-  } else {
-    document.getElementById("pw-error").textContent = "Incorrect password";
-  }
+  const btn = document.getElementById("pw-btn");
+  document.getElementById("pw-error").textContent = "";
+  if (btn) { btn.disabled = true; btn.textContent = "CHECKING…"; }
+  sbcVerifyPassword(v).then(function (res) {
+    if (btn) { btn.disabled = false; btn.textContent = "UNLOCK"; }
+    if (res.ok) {
+      showApp();
+    } else {
+      document.getElementById("pw-error").textContent = res.error;
+    }
+  });
 }
 function logout() {
-  sessionStorage.removeItem("sbc-auth");
+  sbcLogout();
   location.reload();
 }
 function showApp() {
@@ -6055,7 +6060,7 @@ async function runSeoNow() {
 /* ════════════════════════════════════════════════════════════════════
    LIVE VISITORS TAB
    ════════════════════════════════════════════════════════════════════ */
-var VISITS_KEY = DASHBOARD_PASSWORD;
+var VISITS_KEY = sbcVisitsKey();
 var visitorsTimer = null;
 
 var VISIT_PAGE_NAMES = {
@@ -6106,9 +6111,15 @@ function renderVisitorsTab(){
 
 async function loadVisitors(){
   try{
+    /* Read the key at call time, not at page-parse time — it is delivered by
+       the login function and only lands in sessionStorage after a correct
+       password, which happens after this script has already been evaluated. */
+    VISITS_KEY = sbcVisitsKey();
     const r = await fetch("/.netlify/functions/get-visits?key=" + encodeURIComponent(VISITS_KEY));
     if(r.status===401){
-      visitorsError("Tracking key not set yet. In Netlify → Site settings → Environment variables, add <b>VISITS_KEY</b> set to your dashboard password (<b>"+esc(DASHBOARD_PASSWORD)+"</b>), then redeploy the site.");
+      visitorsError(VISITS_KEY
+        ? "Tracking key rejected. In Netlify → Site settings → Environment variables, make sure <b>VISITS_KEY</b> matches on both the get-visits function and dashboard-login, then redeploy the site."
+        : "Tracking key not available on this session. Log out and log back in, then reopen this tab. If it still fails, set <b>VISITS_KEY</b> in Netlify → Site settings → Environment variables and redeploy.");
       return;
     }
     if(!r.ok) throw new Error("Could not load (status "+r.status+"). Make sure the get-visits function is deployed.");
