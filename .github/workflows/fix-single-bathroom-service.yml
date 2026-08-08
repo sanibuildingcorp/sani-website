@@ -1,0 +1,60 @@
+name: Fix single bathroom service classification
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-single-bathroom-service.trigger'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch deterministic pricing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('netlify/functions/lib/deterministic-pricing.js')
+          s=p.read_text()
+          anchor="function normalizeOwnership(estimate,analysis,adj){"
+          if 'function collapseSingleBathroomProject' not in s:
+              insert=r'''function isSingleBathroomProject(input){
+  const req=input&&input.request||{};
+  const service=norm(req.service||'');
+  const desc=norm(req.description||'');
+  const bathroomPrimary=/bathroom/.test(service)||/full\s+gut\s+bathroom|bathroom\s+(?:renovation|remodel|upgrade)/.test(desc);
+  if(!bathroomPrimary)return false;
+  // Keep separate trades only when the customer clearly asks for work outside the bathroom.
+  const outside=/(?:whole|entire|full)\s+(?:apartment|home|house).*paint|paint(?:ing)?\s+(?:the\s+)?(?:whole|entire|full)\s+(?:apartment|home|house)|bedroom|living\s+room|dining\s+room|kitchen\s+(?:painting|flooring)|engineered\s+hardwood|hardwood\s+floor|window\s+replacement|replace\s+windows|separate\s+pricing\s+for\s+(?:flooring|painting|windows?)/.test(desc);
+  return !outside;
+}
+function collapseSingleBathroomProject(estimate,input,adj){
+  if(!isSingleBathroomProject(input))return;
+  ['labor','materials'].forEach(bucket=>(estimate[bucket]||[]).forEach(line=>{
+    const current=text(line.section)||'General';
+    if(current!=='Bathroom'){
+      adj.push({type:'SINGLE_BATHROOM_SERVICE_COLLAPSE',bucket,item:line.item,from:current,to:'Bathroom'});
+      line.section='Bathroom';
+    }
+  }));
+  (estimate.customerSupplied||[]).forEach(x=>{if(x&&typeof x==='object')x.section='Bathroom'});
+  (estimate.options||[]).forEach(o=>{if(o&&typeof o==='object'&&!/window/i.test(`${o.label||''} ${o.description||''}`))o.section='Bathroom'});
+}
+'''
+              s=s.replace(anchor,insert+anchor)
+          old="isolateAlternatives(out,adj);normalizeOwnership(out,analysis||{},adj);ensureWindowOptionEngine(out,analysis||{},input||{},adj);normalizeOwnership(out,analysis||{},adj);enforce(out,'painting'"
+          new="isolateAlternatives(out,adj);normalizeOwnership(out,analysis||{},adj);collapseSingleBathroomProject(out,input||{},adj);ensureWindowOptionEngine(out,analysis||{},input||{},adj);normalizeOwnership(out,analysis||{},adj);collapseSingleBathroomProject(out,input||{},adj);enforce(out,'painting'"
+          if old not in s:
+              raise SystemExit('applyDeterministicPricing anchor not found')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "sani-estimator-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add netlify/functions/lib/deterministic-pricing.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Keep single bathroom projects under Bathroom service"
+          git push
