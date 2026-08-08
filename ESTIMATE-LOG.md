@@ -371,6 +371,64 @@ Flooring — grouped automatically from line names" helper text under Customer V
 was replaced, since grouping is no longer automatic.
 
 
+### Aug 8 2026 (later still) — merging a service is now reversible
+
+**Merging is destructive.** It relabels `section` on the source's price lines to the
+destination's name, so afterwards nothing in the record remembers which lines used to be
+Flooring. `scopeMergeService` therefore snapshots to `estimate.lastMerge` BEFORE touching
+anything: the source card, its index, the destination's three wording arrays, the
+destination's **whole** `serviceBreakdown` row, the source `serviceBreakdown` row and its
+index. Each moved line is stamped `l.sbcPrevSection`; each parked entry the source owned
+is stamped `p.sbcPrevService`. `scopeUndoMerge()` reverses all of it and a gold
+**↩ Undo merge of X** button renders in `sc-actions` while `lastMerge` is set.
+`lastMerge` is field 17 of `CONTRACTOR_OWNED_ESTIMATE_FIELDS`.
+
+**Only the most recent merge is reversible.** Merge twice and the first one's lines can no
+longer be told apart. This is a deliberate limit, not an oversight — see the stamp rule.
+
+**Restore the whole breakdown row, not just its subtotal.** The merge also appends the
+source's `included` / `customerSupplies` / `notIncluded` / `options` to the destination
+row. Restoring the number alone left that wording duplicated on the destination. Both
+rows also go back at their original index so the list does not reshuffle.
+
+**Four defects found by the Claude Code audit — all the same shape as before.**
+
+1. **Duplicate card → a price the customer is shown that does not exist.**
+   `scopeServiceSubtotal` groups by NAME. If the contractor had recreated "Flooring" by
+   hand, undo produced two cards of that name, both reporting the same lines, and
+   `scopeCleanCopy` published both. The customer's price-by-service list then showed
+   $200 that isn't real while the headline total stayed correct. Undo now **refuses**
+   when a card of that name exists (case- and whitespace-insensitive via `scopeNorm`),
+   and the check runs before the confirm and before any mutation, so refusing leaves the
+   record byte-identical and `lastMerge` intact — remove the clashing card and retry.
+
+2. **Undo stole the destination's own parked money.** The snapshot recorded parked
+   entries by `ownerText` only. If the destination had its own parked line worded the
+   same ("Final clean up" is on nearly every service), both matched and both went to the
+   source. This is the SAME collision already fixed in `scopeUnparkFor`, reintroduced in
+   its mirror. Fixed by stamping identity (`sbcPrevService`), not text.
+
+3. **Stale stamps from an un-undone merge were swept up by a later undo**, dragging lines
+   back into a service the contractor had deliberately merged away. Fixed by clearing
+   **every** stamp at the START of `scopeMergeService`, and unconditionally at the end of
+   the undo. That makes "a stamp exists" mean "belongs to the one pending merge" — the
+   only invariant that actually holds.
+
+4. **`lastMerge` was never cleared.** Rebuild Draft from AI, then press the still-visible
+   undo: the AI's fresh wording was replaced by the pre-merge snapshot and a discarded
+   card came back. Now nulled by `scopeRebuildFromAI`, by `scopeDraft`'s silent rebuild,
+   and by `scopeDeleteService` when either named card is removed.
+
+**The generalised rule, now proven twice over:** anything that makes a change reversible
+has to record IDENTITY, never wording, and every path that renames, replaces, merges or
+removes the thing being remembered must retarget or discard the snapshot. Wording repeats
+across services; names get retyped; drafts get rebuilt. See also the parked-lines entry
+above — items 1-7 there are the same lesson in a different costume.
+
+**Note:** `scopeUndoMerge` is the first thing in the scope-control code to call `alert()`.
+Blocking, and invisible to anything driving the page headlessly.
+
+
 -----
 
 ## 7. OPEN / NOT YET BUILT
@@ -435,6 +493,13 @@ Added Aug 8 2026:
       from AI. In every case the money is either still reachable or already returned.
 - [ ] Exclude something that matches two sibling lines: the prompt lists both with
       prices, and Cancel leaves the wording where it was.
+- [ ] Merge a service, then Undo: `labor`, `materials`, `manualCustomerScopeDraft` and
+      `serviceBreakdown` must be byte-identical to before the merge.
+- [ ] Merge, recreate the source card by hand, press Undo: it must REFUSE, and the
+      record must be untouched.
+- [ ] Merge twice, undo once: the first merge's lines stay merged, no stamps remain.
+- [ ] Rebuild Draft from AI with an undo pending: the undo button disappears and the
+      AI wording survives.
 
 1. `node --check` on every `.js` file and every inline `<script>` block.
 1. Div balance: 0 for `estimate.html` / `quote.html`; **−2 baseline** for `dashboard.html`.
@@ -472,6 +537,10 @@ Added Aug 8 2026:
 |Estimate total dropped and nothing explains it|A price line is parked by a “Not included” wording item — check `estimate.parkedLines`; un-exclude or delete that wording to get it back|
 |Money parked but no wording anywhere on screen |Its owner was renamed, merged, blanked or rebuilt without retargeting — see the Aug 8 log entry, rule at the end|
 |Excluding one item removed a neighbour's price too|`scopeMatchScore` matched siblings; the multi-match prompt should have asked — Cancel and delete the price line by hand instead|
+|Two cards with the same name, prices doubled|Undo merge created a duplicate — `scopeServiceSubtotal` groups by name, so both report the same lines. Should be refused; if seen, delete one card|
+|Undo merge button will not work           |A card of that name already exists — rename or remove it, then undo|
+|Undo merge button vanished                |`lastMerge` was cleared by Rebuild Draft from AI, a silent draft rebuild, or deleting either card. Merges before that are not reversible|
+|Lines returned to a service you had merged away|Stale `sbcPrevSection` stamp from an earlier un-undone merge — fixed Aug 8; only one merge is ever reversible|
 |Confirmation email never arrives        |Netlify `submission-created` trigger silently never fires on this site — use the direct client-to-function pattern     |
 
 -----
