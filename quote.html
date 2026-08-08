@@ -39,10 +39,21 @@ function foldZeroPriceServices(list){
  });
  main.included=U(main.included);main.customerSupplies=U(main.customerSupplies);main.notIncluded=U(main.notIncluded);
  return priced}
-function build(e){const names=['Bathroom','Flooring','Painting','Windows'],map=new Map(names.map(n=>[n,{title:n,included:[],customerSupplies:[],notIncluded:[],subtotal:0,options:[]}])) ;const get=n=>map.get(n)||map.get('Bathroom');const c=calc(e),deterministic=/^v8\.2-deterministic-four-service/.test(C(e.customerPresentationVersion));let general=0,optionTotals={A:0,B:0};
+function build(e){/* Services are whatever this estimate ACTUALLY contains, not a fixed list of four.
+ A hardcoded list sent General, Carpentry, Drywall and every other section into
+ map.get('Bathroom'), so the customer saw Bathroom $25,628 while the dashboard
+ showed Bathroom $11,408 plus General $8,376 plus Carpentry $1,821 - the same money,
+ grouped two different ways, with the extra cards rendering as $0.00.
+ The four preferred names keep their order; anything else is appended. */
+const preferred=['Bathroom','Flooring','Painting','Windows'],found=[];
+A(e.serviceBreakdown).forEach(x=>{const t=C(x.title||x.service||x.section||x.name);if(t&&found.indexOf(t)<0)found.push(t)});
+[...A(e.labor),...A(e.materials)].forEach(l=>{const t=C(l.section);if(t&&found.indexOf(t)<0)found.push(t)});
+const names=preferred.concat(found.filter(x=>preferred.indexOf(x)<0)),map=new Map(names.map(n=>[n,{title:n,included:[],customerSupplies:[],notIncluded:[],subtotal:0,options:[]}])) ;const get=n=>map.get(n)||map.get('Bathroom');const c=calc(e),deterministic=/^v8\.2-deterministic-four-service/.test(C(e.customerPresentationVersion));let general=0,optionTotals={A:0,B:0};
 A(e.serviceBreakdown).forEach(s=>{let nm=s.title||s.service||s.section||s.name;let t=trade(nm,nm);if(!map.has(t))return;let o=get(t);o.included.push(...A(s.included||s.items||s.scope));o.customerSupplies.push(...A(s.customerSupplies||s.customerSupplied||s.supplied));o.notIncluded.push(...A(s.notIncluded||s.exclusions||s.excluded));o.options.push(...A(s.options));if(deterministic&&Number.isFinite(Number(s.subtotal)))o.subtotal=+s.subtotal});
 A(e.scopeSections).forEach(s=>A(s.items).forEach(i=>{let t=trade(i,s.title);if(map.has(t))get(t).included.push(friendly(i))}));
-[...A(e.labor),...A(e.materials)].forEach(l=>{let t=trade(l.item,l.section),val=LT(l)*c.k;if(isOption(l.item)&&t==='Windows'){let k=optionKey(l.item);if(k)optionTotals[k]=(optionTotals[k]||0)+val;return}if(!deterministic){if(t==='General'){general+=val;return}get(t).subtotal+=val}let x=N(l.item);if(!deterministic&&(laborLike(l)||/waterproof|membrane|backer|thinset|grout|sealant|insulation|flashing|primer|protection/.test(x)))get(t).included.push(friendly(l.item))});
+[...A(e.labor),...A(e.materials)].forEach(l=>{/* Trust the section the estimator wrote. Keyword guessing is only a fallback
+   for older records that have no section on the line. */
+let sec=C(l.section),t=(sec&&map.has(sec))?sec:trade(l.item,l.section),val=LT(l)*c.k;if(isOption(l.item)&&t==='Windows'){let k=optionKey(l.item);if(k)optionTotals[k]=(optionTotals[k]||0)+val;return}if(!deterministic){if(t==='General'){general+=val;return}get(t).subtotal+=val}let x=N(l.item);if(!deterministic&&(laborLike(l)||/waterproof|membrane|backer|thinset|grout|sealant|insulation|flashing|primer|protection/.test(x)))get(t).included.push(friendly(l.item))});
 A(e.customerSupplied).forEach(x=>{let item=typeof x==='string'?x:x.item,t=trade(item,typeof x==='object'?x.section:'');if(map.has(t))get(t).customerSupplies.push(item)});
 A(e.exclusions).forEach(x=>{let t=trade(x,'');if(map.has(t))get(t).notIncluded.push(x)});
 A(e.options).forEach(o=>{let t=trade((o.label||'')+' '+(o.description||''),o.section);if(t==='Windows')get('Windows').options.push({label:o.label,description:o.description,price:+o.price||0})});
