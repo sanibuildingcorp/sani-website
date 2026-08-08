@@ -45,6 +45,9 @@ function build(e){/* Services are whatever this estimate ACTUALLY contains, not 
  showed Bathroom $11,408 plus General $8,376 plus Carpentry $1,821 - the same money,
  grouped two different ways, with the extra cards rendering as $0.00.
  The four preferred names keep their order; anything else is appended. */
+/* Do the lines carry explicit sections? If they do, those sections ARE the truth and
+   none of the legacy guessing/redistribution/scaling below may run. */
+const hasSections=[...A(e.labor),...A(e.materials)].some(l=>C(l.section));
 const preferred=['Bathroom','Flooring','Painting','Windows'],found=[];
 A(e.serviceBreakdown).forEach(x=>{const t=C(x.title||x.service||x.section||x.name);if(t&&found.indexOf(t)<0)found.push(t)});
 [...A(e.labor),...A(e.materials)].forEach(l=>{const t=C(l.section);if(t&&found.indexOf(t)<0)found.push(t)});
@@ -53,12 +56,19 @@ A(e.serviceBreakdown).forEach(s=>{let nm=s.title||s.service||s.section||s.name;l
 A(e.scopeSections).forEach(s=>A(s.items).forEach(i=>{let t=trade(i,s.title);if(map.has(t))get(t).included.push(friendly(i))}));
 [...A(e.labor),...A(e.materials)].forEach(l=>{/* Trust the section the estimator wrote. Keyword guessing is only a fallback
    for older records that have no section on the line. */
-let sec=C(l.section),t=(sec&&map.has(sec))?sec:trade(l.item,l.section),val=LT(l)*c.k;if(isOption(l.item)&&t==='Windows'){let k=optionKey(l.item);if(k)optionTotals[k]=(optionTotals[k]||0)+val;return}if(!deterministic){if(t==='General'){general+=val;return}get(t).subtotal+=val}let x=N(l.item);if(!deterministic&&(laborLike(l)||/waterproof|membrane|backer|thinset|grout|sealant|insulation|flashing|primer|protection/.test(x)))get(t).included.push(friendly(l.item))});
+let sec=C(l.section),t=(sec&&map.has(sec))?sec:trade(l.item,l.section),val=LT(l)*c.k;if(isOption(l.item)&&t==='Windows'){let k=optionKey(l.item);if(k)optionTotals[k]=(optionTotals[k]||0)+val;return}if(!deterministic){if(!hasSections&&t==='General'){general+=val;return}get(t).subtotal+=val}let x=N(l.item);if(!deterministic&&(laborLike(l)||/waterproof|membrane|backer|thinset|grout|sealant|insulation|flashing|primer|protection/.test(x)))get(t).included.push(friendly(l.item))});
 A(e.customerSupplied).forEach(x=>{let item=typeof x==='string'?x:x.item,t=trade(item,typeof x==='object'?x.section:'');if(map.has(t))get(t).customerSupplies.push(item)});
 A(e.exclusions).forEach(x=>{let t=trade(x,'');if(map.has(t))get(t).notIncluded.push(x)});
 A(e.options).forEach(o=>{let t=trade((o.label||'')+' '+(o.description||''),o.section);if(t==='Windows')get('Windows').options.push({label:o.label,description:o.description,price:+o.price||0})});
 if(optionTotals.A&&!get('Windows').options.some(o=>/option\s*a|option\s*1/i.test(o.label)))get('Windows').options.push({label:'Option A — Replace all specified windows',description:'Complete replacement option based on the estimate line items.',price:optionTotals.A});if(optionTotals.B&&!get('Windows').options.some(o=>/option\s*b|option\s*2/i.test(o.label)))get('Windows').options.push({label:'Option B — Partial replacement / repair option',description:'Alternate window option based on the estimate line items.',price:optionTotals.B});
-let active=foldZeroPriceServices(names.map(n=>get(n)));if(!deterministic){let base=active.reduce((s,x)=>s+x.subtotal,0);if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);let sum=active.reduce((s,x)=>s+x.subtotal,0);if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}}active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}return pubScope(e,active)}
+let active=names.map(n=>get(n));
+if(!deterministic&&!hasSections){/* legacy records only: no sections to trust, so spread
+ General across services and scale to the grand total */
+ let base=active.reduce((s,x)=>s+x.subtotal,0);
+ if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);
+ let sum=active.reduce((s,x)=>s+x.subtotal,0);
+ if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}}
+active=foldZeroPriceServices(active);active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}return pubScope(e,active)}
 /* Published Customer Scope (set in the dashboard's Customer Scope Control).
    When the contractor has explicitly published a scope, its wording replaces the
    auto-derived Included / Customer Supplies / Not Included lists. Subtotals are
