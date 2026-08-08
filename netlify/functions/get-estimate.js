@@ -77,6 +77,9 @@ function buildCustomerView(source, previewDraft) {
   estimate.publishedCustomerScope = cleanCustomerScope(scope, allowedTitles);
   estimate.customerScopePublished = true;
 
+  // Customer summary should describe the project, not dump internal trade/category names.
+  estimate.summary = buildCustomerSummary(estimate);
+
   // Preserve deterministic pricing and its presentation-version marker.
   // Do NOT rebuild serviceBreakdown from manual scope: manual scope baseSubtotal can
   // be stale and is not the pricing source of truth.
@@ -106,10 +109,57 @@ function cleanCustomerScope(scope, allowedTitles) {
       const included = uniq(service.included || []);
       service.included = compressIncluded(title, included);
       service.supplied = uniq(service.supplied || service.customerSupplies || []);
-      service.excluded = uniq(service.excluded || service.notIncluded || []).filter(x => !/^option\s*b\b/i.test(String(x).trim()));
+      service.excluded = cleanExclusions(title, uniq(service.excluded || service.notIncluded || []));
       return service;
     });
   return out;
+}
+
+function buildCustomerSummary(estimate) {
+  const services = (Array.isArray(estimate.serviceBreakdown) ? estimate.serviceBreakdown : [])
+    .filter(s => Number(s && s.subtotal) > 0.005)
+    .map(s => normalizeTitle(s && (s.title || s.service || s.section || s.name)))
+    .filter(Boolean);
+
+  if (services.length === 1 && services[0].includes("bathroom")) {
+    return "Complete bathroom renovation including demolition, required substrate and framing repairs, waterproofing, tile installation, customer-supplied fixture installation, finish work, protection and final cleanup. Work is based on the stated scope and listed assumptions.";
+  }
+
+  const labels = services.map(s => {
+    if (s.includes("bathroom")) return "bathroom renovation";
+    if (s.includes("floor")) return "flooring installation";
+    if (s.includes("paint")) return "painting";
+    if (s.includes("window")) return "window replacement";
+    return s;
+  });
+
+  if (labels.length) {
+    return "Renovation work including " + joinNatural(labels) + ", with required protection, coordination and final cleanup. Work is based on the stated scope and listed assumptions.";
+  }
+
+  return String(estimate.summary || "Project work based on the stated scope and listed assumptions.").trim();
+}
+
+function cleanExclusions(title, values) {
+  const t = normalizeTitle(title);
+  let lines = uniq(values)
+    .filter(x => !/^option\s*[a-z]\b/i.test(String(x).trim()))
+    .filter(x => !/customer supplies|customer-supplied.*listed|purchase cost of all customer/i.test(String(x)))
+    .filter(x => !/permit.*permit|building permits.*permits/i.test(String(x)))
+    .filter(x => !/work outside.*work outside/i.test(String(x)));
+
+  if (t.includes("bathroom")) {
+    const preferred = [];
+    if (lines.some(x => /structural|framing beyond|hidden structural/i.test(x))) preferred.push("Structural repairs beyond the stated bathroom scope or concealed framing conditions are excluded unless approved as a change order");
+    if (lines.some(x => /electrical|hvac|ventilation/i.test(x))) preferred.push("Electrical, HVAC or ventilation work not specifically listed in the included scope is excluded");
+    if (lines.some(x => /permit|filing|inspection fee/i.test(x))) preferred.push("Permit, filing and inspection fees are excluded unless specifically included");
+    if (lines.some(x => /unforeseen|concealed|behind wall|hidden condition|mold|rot|outdated/i.test(x))) preferred.push("Unforeseen concealed conditions requiring additional repair are excluded and will be quoted separately if discovered");
+    if (lines.some(x => /shower door|curtain rod|glass enclosure/i.test(x))) preferred.push("Shower glass or curtain hardware is excluded unless specifically listed or selected as an option");
+    if (lines.some(x => /flooring outside|other rooms|outside.*bathroom/i.test(x))) preferred.push("Work outside the stated bathroom area is excluded");
+    lines = uniq(preferred.length ? preferred : lines);
+  }
+
+  return lines.slice(0, 5);
 }
 
 function normalizeTitle(value) {
@@ -155,6 +205,13 @@ function compressIncluded(title, lines) {
   const joined = lines.join(" | ");
   const concise = defs.filter(([re]) => re.test(joined)).map(([, text]) => text);
   return concise.length ? uniq(concise) : lines;
+}
+
+function joinNatural(values) {
+  const arr = uniq(values);
+  if (arr.length <= 1) return arr[0] || "project work";
+  if (arr.length === 2) return arr[0] + " and " + arr[1];
+  return arr.slice(0, -1).join(", ") + ", and " + arr[arr.length - 1];
 }
 
 function uniq(values) {
