@@ -2,7 +2,7 @@ name: Fix single bathroom service classification
 on:
   push:
     paths:
-      - '.github/workflows/fix-single-bathroom-service.trigger'
+      - '.automation/fix-single-bathroom.trigger'
   workflow_dispatch:
 permissions:
   contents: write
@@ -25,7 +25,6 @@ jobs:
   const desc=norm(req.description||'');
   const bathroomPrimary=/bathroom/.test(service)||/full\s+gut\s+bathroom|bathroom\s+(?:renovation|remodel|upgrade)/.test(desc);
   if(!bathroomPrimary)return false;
-  // Keep separate trades only when the customer clearly asks for work outside the bathroom.
   const outside=/(?:whole|entire|full)\s+(?:apartment|home|house).*paint|paint(?:ing)?\s+(?:the\s+)?(?:whole|entire|full)\s+(?:apartment|home|house)|bedroom|living\s+room|dining\s+room|kitchen\s+(?:painting|flooring)|engineered\s+hardwood|hardwood\s+floor|window\s+replacement|replace\s+windows|separate\s+pricing\s+for\s+(?:flooring|painting|windows?)/.test(desc);
   return !outside;
 }
@@ -42,7 +41,9 @@ function collapseSingleBathroomProject(estimate,input,adj){
   (estimate.options||[]).forEach(o=>{if(o&&typeof o==='object'&&!/window/i.test(`${o.label||''} ${o.description||''}`))o.section='Bathroom'});
 }
 '''
-              s=s.replace(anchor,insert+anchor)
+              if anchor not in s:
+                  raise SystemExit('normalizeOwnership anchor not found')
+              s=s.replace(anchor,insert+anchor,1)
           old="isolateAlternatives(out,adj);normalizeOwnership(out,analysis||{},adj);ensureWindowOptionEngine(out,analysis||{},input||{},adj);normalizeOwnership(out,analysis||{},adj);enforce(out,'painting'"
           new="isolateAlternatives(out,adj);normalizeOwnership(out,analysis||{},adj);collapseSingleBathroomProject(out,input||{},adj);ensureWindowOptionEngine(out,analysis||{},input||{},adj);normalizeOwnership(out,analysis||{},adj);collapseSingleBathroomProject(out,input||{},adj);enforce(out,'painting'"
           if old not in s:
