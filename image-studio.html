@@ -330,16 +330,21 @@ body{padding-bottom:90px}
 
 <div id="toast"></div>
 
+<script src="/js/dashboard-auth.js"></script>
 <script>
 (function(){
   var embedded = false;
   try { embedded = window.self !== window.top; } catch(e){ embedded = true; }
   if (embedded) { document.getElementById("gate").style.display = "none"; }
 })();
-var PASS = "L0nd0n12@";
+/* Password is verified by netlify/functions/dashboard-login.js against the
+   DASHBOARD_PASSWORD env var — see /js/dashboard-auth.js. Never hardcode it. */
 function checkPass(){
-  if(document.getElementById("gate-pass").value === PASS){ document.getElementById("gate").style.display="none"; }
-  else { document.getElementById("gate-err").style.display="block"; }
+  var err = document.getElementById("gate-err");
+  sbcVerifyPassword(document.getElementById("gate-pass").value).then(function(res){
+    if(res.ok){ document.getElementById("gate").style.display="none"; }
+    else { err.textContent = res.error; err.style.display="block"; }
+  });
 }
 
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
