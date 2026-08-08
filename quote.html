@@ -68,7 +68,7 @@ if(!deterministic&&!hasSections){/* legacy records only: no sections to trust, s
  if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);
  let sum=active.reduce((s,x)=>s+x.subtotal,0);
  if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}}
-active=foldZeroPriceServices(active);active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}return pubScope(e,active)}
+active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}return foldZeroPriceServices(pubScope(e,active))}
 /* Published Customer Scope (set in the dashboard's Customer Scope Control).
    When the contractor has explicitly published a scope, its wording replaces the
    auto-derived Included / Customer Supplies / Not Included lists. Subtotals are
@@ -89,10 +89,17 @@ function pubScope(e,active){
  // Anything the contractor published that has no matching priced service still gets
  // shown, so published wording is never silently dropped. Subtotal stays 0 so the
  // customer-facing total is unchanged.
- idx.forEach(ps=>{
-  const inc=U(A(ps.included)),sup=U(A(ps.supplied||ps.customerSupplies)),ni=U(A(ps.excluded||ps.notIncluded));
-  if(!inc.length&&!sup.length&&!ni.length)return;
-  active.push({title:C(ps.name||ps.title)||'Additional Work',included:inc,customerSupplies:sup,notIncluded:ni,subtotal:0,options:[]});
+ /* Published services that have no priced counterpart used to be appended as their
+   own $0.00 cards. That is how Flooring / General / Carpentry kept reappearing on
+   the customer quote after every regeneration, even in a fresh browser: the work had
+   been filed under Bathroom, but the stale published draft re-created the empty
+   shells on every render. Their wording is merged into the largest priced service
+   instead, so nothing published is lost and no priceless card is shown. */
+ const main=active.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),active[0]);
+ if(main)idx.forEach(ps=>{
+  main.included=U([...A(main.included),...A(ps.included)]);
+  main.customerSupplies=U([...A(main.customerSupplies),...A(ps.supplied||ps.customerSupplies)]);
+  main.notIncluded=U([...A(main.notIncluded),...A(ps.excluded||ps.notIncluded)]);
  });
  return active}
 function list(label,cl,a){a=U(a);if(!a.length)return'';return`<div class="label ${cl}">${label}</div><ul class="${cl}list">${a.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`}
