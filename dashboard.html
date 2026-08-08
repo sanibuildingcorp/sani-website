@@ -1274,11 +1274,12 @@ body {
 .sc-pill{display:inline-block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;padding:4px 10px;border-radius:20px;font-weight:700}
 .sc-pill-live{background:#e6f4ea;color:#1e6b34}
 .sc-pill-draft{background:#f1f1f1;color:#666}
-.sc-service{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;background:#fff}
-.sc-service-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.sc-service-name{flex:1;min-width:0;font-weight:700;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:7px 9px}
-.sc-subtotal{font-weight:700;font-size:14px;color:var(--gold-2,#b8720a);white-space:nowrap}
-.sc-group{border-left:3px solid var(--line);padding:6px 0 6px 10px;margin-bottom:8px}
+.sc-service{border:1px solid var(--line);border-radius:12px;padding:0;margin-bottom:14px;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(10,22,40,.05)}
+.sc-service-head{display:flex;align-items:center;gap:10px;margin:0;background:#0a1628;padding:13px 15px}
+.sc-service-name{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.28);border-radius:0;color:#fff;font-family:inherit;font-weight:700;font-size:16px;padding:3px 0}
+.sc-service-name:focus{outline:none;border-bottom-color:#f0a500;background:transparent;color:#fff}
+.sc-subtotal{font-weight:700;font-size:17px;color:#f0a500;white-space:nowrap}
+.sc-group{border-left:3px solid var(--line);padding:12px 14px 6px 12px;margin-bottom:0}
 .sc-inc{border-left-color:#2f9e5c}
 .sc-sup{border-left-color:#c8860a}
 .sc-exc{border-left-color:#b0b0b0}
@@ -1299,12 +1300,12 @@ body {
 .lm-hint{font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink-muted)}
 .lm-tools{padding:0 16px 8px}
 .lm-fold .lines-table{margin:0 0 14px}
-.sc-tabs{display:flex;border-bottom:1px solid var(--line);background:#fbfcfd;margin:10px -14px 0;padding:0 4px}
-.sc-tab{flex:1;padding:10px 3px;text-align:center;font-size:11.5px;font-weight:500;color:var(--ink-muted);
+.sc-tabs{display:flex;border-bottom:1px solid var(--line);background:#fbfcfd;margin:0;padding:0}
+.sc-tab{flex:1;padding:11px 3px;text-align:center;font-size:12.5px;font-weight:500;color:var(--ink-muted);
   cursor:pointer;border:0;background:none;border-bottom:2px solid transparent;font-family:inherit;letter-spacing:.02em}
 .sc-tab.on{color:var(--ink);border-bottom-color:var(--gold);background:#fff}
 .sc-tab .n{display:block;font-size:10px;color:#93a1b5;font-weight:400;margin-top:1px}
-.sc-pane{padding:12px 0 2px}
+.sc-pane{padding:12px 14px 4px}
 .sc-kind{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#93a1b5;margin:12px 0 6px}
 .sc-pane .sc-kind:first-child{margin-top:0}
 .sc-empty{font-size:12.5px;color:#93a1b5;padding:4px 0 8px}
@@ -1317,9 +1318,9 @@ body {
   min-width:0;background:#fff;color:var(--ink)}
 .sc-pl input[type=number]{text-align:right}
 .sc-pl-tot{text-align:right;font-weight:700;color:var(--gold);font-size:12.5px}
-.sc-merge-row{margin:10px 0 2px}
-.sc-merge{width:100%;padding:9px 10px;border:1px solid var(--line,#d8dee8);border-radius:8px;background:#fff;font-size:13px;color:var(--ink,#0a1628)}
-.sc-del-svc{font-size:11px;border:none;background:none;color:#c0392b;cursor:pointer;padding:4px 0}
+.sc-merge-row{display:flex;gap:8px;align-items:center;padding:0 14px 13px;margin:0}
+.sc-merge{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line,#d8dee8);border-radius:8px;background:#fff;font-size:13px;color:var(--ink,#0a1628);font-family:inherit}
+.sc-del-svc{font-size:13px;border:none;background:none;color:#a32b2b;cursor:pointer;padding:9px 4px;font-family:inherit;white-space:nowrap}
 .sc-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .sc-actions button{flex:1 1 auto;min-width:140px}
 .sc-preview{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fbfaf7}
@@ -3399,7 +3400,7 @@ function renderEdit() {
             '<input type="checkbox"' + (sectionsChecked ? " checked" : "") + ' id="cv-sections">' +
             '<div class="cv-check-text">' +
               '<div class="cv-check-label">Per-service subtotals</div>' +
-              '<div class="cv-check-amount">Bathroom / Windows / Painting / Flooring — grouped automatically from line names; shows a price for each</div>' +
+              '<div class="cv-check-amount">Shows the price of each service card exactly as you have them above</div>' +
             '</div>' +
           '</div>' +
           '<div class="cv-check' + (laborLinesChecked ? " checked" : "") + '" data-kind="laborLines" onclick="toggleCv(\'laborLines\')">' +
@@ -4459,10 +4460,15 @@ function renderScopeControl() {
         '<select class="sc-merge" onchange="scopeMergeService(' + si + ',this.value);this.selectedIndex=0">' +
           '<option value="">&#8644; Move whole service into&hellip;</option>' +
           others.map(function (o) { return '<option value="' + o.i + '">' + esc(o.name) + '</option>'; }).join("") +
-        '</select></div>';
+        '</select>' +
+        '<button class="sc-del-svc" onclick="scopeDeleteService(' + si + ')">Remove</button>' +
+        '</div>';
+    } else {
+      html += '<div class="sc-merge-row">' +
+        '<button class="sc-del-svc" onclick="scopeDeleteService(' + si + ')">Remove this service</button>' +
+        '</div>';
     }
-    html += '<button class="sc-del-svc" onclick="scopeDeleteService(' + si + ')">Remove this service</button>' +
-      '</div>';
+    html += '</div>';
   });
 
   html += '<div class="sc-actions">' +
