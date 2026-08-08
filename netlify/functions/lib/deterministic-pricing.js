@@ -489,6 +489,68 @@ function capUnneededRoughIn(estimate, input, analysis, adjustments) {
   });
 }
 
+/* ── Rule: one selected service means ONE customer-facing service card ────────
+   The estimator sections lines by TRADE (framing, drywall, painting, waterproofing).
+   That is right for internal costing and wrong for the customer, because a single
+   bathroom job then renders as six cards - Bathroom $19,642 plus Framing $1,605 plus
+   Drywall $3,477 and so on - while the Bathroom card's own scope list already names
+   that same framing and drywall work. The totals are correct, but it reads as being
+   billed twice, which loses a correctly priced job.
+   When the customer selected exactly one service, every line is filed under it.
+   Alternatives keep their own section so options still render separately. */
+function serviceTitle(v) {
+  return text(v).replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function collapseSingleServicePresentation(estimate, analysis, input, adjustments) {
+  const selected = (analysis && Array.isArray(analysis.selected_trades) ? analysis.selected_trades : [])
+    .map(text).filter(Boolean);
+  const requested = (input && input.request && Array.isArray(input.request.selectedServices)
+    ? input.request.selectedServices : []).map(text).filter(Boolean);
+  const list = selected.length ? selected : requested;
+  if (list.length !== 1) return;                       // multi-service jobs keep their trade cards
+  const target = serviceTitle(list[0]);
+  if (!target) return;
+  const movedFrom = {};
+  ['labor', 'materials'].forEach(kind => {
+    (estimate[kind] || []).forEach(l => {
+      if (isAlt(l)) return;                            // alternatives stay separate
+      const was = text(l.section);
+      if (was === target) return;
+      if (was) movedFrom[was] = (movedFrom[was] || 0) + 1;
+      l.section = target;
+    });
+  });
+  const names = Object.keys(movedFrom);
+  if (!names.length) return;
+  adjustments.push({
+    type: 'SERVICE_CARDS_COLLAPSED',
+    into: target,
+    mergedSections: names,
+    reason: 'The customer selected one service. Splitting it into trade cards duplicates the same work in the quote and reads as double billing.'
+  });
+}
+
+/* ── Rule: never list the same supplied item twice ────────────────────────────
+   "Vanity and sink" and "Vanity & sink" are the same thing to a customer. */
+function dedupeCustomerSupplied(estimate, adjustments) {
+  const key = v => norm(text(typeof v === 'string' ? v : (v && v.item) || ''))
+    .replace(/\s*&\s*/g, ' and ').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  const seen = {};
+  const out = [];
+  let dropped = 0;
+  (estimate.customerSupplied || []).forEach(x => {
+    const k = key(x);
+    if (!k) return;
+    if (seen[k]) { dropped++; return; }
+    seen[k] = true;
+    out.push(x);
+  });
+  if (!dropped) return;
+  estimate.customerSupplied = out;
+  adjustments.push({ type: 'CUSTOMER_SUPPLIED_DEDUPED', dropped, reason: 'Same item listed more than once under different wording.' });
+}
+
 function applyDeterministicPricing(estimate, analysis, input) {
   const out = JSON.parse(JSON.stringify(estimate || {}));
   out.labor = Array.isArray(out.labor) ? out.labor : [];
@@ -510,6 +572,8 @@ function applyDeterministicPricing(estimate, analysis, input) {
   enforceProductionMinimum(out, 'painting', q.paintingSf ? q.paintingSf / RULES.paintingSfPerHour : 0, `${q.paintingSf} paintable SF ÷ ${RULES.paintingSfPerHour} SF/labor-hour`, adjustments);
   enforceProductionMinimum(out, 'flooring', q.flooringSf ? q.flooringSf / RULES.engineeredHardwoodSfPerHour : 0, `${q.flooringSf} flooring SF ÷ ${RULES.engineeredHardwoodSfPerHour} SF/labor-hour`, adjustments);
   enforceProductionMinimum(out, 'tile', q.tileSf ? q.tileSf / RULES.largeFormatTileSfPerHour : 0, `${q.tileSf} tile SF ÷ ${RULES.largeFormatTileSfPerHour} SF/labor-hour`, adjustments);
+  collapseSingleServicePresentation(out, analysis || {}, input || {}, adjustments);
+  dedupeCustomerSupplied(out, adjustments);
   /* Last, so it sees the final labor list after every other rule has run. */
   reconcileExclusions(out, adjustments);
   out.deterministicPricing = {
