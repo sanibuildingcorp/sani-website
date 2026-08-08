@@ -1,12 +1,11 @@
 // SBC Dashboard Service Worker
-// v6 — native Scope Control + isolated internal market-audit loader.
-// The injected market-audit script is dashboard-only, read-only, and never touches customer pages.
-const CACHE = 'sbc-v6-market-audit';
-const MARKET_AUDIT_SCRIPT = '<script data-market-audit-loader="1" src="/js/dashboard-market-audit.js?v=1"></script>';
+// v5 — native dashboard Scope Control only. No legacy script injection.
+const CACHE = 'sbc-v5-native-scope-control';
 
 self.addEventListener('install', function(e) {
   // Do not pre-cache dashboard.html. The contractor dashboard must always load
-  // the newest production HTML because its estimator and Scope Control change frequently.
+  // the newest production HTML because its estimator and Scope Control change
+  // frequently.
   self.skipWaiting();
 });
 
@@ -16,8 +15,8 @@ self.addEventListener('activate', function(e) {
     await Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));
     await self.clients.claim();
 
-    // Reload already-open dashboard tabs once after a service-worker update so
-    // the newest internal market-audit loader becomes active immediately.
+    // Reload any already-open dashboard once so the legacy injected
+    // customer-scope-loader-v2.js is removed from the live page immediately.
     const clients = await self.clients.matchAll({ type:'window', includeUncontrolled:true });
     await Promise.all(clients.map(function(client){
       try {
@@ -31,27 +30,6 @@ self.addEventListener('activate', function(e) {
   })());
 });
 
-async function dashboardResponse(request) {
-  const res = await fetch(request, { cache:'no-store' });
-  if (!res.ok) return res;
-  const type = res.headers.get('content-type') || '';
-  if (!type.includes('text/html')) return res;
-
-  let html = await res.text();
-  // Keep Scope Control native. Inject only the isolated read-only pricing-audit UI.
-  if (!html.includes('data-market-audit-loader="1"') && !html.includes('/js/dashboard-market-audit.js')) {
-    if (html.includes('</body>')) html = html.replace('</body>', MARKET_AUDIT_SCRIPT + '\n</body>');
-    else html += MARKET_AUDIT_SCRIPT;
-  }
-
-  const headers = new Headers(res.headers);
-  headers.delete('content-length');
-  headers.delete('content-encoding');
-  headers.set('cache-control','no-store');
-  headers.set('x-sbc-dashboard-audit','v1');
-  return new Response(html, { status:res.status, statusText:res.statusText, headers:headers });
-}
-
 self.addEventListener('fetch', function(e) {
   const url = new URL(e.request.url);
 
@@ -63,28 +41,22 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // Dashboard HTML is network-first/no-store. Only the isolated internal
-  // market-audit script is injected; Scope Control and all native dashboard logic remain untouched.
+  // Dashboard HTML is strictly network-first/no-store. Do not inject or cache
+  // any Scope Control extension; dashboard.html owns the feature natively.
   if ((url.pathname === '/dashboard' || url.pathname === '/dashboard.html') &&
       e.request.headers.get('accept') &&
       e.request.headers.get('accept').includes('text/html')) {
-    e.respondWith(dashboardResponse(e.request));
+    e.respondWith(fetch(e.request, { cache:'no-store' }));
     return;
   }
 
-  // Other HTML pages stay network-first and are NEVER injected.
+  // Other HTML pages stay network-first.
   if (e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html')) {
     e.respondWith(fetch(e.request).catch(function(){ return caches.match(e.request); }));
     return;
   }
 
-  // Static assets can remain cache-first, except the market-audit loader which
-  // must update immediately while this pricing system is being calibrated.
-  if (url.pathname === '/js/dashboard-market-audit.js') {
-    e.respondWith(fetch(e.request, { cache:'no-store' }));
-    return;
-  }
-
+  // Static assets can remain cache-first.
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       if (cached) return cached;
