@@ -1293,6 +1293,21 @@ body {
 .sc-del{border:none;background:none;color:#c0392b;font-size:14px;cursor:pointer;padding:2px 5px}
 .sc-add{font-size:12px;border:1px dashed var(--line);background:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:var(--ink-muted)}
 .sc-add:hover{border-color:var(--gold);color:var(--gold)}
+.hr-fold{border:1px solid var(--gold);border-radius:10px;background:#fffdf7;overflow:hidden}
+.hr-fold>summary{list-style:none;cursor:pointer;padding:14px 16px;font-size:13px;font-weight:600;
+  letter-spacing:1.2px;text-transform:uppercase;color:var(--gold-2,#96770a);display:flex;
+  align-items:center;justify-content:space-between;gap:10px}
+.hr-fold>summary::-webkit-details-marker{display:none}
+.hr-fold>summary::after{content:"\25be";font-size:14px;color:var(--ink-muted);transition:transform .15s}
+.hr-fold[open]>summary::after{transform:rotate(180deg)}
+.hr-hint{font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink-muted)}
+.hr-body{padding:0 16px 16px}
+.hr-help{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:10px}
+.hr-body textarea{width:100%;background:#fff;border:1.5px solid var(--line);border-radius:8px;
+  padding:10px 12px;font-family:inherit;font-size:13px;color:var(--ink);line-height:1.6;
+  resize:vertical;box-sizing:border-box}
+.hr-actions{display:flex;align-items:center;gap:12px;margin-top:10px}
+.hr-status{font-size:12px;color:var(--ink-muted)}
 .lm-fold{border:1px solid var(--line);border-radius:10px;padding:0;overflow:hidden;background:#fff}
 .lm-fold>summary{list-style:none;cursor:pointer;padding:14px 16px;font-family:inherit;font-size:13px;
   font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink);display:flex;
@@ -1323,6 +1338,12 @@ body {
 .sc-pl-tot{text-align:right;font-weight:700;color:var(--gold);font-size:12.5px}
 .sc-undo{border-color:var(--gold)!important;color:var(--gold)!important}
 .sc-undo-off{opacity:.55;border-color:var(--line)!important;color:var(--ink-muted)!important}
+.sc-kind-total{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:8px 0 2px;padding:8px 10px;background:#f7f9fc;border:1px solid var(--line);border-radius:8px}
+.sc-kind-total span{font-size:10.5px;letter-spacing:1.1px;text-transform:uppercase;color:var(--ink-muted)}
+.sc-kind-total input{width:118px;text-align:right;font-weight:700;font-size:14px;color:var(--gold-2,#96770a);
+  background:#fff;border:1px solid var(--line);border-radius:7px;padding:7px 8px;font-family:inherit}
+.sc-kind-total input:focus{outline:none;border-color:var(--gold)}
 .sc-merge-row{display:flex;gap:8px;align-items:center;padding:0 14px 13px;margin:0}
 .sc-merge{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line,#d8dee8);border-radius:8px;background:#fff;font-size:13px;color:var(--ink,#0a1628);font-family:inherit}
 .sc-del-svc{font-size:13px;border:none;background:none;color:#a32b2b;cursor:pointer;padding:9px 4px;font-family:inherit;white-space:nowrap}
@@ -3312,6 +3333,19 @@ function renderEdit() {
         '<button class="btn-ai" id="gen-btn" onclick="generateAI(true)">Regenerate with AI</button>' +
       '</div>'
     ) +
+    /* House Rules: the contractor's own pricing, applied to EVERY estimate. Saved once,
+       not per job, which is why it loads from its own function rather than the record. */
+    '<details class="form-section hr-fold" id="house-rules-fold">' +
+      '<summary>\u{1F4D0} HOUSE RULES <span class="hr-hint">your prices \u2014 used on every estimate</span></summary>' +
+      '<div class="hr-body">' +
+        '<div class="hr-help">Bands, unit prices, production rates and minimum charges. The estimator follows these instead of guessing from the general market. Plain sentences are fine.</div>' +
+        '<textarea id="house-rules-text" rows="10" placeholder="Full bathroom gut: $18,000-$35,000&#10;Cosmetic bathroom refresh: $8,000-$18,000&#10;Reglazing / wall panels: $3,000-$8,000&#10;&#10;Wall tile labor: $16/SF&#10;Bathroom demolition: 12 hrs&#10;Painting: $4.50/SF labor, Brooklyn&#10;&#10;Minimum charges: handyman $250, tile $1,500, flooring $3,000"></textarea>' +
+        '<div class="hr-actions">' +
+          '<button class="btn-secondary" onclick="saveHouseRules()">\u{1F4BE} Save house rules</button>' +
+          '<span class="hr-status" id="house-rules-status"></span>' +
+        '</div>' +
+      '</div>' +
+    '</details>' +
     '<div class="form-section">' +
       '<h3>📋 PROJECT</h3>' +
       '<div class="field" style="margin-bottom:12px">' +
@@ -3461,6 +3495,9 @@ function renderEdit() {
   renderLines("materials", est.materials || []);
   attachLineListeners();
   try { renderScopeControl(); } catch (scopeErr) { console.error("scope control render failed:", scopeErr); }
+  /* Fill the House Rules box from the saved copy. Wrapped because a missing or slow
+     rules endpoint must never stop the estimate editor from opening. */
+  try { loadHouseRules(); } catch (hrErr) { console.error("house rules load failed:", hrErr); }
   document.getElementById("f-markup").addEventListener("input", recalc);
   renderQuotePhotoPreview();
   selectedRenderPhotoData = null;
@@ -4097,7 +4134,13 @@ async function generateAI(isRegenerate) {
       usePhotoAnalysis: aiChk("use-photo-analysis"),
       useDescription: aiChk("use-description"),
       useAnswers: aiChk("use-answers"),
-      extraRequest: extraRequest
+      extraRequest: extraRequest,
+      /* Prefer whatever is on screen: the contractor may have edited the box and
+         pressed Regenerate without saving first. */
+      houseRules: (function () {
+        var b = document.getElementById("house-rules-text");
+        return b && b.value.trim() ? b.value : SBC_HOUSE_RULES;
+      })()
     });
 
     const kick = await fetch("/.netlify/functions/generate-estimate-background", {
@@ -4444,6 +4487,15 @@ function renderScopeControl() {
         });
       }
       html += '<button class="sc-add" onclick="scopePriceAdd(' + si + ',\'' + blk.kind + '\')">+ Add ' + blk.label.toLowerCase() + ' line</button>';
+      /* Editable subtotal for this half of the card. Materials are what they are; the
+         labor is where the negotiating room is, so the two must move independently. */
+      var kindTotal = scopeRowsRaw(scopeRowsFor(nm, blk.kind)) * (scopeMarkupK() || 1);
+      html += '<div class="sc-kind-total">' +
+        '<span>' + blk.label + ' total</span>' +
+        '<input value="' + esc(fmt(kindTotal)) + '" ' +
+          'title="Type a figure and only the ' + blk.label.toLowerCase() + ' lines in this card are scaled" ' +
+          'onchange="scopeSetKindTotal(' + si + ',\'' + blk.kind + '\', this.value)">' +
+        '</div>';
     });
     html += '</div>';
 
@@ -4513,66 +4565,53 @@ function renderScopeControl() {
    card moves by the same factor, which keeps their relative weight and keeps the grand
    total honest - it is still the sum of the lines, never a figure typed over the top.
    Parked lines are untouched: they are excluded work and are not in the estimate. */
-function scopeSetServiceTotal(si, raw) {
-  var est = currentRecord.estimate || {};
-  var d = scopeDraft();
-  var svc = d.services[si];
-  if (!svc) return;
-  var nm = String(svc.name || "").trim();
-
-  /* Strip $ and thousands separators, but do NOT let junk become a number: Number("")
-     is 0, so typing "abc" was scaling the whole card to zero and wiping its prices. */
+/* Parse a typed money figure. Shared by every editable total.
+   Returns NaN for anything that is not plainly a positive number:
+     ""      Number("") is 0, which scaled a card to zero and wiped its prices
+     "abc"   same trap
+     "1e9"   survived a digit-strip as "19" and set the card to nineteen dollars
+     "-500"  stripping the sign and charging a positive number misreads what was typed
+     "0.001" every rate rounds to 0.00 and the whole card leaves the estimate */
+function scopeParseMoney(raw) {
   var src0 = String(raw == null ? "" : raw);
   var txt = src0.replace(/[^0-9.]/g, "");
-  /* A minus sign means the person meant something we cannot honour - stripping it and
-     charging a positive number instead would be a silent misread of what they typed.
-     A letter means the same: "1e9" survived the strip above as "19" and quietly set the
-     card to nineteen dollars. Anything alphabetic is a typo, not a figure. */
-  var want = (/-/.test(src0) || /[a-z]/i.test(src0) || !/^\d*\.?\d+$/.test(txt)) ? NaN : Number(txt);
-  /* Below a cent every rate rounds to 0.00 and the whole card silently leaves the
-     estimate - "0.001" turned a $150 service into $0. A total under one cent is never
-     what anybody means. */
-  if (!Number.isFinite(want) || want < 0.01) { renderScopeControl(); return; }
-
-  var now = scopeServiceSubtotal(nm);
-  if (Math.abs(want - now) < 0.005) { renderScopeControl(); return; }   // nothing to do
-
+  if (/-/.test(src0) || /[a-z]/i.test(src0) || !/^\d*\.?\d+$/.test(txt)) return NaN;
+  var v = Number(txt);
+  return (Number.isFinite(v) && v >= 0.01) ? v : NaN;
+}
+function scopeMarkupK() {
+  var est = (currentRecord && currentRecord.estimate) || {};
   var mEl = document.getElementById("f-markup");
   var pctRaw = mEl && String(mEl.value).trim() !== "" ? mEl.value : est.markupPct;
-  var k = 1 + (Number(pctRaw) || 0) / 100;
-  var targetRaw = want / (k || 1);
-
+  return 1 + (Number(pctRaw) || 0) / 100;
+}
+/* The priced lines of one service, optionally only labor or only materials. */
+function scopeRowsFor(name, kind) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var kinds = kind ? [kind] : ["labor", "materials"];
   var rows = [];
-  ["labor", "materials"].forEach(function (kind) {
-    (est[kind] || []).forEach(function (l) { if (scopeSectionOf(l) === nm) rows.push(l); });
+  kinds.forEach(function (k) {
+    (est[k] || []).forEach(function (l) { if (scopeSectionOf(l) === name) rows.push(l); });
   });
-  var base = rows.reduce(function (a, l) { return a + (Number(l.qty) || 0) * (Number(l.rate) || 0); }, 0);
-
-  if (!rows.length || base <= 0) {
-    alert("\"" + nm + "\" has no price lines to scale.\n\nAdd a line under Prices first, then set the total.");
-    renderScopeControl();
-    return;
-  }
-  if (!confirm("Set " + nm + " to " + fmt(want) + "?\n\n" +
-               "It is " + fmt(now) + " now. All " + rows.length +
-               " price lines in this card are scaled by the same factor. The estimate total changes with it.")) {
-    renderScopeControl();
-    return;
-  }
-
+  return rows;
+}
+function scopeRowsRaw(rows) {
+  return rows.reduce(function (a, l) { return a + (Number(l.qty) || 0) * (Number(l.rate) || 0); }, 0);
+}
+/* Scale a set of lines so they add up to targetRaw (pre-markup). */
+function scopeScaleRows(rows, targetRaw) {
+  var base = scopeRowsRaw(rows);
+  if (!rows.length || base <= 0) return false;
   var factor = targetRaw / base;
   rows.forEach(function (l) { l.rate = Math.round((Number(l.rate) || 0) * factor * 100) / 100; });
 
-  /* Rounding each rate to the cent leaves a few cents unaccounted for. Put the
-     remainder on the largest line so the card lands on the number that was typed. */
-  var after = rows.reduce(function (a, l) { return a + (Number(l.qty) || 0) * (Number(l.rate) || 0); }, 0);
-  var drift = targetRaw - after;
+  /* Rounding each rate to the cent leaves a few cents over. Absorb them on ONE line.
+     Prefer a line with qty 1, where a whole cent of rate is a whole cent of total - a
+     qty of 14 can only move the total in 14c steps, which is what left a card a few
+     cents off the number that was typed. Otherwise carry four decimals on that one
+     line, which lands within a cent. */
+  var drift = targetRaw - scopeRowsRaw(rows);
   if (Math.abs(drift) >= 0.005) {
-    /* Rounding each rate to the cent leaves a few cents over. Absorb them on ONE line.
-       Prefer a line with qty 1, where a whole cent of rate is a whole cent of total -
-       a qty of 14 can only move the total in 14c steps, which is what left the card a
-       few cents off the number that was typed. Otherwise carry four decimals on that
-       single line, which lands within a cent. */
     var byValue = rows.slice().sort(function (a, b) {
       return ((Number(b.qty) || 0) * (Number(b.rate) || 0)) - ((Number(a.qty) || 0) * (Number(a.rate) || 0));
     });
@@ -4586,38 +4625,111 @@ function scopeSetServiceTotal(si, raw) {
       pick.rate = q === 1 ? Math.round(exact * 100) / 100 : Math.round(exact * 10000) / 10000;
     }
   }
+  return true;
+}
+/* Deterministic v8.2 records read a service's subtotal off serviceBreakdown, so the
+   card keeps showing the old figure until that row moves too - and any pending merge
+   undo remembers how much IT added to that row. Re-basing the row without re-basing
+   those deltas left rows and lines disagreeing per service, and the CUSTOMER QUOTE
+   READS THE ROWS. Move every pending contribution by the same factor. */
+function scopeSyncBreakdown(nm, newCardTotal) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  if (!Array.isArray(est.serviceBreakdown)) return;
+  var row = est.serviceBreakdown.filter(function (x) {
+    return String((x && (x.title || x.name || x.section)) || "").trim().toLowerCase() === nm.toLowerCase();
+  })[0];
+  if (!row || !Number.isFinite(Number(row.subtotal))) return;
+  var wasRow = Number(row.subtotal) || 0;
+  var rowFactor = wasRow > 0 ? newCardTotal / wasRow : 0;
+  if (rowFactor > 0 && Math.abs(rowFactor - 1) > 1e-9) {
+    var cents = function (v) { return Math.round(Number(v) * rowFactor * 100) / 100; };
+    (scopeMergeStack() || []).forEach(function (m) {
+      if (scopeNorm(m.dstName) !== scopeNorm(nm)) return;
+      if (m.addedSubtotal != null) m.addedSubtotal = cents(m.addedSubtotal);
+      if (m.dstSubtotalBefore != null) m.dstSubtotalBefore = cents(m.dstSubtotalBefore);
+      if (m.dstRowBefore && Number.isFinite(Number(m.dstRowBefore.subtotal))) m.dstRowBefore.subtotal = cents(m.dstRowBefore.subtotal);
+      if (m.srcRow && Number.isFinite(Number(m.srcRow.subtotal))) m.srcRow.subtotal = cents(m.srcRow.subtotal);
+    });
+  }
+  row.subtotal = newCardTotal;
+}
 
-  /* Deterministic v8.2 records read their subtotal off serviceBreakdown, so the card
-     would keep showing the old figure until that row is moved too. */
-  if (Array.isArray(est.serviceBreakdown)) {
-    var row = est.serviceBreakdown.filter(function (x) {
-      return String((x && (x.title || x.name || x.section)) || "").trim().toLowerCase() === nm.toLowerCase();
-    })[0];
-    if (row && Number.isFinite(Number(row.subtotal))) {
-      /* A pending undo remembers how much IT added to this row. Re-basing the row here
-         without re-basing that delta left undo subtracting a stale figure: the rows and
-         the priced lines then disagreed per service - published A=150/B=550 while the
-         lines said A=300/B=400 - and the customer quote reads the rows, not the lines.
-         Move every pending contribution by the same factor the row just moved by. */
-      var wasRow = Number(row.subtotal) || 0;
-      var rowFactor = wasRow > 0 ? want / wasRow : 0;
-      if (rowFactor > 0 && Math.abs(rowFactor - 1) > 1e-9) {
-        var cents = function (v) { return Math.round(Number(v) * rowFactor * 100) / 100; };
-        (scopeMergeStack() || []).forEach(function (m) {
-          if (scopeNorm(m.dstName) !== scopeNorm(nm)) return;
-          if (m.addedSubtotal != null) m.addedSubtotal = cents(m.addedSubtotal);
-          if (m.dstSubtotalBefore != null) m.dstSubtotalBefore = cents(m.dstSubtotalBefore);
-          if (m.dstRowBefore && Number.isFinite(Number(m.dstRowBefore.subtotal))) m.dstRowBefore.subtotal = cents(m.dstRowBefore.subtotal);
-          if (m.srcRow && Number.isFinite(Number(m.srcRow.subtotal))) m.srcRow.subtotal = cents(m.srcRow.subtotal);
-        });
-      }
-      row.subtotal = want;
-    }
+/* Set the whole card. Labor and materials both move. */
+function scopeSetServiceTotal(si, raw) {
+  var d = scopeDraft();
+  var svc = d.services[si];
+  if (!svc) return;
+  var nm = String(svc.name || "").trim();
+
+  var want = scopeParseMoney(raw);
+  if (!Number.isFinite(want)) { renderScopeControl(); return; }
+
+  var now = scopeServiceSubtotal(nm);
+  if (Math.abs(want - now) < 0.005) { renderScopeControl(); return; }
+
+  var rows = scopeRowsFor(nm);
+  if (!rows.length || scopeRowsRaw(rows) <= 0) {
+    alert("\"" + nm + "\" has no price lines to scale.\n\nAdd a line under Prices first, then set the total.");
+    renderScopeControl();
+    return;
+  }
+  if (!confirm("Set " + nm + " to " + fmt(want) + "?\n\n" +
+               "It is " + fmt(now) + " now. All " + rows.length +
+               " price lines in this card are scaled by the same factor. The estimate total changes with it.")) {
+    renderScopeControl();
+    return;
   }
 
+  scopeScaleRows(rows, want / (scopeMarkupK() || 1));
+  scopeSyncBreakdown(nm, want);
   scopeLinesRefresh();
   var got = scopeServiceSubtotal(nm);
   toast(nm + " set to " + fmt(got) + (Math.abs(got - want) >= 0.01 ? " (closest reachable)" : ""));
+}
+
+/* Set ONLY the labor, or ONLY the materials, of one card.
+   Cutting a price is almost never an even squeeze across both: the materials are what
+   they are, and the labor is where the negotiating room is. Scaling one side leaves
+   the other untouched; the card total and the grand total follow on their own, because
+   both are still nothing more than the sum of the lines. */
+function scopeSetKindTotal(si, kind, raw) {
+  var d = scopeDraft();
+  var svc = d.services[si];
+  if (!svc || (kind !== "labor" && kind !== "materials")) return;
+  var nm = String(svc.name || "").trim();
+  var label = kind === "labor" ? "Labor" : "Materials";
+
+  var want = scopeParseMoney(raw);
+  if (!Number.isFinite(want)) { renderScopeControl(); return; }
+
+  var k = scopeMarkupK() || 1;
+  var rows = scopeRowsFor(nm, kind);
+  var now = scopeRowsRaw(rows) * k;
+  if (Math.abs(want - now) < 0.005) { renderScopeControl(); return; }
+
+  if (!rows.length || scopeRowsRaw(rows) <= 0) {
+    alert("\"" + nm + "\" has no " + label.toLowerCase() + " lines to scale.\n\n" +
+          "Add a " + label.toLowerCase() + " line first, then set its total.");
+    renderScopeControl();
+    return;
+  }
+
+  var otherRows = scopeRowsFor(nm, kind === "labor" ? "materials" : "labor");
+  var otherTotal = scopeRowsRaw(otherRows) * k;
+  if (!confirm("Set " + nm + " " + label.toLowerCase() + " to " + fmt(want) + "?\n\n" +
+               "It is " + fmt(now) + " now. Its " + rows.length + " " + label.toLowerCase() +
+               " lines are scaled; the " + (kind === "labor" ? "materials" : "labor") + " stay at " +
+               fmt(otherTotal) + ".\n\n" + nm + " becomes " + fmt(want + otherTotal) + ".")) {
+    renderScopeControl();
+    return;
+  }
+
+  scopeScaleRows(rows, want / k);
+  scopeSyncBreakdown(nm, scopeRowsRaw(scopeRowsFor(nm)) * k);
+  scopeLinesRefresh();
+  var got = scopeRowsRaw(scopeRowsFor(nm, kind)) * k;
+  toast(nm + " " + label.toLowerCase() + " set to " + fmt(got) +
+        (Math.abs(got - want) >= 0.01 ? " (closest reachable)" : ""));
 }
 
 /* Repaint BOTH views from the arrays, then recalculate. renderLines must run
@@ -4631,6 +4743,45 @@ function scopeSetServiceTotal(si, raw) {
    re-rendering the panel mid-keystroke would steal focus. */
 function scopeCardsRepaint() {
   try { if (document.getElementById("scope-control-wrap")) renderScopeControl(); } catch (e) {}
+}
+/* One set of rules for the whole business, cached in memory for the session so the
+   estimator payload never has to wait on a round trip. */
+var SBC_HOUSE_RULES = "";
+function loadHouseRules() {
+  var box = document.getElementById("house-rules-text");
+  fetch("/.netlify/functions/house-rules?t=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      SBC_HOUSE_RULES = String((d && d.rules) || "");
+      if (box && !box.value) box.value = SBC_HOUSE_RULES;
+      var st = document.getElementById("house-rules-status");
+      if (st && SBC_HOUSE_RULES && d.updatedAt) {
+        st.textContent = "Saved " + new Date(d.updatedAt).toLocaleDateString();
+      }
+    })
+    .catch(function () { /* absent rules must never block the editor */ });
+}
+async function saveHouseRules() {
+  var box = document.getElementById("house-rules-text");
+  var st = document.getElementById("house-rules-status");
+  if (!box) return;
+  var text = String(box.value || "");
+  if (st) st.textContent = "Saving\u2026";
+  try {
+    var r = await fetch("/.netlify/functions/house-rules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rules: text, key: (typeof sbcVisitsKey === "function" ? sbcVisitsKey() : "") }),
+    });
+    var d = await r.json();
+    if (!r.ok) throw new Error(d && d.error ? d.error : "Save failed");
+    SBC_HOUSE_RULES = text;
+    if (st) st.textContent = "Saved \u2713";
+    toast("House rules saved \u2014 used on every estimate from now on");
+  } catch (e) {
+    if (st) st.textContent = "";
+    toast("Could not save house rules: " + e.message, true);
+  }
 }
 function scopeLinesRefresh() {
   var est = currentRecord.estimate || {};
