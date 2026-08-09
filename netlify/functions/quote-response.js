@@ -58,15 +58,32 @@ exports.handler = async function (event) {
     const resendKey = process.env.RESEND_API_KEY;
     const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
 
+    /* The customer's response is already saved, so a failed notification must never
+       fail their request - but it must not vanish either. It is stamped on the record
+       so the dashboard can show that a reply arrived without an email going out, and
+       returned so the page can tell the customer to call if we did not reach us. */
+    let notified = false;
+    let notifyError = "";
     if (resendKey) {
       try {
         await notifyContractor(resendKey, contractorEmail, record, action, signature, declineReason, questionText);
+        notified = true;
       } catch (e) {
-        console.error("Notification failed:", e.message);
+        notifyError = String(e && e.message || e).slice(0, 300);
+        console.error("Notification failed:", notifyError);
       }
+    } else {
+      notifyError = "RESEND_API_KEY not set";
+      console.error("Notification skipped:", notifyError);
     }
 
-    return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true, status: record.status }) };
+    if (!notified) {
+      record.notificationFailedAt = new Date().toISOString();
+      record.notificationError = notifyError;
+      try { await store.setJSON(ref, record); } catch (e2) {}
+    }
+
+    return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true, status: record.status, notified: notified }) };
   } catch (err) {
     console.error("quote-response error:", err.message);
     return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
@@ -151,9 +168,17 @@ async function notifyContractor(resendKey, contractorEmail, record, action, sign
 </body></html>`;
 
   return sendResend(resendKey, {
-    from: "Sani Building Corp <onboarding@resend.dev>",
+    /* onboarding@resend.dev is Resend's shared TEST sender. It only delivers to the
+       account owner's own address and is rejected outright for anything else, so
+       every "Request changes" and "Question" notification was being thrown away by
+       Resend while the customer was told "Thank you. We received your response."
+       Use the verified domain sender the rest of the system already uses. */
+    from: process.env.RESEND_FROM || "Sani Building Corp <estimates@sanibuildingcorp.com>",
     to: [contractorEmail],
-    reply_to: customer.email,
+    /* An invalid or empty reply_to is a 422 from Resend, which would lose the email
+       for a different reason. */
+    ...(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(customer.email || "").trim())
+        ? { reply_to: String(customer.email).trim() } : {}),
     subject: `${emoji} ${isAccept ? "ACCEPTED" : (isReview ? "REVIEW NEEDED" : (isQuestion ? "QUESTION (still open)" : "DECLINED"))}: ${customer.name} — ${est.projectTitle || record.request?.service} (${record.ref})`,
     html,
   });
