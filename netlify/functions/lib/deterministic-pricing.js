@@ -136,6 +136,27 @@ function canonicalService(section, item, selected) {
   return text(section) || 'General';
 }
 
+/* A line stamped sbcSharedSplit was placed deliberately by attributeSharedLines in
+   generate-estimate-background.js: genuinely shared work - coordination, cleanup,
+   protection, debris - divided across the customer's real services in proportion to
+   their LABOUR, one line per service.
+
+   canonicalService reads the item WORDING before it looks at the section, and
+   "project coordination", "final cleanup" and "debris disposal" all read as generic.
+   Without this guard the very next stage after the split sends every one of them back
+   to General, and the fifth card the customer never asked for reappears on his quote.
+
+   The stamp is precise - it marks only lines this pipeline created - so honouring it
+   costs canonicalService nothing for any other line. The section is still checked
+   against the selected services, so a stale or hand-edited stamp can never pin a line
+   to a service that does not exist. */
+function pinnedService(line, selected) {
+  if (!line || !line.sbcSharedSplit) return '';
+  const sec = text(line.section);
+  if (!sec) return '';
+  return (selected || []).some(x => norm(x) === norm(sec)) ? sec : '';
+}
+
 function classifyLabor(line) {
   const s = norm(`${line?.section || ''} ${line?.item || ''}`);
   if (/plumb|toilet|faucet|valve|drain|supply line|shower trim/.test(s)) return 'plumber';
@@ -267,7 +288,8 @@ function capGeneralConditions(estimate, adjustments) {
 function normalizeOwnership(estimate, analysis, adjustments) {
   const selected = analysis?.selected_trades || [];
   ['labor', 'materials'].forEach(bucket => (estimate[bucket] || []).forEach(line => {
-    const next = canonicalService(line.section, line.item, selected);
+    /* Honour a deliberate split before re-deriving from the wording. */
+    const next = pinnedService(line, selected) || canonicalService(line.section, line.item, selected);
     if (next && next !== line.section) {
       adjustments.push({ type: 'SERVICE_REASSIGNED', bucket, item: line.item, from: line.section, to: next });
       line.section = next;
@@ -813,12 +835,12 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
   let generalBase = 0;
   const projectExclusions = [];
   (out.labor || []).forEach(l => {
-    const s = singleBath ? 'Bathroom' : canonicalService(l.section, l.item, analysis?.selected_trades || []);
+    const s = singleBath ? 'Bathroom' : (pinnedService(l, analysis?.selected_trades) || canonicalService(l.section, l.item, analysis?.selected_trades || []));
     const cost = num(l.qty) * num(l.rate);
     if (map[s]) { map[s].subtotal += cost; map[s].included.push(text(l.item)); } else { generalBase += cost; }
   });
   (out.materials || []).forEach(m => {
-    const s = singleBath ? 'Bathroom' : canonicalService(m.section, m.item, analysis?.selected_trades || []);
+    const s = singleBath ? 'Bathroom' : (pinnedService(m, analysis?.selected_trades) || canonicalService(m.section, m.item, analysis?.selected_trades || []));
     const cost = num(m.qty) * num(m.rate);
     if (map[s]) { map[s].subtotal += cost; map[s].included.push(text(m.item)); } else { generalBase += cost; }
   });
