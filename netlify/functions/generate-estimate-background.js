@@ -7,7 +7,8 @@
 // 1) Read and structure the full customer request.
 // 2) Detect missing/contradictory information and pricing readiness.
 // 3) Generate a complete trade-by-trade estimate from the structured scope.
-// 4) Validate trade coverage, installation labor, rough materials and total realism.
+// 4) Validate trade coverage, installation labor and rough materials. NOT price -
+//    a small job is meant to produce a small number (see validateEstimate).
 // 5) Save both the internal project analysis and the estimate draft to Netlify Blobs.
 //
 // V6 uses OpenAI for structured project understanding, Claude for estimating,
@@ -82,10 +83,11 @@ exports.handler = async function handler(event) {
          exists. Letting anything in this block reach the outer catch throws that away
          and hands the contractor a red error after ~160 seconds of waiting - for a job
          the system had already priced correctly.
-         validateEstimate is aggressive by design (a multi-trade job with fewer than ten
-         labor lines fails it), so on 3+ trade work this block is the normal path, not
-         the exception. That makes an unguarded failure here the difference between a
-         usable estimate and none at all.
+         validateEstimate still fails an estimate that is genuinely incomplete - a trade
+         with no labor, a customer-supplied item with no installation labor, missing
+         protection, cleanup, demolition or debris handling - so this block still runs
+         often. An unguarded failure here is the difference between a usable estimate
+         and none at all.
          Keep the pre-repair estimate. Record what went wrong so it is visible in the
          dashboard rather than silent. */
       timing.repairUsed = true;
@@ -335,7 +337,7 @@ function buildEstimatePrompt(input, analysis) {
 }
 
 function buildRepairPrompt(input, analysis, estimate, validation) {
-  return `You are performing a mandatory estimate QA repair for Sani Building Corp.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nThe previous estimate failed deterministic validation. Repair omissions; do not simply raise prices arbitrarily.\n\nCUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nPROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nFAILED DRAFT:\n${JSON.stringify(estimate, null, 2)}\n\nVALIDATION RESULTS:\n${JSON.stringify(validation, null, 2)}\n\nREPAIR RULES:\n- Correct every failure specifically.\n- Ensure every selected trade has labor and appropriate rough/installation materials.\n- Preserve all customer exclusions and customer-supplied finish materials.\n- Customer-supplied finish materials still need installation labor and supporting materials.\n- Add missing protection, demolition, disposal, handling, preparation, cleanup and coordination only where the documented scope requires them.\n- Recalculate quantities/durations using realistic crew/production logic.\n- Preserve alternate options outside the base total.\n- Do not solve a low-total warning by adding a fake lump sum or arbitrary "contingency" line.\n- Return the COMPLETE replacement estimate, not a patch.\n\nUse exactly the same JSON schema as the original estimate request and return JSON only.`;
+  return `You are performing a mandatory estimate QA repair for Sani Building Corp.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nThe previous estimate failed deterministic validation. Repair omissions; do not simply raise prices arbitrarily.\n\nCUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nPROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nFAILED DRAFT:\n${JSON.stringify(estimate, null, 2)}\n\nVALIDATION RESULTS:\n${JSON.stringify(validation, null, 2)}\n\nREPAIR RULES:\n- Correct every failure specifically.\n- Ensure every selected trade has labor and appropriate rough/installation materials.\n- Preserve all customer exclusions and customer-supplied finish materials.\n- Customer-supplied finish materials still need installation labor and supporting materials.\n- Add missing protection, demolition, disposal, handling, preparation, cleanup and coordination only where the documented scope requires them.\n- Recalculate quantities/durations using realistic crew/production logic.\n- Preserve alternate options outside the base total.\n- Never pad the estimate. Do not add a lump sum, a "contingency" line, or extra hours to make a total look bigger. A small job is meant to produce a small number.\n- Return the COMPLETE replacement estimate, not a patch.\n\nUse exactly the same JSON schema as the original estimate request and return JSON only.`;
 }
 
 function normalizeProjectAnalysis(raw, input) {
@@ -425,14 +427,48 @@ function validateEstimate(estimate, analysis, input) {
   if (analysis.customer_supplied_finish_materials.length && estimate.materials.length === 0) failures.push("All materials were removed even though rough/installation materials are still required.");
   const subtotal = calculateSubtotal(estimate);
   const grandTotal = subtotal * (1 + estimate.markupPct / 100);
-  const laborHoursEquivalent = estimate.labor.reduce((sum, l) => { if (l.unit === "days") return sum + l.qty * 8; if (l.unit === "crew-days") return sum + l.qty * 8; if (l.unit === "hrs") return sum + l.qty; return sum; }, 0);
   if (!estimate.labor.length) failures.push("Estimate contains no labor lines.");
   if (subtotal <= 0) failures.push("Estimate subtotal is zero.");
   const scopeWeight = estimateScopeWeight(analysis, input);
-  if (scopeWeight >= 8 && grandTotal < 20000) failures.push(`Total $${Math.round(grandTotal).toLocaleString()} is suspiciously low for the documented multi-trade scope.`);
-  else if (scopeWeight >= 5 && grandTotal < 10000) failures.push(`Total $${Math.round(grandTotal).toLocaleString()} is suspiciously low for the documented renovation scope.`);
-  if (multiTrade && estimate.labor.length < 10) failures.push("Multi-trade renovation is compressed into too few labor lines.");
-  if (scopeWeight >= 8 && laborHoursEquivalent > 0 && laborHoursEquivalent < 160) warnings.push("Recorded labor duration appears low for a major multi-trade renovation.");
+
+  /* ============================================================================
+     NO PRICE FLOORS. REMOVED Aug 8 2026.
+     ----------------------------------------------------------------------------
+     This block used to reject an estimate for being too CHEAP:
+
+       scopeWeight >= 8 && grandTotal < 20000  -> failure "suspiciously low"
+       scopeWeight >= 5 && grandTotal < 10000  -> failure "suspiciously low"
+       multiTrade && labor.length < 10         -> failure "too few labor lines"
+
+     A failure triggers the repair pass, and buildRepairPrompt hands the model the
+     failure text. So the system read a correct estimate, decided it was too cheap,
+     and asked the AI to redo it. There was never a matching check for a total being
+     too HIGH, so the pressure only ever ran one way.
+
+     estimateScopeWeight scores a single bathroom gut at 9+ (one trade 2, "gut" 3,
+     "bathroom" 2, waterproofing/plumbing 2), so EVERY bathroom job was structurally
+     incapable of passing under $20,000 - against a real quoted range of $12-18k. A
+     small job is supposed to produce a small number.
+
+     scopeWeight is still calculated and still returned, because it is genuinely
+     useful context on the record. It just no longer decides anything about price.
+
+     The real guards remain below: an estimate with no labor, or a subtotal of zero,
+     is still a hard failure. Those catch a broken estimate without having an opinion
+     about what a job ought to cost.
+
+     DO NOT REINTRODUCE A PRICE FLOOR. If pricing needs steering, it belongs in the
+     House Rules the contractor writes - his own bands and unit prices - never in a
+     hardcoded threshold that assumes every job is a big one.
+     ============================================================================ */
+
+  /* Line count is a shape observation, not a defect: a small job legitimately has
+     few lines. Recorded as a warning so it is visible on the record, but it must
+     never trigger the repair pass and pad the estimate. */
+  if (multiTrade && estimate.labor.length < 10) warnings.push("Multi-trade project is described in few labor lines - check nothing is missing.");
+  /* The 160-hour warning is gone too. estimateScopeWeight scores any bathroom gut at
+     9+, so it fired on every single one - including a perfectly normal $9,000 job. A
+     warning that always fires carries no information and trains the eye to skip it. */
   analysis.selected_trades.forEach((trade) => {
     const tradeLabor = estimate.labor.filter((l) => sameTrade(l.section, trade));
     const tradeMaterials = estimate.materials.filter((m) => sameTrade(m.section, trade));
