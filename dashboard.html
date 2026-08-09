@@ -2554,6 +2554,28 @@ body {
   .active-tab-label { display: none; }
 }
 
+/* ── CONVERSATION ── */
+.cnv-head{background:#0c1e33;color:#fff;border-radius:12px 12px 0 0;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.cnv-head .ct{min-width:0}
+.cnv-head .cref{font-size:9.5px;letter-spacing:1.6px;color:#8fa8c0;text-transform:uppercase}
+.cnv-head .ctit{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cnv-head .caddr{font-size:11.5px;color:#a9bccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cnv-head .cpr{white-space:nowrap;font-weight:800;color:#e0bd51;font-size:16px}
+.cnv-body{display:flex;flex-direction:column;gap:9px;padding:14px;max-height:380px;overflow-y:auto;background:var(--navy-2,#f4f6f9);border:1px solid var(--line-soft,rgba(13,27,42,.08));border-top:0}
+.cnv-msg{max-width:86%;padding:9px 12px;border-radius:13px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+.cnv-msg.them{align-self:flex-start;background:#fff;border:1px solid #dfe4ea;border-bottom-left-radius:4px;color:#152235}
+.cnv-msg.me{align-self:flex-end;background:#10273f;color:#fff;border-bottom-right-radius:4px}
+.cnv-meta{font-size:10px;letter-spacing:.6px;text-transform:uppercase;margin-bottom:3px;opacity:.8;font-weight:700}
+.cnv-msg.me .cnv-meta{color:#e0bd51}.cnv-msg.them .cnv-meta{color:#6f7987}
+.cnv-send{border:1px solid var(--line-soft,rgba(13,27,42,.08));border-top:0;border-radius:0 0 12px 12px;padding:12px 14px;background:#fff}
+.cnv-send textarea{width:100%;min-height:74px;padding:10px 12px;border:1px solid #ccd3dc;border-radius:9px;font:inherit;font-size:14px;resize:vertical}
+.cnv-row{display:flex;gap:9px;align-items:center;margin-top:9px;flex-wrap:wrap}
+.cnv-note{font-size:11.5px;color:var(--ink-muted,#7a879b)}
+.cnv-note.bad{color:#c0392b;font-weight:700}
+.cnv-note.good{color:#1c6547;font-weight:700}
+.badge.needs-reply{background:#c0392b;color:#fff}
+@media(max-width:600px){.cnv-msg{max-width:93%}.cnv-body{max-height:300px}}
+
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -3179,6 +3201,10 @@ function renderList() {
           '</div>' +
           '<div class="est-badges">' +
             '<span class="badge ' + e.status + '">' + e.status + '</span>' +
+            /* He works from a phone between jobs and will not be watching this
+               screen. The badge is the one place a waiting customer message is
+               visible without opening anything. */
+            (threadNeedsReply(e) ? '<span class="badge needs-reply">💬 REPLY NEEDED</span>' : '') +
             (Number(e.unpaidTotal) > 0 ? '<span class="badge unpaid-warn">⚠ UNPAID ' + fmt(e.unpaidTotal) + '</span>' : '') +
             '<span style="font-size:11px;color:var(--ink-muted);letter-spacing:1px">' + esc(e.ref) + '</span>' +
           '</div>' +
@@ -3223,6 +3249,124 @@ function closeEdit() {
   document.getElementById("edit-modal").classList.remove("show");
   document.body.style.overflow = "";
   currentRecord = null;
+}
+
+/* ── CONVERSATION ─────────────────────────────────────────────────────────────
+   The same project header the customer sees at the top of their portal, so
+   neither side ever has to ask which job this is, and one append-only thread
+   underneath it. Nothing here deletes or edits a message: if there is ever a
+   dispute about what was agreed, this is the record.
+   normalizeThread() is server-side, in netlify/functions/lib/thread.js, and
+   get-estimate returns the thread already migrated and sorted - this file only
+   renders it, so the two can never disagree about ordering or about what the old
+   single-string customerQuestion field becomes. */
+function threadOf(r) {
+  const t = (r && Array.isArray(r.thread)) ? r.thread : [];
+  if (t.length) return t;
+  /* Fallback for a record fetched before get-estimate started normalizing, so an
+     older question is never invisible here. */
+  const legacy = String((r && r.customerQuestion) || "").trim();
+  return legacy ? [{ id: "legacy-customerQuestion", from: "customer", text: legacy, at: (r && (r.questionAskedAt || r.updatedAt)) || "", via: "quote" }] : [];
+}
+function threadNeedsReply(r) {
+  const t = threadOf(r);
+  return t.length > 0 && t[t.length - 1].from !== "contractor";
+}
+function cnvWhen(iso) {
+  const dt = new Date(iso);
+  if (!isFinite(dt.getTime())) return "";
+  return dt.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+}
+function cnvMessagesHtml(r) {
+  const t = threadOf(r);
+  if (!t.length) return '<div class="cnv-note">No messages yet. Anything you send here also lands on the customer\'s quote page and in their inbox.</div>';
+  return t.map(function (m) {
+    const mine = m.from === "contractor";
+    return '<div class="cnv-msg ' + (mine ? "me" : "them") + '">' +
+      '<div class="cnv-meta">' + (mine ? "You" : esc((r.customer && r.customer.name) || "Customer")) +
+        (cnvWhen(m.at) ? " · " + esc(cnvWhen(m.at)) : "") +
+        (m.via === "gmail" ? " · via email" : "") +
+      "</div>" + esc(m.text) + "</div>";
+  }).join("");
+}
+function cnvPanelHtml(r) {
+  const est = r.estimate || {}, req = r.request || {}, cust = r.customer || {};
+  /* The price in this header is the CUSTOMER-FACING total, the same number on
+     their portal and in every message email. Not the internal grand total. */
+  const cv = calcCustomerView(est);
+  const title = est.projectTitle || req.service || "Untitled project";
+  const addr = cust.address || req.address || "";
+  return '<div class="cnv-head">' +
+      '<div class="ct">' +
+        '<div class="cref">Estimate ' + esc(r.ref) + '</div>' +
+        '<div class="ctit">' + esc(title) + '</div>' +
+        (addr ? '<div class="caddr">' + esc(addr) + '</div>' : "") +
+      '</div>' +
+      '<div class="cpr">' + fmt(cv.customerTotal) + '</div>' +
+    '</div>' +
+    '<div class="cnv-body" id="cnv-body">' + cnvMessagesHtml(r) + '</div>' +
+    '<div class="cnv-send">' +
+      '<textarea id="cnv-text" maxlength="4000" placeholder="Reply to ' + esc((cust.name || "your customer").split(" ")[0]) + '…"></textarea>' +
+      '<div class="cnv-row">' +
+        '<button class="btn-primary" id="cnv-btn" onclick="sendThreadReply()">Send reply</button>' +
+        '<span class="cnv-note" id="cnv-note">Sends the message and emails them a copy with the project header.</span>' +
+      '</div>' +
+      '<div class="cnv-row" id="cnv-key-row" style="display:none">' +
+        '<input id="cnv-key" placeholder="Send key" style="flex:1;min-width:160px;padding:9px 11px;border:1px solid #ccd3dc;border-radius:9px">' +
+      '</div>' +
+    '</div>';
+}
+function cnvRefresh() {
+  const body = document.getElementById("cnv-body");
+  if (body && currentRecord) {
+    body.innerHTML = cnvMessagesHtml(currentRecord);
+    body.scrollTop = body.scrollHeight;
+  }
+}
+/* SAVE FIRST, EMAIL SECOND, REPORT BOTH. A saved message must never claim to have
+   been delivered, and a failed email must never lose the message. */
+async function sendThreadReply() {
+  if (!currentRecord || !currentRecord.ref) return;
+  const box = document.getElementById("cnv-text");
+  const note = document.getElementById("cnv-note");
+  const btn = document.getElementById("cnv-btn");
+  const keyRow = document.getElementById("cnv-key-row");
+  const keyInput = document.getElementById("cnv-key");
+  const text = String((box && box.value) || "").trim();
+  if (!text) { note.className = "cnv-note bad"; note.textContent = "Write a message first."; return; }
+
+  let key = (typeof sbcKey === "function" ? sbcKey() : "");
+  if (!key) {
+    key = String((keyInput && keyInput.value) || "").trim();
+    if (!key) { if (keyRow) keyRow.style.display = "flex"; note.className = "cnv-note bad"; note.textContent = "🔑 Enter the send key above (one time)."; return; }
+  }
+  btn.disabled = true; note.className = "cnv-note"; note.textContent = "Sending…";
+  try {
+    const res = await fetch("/.netlify/functions/thread-reply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-sbc-key": key },
+      body: JSON.stringify({ ref: currentRecord.ref, text: text }),
+    });
+    const data = await res.json();
+    if (res.status === 401) {
+      try { localStorage.removeItem("sbcKey"); sessionStorage.removeItem("sbcKey"); } catch (_) {}
+      if (keyRow) keyRow.style.display = "flex";
+      note.className = "cnv-note bad"; note.textContent = "🔑 Key not accepted — check it and try again.";
+      btn.disabled = false; return;
+    }
+    if (!res.ok) throw new Error(data.error || "Send failed");
+    try { localStorage.setItem("sbcKey", key); } catch (_) {}
+    if (keyRow) keyRow.style.display = "none";
+    if (Array.isArray(data.thread)) currentRecord.thread = data.thread;
+    if (box) box.value = "";
+    cnvRefresh();
+    renderList();
+    if (data.notified) { note.className = "cnv-note good"; note.textContent = "✓ Sent — it is on their quote page and in their inbox."; }
+    else { note.className = "cnv-note bad"; note.textContent = "Saved to the thread, but the email did NOT go out. " + (data.error || "Call them."); }
+  } catch (e) {
+    note.className = "cnv-note bad"; note.textContent = "Send failed: " + e.message;
+  }
+  btn.disabled = false;
 }
 
 function renderEdit() {
@@ -3507,6 +3651,13 @@ function renderEdit() {
       '<div class="tot-line grand"><span>GRAND TOTAL</span><span id="tot-grand">$0.00</span></div>' +
       '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
       '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
+    '</div>' +
+    /* The conversation, directly under the money, above the actions. Same project
+       header the customer sees at the top of their portal - ref, title, address
+       and the customer-facing total - so neither side has to ask which job. */
+    '<div class="section" id="cnv-section">' +
+      '<div class="section-title">💬 Conversation' + (threadNeedsReply(r) ? ' <span class="badge needs-reply">REPLY NEEDED</span>' : '') + '</div>' +
+      cnvPanelHtml(r) +
     '</div>' +
     '<div class="modal-actions">' +
       '<button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>' +
