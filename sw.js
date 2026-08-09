@@ -1,21 +1,33 @@
 // SBC Dashboard Service Worker
-// v6 — auth split. Fixes the cache-first trap that froze the home-screen app.
+// v7 — the service worker gets OUT OF THE WAY of API calls.
 //
-// What changed from v5:
-//   1. Dashboard HTML is matched by PATHNAME ONLY. v5 also required an
-//      "accept: text/html" header, but dashboard-shell.html fetches
-//      /dashboard.html?core=4 with plain fetch() which sends "accept: */*".
-//      That request fell through to the cache-first branch at the bottom and
-//      was cached permanently, so the installed app kept serving an old
-//      dashboard forever while a normal browser tab loaded the new one.
-//   2. /js/dashboard-auth.js is never cached. A stale copy of the auth helper
-//      locks the contractor out of the dashboard with no way to recover from
-//      the phone. Auth code always comes from the network.
-//   3. Cache name bumped so activate() deletes every v5 entry.
-const CACHE = 'sbc-v6-auth-split';
+// What changed from v6, and why it matters:
+//
+//   v6 did this for every /.netlify/ call and every non-GET request:
+//       e.respondWith(fetch(e.request));
+//   That is a no-op in intent — it re-issues the same request unchanged — but it is
+//   NOT a no-op in effect. Calling respondWith makes the service worker responsible
+//   for the response, which keeps the request tied to the worker's lifetime.
+//
+//   iOS terminates an idle service worker aggressively. The estimator runs for
+//   two to three minutes (OpenAI analysis, then Claude pricing, then an optional
+//   repair pass), and the dashboard polls get-estimate throughout. When the worker
+//   was killed mid-request the fetch aborted, and the only thing the page saw was
+//       FetchEvent.respondWith received an error: TypeError: Load failed
+//   which says nothing about the real cause. That is what killed "Regenerate with
+//   AI" around 160 seconds and what broke Send to Customer.
+//
+//   The fix is to return WITHOUT calling respondWith. The browser then performs the
+//   request natively, completely outside the worker, with no lifetime attached to it.
+//   Nothing is lost: these requests were never cached and never modified.
+//
+// Everything from v6 is kept: dashboard HTML and the auth helper are matched by
+// pathname only and never cached, because dashboard-shell.html fetches
+// /dashboard.html?core=4 with `accept: */*` and v5 let that slip into the
+// cache-first branch, freezing the installed app on an old dashboard.
+const CACHE = 'sbc-v7-passthrough-api';
 
-/* Any URL whose pathname must always come from the network, regardless of
-   what accept header the request carries. Query strings are ignored. */
+/* Always from the network, never from the cache. Query strings are ignored. */
 function isAlwaysFresh(pathname) {
   return pathname === '/dashboard' ||
          pathname === '/dashboard.html' ||
@@ -24,9 +36,8 @@ function isAlwaysFresh(pathname) {
 }
 
 self.addEventListener('install', function(e) {
-  // Nothing is pre-cached. The contractor dashboard must always load the
-  // newest production HTML because the estimator and Scope Control change
-  // frequently.
+  // Nothing is pre-cached. The contractor dashboard must always load the newest
+  // production HTML because the estimator and Scope Control change frequently.
   self.skipWaiting();
 });
 
@@ -36,15 +47,13 @@ self.addEventListener('activate', function(e) {
     await Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));
     await self.clients.claim();
 
-    // Reload any already-open dashboard once so a stale cached copy is
-    // replaced immediately instead of on the next cold start.
+    // Reload any already-open dashboard once, so a stale cached copy is replaced
+    // immediately rather than on the next cold start.
     const clients = await self.clients.matchAll({ type:'window', includeUncontrolled:true });
     await Promise.all(clients.map(function(client){
       try {
         const u = new URL(client.url);
-        if (isAlwaysFresh(u.pathname)) {
-          return client.navigate(client.url);
-        }
+        if (isAlwaysFresh(u.pathname)) return client.navigate(client.url);
       } catch (_) {}
       return Promise.resolve();
     }));
@@ -52,40 +61,60 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
-  const url = new URL(e.request.url);
+  var url;
+  try { url = new URL(e.request.url); }
+  catch (_) { return; }                       // unparseable: leave it to the browser
 
-  // API calls and writes always go straight to network.
+  /* API calls and every write go straight to the browser. NOT respondWith(fetch(...)) —
+     see the note at the top of this file. Long-running estimator calls must not be
+     tied to this worker's lifetime. */
   if (url.pathname.startsWith('/.netlify/') ||
       url.pathname.startsWith('/api/') ||
       e.request.method !== 'GET') {
-    e.respondWith(fetch(e.request));
     return;
   }
 
-  // Dashboard shell, dashboard HTML and the auth helper are strictly
-  // network-only. Checked by pathname before any accept-header logic so the
-  // shell's own fetch() of /dashboard.html?core=4 cannot slip past.
+  /* Cross-origin requests are none of our business either. */
+  if (url.origin !== self.location.origin) return;
+
+  /* Dashboard shell, dashboard HTML and the auth helper: network only. If the network
+     fails, hand the failure back rather than a cached copy — a stale auth helper locks
+     the contractor out with no way to recover from a phone. */
   if (isAlwaysFresh(url.pathname)) {
-    e.respondWith(fetch(e.request, { cache:'no-store' }));
+    e.respondWith(
+      fetch(e.request, { cache:'no-store' }).catch(function (err) {
+        return new Response('Offline — could not load ' + url.pathname,
+          { status: 503, headers: { 'Content-Type': 'text/plain' } });
+      })
+    );
     return;
   }
 
-  // Other HTML pages stay network-first with a cached fallback offline.
-  if (e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html')) {
-    e.respondWith(fetch(e.request).catch(function(){ return caches.match(e.request); }));
+  /* Other HTML pages: network first, cached copy as an offline fallback. */
+  var accept = e.request.headers.get('accept') || '';
+  if (accept.indexOf('text/html') !== -1) {
+    e.respondWith(
+      fetch(e.request).catch(function () {
+        return caches.match(e.request).then(function (hit) {
+          return hit || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+        });
+      })
+    );
     return;
   }
 
-  // Remaining static assets can stay cache-first.
+  /* Remaining static assets: cache first, then network. */
   e.respondWith(
-    caches.match(e.request).then(function(cached) {
+    caches.match(e.request).then(function (cached) {
       if (cached) return cached;
-      return fetch(e.request).then(function(res) {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE).then(function(c) { c.put(e.request, clone); });
+      return fetch(e.request).then(function (res) {
+        if (res && res.ok) {
+          var clone = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(e.request, clone); }).catch(function () {});
         }
         return res;
+      }).catch(function () {
+        return new Response('', { status: 504, statusText: 'Offline' });
       });
     })
   );
