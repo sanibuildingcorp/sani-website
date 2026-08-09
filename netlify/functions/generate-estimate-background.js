@@ -19,7 +19,14 @@ const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const { applyDeterministicPricing, consolidateCustomerPresentation } = require("./lib/deterministic-pricing");
 
-const CLAUDE_MODEL = process.env.ESTIMATOR_MODEL || "claude-sonnet-4-5-20250929";
+/* Claude Opus 5. Thinking is ON BY DEFAULT on this model and shares the max_tokens
+   budget with the response text, which is why every call site below was raised.
+   Effort is the control for thinking depth (low|medium|high|xhigh|max, default high);
+   raise CLAUDE_EFFORT to "xhigh" if quantity errors persist. Do NOT send a `thinking`
+   field - the default is correct and disabling it at xhigh/max is a 400. Do NOT send
+   temperature - Claude 5 models reject non-default sampling parameters. */
+const CLAUDE_MODEL = process.env.ESTIMATOR_MODEL || "claude-opus-5";
+const CLAUDE_EFFORT = process.env.ESTIMATOR_EFFORT || "high";
 const OPENAI_ANALYSIS_MODEL = process.env.ESTIMATOR_ANALYSIS_MODEL || "gpt-5-mini";
 const DEFAULT_MARKUP = 25;
 
@@ -60,14 +67,14 @@ exports.handler = async function handler(event) {
     const analysisPrompt = buildProjectAnalysisPrompt(input);
     const rawAnalysis = openaiKey
       ? await callOpenAI(openaiKey, analysisPrompt)
-      : await callClaude(anthropicKey, analysisPrompt, 6000);
+      : await callClaude(anthropicKey, analysisPrompt, 16000);
     const projectAnalysis = normalizeProjectAnalysis(parseAiJson(rawAnalysis, "project analysis"), input);
     timing.analysisMs = Date.now() - analysisStarted;
 
     const estimateStarted = Date.now();
     const estimatePrompt = buildEstimatePrompt(input, projectAnalysis);
     const rawEstimate = anthropicKey
-      ? await callClaude(anthropicKey, estimatePrompt, 8000)
+      ? await callClaude(anthropicKey, estimatePrompt, 32000)
       : await callOpenAI(openaiKey, estimatePrompt);
     let estimate = normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis);
     timing.estimateMs = Date.now() - estimateStarted;
@@ -97,7 +104,7 @@ exports.handler = async function handler(event) {
       try {
         const repairPrompt = buildRepairPrompt(input, projectAnalysis, estimate, validation);
         const rawRepair = anthropicKey
-          ? await callClaude(anthropicKey, repairPrompt, 8000)
+          ? await callClaude(anthropicKey, repairPrompt, 32000)
           : await callOpenAI(openaiKey, repairPrompt);
         let repaired = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);
         deterministicStarted = Date.now();
@@ -798,7 +805,12 @@ function extractOpenAIText(json) {
 }
 
 function callClaude(apiKey, prompt, maxTokens) {
-  const payload = JSON.stringify({ model: CLAUDE_MODEL, max_tokens: maxTokens, temperature: 0.1, messages: [{ role: "user", content: prompt }] });
+  const payload = JSON.stringify({
+    model: CLAUDE_MODEL,
+    max_tokens: maxTokens,
+    output_config: { effort: CLAUDE_EFFORT },
+    messages: [{ role: "user", content: prompt }],
+  });
   return new Promise((resolve, reject) => {
     const req = https.request(
       {
@@ -816,7 +828,13 @@ function callClaude(apiKey, prompt, maxTokens) {
           if (res.statusCode >= 200 && res.statusCode < 300) {
             try {
               const json = JSON.parse(body);
-              const text = (json.content || []).map((part) => part.text || "").join("");
+              /* With thinking on, content carries thinking blocks alongside the
+                 answer. They have no .text, so filtering on type is explicit rather
+                 than relying on `|| ""` to skip them silently. */
+              const text = (json.content || [])
+                .filter((part) => part && part.type === "text")
+                .map((part) => part.text || "")
+                .join("");
               /* A response cut off at max_tokens is valid HTTP and invalid JSON, and
                  parseAiJson's brace-slice fallback cannot rescue it - it finds a nested
                  closing brace and produces another invalid slice. Without this check the
@@ -834,7 +852,10 @@ function callClaude(apiKey, prompt, maxTokens) {
         });
       }
     );
-    req.setTimeout(240000, () => req.destroy(new Error("Claude request timed out after 4 minutes")));
+    /* Thinking makes a deep estimate pass take materially longer than it did on
+       Sonnet 4.5. This is a background function (15-minute ceiling), so the socket
+       must not give up first. */
+    req.setTimeout(600000, () => req.destroy(new Error("Claude request timed out after 10 minutes")));
     req.on("error", reject);
     req.write(payload);
     req.end();
