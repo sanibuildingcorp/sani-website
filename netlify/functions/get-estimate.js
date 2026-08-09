@@ -61,7 +61,7 @@ function buildCustomerView(source, previewDraft) {
   // exist. Old published wording may contain services that were later consolidated
   // into another parent service (for example Flooring/Painting into Bathroom). Those
   // stale zero-value services must never reappear on the customer quote.
-  const deterministic = /^v8\.2-deterministic-four-service/i.test(String(estimate.customerPresentationVersion || ""));
+  const deterministic = /^v8\.\d+-deterministic-four-service/i.test(String(estimate.customerPresentationVersion || ""));
   let allowedTitles = null;
   if (deterministic && Array.isArray(estimate.serviceBreakdown)) {
     allowedTitles = new Set(

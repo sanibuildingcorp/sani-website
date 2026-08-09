@@ -8,6 +8,7 @@
 const https = require("https");
 const nodemailer = require("nodemailer");
 const { getStore } = require("@netlify/blobs");
+const customerTotals = require("./lib/customer-total");
 
 function isValidEmail(e) {
   return typeof e === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
@@ -57,8 +58,11 @@ exports.handler = async function (event) {
       };
     }
 
-    const calc = calcAll(est);
-    const total = record.customerFinalTotal != null ? Number(record.customerFinalTotal) : calc.customerTotal;
+    /* One definition, imported. This used to be a local calcAll() plus a separate
+       customerFinalTotal override, which is how the email and the contract drifted
+       apart from the quote page. */
+    const T = customerTotals(est, record);
+    const total = T.customerTotal;
     const quoteUrl = `${siteUrl}/quote.html?ref=${encodeURIComponent(ref)}`;
     const firstName = (customer.name || "there").split(" ")[0];
     const projectTitle = est.projectTitle || reqData.service || "your project";
@@ -66,11 +70,9 @@ exports.handler = async function (event) {
     const issuedDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
     // What kind of cost is this number? Same truth-labels as quote.html.
-    const _inclL = est.showLaborCost !== false;
-    const _inclM = est.showMaterialsCost === true;
     let costTypeLabel = "";
-    if (_inclM && !_inclL)       costTypeLabel = "Materials cost only — labor quoted separately";
-    else if (_inclL && !_inclM && (est.materials || []).length > 0) costTypeLabel = "Labor cost only — materials not included";
+    if (T.showMaterials && !T.showLabor)      costTypeLabel = "Materials cost only — labor quoted separately";
+    else if (T.showLabor && !T.showMaterials && (est.materials || []).length > 0) costTypeLabel = "Labor cost only — materials not included";
 
     // ── PERSONAL-STYLE EMAIL ─────────────────────────────────────────────────
     // Reads like a note Zurabi typed himself. Minimal HTML = Primary tab.
@@ -176,45 +178,6 @@ exports.handler = async function (event) {
   }
 };
 
-function calcAll(est) {
-  if (!est) return { customerTotal: 0, shownLabor: 0, shownMaterials: 0, hasLabor: false, hasMaterials: false, showLabor: false, showMaterials: false, bothHidden: true };
-  const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const mat = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const markupPct = Number(est.markupPct) || 0;
-  const laborWithMarkup = labor * (1 + markupPct / 100);
-  const matWithMarkup = mat * (1 + markupPct / 100);
-
-  let showLabor, showMaterials;
-  if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
-    showLabor = est.showLaborCost !== false;
-    showMaterials = est.showMaterialsCost === true;
-  } else if (est.displayMode === "total") {
-    showLabor = false; showMaterials = false;
-  } else if (est.displayMode === "full") {
-    showLabor = true; showMaterials = true;
-  } else {
-    showLabor = true; showMaterials = false;
-  }
-
-  const bothHidden = !showLabor && !showMaterials;
-  const fallbackGrand = (labor + mat) * (1 + markupPct / 100);
-  const shownLabor = showLabor ? laborWithMarkup : 0;
-  const shownMaterials = showMaterials ? matWithMarkup : 0;
-  /* The email must state the same number as the quote page: whatever the contractor
-     chose to show. Labor only means the customer is quoted the labor total. */
-  const customerTotal = bothHidden ? Math.round(fallbackGrand * 100) / 100 : Math.round((shownLabor + shownMaterials) * 100) / 100;
-
-  return {
-    customerTotal,
-    shownLabor: Math.round(shownLabor * 100) / 100,
-    shownMaterials: Math.round(shownMaterials * 100) / 100,
-    hasLabor: labor > 0,
-    hasMaterials: mat > 0,
-    showLabor,
-    showMaterials,
-    bothHidden,
-  };
-}
 
 function fmt(n) {
   return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

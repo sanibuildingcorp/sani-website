@@ -2,6 +2,7 @@
 // Returns all estimates from Blobs storage. Dashboard calls this on load.
 
 const { getStore } = require("@netlify/blobs");
+const customerTotals = require("./lib/customer-total");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -43,7 +44,11 @@ exports.handler = async function (event) {
       },
       estimate: {
         projectTitle: e.estimate?.projectTitle || "",
-        grandTotal: calculateTotal(e.estimate),
+        /* grandTotal stays the INTERNAL figure - this list is the contractor's.
+           customerTotal is what that job's quote page actually shows, so the two
+           can be told apart at a glance instead of assumed equal. */
+        grandTotal: customerTotals(e.estimate, e).grandTotal,
+        customerTotal: customerTotals(e.estimate, e).customerTotal,
       },
       submittedAt: e.submittedAt,
       updatedAt: e.updatedAt,
@@ -71,14 +76,6 @@ exports.handler = async function (event) {
   }
 };
 
-function calculateTotal(est) {
-  if (!est) return 0;
-  const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const materials = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const subtotal = labor + materials;
-  const markup = subtotal * ((Number(est.markupPct) || 0) / 100);
-  return Math.round((subtotal + markup) * 100) / 100;
-}
 
 function cors() {
   return {

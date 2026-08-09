@@ -4,6 +4,7 @@
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
+const customerTotals = require("./lib/customer-total");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -75,7 +76,10 @@ exports.handler = async function (event) {
 async function notifyContractor(resendKey, contractorEmail, record, action, signature, declineReason, questionText) {
   const customer = record.customer || {};
   const est = record.estimate || {};
-  const total = (record.customerFinalTotal != null) ? Number(record.customerFinalTotal) : calculateTotal(est);
+  /* The number in your inbox is the number the customer just agreed to, so it
+     matches the page he clicked Approve on. It used to be the internal grand
+     total, which on a labor-only job read $47,117.50 against a $24,835.00 quote. */
+  const total = customerTotals(est, record).customerTotal;
 
   const isAccept = action === "accept";
   const isReview = action === "review";
@@ -155,14 +159,6 @@ async function notifyContractor(resendKey, contractorEmail, record, action, sign
   });
 }
 
-function calculateTotal(est) {
-  if (!est) return 0;
-  const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const materials = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const subtotal = labor + materials;
-  const markup = subtotal * ((Number(est.markupPct) || 0) / 100);
-  return Math.round((subtotal + markup) * 100) / 100;
-}
 
 function escapeHtml(t) {
   if (t == null) return "";

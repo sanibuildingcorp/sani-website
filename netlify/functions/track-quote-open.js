@@ -9,6 +9,7 @@
 // ============================================================
 
 const { getStore } = require("@netlify/blobs");
+const customerTotals = require("./lib/customer-total");
 
 const PIXEL = Buffer.from(
   "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
@@ -76,16 +77,15 @@ function pixelResponse(cors) {
   };
 }
 
-function computeTotal(est) {
+/* This alert tells you what the customer is looking at, so it reports the
+   customer-facing total. An explicit total stored on the estimate still wins. */
+function computeTotal(est, record) {
   if (!est) return null;
   for (const k of ["customerTotal", "grandTotal", "total"]) {
     if (est[k] != null && est[k] !== "") return Number(est[k]);
   }
-  const labor = (est.labor || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const mat = (est.materials || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
-  const markup = Number(est.markupPct) || 0;
-  const sum = (labor + mat) * (1 + markup / 100);
-  return sum > 0 ? Math.round(sum * 100) / 100 : null;
+  const sum = customerTotals(est, record).customerTotal;
+  return sum > 0 ? sum : null;
 }
 
 async function sendEmail(record, ref) {
@@ -108,7 +108,7 @@ async function sendEmail(record, ref) {
   const openCount = record.openCount || 1;
   const repeat = openCount > 1;
 
-  const totalNum = computeTotal(est);
+  const totalNum = computeTotal(est, record);
   const totalStr = totalNum != null
     ? "$" + Number(totalNum).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : null;

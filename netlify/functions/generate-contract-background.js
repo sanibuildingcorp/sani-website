@@ -7,6 +7,7 @@
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
+const customerTotals = require("./lib/customer-total");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -50,12 +51,14 @@ exports.handler = async function (event) {
     const est = record.estimate || {};
     const reqData = record.request || {};
 
-    // ---- Total (honor customer's final total if they changed finishes) ----
-    const mk = 1 + (Number(est.markupPct) || 0) / 100;
-    const laborSum = (est.labor || []).reduce(function (s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
-    const matSum = (est.materials || []).reduce(function (s, i) { return s + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0);
-    const baseTotal = Math.round((laborSum + matSum) * mk * 100) / 100;
-    const total = record.customerFinalTotal != null ? Number(record.customerFinalTotal) : baseTotal;
+    /* ---- Total ----
+       THE CONTRACT MUST STATE THE PRICE THE CUSTOMER AGREED TO, not the internal
+       grand total. This block used to sum labor + materials unconditionally and
+       never looked at showLaborCost / showMaterialsCost, so a labor-only quote the
+       customer approved at $24,835.00 produced a signed agreement for $47,117.50
+       with a deposit and milestones built on it. Same function the quote page and
+       the email use. */
+    const total = customerTotals(est, record).customerTotal;
 
     // ---- Materials & selected finishes ----
     const materialNames = (est.materials || [])
