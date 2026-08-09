@@ -20,7 +20,21 @@ const q=new URLSearchParams(location.search),ref=q.get('ref'),app=document.getEl
 const A=v=>Array.isArray(v)?v:[],E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])),M=n=>'$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),C=s=>String(s??'').trim(),N=s=>C(s).toLowerCase(),LT=l=>(+l.qty||0)*(+l.rate||0),U=a=>{let r=[],z=new Set;A(a).forEach(x=>{x=C(x);let k=N(x).replace(/[^a-z0-9]+/g,' ');if(x&&!z.has(k)){z.add(k);r.push(x)}});return r};
 function trade(item,declared){const x=N(item),d=N(declared);if(/window|sash|balance|spring/.test(x))return'Windows';if(/bathroom painting|bath paint/.test(x))return'Bathroom';if(/shower|vanity|toilet|faucet|plumb|waterproof|membrane|grout|thinset|tile|glass enclosure|shower glass|bathroom|tub|drain|backer board/.test(x))return'Bathroom';if(/engineered hardwood|hardwood|subfloor|flooring|underlayment|transition|floor prep|floor removal/.test(x))return'Flooring';if(/interior paint|painting|painter|primer|spackle|patch|walls|ceilings|doors|trim/.test(x))return'Painting';if(d&&d!=='general')return C(declared);return'General'}
 function isOption(item){return /\boption\s*[ab12]\b|alternate/i.test(N(item))}function optionKey(item){let x=N(item);if(/option\s*a|option\s*1/.test(x))return'A';if(/option\s*b|option\s*2/.test(x))return'B';return''}
-function calc(e){let l=A(e.labor).reduce((s,x)=>s+LT(x),0),m=A(e.materials).reduce((s,x)=>s+LT(x),0),k=1+(+e.markupPct||0)/100,total=rec&&rec.customerFinalTotal!=null?+rec.customerFinalTotal:(l+m)*k;return{l,m,k,total}}
+/* THE CUSTOMER'S TOTAL IS WHAT THE CONTRACTOR CHOSE TO SHOW.
+   Show labor only  -> the customer sees the labor total and pays that.
+   Show materials only -> the materials total.
+   Show both / show neither -> the full grand total.
+   Markup is baked into every one of those figures and is NEVER displayed as its own
+   number or row: the customer must not be able to read the contractor's margin.
+   quote.html previously ignored these flags entirely and always billed (l+m)*k, so a
+   labor-only quote said $47,117.50 when the dashboard promised $24,835.00. */
+function calc(e){
+ const l=A(e.labor).reduce((s,x)=>s+LT(x),0),m=A(e.materials).reduce((s,x)=>s+LT(x),0),k=1+(+e.markupPct||0)/100;
+ const showLabor=e.showLaborCost!==false,showMat=e.showMaterialsCost===true;
+ const bothHidden=!showLabor&&!showMat;
+ const shown=bothHidden?(l+m)*k:((showLabor?l*k:0)+(showMat?m*k:0));
+ const total=rec&&rec.customerFinalTotal!=null?+rec.customerFinalTotal:shown;
+ return{l,m,k,total,showLabor,showMat,bothHidden}}
 function friendly(item){let t=C(item).replace(/^labor\s*[-:]\s*/i,'').replace(/\s*@\s*\$?[\d,.]+.*$/,'').replace(/\s{2,}/g,' ');if(!t)return'';if(/bathroom demolition/i.test(t))return'Protect the work area; remove existing bathroom finishes and fixtures as specified; load and dispose of debris';if(/tile install/i.test(t))return'Prepare substrates and install bathroom wall and floor tile; complete grout, sealant, and finish work';if(/plumb.*shower|shower.*plumb|vanity.*toilet|toilet.*vanity/i.test(t))return'Install and connect shower valve/trim, vanity/sink/faucet, and toilet in their existing plumbing locations';if(/glass enclosure|shower glass/i.test(t))return'Fabricate and install the frameless shower glass enclosure as specified';if(/engineered hardwood/i.test(t))return'Prepare the installation area and install engineered hardwood flooring, including cuts, fitting, transitions, and finish details';if(/interior paint|painter/i.test(t))return'Prepare and paint included interior walls, ceilings, doors, and trim, including minor patching, sanding, spot priming, touch-ups, and cleanup';if(/project management|supervision|coordination/i.test(t))return'Project coordination, scheduling, deliveries, and quality control';if(/cleanup|final clean/i.test(t))return'Final cleanup and removal of construction debris';return t.charAt(0).toUpperCase()+t.slice(1)}
 /* CUSTOMER COST BREAKDOWN.
    showLaborCost / showMaterialsCost decide which BREAKDOWN ROWS appear. They never
@@ -29,13 +43,10 @@ function friendly(item){let t=C(item).replace(/^labor\s*[-:]\s*/i,'').replace(/\
    total. If the contractor has set a manual total, the rows are scaled to it so
    they still add up. */
 function costRows(e,ct){
- const showLabor=e.showLaborCost!==false,showMat=e.showMaterialsCost===true;
- if(!showLabor&&!showMat)return'';
- const base=(ct.l+ct.m)*ct.k;
- const f=(base>0&&ct.total>0)?(ct.total/base):1;
+ if(ct.bothHidden)return'';
  let h='';
- if(showLabor)h+=`<div class="pr"><span>Labor</span><span>${M(ct.l*ct.k*f)}</span></div>`;
- if(showMat)h+=`<div class="pr"><span>Materials</span><span>${M(ct.m*ct.k*f)}</span></div>`;
+ if(ct.showLabor)h+=`<div class="pr"><span>Labor</span><span>${M(ct.l*ct.k)}</span></div>`;
+ if(ct.showMat)h+=`<div class="pr"><span>Materials</span><span>${M(ct.m*ct.k)}</span></div>`;
  return h}
 function laborLike(l){return !/allowance|material|membrane|thinset|grout|paint supplies|sealant|insulation|flashing/i.test(N(l.item))}
 /* A service that carries real scope wording but has no price of its own must not
@@ -110,8 +121,14 @@ function finalizeServices(e,active){
     than letting the customer read a sum that does not match their own total. */
  const c=calc(e),sum=folded.reduce((a,b)=>a+b.subtotal,0);
  if(folded.length&&c.total>0&&Math.abs(sum-c.total)>=1){
-  const main=folded.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),folded[0]);
-  main.subtotal+=c.total-sum}
+  /* When only labor (or only materials) is shown, every card's share must shrink in
+     proportion. Dumping the whole difference on the largest card would show one
+     service at a fraction of its price - or negative - while the others kept their
+     full figure. Only a genuine leftover under $1 is parked. */
+  if(sum>0){const f=c.total/sum;folded.forEach(x=>{x.subtotal=Math.round(x.subtotal*f*100)/100});
+   const s2=folded.reduce((a,b)=>a+b.subtotal,0),d=Math.round((c.total-s2)*100)/100;
+   if(d)folded.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),folded[0]).subtotal+=d}
+  else{const main=folded.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),folded[0]);main.subtotal+=c.total-sum}}
  return folded}
 function build(e){/* Services are whatever this estimate ACTUALLY contains, not a fixed list of four.
  A hardcoded list sent General, Carpentry, Drywall and every other section into
