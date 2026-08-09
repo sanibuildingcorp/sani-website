@@ -200,11 +200,9 @@ function calcAll(est) {
   const fallbackGrand = (labor + mat) * (1 + markupPct / 100);
   const shownLabor = showLabor ? laborWithMarkup : 0;
   const shownMaterials = showMaterials ? matWithMarkup : 0;
-  /* The customer is always quoted the FULL grand total. showLaborCost /
-     showMaterialsCost decide which breakdown rows appear, never the price. This line
-     previously read (shownLabor + shownMaterials), so a labor-only display emailed
-     $24,835.00 while the quote page it linked to said $47,117.50. */
-  const customerTotal = Math.round(fallbackGrand * 100) / 100;
+  /* The email must state the same number as the quote page: whatever the contractor
+     chose to show. Labor only means the customer is quoted the labor total. */
+  const customerTotal = bothHidden ? Math.round(fallbackGrand * 100) / 100 : Math.round((shownLabor + shownMaterials) * 100) / 100;
 
   return {
     customerTotal,
