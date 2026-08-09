@@ -5,6 +5,8 @@
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
+const thread = require("./lib/thread");
+const buildMessageEmail = require("./lib/message-email");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -29,6 +31,10 @@ exports.handler = async function (event) {
       return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "Not found" }) };
     }
 
+    let threadOut = thread.normalizeThread(record);
+    let newMessage = null;
+    let previousMessage = null;
+
     if (action === "accept") {
       record.status = "accepted";
       record.acceptedAt = new Date().toISOString();
@@ -43,9 +49,45 @@ exports.handler = async function (event) {
       if (materialsSelections) record.customerMaterialSelections = materialsSelections;
       if (finalTotal != null) record.customerFinalTotal = finalTotal;
     } else if (action === "question") {
-      record.status = "question";
+      /* THE THREAD IS APPEND-ONLY.
+         record.customerQuestion was one string, rewritten on every question, so
+         asking a second thing destroyed the first - and the customer saw no trace
+         of either. It is still written below because the old read path has not
+         been removed yet; lib/thread.js migrates it into message zero for any
+         record that predates the thread. Do not drop it until nothing reads it. */
+      const text = String(questionText || "").trim();
+      if (!text) {
+        return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Write a message first." }) };
+      }
+      if (text.length > thread.MAX_MESSAGE_CHARS) {
+        return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Message is too long — keep it under " + thread.MAX_MESSAGE_CHARS + " characters." }) };
+      }
+      /* Public endpoint, guessable ref. A burst limit counted on the record needs
+         no shared store and cannot be bypassed by rotating IPs. It is a floor,
+         not the missing auth - that is still outstanding. */
+      const rate = thread.checkRate(record, Date.now());
+      if (!rate.allowed) {
+        record.threadRate = rate.state;
+        try { await store.setJSON(ref, record); } catch (_) {}
+        return { statusCode: 429, headers: cors(), body: JSON.stringify({ error: "Too many messages just now. Please call (332) 277-0990." }) };
+      }
+      record.threadRate = rate.state;
+
+      previousMessage = lastThreadMessage(record);
+      const appended = thread.appendMessage(record, { from: "customer", text: text, via: "quote" });
+      if (appended.added) {
+        record.thread = appended.thread;
+        record.threadUpdatedAt = appended.message.at;
+        record.lastCustomerMessageAt = appended.message.at;
+        newMessage = appended.message;
+      }
+      threadOut = appended.thread;
+
+      /* The quote stays OPEN when a customer asks something - a question is not a
+         rejection - so the status only moves if nothing more final has happened. */
+      if (record.status !== "accepted" && record.status !== "declined") record.status = "question";
       record.questionAskedAt = new Date().toISOString();
-      record.customerQuestion = questionText || "";
+      record.customerQuestion = text;
     } else {
       record.status = "declined";
       record.declinedAt = new Date().toISOString();
@@ -58,32 +100,54 @@ exports.handler = async function (event) {
     const resendKey = process.env.RESEND_API_KEY;
     const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
 
-    /* The customer's response is already saved, so a failed notification must never
-       fail their request - but it must not vanish either. It is stamped on the record
-       so the dashboard can show that a reply arrived without an email going out, and
-       returned so the page can tell the customer to call if we did not reach us. */
     let notified = false;
     let notifyError = "";
-    if (resendKey) {
+    if (!resendKey) {
+      notifyError = "RESEND_API_KEY is not set — your message was saved but we were not notified by email.";
+    } else {
       try {
-        await notifyContractor(resendKey, contractorEmail, record, action, signature, declineReason, questionText);
+        if (action === "question" && newMessage) {
+          /* A bare "Test 3 answer" with no project on it is what started this.
+             Every message email, both directions, carries the same project header
+             and the same customer-facing total - from lib/customer-total.js, never
+             re-derived here. */
+          const mail = buildMessageEmail({
+            ref: ref, record: record, message: newMessage, previous: previousMessage, audience: "contractor",
+          });
+          await sendResend(resendKey, {
+            from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
+            to: [contractorEmail],
+            reply_to: (record.customer && record.customer.email) || undefined,
+            subject: mail.subject,
+            html: mail.html,
+            text: mail.text,
+            headers: { "X-Entity-Ref-ID": ref },
+          });
+        } else {
+          await notifyContractor(resendKey, contractorEmail, record, action, signature, declineReason, questionText);
+        }
         notified = true;
       } catch (e) {
-        notifyError = String(e && e.message || e).slice(0, 300);
-        console.error("Notification failed:", notifyError);
+        console.error("Notification failed:", e.message);
+        notifyError = "Saved, but the notification email did not go out.";
       }
-    } else {
-      notifyError = "RESEND_API_KEY not set";
-      console.error("Notification skipped:", notifyError);
     }
 
-    if (!notified) {
-      record.notificationFailedAt = new Date().toISOString();
-      record.notificationError = notifyError;
-      try { await store.setJSON(ref, record); } catch (e2) {}
-    }
-
-    return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true, status: record.status, notified: notified }) };
+    /* Saved and notified are reported separately. A saved message must never
+       claim success when the other side was never told - the page tells the
+       customer to call instead. */
+    return {
+      statusCode: 200,
+      headers: cors(),
+      body: JSON.stringify({
+        success: true,
+        status: record.status,
+        notified: notified,
+        error: notified ? undefined : notifyError,
+        message: newMessage,
+        thread: threadOut,
+      }),
+    };
   } catch (err) {
     console.error("quote-response error:", err.message);
     return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
@@ -168,17 +232,9 @@ async function notifyContractor(resendKey, contractorEmail, record, action, sign
 </body></html>`;
 
   return sendResend(resendKey, {
-    /* onboarding@resend.dev is Resend's shared TEST sender. It only delivers to the
-       account owner's own address and is rejected outright for anything else, so
-       every "Request changes" and "Question" notification was being thrown away by
-       Resend while the customer was told "Thank you. We received your response."
-       Use the verified domain sender the rest of the system already uses. */
-    from: process.env.RESEND_FROM || "Sani Building Corp <estimates@sanibuildingcorp.com>",
+    from: "Sani Building Corp <onboarding@resend.dev>",
     to: [contractorEmail],
-    /* An invalid or empty reply_to is a 422 from Resend, which would lose the email
-       for a different reason. */
-    ...(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(customer.email || "").trim())
-        ? { reply_to: String(customer.email).trim() } : {}),
+    reply_to: customer.email,
     subject: `${emoji} ${isAccept ? "ACCEPTED" : (isReview ? "REVIEW NEEDED" : (isQuestion ? "QUESTION (still open)" : "DECLINED"))}: ${customer.name} — ${est.projectTitle || record.request?.service} (${record.ref})`,
     html,
   });
@@ -224,6 +280,11 @@ function sendResend(apiKey, payload) {
     req.write(data);
     req.end();
   });
+}
+
+function lastThreadMessage(record) {
+  const t = thread.normalizeThread(record);
+  return t.length ? t[t.length - 1] : null;
 }
 
 function cors() {

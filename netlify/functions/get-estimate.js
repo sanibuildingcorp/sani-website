@@ -11,6 +11,7 @@
 // exactly as stored. quote.html is responsible for applying published wording.
 
 const { getStore } = require("@netlify/blobs");
+const thread = require("./lib/thread");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -34,11 +35,20 @@ exports.handler = async function (event) {
     const isQuoteRequest = /\/quote(?:\.html)?(?:[?#]|$)/i.test(referer);
     const isDraftPreview = isQuoteRequest && /[?&]previewScope=1(?:&|$)/i.test(referer);
 
+    /* The thread is served already normalized - migrated, deduped, oldest first -
+       so quote.html and dashboard.html never have to agree on how to do that.
+       It is per-record and get-estimate is gated by ref, so a customer can only
+       ever receive their own conversation. */
     if (isQuoteRequest) {
-      return { statusCode: 200, headers: cors(), body: JSON.stringify(buildCustomerView(data, isDraftPreview)) };
+      const view = buildCustomerView(data, isDraftPreview);
+      view.thread = thread.normalizeThread(data);
+      /* Rate-limiter bookkeeping is ours, not theirs. */
+      delete view.threadRate;
+      return { statusCode: 200, headers: cors(), body: JSON.stringify(view) };
     }
 
     // Dashboard and internal tools receive the exact stored estimate.
+    data.thread = thread.normalizeThread(data);
     return { statusCode: 200, headers: cors(), body: JSON.stringify(data) };
   } catch (err) {
     console.error("get-estimate error:", err.message);

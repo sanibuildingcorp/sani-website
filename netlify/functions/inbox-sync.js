@@ -34,6 +34,54 @@ const OWN_PATTERNS = [
   "@google.com", "@resend.", "@netlify.", "@cloudflare.",
 ];
 
+const { getStore } = require("@netlify/blobs");
+const thread = require("./lib/thread");
+
+/* THE GMAIL BRIDGE.
+   Zura answers from his phone's Gmail app between jobs and always will. A design
+   that needs him to open the dashboard every time fails in a week. Outbound
+   message emails carry the ref in the SUBJECT - "Re: SBC-260809-VUUI — Three
+   Interior Staircases" - and Gmail keeps the subject on reply, so his reply names
+   the job even though he never thought about it. If the subject has been
+   rewritten, the quoted original underneath usually still carries the ref.
+
+   Keyed on the RFC Message-ID, never on matching text, so re-reading the same
+   mail on the next sync is a no-op rather than a duplicate.
+
+   Honest limit: a brand-new email with no ref anywhere cannot be matched. It
+   still lands in lead_messages and the dashboard inbox - it just will not appear
+   on the customer's portal. That is why the dashboard reply box is the primary
+   path and this is the fallback. */
+async function bridgeToEstimateThread(row, fromAddr) {
+  const ref = thread.refFromText(row.subject, row.body);
+  if (!ref) return { bridged: false, reason: "no-ref" };
+  try {
+    const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
+    const record = await store.get(ref, { type: "json" });
+    if (!record) return { bridged: false, reason: "no-record" };
+
+    /* Whose voice is this? Mail arriving FROM the customer on this record is
+       theirs; anything else that quotes the ref is his. inbox-sync has already
+       dropped our own sending addresses before this point. */
+    const customerEmail = String((record.customer && record.customer.email) || "").trim().toLowerCase();
+    const from = customerEmail && fromAddr === customerEmail ? "customer" : "contractor";
+
+    const appended = thread.appendMessage(record, {
+      id: row.message_id, from: from, text: row.body, at: row.created_at, via: "gmail", subject: row.subject,
+    });
+    if (!appended.added) return { bridged: false, reason: appended.reason };
+
+    record.thread = appended.thread;
+    record.threadUpdatedAt = appended.message.at;
+    if (from === "customer") record.lastCustomerMessageAt = appended.message.at;
+    else record.lastContractorMessageAt = appended.message.at;
+    await store.setJSON(ref, record);
+    return { bridged: true, ref: ref, from: from };
+  } catch (e) {
+    return { bridged: false, reason: String((e && e.message) || e).slice(0, 120) };
+  }
+}
+
 exports.handler = async function (event) {
   const q = event.queryStringParameters || {};
   if (q.ping === "1") {
@@ -53,6 +101,7 @@ exports.handler = async function (event) {
   if (!user || !pass) return json(200, { synced: 0, skipped: "GMAIL_USER / GMAIL_APP_PASSWORD not set in Netlify env yet" });
 
   const deadline = Date.now() + 8000; // stay under the 10s function limit
+  const bridgedToThreads = [];
 
   // 1) Known-customer set (this is the spam wall)
   let known;
@@ -132,6 +181,13 @@ exports.handler = async function (event) {
           created_at: msg.envelope.date ? new Date(msg.envelope.date).toISOString() : new Date().toISOString(),
         };
         const res = await sbInsertIgnoreDupes("lead_messages", row);
+        /* lead_messages stays the CRM record of every mail. The bridge is
+           additive: a mail that names an estimate ALSO joins that estimate's
+           thread. A failure here must never stop the CRM write. */
+        try {
+          const b = await bridgeToEstimateThread(row, fromAddr);
+          if (b.bridged) bridgedToThreads.push(b.ref + " (" + b.from + ")");
+        } catch (_) {}
         if (res.inserted) inserted++;
         else if (res.status === 409 || res.status === 200 || res.status === 204) matchedButDupe++;
         else insertErrors.push("HTTP " + res.status + " " + String(res.detail || "").slice(0, 160));
@@ -149,6 +205,7 @@ exports.handler = async function (event) {
     ok: true, scanned: seen, newMessages: inserted, alreadySynced: matchedButDupe,
     skippedOwnOrSystem: skippedOwn, skippedNotACustomer: skippedUnknown,
     knownCustomers: known.size,
+    bridgedToEstimateThreads: bridgedToThreads,
     insertErrors: insertErrors.slice(0, 3),
   });
 };
