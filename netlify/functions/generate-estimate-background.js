@@ -329,7 +329,7 @@ function normalizeSelectedServices(request) {
 }
 
 function buildProjectAnalysisPrompt(input) {
-  return `You are the Senior Project Intake Manager and Renovation Scope Analyst for Sani Building Corp, an experienced, fully insured NYC-metro renovation and repair contractor.\n\nYou DO NOT generate prices in this stage. Your job is to understand what the customer is trying to accomplish, even when the customer uses imperfect homeowner language, mixes technical terms, omits details, or appears to contradict themselves.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nFULL CUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nCORE ANALYSIS RULES:\n1. Read every source together: selected services, description, answers, customer-supplied items, photos, address, and contractor corrections.\n2. Contractor notes are authoritative and override customer statements only where they directly conflict.\n3. Separate confirmed scope, reasonably implied scope, assumptions, exclusions, missing information and conflicts.\n4. Translate homeowner language into contractor-level scope without changing intent.\n5. Never silently invent major work. Normal enabling work may be listed as implied, with a reason.\n6. Distinguish keeping, repairing, refinishing, replacing in the same location, relocating, supplying and installing.\n7. "Fixtures remain in current locations" normally means no relocation; it does NOT mean the fixtures remain existing when replacement is requested elsewhere.\n8. Customer-supplied finish materials eliminate only the purchase price of those finish items. They do NOT eliminate installation labor, handling, rough materials, adhesives, fasteners, waterproofing, plumbing connections, electrical connections, protection, disposal or consumables.\n9. Every selected trade must be represented. Never let one dominant trade erase another selected trade.\n10. Extract all quantities: square feet, linear feet, dimensions, fixture counts, window counts, room counts and floor level.\n11. Identify site conditions: occupied/vacant, walk-up/elevator, floor, debris route, parking/loading, work hours, building rules and protection.\n12. Ask only questions that materially change scope, labor, materials, schedule, risk or price.\n13. Do not ask low-impact cosmetic questions merely to fill a form.\n14. Use one status:\n   READY_TO_ESTIMATE — major scope, quantities, supply responsibility and site conditions are sufficiently clear.\n   PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS — a useful estimate is possible but defined assumptions are required.\n   NEEDS_CUSTOMER_QUESTIONS — critical information is missing and would materially change the estimate.\n   SITE_VISIT_REQUIRED — online information cannot responsibly establish scope/price.\n15. Never choose the smallest possible interpretation just to lower price. Use the most reasonable professional interpretation supported by the full record.\n16. If the customer requested alternatives (for example replace all windows vs replace some and repair others), preserve EACH option separately.\n17. Identify customer exclusions exactly. If the customer says kitchen is excluded, do not include kitchen painting/flooring/etc.\n18. Keep questions homeowner-friendly and include "Not sure" where appropriate.\n\nReturn JSON only with EXACT top-level structure:\n{\n  "project_summary": "",\n  "project_type": "repair | partial renovation | full renovation | installation | replacement | restoration | mixed",\n  "selected_trades": [],\n  "confirmed_scope": [\n    { "trade": "", "scope_items": [], "quantities": {}, "customer_exclusions": [] }\n  ],\n  "inferred_scope": [\n    { "trade": "", "item": "", "reason": "", "requires_confirmation": true }\n  ],\n  "customer_supplied_finish_materials": [],\n  "contractor_supplied_finish_materials": [],\n  "contractor_supplied_rough_materials": [],\n  "site_conditions": {\n    "occupied_status": "",\n    "floor_number": "",\n    "elevator_access": "",\n    "walk_up": "",\n    "work_hours": "",\n    "debris_access": "",\n    "parking_loading": "",\n    "building_requirements": "",\n    "protection_requirements": ""\n  },\n  "quantities": {},\n  "assumptions": [],\n  "exclusions": [],\n  "conflicts": [\n    { "issue": "", "likely_interpretation": "", "needs_confirmation": true }\n  ],\n  "missing_information": [\n    { "question": "", "reason_needed": "", "priority": "critical | pricing | site_condition | optional", "affected_trade": "" }\n  ],\n  "clarification_questions": [\n    {\n      "id": "",\n      "question": "",\n      "helper_text": "",\n      "type": "single_select | multi_select | number | short_text | photo_request",\n      "options": [],\n      "affected_trade": "",\n      "pricing_importance": "critical | high | medium"\n    }\n  ],\n  "pricing_readiness": {\n    "status": "READY_TO_ESTIMATE | PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS | NEEDS_CUSTOMER_QUESTIONS | SITE_VISIT_REQUIRED",\n    "confidence_score": 0,\n    "reason": ""\n  }\n}`;
+  return `You are the Senior Project Intake Manager and Renovation Scope Analyst for Sani Building Corp, an experienced, fully insured NYC-metro renovation and repair contractor.\n\nYou DO NOT generate prices in this stage. Your job is to understand what the customer is trying to accomplish, even when the customer uses imperfect homeowner language, mixes technical terms, omits details, or appears to contradict themselves.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nFULL CUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nCORE ANALYSIS RULES:\n1. Read every source together: selected services, description, answers, customer-supplied items, photos, address, and contractor corrections.\n2. Contractor notes are authoritative and override customer statements only where they directly conflict.\n3. Separate confirmed scope, reasonably implied scope, assumptions, exclusions, missing information and conflicts.\n4. Translate homeowner language into contractor-level scope without changing intent.\n5. Never silently invent major work. Normal enabling work may be listed as implied, with a reason.\n6. Distinguish keeping, repairing, refinishing, replacing in the same location, relocating, supplying and installing.\n7. "Fixtures remain in current locations" normally means no relocation; it does NOT mean the fixtures remain existing when replacement is requested elsewhere.\n8. Customer-supplied finish materials eliminate only the purchase price of those finish items. They do NOT eliminate installation labor, handling, rough materials, adhesives, fasteners, waterproofing, plumbing connections, electrical connections, protection, disposal or consumables.\n9. Every selected trade must be represented. Never let one dominant trade erase another selected trade.\n10. Extract all quantities: square feet, linear feet, dimensions, fixture counts, window counts, room counts and floor level.\n11. Identify site conditions: occupied/vacant, walk-up/elevator, floor, debris route, parking/loading, work hours, building rules and protection.\n12. Ask only questions that materially change scope, labor, materials, schedule, risk or price.\n13. Do not ask low-impact cosmetic questions merely to fill a form.\n14. Use one status:\n   READY_TO_ESTIMATE — major scope, quantities, supply responsibility and site conditions are sufficiently clear.\n   PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS — a useful estimate is possible but defined assumptions are required.\n   NEEDS_CUSTOMER_QUESTIONS — critical information is missing and would materially change the estimate.\n   SITE_VISIT_REQUIRED — online information cannot responsibly establish scope/price.\n15. Never choose the smallest possible interpretation just to lower price. Use the most reasonable professional interpretation supported by the full record.\n16. If the customer requested alternatives (for example replace all windows vs replace some and repair others), preserve EACH option separately.\n17. Identify customer exclusions EXACTLY, and record each one against the trade it belongs to in confirmed_scope[].customer_exclusions - NOT in the top-level exclusions array. "Kitchen is excluded from painting" belongs to Painting. "Bathroom is excluded from flooring" belongs to Flooring. "No underlayment", "no transition strips" and "no baseboards" are THREE separate exclusions on Flooring, not one. Every sentence in which the customer says something is not wanted, not included, or is excluded becomes one entry, phrased close to his own words. Never merge several into one, and never drop one because it seems obvious from the scope. He wrote these limits down; he must be able to read every one of them back against the service it applies to.\n17b. The top-level exclusions array is ONLY for project-wide risks the customer did not raise himself: permits, concealed conditions, asbestos or mold, structural work, work outside normal hours. A generic risk exclusion must never take the place of something the customer actually asked to leave out.\n18. Keep questions homeowner-friendly and include "Not sure" where appropriate.\n\nReturn JSON only with EXACT top-level structure:\n{\n  "project_summary": "",\n  "project_type": "repair | partial renovation | full renovation | installation | replacement | restoration | mixed",\n  "selected_trades": [],\n  "confirmed_scope": [\n    { "trade": "", "scope_items": [], "quantities": {}, "customer_exclusions": [] }\n  ],\n  "inferred_scope": [\n    { "trade": "", "item": "", "reason": "", "requires_confirmation": true }\n  ],\n  "customer_supplied_finish_materials": [],\n  "contractor_supplied_finish_materials": [],\n  "contractor_supplied_rough_materials": [],\n  "site_conditions": {\n    "occupied_status": "",\n    "floor_number": "",\n    "elevator_access": "",\n    "walk_up": "",\n    "work_hours": "",\n    "debris_access": "",\n    "parking_loading": "",\n    "building_requirements": "",\n    "protection_requirements": ""\n  },\n  "quantities": {},\n  "assumptions": [],\n  "exclusions": [],\n  "conflicts": [\n    { "issue": "", "likely_interpretation": "", "needs_confirmation": true }\n  ],\n  "missing_information": [\n    { "question": "", "reason_needed": "", "priority": "critical | pricing | site_condition | optional", "affected_trade": "" }\n  ],\n  "clarification_questions": [\n    {\n      "id": "",\n      "question": "",\n      "helper_text": "",\n      "type": "single_select | multi_select | number | short_text | photo_request",\n      "options": [],\n      "affected_trade": "",\n      "pricing_importance": "critical | high | medium"\n    }\n  ],\n  "pricing_readiness": {\n    "status": "READY_TO_ESTIMATE | PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS | NEEDS_CUSTOMER_QUESTIONS | SITE_VISIT_REQUIRED",\n    "confidence_score": 0,\n    "reason": ""\n  }\n}`;
 }
 
 /* The contractor's own pricing rules, rendered as an instruction rather than left
@@ -345,11 +345,11 @@ function buildHouseRulesBlock(input) {
 }
 
 function buildEstimatePrompt(input, analysis) {
-  return `You are the Senior Construction Estimator for Sani Building Corp in the NYC metro area.${buildHouseRulesBlock(input)}\n\nYou receive a STRUCTURED project understanding prepared by another AI. Price the WHOLE documented project accurately and conservatively enough to protect the contractor while remaining market-realistic. Do not manufacture work that is unsupported.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nCUSTOMER / REQUEST INPUT:\n${JSON.stringify(input, null, 2)}\n\nSTRUCTURED PROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nESTIMATING METHOD:\n1. Build the estimate TRADE BY TRADE. Every selected trade must receive appropriate labor and necessary contractor-supplied rough/installation materials.\n2. For substantial renovations, use production/crew logic instead of compressing the job into a few generic hourly lines.\n3. Separate meaningful operations: protection/setup, demo/removal, disposal/handling, preparation, rough work, installation, finish work, cleanup, project coordination.\n4. Every labor and material line MUST contain "section" equal to the appropriate trade (Bathroom, Flooring, Painting, Windows, Carpentry, etc.).\n5. Customer-supplied finish materials: DO NOT charge purchase price for the finish product itself. DO include installation labor, handling if contractor responsibility, rough/connection materials, waterproofing/backer board/thinset/grout/sealant, plumbing fittings/connectors, wiring/boxes/fasteners as applicable, floor prep/adhesive/consumables, protection and disposal.\n6. Bathroom renovation generally requires protection, demolition/removal, debris handling/disposal, plumbing disconnect/rough/connection work where applicable, shower base/pan and drain preparation, waterproofing, substrate prep, tile installation, grout/sealant, fixture installation, shower glass, paint/finish work if requested, and cleanup.\n7. Flooring generally requires existing-floor removal if requested, debris disposal, subfloor evaluation/preparation, installation, cuts/fitting/transitions and cleanup. Do not add underlayment when customer explicitly says none.\n8. Painting must account for measured/estimated paintable area, prep, patching, protection, coats and included trim/doors/ceilings. Honor excluded rooms.\n9. Window replacement must include removal, disposal, opening prep, installation, insulation/sealant/flashing/weatherproofing and finish work appropriate to the request.\n10. Walk-up/access conditions require realistic carrying, debris movement and loading labor when documented.\n11. Multi-trade projects require project coordination/supervision when warranted.\n12. Do not use a "smallest reasonable interpretation" rule. Detailed customer information should produce a detailed estimate.\n13. Do not inflate by adding arbitrary contingency inside labor quantities. Use reasonable NYC production rates and the provided markup field.\n14. Do not double-mark up individual line rates. Return base contractor cost/rate and markupPct separately.\n15. If required information is unknown but analysis permits a preliminary estimate, state the assumption instead of silently choosing the cheapest interpretation.\n16. Preserve customer-requested alternate options OUTSIDE the base estimate. Option prices must include complete incremental labor/material effect for that option.\n17. Do not put customer-supplied finish purchases in materials. Record them under customerSupplied.\n18. Do not omit low-visibility but real work such as setup, protection, hauling, cleanup or sealants.\n\nNYC-METRO LABOR GUIDANCE (use professional judgment, not blindly):\n- General labor / demolition / helper: often $60-$90/hr contractor cost basis\n- Painter / finisher: often $65-$90/hr\n- Skilled carpenter / tile installer / flooring installer: often $90-$135/hr\n- Plumber / electrician / specialist: often $120-$175/hr\n- Project coordination / supervisor: often $95-$150/hr\nThese are guidelines only; complexity, access and skill level matter.\n\nOUTPUT JSON ONLY:\n{\n  "projectTitle": "",\n  "summary": "2-4 customer-friendly sentences",\n  "estimateStatus": "READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED",\n  "labor": [\n    { "section": "Bathroom", "item": "Bathroom demolition and debris loading", "qty": 24, "unit": "hrs", "rate": 75 }\n  ],\n  "materials": [\n    { "section": "Bathroom", "item": "Waterproofing membrane and accessories", "qty": 1, "unit": "allowance", "rate": 650 }\n  ],\n  "customerSupplied": [\n    { "section": "Bathroom", "item": "Vanity", "note": "Purchase price excluded; installation and required connections included" }\n  ],\n  "exclusions": [],\n  "options": [\n    { "section": "Windows", "label": "Option A — Replace all windows", "description": "", "price": 0 }\n  ],\n  "timelineText": "",\n  "markupPct": 25,\n  "assumptions": [],\n  "internalScopeChecklist": [\n    { "trade": "Bathroom", "covered": true, "notes": "" }\n  ],\n  "notes": "Internal estimator notes only"\n}`;
+  return `You are the Senior Construction Estimator for Sani Building Corp in the NYC metro area.${buildHouseRulesBlock(input)}\n\nYou receive a STRUCTURED project understanding prepared by another AI. Price the WHOLE documented project accurately and conservatively enough to protect the contractor while remaining market-realistic. Do not manufacture work that is unsupported.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nCUSTOMER / REQUEST INPUT:\n${JSON.stringify(input, null, 2)}\n\nSTRUCTURED PROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nESTIMATING METHOD:\n1. Build the estimate TRADE BY TRADE. Every selected trade must receive appropriate labor and necessary contractor-supplied rough/installation materials.\n2. For substantial renovations, use production/crew logic instead of compressing the job into a few generic hourly lines.\n3. Separate meaningful operations: protection/setup, demo/removal, disposal/handling, preparation, rough work, installation, finish work, cleanup, project coordination.\n4. Every labor and material line MUST contain "section" equal to ONE OF THE CUSTOMER'S SELECTED SERVICES. "General" is NOT a permitted section, and neither is any service he did not select. He asked for a price per service; anything parked in a shared bucket makes every one of those prices wrong - if he then asks "what if I only do the bathroom?", the Bathroom card is not the answer.\n4a. Protection, cleanup, debris handling and disposal belong to the service that creates them. If three services each need cleanup, emit three cleanup lines, one per service. Never emit one shared cleanup line.\n4b. Project coordination and supervision genuinely span services. Emit ONE coordination line PER SERVICE, each carrying that service's share of the effort, sized in proportion to how large that service is. Never emit a single combined coordination line.\n5. Customer-supplied finish materials: DO NOT charge purchase price for the finish product itself. DO include installation labor, handling if contractor responsibility, rough/connection materials, waterproofing/backer board/thinset/grout/sealant, plumbing fittings/connectors, wiring/boxes/fasteners as applicable, floor prep/adhesive/consumables, protection and disposal.\n6. Bathroom renovation generally requires protection, demolition/removal, debris handling/disposal, plumbing disconnect/rough/connection work where applicable, shower base/pan and drain preparation, waterproofing, substrate prep, tile installation, grout/sealant, fixture installation, shower glass, paint/finish work if requested, and cleanup.\n7. Flooring generally requires existing-floor removal if requested, debris disposal, subfloor evaluation/preparation, installation, cuts/fitting/transitions and cleanup. Do not add underlayment when customer explicitly says none.\n8. Painting must account for measured/estimated paintable area, prep, patching, protection, coats and included trim/doors/ceilings. Honor excluded rooms.\n9. Window replacement must include removal, disposal, opening prep, installation, insulation/sealant/flashing/weatherproofing and finish work appropriate to the request.\n10. Walk-up/access conditions require realistic carrying, debris movement and loading labor when documented.\n11. Multi-trade projects require project coordination/supervision when warranted.\n12. Do not use a "smallest reasonable interpretation" rule. Detailed customer information should produce a detailed estimate.\n13. Do not inflate by adding arbitrary contingency inside labor quantities. Use reasonable NYC production rates and the provided markup field.\n14. Do not double-mark up individual line rates. Return base contractor cost/rate and markupPct separately.\n15. If required information is unknown but analysis permits a preliminary estimate, state the assumption instead of silently choosing the cheapest interpretation.\n16. Preserve customer-requested alternate options OUTSIDE the base estimate. Option prices must include complete incremental labor/material effect for that option.\n17. Do not put customer-supplied finish purchases in materials. Record them under customerSupplied.\n18. Do not omit low-visibility but real work such as setup, protection, hauling, cleanup or sealants.\n19. The project understanding already records the customer's own exclusions per trade in confirmed_scope[].customer_exclusions, and those are shown to him against that service. Do NOT repeat them in your "exclusions" array. Use your exclusions array ONLY for project-wide risks he did not raise (permits, concealed conditions, asbestos/mold, structural, out-of-hours work). Returning generic boilerplate risks while his stated exclusions go missing is the worst failure this estimate can have: he asked for this breakdown precisely so he could see what each service does not include.\n\nNYC-METRO LABOR GUIDANCE (use professional judgment, not blindly):\n- General labor / demolition / helper: often $60-$90/hr contractor cost basis\n- Painter / finisher: often $65-$90/hr\n- Skilled carpenter / tile installer / flooring installer: often $90-$135/hr\n- Plumber / electrician / specialist: often $120-$175/hr\n- Project coordination / supervisor: often $95-$150/hr\nThese are guidelines only; complexity, access and skill level matter.\n\nOUTPUT JSON ONLY:\n{\n  "projectTitle": "",\n  "summary": "2-4 customer-friendly sentences",\n  "estimateStatus": "READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED",\n  "labor": [\n    { "section": "Bathroom", "item": "Bathroom demolition and debris loading", "qty": 24, "unit": "hrs", "rate": 75 }\n  ],\n  "materials": [\n    { "section": "Bathroom", "item": "Waterproofing membrane and accessories", "qty": 1, "unit": "allowance", "rate": 650 }\n  ],\n  "customerSupplied": [\n    { "section": "Bathroom", "item": "Vanity", "note": "Purchase price excluded; installation and required connections included" }\n  ],\n  "exclusions": [],\n  "options": [\n    { "section": "Windows", "label": "Option A — Replace all windows", "description": "", "price": 0 }\n  ],\n  "timelineText": "",\n  "markupPct": 25,\n  "assumptions": [],\n  "internalScopeChecklist": [\n    { "trade": "Bathroom", "covered": true, "notes": "" }\n  ],\n  "notes": "Internal estimator notes only"\n}`;
 }
 
 function buildRepairPrompt(input, analysis, estimate, validation) {
-  return `You are performing a mandatory estimate QA repair for Sani Building Corp.${buildHouseRulesBlock(input)}\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nThe previous estimate failed deterministic validation. Repair omissions; do not simply raise prices arbitrarily.\n\nCUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nPROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nFAILED DRAFT:\n${JSON.stringify(estimate, null, 2)}\n\nVALIDATION RESULTS:\n${JSON.stringify(validation, null, 2)}\n\nREPAIR RULES:\n- Correct every failure specifically.\n- Ensure every selected trade has labor and appropriate rough/installation materials.\n- Preserve all customer exclusions and customer-supplied finish materials.\n- Customer-supplied finish materials still need installation labor and supporting materials.\n- Add missing protection, demolition, disposal, handling, preparation, cleanup and coordination only where the documented scope requires them.\n- Recalculate quantities/durations using realistic crew/production logic.\n- Preserve alternate options outside the base total.\n- Never pad the estimate. Do not add a lump sum, a "contingency" line, or extra hours to make a total look bigger. A small job is meant to produce a small number.\n- Return the COMPLETE replacement estimate, not a patch.\n\nUse exactly the same JSON schema as the original estimate request and return JSON only.`;
+  return `You are performing a mandatory estimate QA repair for Sani Building Corp.${buildHouseRulesBlock(input)}\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nThe previous estimate failed deterministic validation. Repair omissions; do not simply raise prices arbitrarily.\n\nCUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nPROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nFAILED DRAFT:\n${JSON.stringify(estimate, null, 2)}\n\nVALIDATION RESULTS:\n${JSON.stringify(validation, null, 2)}\n\nREPAIR RULES:\n- Correct every failure specifically.\n- Ensure every selected trade has labor and appropriate rough/installation materials.\n- Preserve all customer exclusions and customer-supplied finish materials.\n- Customer-supplied finish materials still need installation labor and supporting materials.\n- Add missing protection, demolition, disposal, handling, preparation, cleanup and coordination only where the documented scope requires them.\n- Recalculate quantities/durations using realistic crew/production logic.\n- Preserve alternate options outside the base total.\n- Never pad the estimate. Do not add a lump sum, a "contingency" line, or extra hours to make a total look bigger. A small job is meant to produce a small number.\n- Every line keeps a "section" equal to one of the customer's selected services. "General" is not a permitted section. Cleanup, protection and debris belong to the service that creates them; coordination is one line per service.\n- Do not move the customer's own exclusions into your exclusions array. They belong to their trade in confirmed_scope[].customer_exclusions and are already shown there.\n- Return the COMPLETE replacement estimate, not a patch.\n\nUse exactly the same JSON schema as the original estimate request and return JSON only.`;
 }
 
 function normalizeProjectAnalysis(raw, input) {
@@ -391,7 +391,7 @@ function normalizeEstimate(raw, input, analysis) {
   analysis.customer_supplied_finish_materials.forEach((item) => {
     if (!supplied.some((s) => normalizedIncludes(s.item, item))) supplied.push({ item, section: inferTradeForItem(item, analysis.selected_trades), note: "Installation labor and required rough materials remain included" });
   });
-  return {
+  const normalized = {
     projectTitle: cleanText(raw.projectTitle || `${input.request.service} - ${input.customer.name}`),
     summary: cleanText(raw.summary),
     scopeOfWork: cleanText(raw.scopeOfWork),
@@ -407,6 +407,171 @@ function normalizeEstimate(raw, input, analysis) {
     internalScopeChecklist: Array.isArray(raw.internalScopeChecklist) ? raw.internalScopeChecklist : [],
     notes: cleanText(raw.notes),
   };
+  /* Runs on the main AND repair paths, because it lives inside normalizeEstimate
+     rather than beside one call of it. */
+  return attributeSharedLines(normalized, analysis);
+}
+
+/* ============================================================================
+   NO "GENERAL" SERVICE CARD - CODE BACKSTOP.
+   ----------------------------------------------------------------------------
+   The customer picked four services and asked for four prices. A "General" card
+   holding protection, cleanup and coordination means none of those four numbers is
+   the real number for that service: asked "what if I only do the bathroom?", the
+   answer is not the Bathroom card.
+
+   The estimate prompt now forbids "General" as a section. LAW 3 APPLIES - prompt
+   rules do not hold on their own. The question ban lists were written into a prompt,
+   ignored, and only stuck once they were enforced in code. This is that enforcement.
+
+   Two passes:
+     1. KEYWORD. inferTradeForItem already knows tile->Bathroom, hardwood->Flooring.
+        A stray line whose own text names its trade is simply relabelled. Shared work
+        is skipped here on purpose: "bathroom protection" names a trade, but the
+        protection still serves whichever services are running behind it.
+     2. SPLIT. Work that genuinely spans services - project coordination above all -
+        has no single correct home. Forcing 24 hours of coordination onto one card
+        overcharges that service and undercharges the other three. It is divided
+        across the real services in proportion to what each one costs, emitted as one
+        line per service so the contractor can still see and edit his own numbers.
+
+   Money is conserved exactly. Shares are rounded to the cent, the last share is the
+   remainder rather than its own rounding, and the qty rounding residue is absorbed on
+   the largest part - so the split lines sum to the value of the line they replaced.
+
+   Safe to run before applyDeterministicPricing: removeOverlappingLabor only fires on
+   specific bath-demo and tile-grout pairs, and capGeneralConditions works on the TOTAL
+   cost of general/supervision work, which splitting does not change.
+   ============================================================================ */
+var SHARED_ACROSS_SERVICES = /(coordinat|supervis|project manage|protect|clean|debris|disposal|haul|dump|punch ?list|mobiliz)/i;
+
+function attributeSharedLines(estimate, analysis) {
+  var services = unique((((analysis || {}).selected_trades) || [])
+    .map(function (t) { return titleCase(t); })
+    .filter(function (t) { return t && !isGeneralTrade(t); }));
+  if (!services.length) return estimate;
+
+  var value = function (l) { return positiveNumber(l.qty) * positiveNumber(l.rate); };
+  var homeless = function (l) {
+    return isGeneralTrade(l.section) || !services.some(function (s) { return sameTrade(s, l.section); });
+  };
+
+  /* 1. Keyword, for non-shared work only. */
+  ["labor", "materials"].forEach(function (kind) {
+    (estimate[kind] || []).forEach(function (line) {
+      if (!homeless(line) || SHARED_ACROSS_SERVICES.test(line.item)) return;
+      var guess = titleCase(inferTradeForItem(line.item, services));
+      if (guess && !isGeneralTrade(guess) && services.some(function (s) { return sameTrade(s, guess); })) {
+        line.section = guess;
+      }
+    });
+  });
+
+  /* Weights come from LABOUR, not total cost. Coordination and cleanup are effort,
+     and a service can carry a huge supplied-material line while carrying almost no
+     effort: Windows on this job is $11,880 of customer-selected windows and barely any
+     work. Weighting by total cost handed Windows 62% of the shared coordination and
+     inflated a per-service subtotal the customer actually reads.
+     A service with no labour at all still needs coordinating - a delivery has to be
+     scheduled and received - so it takes the AVERAGE of the services that do have
+     labour. That is a typical share, never a dominant one, and it self-corrects the
+     moment that service gets real labour lines of its own. */
+  var labourWeight = {}, totalWeight = {};
+  services.forEach(function (s) { labourWeight[s] = 0; totalWeight[s] = 0; });
+  ["labor", "materials"].forEach(function (kind) {
+    (estimate[kind] || []).forEach(function (line) {
+      if (homeless(line)) return;
+      var key = services.filter(function (s) { return sameTrade(s, line.section); })[0];
+      if (!key) return;
+      if (kind === "labor") labourWeight[key] += value(line);
+      totalWeight[key] += value(line);
+    });
+  });
+  var withLabour = services.filter(function (s) { return labourWeight[s] > 0; });
+  var weight = {};
+  if (withLabour.length) {
+    var meanLabour = withLabour.reduce(function (a, s) { return a + labourWeight[s]; }, 0) / withLabour.length;
+    services.forEach(function (s) { weight[s] = labourWeight[s] > 0 ? labourWeight[s] : meanLabour; });
+  } else {
+    services.forEach(function (s) { weight[s] = totalWeight[s]; });
+  }
+  var base = services.reduce(function (a, s) { return a + weight[s]; }, 0);
+  if (base <= 0) { services.forEach(function (s) { weight[s] = 1; }); base = services.length; }
+
+  /* 1b. Merge shared lines of the same kind and rate BEFORE splitting, or three
+     cleanup lines become twelve. The longest wording survives, which also stops the
+     customer's Included list reading "final cleanup" three times in three slightly
+     different phrasings. */
+  var SHARED_KIND = [
+    [/coordinat|supervis|project manage/i, "coordination"],
+    [/debris|disposal|haul|dump/i, "debris"],
+    [/clean/i, "cleanup"],
+    [/protect/i, "protection"],
+    [/punch ?list|mobiliz/i, "site"]
+  ];
+  var sharedKind = function (item) {
+    for (var i = 0; i < SHARED_KIND.length; i++) if (SHARED_KIND[i][0].test(item)) return SHARED_KIND[i][1];
+    return "";
+  };
+  ["labor", "materials"].forEach(function (kind) {
+    var groups = {}, out = [];
+    (estimate[kind] || []).forEach(function (line) {
+      var k = homeless(line) ? sharedKind(line.item) : "";
+      if (!k) { out.push(line); return; }
+      var key = k + "|" + positiveNumber(line.rate);
+      if (!groups[key]) { groups[key] = line; out.push(line); return; }
+      var g = groups[key];
+      g.qty = positiveNumber(g.qty) + positiveNumber(line.qty);
+      if (String(line.item).length > String(g.item).length) g.item = line.item;
+    });
+    estimate[kind] = out;
+  });
+
+  /* 2. Split whatever is still homeless across every service. */
+  ["labor", "materials"].forEach(function (kind) {
+    var out = [];
+    (estimate[kind] || []).forEach(function (line) {
+      if (!homeless(line)) { out.push(line); return; }
+      var total = value(line);
+      if (total <= 0 || services.length === 1) {
+        line.section = services[0];
+        out.push(line);
+        return;
+      }
+      var rate = positiveNumber(line.rate) || 1;
+      var parts = [];
+      var spent = 0;
+      services.forEach(function (s, i) {
+        var share = (i === services.length - 1)
+          ? roundCurrency(total - spent)
+          : roundCurrency(total * (weight[s] / base));
+        spent = roundCurrency(spent + share);
+        if (share > 0) parts.push({ section: s, share: share, qty: 0 });
+      });
+      if (!parts.length) { line.section = services[0]; out.push(line); return; }
+      parts.forEach(function (p) { p.qty = Math.round((p.share / rate) * 100) / 100; });
+      var built = parts.reduce(function (a, p) { return a + p.qty * rate; }, 0);
+      if (Math.abs(built - total) >= 0.005) {
+        var biggest = parts.reduce(function (a, b) { return b.share > a.share ? b : a; }, parts[0]);
+        biggest.qty = Math.round(((biggest.qty * rate + (total - built)) / rate) * 10000) / 10000;
+      }
+      parts.forEach(function (p) {
+        var copy = {};
+        Object.keys(line).forEach(function (k) { copy[k] = line[k]; });
+        copy.section = p.section;
+        copy.qty = p.qty;
+        copy.rate = rate;
+        /* Stamp what THIS function created. validateEstimate discounts these when it
+           asks whether a trade has labor of its own - matching on wording instead
+           failed a one-line handyman job whose only labor line happened to read
+           "Protect area, patch drywall, clean up and remove debris". */
+        copy.sbcSharedSplit = true;
+        out.push(copy);
+      });
+    });
+    estimate[kind] = out;
+  });
+  return estimate;
 }
 
 function validateEstimate(estimate, analysis, input) {
@@ -418,7 +583,7 @@ function validateEstimate(estimate, analysis, input) {
   analysis.selected_trades.forEach((trade) => {
     if (isGeneralTrade(trade)) return;
     const token = trade.toLowerCase();
-    const hasLabor = estimate.labor.some((l) => l.section.toLowerCase().includes(token) || token.includes(l.section.toLowerCase()));
+    const hasLabor = estimate.labor.some((l) => !l.sbcSharedSplit && (l.section.toLowerCase().includes(token) || token.includes(l.section.toLowerCase())));
     if (!hasLabor) failures.push(`Selected trade "${trade}" has no labor line.`);
   });
   analysis.customer_supplied_finish_materials.forEach((item) => {
