@@ -77,18 +77,47 @@ exports.handler = async function handler(event) {
     let validation = validateEstimate(estimate, projectAnalysis, input);
 
     if (!validation.passed) {
+      /* THE REPAIR PASS IS AN IMPROVEMENT, NEVER A REQUIREMENT.
+         By the time we get here a complete, deterministically priced estimate already
+         exists. Letting anything in this block reach the outer catch throws that away
+         and hands the contractor a red error after ~160 seconds of waiting - for a job
+         the system had already priced correctly.
+         validateEstimate is aggressive by design (a multi-trade job with fewer than ten
+         labor lines fails it), so on 3+ trade work this block is the normal path, not
+         the exception. That makes an unguarded failure here the difference between a
+         usable estimate and none at all.
+         Keep the pre-repair estimate. Record what went wrong so it is visible in the
+         dashboard rather than silent. */
       timing.repairUsed = true;
       const repairStarted = Date.now();
-      const repairPrompt = buildRepairPrompt(input, projectAnalysis, estimate, validation);
-      const rawRepair = anthropicKey
-        ? await callClaude(anthropicKey, repairPrompt, 8000)
-        : await callOpenAI(openaiKey, repairPrompt);
-      estimate = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);
+      const preRepairEstimate = estimate;
+      const preRepairValidation = validation;
+      try {
+        const repairPrompt = buildRepairPrompt(input, projectAnalysis, estimate, validation);
+        const rawRepair = anthropicKey
+          ? await callClaude(anthropicKey, repairPrompt, 8000)
+          : await callOpenAI(openaiKey, repairPrompt);
+        let repaired = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);
+        deterministicStarted = Date.now();
+        repaired = applyDeterministicPricing(repaired, projectAnalysis, input);
+        timing.deterministicMs += Date.now() - deterministicStarted;
+        const repairedValidation = validateEstimate(repaired, projectAnalysis, input);
+        /* Only accept the repair if it produced something usable. A repair that comes
+           back empty of priced work is worse than the draft it replaced. */
+        if (repaired && (repaired.labor || []).length) {
+          estimate = repaired;
+          validation = repairedValidation;
+        } else {
+          timing.repairSkipped = "repair returned no labor lines";
+        }
+      } catch (repairError) {
+        console.error("repair pass failed, keeping pre-repair estimate:",
+          repairError && repairError.stack ? repairError.stack : repairError);
+        estimate = preRepairEstimate;
+        validation = preRepairValidation;
+        timing.repairSkipped = String((repairError && repairError.message) || repairError).slice(0, 200);
+      }
       timing.repairMs = Date.now() - repairStarted;
-      deterministicStarted = Date.now();
-      estimate = applyDeterministicPricing(estimate, projectAnalysis, input);
-      timing.deterministicMs += Date.now() - deterministicStarted;
-      validation = validateEstimate(estimate, projectAnalysis, input);
     }
 
     estimate = finalizeCustomerPresentation(estimate, projectAnalysis, input);
@@ -572,7 +601,21 @@ function callClaude(apiKey, prompt, maxTokens) {
         res.on("end", () => {
           const body = Buffer.concat(chunks).toString("utf8");
           if (res.statusCode >= 200 && res.statusCode < 300) {
-            try { const json = JSON.parse(body); resolve((json.content || []).map((part) => part.text || "").join("")); }
+            try {
+              const json = JSON.parse(body);
+              const text = (json.content || []).map((part) => part.text || "").join("");
+              /* A response cut off at max_tokens is valid HTTP and invalid JSON, and
+                 parseAiJson's brace-slice fallback cannot rescue it - it finds a nested
+                 closing brace and produces another invalid slice. Without this check the
+                 message is identical to genuinely malformed output, so the one fix that
+                 would help (a larger cap, or a smaller prompt) is invisible. */
+              if (json.stop_reason === "max_tokens") {
+                return reject(new Error(
+                  `Claude response hit the ${maxTokens}-token limit and was cut off. ` +
+                  `Raise max_tokens for this call or shorten the prompt.`));
+              }
+              resolve(text);
+            }
             catch (error) { reject(new Error(`Bad Claude response: ${body.slice(0, 300)}`)); }
           } else reject(new Error(`Claude ${res.statusCode}: ${body.slice(0, 500)}`));
         });
