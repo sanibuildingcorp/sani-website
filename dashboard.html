@@ -2862,13 +2862,12 @@ function calcCustomerView(est) {
 
   const laborAmount = showLabor ? t.laborWithMarkup : 0;
   const materialsAmount = showMaterials ? t.matWithMarkup : 0;
-  /* SINGLE SOURCE OF TRUTH FOR THE TOTAL.
-     The toggles decide which BREAKDOWN ROWS the customer sees. They must never
-     change the price. customerTotal is always the full grand total, so labor-only
-     display can never quote a $47,117.50 job at $24,835. Markup is never its own
-     row anywhere on the customer side; it is baked into laborAmount and
-     materialsAmount, which sum exactly to customerTotal when both are shown. */
-  const customerTotal = t.grand;
+  /* The customer's total is exactly what the contractor chose to show: labor only
+     means the customer is quoted the labor total and pays that. Markup is baked into
+     laborAmount and materialsAmount and is never displayed as its own row or figure,
+     so the customer can never read the margin. The INTERNAL grand total below is a
+     separate number and must never be overwritten by this one. */
+  const customerTotal = laborAmount + materialsAmount;
 
   return {
     showLabor: showLabor,
@@ -3876,10 +3875,10 @@ function updateCvPreview() {
     html += '<div class="cv-preview-note"><strong>✓ All materials included</strong> in the total price.</div>';
   }
   if (!cv.showLabor && cv.showMaterials && t.labor > 0) {
-    html += '<div class="cv-preview-note"><strong>Materials shown separately</strong> — labor is included in the total.</div>';
+    html += '<div class="cv-preview-note"><strong>Materials only</strong> — labor is not part of this price.</div>';
   }
   if (cv.showLabor && !cv.showMaterials && t.mat > 0) {
-    html += '<div class="cv-preview-note"><strong>Labor shown separately</strong> — materials are included in the total.</div>';
+    html += '<div class="cv-preview-note"><strong>Labor only</strong> — materials are not part of this price.</div>';
   }
   body.innerHTML = html;
 }
@@ -4079,14 +4078,14 @@ function applySetTotal(){
 
   var mk = 1 + (Number(est.markupPct)||0)/100;
   var t = calcTotal(est);                 // pre-markup: t.labor, t.mat
-  /* The customer is ALWAYS shown the full grand total; the display toggles only
-     choose which breakdown rows appear. So Set Total must scale the whole estimate,
-     never just the "shown" buckets. Reading the toggles here let the hidden bucket
-     ride along unscaled: on a labor-only display, asking for $40,000 produced
-     $62,282.50 and the confirmation toast agreed with itself. */
-  var showLabor = true;
-  var showMat = true;
-  var targetSub = target / mk;            // pre-markup target across the whole estimate
+  /* Set Total targets the CUSTOMER-FACING total, so it scales exactly the buckets
+     the customer is being shown. On a labor-only quote, typing $40,000 sets the
+     labor the customer sees to $40,000; the hidden materials are not part of that
+     price. When both are hidden the customer sees the grand total, so both scale. */
+  var showLabor = est.showLaborCost !== false;
+  var showMat = est.showMaterialsCost === true;
+  if(!showLabor && !showMat){ showLabor = true; showMat = true; }
+  var targetSub = target / mk;            // pre-markup total across shown buckets
 
   est.labor = est.labor || [];
   est.materials = est.materials || [];
