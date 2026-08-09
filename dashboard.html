@@ -2862,7 +2862,13 @@ function calcCustomerView(est) {
 
   const laborAmount = showLabor ? t.laborWithMarkup : 0;
   const materialsAmount = showMaterials ? t.matWithMarkup : 0;
-  const customerTotal = laborAmount + materialsAmount;
+  /* SINGLE SOURCE OF TRUTH FOR THE TOTAL.
+     The toggles decide which BREAKDOWN ROWS the customer sees. They must never
+     change the price. customerTotal is always the full grand total, so labor-only
+     display can never quote a $47,117.50 job at $24,835. Markup is never its own
+     row anywhere on the customer side; it is baked into laborAmount and
+     materialsAmount, which sum exactly to customerTotal when both are shown. */
+  const customerTotal = t.grand;
 
   return {
     showLabor: showLabor,
@@ -3870,7 +3876,10 @@ function updateCvPreview() {
     html += '<div class="cv-preview-note"><strong>✓ All materials included</strong> in the total price.</div>';
   }
   if (!cv.showLabor && cv.showMaterials && t.labor > 0) {
-    html += '<div class="cv-preview-note"><strong>Materials cost only</strong> — labor not included in this amount.</div>';
+    html += '<div class="cv-preview-note"><strong>Materials shown separately</strong> — labor is included in the total.</div>';
+  }
+  if (cv.showLabor && !cv.showMaterials && t.mat > 0) {
+    html += '<div class="cv-preview-note"><strong>Labor shown separately</strong> — materials are included in the total.</div>';
   }
   body.innerHTML = html;
 }
@@ -3958,7 +3967,7 @@ function recalc() {
   document.getElementById("tot-mat").textContent = fmt(t.mat);
   document.getElementById("tot-sub").textContent = fmt(t.sub);
   document.getElementById("tot-markup").textContent = fmt(t.markup);
-  document.getElementById("tot-grand").textContent = fmt(cv.customerTotal);
+  document.getElementById("tot-grand").textContent = fmt(t.grand);
   document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(function(row) {
     const totEl = row.querySelector(".line-total");
     if (!totEl) return;
@@ -4070,10 +4079,14 @@ function applySetTotal(){
 
   var mk = 1 + (Number(est.markupPct)||0)/100;
   var t = calcTotal(est);                 // pre-markup: t.labor, t.mat
-  var showLabor = est.showLaborCost !== false;
-  var showMat = est.showMaterialsCost === true;
-  if(!showLabor && !showMat){ showLabor = true; showMat = true; } // both hidden = customer sees grand
-  var targetSub = target / mk;            // pre-markup total across shown buckets
+  /* The customer is ALWAYS shown the full grand total; the display toggles only
+     choose which breakdown rows appear. So Set Total must scale the whole estimate,
+     never just the "shown" buckets. Reading the toggles here let the hidden bucket
+     ride along unscaled: on a labor-only display, asking for $40,000 produced
+     $62,282.50 and the confirmation toast agreed with itself. */
+  var showLabor = true;
+  var showMat = true;
+  var targetSub = target / mk;            // pre-markup target across the whole estimate
 
   est.labor = est.labor || [];
   est.materials = est.materials || [];
@@ -4276,7 +4289,7 @@ function scopeServiceSubtotal(name) {
   // Deterministic v8.2 already calculated customer-service subtotals after
   // allocating General/project costs. Use those exact numbers in Scope Control
   // instead of re-grouping raw labor/material rows back into pseudo-services.
-  if (/^v8\.2-deterministic-four-service/.test(String(est.customerPresentationVersion || "")) && Array.isArray(est.serviceBreakdown)) {
+  if (/^v8\.\d+-deterministic-four-service/.test(String(est.customerPresentationVersion || "")) && Array.isArray(est.serviceBreakdown)) {
     var sb = est.serviceBreakdown.find(function (x) {
       return String((x && (x.title || x.name || x.section)) || "").trim().toLowerCase() === String(name || "").trim().toLowerCase();
     });
@@ -4338,7 +4351,7 @@ function buildScopeDraftFromAI() {
   // alternatives isolated and duplicates cleaned. Do NOT merge raw labor,
   // scopeSections, project exclusions or legacy arrays back into this draft,
   // because doing so recreates General/Carpentry pseudo-services and duplicates.
-  if (/^v8\.2-deterministic-four-service/.test(String(est.customerPresentationVersion || "")) && Array.isArray(est.serviceBreakdown)) {
+  if (/^v8\.\d+-deterministic-four-service/.test(String(est.customerPresentationVersion || "")) && Array.isArray(est.serviceBreakdown)) {
     var order = ["Bathroom", "Flooring", "Painting", "Windows"];
     var direct = {};
     est.serviceBreakdown.forEach(function (b) {
