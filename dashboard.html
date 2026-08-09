@@ -2844,10 +2844,23 @@ function calcTotal(est) {
   return { labor: labor, mat: mat, sub: sub, markup: markup, grand: sub + markup, laborWithMarkup: laborWithMarkup, matWithMarkup: matWithMarkup };
 }
 
+/* MIRROR OF netlify/functions/lib/customer-total.js - keep them identical.
+   A page cannot require a Node module, so this logic is duplicated on purpose;
+   netlify/functions/lib/customer-total.test.js extracts THIS function and asserts
+   it agrees with the library in every toggle state. Change one, change both. */
 function calcCustomerView(est) {
   const t = calcTotal(est);
-  const showLabor = est.showLaborCost !== false;
-  const showMaterials = est.showMaterialsCost === true;
+  let showLabor, showMaterials;
+  if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
+    showLabor = est.showLaborCost !== false;
+    showMaterials = est.showMaterialsCost === true;
+  } else if (est.displayMode === "total") {
+    showLabor = false; showMaterials = false;
+  } else if (est.displayMode === "full") {
+    showLabor = true; showMaterials = true;
+  } else {
+    showLabor = true; showMaterials = false;
+  }
 
   if (!showLabor && !showMaterials) {
     return {
@@ -3265,9 +3278,18 @@ function renderEdit() {
 
   const laborChecked = est.showLaborCost !== false;
   const materialsChecked = est.showMaterialsCost === true;
-  const sectionsChecked = est.showSectionSubtotals === true;
+  /* quote.html renders per-service prices when showSectionSubtotals !== false, so
+     undefined means SHOW. The dashboard read === true, which meant opening an older
+     record and pressing Save Draft wrote false and silently deleted the per-service
+     prices from an already-sent quote. One polarity: !== false, everywhere. */
+  const sectionsChecked = est.showSectionSubtotals !== false;
   const laborLinesChecked = est.showLaborLines === true;
   const materialLinesChecked = est.showMaterialLines === true;
+  /* Default OFF: a breakdown is a LIST of what the customer is getting. Prices in it
+     are a separate decision, and showing them while the matching cost toggle is off
+     would leak a cost the contractor chose to hide. */
+  const laborLinePricesChecked = est.showLaborLinePrices === true;
+  const materialLinePricesChecked = est.showMaterialLinePrices === true;
 
   // AI input toggles — only show a toggle for inputs this request actually has
   var hasAnswers = !!answersHtml;
@@ -3453,17 +3475,19 @@ function renderEdit() {
             '<input type="checkbox"' + (laborLinesChecked ? " checked" : "") + ' id="cv-laborlines">' +
             '<div class="cv-check-text">' +
               '<div class="cv-check-label">Labor breakdown</div>' +
-              '<div class="cv-check-amount">Lists every labor line (' + (est.labor||[]).length + ' items) with its price on the customer page. Shows only when labor is part of the shown price.</div>' +
+              '<div class="cv-check-amount">Lists every labor line (' + (est.labor||[]).length + ' items) on the customer page.</div>' +
             '</div>' +
           '</div>' +
+          '<div class="cv-check' + (laborLinePricesChecked ? " checked" : "") + '" style="margin:-4px 0 0 26px;padding:8px 12px;border-style:dashed" data-kind="laborLinePrices" onclick="event.stopPropagation();toggleCv(\'laborLinePrices\')">' +'<span class="cv-checkbox-box"></span>' +'<input type="checkbox"' + (laborLinePricesChecked ? " checked" : "") + ' id="cv-laborlineprices">' +'<div class="cv-check-text"><div class="cv-check-label" style="font-size:12px">…with prices</div>' +'<div class="cv-check-amount">Off = the customer sees WHAT is included, not what each item costs.</div>' +'</div></div>' +
           '<div class="cv-check' + (materialLinesChecked ? " checked" : "") + '" data-kind="materialLines" onclick="toggleCv(\'materialLines\')">' +
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (materialLinesChecked ? " checked" : "") + ' id="cv-materiallines">' +
             '<div class="cv-check-text">' +
               '<div class="cv-check-label">Materials breakdown</div>' +
-              '<div class="cv-check-amount">Lists every material line (' + (est.materials||[]).length + ' items) with its price on the customer page. Shows only when materials are part of the shown price.</div>' +
+              '<div class="cv-check-amount">Lists every material line (' + (est.materials||[]).length + ' items) on the customer page.</div>' +
             '</div>' +
           '</div>' +
+          '<div class="cv-check' + (materialLinePricesChecked ? " checked" : "") + '" style="margin:-4px 0 0 26px;padding:8px 12px;border-style:dashed" data-kind="materialLinePrices" onclick="event.stopPropagation();toggleCv(\'materialLinePrices\')">' +'<span class="cv-checkbox-box"></span>' +'<input type="checkbox"' + (materialLinePricesChecked ? " checked" : "") + ' id="cv-materiallineprices">' +'<div class="cv-check-text"><div class="cv-check-label" style="font-size:12px">…with prices</div>' +'<div class="cv-check-amount">Off = the customer sees WHICH materials you will use, not what each one costs.</div>' +'</div></div>' +
         '</div>' +
         '<div class="cv-preview">' +
           '<div class="cv-preview-label">Customer Sees</div>' +
@@ -3818,11 +3842,15 @@ function toggleCv(kind) {
   } else if (kind === "materials") {
     currentRecord.estimate.showMaterialsCost = !(currentRecord.estimate.showMaterialsCost === true);
   } else if (kind === "sections") {
-    currentRecord.estimate.showSectionSubtotals = !(currentRecord.estimate.showSectionSubtotals === true);
+    currentRecord.estimate.showSectionSubtotals = !(currentRecord.estimate.showSectionSubtotals !== false);
   } else if (kind === "laborLines") {
     currentRecord.estimate.showLaborLines = !(currentRecord.estimate.showLaborLines === true);
   } else if (kind === "materialLines") {
     currentRecord.estimate.showMaterialLines = !(currentRecord.estimate.showMaterialLines === true);
+  } else if (kind === "laborLinePrices") {
+    currentRecord.estimate.showLaborLinePrices = !(currentRecord.estimate.showLaborLinePrices === true);
+  } else if (kind === "materialLinePrices") {
+    currentRecord.estimate.showMaterialLinePrices = !(currentRecord.estimate.showMaterialLinePrices === true);
   }
   const el = document.querySelector('.cv-check[data-kind="' + kind + '"]');
   const checkbox = document.getElementById("cv-" + kind);
@@ -3831,10 +3859,14 @@ function toggleCv(kind) {
     : (kind === "materials"
         ? currentRecord.estimate.showMaterialsCost === true
         : (kind === "sections"
-            ? currentRecord.estimate.showSectionSubtotals === true
+            ? currentRecord.estimate.showSectionSubtotals !== false
             : (kind === "laborLines"
                 ? currentRecord.estimate.showLaborLines === true
-                : currentRecord.estimate.showMaterialLines === true)));
+                : (kind === "materialLines"
+                    ? currentRecord.estimate.showMaterialLines === true
+                    : (kind === "laborLinePrices"
+                        ? currentRecord.estimate.showLaborLinePrices === true
+                        : currentRecord.estimate.showMaterialLinePrices === true)))));
   el.classList.toggle("checked", isChecked);
   if (checkbox) checkbox.checked = isChecked;
   recalc();
@@ -4014,7 +4046,49 @@ function _stRadio(val,label,sub){
   '</label>';
 }
 var _stMode = "all";
+/* WHICH BUCKETS IS THIS CUSTOMER BEING SHOWN?
+   Set Total targets the customer-facing price, so a mode that adjusts a bucket the
+   customer cannot see can never move that price. It did not fail loudly - it
+   rewrote every rate in the hidden bucket and reported success. On a labor-only
+   quote, "Materials only" + $40,000 left the customer total at $24,835.00 and
+   quietly took materials from $17,826 to $12,132, destroying the real cost basis
+   for the job with nothing on screen to say so.
+   Both a UI rule (the mode is greyed out) and a code rule (applySetTotal refuses),
+   because prompt-level and UI-level rules do not hold on their own. */
+function _stShown(est){
+  var showLabor = est.showLaborCost !== false;
+  var showMat = est.showMaterialsCost === true;
+  if(!showLabor && !showMat){ showLabor = true; showMat = true; }  // both hidden = customer sees the grand
+  return { labor: showLabor, mat: showMat };
+}
+function _stModeAvailable(mode){
+  if(!currentRecord || !currentRecord.estimate) return true;
+  var s = _stShown(currentRecord.estimate);
+  if(mode === "labor") return s.labor;
+  if(mode === "mat") return s.mat;
+  return true;
+}
+function _stModeReason(mode){
+  return mode === "labor"
+    ? "Labor is not part of this customer's price — adjusting it would not change the total."
+    : "Materials are not part of this customer's price — adjusting them would not change the total.";
+}
+function _stSyncModes(){
+  document.querySelectorAll('#st-modes [data-st-mode]').forEach(function(el){
+    var m = el.getAttribute('data-st-mode');
+    var okMode = _stModeAvailable(m);
+    el.style.opacity = okMode ? '1' : '0.42';
+    el.style.cursor = okMode ? 'pointer' : 'not-allowed';
+    el.setAttribute('aria-disabled', okMode ? 'false' : 'true');
+  });
+  if(!_stModeAvailable(_stMode)) _stMode = "all";
+}
 function _stPick(mode){
+  if(!_stModeAvailable(mode)){
+    var w = document.getElementById("st-warn");
+    if(w){ w.textContent = _stModeReason(mode); w.style.display = "block"; }
+    return;
+  }
   _stMode = mode;
   document.querySelectorAll('#st-modes [data-st-mode]').forEach(function(el){
     var on = el.getAttribute('data-st-mode') === mode;
@@ -4024,6 +4098,7 @@ function _stPick(mode){
     dot.style.borderColor = on ? 'var(--gold,#b8930a)' : 'var(--ink-muted,#7a879b)';
     dot.innerHTML = on ? '<span style="position:absolute;inset:3px;border-radius:50%;background:var(--gold,#b8930a)"></span>' : '';
   });
+  _stSyncModes();
   _stRefresh();
 }
 function _stCurrentTotal(){
@@ -4036,6 +4111,7 @@ function openSetTotalModal(){
   _stEnsureModal();
   var cur = _stCurrentTotal();
   document.getElementById("st-target").value = (Math.round(cur*100)/100);
+  if(!_stModeAvailable(_stMode)) _stMode = "all";
   _stPick("all");
   document.getElementById("set-total-overlay").style.display = "flex";
 }
@@ -4082,9 +4158,13 @@ function applySetTotal(){
      the customer is being shown. On a labor-only quote, typing $40,000 sets the
      labor the customer sees to $40,000; the hidden materials are not part of that
      price. When both are hidden the customer sees the grand total, so both scale. */
-  var showLabor = est.showLaborCost !== false;
-  var showMat = est.showMaterialsCost === true;
-  if(!showLabor && !showMat){ showLabor = true; showMat = true; }
+  var _shown = _stShown(est);
+  var showLabor = _shown.labor, showMat = _shown.mat;
+  /* The code rule behind the greyed-out radio. Without it, a stale modal or a
+     toggle changed after the modal opened silently rewrites a hidden bucket. */
+  if(!_stModeAvailable(_stMode)){
+    warn.textContent = _stModeReason(_stMode); warn.style.display = "block"; return;
+  }
   var targetSub = target / mk;            // pre-markup total across shown buckets
 
   est.labor = est.labor || [];
@@ -4249,6 +4329,7 @@ var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   // Customer View Mode choices
   "showLaborCost", "showMaterialsCost", "showSectionSubtotals",
   "showLaborLines", "showMaterialLines",
+  "showLaborLinePrices", "showMaterialLinePrices",
   // Manually set money + hand-built extras
   "customerFinalTotal", "finishGroups", "contract",
   "quotePhotos", "savedMaterials", "materialsTotalEstimate",
@@ -5485,7 +5566,7 @@ function gatherForm() {
     markupPct: parseFloat(document.getElementById("f-markup").value) || 0,
     showLaborCost: currentRecord.estimate.showLaborCost !== false,
     showMaterialsCost: currentRecord.estimate.showMaterialsCost === true,
-    showSectionSubtotals: currentRecord.estimate.showSectionSubtotals === true,
+    showSectionSubtotals: currentRecord.estimate.showSectionSubtotals !== false,
     showLaborLines: currentRecord.estimate.showLaborLines === true,
     showMaterialLines: currentRecord.estimate.showMaterialLines === true,
     labor: currentRecord.estimate.labor || [],

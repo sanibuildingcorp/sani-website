@@ -28,14 +28,42 @@ function isOption(item){return /\boption\s*[ab12]\b|alternate/i.test(N(item))}fu
    number or row: the customer must not be able to read the contractor's margin.
    quote.html previously ignored these flags entirely and always billed (l+m)*k, so a
    labor-only quote said $47,117.50 when the dashboard promised $24,835.00. */
+/* MIRROR OF netlify/functions/lib/customer-total.js - keep them identical.
+   This page is deliberately self-contained: it is the one page that must render
+   for a customer with no working JavaScript fetch, so it carries no <script src>.
+   That means it cannot require the shared module, so the logic is duplicated
+   here on purpose - and netlify/functions/lib/customer-total.test.js extracts
+   THIS function and asserts it agrees with the library across every toggle
+   state. If you change one, change both; the test will tell you if you didn't. */
 function calc(e){
  const l=A(e.labor).reduce((s,x)=>s+LT(x),0),m=A(e.materials).reduce((s,x)=>s+LT(x),0),k=1+(+e.markupPct||0)/100;
- const showLabor=e.showLaborCost!==false,showMat=e.showMaterialsCost===true;
+ const r2=x=>Math.round((Number(x)||0)*100)/100;
+ const grand=r2(l+m+(l+m)*((+e.markupPct||0)/100));
+ let showLabor,showMat;
+ if(typeof e.showLaborCost==='boolean'||typeof e.showMaterialsCost==='boolean'){
+  showLabor=e.showLaborCost!==false;showMat=e.showMaterialsCost===true}
+ else if(e.displayMode==='total'){showLabor=false;showMat=false}
+ else if(e.displayMode==='full'){showLabor=true;showMat=true}
+ else{showLabor=true;showMat=false}
  const bothHidden=!showLabor&&!showMat;
- const shown=bothHidden?(l+m)*k:((showLabor?l*k:0)+(showMat?m*k:0));
- const total=rec&&rec.customerFinalTotal!=null?+rec.customerFinalTotal:shown;
- return{l,m,k,total,showLabor,showMat,bothHidden}}
-function friendly(item){let t=C(item).replace(/^labor\s*[-:]\s*/i,'').replace(/\s*@\s*\$?[\d,.]+.*$/,'').replace(/\s{2,}/g,' ');if(!t)return'';if(/bathroom demolition/i.test(t))return'Protect the work area; remove existing bathroom finishes and fixtures as specified; load and dispose of debris';if(/tile install/i.test(t))return'Prepare substrates and install bathroom wall and floor tile; complete grout, sealant, and finish work';if(/plumb.*shower|shower.*plumb|vanity.*toilet|toilet.*vanity/i.test(t))return'Install and connect shower valve/trim, vanity/sink/faucet, and toilet in their existing plumbing locations';if(/glass enclosure|shower glass/i.test(t))return'Fabricate and install the frameless shower glass enclosure as specified';if(/engineered hardwood/i.test(t))return'Prepare the installation area and install engineered hardwood flooring, including cuts, fitting, transitions, and finish details';if(/interior paint|painter/i.test(t))return'Prepare and paint included interior walls, ceilings, doors, and trim, including minor patching, sanding, spot priming, touch-ups, and cleanup';if(/project management|supervision|coordination/i.test(t))return'Project coordination, scheduling, deliveries, and quality control';if(/cleanup|final clean/i.test(t))return'Final cleanup and removal of construction debris';return t.charAt(0).toUpperCase()+t.slice(1)}
+ const computed=bothHidden?grand:r2((showLabor?l*k:0)+(showMat?m*k:0));
+ /* A stamped total arrives from a public endpoint. Zero, negative and
+    unparseable are not prices - fall back to the lines rather than print $0.00
+    over a page full of real money. */
+ let stamped=null;
+ if(rec&&rec.customerFinalTotal!=null){const x=Number(rec.customerFinalTotal);
+  if(Number.isFinite(x)&&x>0)stamped=r2(x)}
+ const total=stamped!=null?stamped:computed;
+ return{l,m,k,grand,total,stamped,computed,showLabor,showMat,bothHidden}}
+/* A rate the estimator wrote into the item name - "Oak treads @ $118.00/ea" - is
+   a CONTRACTOR number. Printed beside the marked-up extension it divides straight
+   back out to the margin: 5,752.50 / 39 = 147.50 against the 118.00 in the text,
+   which is 25%, exactly. friendly() has always stripped it. details() printed
+   x.item raw, so every price toggle in the system was defeated by a string.
+   One strip, one place, used by both - and applied whether or not the price
+   column is on, because the rate is not the customer's business either way. */
+function itemText(s){return C(s).replace(/^labor\s*[-:]\s*/i,'').replace(/\s*@\s*\$?[\d,.]+.*$/,'').replace(/\s{2,}/g,' ')}
+function friendly(item){let t=itemText(item);if(!t)return'';if(/bathroom demolition/i.test(t))return'Protect the work area; remove existing bathroom finishes and fixtures as specified; load and dispose of debris';if(/tile install/i.test(t))return'Prepare substrates and install bathroom wall and floor tile; complete grout, sealant, and finish work';if(/plumb.*shower|shower.*plumb|vanity.*toilet|toilet.*vanity/i.test(t))return'Install and connect shower valve/trim, vanity/sink/faucet, and toilet in their existing plumbing locations';if(/glass enclosure|shower glass/i.test(t))return'Fabricate and install the frameless shower glass enclosure as specified';if(/engineered hardwood/i.test(t))return'Prepare the installation area and install engineered hardwood flooring, including cuts, fitting, transitions, and finish details';if(/interior paint|painter/i.test(t))return'Prepare and paint included interior walls, ceilings, doors, and trim, including minor patching, sanding, spot priming, touch-ups, and cleanup';if(/project management|supervision|coordination/i.test(t))return'Project coordination, scheduling, deliveries, and quality control';if(/cleanup|final clean/i.test(t))return'Final cleanup and removal of construction debris';return t.charAt(0).toUpperCase()+t.slice(1)}
 /* CUSTOMER COST BREAKDOWN.
    showLaborCost / showMaterialsCost decide which BREAKDOWN ROWS appear. They never
    change the price: the total is always the full grand total. Markup is never its
@@ -100,9 +128,36 @@ function pubList(e){
 const INSTRUCTION_RE=/^\s*(do not|don't|dont|please do not|do NOT)\b|\bdo not (price|assume|treat|quote|estimate)\b|estimating instruction|note to estimator/i;
 function cleanExclusions(list){
  return A(list).filter(x=>{const t=C(x);return t&&!INSTRUCTION_RE.test(t)})}
+/* THE CARDS MUST ALWAYS ADD UP TO THE HEADLINE.
+   A card's subtotal is built from every priced line - labor AND materials - so it
+   sums to the GRAND total. The headline is whatever the toggles say the customer
+   pays. On a labor-only quote those are different numbers, and the difference is
+   exactly the bucket the contractor chose not to quote:
+
+     cards $47,117.50   headline $24,835.00   ->   $22,282.50, by subtraction
+
+   which is the hidden materials figure, to the cent. Before that arithmetic even
+   occurs the page is showing service prices that outweigh its own total, and a
+   customer always spots an error on a price.
+   Proportional, so no single card is distorted, with the sub-dollar remainder
+   landing on the largest one. This logic already existed - it just sat inside the
+   published-scope branch, and finalizeServices returns before reaching it on
+   every record that has not been published. */
+function reconcileCards(e,listIn){
+ const list=A(listIn),c=calc(e),sum=list.reduce((a,b)=>a+(+b.subtotal||0),0);
+ if(!list.length||!(c.total>0)||Math.abs(sum-c.total)<1)return list;
+ if(sum>0){
+  const f=c.total/sum;
+  list.forEach(x=>{x.subtotal=Math.round((+x.subtotal||0)*f*100)/100});
+  const s2=list.reduce((a,b)=>a+b.subtotal,0),d=Math.round((c.total-s2)*100)/100;
+  if(d)list.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),list[0]).subtotal+=d;
+ }else{
+  list.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),list[0]).subtotal+=c.total-sum;
+ }
+ return list}
 function finalizeServices(e,active){
  const ps=pubList(e);
- if(!ps)return foldZeroPriceServices(pubScope(e,active));
+ if(!ps)return reconcileCards(e,foldZeroPriceServices(pubScope(e,active)));
  const byName=new Map(A(active).map(s=>[N(s.title),s]));
  const out=ps.map(s=>{const m=byName.get(N(s.name||s.title));return{
   title:String(s.name||s.title||'Service').trim()||'Service',
@@ -115,21 +170,7 @@ function finalizeServices(e,active){
     customer as a "$0.00" card - that reads as broken. Adding a service and typing
     wording into it before any price line exists is a normal move in the new card UI,
     so fold those into the largest priced card exactly as the legacy path does. */
- const folded=foldZeroPriceServices(out);
- /* The cards must always add up to the headline total. If the contractor removed a
-    priced service from the scope, park the difference on the largest card rather
-    than letting the customer read a sum that does not match their own total. */
- const c=calc(e),sum=folded.reduce((a,b)=>a+b.subtotal,0);
- if(folded.length&&c.total>0&&Math.abs(sum-c.total)>=1){
-  /* When only labor (or only materials) is shown, every card's share must shrink in
-     proportion. Dumping the whole difference on the largest card would show one
-     service at a fraction of its price - or negative - while the others kept their
-     full figure. Only a genuine leftover under $1 is parked. */
-  if(sum>0){const f=c.total/sum;folded.forEach(x=>{x.subtotal=Math.round(x.subtotal*f*100)/100});
-   const s2=folded.reduce((a,b)=>a+b.subtotal,0),d=Math.round((c.total-s2)*100)/100;
-   if(d)folded.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),folded[0]).subtotal+=d}
-  else{const main=folded.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),folded[0]);main.subtotal+=c.total-sum}}
- return folded}
+ return reconcileCards(e,foldZeroPriceServices(out))}
 function build(e){/* Services are whatever this estimate ACTUALLY contains, not a fixed list of four.
  A hardcoded list sent General, Carpentry, Drywall and every other section into
  map.get('Bathroom'), so the customer saw Bathroom $25,628 while the dashboard
@@ -195,7 +236,21 @@ function pubScope(e,active){
  return active}
 function list(label,cl,a){a=U(a);if(!a.length)return'';return`<div class="label ${cl}">${label}</div><ul class="${cl}list">${a.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`}
 function inSvc(x,s){const sec=C(x.section);return (sec&&sec===s.title)||trade(x.item,x.section)===s.title}
-function details(e,s){let z=[];if(e.showLaborLines===true)A(e.labor).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Labor'}));if(e.showMaterialLines===true)A(e.materials).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Material'}));return z.length?`<details><summary>View detailed labor & materials (${z.length})</summary><table class="lines">${z.map(x=>`<tr><td>${x.t}</td><td>${E(x.item)}</td><td>${M(LT(x)*calc(e).k)}</td></tr>`).join('')}</table></details>`:''}
+function details(e,s){
+ /* A breakdown is a LIST of what the customer is getting. Whether it carries prices
+    is a separate decision (showLaborLinePrices / showMaterialLinePrices, default OFF)
+    so the contractor can show WHICH materials he will use without publishing what he
+    pays for each one. A price is printed only when that flag is on AND the matching
+    cost toggle is on - otherwise the table would print the very costs the contractor
+    chose to hide, which is what it used to do. */
+ const ct=calc(e);
+ let z=[];
+ if(e.showLaborLines===true)A(e.labor).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Labor',price:(e.showLaborLinePrices===true&&ct.showLabor)}));
+ if(e.showMaterialLines===true)A(e.materials).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Material',price:(e.showMaterialLinePrices===true&&ct.showMat)}));
+ if(!z.length)return'';
+ const anyPrice=z.some(x=>x.price);
+ const label=anyPrice?'View detailed labor & materials':'View what is included in detail';
+ return `<details><summary>${label} (${z.length})</summary><table class="lines">${z.map(x=>`<tr><td>${x.t}</td><td${x.price?'':' colspan="2"'}>${E(itemText(x.item))}</td>${x.price?`<td>${M(LT(x)*ct.k)}</td>`:''}</tr>`).join('')}</table></details>`}
 function isV7(e){
  /* Which LAYOUT to render, not which WORDING to use.
     This used to require customerScopePublished===true, which meant a perfectly good
