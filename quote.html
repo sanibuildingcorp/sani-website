@@ -22,6 +22,21 @@ function trade(item,declared){const x=N(item),d=N(declared);if(/window|sash|bala
 function isOption(item){return /\boption\s*[ab12]\b|alternate/i.test(N(item))}function optionKey(item){let x=N(item);if(/option\s*a|option\s*1/.test(x))return'A';if(/option\s*b|option\s*2/.test(x))return'B';return''}
 function calc(e){let l=A(e.labor).reduce((s,x)=>s+LT(x),0),m=A(e.materials).reduce((s,x)=>s+LT(x),0),k=1+(+e.markupPct||0)/100,total=rec&&rec.customerFinalTotal!=null?+rec.customerFinalTotal:(l+m)*k;return{l,m,k,total}}
 function friendly(item){let t=C(item).replace(/^labor\s*[-:]\s*/i,'').replace(/\s*@\s*\$?[\d,.]+.*$/,'').replace(/\s{2,}/g,' ');if(!t)return'';if(/bathroom demolition/i.test(t))return'Protect the work area; remove existing bathroom finishes and fixtures as specified; load and dispose of debris';if(/tile install/i.test(t))return'Prepare substrates and install bathroom wall and floor tile; complete grout, sealant, and finish work';if(/plumb.*shower|shower.*plumb|vanity.*toilet|toilet.*vanity/i.test(t))return'Install and connect shower valve/trim, vanity/sink/faucet, and toilet in their existing plumbing locations';if(/glass enclosure|shower glass/i.test(t))return'Fabricate and install the frameless shower glass enclosure as specified';if(/engineered hardwood/i.test(t))return'Prepare the installation area and install engineered hardwood flooring, including cuts, fitting, transitions, and finish details';if(/interior paint|painter/i.test(t))return'Prepare and paint included interior walls, ceilings, doors, and trim, including minor patching, sanding, spot priming, touch-ups, and cleanup';if(/project management|supervision|coordination/i.test(t))return'Project coordination, scheduling, deliveries, and quality control';if(/cleanup|final clean/i.test(t))return'Final cleanup and removal of construction debris';return t.charAt(0).toUpperCase()+t.slice(1)}
+/* CUSTOMER COST BREAKDOWN.
+   showLaborCost / showMaterialsCost decide which BREAKDOWN ROWS appear. They never
+   change the price: the total is always the full grand total. Markup is never its
+   own row - it is baked into each amount, and labor+materials sum exactly to the
+   total. If the contractor has set a manual total, the rows are scaled to it so
+   they still add up. */
+function costRows(e,ct){
+ const showLabor=e.showLaborCost!==false,showMat=e.showMaterialsCost===true;
+ if(!showLabor&&!showMat)return'';
+ const base=(ct.l+ct.m)*ct.k;
+ const f=(base>0&&ct.total>0)?(ct.total/base):1;
+ let h='';
+ if(showLabor)h+=`<div class="pr"><span>Labor</span><span>${M(ct.l*ct.k*f)}</span></div>`;
+ if(showMat)h+=`<div class="pr"><span>Materials</span><span>${M(ct.m*ct.k*f)}</span></div>`;
+ return h}
 function laborLike(l){return !/allowance|material|membrane|thinset|grout|paint supplies|sealant|insulation|flashing/i.test(N(l.item))}
 /* A service that carries real scope wording but has no price of its own must not
    render as a "$0.00" card - that reads as broken - and must not silently vanish
@@ -54,6 +69,26 @@ function pubList(e){
  if(!p||!Array.isArray(p.services)||!p.services.length)return null;
  if(!p.services.some(s=>Number.isFinite(Number(s.subtotal))))return null;
  return p.services}
+/* EXCLUSION SAFETY FILTER.
+   Estimating instructions written FOR the estimator were being echoed verbatim into
+   the customer's "Not included" list - "Do not price this as refinishing,
+   resurfacing, tread replacement, or an oak overlay project." The customer is not
+   the audience for these and they read as disclaimers on work he is paying for.
+
+   This filter catches ONLY the imperative voice, and nothing else.
+
+   An earlier version also dropped exclusions that contradicted the service's own
+   Included list, scored on shared word stems. It was removed: on review it deleted
+   8 realistic exclusions out of 12, including "Mold removal" on any job whose
+   included list mentioned "molding removal", because the stemmer collapses
+   molding -> mold. A wrongly deleted exclusion silently removes the contractor's
+   protection, which is worse than a leaked instruction. Anything needing judgement
+   about whether an exclusion contradicts priced work belongs at source, in
+   generate-estimate-background.js, where the analysis object is available. The
+   display layer cannot see it and any copy made here is the weaker one. */
+const INSTRUCTION_RE=/^\s*(do not|don't|dont|please do not|do NOT)\b|\bdo not (price|assume|treat|quote|estimate)\b|estimating instruction|note to estimator/i;
+function cleanExclusions(list){
+ return A(list).filter(x=>{const t=C(x);return t&&!INSTRUCTION_RE.test(t)})}
 function finalizeServices(e,active){
  const ps=pubList(e);
  if(!ps)return foldZeroPriceServices(pubScope(e,active));
@@ -62,7 +97,7 @@ function finalizeServices(e,active){
   title:String(s.name||s.title||'Service').trim()||'Service',
   included:U(A(s.included)),
   customerSupplies:U(A(s.supplied||s.customerSupplies)),
-  notIncluded:U(A(s.excluded||s.notIncluded)),
+  notIncluded:cleanExclusions(U(A(s.excluded||s.notIncluded))),
   subtotal:Number(s.subtotal)||0,
   options:m?A(m.options):[]}});
  /* A published service that carries wording but no priced lines must not reach the
@@ -90,7 +125,7 @@ const hasSections=[...A(e.labor),...A(e.materials)].some(l=>C(l.section));
 const preferred=['Bathroom','Flooring','Painting','Windows'],found=[];
 A(e.serviceBreakdown).forEach(x=>{const t=C(x.title||x.service||x.section||x.name);if(t&&found.indexOf(t)<0)found.push(t)});
 [...A(e.labor),...A(e.materials)].forEach(l=>{const t=C(l.section);if(t&&found.indexOf(t)<0)found.push(t)});
-const names=preferred.concat(found.filter(x=>preferred.indexOf(x)<0)),map=new Map(names.map(n=>[n,{title:n,included:[],customerSupplies:[],notIncluded:[],subtotal:0,options:[]}])) ;const get=n=>map.get(n)||map.get('Bathroom');const c=calc(e),deterministic=/^v8\.2-deterministic-four-service/.test(C(e.customerPresentationVersion));let general=0,optionTotals={A:0,B:0};
+const names=preferred.concat(found.filter(x=>preferred.indexOf(x)<0)),map=new Map(names.map(n=>[n,{title:n,included:[],customerSupplies:[],notIncluded:[],subtotal:0,options:[]}])) ;const get=n=>map.get(n)||map.get('Bathroom');const c=calc(e),deterministic=/^v8\.\d+-deterministic-four-service/.test(C(e.customerPresentationVersion));let general=0,optionTotals={A:0,B:0};
 A(e.serviceBreakdown).forEach(s=>{let nm=s.title||s.service||s.section||s.name;let t=trade(nm,nm);if(!map.has(t))return;let o=get(t);o.included.push(...A(s.included||s.items||s.scope));o.customerSupplies.push(...A(s.customerSupplies||s.customerSupplied||s.supplied));o.notIncluded.push(...A(s.notIncluded||s.exclusions||s.excluded));o.options.push(...A(s.options));if(deterministic&&Number.isFinite(Number(s.subtotal)))o.subtotal=+s.subtotal});
 A(e.scopeSections).forEach(s=>A(s.items).forEach(i=>{let t=trade(i,s.title);if(map.has(t))get(t).included.push(friendly(i))}));
 [...A(e.labor),...A(e.materials)].forEach(l=>{/* Trust the section the estimator wrote. Keyword guessing is only a fallback
@@ -107,7 +142,7 @@ if(!deterministic&&!hasSections){/* legacy records only: no sections to trust, s
  if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);
  let sum=active.reduce((s,x)=>s+x.subtotal,0);
  if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}}
-active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=U(s.notIncluded)});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}return finalizeServices(e,active)}
+active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=cleanExclusions(U(s.notIncluded))});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}return finalizeServices(e,active)}
 /* Published Customer Scope (set in the dashboard's Customer Scope Control).
    When the contractor has explicitly published a scope, its wording replaces the
    auto-derived Included / Customer Supplies / Not Included lists. Subtotals are
@@ -153,7 +188,7 @@ function isV7(e){
     Also falls back to "does this estimate actually carry service data", so a future
     rename of customerPresentationVersion cannot silently drop the layout again. */
  const v=C(e.customerPresentationVersion);
- if(/^v8\.2-deterministic-four-service/.test(v))return true;
+ if(/^v8\.\d+-deterministic-four-service/.test(v))return true;
  if(v==='v7-service-proposal')return true;
  if(C(e.customerViewPublishedVersion)==='v7')return true;
  if(e.customerScopePublished===true&&e.publishedCustomerScope&&A(e.publishedCustomerScope.services).length)return true;
@@ -161,8 +196,8 @@ function isV7(e){
 function isApproved(r){return /accept|approv|invoic|complete/i.test(C(r.status))||!!r.acceptedAt||!!r.approvedAt||N(r.customerResponse&&r.customerResponse.action)==='accept'}
 function legacyScope(e){if(C(e.scopeOfWork))return C(e.scopeOfWork);let s=A(e.scopeSections).map(x=>`${C(x.title)}\n${A(x.items).map(i=>'• '+C(i)).join('\n')}`).join('\n\n');if(s)return s;return C(e.summary)}
 function actionHtml(c,approved){if(approved)return`<div class="approved">✓ This estimate has already been approved. The approved scope and price remain on record.</div>`;return`<section class="actions"><button class="approve" onclick="P('a')">Approve estimate</button><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><section class="card panel" id="a"><input id="sig" value="${E(c.name||'')}"><button class="approve" onclick="S('accept')">Confirm approval</button></section><section class="card panel" id="q"><textarea id="msg" placeholder="Tell us what you would like changed or clarified"></textarea><button class="approve" onclick="S('question')">Send message</button></section><div id="st" class="status"></div>`}
-function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r);app.innerHTML=`<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||r.status||'Sent'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div></section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e)||'Please refer to the estimate details provided by Sani Building Corp.')}</div></section><section class="card prices"><div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${actionHtml(c,approved)}`;track()}
-function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal)}</b></div>`).join('');app.innerHTML=`<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div></section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal)}</b></div><div class="body">${list('Included in this service','in',s.included)}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',s.notIncluded)}${A(s.options).length?`<div class="opts"><div class="label">Alternatives</div>${A(s.options).map(o=>`<div class="opt"><span><b>${E(o.label)}</b>${o.description?`<div class="muted">${E(o.description)}</div>`:''}</span><b>${M(o.price)}</b></div>`).join('')}</div>`:''}${details(e,s)}</div></section>`).join('')}${actionHtml(c,approved)}`;track()}
+function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r);app.innerHTML=`<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||r.status||'Sent'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div></section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e)||'Please refer to the estimate details provided by Sani Building Corp.')}</div></section><section class="card prices">${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${actionHtml(c,approved)}`;track()}
+function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal)}</b></div>`).join('');app.innerHTML=`<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div></section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal)}</b></div><div class="body">${list('Included in this service','in',s.included)}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',s.notIncluded)}${A(s.options).length?`<div class="opts"><div class="label">Alternatives</div>${A(s.options).map(o=>`<div class="opt"><span><b>${E(o.label)}</b>${o.description?`<div class="muted">${E(o.description)}</div>`:''}</span><b>${M(o.price)}</b></div>`).join('')}</div>`:''}${details(e,s)}</div></section>`).join('')}${actionHtml(c,approved)}`;track()}
 function render(r){let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r)}
 function track(){new Image().src='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now()}
 window.P=id=>{document.querySelectorAll('.panel').forEach(x=>x.classList.remove('open'));let el=document.getElementById(id);if(el)el.classList.add('open')};
