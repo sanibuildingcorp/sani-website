@@ -314,7 +314,17 @@ function photos(r){
 function render(r){let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r)}
 function track(){new Image().src='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now()}
 window.P=id=>{document.querySelectorAll('.panel').forEach(x=>x.classList.remove('open'));let el=document.getElementById(id);if(el)el.classList.add('open')};
-window.S=async a=>{let p={ref,action:a,finalTotal:calc(rec.estimate||{}).total};if(a==='accept')p.signature=document.getElementById('sig').value;if(a==='question')p.questionText=document.getElementById('msg').value;let rr=await fetch('/.netlify/functions/quote-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}),j=await rr.json();let st=document.getElementById('st');if(st)st.textContent=rr.ok?'Thank you. We received your response.':(j.error||'Please call us at (332) 277-0990.')};
+window.S=async a=>{let p={ref,action:a,finalTotal:calc(rec.estimate||{}).total};if(a==='accept')p.signature=document.getElementById('sig').value;if(a==='question')p.questionText=document.getElementById('msg').value;let rr=await fetch('/.netlify/functions/quote-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}),j=await rr.json();let st=document.getElementById('st');
+ if(st){
+  if(!rr.ok){st.textContent=(j&&j.error)||'Please call us at (332) 277-0990.';return}
+  /* The response is saved either way, but if the contractor's notification did not
+     go out, saying only "Thank you" leaves the customer waiting on a reply nobody
+     knows to send. */
+  st.innerHTML=(j&&j.notified===false)
+   ? 'Thank you \u2014 your response was saved. To make sure we see it right away, please also call or text <a href="tel:+13322770990"><b>(332) 277-0990</b></a>.'
+   : 'Thank you. We received your response.';
+ }
+ if(a==='question'){const m=document.getElementById('msg');if(m)m.value=''}};
 if(!ref){app.textContent='Estimate link is incomplete.';return}fetch('/.netlify/functions/get-estimate?ref='+encodeURIComponent(ref),{cache:'no-store'}).then(r=>r.json()).then(j=>render(j.record||j.estimateRecord||j.data||j)).catch(e=>app.textContent='Could not load estimate: '+e.message)
 })();
 </script>
