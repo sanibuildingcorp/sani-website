@@ -3649,6 +3649,12 @@ function renderEdit() {
         '<span id="tot-markup">$0.00</span>' +
       '</div>' +
       '<div class="tot-line grand"><span>GRAND TOTAL</span><span id="tot-grand">$0.00</span></div>' +
+      /* The tiered markup was silent: computed on every estimate, displayed nowhere, and
+         dropped by the next save. A number nobody can see is a number nobody can
+         disagree with, which is the opposite of what it is for. */
+      '<div id="markup-advice" style="display:none;margin-top:10px;padding:10px 12px;border-radius:9px;' +
+        'background:var(--gold-soft,rgba(212,181,114,0.12));border:1px solid var(--line,rgba(212,181,114,0.28));' +
+        'font-size:12.5px;line-height:1.5;color:var(--ink,#1a2433)"></div>' +
       '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
       '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
     '</div>' +
@@ -4140,6 +4146,34 @@ function syncLines() {
     currentRecord.estimate[kind] = items;
   });
 }
+/* Reads what lib/deterministic-pricing.js recommended and says plainly whether the
+   number in the box matches it. Never changes the field — Zura's own number always wins,
+   and the engine only ever replaces the legacy 25% default. */
+function renderMarkupAdvice(t) {
+  var el = document.getElementById("markup-advice");
+  if (!el) return;
+  var rec = currentRecord && currentRecord.estimate && currentRecord.estimate.markupRecommendation;
+  if (!rec || !Number.isFinite(Number(rec.recommendedMarkupPct))) { el.style.display = "none"; return; }
+  var want = Number(rec.recommendedMarkupPct);
+  /* calcTotal() returns labor/mat/sub/markup/grand — there is NO markupPct on it.
+     Reading t.markupPct printed "Currently NaN%". Take it from the same place recalc()
+     just wrote it. */
+  var have = Number(currentRecord.estimate.markupPct);
+  if (!Number.isFinite(have)) have = 0;
+  var same = Math.abs(want - have) < 0.05;
+  var margin = have > 0 ? Math.round((1 - 1 / (1 + have / 100)) * 1000) / 10 : 0;
+  var atRec = Math.round(t.sub * (1 + want / 100) * 100) / 100;
+  el.style.display = "block";
+  el.innerHTML =
+    '<div style="font-weight:700;margin-bottom:3px">' +
+      (same ? '✓ Markup matches the calibrated recommendation' : '⚠ Markup is ' + (have > want ? 'above' : 'below') + ' the calibrated recommendation') +
+    '</div>' +
+    '<div>Recommended <strong>' + want + '%</strong> (' + rec.grossMargin + '% gross margin) on ' + fmt(rec.directCost) + ' of direct cost.<br>' +
+    'Currently <strong>' + have + '%</strong> — ' + margin + '% gross margin.' +
+    (same ? '' : '<br>At ' + want + '% the grand total would be <strong>' + fmt(atRec) + '</strong>.') + '</div>' +
+    '<div style="color:var(--ink-muted,#7a879b);margin-top:4px">' + esc(rec.tier || "") + '</div>';
+}
+
 function recalc() {
   syncLines();
   currentRecord.estimate.markupPct = parseFloat(document.getElementById("f-markup").value) || 0;
@@ -4150,6 +4184,7 @@ function recalc() {
   document.getElementById("tot-sub").textContent = fmt(t.sub);
   document.getElementById("tot-markup").textContent = fmt(t.markup);
   document.getElementById("tot-grand").textContent = fmt(t.grand);
+  renderMarkupAdvice(t);
   document.querySelectorAll("#labor-body tr, #materials-body tr").forEach(function(row) {
     const totEl = row.querySelector(".line-total");
     if (!totEl) return;
@@ -4474,6 +4509,9 @@ async function generateAI(isRegenerate) {
    pricingReadiness, clarificationQuestions) is deliberately ABSENT - regenerating
    is supposed to replace those. */
 var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
+  /* The engine writes this on every generation. Without it here, the next Save Draft
+     rebuilds the estimate without it and the recommendation disappears. */
+  "markupRecommendation",
   // Customer Scope Control
   "manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished",
   "customerViewPublishedVersion",
