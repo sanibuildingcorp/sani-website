@@ -1,6 +1,53 @@
-// Sani Building Corp — deterministic estimator guardrails v2.0
+// Sani Building Corp — deterministic estimator guardrails v2.3
 // Pricing polish: cost-based labor + single markup + duplication controls.
-// Aug 8, 2026
+// Aug 8, 2026 · v2.1 Aug 10, 2026 · v2.2 Aug 11, 2026 · v2.3 Aug 11, 2026
+//
+// v2.3 — three things v2.2 left open, all found by executing the file:
+//  F. isolateAlternatives WAS NEVER MOVED. v2.2 relocated applyTieredMarkup to just
+//     after normalizeLaborRates, which fixed ensureWindowOptionEngine — but
+//     isolateAlternatives runs NINE LINES EARLIER and still priced every alternative at
+//     the legacy 25%. It also captured the raw cost BEFORE calibration, so an option was
+//     wrong twice and the two errors partly cancelled. Both pricing sites now defer:
+//     they record rawCost, and one priceAlternatives() pass at the end applies the
+//     resolved markup to a calibrated basis.
+//  G. Clamp-only calibration left the cost basis MIXED. Any AI rate that happened to
+//     land under its ceiling stayed on the payroll basis — "Remove existing bathroom
+//     floor tile" classifies as tile, its $52 sits under the $62.40 tile ceiling, and
+//     it was never calibrated. Job 2 drifted from +3.4% to +8.8% against its real sale
+//     price. Calibration now SCALES again (correct basis) and stays idempotent by
+//     STAMPING the line — identity, not arithmetic. Re-running is a no-op because the
+//     stamp is already there, not because the maths happens to be stable.
+//  H. buildCustomerScope's plain-language scope was overwritten. It wrote outcome
+//     sentences, then consolidateCustomerPresentation replaced serviceBreakdown with raw
+//     text(l.item). Customers read internal task names. consolidate now asks for the
+//     same phrases, and the phrases are service-aware so a Flooring card no longer says
+//     "Remove the existing bathroom".
+//
+// v2.2 — fixes five defects found by executing the engine (Claude Code review, Aug 11):
+//  A. Tiered markup had a CLIFF. $4,000 cost quoted $6,700; $4,001 quoted $6,161.54.
+//     Adding $1 of cost made a job $538 cheaper, and cost had to reach $4,351 before the
+//     price recovered. Replaced with a continuous curve anchored on the two real jobs.
+//  B. Calibration was NOT IDEMPOTENT. The repair pass feeds the already-calibrated
+//     estimate back to the model and re-runs pricing, so echoed rates were scaled by
+//     0.80 twice (tile $78 -> $62.40 -> $49.92). Now clamp-only, which is idempotent.
+//  C. Markup resolved LAST, so isolateAlternatives and ensureWindowOptionEngine priced
+//     options at the stale 25% while the base carried 54%. Resolved once, early.
+//  D. Walk-up exemption read estimate.notes, which never carries it. Now requestEvidence.
+//  E. Version stamps still said v2.0-cost-based.
+//
+// v2.1 CHANGES — all four verified against Sani's own completed jobs:
+//  1. SUB_CONTRACT_CALIBRATION (0.80). The published loaded-cost table assumes payroll.
+//     Sani buys SUBCONTRACT packages. On the real 5x7 bathroom the engine computed
+//     $8,752 of labor + rough materials where the sub actually charged $7,000.
+//  2. TIERED MARKUP. A flat 25% markup is a 20% gross margin — ten points under the NYC
+//     standard of 30-40%, and under Sani's own observed 33.2% and 41.6%. Inflated labor
+//     was hiding this: the two errors cancel ONLY on labor-heavy work. On a material-heavy
+//     job (8 windows, 21% labor) the estimate came out 15% under. Both are fixed together;
+//     fixing either alone breaks pricing.
+//  3. paintingSfPerHour 32 -> 65. Two independent sources agree: back-solving published
+//     NYC billable rates gives 65-71 paintable SF/painter-hour. 32 doubled painting labor.
+//  4. Carpentry split into rough and finish. One rate could not cover both framing
+//     ($46-70 loaded) and trim/millwork ($67-97 loaded).
 //
 // IMPORTANT ARCHITECTURE:
 // AI understands scope and proposes operations.
@@ -14,15 +61,34 @@
 const { marketAudit } = require('./nyc-market-benchmark');
 
 const RULES = {
-  markupDefault: 25,
-  paintingSfPerHour: 32,
+  markupDefault: 25,                 /* legacy fallback only; see markupTiers */
+  /* Sani buys subcontract packages, not payroll. Published loaded-cost rates assume an
+     employee with full burden. Calibrated against the completed 5x7 bathroom: engine
+     labor + rough materials $8,752 vs the sub's actual flat $7,000. Recalculate this
+     the moment a second sub-let job with known numbers exists. */
+  subContractCalibration: 0.80,
+  /* Markup by direct cost, from SANI_ACTUALS: 1.71x on a $2,250 job, 1.50x on a $9,690
+     job. Expressed as percent to match the dashboard field. Gross margin in brackets. */
+  applyTieredMarkup: true,
+  /* CONTINUOUS markup curve, not brackets. Anchored on the two completed jobs so both
+     reproduce exactly: $2,250 cost sold at 71%, $9,690 cost sold at 49.6%. Between and
+     beyond the anchors the rate is linearly interpolated, which keeps customer price
+     strictly increasing with cost — brackets did not (see v2.2 note A). */
+  markupCurve: [
+    { directCost: 2250,  markupPct: 71.0, note: 'Sani actual — bathroom floor + heat, 41.5% gross margin' },
+    { directCost: 9690,  markupPct: 49.6, note: 'Sani actual — 5x7 bathroom, 33.2% gross margin' },
+    { directCost: 30000, markupPct: 48.5, note: 'Large job floor — 32.7% gross margin' }
+  ],
+  paintingSfPerHour: 65,             /* was 32 — see header note 3 */
   engineeredHardwoodSfPerHour: 16,
   largeFormatTileSfPerHour: 5,
   loadedCostRates: {
     helper: 48,
     demo: 52,
     painter: 55,
-    carpenter: 72,
+    carpenter: 72,                   /* blended fallback when rough/finish is unclear */
+    carpenterRough: 58,              /* base $32-48 x 1.45 burden */
+    carpenterFinish: 78,             /* base $45-65 x 1.50 burden */
     flooring: 72,
     tile: 78,
     plumber: 95,
@@ -39,6 +105,8 @@ const RULES = {
     demo: 62,
     painter: 65,
     carpenter: 85,
+    carpenterRough: 70,
+    carpenterFinish: 97,
     flooring: 85,
     tile: 90,
     plumber: 110,
@@ -88,23 +156,37 @@ function scopedText(raw, label, nextLabels) {
   const m = raw.match(re);
   return m ? m[1] : '';
 }
+/* Read the analysis pass's STRUCTURED quantities before falling back to prose regex.
+   v2.0 only regexed the evidence string. analysis.quantities is serialised into that
+   string as JSON ({"painting_sf":1200}), which none of the prose patterns can match —
+   so all three production minimums below were dead unless the customer happened to
+   write "1200 sf paintable" in their own words. Structured first, prose second. */
+function firstQty(q, keys) {
+  for (const k of keys) {
+    const v = num(q && q[k]);
+    if (v) return v;
+  }
+  return 0;
+}
+
 function extractQuantities(input, analysis) {
   const raw = evidence(input, analysis);
+  const q = (analysis && analysis.quantities) || {};
   const desc = text(input?.request?.description);
   const floor = scopedText(desc, 'FLOORING', ['PAINTING', 'WINDOW']);
   const paint = scopedText(desc, 'PAINTING', ['WINDOW']);
   const bath = scopedText(desc, 'BATHROOM RENOVATION', ['FLOORING', 'PAINTING', 'WINDOW']);
   return {
-    paintingSf: findQty(paint || raw, [
+    paintingSf: firstQty(q, ['painting_sf', 'paintingSf', 'paintable_sf', 'paintableSf']) || findQty(paint || raw, [
       /(?:approximately|approx\.?)\s*([\d,]+(?:\.\d+)?)\s*(?:sf|sq\.?\s*ft|square\s*feet)\s+(?:of\s+)?paintable/i,
       /paintable(?:\s+surface)?[^\d]{0,30}([\d,]+(?:\.\d+)?)\s*(?:sf|sq\.?\s*ft|square\s*feet)/i,
       /([\d,]+(?:\.\d+)?)\s*(?:sf|sq\.?\s*ft|square\s*feet)[^|\n]{0,35}(?:paintable|painting)/i
     ]),
-    flooringSf: findQty(floor || raw, [
+    flooringSf: firstQty(q, ['flooring_sf', 'flooringSf', 'floor_sf', 'floorSf']) || findQty(floor || raw, [
       /total\s*(?:approximately|approx\.?)?\s*[:=-]?\s*([\d,]+(?:\.\d+)?)\s*(?:sf|sq\.?\s*ft|square\s*feet)/i,
       /(?:approximately|approx\.?)\s*([\d,]+(?:\.\d+)?)\s*(?:sf|sq\.?\s*ft|square\s*feet)/i
     ]),
-    tileSf: findQty(bath || raw, [
+    tileSf: firstQty(q, ['tile_sf', 'tileSf']) || findQty(bath || raw, [
       /(?:total\s+tile\s+installation|tile\s+installation)[^\d]{0,25}([\d,]+(?:\.\d+)?)\s*(?:sf|sq\.?\s*ft|square\s*feet)/i,
       /approximately\s*([\d,]+(?:\.\d+)?)\s*(?:sf|sq\.?\s*ft|square\s*feet)[^\n]{0,30}(?:shower|wall|floor|tile)/i
     ])
@@ -168,32 +250,119 @@ function classifyLabor(line) {
   if (/engineered hardwood|hardwood|flooring install|subfloor|transition/.test(s)) return 'flooring';
   if (/paint|primer|painter|spackle/.test(s)) return 'painter';
   if (/drywall|sheetrock|cement board|backer board|taping|mudding|sanding/.test(s)) return 'drywall';
-  if (/carpent|framing|stud|blocking|door|trim|molding|baseboard/.test(s)) return 'carpenter';
+  if (/finish carpen|trim|molding|baseboard|casing|crown|millwork|cabinet/.test(s)) return 'carpenterFinish';
+  if (/rough carpen|framing|stud|blocking|joist|subfloor|sheathing/.test(s)) return 'carpenterRough';
+  if (/carpent|door/.test(s)) return 'carpenter';
   if (/demo|demolition|remove|debris|haul|disposal/.test(s)) return 'demo';
   if (/project management|project coordination|supervision|trade scheduling/.test(s)) return 'supervision';
   if (/helper|laborer|cleanup|protection|setup|material handling/.test(s)) return 'helper';
   return 'general';
 }
 
+function calibratedRate(v) { return money(num(v) * (Number(RULES.subContractCalibration) || 1)); }
+
+/* A line already converted to the subcontract basis carries this stamp. Re-running is a
+   no-op because the STAMP is there, not because the arithmetic happens to be stable.
+   v2.2 chose clamp-only for idempotency and paid for it: any AI rate that landed under
+   its ceiling was left on the payroll basis, so the cost basis was mixed and Job 2 drifted
+   from +3.4% to +8.8% against its real sale price. Identity, never arithmetic. */
+const RATE_BASIS_SUBCONTRACT = 'subcontract';
+
 function normalizeLaborRates(estimate, adjustments) {
+  const cal = Number(RULES.subContractCalibration) || 1;
   (estimate.labor || []).forEach(line => {
     const unit = norm(line.unit);
     if (!/hr|hour/.test(unit)) return;
+    if (line.rateBasis === RATE_BASIS_SUBCONTRACT) return;   // already converted
     const cls = classifyLabor(line);
-    const target = RULES.loadedCostRates[cls] || RULES.loadedCostRates.general;
-    const ceiling = RULES.maxLoadedRates[cls] || RULES.maxLoadedRates.general;
+    /* The published table is payroll-basis. Calibrate to what Sani actually pays a sub
+       BEFORE comparing, so the ceiling is a real ceiling and not a payroll one. */
+    const target = calibratedRate(RULES.loadedCostRates[cls] || RULES.loadedCostRates.general);
+    const ceiling = calibratedRate(RULES.maxLoadedRates[cls] || RULES.maxLoadedRates.general);
     const old = num(line.rate);
+    if (!old) return;
     if (old > ceiling) {
       line.rate = target;
+      line.rateBasis = RATE_BASIS_SUBCONTRACT;
       adjustments.push({
         type: 'LABOR_RATE_NORMALIZED',
         item: text(line.item),
         laborClass: cls,
         fromRate: old,
         toLoadedCostRate: target,
-        reason: 'AI returned a customer selling-rate-like hourly rate. Dashboard markup is applied separately.'
+        subContractCalibration: cal,
+        reason: 'AI returned a rate above Sani\'s sub-let loaded cost ceiling. Dashboard markup is applied separately.'
       });
+      return;
     }
+    /* Under the ceiling but still on the payroll basis the AI was trained on. Convert it,
+       exactly as v2.1 did — the stamp above is what makes this safe to re-run, so the
+       cost basis stays uniform across every line instead of depending on where each AI
+       guess happened to land. */
+    if (cal !== 1) {
+      const scaled = calibratedRate(old);
+      if (Math.abs(scaled - old) >= 0.01) {
+        line.rate = scaled;
+        line.rateBasis = RATE_BASIS_SUBCONTRACT;
+        adjustments.push({
+          type: 'LABOR_RATE_CALIBRATED_TO_SUBCONTRACT',
+          item: text(line.item),
+          laborClass: cls,
+          fromRate: old,
+          toRate: scaled,
+          subContractCalibration: cal,
+          reason: 'Published loaded-cost rates assume payroll. Sani buys subcontract packages; factor is from the completed 5x7 bathroom.'
+        });
+      } else {
+        line.rateBasis = RATE_BASIS_SUBCONTRACT;
+      }
+    }
+  });
+}
+
+/* Markup from job size, from Sani's own completed jobs. A flat 25% is a 20% gross margin,
+   below both the NYC 30-40% standard and Sani's observed 33.2% / 41.6%.
+   Continuous: interpolate between anchors, flat outside them. A bracketed step made the
+   customer price fall as cost rose, which is never acceptable. */
+function resolveMarkupPct(directCost) {
+  const c = RULES.markupCurve;
+  if (directCost <= c[0].directCost) return { markupPct: c[0].markupPct, note: c[0].note };
+  const last = c[c.length - 1];
+  if (directCost >= last.directCost) return { markupPct: last.markupPct, note: last.note };
+  for (let i = 0; i < c.length - 1; i++) {
+    const a = c[i], b = c[i + 1];
+    if (directCost > a.directCost && directCost <= b.directCost) {
+      const t = (directCost - a.directCost) / (b.directCost - a.directCost);
+      const pct = Math.round((a.markupPct + t * (b.markupPct - a.markupPct)) * 10) / 10;
+      return { markupPct: pct, note: `Interpolated between $${a.directCost} and $${b.directCost} anchors` };
+    }
+  }
+  return { markupPct: last.markupPct, note: last.note };
+}
+
+function applyTieredMarkup(estimate, adjustments) {
+  if (!RULES.applyTieredMarkup) return;
+  const directCost = sumLines(estimate.labor) + sumLines(estimate.materials);
+  if (!(directCost > 0)) return;
+  const tier = resolveMarkupPct(directCost);
+  const current = Number(estimate.markupPct);
+  /* Only replace the legacy default. A contractor who typed his own number keeps it. */
+  const isLegacyDefault = !Number.isFinite(current) || current === RULES.markupDefault;
+  estimate.markupRecommendation = {
+    directCost: money(directCost),
+    recommendedMarkupPct: tier.markupPct,
+    grossMargin: Math.round((1 - 1 / (1 + tier.markupPct / 100)) * 1000) / 10,
+    tier: tier.note,
+    basis: 'SANI_ACTUALS markup bands; NYC standard gross margin 30-40%'
+  };
+  if (!isLegacyDefault) return;
+  estimate.markupPct = tier.markupPct;
+  adjustments.push({
+    type: 'MARKUP_TIERED',
+    fromMarkupPct: Number.isFinite(current) ? current : null,
+    toMarkupPct: tier.markupPct,
+    directCost: money(directCost),
+    reason: tier.note + '. Flat 25% was a 20% gross margin, under the NYC 30-40% standard and under Sani\'s own completed jobs.'
   });
 }
 
@@ -250,7 +419,7 @@ function removeOverlappingLabor(estimate, adjustments) {
   estimate.labor = lines.filter((_, i) => !drop.has(i));
 }
 
-function capGeneralConditions(estimate, adjustments) {
+function capGeneralConditions(estimate, adjustments, input, analysis) {
   const labor = estimate.labor || [];
   const generalIdx = [];
   let specificCost = 0, generalCost = 0;
@@ -264,8 +433,13 @@ function capGeneralConditions(estimate, adjustments) {
     }
   });
   if (!specificCost || !generalCost) return;
-  const evidenceText = norm(estimate.notes || '');
-  const exceptional = /no elevator|walk[- ]?up|restricted hours|night work|occupied.*protection/.test(evidenceText);
+  /* v2.1 read estimate.notes, which the AI schema documents as "Internal estimator notes
+     only" — walk-up and access facts arrive in input.request.description, so the
+     exemption never fired and real fifth-floor walk-ups got the tight 12% cap on exactly
+     the jobs that need protection and haul labour. capUnneededRoughIn below already uses
+     requestEvidence correctly; this now matches it. */
+  const evidenceText = requestEvidence(input, analysis) + ' ' + norm(estimate.notes || '');
+  const exceptional = /no elevator|walk[- ]?up|walkup|restricted hours|night work|occupied.*protection|[3-9](?:rd|th)\s+floor/.test(evidenceText);
   const maxRatio = exceptional ? 0.18 : 0.12;
   const maxGeneral = specificCost * maxRatio;
   if (generalCost <= maxGeneral) return;
@@ -328,17 +502,42 @@ function isolateAlternatives(estimate, adjustments) {
     });
     estimate[bucket] = keep;
   });
-  const mm = 1 + num(estimate.markupPct || RULES.markupDefault) / 100;
+  /* NO PRICE HERE. This function runs before the markup is resolved, so anything it
+     priced would carry the legacy 25% while the base work carried the real rate — an
+     alternative shown at $1,875 that should read $2,436. Record the calibrated raw cost
+     and let priceAlternatives() apply the resolved markup once, at the end. */
   Object.values(grouped).forEach(o => {
     if (!estimate.options.some(x => norm(x.label) === norm(o.label))) {
       estimate.options.push({
         section: o.section,
         label: o.label,
         description: 'Mutually exclusive alternative; excluded from base Grand Total until selected.',
-        price: money(o.raw * mm)
+        rawCost: money(o.raw)
       });
     }
   });
+}
+
+/* One place, one markup. Every option that carries a rawCost is priced from the same
+   number the base estimate uses, so the customer never sees an alternative on a
+   different margin from the work printed beside it. */
+function priceAlternatives(estimate, adjustments) {
+  const mm = 1 + num(estimate.markupPct || RULES.markupDefault) / 100;
+  let priced = 0;
+  (estimate.options || []).forEach(o => {
+    if (!o || !Number.isFinite(Number(o.rawCost))) return;
+    o.price = money(num(o.rawCost) * mm);
+    delete o.rawCost;
+    priced++;
+  });
+  if (priced) {
+    adjustments.push({
+      type: 'ALTERNATIVES_PRICED_AT_BASE_MARKUP',
+      count: priced,
+      markupPct: Number(estimate.markupPct),
+      reason: 'Alternatives are priced from the same calibrated cost basis and the same markup as the base estimate.'
+    });
+  }
 }
 
 function windowRequested(input, analysis) {
@@ -371,8 +570,9 @@ function ensureWindowOptionEngine(estimate, analysis, input, adjustments) {
   const optionA = estimate.options.find(o =>
     canonicalService(o.section, `${o.label || ''} ${o.description || ''}`, []) === 'Windows' && optionLetter(o) === 'A'
   );
-  if (!hasBase && optionA && num(optionA.price) > 0) {
-    const preMarkup = money(num(optionA.price) / mm);
+  if (!hasBase && optionA && (num(optionA.price) > 0 || num(optionA.rawCost) > 0)) {
+    /* rawCost is already pre-markup; a legacy record only carries price. */
+    const preMarkup = num(optionA.rawCost) > 0 ? money(num(optionA.rawCost)) : money(num(optionA.price) / mm);
     estimate.materials.push({ section: 'Windows', item: `${text(optionA.label) || 'Window Option A'} — selected base allowance`, qty: 1, unit: 'allowance', rate: preMarkup });
     estimate.options = estimate.options.filter(o => o !== optionA);
     hasBase = true;
@@ -385,6 +585,8 @@ function ensureWindowOptionEngine(estimate, analysis, input, adjustments) {
     estimate.materials.push({ section: 'Windows', item: `Window Option A — ${count} specified replacement windows allowance`, qty: count, unit: 'ea', rate: 780 });
     adjustments.push({ type: 'WINDOW_BASE_SYNTHESIZED', option: 'A', windowCount: count });
   }
+  estimate.optionSelections = estimate.optionSelections || {};
+  estimate.optionSelections.Windows = { selected: 'Option A', baseIncluded: true, alternatives: [] };
   estimate.options = estimate.options.filter(o => !(canonicalService(o.section, `${o.label || ''} ${o.description || ''}`, []) === 'Windows' && optionLetter(o) === 'A'));
   const hasB = estimate.options.some(o => canonicalService(o.section, `${o.label || ''} ${o.description || ''}`, []) === 'Windows' && optionLetter(o) === 'B');
   if (!hasB) {
@@ -395,15 +597,18 @@ function ensureWindowOptionEngine(estimate, analysis, input, adjustments) {
       section: 'Windows',
       label: 'Option B — Replace 2 premium acoustic windows + adjust remaining existing windows',
       description: 'Alternative requested by customer. Replace two bedroom windows with premium acoustic windows and repair/adjust the remaining existing windows. Excluded from base Grand Total until selected.',
-      price: money(raw * mm)
+      rawCost: money(raw)
     });
   }
-  estimate.optionSelections = estimate.optionSelections || {};
-  estimate.optionSelections.Windows = {
-    selected: 'Option A',
-    baseIncluded: true,
-    alternatives: estimate.options.filter(o => canonicalService(o.section, `${o.label || ''} ${o.description || ''}`, []) === 'Windows').map(o => ({ label: o.label, description: o.description, price: money(o.price) }))
-  };
+  /* optionSelections is rebuilt in applyDeterministicPricing AFTER priceAlternatives,
+     so the alternatives it lists carry final prices rather than undefined. */
+}
+
+function rebuildWindowSelections(estimate) {
+  if (!estimate.optionSelections || !estimate.optionSelections.Windows) return;
+  estimate.optionSelections.Windows.alternatives = (estimate.options || [])
+    .filter(o => canonicalService(o.section, `${o.label || ''} ${o.description || ''}`, []) === 'Windows')
+    .map(o => ({ label: o.label, description: o.description, price: money(o.price) }));
 }
 
 function calculateTotals(estimate) {
@@ -434,7 +639,7 @@ function buildHealth(estimate, analysis, q, adjustments, input) {
     totals: calculateTotals(estimate),
     deterministicAdjustments: adjustments,
     checkedAt: new Date().toISOString(),
-    version: 'deterministic-v2.0-cost-based'
+    version: 'deterministic-v2.3-cost-based'
   };
 }
 
@@ -586,33 +791,61 @@ function dedupeCustomerSupplied(estimate, adjustments) {
    what the estimate ACTUALLY prices. Not model prose, so it reads the same on every
    estimate and can never invent work that is not in the price.
    ═════════════════════════════════════════════════════════════════════════════ */
+/* Each phase carries the bathroom voice and a generic one. A Flooring card that said
+   "Remove the existing bathroom down to the substrate" would be worse than the raw task
+   name it replaced, so the wording follows the service. */
 const SCOPE_PHASES = [
   { key: 'protect',    re: /protect|setup|floor covering|dust barrier|masking/i,
     say: 'Protect your floors, hallways and adjacent finishes before any work starts' },
   { key: 'demo',       re: /demolition|demo\b|remove existing|tear ?out|strip/i,
-    say: 'Remove the existing bathroom down to the substrate' },
+    say: 'Remove the existing bathroom down to the substrate',
+    generic: 'Remove the existing work and prepare the surfaces underneath' },
   { key: 'disposal',   re: /debris|dumpster|disposal|haul|carry|dump fee/i,
     say: 'Bag, carry out and legally dispose of all construction debris' },
   { key: 'framing',    re: /framing|metal stud|blocking|stud repair/i,
     say: 'Repair framing and add blocking where fixtures and grab bars will mount' },
   { key: 'substrate',  re: /drywall|cement board|backer|durock|sheetrock|substrate/i,
-    say: 'Install new moisture-resistant wall and ceiling substrate' },
+    say: 'Install new moisture-resistant wall and ceiling substrate',
+    generic: 'Install and finish new wall and ceiling substrate' },
+  { key: 'prep',       re: /surface prep|patch|spackle|skim coat|sand(ing)? (walls|surfaces)|caulk gaps/i,
+    say: 'Patch, sand and prepare every surface before finishing',
+    generic: 'Patch, sand and prepare every surface before finishing' },
   { key: 'waterproof', re: /waterproof|kerdi|membrane|schluter|redgard/i,
     say: 'Install a full waterproofing system in the shower and wet areas' },
   { key: 'plumbing',   re: /plumb|valve|rough-?in|supply line|drain|wax ring/i,
-    say: 'Connect all plumbing and set your fixtures in their existing locations' },
+    say: 'Connect all plumbing and set your fixtures in their existing locations',
+    generic: 'Complete all plumbing connections required by this work' },
   { key: 'electrical', re: /electric|wiring|gfci|outlet|light fixture|exhaust fan/i,
     say: 'Complete electrical connections for lighting, ventilation and outlets' },
   { key: 'tile',       re: /tile|grout|thinset|mortar/i,
-    say: 'Install wall and floor tile with full grouting, sealing and finish work' },
+    say: 'Install wall and floor tile with full grouting, sealing and finish work',
+    generic: 'Install tile with full grouting, sealing and finish work' },
+  /* Without these a Flooring, Painting or Windows card matched almost nothing and the
+     customer got a one-line scope for a five-figure job — worse than the task names it
+     replaced. Every service the engine can produce needs real phase coverage. */
+  { key: 'subfloor',   re: /subfloor|underlayment|level(ing)? compound|floor prep/i,
+    say: 'Prepare and level the subfloor before the new floor goes down',
+    generic: 'Prepare and level the subfloor before the new floor goes down' },
+  { key: 'flooring',   re: /engineered hardwood|hardwood|flooring install|install.*floor|laminate|vinyl plank|lvp/i,
+    say: 'Install the new flooring throughout the included areas',
+    generic: 'Install the new flooring, including cuts, fitting and finish details' },
+  { key: 'trim',       re: /quarter.?round|baseboard|shoe mould|transition strip|threshold|casing|crown/i,
+    say: 'Fit transitions, baseboard and trim so every edge is finished',
+    generic: 'Fit transitions, baseboard and trim so every edge is finished' },
+  { key: 'windows',    re: /window|sash|glazing bead|sill/i,
+    say: 'Remove the existing windows, prepare the openings and install the new units',
+    generic: 'Remove the existing windows, prepare the openings, install the new units and seal them weathertight' },
   { key: 'fixtures',   re: /vanity|toilet|faucet|shower trim|sink|shower kit|shower pan/i,
-    say: 'Install and connect the vanity, toilet, faucet and shower fittings' },
+    say: 'Install and connect the vanity, toilet, faucet and shower fittings',
+    generic: 'Install and connect every specified fixture and fitting' },
   { key: 'accessories',re: /grab bar|mirror|curtain bar|toilet paper|accessor|towel/i,
-    say: 'Mount all bathroom accessories and hardware' },
+    say: 'Mount all bathroom accessories and hardware',
+    generic: 'Mount all specified accessories and hardware' },
   { key: 'door',       re: /door|privacy lock|door stop|frame install/i,
     say: 'Install the new door, frame and hardware' },
   { key: 'paint',      re: /paint|primer|prime\b/i,
-    say: 'Prime and paint all new wall and ceiling surfaces' },
+    say: 'Prime and paint all new wall and ceiling surfaces',
+    generic: 'Prepare, prime and paint every included wall, ceiling, door and trim surface' },
   { key: 'cleanup',    re: /cleanup|clean-?up|final clean|touch-?up|protection removal/i,
     say: 'Clean the space daily and leave it finished, protected and ready to use' },
   { key: 'management', re: /coordination|supervision|project management|scheduling/i,
@@ -633,17 +866,20 @@ const STANDARD_EXCLUSIONS = [
    location is meaningless and reads as though work is being taken away. */
 const LOCATION_CARVE_OUT = /outside|other room|another (room|area)|beyond (this|the) (room|bathroom|kitchen)|elsewhere/i;
 
-function phasesPresent(estimate, sectionName) {
+/* filterSection: which lines to read ('' = every line). voice: which wording to use.
+   On a collapsed single-bathroom job they differ — read everything, speak as Bathroom. */
+function phasesPresent(estimate, filterSection, voice) {
   const hits = {};
   ['labor', 'materials'].forEach(kind => {
     (estimate[kind] || []).forEach(l => {
-      if (sectionName && text(l.section) !== sectionName) return;
+      if (filterSection && text(l.section) !== filterSection) return;
       if (isAlt(l)) return;
       const t = text(l.item);
       SCOPE_PHASES.forEach(p => { if (p.re.test(t)) hits[p.key] = true; });
     });
   });
-  return SCOPE_PHASES.filter(p => hits[p.key]).map(p => p.say);
+  const bathroom = norm(voice === undefined ? filterSection : voice) === 'bathroom';
+  return SCOPE_PHASES.filter(p => hits[p.key]).map(p => (bathroom ? p.say : (p.generic || p.say)));
 }
 
 function suppliedNames(estimate) {
@@ -707,7 +943,7 @@ function buildCustomerScope(estimate, analysis, adjustments) {
     : '';
 
   estimate.serviceBreakdown = sections.map(sec => {
-    const included = phasesPresent(estimate, single ? '' : sec);
+    const included = phasesPresent(estimate, single ? '' : sec, sec);
     return {
       title: sec,
       included,
@@ -737,11 +973,17 @@ function applyDeterministicPricing(estimate, analysis, input) {
   if (!Number.isFinite(Number(out.markupPct))) out.markupPct = RULES.markupDefault;
   const adjustments = [];
   const q = extractQuantities(input || {}, analysis || {});
-  isolateAlternatives(out, adjustments);
+  /* ORDER MATTERS AND THIS IS THE ORDER.
+     Ownership, then rates — so an alternative's raw cost is captured on the calibrated
+     basis. Then isolateAlternatives lifts alternatives OUT of the base, so the markup is
+     chosen from what the customer is actually buying. Neither option pricer needs the
+     markup any more (both record rawCost), which is what finally allows the markup to be
+     resolved from the FINAL direct cost, after every rule that adds or removes a line. */
   normalizeOwnership(out, analysis || {}, adjustments);
   normalizeLaborRates(out, adjustments);
+  isolateAlternatives(out, adjustments);
   removeOverlappingLabor(out, adjustments);
-  capGeneralConditions(out, adjustments);
+  capGeneralConditions(out, adjustments, input, analysis);
   capUnneededRoughIn(out, input || {}, analysis || {}, adjustments);
   ensureWindowOptionEngine(out, analysis || {}, input || {}, adjustments);
   normalizeOwnership(out, analysis || {}, adjustments);
@@ -752,8 +994,13 @@ function applyDeterministicPricing(estimate, analysis, input) {
   dedupeCustomerSupplied(out, adjustments);
   /* Last, so it sees the final labor list after every other rule has run. */
   reconcileExclusions(out, adjustments);
+  /* Every line that will ever exist now exists. Choose the markup from that number, then
+     price the alternatives from the same one. */
+  applyTieredMarkup(out, adjustments);
+  priceAlternatives(out, adjustments);
+  rebuildWindowSelections(out);
   out.deterministicPricing = {
-    version: 'v2.0-cost-based',
+    version: 'v2.3-cost-based',
     pricingBasis: 'Internal loaded labor cost + materials + one dashboard markup',
     quantities: q,
     adjustments
@@ -837,12 +1084,26 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
   (out.labor || []).forEach(l => {
     const s = singleBath ? 'Bathroom' : (pinnedService(l, analysis?.selected_trades) || canonicalService(l.section, l.item, analysis?.selected_trades || []));
     const cost = num(l.qty) * num(l.rate);
-    if (map[s]) { map[s].subtotal += cost; map[s].included.push(text(l.item)); } else { generalBase += cost; }
+    /* COST ONLY. The wording comes from phasesPresent below. Pushing text(l.item) here
+       is what silently threw away buildCustomerScope's plain-language scope and put
+       "Debris bagging, carrying and disposal" back in front of the customer. */
+    if (map[s]) { map[s].subtotal += cost; } else { generalBase += cost; }
   });
   (out.materials || []).forEach(m => {
     const s = singleBath ? 'Bathroom' : (pinnedService(m, analysis?.selected_trades) || canonicalService(m.section, m.item, analysis?.selected_trades || []));
     const cost = num(m.qty) * num(m.rate);
-    if (map[s]) { map[s].subtotal += cost; map[s].included.push(text(m.item)); } else { generalBase += cost; }
+    if (map[s]) { map[s].subtotal += cost; } else { generalBase += cost; }
+  });
+  /* Outcomes, in the voice of the service. Falls back to the line items only if a
+     service prices work that matches no phase at all, so a card is never left empty. */
+  const fromPhases = {};
+  services.forEach(s => {
+    const said = phasesPresent(out, singleBath ? '' : s, singleBath ? 'Bathroom' : s);
+    if (said.length) { map[s].included = said; fromPhases[s] = true; return; }
+    [...(out.labor || []), ...(out.materials || [])].forEach(l => {
+      const owner = singleBath ? 'Bathroom' : (pinnedService(l, analysis?.selected_trades) || canonicalService(l.section, l.item, analysis?.selected_trades || []));
+      if (owner === s && !isAlt(l)) map[s].included.push(text(l.item));
+    });
   });
   const direct = services.reduce((a, s) => a + map[s].subtotal, 0);
   if (generalBase > 0) {
@@ -882,7 +1143,10 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
     v.included = dedupe(v.included);
     v.customerSupplies = dedupe(v.customerSupplies);
     v.notIncluded = dedupe(v.notIncluded).filter(x => !v.customerSupplies.some(y => near(x, y)));
-    if (s === 'Windows') v.included = v.included.filter(x => /window/.test(norm(x)));
+    /* This filter existed to strip raw task names that were not about windows. Applied to
+       outcome sentences it deletes "Protect your floors…" and "Clean the space daily…" and
+       leaves the Windows card with one line, so it now runs only on the fallback wording. */
+    if (s === 'Windows' && !fromPhases[s]) v.included = v.included.filter(x => /window/.test(norm(x)));
     v.subtotal = money(v.subtotal * mm);
   });
   out.serviceBreakdown = services.map(s => map[s]);
