@@ -77,6 +77,8 @@ exports.handler = async function handler(event) {
       ? await callClaude(anthropicKey, estimatePrompt, 32000)
       : await callOpenAI(openaiKey, estimatePrompt);
     let estimate = normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis);
+    /* Kept aside before applyDeterministicPricing touches a rate — see the repair pass. */
+    const preRepairDraft = JSON.parse(JSON.stringify(estimate));
     timing.estimateMs = Date.now() - estimateStarted;
 
     let deterministicStarted = Date.now();
@@ -102,7 +104,14 @@ exports.handler = async function handler(event) {
       const preRepairEstimate = estimate;
       const preRepairValidation = validation;
       try {
-        const repairPrompt = buildRepairPrompt(input, projectAnalysis, estimate, validation);
+        /* THE MODEL MUST NEVER SEE CALIBRATED RATES.
+           This used to hand it the post-pricing estimate, whose hourly rates have already
+           been converted from the payroll basis to Sani's subcontract basis (tile
+           $78 -> $62.40). The model then echoes those rates back as its "repaired" draft
+           and pricing runs again, converting a second time ($62.40 -> $49.92). The
+           rateBasis stamp in lib/deterministic-pricing.js is the in-file backstop; this
+           is the actual cause. Send the draft as the model wrote it. */
+        const repairPrompt = buildRepairPrompt(input, projectAnalysis, preRepairDraft, validation);
         const rawRepair = anthropicKey
           ? await callClaude(anthropicKey, repairPrompt, 32000)
           : await callOpenAI(openaiKey, repairPrompt);
