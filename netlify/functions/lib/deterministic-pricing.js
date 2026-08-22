@@ -193,29 +193,211 @@ function extractQuantities(input, analysis) {
   };
 }
 
+/* ===========================================================================
+   SERVICE VOCABULARY — v9, selection-gated
+   ---------------------------------------------------------------------------
+   WHAT WENT WRONG (New Leaf Pilates Studio, SBC-260805-Q6CT, Aug 2026)
+
+   The customer ordered interior painting, wall-mounted mirrors, patch flooring
+   and furniture assembly. The quote came back with a "Bathroom $9,976.72" card
+   and a "Flooring $9,035.62" card, both showing NO labor lines and NO material
+   lines. There is no bathroom in that job.
+
+   Two defects, both structural:
+
+   1. canonicalService took `selected` — the trades the customer actually asked
+      for — and used it on exactly one branch (Painting). Every other branch
+      classified on keywords alone. The word "glass" in a mirror-panel line and
+      the word "tile" in a floor-patch line both fell into the Bathroom bucket.
+      A keyword could invent a service the customer never bought.
+
+   2. The customer-facing card set was hardcoded to four names:
+      ['Bathroom','Flooring','Painting','Windows']. Mirrors, furniture assembly,
+      doors, drywall, carpentry and handyman work matched no card at all, so
+      their cost landed in `generalBase` — which consolidateCustomerPresentation
+      then redistributes across the surviving cards in proportion to cost. That
+      is precisely why both cards carried a large price while listing nothing:
+      the money arrived through the General redistribution, not through any line
+      the card owned.
+
+   THE FIX (Law 3 — enforce in code, not in the prompt)
+
+   - The vocabulary now covers the trades Sani actually sells.
+   - canonicalService can NEVER return a service outside the allowed set. It
+     walks the vocabulary in order and takes the first pattern match whose
+     service is allowed; a match on a service the customer did not buy is
+     skipped, not honoured. If nothing allowed matches, the line goes to the
+     single allowed service when there is exactly one, otherwise to General.
+   - "Handyman" and "General" are containers, not trades. When the customer's
+     only selection is a container, the allowed set is derived from the words in
+     the customer's own request instead — so a Handyman ticket can still split
+     into Painting / Mirrors & Glass / Flooring cards, but can only produce a
+     Bathroom card if the customer actually said bathroom, shower, tub, toilet
+     or vanity.
+
+   Order is load-bearing. Bathroom sits ahead of Tile, Plumbing and
+   Waterproofing so a real bathroom job keeps collecting its tile and plumbing
+   lines onto the Bathroom card exactly as before. Those services only become
+   reachable when Bathroom is NOT in the allowed set.
+=========================================================================== */
+
+const CONTAINER_SERVICES = ['Handyman', 'General'];
+
+/* `strong` entries win before the ordered walk: words that name one trade and
+   nothing else. "Mirror" is never a bathroom line unless the customer bought a
+   bathroom, and even then the shower-glass guard below keeps it out. */
+const SERVICE_VOCAB = [
+  { name: 'Windows',           strong: /\bwindow\b|window sash|window sill|glazing bead/,
+                               item: /window|sash|glazing bead/,                                   sec: /window/,
+                               trade: /window/ },
+  { name: 'Doors',             strong: /\bdoor slab\b|door jamb|doorway|lockset|door hardware/,
+                               item: /\bdoor\b|doorway|jamb|lockset|hinge/,                        sec: /\bdoor/,
+                               trade: /\bdoor/ },
+  { name: 'Mirrors & Glass',   strong: /\bmirror\b|glass panel|glass wall|glazier/,
+                               item: /mirror|glass panel|glass wall|glazier/,                      sec: /mirror|glass/,
+                               trade: /mirror|glass|glazier/,
+                               not: /shower|tub|bath|vanity|shower door/ },
+  { name: 'Furniture Assembly',strong: /furniture assembl|assemble furniture|flat.?pack|furniture install|furniture moving/,
+                               item: /furniture|assembl|flat.?pack|shelving unit|desk install/,    sec: /furniture/,
+                               trade: /furniture/ },
+  { name: 'Painting',          strong: /\bpaint\b|painter|primer coat/,
+                               item: /paint|painter|primer|spackle|skim coat/,                     sec: /paint/,
+                               trade: /paint/ },
+  { name: 'Bathroom',          item: /bath|shower|vanity|toilet|\btub\b|lavatory|backer|thinset|grout|tile|waterproof|plumb|faucet|glass|glaz/,
+                               sec: /bath|shower|plumb|tile|waterproof/,
+                               trade: /bath/,
+                               ev: /bathroom|\bshower\b|\btub\b|toilet|vanity|lavatory/ },
+  { name: 'Kitchen',           item: /kitchen|cabinet|countertop|backsplash|range hood/,           sec: /kitchen|cabinet/,
+                               trade: /kitchen|cabinet/,
+                               ev: /kitchen/ },
+  { name: 'Flooring',          item: /engineered hardwood|hardwood floor|flooring|floor patch|patch floor|quarter.?round|subfloor|underlayment|transition strip|baseboard|vinyl plank|laminate floor/,
+                               sec: /floor/,
+                               trade: /floor/,
+                               not: /bath|shower/ },
+  { name: 'Tile',              item: /tile|thinset|grout|backer ?board|mortar bed/,                sec: /tile/,
+                               trade: /tile/ },
+  { name: 'Carpentry',         item: /carpentry|framing|trim work|moulding|molding|millwork|blocking/, sec: /carpentry|framing|trim/,
+                               trade: /carpentry|framing|trim/ },
+  { name: 'Drywall',           item: /drywall|sheetrock|gypsum|joint compound|tape and finish/,    sec: /drywall|sheetrock/,
+                               trade: /drywall|sheetrock/ },
+  { name: 'Electrical',        item: /electric|outlet|receptacle|gfci|light fixture|switch|circuit|wiring/, sec: /electric/,
+                               trade: /electric/ },
+  { name: 'Plumbing',          item: /plumb|supply line|waste line|shut.?off valve|p.?trap|faucet/, sec: /plumb/,
+                               trade: /plumb/ },
+  { name: 'Waterproofing',     item: /waterproof|membrane|vapor barrier|flood test/,               sec: /waterproof/,
+                               trade: /waterproof/ },
+  { name: 'Deck',              item: /\bdeck\b|decking|timbertech|railing post/,                   sec: /deck/,
+                               trade: /deck/ },
+  { name: 'Handyman',          item: /handyman|odd job|small repair|mount(?:ing)? (?:tv|shelf|shelves)|hang (?:shelf|shelves|picture)/, sec: /handyman/,
+                               trade: /handyman|general repair/ }
+];
+
+const VOCAB_BY_NAME = SERVICE_VOCAB.reduce((a, v) => { a[v.name] = v; return a; }, {});
+
 function genericOperation(item) {
   const i = norm(item);
   if (!i) return false;
-  const specific = /window|paint|primer|spackle|hardwood|flooring|quarter.?round|subfloor|transition|baseboard|bath|shower|vanity|toilet|plumb|waterproof|backer|thinset|grout|tile|glass|glaz|faucet/.test(i);
+  const specific = SERVICE_VOCAB.some(v => v.item.test(i) && !(v.not && v.not.test(i)));
   if (specific) return false;
   return /project management|project coordination|coordination|supervision|general conditions|general labor|final project cleanup|final cleanup|walk[- ]?through|site protection|material haul|walk[- ]?up.*haul|debris removal|debris disposal|disposal haul|jobsite setup/.test(i);
 }
 
+/* Map one trade name the customer or the analyst wrote onto a canonical service. */
+function tradeToService(trade) {
+  const t = norm(trade);
+  if (!t) return '';
+  const hit = SERVICE_VOCAB.find(v => (v.trade || v.item).test(t) && !(v.not && v.not.test(t)));
+  return hit ? hit.name : '';
+}
+
+/* The allowed set. Everything downstream is confined to this list. */
+function allowedServiceSet(selected) {
+  const out = [];
+  (selected || []).forEach(x => {
+    const n = tradeToService(x);
+    if (n && !out.includes(n)) out.push(n);
+  });
+  return out;
+}
+
+function containerOnly(allowed) {
+  return !allowed.length || allowed.every(x => CONTAINER_SERVICES.includes(x));
+}
+
 function canonicalService(section, item, selected) {
   const i = norm(item), sec = norm(section);
-  const sel = (selected || []).map(norm);
-  const has = n => sel.some(x => x.includes(n));
+  const allowed = Array.isArray(selected) && selected.__sbcResolved
+    ? selected.slice()
+    : allowedServiceSet(selected);
+
+  /* No usable allowed set (legacy call sites pass []) — fall back to the old
+     ordered walk with no gate, so Windows detection and the option helpers that
+     deliberately pass [] keep behaving exactly as they did. */
+  const gated = allowed.length > 0;
+  const permitted = n => !gated || allowed.includes(n) || CONTAINER_SERVICES.includes(n);
+
   if (genericOperation(i)) return 'General';
-  if (/window/.test(i)) return 'Windows';
-  if (/paint|painter|primer|spackle|skim coat/.test(i) && has('paint')) return 'Painting';
-  if (/engineered hardwood|hardwood floor|flooring|quarter.?round|subfloor|transition|baseboard/.test(i) && !/bath|tile|shower/.test(i)) return 'Flooring';
-  if (/bath|shower|vanity|toilet|plumb|waterproof|backer|thinset|grout|tile|glass|glaz|faucet/.test(i)) return 'Bathroom';
-  if (/window/.test(sec)) return 'Windows';
-  if (/paint|painter|primer|spackle/.test(sec) && has('paint')) return 'Painting';
-  if (/floor/.test(sec) && !/bath|tile|shower/.test(sec)) return 'Flooring';
-  if (/bath|shower|plumb|tile|waterproof/.test(sec)) return 'Bathroom';
+
+  /* Strong words first: they name one trade and nothing else. */
+  for (const v of SERVICE_VOCAB) {
+    if (!v.strong || !v.strong.test(i)) continue;
+    if (v.not && v.not.test(i)) continue;
+    if (permitted(v.name)) return v.name;
+  }
+  /* Ordered walk on the item wording. */
+  for (const v of SERVICE_VOCAB) {
+    if (!v.item.test(i)) continue;
+    if (v.not && v.not.test(i)) continue;
+    if (permitted(v.name)) return v.name;
+  }
+  /* Then the section wording. */
+  for (const v of SERVICE_VOCAB) {
+    if (!v.sec || !v.sec.test(sec)) continue;
+    if (v.not && v.not.test(sec)) continue;
+    if (permitted(v.name)) return v.name;
+  }
   if (/project management|supervision|coordination|general conditions|general labor|cleanup|site protection/.test(sec)) return 'General';
+
+  /* Nothing allowed matched. A single-service job absorbs the line rather than
+     spawning a card the customer never asked for. */
+  const real = allowed.filter(x => !CONTAINER_SERVICES.includes(x));
+  if (real.length === 1) return real[0];
+  if (gated) return 'General';
   return text(section) || 'General';
+}
+
+/* Resolve the definitive service set for one estimate, once, and hand the SAME
+   resolved array to every classifier call below. When the customer's only
+   selection is a container ("Handyman"), the set is rebuilt from the words in
+   his own request — so the ticket can still split into real cards, but a
+   Bathroom card requires him to have actually written bathroom/shower/tub/
+   toilet/vanity. */
+function resolveServiceSet(analysis, input, estimate) {
+  let allowed = allowedServiceSet(analysis?.selected_trades || []);
+  if (containerOnly(allowed)) {
+    const ev = norm([
+      text(input?.request?.description),
+      text(input?.request?.service),
+      ...(analysis?.confirmed_scope || []).map(s => `${text(s.trade)} ${(s.scope_items || []).map(text).join(' ')}`),
+      ...[...(estimate?.labor || []), ...(estimate?.materials || [])].map(l => `${text(l.section)} ${text(l.item)}`)
+    ].join(' | '));
+    const found = [];
+    SERVICE_VOCAB.forEach(v => {
+      if (CONTAINER_SERVICES.includes(v.name)) return;
+      const re = v.ev || v.strong || v.item;
+      if (re.test(ev) && !(v.not && v.not.test(ev)) && !found.includes(v.name)) found.push(v.name);
+    });
+    /* Tile patching inside a flooring scope is one service to the customer, not
+       two cards. Tile only stands alone when there is no Flooring scope to own
+       it, or when it belongs to a Bathroom. */
+    if (found.includes('Tile') && found.includes('Flooring') && !found.includes('Bathroom')) {
+      found.splice(found.indexOf('Tile'), 1);
+    }
+    if (found.length) allowed = found;
+  }
+  const arr = allowed.slice();
+  Object.defineProperty(arr, '__sbcResolved', { value: true, enumerable: false });
+  return arr;
 }
 
 /* A line stamped sbcSharedSplit was placed deliberately by attributeSharedLines in
@@ -460,7 +642,11 @@ function capGeneralConditions(estimate, adjustments, input, analysis) {
 }
 
 function normalizeOwnership(estimate, analysis, adjustments) {
-  const selected = analysis?.selected_trades || [];
+  /* Must use the RESOLVED set, not raw selected_trades. On a container-only
+     ticket ("Handyman") the raw list maps to no real trade, and the gate in
+     canonicalService would rewrite every line.section to General before
+     consolidateCustomerPresentation ever got to look at it. */
+  const selected = resolveServiceSet(analysis, null, estimate);
   ['labor', 'materials'].forEach(bucket => (estimate[bucket] || []).forEach(line => {
     /* Honour a deliberate split before re-deriving from the wording. */
     const next = pinnedService(line, selected) || canonicalService(line.section, line.item, selected);
@@ -1052,29 +1238,46 @@ function isSingleBathroomProject(input) {
   return !outside;
 }
 
-function selectedCustomerServices(analysis, estimate, input) {
+/* The card set is no longer a hardcoded four. It is the resolved service set,
+   kept in vocabulary order, narrowed to the services that either the customer
+   selected or that priced lines actually landed on. A service can appear here
+   only if it survived the gate in canonicalService, so no card can exist for
+   work the customer did not buy. */
+function selectedCustomerServices(analysis, estimate, input, allowed) {
   if (isSingleBathroomProject(input)) return ['Bathroom'];
-  const preferred = ['Bathroom', 'Flooring', 'Painting', 'Windows'];
+  const set = allowed || resolveServiceSet(analysis, input, estimate);
   const e = requestEvidence(input, analysis);
-  const selected = (analysis?.selected_trades || []).map(x => canonicalService(x, x, analysis?.selected_trades || []));
-  const lines = [...(estimate.labor || []), ...(estimate.materials || [])].map(x => canonicalService(x.section, x.item, analysis?.selected_trades || []));
-  return preferred.filter(x => selected.includes(x) || lines.includes(x) || (x === 'Windows' && /window/.test(e)));
+  const lines = [...(estimate.labor || []), ...(estimate.materials || [])]
+    .map(x => canonicalService(x.section, x.item, set));
+  const order = SERVICE_VOCAB.map(v => v.name);
+  const candidates = set.filter(x => !CONTAINER_SERVICES.includes(x));
+  const keep = candidates.filter(x => set.includes(x) || lines.includes(x) || (x === 'Windows' && /window/.test(e)));
+  const out = keep.length ? keep : candidates;
+  return order.filter(x => out.includes(x));
 }
-function exclusionOwner(x) {
+function exclusionOwner(x, allowed) {
   const s = norm(x);
-  if (/window|scaffold|rigging|exterior/.test(s)) return 'Windows';
-  if (/paint|kitchen.*paint|tiled shower|skim coat|plaster/.test(s)) return 'Painting';
-  if (/floor|underlayment|transition|baseboard|subfloor/.test(s)) return 'Flooring';
-  if (/bath|shower|plumb|fixture|vanity|toilet|glass|tile|waterproof|faucet/.test(s)) return 'Bathroom';
+  const gated = Array.isArray(allowed) && allowed.length > 0;
+  const ok = n => !gated || allowed.includes(n);
+  if (/window|scaffold|rigging|exterior/.test(s) && ok('Windows')) return 'Windows';
+  if (/mirror|glass panel|glass wall/.test(s) && ok('Mirrors & Glass')) return 'Mirrors & Glass';
+  if (/furniture|assembl/.test(s) && ok('Furniture Assembly')) return 'Furniture Assembly';
+  if (/paint|kitchen.*paint|tiled shower|skim coat|plaster/.test(s) && ok('Painting')) return 'Painting';
+  if (/floor|underlayment|transition|baseboard|subfloor/.test(s) && ok('Flooring')) return 'Flooring';
+  if (/bath|shower|plumb|fixture|vanity|toilet|glass|tile|waterproof|faucet/.test(s) && ok('Bathroom')) return 'Bathroom';
+  if (/tile|grout|thinset/.test(s) && ok('Tile')) return 'Tile';
   return 'Project';
 }
 function supplyText(x) { return text(typeof x === 'string' ? x : (x?.item || x?.label || x?.description || '')); }
-function supplySection(x, analysis) { return x && typeof x === 'object' ? canonicalService(x.section, x.item || x.label || x.description, analysis?.selected_trades || []) : ''; }
+function supplySection(x, allowed) { return x && typeof x === 'object' ? canonicalService(x.section, x.item || x.label || x.description, allowed || []) : ''; }
 
 function consolidateCustomerPresentation(estimate, analysis, input) {
   const out = estimate;
   const singleBath = isSingleBathroomProject(input);
-  const services = selectedCustomerServices(analysis, out, input);
+  /* Resolved ONCE and handed to every classifier call below, so one estimate
+     cannot be classified against two different service sets. */
+  const allowed = resolveServiceSet(analysis, input, out);
+  const services = selectedCustomerServices(analysis, out, input, allowed);
   if (!services.length) return out;
   const mm = 1 + (Number(out.markupPct) || RULES.markupDefault) / 100;
   const map = {};
@@ -1082,7 +1285,7 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
   let generalBase = 0;
   const projectExclusions = [];
   (out.labor || []).forEach(l => {
-    const s = singleBath ? 'Bathroom' : (pinnedService(l, analysis?.selected_trades) || canonicalService(l.section, l.item, analysis?.selected_trades || []));
+    const s = singleBath ? 'Bathroom' : (pinnedService(l, allowed) || canonicalService(l.section, l.item, allowed));
     const cost = num(l.qty) * num(l.rate);
     /* COST ONLY. The wording comes from phasesPresent below. Pushing text(l.item) here
        is what silently threw away buildCustomerScope's plain-language scope and put
@@ -1090,7 +1293,7 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
     if (map[s]) { map[s].subtotal += cost; } else { generalBase += cost; }
   });
   (out.materials || []).forEach(m => {
-    const s = singleBath ? 'Bathroom' : (pinnedService(m, analysis?.selected_trades) || canonicalService(m.section, m.item, analysis?.selected_trades || []));
+    const s = singleBath ? 'Bathroom' : (pinnedService(m, allowed) || canonicalService(m.section, m.item, allowed));
     const cost = num(m.qty) * num(m.rate);
     if (map[s]) { map[s].subtotal += cost; } else { generalBase += cost; }
   });
@@ -1101,7 +1304,7 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
     const said = phasesPresent(out, singleBath ? '' : s, singleBath ? 'Bathroom' : s);
     if (said.length) { map[s].included = said; fromPhases[s] = true; return; }
     [...(out.labor || []), ...(out.materials || [])].forEach(l => {
-      const owner = singleBath ? 'Bathroom' : (pinnedService(l, analysis?.selected_trades) || canonicalService(l.section, l.item, analysis?.selected_trades || []));
+      const owner = singleBath ? 'Bathroom' : (pinnedService(l, allowed) || canonicalService(l.section, l.item, allowed));
       if (owner === s && !isAlt(l)) map[s].included.push(text(l.item));
     });
   });
@@ -1115,24 +1318,31 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
   (out.customerSupplied || []).forEach(x => {
     const t = supplyText(x);
     if (!t) return;
-    let s = singleBath ? 'Bathroom' : supplySection(x, analysis);
+    let s = singleBath ? 'Bathroom' : supplySection(x, allowed);
     if (!map[s]) {
       const low = norm(t);
-      if (/paint/.test(low)) s = 'Painting';
-      else if (/hardwood|flooring/.test(low)) s = 'Flooring';
-      else if (/window/.test(low)) s = 'Windows';
-      else s = 'Bathroom';
+      /* Was: `else s = 'Bathroom'`. An unrecognised customer-supplied item was
+         dropped onto the Bathroom card even on jobs with no bathroom. It now
+         goes to the one service on the job, or to the first card, never to a
+         service picked out of the air. */
+      const guess = canonicalService('', t, allowed);
+      if (map[guess]) s = guess;
+      else if (/paint/.test(low) && map['Painting']) s = 'Painting';
+      else if (/hardwood|flooring|floor/.test(low) && map['Flooring']) s = 'Flooring';
+      else if (/window/.test(low) && map['Windows']) s = 'Windows';
+      else if (/mirror|glass/.test(low) && map['Mirrors & Glass']) s = 'Mirrors & Glass';
+      else s = services[0];
     }
     if (map[s]) map[s].customerSupplies.push(t);
   });
   (out.exclusions || []).forEach(x => {
     const t = supplyText(x);
     if (!t) return;
-    const owner = singleBath ? 'Bathroom' : exclusionOwner(t);
+    const owner = singleBath ? 'Bathroom' : exclusionOwner(t, allowed);
     if (map[owner]) map[owner].notIncluded.push(t); else projectExclusions.push(t);
   });
   (out.options || []).forEach(o => {
-    const s = singleBath ? 'Bathroom' : canonicalService(o.section, `${o.label || ''} ${o.description || ''}`, analysis?.selected_trades || []);
+    const s = singleBath ? 'Bathroom' : canonicalService(o.section, `${o.label || ''} ${o.description || ''}`, allowed);
     if (!map[s]) return;
     const opt = { label: text(o.label) || 'Alternative', description: text(o.description), price: money(o.price) };
     map[s].options.push(opt);
