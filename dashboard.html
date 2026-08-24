@@ -1327,21 +1327,29 @@ body {
 .sc-kind{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#93a1b5;margin:12px 0 6px}
 .sc-pane .sc-kind:first-child{margin-top:0}
 .sc-empty{font-size:12.5px;color:#93a1b5;padding:4px 0 8px}
-.sc-pl2{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+/* Type here now matches the rest of the page. The card was rendering at 12.5-14.5px
+   while everything around it sat at 16px, so the one place Zura actually reads numbers
+   was the smallest text on screen. */
+.sc-pl2{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
 .sc-pl2:last-of-type{border-bottom:0}
-.sc-pl2-top{display:flex;align-items:center;gap:8px}
-.sc-pl2-item{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.14);color:inherit;font:inherit;font-size:14.5px;padding:3px 0}
+.sc-pl2-top{display:block}
+.sc-pl2-item{display:block;width:100%;box-sizing:border-box;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.16);color:inherit;font-family:inherit;font-size:16px;line-height:1.4;padding:4px 0;resize:none;overflow:hidden;min-height:26px}
 .sc-pl2-item:focus{outline:0;border-bottom-color:#f0a500}
-.sc-pl2-tot{font-size:15px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sc-src{font-size:13px;opacity:.85}
-.sc-pl2-sub{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12.5px;opacity:.72}
-.sc-pl2-sub .sc-n{width:62px;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.14);color:inherit;font:inherit;font-variant-numeric:tabular-nums;padding:2px 0}
-.sc-pl2-sub .sc-u{width:54px;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.14);color:inherit;font:inherit;padding:2px 0;text-transform:lowercase}
+.sc-pl2-tot{margin-left:auto;font-size:16px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sc-src{font-size:15px;opacity:.9}
+.sc-pl2-sub{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:7px;font-size:14px;opacity:.8}
+.sc-pl2-sub .sc-n{width:70px;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.16);color:inherit;font-family:inherit;font-size:14px;font-variant-numeric:tabular-nums;padding:3px 0}
+.sc-pl2-sub .sc-u{width:58px;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.16);color:inherit;font-family:inherit;font-size:14px;padding:3px 0;text-transform:lowercase}
 .sc-pl2-sub .sc-n:focus,.sc-pl2-sub .sc-u:focus{outline:0;border-bottom-color:#f0a500}
-.sc-x{opacity:.6}
-.sc-srctxt{margin-left:4px;font-size:11.5px;opacity:.75}
-.sc-del2{margin-left:auto;background:transparent;border:0;color:inherit;opacity:.45;font-size:13px;cursor:pointer;padding:2px 4px}
+.sc-x{opacity:.6;font-size:14px}
+.sc-srctxt{font-size:12.5px;opacity:.75}
+.sc-del2{background:transparent;border:0;color:inherit;opacity:.5;font-size:16px;cursor:pointer;padding:4px 6px;margin-left:2px}
 .sc-del2:hover{opacity:1;color:#e0715f}
+@media(max-width:430px){
+  .sc-pl2-item{font-size:15.5px}
+  .sc-pl2-sub{font-size:13.5px}
+  .sc-srctxt{display:none}   /* the cart icon already says it came from a listing */
+}
 .sc-plh{display:grid;grid-template-columns:1fr 46px 58px 70px 24px;gap:5px;font-size:9.5px;letter-spacing:1px;
   text-transform:uppercase;color:#93a1b5;margin-bottom:5px}
 .sc-plh span:nth-child(2),.sc-plh span:nth-child(3){text-align:center}
@@ -3547,6 +3555,10 @@ function renderEdit() {
         '<textarea id="f-scope" rows="8" placeholder="DEMOLITION:&#10;- Remove old fixtures&#10;- Haul debris&#10;&#10;INSTALLATION:&#10;- Install new tile&#10;- Mount vanity">' + esc(est.scopeOfWork || "") + '</textarea>' +
       '</div>' +
     '</div>' +
+    /* KEPT, and kept collapsed. Zura's call, Aug 24: closed they show nothing, so they
+   duplicate nothing on screen, and "tap to open" is a view he uses. They are also
+   load-bearing — renderLines() writes into #labor-body / #materials-body and
+   syncLines() reads them back on every Save Draft. */
     '<details class="form-section lm-fold">' +
       '<summary>🔨 LABOR <span class="lm-hint">tap to open</span></summary>' +
       '<div class="lm-tools"><button class="btn-add-row" onclick="addLine(\'labor\')">+ Add Item</button></div>' +
@@ -3562,6 +3574,10 @@ function renderEdit() {
         '<tbody id="labor-body"></tbody>' +
       '</table>' +
     '</details>' +
+    /* KEPT, and kept collapsed. Zura's call, Aug 24: closed they show nothing, so they
+   duplicate nothing on screen, and "tap to open" is a view he uses. They are also
+   load-bearing — renderLines() writes into #labor-body / #materials-body and
+   syncLines() reads them back on every Save Draft. */
     '<details class="form-section lm-fold">' +
       '<summary>🧰 MATERIALS <span class="lm-hint">tap to open</span></summary>' +
       '<div class="lm-tools"><button class="btn-add-row" onclick="addLine(\'materials\')">+ Add Item</button></div>' +
@@ -4740,17 +4756,22 @@ function renderScopeControl() {
           var unit = String(r.l.unit || (blk.kind === "labor" ? "hrs" : "ea"));
           var src = String(r.l.sbcPricedFrom || "");
           html += '<div class="sc-pl2">' +
+            /* A single-line <input> truncated every item name — "Site setup, corridor
+               and apartment protection" showed as "Site setup, corridor/elevator and
+               apart". A textarea wraps, so the whole line is readable, and it grows
+               with its own content. */
             '<div class="sc-pl2-top">' +
-              '<input class="sc-pl2-item" value="' + esc(r.l.item || "") + '" placeholder="Item" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'item\',this.value)">' +
-              (src ? '<span class="sc-src" title="Price from ' + esc(src) + '">&#128722;</span>' : '') +
-              '<span class="sc-pl2-tot">' + fmt(q * rt) + '</span>' +
+              '<textarea class="sc-pl2-item" rows="1" placeholder="Item" ' +
+                'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" ' +
+                'onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'item\',this.value)">' + esc(r.l.item || "") + '</textarea>' +
             '</div>' +
             '<div class="sc-pl2-sub">' +
               '<input class="sc-n" type="number" step="0.5" min="0" value="' + esc(q) + '" title="Quantity" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'qty\',this.value)">' +
               '<input class="sc-u" value="' + esc(unit) + '" title="Unit — hrs, ea, sf, bag, roll" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'unit\',this.value)">' +
               '<span class="sc-x">&times;</span>' +
               '<input class="sc-n" type="number" step="0.01" min="0" value="' + esc(rt) + '" title="Price for one" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'rate\',this.value)">' +
-              (src ? '<span class="sc-srctxt">' + esc(src) + '</span>' : '') +
+              (src ? '<span class="sc-src" title="Price from ' + esc(src) + '">&#128722;</span><span class="sc-srctxt">' + esc(src) + '</span>' : '') +
+              '<span class="sc-pl2-tot">' + fmt(q * rt) + '</span>' +
               '<button class="sc-del2" onclick="scopePriceDelete(\'' + blk.kind + '\',' + r.gi + ')" title="Delete line">&#10005;</button>' +
             '</div>' +
             '</div>';
