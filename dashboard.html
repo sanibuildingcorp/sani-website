@@ -1327,6 +1327,21 @@ body {
 .sc-kind{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#93a1b5;margin:12px 0 6px}
 .sc-pane .sc-kind:first-child{margin-top:0}
 .sc-empty{font-size:12.5px;color:#93a1b5;padding:4px 0 8px}
+.sc-pl2{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.sc-pl2:last-of-type{border-bottom:0}
+.sc-pl2-top{display:flex;align-items:center;gap:8px}
+.sc-pl2-item{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.14);color:inherit;font:inherit;font-size:14.5px;padding:3px 0}
+.sc-pl2-item:focus{outline:0;border-bottom-color:#f0a500}
+.sc-pl2-tot{font-size:15px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sc-src{font-size:13px;opacity:.85}
+.sc-pl2-sub{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12.5px;opacity:.72}
+.sc-pl2-sub .sc-n{width:62px;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.14);color:inherit;font:inherit;font-variant-numeric:tabular-nums;padding:2px 0}
+.sc-pl2-sub .sc-u{width:54px;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.14);color:inherit;font:inherit;padding:2px 0;text-transform:lowercase}
+.sc-pl2-sub .sc-n:focus,.sc-pl2-sub .sc-u:focus{outline:0;border-bottom-color:#f0a500}
+.sc-x{opacity:.6}
+.sc-srctxt{margin-left:4px;font-size:11.5px;opacity:.75}
+.sc-del2{margin-left:auto;background:transparent;border:0;color:inherit;opacity:.45;font-size:13px;cursor:pointer;padding:2px 4px}
+.sc-del2:hover{opacity:1;color:#e0715f}
 .sc-plh{display:grid;grid-template-columns:1fr 46px 58px 70px 24px;gap:5px;font-size:9.5px;letter-spacing:1px;
   text-transform:uppercase;color:#93a1b5;margin-bottom:5px}
 .sc-plh span:nth-child(2),.sc-plh span:nth-child(3){text-align:center}
@@ -4713,15 +4728,31 @@ function renderScopeControl() {
       if (!blk.rows.length) {
         html += '<div class="sc-empty">No ' + blk.label.toLowerCase() + ' lines in this service.</div>';
       } else {
-        html += '<div class="sc-plh"><span>Item</span><span>Qty</span><span>Rate</span><span>Total</span><span></span></div>';
+        /* READ IT LIKE AN INVOICE, EDIT IT IN PLACE.
+           The old row was five inputs in a 5-column grid — Item, Qty, Rate, Total, X —
+           which on a phone gave every field about 60px and showed the UNIT nowhere at
+           all, even though every line carries one. That is why a line could not be read:
+           "6.5" and "95" side by side mean nothing; "6.5 HRS x $95.00" is a sentence.
+           The row is now stacked: the item on its own line with its extended price, and
+           the arithmetic underneath in small type, editable in place. */
         blk.rows.forEach(function (r) {
           var q = Number(r.l.qty) || 0, rt = Number(r.l.rate) || 0;
-          html += '<div class="sc-pl">' +
-            '<input value="' + esc(r.l.item || "") + '" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'item\',this.value)">' +
-            '<input type="number" step="0.5" min="0" value="' + esc(q) + '" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'qty\',this.value)">' +
-            '<input type="number" step="0.01" min="0" value="' + esc(rt) + '" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'rate\',this.value)">' +
-            '<span class="sc-pl-tot">' + fmt(q * rt) + '</span>' +
-            '<button class="sc-del" onclick="scopePriceDelete(\'' + blk.kind + '\',' + r.gi + ')" title="Delete line">✕</button>' +
+          var unit = String(r.l.unit || (blk.kind === "labor" ? "hrs" : "ea"));
+          var src = String(r.l.sbcPricedFrom || "");
+          html += '<div class="sc-pl2">' +
+            '<div class="sc-pl2-top">' +
+              '<input class="sc-pl2-item" value="' + esc(r.l.item || "") + '" placeholder="Item" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'item\',this.value)">' +
+              (src ? '<span class="sc-src" title="Price from ' + esc(src) + '">&#128722;</span>' : '') +
+              '<span class="sc-pl2-tot">' + fmt(q * rt) + '</span>' +
+            '</div>' +
+            '<div class="sc-pl2-sub">' +
+              '<input class="sc-n" type="number" step="0.5" min="0" value="' + esc(q) + '" title="Quantity" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'qty\',this.value)">' +
+              '<input class="sc-u" value="' + esc(unit) + '" title="Unit — hrs, ea, sf, bag, roll" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'unit\',this.value)">' +
+              '<span class="sc-x">&times;</span>' +
+              '<input class="sc-n" type="number" step="0.01" min="0" value="' + esc(rt) + '" title="Price for one" onchange="scopePriceEdit(\'' + blk.kind + '\',' + r.gi + ',\'rate\',this.value)">' +
+              (src ? '<span class="sc-srctxt">' + esc(src) + '</span>' : '') +
+              '<button class="sc-del2" onclick="scopePriceDelete(\'' + blk.kind + '\',' + r.gi + ')" title="Delete line">&#10005;</button>' +
+            '</div>' +
             '</div>';
         });
       }
