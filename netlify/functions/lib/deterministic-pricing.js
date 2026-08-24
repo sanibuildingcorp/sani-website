@@ -251,20 +251,25 @@ const CONTAINER_SERVICES = ['Handyman', 'General'];
    nothing else. "Mirror" is never a bathroom line unless the customer bought a
    bathroom, and even then the shower-glass guard below keeps it out. */
 const SERVICE_VOCAB = [
-  { name: 'Windows',           strong: /\bwindow\b|window sash|window sill|glazing bead/,
+  { name: 'Windows',           ev: /\bwindow/,
+                               strong: /\bwindow\b|window sash|window sill|glazing bead/,
                                item: /window|sash|glazing bead/,                                   sec: /window/,
                                trade: /window/ },
-  { name: 'Doors',             strong: /\bdoor slab\b|door jamb|doorway|lockset|door hardware/,
+  { name: 'Doors',             ev: /\bdoor\b|doorway/,
+                               strong: /\bdoor slab\b|door jamb|doorway|lockset|door hardware/,
                                item: /\bdoor\b|doorway|jamb|lockset|hinge/,                        sec: /\bdoor/,
                                trade: /\bdoor/ },
-  { name: 'Mirrors & Glass',   strong: /\bmirror\b|glass panel|glass wall|glazier/,
+  { name: 'Mirrors & Glass',   ev: /\bmirror/,
+                               strong: /\bmirror\b|glass panel|glass wall|glazier/,
                                item: /mirror|glass panel|glass wall|glazier/,                      sec: /mirror|glass/,
                                trade: /mirror|glass|glazier/,
                                not: /shower|tub|bath|vanity|shower door/ },
-  { name: 'Furniture Assembly',strong: /furniture assembl|assemble furniture|flat.?pack|furniture install|furniture moving/,
+  { name: 'Furniture Assembly',ev: /furniture/,
+                               strong: /furniture assembl|assemble furniture|flat.?pack|furniture install|furniture moving/,
                                item: /furniture|assembl|flat.?pack|shelving unit|desk install/,    sec: /furniture/,
                                trade: /furniture/ },
-  { name: 'Painting',          strong: /\bpaint\b|painter|primer coat/,
+  { name: 'Painting',          ev: /paint/,
+                               strong: /\bpaint\b|painter|primer coat/,
                                item: /paint|painter|primer|spackle|skim coat/,                     sec: /paint/,
                                trade: /paint/ },
   { name: 'Bathroom',          item: /bath|shower|vanity|toilet|\btub\b|lavatory|backer|thinset|grout|tile|waterproof|plumb|faucet|glass|glaz/,
@@ -274,23 +279,31 @@ const SERVICE_VOCAB = [
   { name: 'Kitchen',           item: /kitchen|cabinet|countertop|backsplash|range hood/,           sec: /kitchen|cabinet/,
                                trade: /kitchen|cabinet/,
                                ev: /kitchen/ },
-  { name: 'Flooring',          item: /engineered hardwood|hardwood floor|flooring|floor patch|patch floor|quarter.?round|subfloor|underlayment|transition strip|baseboard|vinyl plank|laminate floor/,
+  { name: 'Flooring',          ev: /\bfloor|hardwood|laminate|vinyl plank/,
+                               item: /engineered hardwood|hardwood floor|flooring|floor patch|patch floor|quarter.?round|subfloor|underlayment|transition strip|baseboard|vinyl plank|laminate floor/,
                                sec: /floor/,
                                trade: /floor/,
                                not: /bath|shower/ },
-  { name: 'Tile',              item: /tile|thinset|grout|backer ?board|mortar bed/,                sec: /tile/,
+  { name: 'Tile',              ev: /\btil(e|ing)\b/,
+                               item: /tile|thinset|grout|backer ?board|mortar bed/,                sec: /tile/,
                                trade: /tile/ },
-  { name: 'Carpentry',         item: /carpentry|framing|trim work|moulding|molding|millwork|blocking/, sec: /carpentry|framing|trim/,
+  { name: 'Carpentry',         ev: /carpentry|millwork|framing/,
+                               item: /carpentry|framing|trim work|moulding|molding|millwork|blocking/, sec: /carpentry|framing|trim/,
                                trade: /carpentry|framing|trim/ },
-  { name: 'Drywall',           item: /drywall|sheetrock|gypsum|joint compound|tape and finish/,    sec: /drywall|sheetrock/,
+  { name: 'Drywall',           ev: /drywall|sheetrock/,
+                               item: /drywall|sheetrock|gypsum|joint compound|tape and finish/,    sec: /drywall|sheetrock/,
                                trade: /drywall|sheetrock/ },
-  { name: 'Electrical',        item: /electric|outlet|receptacle|gfci|light fixture|switch|circuit|wiring/, sec: /electric/,
+  { name: 'Electrical',        ev: /electric|lighting/,
+                               item: /electric|outlet|receptacle|gfci|light fixture|switch|circuit|wiring/, sec: /electric/,
                                trade: /electric/ },
-  { name: 'Plumbing',          item: /plumb|supply line|waste line|shut.?off valve|p.?trap|faucet/, sec: /plumb/,
+  { name: 'Plumbing',          ev: /plumb/,
+                               item: /plumb|supply line|waste line|shut.?off valve|p.?trap|faucet/, sec: /plumb/,
                                trade: /plumb/ },
-  { name: 'Waterproofing',     item: /waterproof|membrane|vapor barrier|flood test/,               sec: /waterproof/,
+  { name: 'Waterproofing',     ev: /waterproof/,
+                               item: /waterproof|membrane|vapor barrier|flood test/,               sec: /waterproof/,
                                trade: /waterproof/ },
-  { name: 'Deck',              item: /\bdeck\b|decking|timbertech|railing post/,                   sec: /deck/,
+  { name: 'Deck',              ev: /\bdeck\b|decking/,
+                               item: /\bdeck\b|decking|timbertech|railing post/,                   sec: /deck/,
                                trade: /deck/ },
   { name: 'Handyman',          item: /handyman|odd job|small repair|mount(?:ing)? (?:tv|shelf|shelves)|hang (?:shelf|shelves|picture)/, sec: /handyman/,
                                trade: /handyman|general repair/ }
@@ -382,8 +395,26 @@ function resolveServiceSet(analysis, input, estimate) {
     const ev = norm([
       text(input?.request?.description),
       text(input?.request?.service),
-      ...(analysis?.confirmed_scope || []).map(s => `${text(s.trade)} ${(s.scope_items || []).map(text).join(' ')}`),
-      ...[...(estimate?.labor || []), ...(estimate?.materials || [])].map(l => `${text(l.section)} ${text(l.item)}`)
+      ...(input?.request?.selectedServices || []).map(text),
+      ...(analysis?.confirmed_scope || []).map(s => `${text(s.trade)} ${(s.scope_items || []).map(text).join(' ')}`)
+      /* THE ESTIMATOR'S OWN LINE ITEMS ARE NOT EVIDENCE. THEY USED TO BE, AND THAT
+         WAS THE BUG BEHIND EVERY PHANTOM CARD.
+
+         A painting line reading "mask trim, glass and windows before spraying"
+         made this function believe the customer had bought Windows. A protection
+         line mentioning a mirror made it believe they had bought a Bathroom. On
+         the Pilates studio — painting, wall mirrors, floor patching, furniture,
+         no windows and no bathroom anywhere in the request — that produced a
+         Windows card and a Bathroom card, each holding an identical half of the
+         money with no lines under either, because no line truly belonged to them
+         and the shared-cost split fed them regardless.
+
+         The set of services must come from what the CUSTOMER asked for: the
+         services they selected, the words they wrote, and the trades the analyst
+         confirmed from those words. The estimate is the answer; it cannot also be
+         the question. Incidental nouns inside a task description are not a
+         purchase. This closes the phantom-card class for every trade at once,
+         rather than one keyword at a time. */
     ].join(' | '));
     const found = [];
     SERVICE_VOCAB.forEach(v => {
