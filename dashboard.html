@@ -4436,17 +4436,60 @@ function scopeAlreadyShared() {
 
 /* Same trade-matching idea the customer quote page uses, so section names stay
    consistent between the estimate lines and this panel. */
+/* SECOND CLASSIFIER, NOW HARMLESS.
+   This was a private copy of the server's canonicalService(), hardcoded to a handful
+   of trades, and it produced the exact bug that was fixed on the server: it mapped
+   "mirror" -> Bathroom. On the Pilates studio job — painting, wall mirrors, floor
+   patching, furniture assembly, no bathroom anywhere — every line was stamped
+   "Handyman" by the estimator, this function re-read the ITEM TEXT, found "mirror",
+   and conjured a Bathroom card. The card then showed $0 labour and $0 materials while
+   carrying half the money, because no line actually belonged to it and the shared-cost
+   split fed it anyway.
+
+   A line's section is decided ONCE, on the server, by lib/deterministic-pricing.js,
+   which knows what the customer actually bought. The dashboard's job is to display it,
+   not to guess it again. Keyword fallback now only runs on a line with no section at
+   all, and it can never invent a service the estimate does not already contain. */
 function scopeSectionOf(line) {
   if (line && line.section && String(line.section).trim()) return String(line.section).trim();
+
   var n = String((line && line.item) || "").toLowerCase();
-  if (/window/.test(n)) return "Windows";
-  if (/paint|prime/.test(n)) return "Painting";
-  if (/floor|hardwood|laminate|subfloor|underlayment/.test(n)) return "Flooring";
-  if (/cabinet|countertop|kitchen/.test(n)) return "Kitchen";
-  if (/bathroom|shower|vanity|toilet|waterproof|grout|tile|linen|mirror|plumb|electric/.test(n)) return "Bathroom";
-  if (/deck|railing/.test(n)) return "Deck";
-  if (/stair|tread|riser/.test(n)) return "Stairs";
-  if (/carpent|trim|door|molding/.test(n)) return "Carpentry";
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var known = [];
+  (est.serviceBreakdown || []).forEach(function (r) {
+    var t = String((r && (r.title || r.name || r.section)) || "").trim();
+    if (t && known.indexOf(t) === -1) known.push(t);
+  });
+  var d = est.manualCustomerScopeDraft;
+  if (d && Array.isArray(d.services)) {
+    d.services.forEach(function (sv) {
+      var t = String((sv && sv.name) || "").trim();
+      if (t && known.indexOf(t) === -1) known.push(t);
+    });
+  }
+  /* Only a service this estimate already has may be returned. */
+  var allow = function (name) { return known.some(function (k) { return k.toLowerCase() === name.toLowerCase(); }) ? name : ""; };
+
+  var guess =
+    /window/.test(n) ? "Windows" :
+    /\bmirror\b|glass panel|glass wall/.test(n) ? "Mirrors & Glass" :
+    /furniture|assembl/.test(n) ? "Furniture Assembly" :
+    /paint|prime/.test(n) ? "Painting" :
+    /floor|hardwood|laminate|subfloor|underlayment/.test(n) ? "Flooring" :
+    /cabinet|countertop|kitchen/.test(n) ? "Kitchen" :
+    /bathroom|shower|vanity|toilet|waterproof/.test(n) ? "Bathroom" :
+    /\btile\b|grout|thinset/.test(n) ? "Tile" :
+    /deck|railing/.test(n) ? "Deck" :
+    /stair|tread|riser/.test(n) ? "Stairs" :
+    /carpent|trim|molding/.test(n) ? "Carpentry" :
+    /electric|outlet|gfci/.test(n) ? "Electrical" :
+    /plumb|faucet/.test(n) ? "Plumbing" : "";
+
+  var hit = guess ? allow(guess) : "";
+  if (hit) return hit;
+  /* Nothing allowed matched. A single-service job absorbs the line rather than
+     spawning a card the customer never asked for. */
+  if (known.length === 1) return known[0];
   return "General";
 }
 
