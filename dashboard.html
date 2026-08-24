@@ -3841,145 +3841,13 @@ function copyMaterialsList() {
 let currentRenderBase64 = null;
 let selectedRenderPhotoData = null;
 
-function selectRenderPhoto(idx, el) {
-  document.querySelectorAll("#render-photo-selector > div").forEach(function(d) {
-    d.style.borderColor = "var(--line)";
-    d.classList.remove("rp-selected");
-  });
-  el.style.borderColor = "var(--gold)";
-  el.classList.add("rp-selected");
-  const photos = (currentRecord && currentRecord.request && currentRecord.request.photos) || [];
-  selectedRenderPhotoData = photos[idx] ? photos[idx].data : null;
-  const hint = document.getElementById("render-photo-hint");
-  if (hint) hint.textContent = "✓ Photo selected — ready to generate";
-}
-
-async function generateRender() {
-  if (!currentRecord) return;
-  const btn = document.getElementById("render-btn");
-  const result = document.getElementById("render-result");
-  const loading = document.getElementById("render-loading");
-  const imageWrap = document.getElementById("render-image-wrap");
-  const status = document.getElementById("render-status");
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="ai-spin"></span> Generating…';
-  result.style.display = "block";
-  loading.style.display = "block";
-  imageWrap.style.display = "none";
-  currentRenderBase64 = null;
-
-  const messages = ["Analyzing photo…", "Crafting render prompt…", "Generating with Gemini…", "Almost done…"];
-  let msgIdx = 0;
-  const msgTimer = setInterval(function() {
-    msgIdx = (msgIdx + 1) % messages.length;
-    if (status) status.textContent = messages[msgIdx];
-  }, 7000);
-
-  try {
-    const req = currentRecord.request || {};
-    const est = currentRecord.estimate || {};
-    let photoToUse = selectedRenderPhotoData ||
-      ((req.photos && req.photos.length > 0) ? req.photos[0].data : null);
-    if (photoToUse) {
-      photoToUse = await new Promise(function (resolve) {
-        var original = photoToUse;
-        var isUrl = /^https?:\/\//i.test(original);
-        var done = false;
-        function finish(val) { if (done) return; done = true; resolve(val); }
-        // Safety: if load/shrink stalls, send the raw value so the spinner never hangs
-        var safety = setTimeout(function () { finish(original); }, 9000);
-        var img = new Image();
-        if (isUrl) img.crossOrigin = "anonymous"; // allow canvas read on Supabase Storage URLs
-        img.onload = function () {
-          clearTimeout(safety);
-          try {
-            var w = img.width, h = img.height, MAX = 512;
-            if (w > MAX) { h = Math.round(h * (MAX / w)); w = MAX; }
-            var c = document.createElement("canvas");
-            c.width = w; c.height = h;
-            c.getContext("2d").drawImage(img, 0, 0, w, h);
-            finish(c.toDataURL("image/jpeg", 0.6));
-          } catch (e) {
-            // Cross-origin taint blocks toDataURL — fall back to raw photo value
-            finish(original);
-          }
-        };
-        img.onerror = function () { clearTimeout(safety); finish(original); };
-        // Cache-buster forces a fresh CORS request; never appended to data: URIs
-        img.src = isUrl ? (original + (original.indexOf("?") === -1 ? "?cors=1" : "&cors=1")) : original;
-      });
-    }
-    const customPromptEl = document.getElementById("render-custom-prompt");
-    const customPrompt = customPromptEl ? customPromptEl.value.trim() : "";
-
-    const jobId = "render-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-
-    await fetch("/.netlify/functions/generate-render-background", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jobId,
-        service: req.service || est.projectTitle || "room",
-        projectTitle: est.projectTitle || req.service || "",
-        scopeOfWork: est.scopeOfWork || "",
-        serviceAnswers: req.serviceAnswers || {},
-        photoBase64: photoToUse || null,
-        customPrompt: customPrompt || ""
-      })
-    });
-
-    const data = await new Promise(function(resolve, reject) {
-      let attempts = 0;
-      const maxAttempts = 22;
-      function poll() {
-        attempts++;
-        if (attempts > maxAttempts) { reject(new Error("Render timed out — Gemini took too long. Try a shorter prompt.")); return; }
-        fetch("/.netlify/functions/get-render-status?jobId=" + encodeURIComponent(jobId))
-          .then(function(r) { return r.json(); })
-          .then(function(d) {
-            if (d.status === "done") { resolve(d); }
-            else if (d.status === "error") { reject(new Error(d.error || "Render failed")); }
-            else { setTimeout(poll, 4000); }
-          })
-          .catch(function() { setTimeout(poll, 4000); });
-      }
-      setTimeout(poll, 5000);
-    });
-
-    clearInterval(msgTimer);
-    currentRenderBase64 = data.imageBase64;
-    document.getElementById("render-image").src = data.imageBase64;
-    loading.style.display = "none";
-    imageWrap.style.display = "block";
-
-    if (data.spaceDescription) {
-      const descEl = document.getElementById("render-space-desc");
-      if (descEl) { descEl.textContent = "AI saw: " + data.spaceDescription; descEl.style.display = "block"; }
-    }
-    toast("✨ AI render generated!");
-  } catch (e) {
-    clearInterval(msgTimer);
-    loading.style.display = "none";
-    result.style.display = "none";
-    toast("Render failed: " + e.message, true);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = "✨ Generate Render";
-  }
-}
-
-function dismissRender() {
-  var wrap = document.getElementById("render-image-wrap");
-  var result = document.getElementById("render-result");
-  var img = document.getElementById("render-image");
-  if (wrap) wrap.style.display = "none";
-  if (result) result.style.display = "none";
-  if (img) img.src = "";
-  currentRenderBase64 = null;
-}
-
-function addRenderToQuote() {
+/* AI RENDER — REMOVED Aug 24 2026.
+   selectRenderPhoto / generateRender / dismissRender were defined and never called
+   from anywhere in the repo: each appeared exactly once, its own definition, with no
+   onclick, no onchange and no reference from any other file. The buttons that used to
+   call them were removed earlier. This is the long-open "generateRender crossOrigin
+   bug" — there was nothing to fix, only something to delete. */
+async function addRenderToQuote() {
   if (!currentRenderBase64 || !currentRecord || !currentRecord.estimate) return;
   if (!currentRecord.estimate.quotePhotos) currentRecord.estimate.quotePhotos = [];
   if (currentRecord.estimate.quotePhotos.length >= 6) {
@@ -4553,29 +4421,118 @@ function scopeSectionOf(line) {
 
 /* Read-only subtotal for one service, derived from the existing line items and
    the existing markup field. Editing scope text can never move this number. */
-function scopeServiceSubtotal(name) {
+/* ══ THE CARD PRICE IS DERIVED. ONE DEFINITION, AND THIS IS IT. ══════════════
+   Before this, scopeServiceSubtotal returned a CACHED number —
+   estimate.serviceBreakdown[].subtotal — whenever customerPresentationVersion
+   matched a deterministic version. That cache was refreshed from exactly two
+   places (scopeSetServiceTotal, scopeSetKindTotal). Editing a qty or rate,
+   adding or deleting a price line, parking or unparking, changing the markup %,
+   editing the top Labor/Materials tables or using "Set total to a number" all
+   left it stale, so the card kept showing yesterday's price until Zura logged
+   out and back in.
+
+   It also failed silently: scopeSyncBreakdown returned early when it could not
+   match a serviceBreakdown row by name, so after scopeRenameService or
+   scopeAddService a card was permanently detached from the cache with nothing
+   on screen to say so.
+
+   WHAT THE CACHE WAS ACTUALLY FOR, and what this must not lose: the pricing
+   engine allocates shared cost — coordination, cleanup, protection, debris —
+   into the subtotal, and that allocation is not visible on the lines. Any line
+   whose section matches no card is redistributed here, weighted by LABOUR cost.
+   NOT by total cost: weighting by total once let an $11,880 supplied-window
+   line absorb most of the coordination, and that bug is fixed — do not undo it.
+   A card carrying no labour at all takes the mean share of the labour-bearing
+   cards, so a materials-only card is neither starved nor dominant.
+
+   Returns pre-rounded cents that sum EXACTLY to the grand total. */
+function scopeCardNames() {
+  var d = (typeof scopeDraft === "function") ? scopeDraft() : null;
+  var names = (d && Array.isArray(d.services) ? d.services : [])
+    .map(function (s) { return String((s && s.name) || "").trim(); })
+    .filter(Boolean);
+  if (names.length) return names;
+  return scopeUniqueServices();
+}
+
+function scopeCardTotals() {
   var est = (currentRecord && currentRecord.estimate) || {};
-  // Deterministic v8.2 already calculated customer-service subtotals after
-  // allocating General/project costs. Use those exact numbers in Scope Control
-  // instead of re-grouping raw labor/material rows back into pseudo-services.
-  if (/^v8\.\d+-deterministic-four-service/.test(String(est.customerPresentationVersion || "")) && Array.isArray(est.serviceBreakdown)) {
-    var sb = est.serviceBreakdown.find(function (x) {
-      return String((x && (x.title || x.name || x.section)) || "").trim().toLowerCase() === String(name || "").trim().toLowerCase();
-    });
-    if (sb && Number.isFinite(Number(sb.subtotal))) return Number(sb.subtotal);
-  }
-  /* Use the live markup field when it holds a value, otherwise the saved estimate.
-     An empty field must never silently price the service at 0% markup. */
   var mEl = document.getElementById("f-markup");
-  var raw = mEl && String(mEl.value).trim() !== "" ? mEl.value : est.markupPct;
-  var pct = Number(raw) || 0;
-  var sum = 0;
+  var rawPct = mEl && String(mEl.value).trim() !== "" ? mEl.value : est.markupPct;
+  var k = 1 + (Number(rawPct) || 0) / 100;
+
+  var names = scopeCardNames();
+  var key = function (v) { return String(v || "").trim().toLowerCase(); };
+  var byKey = {};
+  names.forEach(function (nm) { byKey[key(nm)] = nm; });
+
+  var own = {}, ownLabor = {};
+  names.forEach(function (nm) { own[nm] = 0; ownLabor[nm] = 0; });
+  var loose = 0;
+
   ["labor", "materials"].forEach(function (kind) {
     (est[kind] || []).forEach(function (l) {
-      if (scopeSectionOf(l) === name) sum += (Number(l.qty) || 0) * (Number(l.rate) || 0);
+      var cost = (Number(l.qty) || 0) * (Number(l.rate) || 0);
+      if (!cost) return;
+      var nm = byKey[key(scopeSectionOf(l))];
+      if (nm) {
+        own[nm] += cost;
+        if (kind === "labor") ownLabor[nm] += cost;
+      } else {
+        loose += cost;
+      }
     });
   });
-  return sum * (1 + pct / 100);
+
+  if (loose > 0 && names.length) {
+    /* Only cards that actually carry priced work share the pool. A card the contractor
+       just added, with nothing in it yet, must not quietly absorb a slice of the
+       coordination cost. */
+    var share = names.filter(function (nm) { return own[nm] > 0; });
+    if (!share.length) share = names;
+    var withLabor = share.filter(function (nm) { return ownLabor[nm] > 0; });
+    var laborTotal = withLabor.reduce(function (a, nm) { return a + ownLabor[nm]; }, 0);
+    if (!withLabor.length || laborTotal <= 0) {
+      share.forEach(function (nm) { own[nm] += loose / share.length; });
+    } else {
+      var meanShare = 1 / withLabor.length;
+      var weights = {}, wSum = 0;
+      share.forEach(function (nm) {
+        weights[nm] = ownLabor[nm] > 0 ? (ownLabor[nm] / laborTotal) : meanShare;
+        wSum += weights[nm];
+      });
+      share.forEach(function (nm) { own[nm] += loose * (weights[nm] / wSum); });
+    }
+  }
+
+  /* Round to cents, then put the residual on the largest card so the cards sum
+     to the grand total EXACTLY. A penny of drift here is a customer asking why
+     the parts do not add up. */
+  var t = (typeof calcTotal === "function") ? calcTotal(est) : null;
+  var grand = t ? Math.round(t.grand * 100) / 100 : Math.round(names.reduce(function (a, nm) { return a + own[nm]; }, 0) * k * 100) / 100;
+
+  var byCard = {}, sum = 0, biggest = names[0] || "";
+  names.forEach(function (nm) {
+    var v = Math.round(own[nm] * k * 100) / 100;
+    byCard[nm] = v; sum += v;
+    if (v > (byCard[biggest] || 0)) biggest = nm;
+  });
+  sum = Math.round(sum * 100) / 100;
+  var resid = Math.round((grand - sum) * 100) / 100;
+  if (resid !== 0 && biggest) byCard[biggest] = Math.round((byCard[biggest] + resid) * 100) / 100;
+
+  return { byCard: byCard, names: names, grand: grand, unattributed: Math.round(loose * k * 100) / 100 };
+}
+
+function scopeServiceSubtotal(name) {
+  /* Derived, every time. serviceBreakdown[].subtotal is a publish artifact now —
+     written at publish time from this same function, never read back. */
+  var totals = scopeCardTotals();
+  var nm = String(name || "").trim();
+  if (Object.prototype.hasOwnProperty.call(totals.byCard, nm)) return totals.byCard[nm];
+  var lower = nm.toLowerCase();
+  var hit = totals.names.filter(function (x) { return x.toLowerCase() === lower; })[0];
+  return hit ? totals.byCard[hit] : 0;
 }
 
 function scopeUniqueServices() {
@@ -4914,27 +4871,9 @@ function scopeScaleRows(rows, targetRaw) {
    undo remembers how much IT added to that row. Re-basing the row without re-basing
    those deltas left rows and lines disagreeing per service, and the CUSTOMER QUOTE
    READS THE ROWS. Move every pending contribution by the same factor. */
-function scopeSyncBreakdown(nm, newCardTotal) {
-  var est = (currentRecord && currentRecord.estimate) || {};
-  if (!Array.isArray(est.serviceBreakdown)) return;
-  var row = est.serviceBreakdown.filter(function (x) {
-    return String((x && (x.title || x.name || x.section)) || "").trim().toLowerCase() === nm.toLowerCase();
-  })[0];
-  if (!row || !Number.isFinite(Number(row.subtotal))) return;
-  var wasRow = Number(row.subtotal) || 0;
-  var rowFactor = wasRow > 0 ? newCardTotal / wasRow : 0;
-  if (rowFactor > 0 && Math.abs(rowFactor - 1) > 1e-9) {
-    var cents = function (v) { return Math.round(Number(v) * rowFactor * 100) / 100; };
-    (scopeMergeStack() || []).forEach(function (m) {
-      if (scopeNorm(m.dstName) !== scopeNorm(nm)) return;
-      if (m.addedSubtotal != null) m.addedSubtotal = cents(m.addedSubtotal);
-      if (m.dstSubtotalBefore != null) m.dstSubtotalBefore = cents(m.dstSubtotalBefore);
-      if (m.dstRowBefore && Number.isFinite(Number(m.dstRowBefore.subtotal))) m.dstRowBefore.subtotal = cents(m.dstRowBefore.subtotal);
-      if (m.srcRow && Number.isFinite(Number(m.srcRow.subtotal))) m.srcRow.subtotal = cents(m.srcRow.subtotal);
-    });
-  }
-  row.subtotal = newCardTotal;
-}
+/* scopeSyncBreakdown was deleted. It wrote the cached card price from two of the
+   nine paths that change money, and returned silently when it could not match a
+   row by name. scopeCardTotals() above replaces it — see the comment there. */
 
 /* Set the whole card. Labor and materials both move. */
 function scopeSetServiceTotal(si, raw) {
@@ -4963,7 +4902,6 @@ function scopeSetServiceTotal(si, raw) {
   }
 
   scopeScaleRows(rows, want / (scopeMarkupK() || 1));
-  scopeSyncBreakdown(nm, want);
   scopeLinesRefresh();
   var got = scopeServiceSubtotal(nm);
   toast(nm + " set to " + fmt(got) + (Math.abs(got - want) >= 0.01 ? " (closest reachable)" : ""));
@@ -5007,7 +4945,6 @@ function scopeSetKindTotal(si, kind, raw) {
   }
 
   scopeScaleRows(rows, want / k);
-  scopeSyncBreakdown(nm, scopeRowsRaw(scopeRowsFor(nm)) * k);
   scopeLinesRefresh();
   var got = scopeRowsRaw(scopeRowsFor(nm, kind)) * k;
   toast(nm + " " + label.toLowerCase() + " set to " + fmt(got) +
@@ -5337,7 +5274,22 @@ function scopeRenameService(si, val) {
   var was = String(svc.name || "").trim();
   var now = String(val || "").trim() || "General";
   svc.name = now;
-  if (was && was !== now) scopeRetargetParked(was, null, now, null);
+  if (was && was !== now) {
+    /* THE LINES MUST FOLLOW THE NAME. scopeMergeService already relabels lines so the
+       money follows the wording; rename was the one path that did not, so every line
+       filed under the old name was orphaned. On the old cached card price that showed
+       up as a card frozen at yesterday's number with nothing on screen to say so; on a
+       derived price it would spray that card's money across the other cards. No undo
+       stamp here on purpose — a rename is not reversible state, unlike a merge, and
+       the merge/undo chain must not be touched. */
+    var est = (currentRecord && currentRecord.estimate) || {};
+    ["labor", "materials"].forEach(function (kind) {
+      (est[kind] || []).forEach(function (l) {
+        if (scopeNorm(scopeSectionOf(l)) === scopeNorm(was)) l.section = now;
+      });
+    });
+    scopeRetargetParked(was, null, now, null);
+  }
 }
 function scopeAddService() {
   var name = prompt("Service name (e.g. Bathroom, Flooring, Painting, Windows):", "");
@@ -5730,6 +5682,40 @@ function scopePreview() {
   box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
+function scopeStampBreakdown() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  if (!Array.isArray(est.serviceBreakdown)) return;
+  var totals = scopeCardTotals();
+  var key = function (v) { return String(v || "").trim().toLowerCase(); };
+  var byKey = {};
+  totals.names.forEach(function (nm) { byKey[key(nm)] = totals.byCard[nm]; });
+  var seen = {};
+  /* A row no card claims any more — the old name after a rename — must be REMOVED,
+     not zeroed.
+
+     Zeroing it looked right on the dashboard and was wrong on the customer's quote.
+     quote.html runs foldZeroPriceServices(), which treats a zero-price card as an
+     empty shell and folds its wording into the largest priced service. So renaming
+     "Flooring" to "Wood Floors" pushed the flooring scope bullets onto the Windows
+     card, and the renamed card went out with no scope at all. The money already
+     follows a rename; the wording has to follow it the same way.
+
+     Anything a live card still claims keeps its row and gets the derived price. */
+  est.serviceBreakdown = est.serviceBreakdown.filter(function (row) {
+    var k = key(row && (row.title || row.name || row.section));
+    if (!Number.isFinite(byKey[k])) return false;
+    seen[k] = true;
+    row.subtotal = byKey[k];
+    return true;
+  });
+  /* A card with no row yet (added by hand) still needs one, or its money is published
+     nowhere. */
+  totals.names.forEach(function (nm) {
+    if (seen[key(nm)]) return;
+    est.serviceBreakdown.push({ title: nm, subtotal: totals.byCard[nm] || 0, included: [], customerSupplies: [], notIncluded: [], options: [] });
+  });
+}
+
 async function scopePublish() {
   var msg = scopeAlreadyShared()
     ? "This estimate has already been shared. Publishing will IMMEDIATELY change what the customer sees at their existing quote link.\n\nPublish now?"
@@ -5739,6 +5725,10 @@ async function scopePublish() {
   currentRecord.estimate.manualCustomerScopeDraft = clean;
   currentRecord.estimate.publishedCustomerScope = clean;
   currentRecord.estimate.customerScopePublished = true;
+  /* serviceBreakdown[].subtotal is a WRITE-ONLY publish artifact. Stamping it from
+     scopeCardTotals() here is what guarantees the dashboard and the customer's quote
+     cannot disagree — they are the same number, computed once. */
+  scopeStampBreakdown();
   await saveDraft();
   renderScopeControl();
   toast("✓ Customer scope published");
@@ -6242,7 +6232,7 @@ function renderInvoiceModal(totals, prior, remaining) {
       '<div class="inv-section-label">📝 Description — What This Invoice Covers</div>' +
       '<div class="field">' +
         '<label>Write one line per item. Each line shows as a ✓ on the invoice. Nothing else is shown — only what you write here.</label>' +
-        '<textarea id="inv-workperformed" rows="7" placeholder="Door hinge repair&#10;TV mounting (including cable management)&#10;Shelving installation&#10;Closet light fixture replacement&#10;Front door weatherstripping" oninput="updateInvoiceState()">' + esc(invoiceState.workPerformed) + '</textarea>' +
+        '<textarea id="inv-workperformed" rows="7" placeholder="Door hinge repair&#10;Shelving installation&#10;Closet light fixture replacement&#10;Front door weatherstripping" oninput="updateInvoiceState()">' + esc(invoiceState.workPerformed) + '</textarea>' +
         '<div style="font-size:11px;color:var(--ink-muted);margin-top:4px">Leave blank to show no checklist — just the total.</div>' +
       '</div>' +
     '</div>' +
@@ -7949,25 +7939,15 @@ if (document.readyState === 'loading') {
 /* ===== SEND ESTIMATE LINK ===== */
 var ESTIMATE_URL = 'https://www.sanibuildingcorp.com/estimate';
 
-function openSendLinkModal() {
-  var overlay = document.getElementById('send-link-overlay');
-  if (!overlay) return;
-  overlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-  var n = document.getElementById('sl-name');
-  var p = document.getElementById('sl-phone');
-  var e = document.getElementById('sl-email');
-  var err = document.getElementById('sl-error');
-  var prev = document.getElementById('sl-preview');
-  if (n) n.value = '';
-  if (p) p.value = '';
-  if (e) e.value = '';
-  if (err) err.style.display = 'none';
-  if (prev) prev.style.display = 'none';
-  updateSendLinkButtons();
-  setTimeout(function() { if (n) n.focus(); }, 300);
-}
-
+/* SEND ESTIMATE LINK — the four helper functions were removed Aug 24 2026.
+   openSendLinkModal / sendEstimateBySMS / sendEstimateByEmail / copyEstimateLink were
+   dead duplicates: the floating button and all three modal buttons carry their own
+   inline copies of this logic in their onclick attributes, and those inline copies are
+   what actually runs. Deleting the unused named copies leaves exactly ONE copy to
+   maintain, which was the point.
+   If you would rather have the logic in named functions than inline — it does read
+   better — say so and the buttons get pointed at them instead. That change touches a
+   working customer-facing feature, so it was not made unasked. */
 function closeSendLinkModal() {
   document.getElementById('send-link-overlay').style.display = 'none';
   document.body.style.overflow = '';
@@ -8039,47 +8019,6 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', attachSendLinkInputs);
 } else {
   attachSendLinkInputs();
-}
-
-function sendEstimateBySMS() {
-  var phoneEl = document.getElementById('sl-phone');
-  var nameEl  = document.getElementById('sl-name');
-  var phone = phoneEl ? phoneEl.value.trim() : '';
-  var name  = nameEl  ? nameEl.value.trim()  : '';
-  if (!phone) { showSendLinkError('Please enter a phone number first.'); return; }
-  var msg   = getSMSMessage(name);
-  var clean = phone.replace(/[^0-9]/g, '');
-  var smsUrl = 'sms:+1' + clean + (navigator.userAgent.match(/iPhone|iPad/) ? '&' : '?') + 'body=' + encodeURIComponent(msg);
-  window.location.href = smsUrl;
-  setTimeout(function() { showSendLinkSuccess('Messages app opened!'); }, 500);
-}
-
-function sendEstimateByEmail() {
-  var emailEl = document.getElementById('sl-email');
-  var nameEl  = document.getElementById('sl-name');
-  var email = emailEl ? emailEl.value.trim() : '';
-  var name  = nameEl  ? nameEl.value.trim()  : '';
-  if (!email) { showSendLinkError('Please enter an email address first.'); return; }
-  var subject = getEmailSubject(name);
-  var body    = getEmailBody(name);
-  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  setTimeout(function() { showSendLinkSuccess('Mail app opened!'); }, 500);
-}
-
-function copyEstimateLink() {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(ESTIMATE_URL).then(function() {
-      showSendLinkSuccess('Link copied to clipboard!');
-    });
-  } else {
-    var ta = document.createElement('textarea');
-    ta.value = ESTIMATE_URL;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showSendLinkSuccess('Link copied!');
-  }
 }
 
 function showSendLinkError(msg) {
