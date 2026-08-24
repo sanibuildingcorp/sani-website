@@ -69,7 +69,11 @@ const RULES = {
   subContractCalibration: 0.80,
   /* Markup by direct cost, from SANI_ACTUALS: 1.71x on a $2,250 job, 1.50x on a $9,690
      job. Expressed as percent to match the dashboard field. Gross margin in brackets. */
-  applyTieredMarkup: true,
+  /* OFF — Zura, Aug 23 2026. The curve below overrode his own markup field with 48-71%
+     depending on job size, so a bathroom he priced at 25% shipped at 49.4%. He sets the
+     markup in the dashboard; nothing here may override it. The curve is kept only as a
+     reference number shown in the dashboard advice line. */
+  applyTieredMarkup: false,
   /* CONTINUOUS markup curve, not brackets. Anchored on the two completed jobs so both
      reproduce exactly: $2,250 cost sold at 71%, $9,690 cost sold at 49.6%. Between and
      beyond the anchors the rate is linearly interpolated, which keeps customer price
@@ -556,8 +560,26 @@ function laborMatches(line, kind) {
   return false;
 }
 
+/* PRODUCTION MINIMUMS ARE ADVISORY ONLY — Zura, Aug 23 2026.
+   This used to RAISE labour hours to hit a published production rate and could never
+   lower them, so every rate that was even slightly pessimistic became a one-way ratchet
+   on price. largeFormatTileSfPerHour of 5 turned 170 SF of tile into a 34-hour floor on
+   that line alone. He wants the estimate to be what the model and the live market say,
+   not what a table says. The finding is still recorded so it is visible, but it no
+   longer moves a number. */
+const ENFORCE_PRODUCTION_MINIMUMS = false;
+
 function enforceProductionMinimum(estimate, kind, minHours, reason, adjustments) {
   if (!minHours) return;
+  if (!ENFORCE_PRODUCTION_MINIMUMS) {
+    const seen = (estimate.labor || []).filter(l => laborMatches(l, kind))
+      .reduce((s2, l) => s2 + num(l.qty), 0);
+    if (seen + 0.01 < minHours) {
+      adjustments.push({ type: 'PRODUCTION_HOURS_NOTE', kind, estimatedHours: Math.round(seen * 10) / 10,
+        referenceHours: Math.ceil(minHours), reason, note: 'Advisory only — no hours were added.' });
+    }
+    return;
+  }
   const matches = (estimate.labor || []).filter(l => laborMatches(l, kind));
   if (!matches.length) {
     adjustments.push({ type: 'MISSING_PRODUCTION_LINE', kind, minimumHours: Math.ceil(minHours), reason });
@@ -1149,6 +1171,44 @@ function buildCustomerScope(estimate, analysis, adjustments) {
   });
 }
 
+/* ── LUMP MATERIAL LINES ARE THE PRICE BUG ────────────────────────────────────
+   A material line written as "1 allowance x $4,200" is a number the model invented
+   with nothing anchoring it. It cannot be checked against a real product price, the
+   contractor cannot edit one item inside it, and the customer cannot be told what it
+   buys. It is how a bathroom under 40 SF came back with $22,700 of materials while a
+   competing app, given the identical description, itemised the same room at $549 for
+   the vanity and $199 for the toilet and landed at a third of the price.
+
+   The prompt now demands itemised products. This is the backstop, because prompt
+   rules alone have failed three times in this codebase. A lump line is not deleted -
+   deleting it would silently drop real scope - it is FLAGGED so it is visible in the
+   dashboard and in validation, and capped at a defensible ceiling so one invented
+   number cannot dominate the estimate. */
+const LUMP_UNIT = /^\s*(allowance|lump\s*sum|ls|package|pkg|misc|miscellaneous|various|assorted)\s*$/i;
+const LUMP_ITEM = /\b(allowance|and accessories|and sundries|misc\b|miscellaneous|package|assorted)\b/i;
+const LUMP_CEILING = 1500;
+
+function flagLumpMaterials(estimate, adjustments) {
+  (estimate.materials || []).forEach(m => {
+    const unit = String((m && m.unit) || '');
+    const qty = num(m.qty), rate = num(m.rate);
+    const value = qty * rate;
+    const looksLump = LUMP_UNIT.test(unit) || (qty <= 1 && LUMP_ITEM.test(String(m.item || '')));
+    if (!looksLump || value <= LUMP_CEILING) return;
+    const was = rate;
+    m.rate = money(LUMP_CEILING / (qty || 1));
+    m.sbcLumpCapped = true;
+    adjustments.push({
+      type: 'LUMP_MATERIAL_CAPPED',
+      item: text(m.item),
+      section: text(m.section),
+      fromRate: money(was),
+      toRate: money(m.rate),
+      reason: 'Un-itemised material line. Itemise it as real products with real quantities, then price each one.'
+    });
+  });
+}
+
 function applyDeterministicPricing(estimate, analysis, input) {
   const out = JSON.parse(JSON.stringify(estimate || {}));
   out.labor = Array.isArray(out.labor) ? out.labor : [];
@@ -1166,6 +1226,7 @@ function applyDeterministicPricing(estimate, analysis, input) {
      markup any more (both record rawCost), which is what finally allows the markup to be
      resolved from the FINAL direct cost, after every rule that adds or removes a line. */
   normalizeOwnership(out, analysis || {}, adjustments);
+  flagLumpMaterials(out, adjustments);
   normalizeLaborRates(out, adjustments);
   isolateAlternatives(out, adjustments);
   removeOverlappingLabor(out, adjustments);
