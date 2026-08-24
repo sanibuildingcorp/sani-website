@@ -1186,6 +1186,9 @@ function buildCustomerScope(estimate, analysis, adjustments) {
    number cannot dominate the estimate. */
 const LUMP_UNIT = /^\s*(allowance|lump\s*sum|ls|package|pkg|misc|miscellaneous|various|assorted)\s*$/i;
 const LUMP_ITEM = /\b(allowance|and accessories|and sundries|misc\b|miscellaneous|package|assorted)\b/i;
+/* Applies ONLY to lines lib/material-prices.js could not look up. A line with a
+   real retail price attached is never touched — the price of a toilet is the
+   price of a toilet, and no ceiling here may second-guess it. */
 const LUMP_CEILING = 1500;
 
 function flagLumpMaterials(estimate, adjustments) {
@@ -1193,6 +1196,7 @@ function flagLumpMaterials(estimate, adjustments) {
     const unit = String((m && m.unit) || '');
     const qty = num(m.qty), rate = num(m.rate);
     const value = qty * rate;
+    if (m.sbcPricedFrom) return;   /* priced from a real listing — leave it alone */
     const looksLump = LUMP_UNIT.test(unit) || (qty <= 1 && LUMP_ITEM.test(String(m.item || '')));
     if (!looksLump || value <= LUMP_CEILING) return;
     const was = rate;
