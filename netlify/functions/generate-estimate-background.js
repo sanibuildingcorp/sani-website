@@ -20,6 +20,7 @@ const { getStore } = require("@netlify/blobs");
 const { applyDeterministicPricing, consolidateCustomerPresentation } = require("./lib/deterministic-pricing");
 const { writeCustomerScope } = require("./lib/scope-writer");
 const { researchMarketPricing, buildResearchBlock } = require("./lib/market-research");
+const { priceMaterialsLive, serperShopping } = require("./lib/material-prices");
 
 /* Claude Opus 5. Thinking is ON BY DEFAULT on this model and shares the max_tokens
    budget with the response text, which is why every call site below was raised.
@@ -160,6 +161,21 @@ exports.handler = async function handler(event) {
       }
       timing.repairMs = Date.now() - repairStarted;
     }
+
+    /* LIVE MATERIAL PRICES — real products, real retail prices.
+       Runs before the cards are consolidated so the per-service subtotals are
+       built from the looked-up numbers, not the model's guesses. Materials only;
+       labour is not a product and stays with the model, informed by the market
+       research pass above. No key or no result means the estimate is untouched. */
+    const matPriceStarted = Date.now();
+    if (process.env.SERPER_API_KEY) {
+      try {
+        estimate = await priceMaterialsLive(estimate, (q) => serperShopping(process.env.SERPER_API_KEY, q));
+      } catch (matErr) {
+        console.error("live material pricing skipped:", matErr && matErr.message ? matErr.message : matErr);
+      }
+    }
+    timing.materialPriceMs = Date.now() - matPriceStarted;
 
     estimate = finalizeCustomerPresentation(estimate, projectAnalysis, input);
     estimate = consolidateCustomerPresentation(estimate, projectAnalysis, input);
