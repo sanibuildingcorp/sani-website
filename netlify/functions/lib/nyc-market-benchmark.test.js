@@ -45,9 +45,16 @@ function line(section,item,qty,rate){ return {section,item,qty,rate,unit:'unit'}
   assert.equal(a.pricingChanged,false);
 }
 
-// 3) Brooklyn painting near $5/SF should pass the market check.
+/* 3) Brooklyn painting inside the current band should pass.
+   REWRITTEN Aug 24 2026. This case previously fed 1,000 SF paintable at $5,000 selling
+   ($5.00/SF) and asserted PASS. That expectation predates the v2.6 UNIT FIX: published
+   painting $/SF rates are per FLOOR area, so when the audit is handed a PAINTABLE figure
+   it now converts the band down (÷2.3-3.6) and $5.00/SF paintable is genuinely HIGH
+   against $1.67-$3.48. The lib was right and the test was stale — it has failed on main
+   since v2.6 shipped. Retargeted at a figure inside the current band so it tests the
+   shipped behaviour instead of the old basis. */
 {
-  const e=estimate([line('Painting','Interior painting walls ceilings and trim',40,100)],[]); // $4,000 cost => $5,000 selling
+  const e=estimate([line('Painting','Interior painting walls ceilings and trim',20,100)],[]); // $2,000 cost => $2,500 selling => $2.50/SF paintable
   const a=marketAudit(e,analysis('Interior painting',{painting_sf:1000}),input('Interior Painting','Approximately 1,000 SF paintable walls ceilings and trim.'));
   const c=a.checks.find(x=>x.code==='PAINTING_PER_SF');
   assert(c,'painting check missing');
