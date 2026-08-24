@@ -302,6 +302,10 @@ const SERVICE_VOCAB = [
   { name: 'Waterproofing',     ev: /waterproof/,
                                item: /waterproof|membrane|vapor barrier|flood test/,               sec: /waterproof/,
                                trade: /waterproof/ },
+  { name: 'Stairs',            ev: /\bstair|staircase|\btread\b|\briser\b|banister|newel/,
+                               strong: /\bstair(s|case|well)?\b|\btread\b|\briser\b|newel post|banister/,
+                               item: /stair|tread|riser|newel|banister/,                             sec: /stair/,
+                               trade: /stair/ },
   { name: 'Deck',              ev: /\bdeck\b|decking/,
                                item: /\bdeck\b|decking|timbertech|railing post/,                   sec: /deck/,
                                trade: /deck/ },
@@ -391,12 +395,44 @@ function canonicalService(section, item, selected) {
    toilet/vanity. */
 function resolveServiceSet(analysis, input, estimate) {
   let allowed = allowedServiceSet(analysis?.selected_trades || []);
-  if (containerOnly(allowed)) {
+  /* ══ EVIDENCE ALWAYS RUNS, NOT ONLY WHEN THE TRADE LIST IS EMPTY. ══════════
+     This gate used to be `if (containerOnly(allowed))`, so the customer's own
+     words were read only when the wizard produced nothing but Handyman/General.
+     The moment ONE real trade was selected, everything else the customer asked
+     for became invisible.
+
+     The Pilates studio picked Painting, Flooring and Handyman. "Handyman" is a
+     container — it names no trade — and it was carrying the mirrors and the
+     furniture assembly. Because Painting and Flooring were also selected, the
+     set was not container-only, evidence never ran, and Mirrors & Glass and
+     Furniture Assembly were never admitted. Their lines were then re-filed onto
+     Painting by canonicalService and two real trades disappeared from the
+     estimate with their money folded into another card.
+
+     That is the same defect as a phantom card seen from the other side, and it
+     gets worse with every trade added to the vocabulary. Evidence now always
+     runs, and its findings are UNIONED with the selected trades: what the
+     customer picked, plus what the customer described. Still nothing sourced
+     from the estimator's own output, so no phantom can enter this way. */
+  {
     const ev = norm([
       text(input?.request?.description),
       text(input?.request?.service),
       ...(input?.request?.selectedServices || []).map(text),
-      ...(analysis?.confirmed_scope || []).map(s => `${text(s.trade)} ${(s.scope_items || []).map(text).join(' ')}`)
+      /* ══ THE TRADE NAME IS EVIDENCE. THE TASK TEXT IS NOT. ══════════════════
+         `scope_items` used to be concatenated in here, and that is the last place
+         the phantom Windows card was coming from. The analyst wrote a perfectly
+         correct painting task — "mask trim, glass and windows before spraying" —
+         and this line handed the word "windows" to the vocabulary matcher as
+         though the customer had bought windows. A Windows card appeared, and then
+         canonicalService filed the masking labour under it, so it even had money
+         and lines and survived every emptiness check downstream.
+
+         It is the same category error as reading the estimator's own line items:
+         a noun inside a description of HOW work is done is not a thing the
+         customer purchased. `trade` is an explicit naming of a trade and is kept.
+         The customer's own description is kept. The task text is not evidence. */
+      ...(analysis?.confirmed_scope || []).map(s => text(s.trade))
       /* THE ESTIMATOR'S OWN LINE ITEMS ARE NOT EVIDENCE. THEY USED TO BE, AND THAT
          WAS THE BUG BEHIND EVERY PHANTOM CARD.
 
@@ -428,7 +464,15 @@ function resolveServiceSet(analysis, input, estimate) {
     if (found.includes('Tile') && found.includes('Flooring') && !found.includes('Bathroom')) {
       found.splice(found.indexOf('Tile'), 1);
     }
-    if (found.length) allowed = found;
+    /* Containers are placeholders. Once evidence has named the real trades a
+       container was standing in for, it must not linger and collect lines. But
+       if evidence found nothing at all, the container stays — it is better to
+       show one honest "Handyman" card than no card. */
+    const real = allowed.filter(x => !CONTAINER_SERVICES.includes(x));
+    const union = real.slice();
+    found.forEach(f => { if (!union.includes(f)) union.push(f); });
+    if (union.length) allowed = union;
+    else if (!allowed.length) allowed = found;
   }
   const arr = allowed.slice();
   Object.defineProperty(arr, '__sbcResolved', { value: true, enumerable: false });
@@ -1347,7 +1391,13 @@ function selectedCustomerServices(analysis, estimate, input, allowed) {
     .map(x => canonicalService(x.section, x.item, set));
   const order = SERVICE_VOCAB.map(v => v.name);
   const candidates = set.filter(x => !CONTAINER_SERVICES.includes(x));
-  const keep = candidates.filter(x => set.includes(x) || lines.includes(x) || (x === 'Windows' && /window/.test(e)));
+  /* Trade-specific special cases do not belong here. There was one for Windows
+     (`x === 'Windows' && /window/.test(e)`) and it was dead code besides, because
+     `candidates` is drawn from `set`, so `set.includes(x)` was already true for
+     every candidate and the whole filter passed everything through. A service
+     survives on the same terms as every other service: the customer asked for it,
+     or a priced line belongs to it. */
+  const keep = candidates.filter(x => set.includes(x) || lines.includes(x));
   const out = keep.length ? keep : candidates;
   return order.filter(x => out.includes(x));
 }
@@ -1373,7 +1423,7 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
   /* Resolved ONCE and handed to every classifier call below, so one estimate
      cannot be classified against two different service sets. */
   const allowed = resolveServiceSet(analysis, input, out);
-  const services = selectedCustomerServices(analysis, out, input, allowed);
+  let services = selectedCustomerServices(analysis, out, input, allowed);
   if (!services.length) return out;
   const mm = 1 + (Number(out.markupPct) || RULES.markupDefault) / 100;
   const map = {};
@@ -1404,6 +1454,31 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
       if (owner === s && !isAlt(l)) map[s].included.push(text(l.item));
     });
   });
+  /* ══ A SERVICE THAT OWNS NO PRICED LINE IS NOT A SERVICE. ══════════════════
+     One rule, every trade, forever. Not a keyword, not a ban list, not a prompt.
+
+     Every phantom card this system has produced — Windows on a Pilates studio,
+     Bathroom on a job with no bathroom — had the same shape: a card holding no
+     labour line and no materials line. Upstream causes differ and new ones will
+     appear as new trades are added. The shape does not. So the check is on the
+     shape.
+
+     It runs BEFORE the shared-cost split on purpose. Splitting first is what let
+     an empty card walk away with half the money: with `direct` at zero the
+     fallback share is 1/services.length, which funds every empty card equally.
+     Money is now divided only among services that actually did work. */
+  const ownsLines = {};
+  services.forEach(s => ownsLines[s] = 0);
+  [...(out.labor || []), ...(out.materials || [])].forEach(l => {
+    const s = singleBath ? 'Bathroom' : (pinnedService(l, allowed) || canonicalService(l.section, l.item, allowed));
+    if (ownsLines[s] !== undefined) ownsLines[s] += 1;
+  });
+  const dropped = services.filter(s => !ownsLines[s]);
+  if (dropped.length && dropped.length < services.length) {
+    dropped.forEach(s => { delete map[s]; });
+    services = services.filter(s => ownsLines[s] > 0);
+  }
+
   const direct = services.reduce((a, s) => a + map[s].subtotal, 0);
   if (generalBase > 0) {
     services.forEach(s => {
@@ -1442,7 +1517,9 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
     if (!map[s]) return;
     const opt = { label: text(o.label) || 'Alternative', description: text(o.description), price: money(o.price) };
     map[s].options.push(opt);
-    if (s === 'Windows') map[s].notIncluded.push(`${opt.label}${opt.price ? ` — $${opt.price.toFixed(2)}` : ''} alternative (not included in current total)`);
+    /* This note used to be printed for Windows and no other trade. An alternative
+       is an alternative on every card. */
+    map[s].notIncluded.push(`${opt.label}${opt.price ? ` — $${opt.price.toFixed(2)}` : ''} alternative (not included in current total)`);
   });
   services.forEach(s => {
     const v = map[s];
@@ -1452,13 +1529,14 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
     /* This filter existed to strip raw task names that were not about windows. Applied to
        outcome sentences it deletes "Protect your floors…" and "Clean the space daily…" and
        leaves the Windows card with one line, so it now runs only on the fallback wording. */
-    if (s === 'Windows' && !fromPhases[s]) v.included = v.included.filter(x => /window/.test(norm(x)));
+    /* Removed: a Windows-only keyword filter on `included`. Every card now keeps
+       the wording its own lines produced. */
     v.subtotal = money(v.subtotal * mm);
   });
   out.serviceBreakdown = services.map(s => map[s]);
   out.projectExclusions = dedupe([...(out.projectExclusions || []), ...projectExclusions]);
   out.scopeSections = [];
-  out.customerPresentationVersion = 'v8.3-deterministic-four-service-cost-based';
+  out.customerPresentationVersion = 'v9.0-deterministic-services';
   return out;
 }
 
