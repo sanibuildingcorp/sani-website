@@ -74,8 +74,20 @@ function num(v) {
 }
 function money(v) { return Math.round((Number(v) || 0) * 100) / 100; }
 
-/* Lines that are not a purchasable product. Looking these up returns noise. */
-const NOT_A_PRODUCT = /\b(labor|labour|coordination|supervision|cleanup|clean up|disposal|debris|permit|filing|allowance for|delivery|freight|dump fee|protection of|management)\b/i;
+/* Lines that are not a purchasable product. Looking these up returns noise, and
+   worse than noise: "Freight elevator, 10 days x $300" is a building access fee,
+   and a shopping search for it returns actual elevators. Building fees, COIs,
+   alteration deposits and carting are real costs and stay in the estimate — they
+   are just not things with a shelf price, so they keep the model's number. */
+const NOT_A_PRODUCT = new RegExp([
+  'labor|labour|coordination|supervision|management|overhead',
+  'cleanup|clean up|disposal|debris|carting|dump fee|haul',
+  'permit|filing|expedit|inspection|approval|deposit|alteration agreement',
+  'elevator|hoist|scaffold|staging|access fee|building fee|house rules',
+  'insurance|certificate of insurance|\\bcoi\\b|bond\\b',
+  'delivery|freight|shipping|storage|parking',
+  'allowance for|protection of|per day|per diem|day rate'
+].join('|'), 'i');
 
 function searchable(item) {
   const t = clean(item);
