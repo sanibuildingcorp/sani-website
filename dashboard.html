@@ -4621,6 +4621,37 @@ function scopeUniqueServices() {
   return out;
 }
 
+/* ══ A SERVICE THAT OWNS NO PRICED LINE IS NOT A SERVICE. ════════════════════
+   The same rule the server now applies, applied again here, because the dashboard
+   also seeds cards from OLD saved records that were written before the server had
+   the rule. Without this, every historical estimate keeps its phantom card forever
+   and the only cure is regenerating each job by hand.
+
+   It is deliberately not a list of trade names. Phantom cards have appeared as
+   Windows, as Bathroom, and they will appear under trades that do not exist in
+   this system yet. What they have in common is not their name — it is that no
+   labour line and no materials line belongs to them.
+
+   A service the contractor typed in himself with + Add Service is exempt: he may
+   well be adding the card first and the lines after. Only AI-seeded cards are
+   subject to the check. And if NO service owns lines the whole set is kept, so a
+   record that failed to price still shows its scope instead of going blank. */
+function scopeDropEmptyServices(list) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var counts = {};
+  ["labor", "materials"].forEach(function (kind) {
+    (est[kind] || []).forEach(function (l) {
+      var k = String((l && l.section) || "").trim().toLowerCase();
+      if (k) counts[k] = (counts[k] || 0) + 1;
+    });
+  });
+  var kept = list.filter(function (sv) {
+    if (sv && sv.manual === true) return true;
+    return counts[String((sv && sv.name) || "").trim().toLowerCase()] > 0;
+  });
+  return kept.length ? kept : list;
+}
+
 /* Seeds the draft from whatever the AI produced. Handles every shape the
    estimator has emitted: serviceBreakdown, scopeSections, and plain
    labor/materials/customerSupplied/exclusions. */
@@ -4646,25 +4677,43 @@ function buildScopeDraftFromAI() {
      exclusions/excluded. Every name is accepted so old records still seed. */
   function bText(x) { return (x && (x.item || x.text || x.label)) || x; }
 
-  // V8.2 deterministic presentation is already the contractor-facing truth:
-  // exactly Bathroom / Flooring / Painting / Windows, with General allocated,
-  // alternatives isolated and duplicates cleaned. Do NOT merge raw labor,
-  // scopeSections, project exclusions or legacy arrays back into this draft,
-  // because doing so recreates General/Carpentry pseudo-services and duplicates.
-  if (/^v8\.\d+-deterministic-four-service/.test(String(est.customerPresentationVersion || "")) && Array.isArray(est.serviceBreakdown)) {
-    var order = ["Bathroom", "Flooring", "Painting", "Windows"];
-    var direct = {};
-    est.serviceBreakdown.forEach(function (b) {
-      if (!b) return;
-      var name = String(b.title || b.section || b.service || b.name || "").trim();
-      if (order.indexOf(name) === -1) return;
+  /* ══ REMOVED: A HARDCODED FOUR-SERVICE LIST. ══════════════════════════════
+     This branch fired on any record whose customerPresentationVersion matched
+     /^v8\.\d+-deterministic-four-service/ — which was every current record — and
+     it read:
+
+         var order = ["Bathroom", "Flooring", "Painting", "Windows"];
+         if (order.indexOf(name) === -1) return;
+
+     Two failures in three lines, and they explain the screenshot exactly.
+
+     It DELETED every trade outside those four. A Pilates studio with Painting,
+     Mirrors & Glass, Furniture Assembly and Flooring lost two whole cards on the
+     way to the screen — the work was still priced, but the contractor could not
+     see it.
+
+     And it KEPT any row named Windows, including one left in an old saved record
+     from before the server-side fix, which is why a Windows card survived a
+     rebuild that was supposed to clear it.
+
+     Every trade the estimator emits is now shown, in the estimator's own order,
+     whatever it is called. Adding a new trade to the vocabulary no longer
+     requires editing the dashboard. */
+  var sbRows = Array.isArray(est.serviceBreakdown) ? est.serviceBreakdown : [];
+  if (sbRows.length) {
+    var direct = [];
+    sbRows.forEach(function (b2) {
+      if (!b2) return;
+      var name = String(b2.title || b2.section || b2.service || b2.name || "").trim();
+      if (!name) return;
+      if (direct.some(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })) return;
       var t = { name: name, included: [], supplied: [], excluded: [] };
-      (b.included || b.items || b.scope || []).forEach(function (x) { push(t.included, bText(x)); });
-      (b.customerSupplies || b.customerSupplied || b.supplied || []).forEach(function (x) { push(t.supplied, bText(x)); });
-      (b.notIncluded || b.exclusions || b.excluded || []).forEach(function (x) { push(t.excluded, bText(x)); });
-      direct[name] = t;
+      (b2.included || b2.items || b2.scope || []).forEach(function (x) { push(t.included, bText(x)); });
+      (b2.customerSupplies || b2.customerSupplied || b2.supplied || []).forEach(function (x) { push(t.supplied, bText(x)); });
+      (b2.notIncluded || b2.exclusions || b2.excluded || []).forEach(function (x) { push(t.excluded, bText(x)); });
+      direct.push(t);
     });
-    return { services: order.filter(function (name) { return direct[name]; }).map(function (name) { return direct[name]; }) };
+    return { services: scopeDropEmptyServices(direct) };
   }
 
   var breakdown = [];
@@ -4694,7 +4743,7 @@ function buildScopeDraftFromAI() {
     exList.forEach(function (x) { push(target.excluded, (x && x.item) || x); });
   }
 
-  return { services: Object.keys(byName).map(function (k) { return byName[k]; }) };
+  return { services: scopeDropEmptyServices(Object.keys(byName).map(function (k) { return byName[k]; })) };
 }
 
 function scopeDraft() {
@@ -5389,7 +5438,7 @@ function scopeRenameService(si, val) {
 function scopeAddService() {
   var name = prompt("Service name (e.g. Bathroom, Flooring, Painting, Windows):", "");
   if (!name) return;
-  scopeDraft().services.push({ name: String(name).trim(), included: [], supplied: [], excluded: [] });
+  scopeDraft().services.push({ name: String(name).trim(), manual: true, included: [], supplied: [], excluded: [] });
   renderScopeControl();
 }
 /* Move an entire service into another one: its Included / Customer supplies /
