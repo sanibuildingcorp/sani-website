@@ -658,3 +658,27 @@ Semrush Jul 7: Health 95% (+1). Fixed low word count / low text-HTML ratio: cont
 ## Homepage duplicate-URL row (Jul 7 2026)
 
 Semrush showed homepage twice (with/without trailing slash) — cosmetic crawl artifact, canonical already correct (…com/). Normalized 5 no-slash refs (JSON-LD url fields) to trailing slash in: index, about, contact, services, tile-grouting-restoration. Gallery ratio 0.04→0.07 after content fix (markup-heavy page, low priority). contact/services word-count content confirmed committed.
+
+## Bathroom cluster — technical fix pass (Aug 25 2026)
+
+**Context.** Semrush pull showed the bathroom pages ranking p2–p3, not absent: bathroom remodel nyc #18, brooklyn bathroom remodeling #20, bathroom renovation manhattan #22, bathroom renovation brooklyn #23 (↑ from 33), bathroom remodel queens #16, bathroom remodeling brooklyn+dumbo #3. Domain: 288 keywords, only 2 in positions 1–3. **228 of 288 keywords trigger a Local Pack** — on mobile the map block fills the first screen, so GBP outranks any organic work.
+
+**Correction to the June plan.** "Authority Score 7 is THE ceiling" is wrong. Page-1 competitors for *bathroom remodeling brooklyn ny*: adircontracting.com **AS 6** at #8, zaniconstructionnyc.com **AS 7** at #10. Equal-or-lower authority is already on page 1. The gap is referring-domain count (adir 214 vs ours 133) + local signals, not an authority wall. 5 of the top 12 are directories (Yelp ×2, Houzz, Angi, Brownstoner) — you reach page 1 *through* them, which makes CITATION-PACK.md execution the top lever, still unstarted.
+
+### Fixed this pass
+|Item|Detail|
+|---|---|
+|Cannibalization|`/renovation-contractor-queens` + `/renovation-contractor-manhattan` had exact-match `<h3>Bathroom Remodel {Borough}</h3>` cards competing with the dedicated pages (queens bathroom remodeling: #12 dedicated vs #59 hub; bathroom repair and remodel manhattan #61 hub). Headings converted to exact-anchor internal links → the hub now *feeds* the dedicated page instead of splitting it. Duplicate exact-match phrasing removed from card copy. Bronx card left optimized — no dedicated Bronx bathroom page exists.|
+|Stock-photo leak|**Manhattan + Queens hero backgrounds were serving an Unsplash stock bathroom** — CSS referenced `hero.jpg`, which did not exist in either folder. Seeded both from the real local bathroom photo; removed the stock URL layer (it was a second background layer, so the stock file downloaded on *every* load regardless).|
+|Broken gallery slots|`vanity.jpg` + `freestanding-tub.jpg` 404'd on all 3 borough pages. Brooklyn repointed to real job photos (`photo-mrjukvrd`, `photo-mrjsjp4x`) + alt corrected to match the actual photo. Manhattan/Queens slots **removed** — their fallbacks were third-party CGI renders, one carrying a visible watermark. Not ours, not publishable as portfolio work.|
+|Stock fallbacks|All 21 remaining `onerror` handlers pointing at images.unsplash.com repointed to real local photos. Zero unsplash references remain on any bathroom page — a future missing upload can no longer silently become stock.|
+|OG / social image|**Every page sitewide shared one identical kitchen photo (`project-1.jpg`, md5 29f9fff…) as its social preview — including all 6 bathroom pages.** Generated proper 1200×630 OG images per bathroom page from real bathroom photos; added `og:image:width/height`. *Remaining: the other ~34 pages still point at the kitchen photo.*|
+|LCP / CWV|`/bathroom-renovation` had **zero** lazy-loading across 17 images. Added `loading="lazy"` (14) + `decoding="async"` sitewide on the cluster; `fetchpriority="high"` on each hero (LCP element).|
+|CLS|No `width`/`height` on any bathroom-page image → layout shift on every load. Intrinsic dimensions written to 56 img tags; `img{height:auto}` guard added to site.css so they stay responsive (class rules using object-fit/height:100% win on specificity, unaffected).|
+|Image weight|235 JPEGs recompressed (q82 progressive, long edge capped 1600). **images/ 112 MB → 77 MB.** Brooklyn bathroom page payload 5.6 MB → 1.86 MB. All 287 JPEGs verified to decode cleanly.|
+
+### Not fixed — needs Zura, not code
+1. **Yelp / Houzz / Angi listings** (CITATION-PACK.md) — citations, links, *and* a page-1 slot by proxy. Highest remaining lever.
+2. **GBP reviews + weekly posts** — the entire mobile game (228/288 keywords have a Map Pack).
+3. **Real job photos** — Manhattan/Queens galleries are thin now that the renders are gone; both pages also reuse the same `intro.jpg`. Upload via Image Studio.
+4. **OG image for the other ~34 pages** — same kitchen-photo bug, outside this pass's scope.

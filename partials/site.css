@@ -144,3 +144,15 @@ footer{background:#050d1a;padding:80px 36px 32px;border-top:1px solid rgba(240,1
 .m-talk-row .m-phone-mobile{flex:1;font-size:14px;letter-spacing:1px}
 .m-talk-note{font-size:12px;color:rgba(255,255,255,.5);text-align:center;margin-top:12px;line-height:1.6}
 .m-talk-note a{color:var(--gold-light);text-decoration:none;border-bottom:1px solid rgba(240,165,0,.4)}
+
+/* ═══════════ SERVICE CARD LINKS (SEO: hub → dedicated service page) ═══════════ */
+.svc-card h3 a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(200,134,10,.35);transition:color .2s,border-color .2s}
+.svc-card h3 a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+.svc-card-more{display:inline-block;margin-top:8px;color:var(--gold);font-weight:500;text-decoration:none;white-space:nowrap}
+.svc-card-more:hover{text-decoration:underline}
+
+/* ═══════════ IMAGE CLS GUARD ═══════════
+   width/height attributes are set on <img> tags so the browser reserves space
+   (SEO: CLS). height:auto keeps them responsive; class rules using
+   object-fit/height:100% win on specificity and are unaffected. */
+img{height:auto}
