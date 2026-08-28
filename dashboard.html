@@ -4959,21 +4959,52 @@ function renderScopeControl() {
      two different objects and they are allowed to differ - that is the whole point
      of drafting privately. What is NOT acceptable is that the difference was
      invisible, so a panel showing one Carpentry card sat next to a live customer
-     page showing Painting and Carpentry, and nothing on screen said so. */
+     page showing Painting and Carpentry, and nothing on screen said so.
+
+     \u2550\u2550 IT COMPARED AGAINST THE WRONG OBJECT, SO IT STAYED SILENT. \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+     This used to read publishedCustomerScope. That is NOT what the customer's
+     page renders. quote.html builds its CARD SET from serviceBreakdown and then
+     runs pubScope(), which only rewrites the wording INSIDE cards that already
+     exist - it can neither add a card nor remove one. Two consequences, both of
+     which happened on a live job:
+
+       - a phantom Painting row sitting in serviceBreakdown was on the customer's
+         quote while this banner said nothing, because publishedCustomerScope
+         agreed with the draft; and
+       - on an estimate that was never published, publishedCustomerScope is null,
+         the old code returned early, and the banner said nothing at all. That is
+         the COMMON case, and it is the one that cost a week.
+
+     It now compares the draft against the one object the customer's page really
+     reads, and it names which side each disagreement is on. */
   (function () {
-    var pub = est.customerScopePublished === true && est.publishedCustomerScope &&
-              Array.isArray(est.publishedCustomerScope.services) ? est.publishedCustomerScope.services : null;
-    if (!pub || !pub.length) return;
-    var nm = function (x) { return String((x && (x.name || x.title)) || "").trim().toLowerCase(); };
-    var here = d.services.map(nm).filter(Boolean).sort().join("|");
-    var there = pub.map(nm).filter(Boolean).sort().join("|");
+    var nmOf = function (x) { return String((x && (x.name || x.title || x.section)) || "").trim(); };
+    var shown = (est.serviceBreakdown || []).map(nmOf).filter(Boolean);
+    if (!shown.length) return;
+
+    var mine  = d.services.map(nmOf).filter(Boolean);
+    var here  = mine.map(function (s) { return s.toLowerCase(); }).sort().join("|");
+    var there = shown.map(function (s) { return s.toLowerCase(); }).sort().join("|");
     if (here === there) return;
+
+    var extra   = shown.filter(function (s) { return mine.every(function (x) { return x.toLowerCase() !== s.toLowerCase(); }); });
+    var missing = mine.filter(function (s) { return shown.every(function (x) { return x.toLowerCase() !== s.toLowerCase(); }); });
+
     html += '<div class="sc-svc" style="border-color:#b05c4c">' +
       '<div class="sc-svc-head"><b style="color:#b05c4c">\u26a0 Your customer is NOT seeing this</b></div>' +
       '<div style="padding:10px 12px;font-size:13px;line-height:1.55">' +
-        'Their live quote right now shows: <b>' + esc(pub.map(function (x) { return String(x.name || x.title || "").trim(); }).filter(Boolean).join(", ")) + '</b>.<br>' +
-        'This panel is showing your private draft: <b>' + esc(d.services.map(function (x) { return String(x.name || "").trim(); }).filter(Boolean).join(", ") || "nothing") + '</b>.<br><br>' +
-        'Publish to make theirs match yours, or load theirs to start from what they actually have.' +
+        'Their live quote right now shows: <b>' + esc(shown.join(", ")) + '</b>.<br>' +
+        'This panel is showing your private draft: <b>' + esc(mine.join(", ") || "nothing") + '</b>.' +
+        (extra.length
+          ? '<br><br><b style="color:#b05c4c">On their quote, not in your draft: ' + esc(extra.join(", ")) + '</b>' +
+            '<br>Press <b>Publish</b> and ' + (extra.length === 1 ? 'that card is removed' : 'those cards are removed') +
+            ' from their quote. Your total does not change \u2014 the money folds back into the cards that keep it.'
+          : '') +
+        (missing.length
+          ? '<br><br><b>In your draft, not on their quote: ' + esc(missing.join(", ")) + '</b>' +
+            '<br>Press <b>Publish</b> to add ' + (missing.length === 1 ? 'it' : 'them') + '.'
+          : '') +
+        '<br><br>Save Draft does <b>not</b> change what the customer sees. Only Publish does.' +
       '</div>' +
       '<div class="sc-merge-row">' +
         '<button class="btn-secondary" onclick="scopeLoadPublished()">\u2b07 Load what the customer sees</button>' +
@@ -5530,14 +5561,33 @@ function scopeRenameService(si, val) {
    the screen and the customer disagree and only the customer finds out. */
 /* Replace the private draft with exactly what the customer is reading, so the
    contractor can edit forward from the real thing instead of guessing. */
+/* ══ "WHAT THE CUSTOMER SEES" IS serviceBreakdown, NOT publishedCustomerScope. ══
+   This used to read publishedCustomerScope only, and return in silence when
+   nothing had ever been published - which is exactly when the contractor most
+   needs it, because that is when the customer is looking at raw engine output
+   nobody has ever reviewed. The button then did nothing at all when pressed.
+
+   The card SET always comes from serviceBreakdown; a published copy can only
+   supply better WORDING for a card that is already there. So both are read, in
+   that order: every card the customer actually has, wearing the published words
+   where published words exist. */
 function scopeLoadPublished() {
   var est = (currentRecord && currentRecord.estimate) || {};
-  var pub = est.publishedCustomerScope && est.publishedCustomerScope.services;
-  if (!pub || !pub.length) return;
+  var rows = est.serviceBreakdown || [];
+  if (!rows.length) return;
+
+  var pubIdx = {};
+  ((est.publishedCustomerScope && est.publishedCustomerScope.services) || []).forEach(function (sv) {
+    var k = String((sv && (sv.name || sv.title)) || "").trim().toLowerCase();
+    if (k) pubIdx[k] = sv;
+  });
+
   if (!confirm("Replace your draft with exactly what the customer is seeing now?\n\nUnsaved draft edits are lost. Nothing on the customer's side changes.")) return;
-  est.manualCustomerScopeDraft = { services: pub.map(function (sv) {
+  est.manualCustomerScopeDraft = { services: rows.map(function (row) {
+    var name = String((row && (row.title || row.name || row.section)) || "Service").trim() || "Service";
+    var sv = pubIdx[name.toLowerCase()] || row;
     return {
-      name: String((sv && (sv.name || sv.title)) || "Service").trim() || "Service",
+      name: name,
       published: true,
       included: (sv.included || []).slice(),
       supplied: (sv.supplied || sv.customerSupplies || []).slice(),
