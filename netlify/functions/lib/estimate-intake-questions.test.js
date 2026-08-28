@@ -1,4 +1,4 @@
-// node netlify/functions/estimate-intake-questions.test.js
+// node netlify/functions/lib/estimate-intake-questions.test.js
 //
 // The endpoint, EXECUTED, against a stubbed Anthropic API. Syntax-checking this
 // file would have told us nothing: every bug worth catching here is in what the
@@ -63,7 +63,16 @@ function apiReply(obj) {
   });
 }
 
-const handlerPath = path.join(__dirname, "estimate-intake-questions.js");
+/* ══ THIS FILE LIVES IN lib/ FOR A REASON. ═════════════════════════════════
+   Netlify treats every top-level .js file in netlify/functions/ as a function,
+   and a function name may only contain letters, digits, hyphens and
+   underscores. A file called estimate-intake-questions.test.js sitting beside
+   the handler makes the name "estimate-intake-questions.test", and Netlify
+   fails the ENTIRE deploy with "Incorrect function names" - not just that file.
+   It cost two merged pull requests that never reached production.
+   Test files belong in lib/, which is bundled as a dependency, never scanned
+   for functions. The guard at the bottom of this file keeps it that way. */
+const handlerPath = path.join(__dirname, "..", "estimate-intake-questions.js");
 const { handler } = require(handlerPath);
 Module._load = realLoad;   // only the handler's own require needed stubbing
 
@@ -308,6 +317,31 @@ t("no photos means no image blocks at all", async () => {
   await post(Object.assign({}, REQ, { photos: [], photoCount: 0 }));
   assert.strictEqual(imagesSent().length, 0);
   assert.ok(!/LOOK AT THEM FIRST/.test(promptText()));
+});
+
+/* ── THE GUARD THAT WOULD HAVE CAUGHT THIS ─────────────────────────────────
+   Netlify derives a function name from every top-level entry in
+   netlify/functions/ — the filename without its extension, or the directory
+   name. The name may contain only letters, digits, hyphens and underscores. One
+   illegal name fails the WHOLE deploy with "Incorrect function names", so a
+   stray file beside the handlers takes every other function down with it. That
+   is exactly what happened: a test file named estimate-intake-questions.test.js
+   sat in that directory and two merged pull requests never reached production
+   while every harness in the repo stayed green.
+   Nothing about the code was wrong. The FILENAME was wrong, and no test in the
+   repo was looking at filenames. */
+t("every top-level file in netlify/functions/ is a legal function name", () => {
+  const fs = require("fs");
+  const dir = path.join(__dirname, "..");
+  const bad = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    // Directories become functions too, except lib/, which holds shared modules.
+    const name = entry.isDirectory() ? entry.name : entry.name.replace(/\.[^.]+$/, "");
+    if (entry.isDirectory() && entry.name === "lib") continue;
+    if (!/^[A-Za-z0-9_-]+$/.test(name)) bad.push(entry.name + '  ->  "' + name + '"');
+  }
+  assert.deepStrictEqual(bad, [],
+    "these break the entire deploy, not just themselves:\n       " + bad.join("\n       "));
 });
 
 (async function run() {
