@@ -472,7 +472,7 @@ function messageBox(open){
    estimates, and stripping the contract off a quote a customer already has —
    possibly one they signed against — to honour a preference never expressed
    would be worse than showing it. */
-function contractHtml(r,needsContract){
+function contractHtml(r,needsContract,approved){
  const has=!!(r&&r.contract&&(r.contract.sections||r.contract.clauses||r.contract.scope));
  const chose=r?r.includeContractForCustomer:undefined;
  if(chose===false)return'';
@@ -485,15 +485,27 @@ function contractHtml(r,needsContract){
     The card keeps the explanation and points down at the single button.
     When the contract is NOT the approval route — already signed, or written on
     a job the contractor left unticked — the action bar has an ordinary Approve
-    button instead, so this card keeps its own way in. */
- if(needsContract){
+    button instead, so this card keeps its own way in.
+
+    ══ AND IT MUST ONLY DEFER TO A BUTTON THAT WILL ACTUALLY BE THERE. ═════════
+    Deferring on `needsContract` alone was wrong. On an APPROVED estimate the
+    action bar is replaced by the green approved notice, so there is no button at
+    the foot of the page at all — and this card sat there telling the customer to
+    use one. Same dead end as before wearing a different hat, and worse: an
+    approved customer wanting to re-read the warranty they agreed to had no route
+    to it whatsoever.
+
+    The card gives up its own button only when the bar will genuinely carry one. */
+ if(needsContract&&!approved){
   return`<section class="card"><div class="ey">Contract</div>
   <p style="margin:0">The full contract for this project — scope, payment schedule, warranty and terms — is on its own page. Use the button at the bottom of this page to open it, read it and sign.</p></section>`;
  }
  const url='/contract.html?ref='+encodeURIComponent(ref);
+ /* Still unsigned on an approved job — say sign, not view. */
+ const label=needsContract?'Review &amp; sign the contract &rarr;':'View the contract &rarr;';
  return`<section class="card"><div class="ey">Contract</div>
  <p style="margin:0 0 14px">The full contract for this project — scope, payment schedule, warranty and terms — is on its own page.</p>
- <a class="approve" style="display:inline-block;text-align:center;text-decoration:none" href="${url}">View the contract &rarr;</a></section>`;
+ <a class="approve" style="display:inline-block;text-align:center;text-decoration:none" href="${url}">${label}</a></section>`;
 }
 /* Does this job require a signed contract before it can be approved?
    The contractor's checkbox says "the customer must review & sign the contract
@@ -524,8 +536,8 @@ function actionHtml(c,approved,needsContract){
   return`<section class="actions"><a class="approve" style="display:inline-block;text-align:center;text-decoration:none" href="${url}">Review &amp; sign the contract to approve &rarr;</a><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><div class="muted" style="padding:0 4px 10px;font-size:13px">This project is approved by signing the contract — scope, payment schedule and warranty are all set out there.</div>${messageBox(false)}`;
  }
  return`<section class="actions"><button class="approve" onclick="P('a')">Approve estimate</button><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><section class="card panel" id="a"><input id="sig" value="${E(c.name||'')}"><button class="approve" onclick="S('accept')">Confirm approval</button></section>${messageBox(false)}`}
-function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r);app.innerHTML=`${pinHtml(r,ct)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||r.status||'Sent'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e)||'Please refer to the estimate details provided by Sani Building Corp.')}</div></section><section class="card prices">${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${contractHtml(r,contractRequired(r))}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
-function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal)}</b></div>`).join('');app.innerHTML=`${pinHtml(r,ct)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal)}</b></div><div class="body">${list('Included in this service','in',s.included)}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',s.notIncluded)}${A(s.options).length?`<div class="opts"><div class="label">Alternatives</div>${A(s.options).map(o=>`<div class="opt"><span><b>${E(o.label)}</b>${o.description?`<div class="muted">${E(o.description)}</div>`:''}</span><b>${M(o.price)}</b></div>`).join('')}</div>`:''}${details(e,s)}</div></section>`).join('')}${contractHtml(r,contractRequired(r))}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
+function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r);app.innerHTML=`${pinHtml(r,ct)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||r.status||'Sent'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e)||'Please refer to the estimate details provided by Sani Building Corp.')}</div></section><section class="card prices">${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
+function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal)}</b></div>`).join('');app.innerHTML=`${pinHtml(r,ct)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal)}</b></div><div class="body">${list('Included in this service','in',s.included)}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',s.notIncluded)}${A(s.options).length?`<div class="opts"><div class="label">Alternatives</div>${A(s.options).map(o=>`<div class="opt"><span><b>${E(o.label)}</b>${o.description?`<div class="muted">${E(o.description)}</div>`:''}</span><b>${M(o.price)}</b></div>`).join('')}</div>`:''}${details(e,s)}</div></section>`).join('')}${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
 function render(r){let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r)}
 function track(){new Image().src='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now()}
 window.P=id=>{document.querySelectorAll('.panel').forEach(x=>x.classList.remove('open'));let el=document.getElementById(id);if(el)el.classList.add('open')};

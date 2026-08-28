@@ -20,9 +20,10 @@ vm.createContext(ctx);
 ['contractRequired','contractHtml','actionHtml'].forEach(n=>vm.runInContext(ext(n),ctx));
 const req=r=>vm.runInContext('contractRequired',ctx)(r);
 const ui=r=>vm.runInContext('actionHtml',ctx)({name:'A Customer'},false,req(r));
-const card=r=>vm.runInContext('contractHtml',ctx)(r,req(r));
+const card=(r,approved)=>vm.runInContext('contractHtml',ctx)(r,req(r),!!approved);
+const uiA=(r,approved)=>vm.runInContext('actionHtml',ctx)({name:'A Customer'},!!approved,req(r));
 /* The whole page below the prices, as the customer scrolls it. */
-const page=r=>card(r)+ui(r);
+const page=(r,approved)=>card(r,approved)+uiA(r,approved);
 const goldButtons=h=>(h.match(/class="approve"/g)||[]).length;
 const contractLinks=h=>(h.match(/href="\/contract\.html/g)||[]).length;
 
@@ -81,6 +82,27 @@ console.log('\n2b. Exactly one way forward, never two');
  const none=page({includeContractForCustomer:false});
  t('no-contract job: no contract card and no contract link at all',
    contractLinks(none)===0 && !/Contract</.test(none), contractLinks(none)+' links');
+}
+
+console.log('\n2c. An APPROVED estimate still has a route to the contract');
+{
+ /* The action bar is replaced by the approved notice, so nothing at the foot of
+    the page carries a contract button. The card must not defer to one that is
+    not going to exist — that stranded an approved customer wanting to re-read
+    the warranty they had agreed to. */
+ const appr=page({includeContractForCustomer:true,contract:UNSIGNED},true);
+ t('approved + contract: there IS still a link to the contract',
+   contractLinks(appr)===1, contractLinks(appr)+' links');
+ t('...and it does NOT point at a button that is not there',
+   !/button at the bottom of this page/.test(appr));
+ t('...still unsigned, so it says sign, not view',
+   /sign the contract/.test(appr), (appr.match(/>[^<]*contract[^<]*</i)||[''])[0]);
+
+ const apprSigned=page({includeContractForCustomer:true,contract:SIGNED},true);
+ t('approved + signed: the contract is still readable',
+   contractLinks(apprSigned)===1 && /View the contract/.test(apprSigned));
+ t('approved: the green notice is shown and no approve button',
+   /has been approved/.test(apprSigned) && !/P\('a'\)/.test(apprSigned));
 }
 
 console.log('\n3. The server refuses the shortcut too');
