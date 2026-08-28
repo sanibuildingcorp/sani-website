@@ -79,6 +79,29 @@ exports.handler = async function (event) {
     let newMessage = null;
     let previousMessage = null;
 
+    /* ══ A BUTTON THAT IS MERELY ABSENT IS NOT A RULE. ════════════════════════
+       quote.html no longer offers an approve button when the contractor ticked
+       "the customer must review & sign the contract to approve", but the endpoint
+       is public - it has to be, the customer is the one who presses Accept - so
+       the rule has to live here too. Law 3: prompt rules do not hold, code rules
+       do, and a UI-only rule is a prompt rule wearing a button.
+
+       Signing the contract IS the approval: sign-contract.js sets status to
+       accepted. So this refuses only the shortcut, and points at the real route
+       rather than leaving the customer stuck. */
+    if (action === "accept" && record.includeContractForCustomer === true &&
+        !(record.contract && record.contract.signed)) {
+      return {
+        statusCode: 409,
+        headers: cors(),
+        body: JSON.stringify({
+          error: "This project is approved by signing the contract. Please open the contract, read it and sign there.",
+          contractUrl: "/contract.html?ref=" + encodeURIComponent(ref),
+          needsContract: true,
+        }),
+      };
+    }
+
     if (action === "accept") {
       record.status = "accepted";
       record.acceptedAt = new Date().toISOString();
