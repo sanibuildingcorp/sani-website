@@ -17,9 +17,14 @@ function ext(n){const s=Q.indexOf('function '+n+'(');let i=Q.indexOf('{',s),d=0;
 const ctx={console,encodeURIComponent,ref:'SBC-1',E:s=>String(s==null?'':s),
  messageBox:()=>'<MSGBOX>',P:()=>{},S:()=>{}};
 vm.createContext(ctx);
-['contractRequired','actionHtml'].forEach(n=>vm.runInContext(ext(n),ctx));
+['contractRequired','contractHtml','actionHtml'].forEach(n=>vm.runInContext(ext(n),ctx));
 const req=r=>vm.runInContext('contractRequired',ctx)(r);
 const ui=r=>vm.runInContext('actionHtml',ctx)({name:'A Customer'},false,req(r));
+const card=r=>vm.runInContext('contractHtml',ctx)(r,req(r));
+/* The whole page below the prices, as the customer scrolls it. */
+const page=r=>card(r)+ui(r);
+const goldButtons=h=>(h.match(/class="approve"/g)||[]).length;
+const contractLinks=h=>(h.match(/href="\/contract\.html/g)||[]).length;
 
 let pass=0,fail=0;
 const t=(n,c,d)=>{c?pass++:fail++;console.log((c?'PASS  ':'FAIL  ')+n+(d?'\n        '+d:''))};
@@ -52,6 +57,30 @@ console.log('\n2. What the customer is offered');
  const done=vm.runInContext('actionHtml',ctx)({name:'A'},true,true);
  t('already approved: shows the approved notice, no buttons',
    /has been approved/.test(done) && !/P\('a'\)/.test(done));
+}
+
+console.log('\n2b. Exactly one way forward, never two');
+{
+ const withC=page({includeContractForCustomer:true,contract:UNSIGNED});
+ t('contract job: only ONE link to the contract on the page',
+   contractLinks(withC)===1, contractLinks(withC)+' links');
+ t('contract job: only ONE gold button',
+   goldButtons(withC)===1, goldButtons(withC)+' gold buttons');
+ t('...and the card still explains what the contract is',
+   /full contract for this project/.test(withC));
+ t('...pointing at the button below it',
+   /button at the bottom of this page/.test(withC));
+
+ const signed=page({includeContractForCustomer:true,contract:SIGNED});
+ t('signed job: the card keeps its own View button',
+   contractLinks(signed)===1 && /View the contract/.test(signed),
+   contractLinks(signed)+' links');
+ t('signed job: and the normal approve button is back',
+   /onclick="P\('a'\)"/.test(signed));
+
+ const none=page({includeContractForCustomer:false});
+ t('no-contract job: no contract card and no contract link at all',
+   contractLinks(none)===0 && !/Contract</.test(none), contractLinks(none)+' links');
 }
 
 console.log('\n3. The server refuses the shortcut too');

@@ -11,8 +11,17 @@ const t=(n,c,d)=>{c?pass++:fail++;console.log((c?'PASS  ':'FAIL  ')+n+(d?'\n    
 
 const ctx={console,encodeURIComponent,ref:'SBC-260821-XQNQ',E:s=>String(s==null?'':s)};
 vm.createContext(ctx);
+vm.runInContext(ext(Q,'contractRequired'),ctx);
 vm.runInContext(ext(Q,'contractHtml'),ctx);
-const shows=r=>/Review &amp; sign the contract/.test(vm.runInContext('contractHtml',ctx)(r));
+/* Is the contract PRESENTED to the customer at all? Deliberately not a test of
+   the button's wording: this file owns the visibility rule, and an earlier
+   version asserted on the exact button text, so changing that text broke a test
+   that had nothing to do with it. contract-approval.test.js owns which control
+   appears and how many. */
+const shows=r=>{
+  const needs=vm.runInContext('contractRequired',ctx)(r);
+  return /class="ey">Contract</.test(vm.runInContext('contractHtml',ctx)(r,needs));
+};
 
 const CONTRACT={sections:[{title:'Scope',body:'Stair work'}]};
 
