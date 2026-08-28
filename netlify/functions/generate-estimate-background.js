@@ -371,12 +371,19 @@ function buildEstimatorInput(record, body) {
   const request = record.request || {};
   const answers = request.serviceAnswers || {};
   const answerTopics = request.answerTopics || {};
+  /* The question as the customer actually read it. The id alone ("wallCond") is
+     not a question, and an estimator reading "wallCond: peeling in patches" has to
+     guess what was asked - which is how an answer about one wall became an answer
+     about the whole apartment. Older records have no labels; they fall back to the
+     id, which is what every record used to get. */
+  const answerLabels = request.answerLabels || {};
   const groupedAnswers = {};
   Object.entries(answers).forEach(([key, value]) => {
     if (value === null || value === undefined || String(value).trim() === "") return;
     const trade = cleanText(answerTopics[key] || "General") || "General";
     if (!groupedAnswers[trade]) groupedAnswers[trade] = [];
-    groupedAnswers[trade].push({ question: key.replace(/-/g, " "), answer: Array.isArray(value) ? value.join(", ") : String(value) });
+    const asked = cleanText(answerLabels[key] || "") || String(key).replace(/-/g, " ");
+    groupedAnswers[trade].push({ question: asked, answer: Array.isArray(value) ? value.join(", ") : String(value) });
   });
   const customerSupplies = Array.isArray(request.customerSupplies) ? request.customerSupplies.map(cleanText).filter(Boolean) : [];
   const photoAnalysis = Array.isArray(request.photoAnalysis) ? request.photoAnalysis : [];

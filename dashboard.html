@@ -3400,11 +3400,14 @@ function renderEdit() {
   const est = r.estimate || {};
 
   const answers = req.serviceAnswers || {};
+  // Show the question the customer was actually asked. Requests taken before the
+  // form started recording the wording fall back to the id, as they always did.
+  const aLabels = req.answerLabels || {};
   const answersHtml = Object.entries(answers)
     .filter(function(kv) { return kv[1] && String(kv[1]).trim(); })
     .map(function(kv) {
       return '<div class="answer-row">' +
-        '<div class="ak">' + esc(kv[0].replace(/-/g, " ")) + '</div>' +
+        '<div class="ak">' + esc(aLabels[kv[0]] || kv[0].replace(/-/g, " ")) + '</div>' +
         '<div class="av">' + esc(kv[1]) + '</div>' +
       '</div>';
     }).join("");

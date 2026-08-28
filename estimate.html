@@ -245,7 +245,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
     <div class="step" data-step="2">
       <div class="eyebrow" id="step2-eyebrow">Step 2 · Project Details</div>
       <h2 class="title" id="step2-title">A few quick questions</h2>
-      <p class="subtitle">Just enough so we can give you real numbers.</p>
+      <p class="subtitle" id="step2-subtitle">Just enough so we can give you real numbers.</p>
       <div id="ai-question-container"></div>
       <div style="text-align:center;margin:10px 0 2px"><button class="skip-link" onclick="goToStep('supplies')">Skip these &mdash; send my request</button></div>
       <div class="step-nav">
@@ -470,6 +470,16 @@ let askedQuestionLabels=[];
 /* questionId -> trade label ("Bathroom", "Painting"...). Sent with the request so the
    estimator can file every answer under the right service section. */
 let answerTopics={};
+/* questionId -> the question as the customer actually read it. Without this the
+   estimator only ever saw the id ("wallCond: Peeling in patches") and had to guess
+   what was asked. The wording is the half that carries the meaning. */
+let answerLabels={};
+/* The whole question set, planned in one call the moment the description is
+   written. Rendering from this queue means no network wait between taps. */
+let plannedQuestions=[],plannedIndex=0,usingPlan=false;
+/* What the AI understood the job to be, echoed back so the customer can correct
+   it here rather than after they get a wrong price. */
+let intakeReadAs='';
 const TOTAL_STEPS=5;
 // data-step -> number the customer sees. Steps 3 (Property), 4 (old About), 6 (AI analysis)
 // and 7 (Timeline) are retired from the flow - markup kept, never navigated to.
@@ -510,11 +520,58 @@ function selectService(el){
 // ===== AI Step 2 =====
 async function startStep2(){
   formData.serviceAnswers={};aiQuestionCount=0;currentStep=2;hideSiteMenu();
+  askedQuestionLabels=[];answerLabels={};answerTopics={};
+  plannedQuestions=[];plannedIndex=0;usingPlan=false;intakeReadAs='';
   document.getElementById('progress-fill').style.width='80%';
   document.getElementById('step-num').textContent='4';
   document.getElementById('step-label').textContent='A Few Follow-Ups';
   document.getElementById('step2-eyebrow').textContent='Step 4 of 5';
-  await loadNextAIQuestion();
+  await planIntakeQuestions();
+}
+/* ── ONE CALL, THE WHOLE SET ────────────────────────────────────────────────
+   The customer has just written what they need. Before anything reaches the
+   dashboard, the AI reads it and works out what an estimator would still have
+   to know to put a real number on the job — then asks for exactly that.
+   Planning all the questions together is what makes them good: a model choosing
+   one question at a time cannot rank its slots, so it spends the first on
+   something small and never gets to the square footage.
+   Three outcomes, and the form keeps moving on all three:
+     questions   → ask them, straight from memory, no waiting between taps
+     none        → the description already said enough. Go on.
+     unavailable → fall back to the older one-at-a-time endpoint. */
+async function planIntakeQuestions(){
+  showStep('ai-loading');
+  try{
+    const res=await fetch('/.netlify/functions/estimate-intake-questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      service:formData.service,
+      serviceLabel:formData.serviceLabel,
+      serviceCount:(formData.service||'').split(',').filter(Boolean).length||1,
+      description:formData.description||'',
+      propertyType:formData.propertyType||'',
+      photoCount:(formData.photos||[]).length,
+      /* The first three images themselves. The AI looks at them before it decides
+         what to ask, so it never spends a question on something the photo shows.
+         Files that are not images (PDFs, plans) are left out — the endpoint drops
+         them anyway, and sending them only makes the customer wait longer. */
+      photos:(formData.photos||[]).filter(function(p){return p&&p.kind!=='file'&&/^data:image\//.test(String(p.data||''))}).slice(0,3).map(function(p){return {data:p.data}}),
+      photoNotes:(formData.photoAnalysis||[]).map(function(a){return a&&a.detected?String(a.detected):''}).filter(Boolean)
+    })});
+    const data=await res.json();
+    intakeReadAs=String((data&&data.readAs)||'');
+    if(data&&Array.isArray(data.questions)&&data.questions.length){
+      plannedQuestions=data.questions;plannedIndex=0;usingPlan=true;
+      showPlannedQuestion();return;
+    }
+    /* No questions AND no failure means the description covered everything. */
+    if(data&&!data.fallback){goToStep('supplies');return;}
+    await loadNextAIQuestion();
+  }catch(e){console.error(e);await loadNextAIQuestion();}
+}
+function showPlannedQuestion(){
+  if(plannedIndex>=plannedQuestions.length){goToStep('supplies');return;}
+  currentAIQuestion=plannedQuestions[plannedIndex];
+  renderAIQuestion(currentAIQuestion);
+  showStep(2);
 }
 async function loadNextAIQuestion(){
   showStep('ai-loading');
@@ -533,7 +590,18 @@ function renderAIQuestion(q){
   var eb=document.getElementById('step2-eyebrow');if(eb)eb.textContent=tl;
   var sl=document.getElementById('step-label');if(sl)sl.textContent=tl;
   if(q&&q.questionId)answerTopics[q.questionId]=tl;
+  if(q&&q.questionId&&q.label)answerLabels[q.questionId]=String(q.label);
   document.getElementById('step2-title').textContent=q.label;
+  /* Two lines under the title: why the answer matters, and how many are left.
+     People answer carefully when they know what the answer is for, and they stay
+     when they can see the end of the form. */
+  var sub=document.getElementById('step2-subtitle');
+  if(sub){
+    var bits=[];
+    if(q&&q.why)bits.push(String(q.why));
+    if(usingPlan&&plannedQuestions.length>1)bits.push('Question '+(plannedIndex+1)+' of '+plannedQuestions.length);
+    sub.textContent=bits.join(' · ')||'Just enough so we can give you real numbers.';
+  }
   const c=document.getElementById('ai-question-container');
   document.getElementById('continue-2').disabled=true;
   if(q.type==='text'){
@@ -572,7 +640,11 @@ function aiTextChanged(v){
   if(v&&v.trim()){formData.serviceAnswers[currentAIQuestion.questionId]=v.trim();document.getElementById('continue-2').disabled=false;}
   else{document.getElementById('continue-2').disabled=true;}
 }
-async function answerAIQuestion(){aiQuestionCount++;await loadNextAIQuestion();}
+async function answerAIQuestion(){
+  aiQuestionCount++;
+  if(usingPlan){plannedIndex++;showPlannedQuestion();return;}
+  await loadNextAIQuestion();
+}
 function goBackToAI(){startStep2();}
 
 function selectOption(el,field){
@@ -796,7 +868,7 @@ async function submitForm(){
   });
 
   btn.textContent='Sending...';
-  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,customerSupplies:allSupplies(),answerTopics:answerTopics,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,photoAnalysis:analysisLite,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
+  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,customerSupplies:allSupplies(),answerTopics:answerTopics,answerLabels:answerLabels,intakeReadAs:intakeReadAs,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,photoAnalysis:analysisLite,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
   try{
     const res=await fetch('/.netlify/functions/estimate-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!res.ok){let m='Server error '+res.status;if(res.status===413)m='Photos too large.';btn.disabled=false;btn.textContent='Try Again';alert('Something went wrong: '+m+'\n\nRef: '+ref+'. Call (332) 277-0990.');return;}

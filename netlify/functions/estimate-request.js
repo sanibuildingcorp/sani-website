@@ -18,7 +18,7 @@ exports.handler = async function (event) {
     const body = JSON.parse(event.body);
     const {
       ref, name, phone, email, address,
-      service, serviceId, serviceAnswers, customerSupplies, answerTopics,
+      service, serviceId, serviceAnswers, customerSupplies, answerTopics, answerLabels, intakeReadAs,
       propertyType, description, timeline,
       photoCount, photos, photoAnalysis, submittedAt,
     } = body;
@@ -49,6 +49,14 @@ exports.handler = async function (event) {
           // questionId -> trade ("Bathroom", "Painting"...). Lets the estimator file each
           // answer under the right service instead of guessing from the wording.
           answerTopics: answerTopics && typeof answerTopics === "object" ? answerTopics : {},
+          // questionId -> the question as the customer actually read it. Without it the
+          // estimator sees only the id and has to guess what was asked; "wallCond:
+          // Peeling in patches" means nothing without "What condition are the walls in?".
+          answerLabels: answerLabels && typeof answerLabels === "object" ? answerLabels : {},
+          // What the intake AI understood the job to be, in one sentence, at the moment
+          // the customer was asked the follow-ups. Kept so the contractor can see whether
+          // the questions were aimed at the right job.
+          intakeReadAs: typeof intakeReadAs === "string" ? intakeReadAs.slice(0, 300) : "",
           propertyType, description, timeline,
           photoCount: photoCount || 0,
           photos: photos || [],
@@ -159,11 +167,13 @@ async function sendContractorEmail(resendKey, contractorEmail, data) {
     )
     .join("");
 
+  // Show the question the customer was actually asked, not its internal id.
+  const emailLabels = (data.answerLabels && typeof data.answerLabels === "object") ? data.answerLabels : {};
   const answerRows = Object.entries(data.serviceAnswers || {})
     .filter(([_, v]) => v && String(v).trim())
     .map(
       ([k, v]) =>
-        `<tr><td style="padding:6px 10px;color:#888;text-transform:capitalize;width:160px;background:#faf8f4"><strong>${escapeHtml(k.replace(/-/g, " "))}</strong></td><td style="padding:6px 10px">${escapeHtml(v)}</td></tr>`
+        `<tr><td style="padding:6px 10px;color:#888;width:200px;background:#faf8f4"><strong>${escapeHtml(emailLabels[k] || k.replace(/-/g, " "))}</strong></td><td style="padding:6px 10px">${escapeHtml(v)}</td></tr>`
     )
     .join("");
 

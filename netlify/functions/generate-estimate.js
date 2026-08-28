@@ -235,6 +235,9 @@ function buildEstimatorInput(record, body) {
   const request = record.request || {};
   const answers = request.serviceAnswers || {};
   const answerTopics = request.answerTopics || {};
+  /* The question as the customer actually read it. See the same block in
+     generate-estimate-background.js - the id on its own is not a question. */
+  const answerLabels = request.answerLabels || {};
 
   const groupedAnswers = {};
   Object.entries(answers).forEach(([key, value]) => {
@@ -242,7 +245,7 @@ function buildEstimatorInput(record, body) {
     const trade = cleanText(answerTopics[key] || "General") || "General";
     if (!groupedAnswers[trade]) groupedAnswers[trade] = [];
     groupedAnswers[trade].push({
-      question: key.replace(/-/g, " "),
+      question: cleanText(answerLabels[key] || "") || String(key).replace(/-/g, " "),
       answer: Array.isArray(value) ? value.join(", ") : String(value),
     });
   });
