@@ -513,6 +513,49 @@ window.S=async a=>{
  if(a==='accept'){setTimeout(()=>location.reload(),900);return}
  if(card&&card.scrollIntoView)card.scrollIntoView({behavior:'smooth',block:'end'});
 };
+/* ══ PREVIEW MODE — THE REAL PAGE, THE UNSENT ESTIMATE. ══════════════════════
+   The dashboard opens this page in an iframe with ?preview=1 and posts the
+   estimate the contractor is ABOUT to send. Nothing is fetched and nothing is
+   saved: what he approves is what goes out.
+
+   It has to be THIS page. A separate "preview renderer" in the dashboard would
+   be a second implementation of the customer view, and every bug this project
+   has chased - four service classifiers, eight definitions of the total, a
+   Painting card the dashboard could not see - came from exactly that. One
+   renderer, or the preview is a guess.
+
+   Same-origin only, and the accept / decline / message controls are inert:
+   a preview must never be able to accept a quote on the customer's behalf. */
+if(q.get('preview')==='1'){
+ app.innerHTML='<div style="padding:24px;text-align:center;color:#6b7a8d;font:15px system-ui">Loading preview…</div>';
+ window.addEventListener('message',function(e){
+  if(e.origin!==location.origin)return;
+  var d=e.data;
+  if(!d||d.type!=='sbc-preview-record'||!d.record)return;
+  try{
+   render(d.record);
+   document.body.setAttribute('data-sbc-preview','1');
+   /* Inert, and visibly so. */
+   Array.prototype.forEach.call(document.querySelectorAll('button,input,textarea,select'),function(el){
+    el.disabled=true;el.style.cursor='not-allowed';
+   });
+   var b=document.createElement('div');
+   b.setAttribute('style','position:sticky;top:0;z-index:99;background:#8a6d1f;color:#fff;'+
+    'padding:9px 14px;font:600 13px/1.4 system-ui;text-align:center');
+   b.textContent='PREVIEW — this is exactly what your customer will see. Buttons are switched off here.';
+   document.body.insertBefore(b,document.body.firstChild);
+  }catch(err){
+   app.textContent='Preview failed to render: '+err.message;
+  }
+  if(window.parent&&window.parent!==window){
+   window.parent.postMessage({type:'sbc-preview-ready'},location.origin);
+  }
+ });
+ if(window.parent&&window.parent!==window){
+  window.parent.postMessage({type:'sbc-preview-listening'},location.origin);
+ }
+ return;
+}
 if(!ref){app.textContent='Estimate link is incomplete.';return}fetch('/.netlify/functions/get-estimate?ref='+encodeURIComponent(ref),{cache:'no-store'}).then(r=>r.json()).then(j=>render(j.record||j.estimateRecord||j.data||j)).catch(e=>app.textContent='Could not load estimate: '+e.message)
 })();
 </script>
