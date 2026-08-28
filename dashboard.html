@@ -6170,6 +6170,107 @@ async function saveDraft() {
   }
 }
 
+/* ══ THE PRE-SEND PREVIEW. ═══════════════════════════════════════════════════
+   Opens the customer's own quote page against the estimate that is about to go
+   out, and resolves true only if he presses Send from inside it.
+
+   Resolves FALSE on anything that goes wrong - a blocked iframe, a page that
+   never loads, a render that throws. A preview that fails must never turn into
+   a send: the whole point is that he saw it first. */
+function previewBeforeSend(est, cv, visibility) {
+  return new Promise(function (resolve) {
+    var record = {
+      ref: currentRecord.ref,
+      status: currentRecord.status,
+      customer: currentRecord.customer,
+      request: currentRecord.request,
+      /* The pending edits, not what is in storage. */
+      estimate: est,
+      customerFinalTotal: currentRecord.customerFinalTotal,
+      thread: currentRecord.thread,
+    };
+
+    var wrap = document.createElement("div");
+    wrap.setAttribute("style",
+      "position:fixed;inset:0;z-index:9999;background:rgba(12,18,28,.72);" +
+      "display:flex;flex-direction:column;padding:0");
+
+    var bar = document.createElement("div");
+    bar.setAttribute("style",
+      "background:#101826;color:#fff;padding:12px 14px;display:flex;gap:10px;" +
+      "align-items:center;flex-wrap:wrap;font:14px system-ui");
+    bar.innerHTML =
+      '<b style="font-size:15px">What ' + esc(currentRecord.customer.name || "your customer") + ' will see</b>' +
+      '<span style="opacity:.75">' + esc(fmt(cv.customerTotal)) + ' · ' + esc(visibility) + '</span>' +
+      '<span style="flex:1"></span>';
+
+    var cancel = document.createElement("button");
+    cancel.textContent = "Cancel";
+    cancel.setAttribute("style",
+      "background:#2b3646;color:#fff;border:0;border-radius:8px;padding:11px 18px;" +
+      "font:600 15px system-ui;cursor:pointer");
+
+    var send = document.createElement("button");
+    send.textContent = "Send it";
+    send.setAttribute("style",
+      "background:#c8a02a;color:#1b1405;border:0;border-radius:8px;padding:11px 22px;" +
+      "font:700 15px system-ui;cursor:pointer");
+    /* Off until the page has actually rendered. He cannot approve a blank box. */
+    send.disabled = true;
+    send.style.opacity = ".5";
+    send.style.cursor = "not-allowed";
+
+    bar.appendChild(cancel);
+    bar.appendChild(send);
+
+    var frame = document.createElement("iframe");
+    frame.setAttribute("title", "Customer quote preview");
+    frame.setAttribute("style", "flex:1;width:100%;border:0;background:#fff");
+    frame.src = "/quote.html?ref=" + encodeURIComponent(currentRecord.ref) + "&preview=1";
+
+    wrap.appendChild(bar);
+    wrap.appendChild(frame);
+    document.body.appendChild(wrap);
+
+    var settled = false;
+    function finish(ok) {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("message", onMessage);
+      clearTimeout(timer);
+      if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+      resolve(ok);
+    }
+
+    function onMessage(e) {
+      if (e.origin !== location.origin) return;
+      var d = e.data || {};
+      if (d.type === "sbc-preview-listening") {
+        frame.contentWindow.postMessage(
+          { type: "sbc-preview-record", record: record }, location.origin);
+      } else if (d.type === "sbc-preview-ready") {
+        send.disabled = false;
+        send.style.opacity = "1";
+        send.style.cursor = "pointer";
+      }
+    }
+    window.addEventListener("message", onMessage);
+
+    /* If the frame never reports in, say so plainly and refuse rather than
+       leaving a dead dialog he might click Send on out of frustration. */
+    var timer = setTimeout(function () {
+      if (send.disabled) {
+        bar.insertAdjacentHTML("afterbegin",
+          '<div style="width:100%;color:#ffcf8a">The preview did not load, so nothing was sent. ' +
+          'Save the draft and open the customer link directly to check it.</div>');
+      }
+    }, 8000);
+
+    cancel.onclick = function () { finish(false); };
+    send.onclick = function () { if (!send.disabled) finish(true); };
+  });
+}
+
 async function sendToCustomer() {
   const est = gatherForm();
   if (!est.projectTitle) { toast("Add a project title first", true); return; }
@@ -6187,7 +6288,18 @@ async function sendToCustomer() {
     visibility = "Total only (no breakdown)";
   }
 
-  if (!confirm("Send estimate of " + fmt(cv.customerTotal) + " to " + currentRecord.customer.name + "?\n\nCustomer will see: " + visibility)) return;
+  /* ══ SHOW HIM THE CUSTOMER'S PAGE, NOT A SENTENCE ABOUT IT. ═══════════════
+     This was a confirm() reading "Customer will see: Total only (no breakdown)"
+     - a description of the customer's page, written by hand, sitting next to a
+     customer page that was rendered by entirely different code. That gap is
+     where the phantom Painting card lived: the dashboard said one thing and the
+     quote showed another, and nothing on screen ever compared them.
+
+     It now opens quote.html itself, in an iframe, rendering the estimate about
+     to be sent. Not a copy of the customer view - the customer view. Nothing is
+     saved and nothing is sent unless he approves what he is looking at. */
+  const approved = await previewBeforeSend(est, cv, visibility);
+  if (!approved) return;
 
   // Include the contract only if the box in the Contract section is checked.
   var includeContract = (window.__sbcIncludeContract === true);
