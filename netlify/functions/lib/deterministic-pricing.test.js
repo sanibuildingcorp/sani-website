@@ -190,6 +190,93 @@ console.log('\n6. selectedCustomerServices actually narrows');
   t('the picked service survives', out.includes('Stairs'), JSON.stringify(out));
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   7. EVERY SERVICE ON THE FORM MUST REACH THE ENGINE
+   ══════════════════════════════════════════════════════════════════════════ */
+console.log('\n7. All eleven services on estimate.html resolve');
+{
+  const A = priv('allowedServiceSet');
+  /* Kept in the same order as SERVICES in estimate.html. If a button is added
+     there and not here, this list is the reminder. */
+  const FORM = ['Bathroom', 'Painting', 'Flooring', 'Carpentry', 'Water Damage',
+                'Handyman', 'Deck', 'Stairs', 'Restoration', 'General Renovation',
+                'Other / Not Listed'];
+  FORM.forEach(function (label) {
+    const r = A([label]);
+    t('the engine recognises "' + label + '"', r.length > 0,
+      'allowedServiceSet returned [] — the customer ticks this and the engine never hears of it');
+  });
+  t('Water Damage is its own trade, not a container',
+    A(['Water Damage'])[0] === 'Water Damage', JSON.stringify(A(['Water Damage'])));
+  t('Restoration is not renamed to Water Damage',
+    A(['Restoration'])[0] === 'Restoration', JSON.stringify(A(['Restoration'])));
+  t('General Renovation lands on the container',
+    A(['General Renovation'])[0] === 'General', JSON.stringify(A(['General Renovation'])));
+  t('Other / Not Listed lands on the container',
+    A(['Other / Not Listed'])[0] === 'General', JSON.stringify(A(['Other / Not Listed'])));
+  /* The container entry sits last so no real trade loses its own name to it. */
+  t('"Bathroom Renovation" is still Bathroom, not General',
+    A(['Bathroom Renovation'])[0] === 'Bathroom', JSON.stringify(A(['Bathroom Renovation'])));
+  t('"Kitchen Renovation" is still Kitchen',
+    A(['Kitchen Renovation'])[0] === 'Kitchen', JSON.stringify(A(['Kitchen Renovation'])));
+  t('waterproofing is not water damage',
+    A(['Waterproofing'])[0] === 'Waterproofing', JSON.stringify(A(['Waterproofing'])));
+}
+
+console.log('\n8. A dropped service stops splitting its money across the survivors');
+{
+  /* The live estimate this comes from: the customer picked Flooring, Painting
+     and General Renovation, and described radiator work. General Renovation did
+     not exist in the vocabulary, so it was dropped and every radiator line was
+     re-filed onto whichever survivor matched first — $528 of heating work shown
+     as Painting, $202 of it shown as Flooring. Both cards wrong; the grand total
+     right to the cent, which is exactly why nobody caught it. */
+  const canon = priv('canonicalService');
+  const picked = priv('allowedServiceSet')(['Flooring', 'Painting', 'General Renovation']);
+  t('all three selections survive now', picked.length === 3, JSON.stringify(picked));
+
+  const HEATING = [
+    'Drain and isolate heating loop for radiator removal',
+    'Rig radiator out and set aside',
+    'Refill and rebalance heating system',
+  ];
+  HEATING.forEach(function (item) {
+    const s = canon('General', item, picked);
+    t('"' + item.slice(0, 34) + '..." is not sold as Painting or Flooring',
+      s !== 'Painting' && s !== 'Flooring', 'filed as ' + s);
+  });
+}
+
+console.log('\n9. The two new trades classify their own work');
+{
+  const canon = priv('canonicalService');
+  const wd = priv('allowedServiceSet')(['Water Damage', 'Painting']);
+  t('water-damaged drywall belongs to Water Damage, not Drywall',
+    canon('', 'Remove water-damaged drywall and insulation', wd) === 'Water Damage',
+    canon('', 'Remove water-damaged drywall and insulation', wd));
+  t('mold remediation belongs to Water Damage',
+    canon('', 'Mold remediation and antimicrobial treatment', wd) === 'Water Damage');
+  /* Painting sits earlier in the vocabulary on purpose: repainting a repaired
+     ceiling is painting, and the customer bought painting. */
+  t('repainting a repaired ceiling is still Painting',
+    canon('', 'Prime and paint the water-damaged ceiling', wd) === 'Painting',
+    canon('', 'Prime and paint the water-damaged ceiling', wd));
+
+  const only = priv('allowedServiceSet')(['Restoration']);
+  t('on a Restoration-only ticket the water lines land on Restoration',
+    canon('', 'Remove water-damaged plaster', only) === 'Restoration',
+    canon('', 'Remove water-damaged plaster', only));
+  const rest = priv('allowedServiceSet')(['Restoration', 'Painting']);
+  t('plaster repair belongs to Restoration',
+    canon('', 'Repair plaster and restore original moulding', rest) === 'Restoration',
+    canon('', 'Repair plaster and restore original moulding', rest));
+  /* "Refinish the hardwood" is flooring work, whatever else is on the ticket. */
+  const rf = priv('allowedServiceSet')(['Restoration', 'Flooring']);
+  t('refinishing a floor is still Flooring',
+    canon('', 'Sand and refinish hardwood flooring', rf) === 'Flooring',
+    canon('', 'Sand and refinish hardwood flooring', rf));
+}
+
 console.log('\n──────────────────────────────');
 console.log('  ' + pass + ' passed, ' + fail + ' failed');
 console.log('──────────────────────────────');

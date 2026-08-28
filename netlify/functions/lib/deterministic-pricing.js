@@ -309,6 +309,45 @@ const SERVICE_VOCAB = [
   { name: 'Waterproofing',     ev: /waterproof/,
                                item: /waterproof|membrane|vapor barrier|flood test/,               sec: /waterproof/,
                                trade: /waterproof/ },
+  /* ══ FOUR OF THE ELEVEN SERVICES ON THE FORM WERE INVISIBLE HERE. ══════════
+     estimate.html offers Bathroom, Painting, Flooring, Carpentry, Water Damage,
+     Handyman, Deck, Stairs, Restoration, General Renovation and Other. Seven of
+     those had a vocabulary entry. Four did not, so tradeToService returned '' for
+     them and allowedServiceSet dropped them on the floor - the customer ticked a
+     service and the pricing engine never heard of it.
+
+     What that costs, from a live estimate: the customer picked Flooring,
+     Painting and General Renovation, and the radiator work they described was
+     the General Renovation part. General Renovation was dropped, so every
+     radiator line had to go somewhere else, and canonicalService split it across
+     the two survivors - $528 of heating work presented as Painting and $202 of
+     it presented as Flooring. The grand total was right to the cent. Both cards
+     were wrong, and neither could be explained to the customer.
+
+     Water Damage and Restoration are real trades and get real entries. General
+     Renovation and Other / Not Listed are containers, like Handyman: they name
+     no trade, so the cards come from what the customer actually described. */
+  { name: 'Water Damage',      ev: /water damage|water.?damaged|\bflood(?:ed|ing)?\b|\bmold\b|\bmould\b|water intrusion/,
+                               /* Only words that can mean nothing else. Deliberately
+                                  NOT "leak" - every plumbing job has a leak in it. And
+                                  Painting sits earlier in this list, so "prime and paint
+                                  the water-damaged ceiling" stays Painting: repainting a
+                                  repaired ceiling is painting. */
+                               strong: /water.?damaged?|mold remediation|mould remediation|dehumidif|water extraction|antimicrobial|flood cut/,
+                               item: /water.?damage|water.?damaged|\bmold\b|\bmould\b|dehumidif|antimicrobial|moisture (?:reading|meter|test)|dry.?out|water extraction|flood cut/,
+                               sec: /water.?damage|flood|\bmold\b|\bmould\b/,
+                               trade: /water.?damage|flood|\bmold\b|\bmould\b|remediation/,
+                               not: /waterproof/ },
+  /* The site sells this as "Water Damage Restoration", and the form offers the
+     two halves as separate buttons. They stay separate services rather than one
+     renaming the other: a customer who ticked Restoration must not be handed a
+     card headed Water Damage. On a Restoration-only ticket the water-damage
+     wording is simply not permitted, and the single-real-service rule lands
+     those lines on Restoration, which is where they belong. */
+  { name: 'Restoration',       ev: /\brestoration\b|\brestore\b|historic|landmark/,
+                               item: /restor(?:e|ed|ation|ing)|plaster repair|repair plaster|historic|landmark|original (?:plaster|molding|moulding|trim|detail)/,
+                               sec: /restoration|restore/,
+                               trade: /restoration|restore/ },
   { name: 'Stairs',            ev: /\bstair|staircase|\btread\b|\briser\b|banister|newel/,
                                strong: /\bstair(s|case|well)?\b|\btread\b|\briser\b|newel post|banister/,
                                item: /stair|tread|riser|newel|banister/,                             sec: /stair/,
@@ -317,7 +356,16 @@ const SERVICE_VOCAB = [
                                item: /\bdeck\b|decking|timbertech|railing post/,                   sec: /deck/,
                                trade: /deck/ },
   { name: 'Handyman',          item: /handyman|odd job|small repair|mount(?:ing)? (?:tv|shelf|shelves)|hang (?:shelf|shelves|picture)/, sec: /handyman/,
-                               trade: /handyman|general repair/ }
+                               trade: /handyman|general repair/ },
+  /* LAST, and a container. "General Renovation" and "Other / Not Listed" name no
+     trade at all — they are the customer saying "it is a big job" or "none of
+     your buttons fit". Landing them here means the allowed set is rebuilt from
+     the words they wrote, so the cards match what they described. Last in the
+     list so that every real trade gets first refusal: "Bathroom Renovation"
+     resolves to Bathroom, not to General. */
+  { name: 'General',           item: /general renovation|gut renovation|full renovation/,
+                               sec: /general renovation|gut renovation/,
+                               trade: /general renovation|gut renovation|full (?:home |house |apartment )?renovation|whole (?:home|house|apartment)|\bother\b|not listed|unlisted|miscellaneous/ }
 ];
 
 const VOCAB_BY_NAME = SERVICE_VOCAB.reduce((a, v) => { a[v.name] = v; return a; }, {});
