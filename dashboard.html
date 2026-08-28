@@ -4646,7 +4646,7 @@ function scopeDropEmptyServices(list) {
     });
   });
   var kept = list.filter(function (sv) {
-    if (sv && sv.manual === true) return true;
+    if (sv && (sv.manual === true || sv.published === true)) return true;
     return counts[String((sv && sv.name) || "").trim().toLowerCase()] > 0;
   });
   return kept.length ? kept : list;
@@ -4699,6 +4699,26 @@ function buildScopeDraftFromAI() {
      Every trade the estimator emits is now shown, in the estimator's own order,
      whatever it is called. Adding a new trade to the vocabulary no longer
      requires editing the dashboard. */
+  /* ══ WHAT THE CUSTOMER IS LOOKING AT RIGHT NOW COMES FIRST. ════════════════
+     Once a scope is published, publishedCustomerScope is what quote.html actually
+     renders. It was not read here at all, so the dashboard rebuilt its draft from
+     serviceBreakdown and could show a completely different set of services from the
+     live customer page — or none. The published scope is now the first source, so
+     the panel always opens on exactly what the customer can see. */
+  if (est.customerScopePublished === true &&
+      est.publishedCustomerScope && Array.isArray(est.publishedCustomerScope.services) &&
+      est.publishedCustomerScope.services.length) {
+    return { services: est.publishedCustomerScope.services.map(function (sv) {
+      return {
+        name: String((sv && (sv.name || sv.title)) || "Service").trim() || "Service",
+        published: true,
+        included: (sv.included || []).slice(),
+        supplied: (sv.supplied || sv.customerSupplies || []).slice(),
+        excluded: (sv.excluded || sv.notIncluded || []).slice()
+      };
+    }) };
+  }
+
   var sbRows = Array.isArray(est.serviceBreakdown) ? est.serviceBreakdown : [];
   if (sbRows.length) {
     var direct = [];
@@ -4748,7 +4768,17 @@ function buildScopeDraftFromAI() {
 
 function scopeDraft() {
   var est = (currentRecord && currentRecord.estimate) || {};
-  if (!est.manualCustomerScopeDraft || !Array.isArray(est.manualCustomerScopeDraft.services)) {
+  /* ══ AN EMPTY DRAFT IS NOT A SAVED DRAFT. ═══════════════════════════════════
+     This condition used to accept `{ services: [] }` as a perfectly good draft and
+     hand it straight back, so the Services panel rendered nothing at all — no cards,
+     just the buttons — while the customer's page carried a full priced scope. That
+     is how a $10,000.01 quote with a Painting card and a $3,400 alternative went out
+     to a customer over a scope the contractor could not see on his own screen. An
+     estimate with priced lines always has at least one service; a zero-length list
+     means the build failed, not that the contractor deleted everything. */
+  var _d = est.manualCustomerScopeDraft;
+  var _hasLines = ((est.labor || []).length + (est.materials || []).length) > 0;
+  if (!_d || !Array.isArray(_d.services) || (_d.services.length === 0 && _hasLines)) {
     /* Silent rebuild path - no prompt is possible here. If money is parked, the wording
        that owns it is about to be replaced, so give the money back rather than strand
        it. Restoring is always recoverable; stranding never is. */
@@ -4923,6 +4953,33 @@ function renderScopeControl() {
     }
     html += '</div>';
   });
+
+  /* ══ ALTERNATIVES WERE INVISIBLE HERE AND VISIBLE TO THE CUSTOMER. ═════════
+     estimate.options is rendered on quote.html as priced "Alternatives" under a
+     service card. Nothing in this dashboard ever displayed it. A customer was
+     offered "Option A — Additional stair flight, $3,400.00" on a signed-off quote
+     while the contractor had no screen anywhere that showed the offer existed.
+     (The Finishing Options panel below is a different thing entirely — it edits
+     finishGroups, not estimate.options.) They are listed here, with the price the
+     customer sees and a way to withdraw one. */
+  var _opts = (est.options || []).filter(function (o) { return o; });
+  html += '<div class="sc-svc"><div class="sc-svc-head"><b>Alternatives the customer is shown</b></div>';
+  if (!_opts.length) {
+    html += '<div class="sc-empty" style="padding:10px 12px;color:var(--ink-muted,#8a9bb0)">None. Nothing extra is being offered on the customer\'s quote.</div>';
+  } else {
+    html += '<div class="sc-empty" style="padding:8px 12px;color:var(--ink-muted,#8a9bb0)">These appear on the customer\'s quote as priced add-ons. They are NOT in the grand total.</div>';
+    _opts.forEach(function (o, oi) {
+      html += '<div class="sc-item" style="align-items:flex-start">' +
+        '<div style="flex:1;min-width:0">' +
+          '<b>' + esc(String(o.label || "Alternative")) + '</b>' +
+          (o.description ? '<div style="color:var(--ink-muted,#8a9bb0);font-size:12px;margin-top:3px">' + esc(String(o.description)) + '</div>' : '') +
+        '</div>' +
+        '<b style="white-space:nowrap;margin:0 10px">' + fmt(Number(o.price) || 0) + '</b>' +
+        '<button class="sc-del" onclick="scopeRemoveOption(' + oi + ')" title="Stop offering this">✕</button>' +
+      '</div>';
+    });
+  }
+  html += '</div>';
 
   html += '<div class="sc-actions">' +
       (scopeMergeStack().map(function (u, ui) { return { u: u, ui: ui }; }).reverse().map(function (e) {
@@ -5435,6 +5492,18 @@ function scopeRenameService(si, val) {
     scopeRetargetParked(was, null, now, null);
   }
 }
+/* Withdraw an alternative so it stops appearing on the customer's quote. It carries
+   no money in the grand total, so nothing else has to move. */
+function scopeRemoveOption(oi) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var o = (est.options || [])[oi];
+  if (!o) return;
+  if (!confirm("Stop offering \"" + String(o.label || "this alternative") + "\" to the customer?\n\nIt is not part of the grand total, so your price does not change.")) return;
+  est.options = (est.options || []).filter(function (_, i) { return i !== oi; });
+  renderScopeControl();
+  toast("Alternative removed — publish or re-send for the customer to see it go");
+}
+
 function scopeAddService() {
   var name = prompt("Service name (e.g. Bathroom, Flooring, Painting, Windows):", "");
   if (!name) return;
