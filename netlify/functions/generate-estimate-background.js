@@ -21,6 +21,9 @@ const { applyDeterministicPricing, consolidateCustomerPresentation } = require("
 const { writeCustomerScope } = require("./lib/scope-writer");
 const { researchMarketPricing, buildResearchBlock } = require("./lib/market-research");
 const { priceMaterialsLive, serperShopping } = require("./lib/material-prices");
+/* The customer's own answers to the questions he was asked. See
+   buildConversationForEstimator. */
+const thread = require("./lib/thread");
 
 /* Claude Opus 5. Thinking is ON BY DEFAULT on this model and shares the max_tokens
    budget with the response text, which is why every call site below was raised.
@@ -377,6 +380,29 @@ function buildEstimatorInput(record, body) {
   });
   const customerSupplies = Array.isArray(request.customerSupplies) ? request.customerSupplies.map(cleanText).filter(Boolean) : [];
   const photoAnalysis = Array.isArray(request.photoAnalysis) ? request.photoAnalysis : [];
+
+  /* ══ THE CONVERSATION IS PART OF THE BRIEF. ═════════════════════════════════
+     The whole point of the thread is that a customer who could not describe the
+     job in the form can describe it afterwards, in their own words, when asked
+     a direct question. "The tiles are about 4 by 4 feet" or "actually the second
+     bathroom too" is the most valuable information on the whole record: it is an
+     answer to a question that was worth asking.
+
+     And the estimator never saw it. This function handed over the original form
+     and nothing else, so the contractor could ask, the customer could answer,
+     and Regenerate would rebuild the estimate exactly as if they had said
+     nothing. The reply was stored, shown on two screens, emailed to both sides,
+     and excluded from the one process it existed to inform.
+
+     Both sides are included. The contractor corrects scope in this thread too
+     ("we agreed to skip the sanding"), and the analysis stage is already told
+     that contractor notes are authoritative where they conflict.
+
+     Bounded on purpose: a long thread must not crowd the customer's original
+     description out of the prompt, so the MOST RECENT messages are kept - the
+     later a message is, the more likely it is the correction that matters. */
+  const conversation = buildConversationForEstimator(record, body);
+
   return {
     ref: cleanText(body.ref),
     customer: { name: cleanText(customer.name), phone: cleanText(customer.phone), email: cleanText(customer.email), address: cleanText(customer.address) },
@@ -390,9 +416,44 @@ function buildEstimatorInput(record, body) {
       groupedAnswers: body.useAnswers === false ? {} : groupedAnswers,
       customerSupplies,
       photoAnalysis: body.usePhotoAnalysis === false ? [] : photoAnalysis,
+      /* Answers the customer gave AFTER the form, in reply to being asked. */
+      conversation: body.useConversation === false ? [] : conversation,
     },
     contractor: { extraRequest: cleanText(body.extraRequest), houseRules: cleanText(body.houseRules) },
   };
+}
+
+/* The last MAX_CONVERSATION_MESSAGES messages, oldest-first within that window so
+   the exchange still reads in order, and hard-capped on characters so one long
+   message cannot swallow the prompt. Returns [] for a record with no thread,
+   which is every record until someone writes on it. */
+const MAX_CONVERSATION_MESSAGES = 30;
+const MAX_CONVERSATION_CHARS = 6000;
+
+function buildConversationForEstimator(record, body) {
+  let msgs;
+  try { msgs = thread.normalizeThread(record); } catch (e) { return []; }
+  if (!Array.isArray(msgs) || !msgs.length) return [];
+
+  const recent = msgs.slice(-MAX_CONVERSATION_MESSAGES);
+  const out = [];
+  let budget = MAX_CONVERSATION_CHARS;
+
+  /* Walk backwards so the newest messages get the budget first, then restore
+     chronological order - a correction is worth more than the greeting above it. */
+  for (let i = recent.length - 1; i >= 0; i--) {
+    const m = recent[i];
+    const said = cleanText(m && m.text);
+    if (!said) continue;
+    if (said.length > budget) break;
+    budget -= said.length;
+    out.unshift({
+      from: m.from === "contractor" ? "contractor" : "customer",
+      at: m.at,
+      said: said,
+    });
+  }
+  return out;
 }
 
 function normalizeSelectedServices(request) {
@@ -404,7 +465,7 @@ function normalizeSelectedServices(request) {
 }
 
 function buildProjectAnalysisPrompt(input) {
-  return `You are the Senior Project Intake Manager and Renovation Scope Analyst for Sani Building Corp, an experienced, fully insured NYC-metro renovation and repair contractor.\n\nYou DO NOT generate prices in this stage. Your job is to understand what the customer is trying to accomplish, even when the customer uses imperfect homeowner language, mixes technical terms, omits details, or appears to contradict themselves.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nFULL CUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nCORE ANALYSIS RULES:\n1. Read every source together: selected services, description, answers, customer-supplied items, photos, address, and contractor corrections.\n2. Contractor notes are authoritative and override customer statements only where they directly conflict.\n3. Separate confirmed scope, reasonably implied scope, assumptions, exclusions, missing information and conflicts.\n4. Translate homeowner language into contractor-level scope without changing intent.\n5. Never silently invent major work. Normal enabling work may be listed as implied, with a reason.\n6. Distinguish keeping, repairing, refinishing, replacing in the same location, relocating, supplying and installing.\n7. "Fixtures remain in current locations" normally means no relocation; it does NOT mean the fixtures remain existing when replacement is requested elsewhere.\n8. Customer-supplied finish materials eliminate only the purchase price of those finish items. They do NOT eliminate installation labor, handling, rough materials, adhesives, fasteners, waterproofing, plumbing connections, electrical connections, protection, disposal or consumables.\n9. Every selected trade must be represented. Never let one dominant trade erase another selected trade.\n10. Extract all quantities: square feet, linear feet, dimensions, fixture counts, window counts, room counts and floor level.\n11. Identify site conditions: occupied/vacant, walk-up/elevator, floor, debris route, parking/loading, work hours, building rules and protection.\n12. Ask only questions that materially change scope, labor, materials, schedule, risk or price.\n13. Do not ask low-impact cosmetic questions merely to fill a form.\n14. Use one status:\n   READY_TO_ESTIMATE — major scope, quantities, supply responsibility and site conditions are sufficiently clear.\n   PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS — a useful estimate is possible but defined assumptions are required.\n   NEEDS_CUSTOMER_QUESTIONS — critical information is missing and would materially change the estimate.\n   SITE_VISIT_REQUIRED — online information cannot responsibly establish scope/price.\n15. Never choose the smallest possible interpretation just to lower price. Use the most reasonable professional interpretation supported by the full record.\n16. If the customer requested alternatives (for example replace all windows vs replace some and repair others), preserve EACH option separately.\n17. Identify customer exclusions EXACTLY, and record each one against the trade it belongs to in confirmed_scope[].customer_exclusions - NOT in the top-level exclusions array. "Kitchen is excluded from painting" belongs to Painting. "Bathroom is excluded from flooring" belongs to Flooring. "No underlayment", "no transition strips" and "no baseboards" are THREE separate exclusions on Flooring, not one. Every sentence in which the customer says something is not wanted, not included, or is excluded becomes one entry, phrased close to his own words. Never merge several into one, and never drop one because it seems obvious from the scope. He wrote these limits down; he must be able to read every one of them back against the service it applies to.\n17b. The top-level exclusions array is ONLY for project-wide risks the customer did not raise himself: permits, concealed conditions, asbestos or mold, structural work, work outside normal hours. A generic risk exclusion must never take the place of something the customer actually asked to leave out.\n18. Keep questions homeowner-friendly and include "Not sure" where appropriate.\n\nReturn JSON only with EXACT top-level structure:\n{\n  "project_summary": "",\n  "project_type": "repair | partial renovation | full renovation | installation | replacement | restoration | mixed",\n  "selected_trades": [],\n  "confirmed_scope": [\n    { "trade": "", "scope_items": [], "quantities": {}, "customer_exclusions": [] }\n  ],\n  "inferred_scope": [\n    { "trade": "", "item": "", "reason": "", "requires_confirmation": true }\n  ],\n  "customer_supplied_finish_materials": [],\n  "contractor_supplied_finish_materials": [],\n  "contractor_supplied_rough_materials": [],\n  "site_conditions": {\n    "occupied_status": "",\n    "floor_number": "",\n    "elevator_access": "",\n    "walk_up": "",\n    "work_hours": "",\n    "debris_access": "",\n    "parking_loading": "",\n    "building_requirements": "",\n    "protection_requirements": ""\n  },\n  "quantities": {},\n  "assumptions": [],\n  "exclusions": [],\n  "conflicts": [\n    { "issue": "", "likely_interpretation": "", "needs_confirmation": true }\n  ],\n  "missing_information": [\n    { "question": "", "reason_needed": "", "priority": "critical | pricing | site_condition | optional", "affected_trade": "" }\n  ],\n  "clarification_questions": [\n    {\n      "id": "",\n      "question": "",\n      "helper_text": "",\n      "type": "single_select | multi_select | number | short_text | photo_request",\n      "options": [],\n      "affected_trade": "",\n      "pricing_importance": "critical | high | medium"\n    }\n  ],\n  "pricing_readiness": {\n    "status": "READY_TO_ESTIMATE | PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS | NEEDS_CUSTOMER_QUESTIONS | SITE_VISIT_REQUIRED",\n    "confidence_score": 0,\n    "reason": ""\n  }\n}`;
+  return `You are the Senior Project Intake Manager and Renovation Scope Analyst for Sani Building Corp, an experienced, fully insured NYC-metro renovation and repair contractor.\n\nYou DO NOT generate prices in this stage. Your job is to understand what the customer is trying to accomplish, even when the customer uses imperfect homeowner language, mixes technical terms, omits details, or appears to contradict themselves.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nFULL CUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nCORE ANALYSIS RULES:\n1. Read every source together: selected services, description, answers, customer-supplied items, photos, address, contractor corrections, and request.conversation - the messages exchanged AFTER the form was submitted.\n1a. request.conversation is the single most valuable field on the record when it is not empty. It exists because the customer could not describe the job in the form and was asked a direct question, and it holds the answer in their own words: a measurement, a room they forgot, a fixture they have already bought, a correction to something they wrote earlier. A LATER MESSAGE BEATS AN EARLIER ONE, and both beat the original form, because it is the most recent thing the person actually said. If a reply gives you a quantity the form left blank, use it and stop treating it as missing. If a reply contradicts the description, follow the reply and record the change in assumptions. Messages from the contractor are authoritative over the customer's where they conflict. Never ask again, in clarification_questions, for something a reply has already answered.\n2. Contractor notes are authoritative and override customer statements only where they directly conflict.\n3. Separate confirmed scope, reasonably implied scope, assumptions, exclusions, missing information and conflicts.\n4. Translate homeowner language into contractor-level scope without changing intent.\n5. Never silently invent major work. Normal enabling work may be listed as implied, with a reason.\n6. Distinguish keeping, repairing, refinishing, replacing in the same location, relocating, supplying and installing.\n7. "Fixtures remain in current locations" normally means no relocation; it does NOT mean the fixtures remain existing when replacement is requested elsewhere.\n8. Customer-supplied finish materials eliminate only the purchase price of those finish items. They do NOT eliminate installation labor, handling, rough materials, adhesives, fasteners, waterproofing, plumbing connections, electrical connections, protection, disposal or consumables.\n9. Every selected trade must be represented. Never let one dominant trade erase another selected trade.\n10. Extract all quantities: square feet, linear feet, dimensions, fixture counts, window counts, room counts and floor level.\n11. Identify site conditions: occupied/vacant, walk-up/elevator, floor, debris route, parking/loading, work hours, building rules and protection.\n12. Ask only questions that materially change scope, labor, materials, schedule, risk or price.\n13. Do not ask low-impact cosmetic questions merely to fill a form.\n14. Use one status:\n   READY_TO_ESTIMATE — major scope, quantities, supply responsibility and site conditions are sufficiently clear.\n   PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS — a useful estimate is possible but defined assumptions are required.\n   NEEDS_CUSTOMER_QUESTIONS — critical information is missing and would materially change the estimate.\n   SITE_VISIT_REQUIRED — online information cannot responsibly establish scope/price.\n15. Never choose the smallest possible interpretation just to lower price. Use the most reasonable professional interpretation supported by the full record.\n16. If the customer requested alternatives (for example replace all windows vs replace some and repair others), preserve EACH option separately.\n17. Identify customer exclusions EXACTLY, and record each one against the trade it belongs to in confirmed_scope[].customer_exclusions - NOT in the top-level exclusions array. "Kitchen is excluded from painting" belongs to Painting. "Bathroom is excluded from flooring" belongs to Flooring. "No underlayment", "no transition strips" and "no baseboards" are THREE separate exclusions on Flooring, not one. Every sentence in which the customer says something is not wanted, not included, or is excluded becomes one entry, phrased close to his own words. Never merge several into one, and never drop one because it seems obvious from the scope. He wrote these limits down; he must be able to read every one of them back against the service it applies to.\n17b. The top-level exclusions array is ONLY for project-wide risks the customer did not raise himself: permits, concealed conditions, asbestos or mold, structural work, work outside normal hours. A generic risk exclusion must never take the place of something the customer actually asked to leave out.\n18. Keep questions homeowner-friendly and include "Not sure" where appropriate.\n\nReturn JSON only with EXACT top-level structure:\n{\n  "project_summary": "",\n  "project_type": "repair | partial renovation | full renovation | installation | replacement | restoration | mixed",\n  "selected_trades": [],\n  "confirmed_scope": [\n    { "trade": "", "scope_items": [], "quantities": {}, "customer_exclusions": [] }\n  ],\n  "inferred_scope": [\n    { "trade": "", "item": "", "reason": "", "requires_confirmation": true }\n  ],\n  "customer_supplied_finish_materials": [],\n  "contractor_supplied_finish_materials": [],\n  "contractor_supplied_rough_materials": [],\n  "site_conditions": {\n    "occupied_status": "",\n    "floor_number": "",\n    "elevator_access": "",\n    "walk_up": "",\n    "work_hours": "",\n    "debris_access": "",\n    "parking_loading": "",\n    "building_requirements": "",\n    "protection_requirements": ""\n  },\n  "quantities": {},\n  "assumptions": [],\n  "exclusions": [],\n  "conflicts": [\n    { "issue": "", "likely_interpretation": "", "needs_confirmation": true }\n  ],\n  "missing_information": [\n    { "question": "", "reason_needed": "", "priority": "critical | pricing | site_condition | optional", "affected_trade": "" }\n  ],\n  "clarification_questions": [\n    {\n      "id": "",\n      "question": "",\n      "helper_text": "",\n      "type": "single_select | multi_select | number | short_text | photo_request",\n      "options": [],\n      "affected_trade": "",\n      "pricing_importance": "critical | high | medium"\n    }\n  ],\n  "pricing_readiness": {\n    "status": "READY_TO_ESTIMATE | PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS | NEEDS_CUSTOMER_QUESTIONS | SITE_VISIT_REQUIRED",\n    "confidence_score": 0,\n    "reason": ""\n  }\n}`;
 }
 
 /* The contractor's own pricing rules, rendered as an instruction rather than left
