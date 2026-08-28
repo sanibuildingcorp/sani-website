@@ -6188,6 +6188,17 @@ function previewBeforeSend(est, cv, visibility) {
       estimate: est,
       customerFinalTotal: currentRecord.customerFinalTotal,
       thread: currentRecord.thread,
+      /* ══ THE CONTRACT DECISION, AS IT STANDS RIGHT NOW. ════════════════════
+         quote.html shows its Contract section from these two fields, and the
+         first version of this preview passed neither - so the preview said "no
+         contract" on a job whose customer was about to be sent one. A preview
+         that is wrong about the contract is worse than no preview.
+
+         The value read is the CHECKBOX, not what is stored: send-quote writes
+         record.includeContractForCustomer from exactly this flag a moment later,
+         so this is what the customer is going to get. */
+      contract: currentRecord.contract,
+      includeContractForCustomer: (window.__sbcIncludeContract === true),
     };
 
     var wrap = document.createElement("div");
