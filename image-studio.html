@@ -459,7 +459,7 @@ async function publishAll(){
     if(st) st.innerHTML = '<span style="color:var(--gold)">\u23f3 Publishing\u2026</span>';
     try {
       var optimized = await optimize(bulkQueue[i]);
-      var r = await fetch("/.netlify/functions/publish-image-to-page", {
+      var r = await sbcFetch("/.netlify/functions/publish-image-to-page", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           page: page,
@@ -765,7 +765,7 @@ async function publish(){
 
     var r, data;
     if(needPatch){
-      r = await fetch("/.netlify/functions/publish-image-to-page", {
+      r = await sbcFetch("/.netlify/functions/publish-image-to-page", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ page:page, imageBase64:optimized, newPath:path, currentRef:slot.ref, kind:kind, alt:alt })
       });
@@ -1085,7 +1085,7 @@ async function publishQueue(){
       files.push({ path: pubQueue[i].path, imageBase64: opt });
     }
     btn.textContent = "Publishing " + files.length + " photos\u2026";
-    var r = await fetch("/.netlify/functions/publish-image-to-page", {
+    var r = await sbcFetch("/.netlify/functions/publish-image-to-page", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ files: files })

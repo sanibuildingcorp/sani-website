@@ -18,9 +18,18 @@ const GH_OWNER = process.env.GITHUB_OWNER || "sanibuildingcorp";
 const GH_REPO = process.env.GITHUB_REPO || "sani-website";
 const GH_BRANCH = process.env.GITHUB_BRANCH || "main";
 
+const { requireDashboardKey } = require("./lib/require-dashboard-key");
+
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
   if (event.httpMethod !== "POST") return json(405, { error: "POST only" });
+
+  /* CONTRACTOR ONLY. This commits to the GitHub repo with GITHUB_TOKEN and had
+     no inbound gate: anyone who knew the URL could commit arbitrary image bytes
+     and rewrite page HTML on the live site, using Sani's own write token.
+     Called from image-studio.html and page-editor.html via sbcFetch(). */
+  const denied = requireDashboardKey(event, cors());
+  if (denied) return denied;
 
   const token = process.env.GITHUB_TOKEN;
   if (!token) return json(500, { error: "GITHUB_TOKEN is not set." });
@@ -210,7 +219,7 @@ function encPath(p) { return p.split("/").map(encodeURIComponent).join("/"); }
 function escapeRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 function escAttr(s) { return String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function cors() {
-  return { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
+  return { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, x-sbc-key", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 }
 function json(statusCode, obj) {
   return { statusCode, headers: Object.assign({ "Content-Type": "application/json" }, cors()), body: JSON.stringify(obj) };

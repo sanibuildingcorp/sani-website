@@ -254,10 +254,22 @@ exports.handler = async function (event) {
       "You write in a confident, premium, trustworthy voice. Never keyword-stuff. " +
       "Always weave keywords naturally into helpful, specific content. " +
       "IMPORTANT: Do NOT use the word 'luxury' or 'luxurious' anywhere. Instead use phrasing like 'high-quality', 'premium', 'high-end', 'top-quality', or 'professional'. " +
+      /* ══ NEVER CLAIM A LICENCE. STANDING RULE. ════════════════════════════
+         Sani is insured, not licensed, and saying otherwise on a public page is
+         a claim about credentials the business does not hold. scope-writer.js
+         strips the word from AI output correctly - and this prompt was handing
+         it straight back in, in the BUSINESS line below, where the model reads
+         it as a fact about the company and writes it onto the page. A rule
+         enforced in one file and contradicted in another is not enforced.
+         Law 3: prompt rules do not hold, code rules do - so the word is gone
+         from the prompt AND scrubbed from the output below. */
+      "NEVER write 'licensed', 'license', 'licence' or any licensing or certification claim. " +
+      "Sani Building Corp is fully insured. Say 'fully insured' if credentials are relevant at all. " +
+      "NEVER mention TV mounting or TV installation. " +
       "Return ONLY valid JSON, no markdown, no backticks, no preamble.";
 
     const userPrompt = `
-BUSINESS: Sani Building Corp — licensed NYC renovation contractor.
+BUSINESS: Sani Building Corp — fully insured NYC renovation contractor.
 Phone: 332-277-0990. Areas: Brooklyn, Manhattan, Queens, Bronx, Long Island. 10+ years, 4.9★ (62 reviews).
 
 SERVICE PAGE TO OPTIMIZE: ${service}
@@ -596,13 +608,57 @@ function rewritePage(html, content, opts) {
 }
 
 // Replace "luxury"/"luxurious" anywhere in the content object with high-quality wording
+/* ══ THE SAFETY NET RUNS ON EVERY STANDING RULE, NOT JUST ON "LUXURY". ═══════
+   Law 3: prompt rules do not hold, code rules do. "Do not say luxury" was
+   written into the prompt AND enforced here, and that pairing is why no page
+   ever shipped saying luxury. The licence claim and the TV rule had only the
+   prompt half - and in the licence's case the prompt actively asserted it - so
+   they were one distracted generation away from reaching a public page.
+
+   Both now go through the same walk. A licence claim becomes the true statement
+   ("fully insured"); a TV-mounting offer is removed rather than reworded,
+   because there is no true version of a service Sani does not sell. */
+/* Capitalise the replacement only where a capital actually belongs: at the start
+   of the string or of a sentence.
+
+   The first version keyed off the original's first letter, which is right for
+   "Licensed" and wrong for "TV" - an acronym is uppercase wherever it sits, so
+   "We offer TV mounting" came back as "We offer Shelving". Position decides,
+   not the original's case. */
+function cap(replacement, whole, offset) {
+  const before = String(whole).slice(0, offset);
+  const atSentenceStart = !before.trim() || /[.!?:]["')\]]?\s+$/.test(before) || /\n\s*$/.test(before);
+  return atSentenceStart
+    ? replacement.charAt(0).toUpperCase() + replacement.slice(1)
+    : replacement;
+}
+
 function stripLuxury(obj) {
   function fix(str) {
     return String(str)
       .replace(/\bLuxurious\b/g, "High-End")
       .replace(/\bluxurious\b/g, "high-end")
       .replace(/\bLuxury\b/g, "High-Quality")
-      .replace(/\bluxury\b/g, "high-quality");
+      .replace(/\bluxury\b/g, "high-quality")
+      /* Licensing claims -> the credential Sani actually holds.
+         LONGEST FORMS FIRST, and each one swallows any "fully" in front of it.
+         Replacing the bare word alone produced "we are fully fully insured" —
+         enforced, and unusable on a public page. A scrub that emits broken
+         English has traded one embarrassment for another. */
+      .replace(/\b(?:fully\s+)?licen[sc]ed\s+(?:and|&)\s+insured\b/gi, (m, o, w) => cap("fully insured", w, o))
+      .replace(/\b(?:fully\s+)?insured\s+(?:and|&)\s+licen[sc]ed\b/gi, (m, o, w) => cap("fully insured", w, o))
+      .replace(/\bfully\s+licen[sc]ed\b/gi, (m, o, w) => cap("fully insured", w, o))
+      .replace(/\blicen[sc]ed\b/gi, (m, o, w) => cap("fully insured", w, o))
+      .replace(/\blicen[sc]ing\b/gi, (m, o, w) => cap("insurance", w, o))
+      .replace(/\blicen[sc]es?\b/gi, (m, o, w) => cap("insurance", w, o))
+      /* TV mounting is not offered. The verb form has to survive the swap or
+         "we can mount your TV" becomes "we can installing shelving". */
+      .replace(/\bTV\s+(?:wall\s+)?(?:mounting|mounts?|installations?|install)\b/gi,
+               (m, o, w) => cap("shelving", w, o))
+      .replace(/\btelevisions?\s+(?:wall\s+)?(?:mounting|mounts?|installations?)\b/gi,
+               (m, o, w) => cap("shelving", w, o))
+      .replace(/\b(mount|install)(ing|s|ed)?\s+(?:your\s+|a\s+|the\s+)?TVs?\b/gi,
+               (m, verb, suffix, o, w) => cap("install" + (suffix === "ing" ? "ing" : suffix || "") + " shelving", w, o));
   }
   function walk(v) {
     if (typeof v === "string") return fix(v);

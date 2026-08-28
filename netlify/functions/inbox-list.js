@@ -136,11 +136,18 @@ exports.handler = async function (event) {
   return { statusCode: 200, headers: cors(), body: JSON.stringify({ customers: list, sources: dbg }) };
 };
 
+/* list-estimates is now gated on DASHBOARD_KEY. This is a server-to-server call
+   from one Netlify function to a sibling, so the key comes from the function's
+   own environment - never from the caller's request. Sending it on every sibling
+   fetch is harmless for the ungated ones and means a future gate on any of them
+   does not silently break this inbox. */
 async function getJsonAny(path) {
   let lastErr;
+  const headers = { accept: "application/json" };
+  if (process.env.DASHBOARD_KEY) headers["x-sbc-key"] = process.env.DASHBOARD_KEY;
   for (const base of BASES) {
     try {
-      const r = await fetch(base + path, { headers: { accept: "application/json" } });
+      const r = await fetch(base + path, { headers: headers });
       if (!r.ok) throw new Error("HTTP " + r.status + " @ " + base);
       return await r.json();
     } catch (e) { lastErr = e; }

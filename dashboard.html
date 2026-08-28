@@ -3010,7 +3010,7 @@ async function loadEstimates() {
   host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
   try {
     const [estimateRes, handymanRes, visitsRes] = await Promise.all([
-      fetch("/.netlify/functions/list-estimates").catch(function(e) { console.error("Estimates load failed:", e); return null; }),
+      sbcFetch("/.netlify/functions/list-estimates").catch(function(e) { console.error("Estimates load failed:", e); return null; }),
       fetch("/.netlify/functions/handyman-get").catch(function(e) { console.error("Handyman load failed:", e); return null; }),
       fetch("/.netlify/functions/visits").catch(function(e) { console.error("Visits load failed:", e); return null; })
     ]);
@@ -6156,7 +6156,7 @@ function gatherForm() {
 async function saveDraft() {
   const est = gatherForm();
   try {
-    const r = await fetch("/.netlify/functions/save-estimate", {
+    const r = await sbcFetch("/.netlify/functions/save-estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ref: currentRecord.ref, estimate: est, status: currentRecord.status === "new" ? "drafted" : currentRecord.status }),
@@ -6193,7 +6193,7 @@ async function sendToCustomer() {
   var includeContract = (window.__sbcIncludeContract === true);
 
   try {
-    let r = await fetch("/.netlify/functions/save-estimate", {
+    let r = await sbcFetch("/.netlify/functions/save-estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ref: currentRecord.ref, estimate: est }),
@@ -6433,7 +6433,7 @@ async function markCompleted(done) {
   if (!done && !confirm("Reopen this project? It will go back to Accepted status.")) return;
   var newStatus = done ? "completed" : "accepted";
   try {
-    var r = await fetch("/.netlify/functions/save-estimate", {
+    var r = await sbcFetch("/.netlify/functions/save-estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ref: currentRecord.ref, status: newStatus,
@@ -6474,7 +6474,7 @@ async function toggleInvoicePaid(invoiceNumber, makePaid) {
     });
     if (currentRecord.status === "completed") {
       // Project is completed — keep it completed; re-assert status server-side
-      fetch("/.netlify/functions/save-estimate", {
+      sbcFetch("/.netlify/functions/save-estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ref: currentRecord.ref, status: "completed" }),
@@ -9189,9 +9189,15 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
           try {
             var est = (typeof gatherForm === "function") ? gatherForm() : currentRecord.estimate;
             est.invoiceWorkDate = wd;
+            /* _wdFetch is the ORIGINAL window.fetch, saved before this wrapper
+               replaced it, so it does not pass through sbcFetch. save-estimate is
+               gated now, so the key has to be attached by hand right here. */
             await _wdFetch("/.netlify/functions/save-estimate", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                "x-sbc-key": (typeof sbcKey === "function" ? sbcKey() : "")
+              },
               body: JSON.stringify({ ref: currentRecord.ref, estimate: est })
             });
           } catch (e) { console.error("workdate save", e); }

@@ -112,7 +112,13 @@ exports.handler = async function (event) {
       fetch("https://velvety-horse-2aa6e3.netlify.app/.netlify/functions/contact-leads")
         .then((r) => (r.ok ? r.json() : { leads: [] }))
         .catch(() => ({ leads: [] })),
-      fetch("https://velvety-horse-2aa6e3.netlify.app/.netlify/functions/list-estimates")
+      /* list-estimates is gated on DASHBOARD_KEY now. Server-to-server, so the
+         key comes from this function's own environment. Without this header the
+         call 401s and every estimate customer silently looks like a stranger,
+         so their replies would stop being matched to their job. */
+      fetch("https://velvety-horse-2aa6e3.netlify.app/.netlify/functions/list-estimates", {
+        headers: process.env.DASHBOARD_KEY ? { "x-sbc-key": process.env.DASHBOARD_KEY } : {},
+      })
         .then((r) => (r.ok ? r.json() : {}))
         .catch(() => ({})),
     ]);

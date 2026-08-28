@@ -4,8 +4,12 @@
 //   -> commits the HTML to the matching service-page file in the repo.
 //   -> Netlify auto-deploys on the new commit, so the live page updates in ~1 minute.
 //
+// CONTRACTOR ONLY: POST with header  x-sbc-key: <DASHBOARD_KEY>.
+//
 // Requires Netlify env var: GITHUB_TOKEN  (a GitHub Personal Access Token with
 // Contents: Read & Write permission on the sani-website repo).
+
+const { requireDashboardKey } = require("./lib/require-dashboard-key");
 
 const GH_OWNER = process.env.GITHUB_OWNER || "sanibuildingcorp";
 const GH_REPO = process.env.GITHUB_REPO || "sani-website";
@@ -29,6 +33,13 @@ exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return json(405, { error: "POST only" });
   }
+
+  /* CONTRACTOR ONLY. This commits straight to the GitHub repo with GITHUB_TOKEN
+     and had no inbound gate: anyone who knew the URL could overwrite any service
+     page on the live site, using Sani's own write token. Called from
+     seo-content.html, which sends the key via sbcFetch(). */
+  const denied = requireDashboardKey(event, cors());
+  if (denied) return denied;
 
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
@@ -120,7 +131,7 @@ exports.handler = async function (event) {
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 }

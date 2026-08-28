@@ -10,6 +10,25 @@
 //                 VISITS_KEY          (optional — handed back after a correct
 //                                      password so the Live Visitors tab can
 //                                      call get-visits; it is NOT public)
+//                 DASHBOARD_KEY       (optional — handed back the same way, so
+//                                      every contractor page can authenticate
+//                                      to the gated write endpoints)
+//
+//  WHY DASHBOARD_KEY IS RETURNED HERE.
+//  It was only ever obtainable by typing it into a box on dashboard.html ("Enter
+//  the send key above (one time)") and it lived in localStorage from then on.
+//  That worked for the one page that asked, and left every other contractor page
+//  - image-studio, page-editor, seo-content - with no way to authenticate at
+//  all, which is precisely why their endpoints were left ungated. Handing the
+//  key back after a correct password puts every one of those pages on the same
+//  footing as the reply box, so the endpoints CAN be gated without breaking a
+//  tool the contractor uses. The hand-typed box still works and still wins; this
+//  is a fallback, not a replacement.
+//
+//  This does put the key in the page's session after login. That is the same
+//  exposure VISITS_KEY already has and the same one the typed key already had -
+//  and it is bounded by the password, which is the actual gate. The alternative
+//  on offer was leaving the endpoints open to the whole internet.
 //
 //  Fast by design: no AI, no network. Stays well inside the 10s synchronous
 //  function limit (Law 1 in CLAUDE.md).
@@ -59,5 +78,9 @@ exports.handler = async (event) => {
     return reply(401, { ok: false, error: 'Incorrect password' });
   }
 
-  return reply(200, { ok: true, visitsKey: process.env.VISITS_KEY || '' });
+  return reply(200, {
+    ok: true,
+    visitsKey: process.env.VISITS_KEY || '',
+    dashboardKey: process.env.DASHBOARD_KEY || '',
+  });
 };

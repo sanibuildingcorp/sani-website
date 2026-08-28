@@ -1,7 +1,17 @@
 // netlify/functions/save-estimate.js
 // Saves contractor's edits (scope, line items, prices) back to Blobs.
+//
+// CONTRACTOR ONLY. POST with header  x-sbc-key: <DASHBOARD_KEY>.
+//
+// This had no inbound gate of any kind. Anyone who knew the URL could POST a ref
+// and overwrite that estimate's scope, line items and prices - on a job already
+// quoted, accepted, or paid against. It is called from dashboard.html and from
+// js/customer-scope-control.js and js/customer-scope-loader-v2.js, and despite
+// their names those two load only in dashboard-shell.html, which is a contractor
+// page. No customer flow touches this function, so gating it is safe.
 
 const { getStore } = require("@netlify/blobs");
+const { requireDashboardKey } = require("./lib/require-dashboard-key");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -10,6 +20,9 @@ exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
   }
+
+  const denied = requireDashboardKey(event, cors());
+  if (denied) return denied;
 
   try {
     const {
@@ -57,9 +70,13 @@ exports.handler = async function (event) {
 
 function cors() {
   return {
+    /* x-sbc-key must be advertised here or a cross-origin browser preflight
+       rejects the request before the handler ever runs — the gate would look
+       like a network error rather than a 401. */
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
+    "Cache-Control": "no-store",
   };
 }

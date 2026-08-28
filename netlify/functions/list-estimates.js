@@ -1,8 +1,20 @@
 // netlify/functions/list-estimates.js
 // Returns all estimates from Blobs storage. Dashboard calls this on load.
+//
+// CONTRACTOR ONLY. GET with header  x-sbc-key: <DASHBOARD_KEY>.
+//
+// THIS WAS THE WORST OF THE OPEN ENDPOINTS. A plain GET, no key, no password,
+// returned EVERY estimate in the business: customer names, home addresses,
+// phone numbers, email addresses and prices, for every job ever quoted. One URL,
+// no credentials, the whole customer list.
+//
+// Callers, all contractor-side: dashboard.html on load, and inbox-list.js /
+// inbox-sync.js server-to-server. The server-side callers now send the key from
+// their own environment; nothing a customer's browser does reaches this.
 
 const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
+const { requireDashboardKey } = require("./lib/require-dashboard-key");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -11,6 +23,9 @@ exports.handler = async function (event) {
   if (event.httpMethod !== "GET") {
     return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
   }
+
+  const denied = requireDashboardKey(event, cors());
+  if (denied) return denied;
 
   try {
     const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
@@ -80,8 +95,9 @@ exports.handler = async function (event) {
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Content-Type": "application/json",
+    "Cache-Control": "no-store",
   };
 }
