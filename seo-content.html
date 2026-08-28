@@ -496,7 +496,7 @@ async function publishToGitHub(){
   document.getElementById("err").classList.remove("show");
 
   try {
-    const r = await fetch("/.netlify/functions/seo-publish",{
+    const r = await sbcFetch("/.netlify/functions/seo-publish",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({ slug:currentDraft.slug, html:currentDraft.fullHtml })

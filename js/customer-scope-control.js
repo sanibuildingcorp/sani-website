@@ -1,3 +1,21 @@
+/* save-estimate is gated on DASHBOARD_KEY. This file is injected by
+   dashboard-shell.html AFTER dashboard.html, so sbcFetch() from
+   js/dashboard-auth.js is normally already defined - but load order across an
+   injected document is not something to bet a save on, so the key is read
+   directly if it is not. Never falls back to an unkeyed fetch: that would 401
+   and look like a mysterious "Save failed" instead of a missing key. */
+function sbcScopeFetch(url, opts) {
+  if (typeof sbcFetch === 'function') return sbcFetch(url, opts);
+  var o = opts || {}, h = {};
+  var src = o.headers || {};
+  for (var k in src) { if (Object.prototype.hasOwnProperty.call(src, k)) h[k] = src[k]; }
+  var key = '';
+  try { key = localStorage.getItem('sbcKey') || sessionStorage.getItem('sbcKey') || ''; } catch (e) {}
+  h['x-sbc-key'] = key;
+  o.headers = h;
+  return fetch(url, o);
+}
+
 /*
  * Sani Building Corp — Customer Scope Control
  * Isolated dashboard extension. Does NOT replace core dashboard functions.
@@ -207,7 +225,7 @@
   async function saveFields(fields,success){
     var r=rec(); if(!r)return false;
     try{
-      var resp=await fetch('/.netlify/functions/save-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:r.ref,estimate:fields})});
+      var resp=await sbcScopeFetch('/.netlify/functions/save-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:r.ref,estimate:fields})});
       var data=await resp.json().catch(function(){return {};});
       if(!resp.ok)throw new Error(data.error||'Save failed');
       Object.keys(fields).forEach(function(k){r.estimate[k]=fields[k];});

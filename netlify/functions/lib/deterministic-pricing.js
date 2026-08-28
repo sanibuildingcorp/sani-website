@@ -251,13 +251,20 @@ const CONTAINER_SERVICES = ['Handyman', 'General'];
    nothing else. "Mirror" is never a bathroom line unless the customer bought a
    bathroom, and even then the shower-glass guard below keeps it out. */
 const SERVICE_VOCAB = [
+  /* ══ THE PLURAL WAS NOT MATCHED, AND CUSTOMERS WRITE THE PLURAL. ═══════════
+     `\bwindow\b` does not match "windows" and `\bdoor\b` does not match "doors".
+     So "replace the three double-hung windows" failed Windows' strong pattern,
+     and "replace the doors" failed Doors' evidence pattern outright - the
+     customer asked for a trade in the most ordinary way there is and got no card
+     for it. Caught by the true-positive half of deterministic-pricing.test.js.
+     Every anchored singular here now admits its plural. */
   { name: 'Windows',           ev: /\bwindow/,
-                               strong: /\bwindow\b|window sash|window sill|glazing bead/,
+                               strong: /\bwindows?\b|window sash|window sill|glazing bead/,
                                item: /window|sash|glazing bead/,                                   sec: /window/,
                                trade: /window/ },
-  { name: 'Doors',             ev: /\bdoor\b|doorway/,
-                               strong: /\bdoor slab\b|door jamb|doorway|lockset|door hardware/,
-                               item: /\bdoor\b|doorway|jamb|lockset|hinge/,                        sec: /\bdoor/,
+  { name: 'Doors',             ev: /\bdoors?\b|doorway/,
+                               strong: /\bdoor slabs?\b|door jamb|doorway|lockset|door hardware/,
+                               item: /\bdoors?\b|doorway|jamb|lockset|hinge/,                      sec: /\bdoor/,
                                trade: /\bdoor/ },
   { name: 'Mirrors & Glass',   ev: /\bmirror/,
                                strong: /\bmirror\b|glass panel|glass wall|glazier/,
@@ -315,9 +322,34 @@ const SERVICE_VOCAB = [
 
 const VOCAB_BY_NAME = SERVICE_VOCAB.reduce((a, v) => { a[v.name] = v; return a; }, {});
 
+/* ══ PROTECTION CONSUMABLES BELONG TO NO TRADE. ══════════════════════════════
+   Drop cloths, rosin paper, poly sheeting, ram board and masking tape are used
+   by every trade on every job. They are general conditions.
+
+   "Painters tape" is the one that did the damage. Painting's strong pattern is
+   /\bpaint\b|painter|primer coat/, and `painter` matches "painters and masking
+   tape" - so a line of carpentry protection material named the Painting trade,
+   and once named, Painting was permitted to collect it. That is how $508.82 of
+   stair protection was presented to a customer as Painting on a job with no
+   painting in it, with the Stairs card short by exactly that amount.
+
+   Caught here rather than with a `not` clause on the Painting entry, because
+   `not` is also consulted against the customer's own description in the evidence
+   loop - and a customer who writes "paint the hall, bring painters tape" must
+   still get a Painting card. This tests one line's wording and nothing else. */
+const PROTECTION_CONSUMABLE = /drop\s*cloth|rosin\s*paper|poly\s*(?:sheet|film)|plastic\s*sheet|ram\s*board|masking\s*(?:tape|film|paper)|painters?'?\s*tape|floor\s*protection|surface\s*protection|protective\s*(?:covering|sheet|paper)/;
+
+function protectionConsumable(item) {
+  const i = norm(item);
+  return !!i && PROTECTION_CONSUMABLE.test(i);
+}
+
 function genericOperation(item) {
   const i = norm(item);
   if (!i) return false;
+  /* Runs BEFORE the specificity check. A drop-cloth line matches Painting's item
+     pattern, so `specific` would otherwise be true and this would return false. */
+  if (PROTECTION_CONSUMABLE.test(i)) return true;
   const specific = SERVICE_VOCAB.some(v => v.item.test(i) && !(v.not && v.not.test(i)));
   if (specific) return false;
   return /project management|project coordination|coordination|supervision|general conditions|general labor|final project cleanup|final cleanup|walk[- ]?through|site protection|material haul|walk[- ]?up.*haul|debris removal|debris disposal|disposal haul|jobsite setup/.test(i);
@@ -393,6 +425,52 @@ function canonicalService(section, item, selected) {
    his own request — so the ticket can still split into real cards, but a
    Bathroom card requires him to have actually written bathroom/shower/tub/
    toilet/vanity. */
+/* ══ A NOUN IS NOT A PURCHASE. ═══════════════════════════════════════════════
+   Three separate fixes have already removed a SOURCE of false evidence from
+   resolveServiceSet: the estimator's own line items, then scope_items, then the
+   analyst's task text. Each closed one hole. None of them touched the source
+   that cannot be removed - the customer's own sentence - and that source has the
+   same defect, because the matcher reads a flat string with no grammar in it.
+
+   Executed against the live engine, selected_trades: ["Stairs"]:
+
+     "Rebuild the staircase."                          -> ["Stairs"]
+     "Rebuild the staircase to the second floor."      -> ["Stairs","Flooring"]
+     "Rebuild the staircase. Do not touch the bathroom."-> ["Stairs","Bathroom"]
+     "Rebuild the staircase. No painting needed."      -> ["Stairs","Painting"]
+     "The kitchen was done last year, leave it alone." -> ["Stairs","Kitchen"]
+
+   The customer saying a trade is NOT wanted admitted that trade. Once admitted,
+   canonicalService is permitted to file lines onto it, and the phantom walks off
+   with real money: $508.82 of stair protection presented as Painting, with the
+   Stairs card short by exactly that amount.
+
+   Two sanitisers, applied before any vocabulary is matched. Both are subtractive:
+   they can only ever REMOVE text from consideration, so neither can invent a
+   service, and a plainly-worded request is untouched by both. */
+
+/* A storey is a place, not a floor finish. "Second floor" is where the work is;
+   "hardwood floor" is what was bought. Strip the storey phrases and leave the
+   rest of the sentence intact, so "hardwood floors on the second floor" still
+   reads as Flooring while "the staircase to the second floor" no longer does. */
+const STOREY_PHRASE = /\b(?:on|to|at|from)?\s*(?:the\s+)?(?:1st|2nd|3rd|4th|5th|first|second|third|fourth|fifth|top|ground|garden|parlor|parlour|upper|lower|main|basement|cellar|attic|penthouse)\s+floors?\b|\bfloors?\s*(?:no\.?|number)?\s*\d+\b|\b\d+(?:st|nd|rd|th)\s+floors?\b|\bwalk[\s-]?up\b|\bper\s+floor\b|\bfloor\s+plan\b/g;
+
+/* A clause that says a trade is NOT wanted is evidence AGAINST it, never for it.
+   The sentence is split on clause boundaries and any clause carrying a negation
+   is dropped whole - the negation governs its own clause and nothing further, so
+   "no painting, but replace the windows" keeps the windows and drops the paint. */
+const NEGATION = /\b(?:no|not|non|none|never|without|except|excluding|exclude[sd]?|omit(?:ted|ting)?|skip(?:ped|ping)?|avoid|leave|leaving|ignore|ignoring|don'?t|do\s+not|doesn'?t|didn'?t|won'?t|isn'?t|aren'?t|already|previously|last\s+year|separate(?:ly)?\s+(?:priced|quoted|contracted)|by\s+others|others\s+to|customer\s+will|owner\s+will|nothing)\b/;
+
+function evidenceText(parts) {
+  const flat = norm(parts.join(' | ')).replace(STOREY_PHRASE, ' ');
+  /* Clause boundaries: sentence enders, the pipe joiner between fields, and the
+     conjunctions a negation does not carry across. */
+  return flat
+    .split(/[.;!?|]+|,\s*(?=(?:but|however|though|although|and)\b)|\b(?:but|however|though|although)\b/)
+    .filter(c => c && !NEGATION.test(c))
+    .join(' | ');
+}
+
 function resolveServiceSet(analysis, input, estimate) {
   let allowed = allowedServiceSet(analysis?.selected_trades || []);
   /* ══ EVIDENCE ALWAYS RUNS, NOT ONLY WHEN THE TRADE LIST IS EMPTY. ══════════
@@ -415,7 +493,9 @@ function resolveServiceSet(analysis, input, estimate) {
      customer picked, plus what the customer described. Still nothing sourced
      from the estimator's own output, so no phantom can enter this way. */
   {
-    const ev = norm([
+    /* evidenceText(), not norm(): storey phrases stripped and negated clauses
+       dropped before a single vocabulary entry is tested. See the block above. */
+    const ev = evidenceText([
       text(input?.request?.description),
       text(input?.request?.service),
       ...(input?.request?.selectedServices || []).map(text),
@@ -451,7 +531,7 @@ function resolveServiceSet(analysis, input, estimate) {
          the question. Incidental nouns inside a task description are not a
          purchase. This closes the phantom-card class for every trade at once,
          rather than one keyword at a time. */
-    ].join(' | '));
+    ]);
     const found = [];
     SERVICE_VOCAB.forEach(v => {
       if (CONTAINER_SERVICES.includes(v.name)) return;
@@ -469,8 +549,65 @@ function resolveServiceSet(analysis, input, estimate) {
        if evidence found nothing at all, the container stays — it is better to
        show one honest "Handyman" card than no card. */
     const real = allowed.filter(x => !CONTAINER_SERVICES.includes(x));
+
+    /* ══ BREAK THE CIRCLE: EVIDENCE PROPOSES, A PRICED LINE CONFIRMS. ══════════
+       Sanitising the text is necessary and not sufficient, because the admission
+       is self-justifying. Evidence admits Painting -> canonicalService is now
+       PERMITTED to file a stair line onto Painting -> that line "proves" Painting
+       belongs -> the card ships with money in it. Every phantom this system has
+       produced went round that loop.
+
+       So when the customer picked at least one real trade, a service the customer
+       did not pick must be corroborated by a priced line that names it in its own
+       right - matched STRONGLY, against the customer's picks alone, before any
+       evidence has widened the gate. A strong word names one trade and nothing
+       else, so "mask the windows" cannot corroborate Windows but "install three
+       double-hung windows" can.
+
+       A container-only ticket is exempt: evidence is the only thing it has, and
+       requiring corroboration there would leave the customer with no cards at all.
+       That path is unchanged. */
+    let admitted = found;
+    if (real.length && found.length) {
+      const lines = [...(estimate?.labor || []), ...(estimate?.materials || [])];
+      const namedByALine = name => {
+        const v = SERVICE_VOCAB.find(x => x.name === name);
+        if (!v) return false;
+        /* EITHER pattern counts. Two attempts to be stricter here both produced
+           MISSING cards, which is the worse failure - a phantom card is
+           embarrassing, a missing card is work that never gets billed:
+
+             - requiring `strong` alone made 11 of the 17 trades impossible to
+               admit, because only 6 entries define one at all; and
+             - preferring `strong` over `item` where both exist still lost Doors,
+               whose strong pattern wants "door slab" or "door hardware" and so
+               does not match the perfectly ordinary line "Hang new interior doors
+               and hardware".
+
+           Both were caught by the true-positive half of the test file, and
+           neither would have been caught by reading the code.
+
+           `item` is loose, and that is acceptable here, because corroboration is
+           the SECOND of two independent gates: the customer's own sanitised words
+           had to name the trade before this is ever consulted. The two loosest
+           ways a line can name a trade by accident - protection consumables and
+           general conditions - are excluded outright. */
+        const pats = [v.strong, v.item].filter(Boolean);
+        if (!pats.length) return false;
+        return lines.some(l => {
+          const i = norm(l?.item);
+          /* A tin of protection material corroborates nothing, and neither does
+             a coordination or cleanup line. */
+          if (!i || protectionConsumable(i) || genericOperation(i)) return false;
+          if (v.not && v.not.test(i)) return false;
+          return pats.some(re => re.test(i));
+        });
+      };
+      admitted = found.filter(f => real.includes(f) || namedByALine(f));
+    }
+
     const union = real.slice();
-    found.forEach(f => { if (!union.includes(f)) union.push(f); });
+    admitted.forEach(f => { if (!union.includes(f)) union.push(f); });
     if (union.length) allowed = union;
     else if (!allowed.length) allowed = found;
   }
@@ -1396,8 +1533,23 @@ function selectedCustomerServices(analysis, estimate, input, allowed) {
      `candidates` is drawn from `set`, so `set.includes(x)` was already true for
      every candidate and the whole filter passed everything through. A service
      survives on the same terms as every other service: the customer asked for it,
-     or a priced line belongs to it. */
-  const keep = candidates.filter(x => set.includes(x) || lines.includes(x));
+     or a priced line belongs to it.
+
+     ══ AND THE FILTER THAT REPLACED IT WAS THE SAME TAUTOLOGY. ═════════════════
+     `candidates.filter(x => set.includes(x) || lines.includes(x))` reads as the
+     rule this comment describes, and is not that rule: `candidates` is derived
+     from `set` one line above, so the first clause is true for every element and
+     `keep === candidates`, always. Verified by execution. The gate documented
+     here has never once narrowed anything.
+
+     The rule needs the customer's OWN selections, not the resolved set that
+     evidence has already widened. `picked` is what the customer actually chose;
+     everything else has to have earned its place by owning a priced line. */
+  const picked = allowedServiceSet([
+    ...(analysis?.selected_trades || []),
+    ...((input?.request?.selectedServices) || []),
+  ]);
+  const keep = candidates.filter(x => picked.includes(x) || lines.includes(x));
   const out = keep.length ? keep : candidates;
   return order.filter(x => out.includes(x));
 }

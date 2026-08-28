@@ -2,6 +2,50 @@
 // Customer clicks Accept or Decline on quote.html.
 // Updates status in Blobs, emails contractor with the news.
 
+/* ══ THE CUSTOMER MAY NOT NAME THEIR OWN PRICE. ══════════════════════════════
+   This endpoint has to stay open — the customer is the one who presses Accept,
+   and gating it on a contractor key would break every quote link ever sent. So
+   the endpoint is public and the FIELDS are guarded instead.
+   `finalTotal` arrived from the customer's browser and was written verbatim to
+   record.customerFinalTotal, which is the stamped figure customer-total.js
+   honours over everything else — the contract, the invoice and the deposit all
+   read it. A POST with finalTotal: 1 accepted a $30,000 job for a dollar, and
+   nothing in the pipeline would have contradicted it afterwards.
+   quote.html legitimately sends a HIGHER figure when the customer picks paid
+   finish options, so the number cannot simply be discarded. It is clamped: the
+   server recomputes the base from the record's own lines, and anything at or
+   above it is honoured while anything below it is refused and logged. Choosing
+   to pay more is not an attack; paying less is.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function acceptFinalTotal(record, submitted) {
+  if (submitted == null) return;
+
+  const n = Number(submitted);
+  if (!Number.isFinite(n) || n <= 0) {
+    record.rejectedFinalTotal = { value: String(submitted).slice(0, 40), at: new Date().toISOString(), reason: "not a positive number" };
+    return;
+  }
+
+  let base = 0;
+  try { base = Number(customerTotals(record.estimate || {}, {}).customerTotal) || 0; }
+  catch (e) { base = 0; }
+
+  /* No usable base (an estimate with no lines) means nothing to compare against,
+     so the submitted figure is not trusted at all. */
+  if (base <= 0) {
+    record.rejectedFinalTotal = { value: n, at: new Date().toISOString(), reason: "no server-side total to check against" };
+    return;
+  }
+
+  if (n < base - 0.005) {
+    record.rejectedFinalTotal = { value: n, expectedAtLeast: base, at: new Date().toISOString(), reason: "below the quoted total" };
+    record.customerFinalTotal = base;
+    return;
+  }
+
+  record.customerFinalTotal = Math.round(n * 100) / 100;
+}
+
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
@@ -41,13 +85,13 @@ exports.handler = async function (event) {
       record.signature = signature || "";
       if (finishSelections) record.customerSelections = finishSelections;
       if (materialsSelections) record.customerMaterialSelections = materialsSelections;
-      if (finalTotal != null) record.customerFinalTotal = finalTotal;
+      acceptFinalTotal(record, finalTotal);
     } else if (action === "review") {
       record.status = "review_requested";
       record.reviewRequestedAt = new Date().toISOString();
       if (finishSelections) record.customerSelections = finishSelections;
       if (materialsSelections) record.customerMaterialSelections = materialsSelections;
-      if (finalTotal != null) record.customerFinalTotal = finalTotal;
+      acceptFinalTotal(record, finalTotal);
     } else if (action === "question") {
       /* THE THREAD IS APPEND-ONLY.
          record.customerQuestion was one string, rewritten on every question, so

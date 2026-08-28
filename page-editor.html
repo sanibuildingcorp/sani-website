@@ -288,7 +288,7 @@ async function publish(){
   const btn = document.getElementById("pub-btn");
   btn.disabled = true; btn.textContent = "Publishing…";
   try{
-    const res = await fetch("/.netlify/functions/publish-image-to-page",{
+    const res = await sbcFetch("/.netlify/functions/publish-image-to-page",{
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
         page: curSlug,

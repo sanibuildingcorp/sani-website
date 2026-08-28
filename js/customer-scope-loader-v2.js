@@ -1,3 +1,21 @@
+/* save-estimate is gated on DASHBOARD_KEY. This file is injected by
+   dashboard-shell.html AFTER dashboard.html, so sbcFetch() from
+   js/dashboard-auth.js is normally already defined - but load order across an
+   injected document is not something to bet a save on, so the key is read
+   directly if it is not. Never falls back to an unkeyed fetch: that would 401
+   and look like a mysterious "Save failed" instead of a missing key. */
+function sbcScopeFetch(url, opts) {
+  if (typeof sbcFetch === 'function') return sbcFetch(url, opts);
+  var o = opts || {}, h = {};
+  var src = o.headers || {};
+  for (var k in src) { if (Object.prototype.hasOwnProperty.call(src, k)) h[k] = src[k]; }
+  var key = '';
+  try { key = localStorage.getItem('sbcKey') || sessionStorage.getItem('sbcKey') || ''; } catch (e) {}
+  h['x-sbc-key'] = key;
+  o.headers = h;
+  return fetch(url, o);
+}
+
 /* Sani Building Corp — Customer Scope Control v2
    Robust DOM-injected dashboard module. Does not replace dashboard.html or core dashboard functions. */
 (function(){
@@ -67,7 +85,7 @@
   function items(s,kind,label,cls){const rows=A(s[kind]);return`<div class="scv2-col ${cls}"><div class="scv2-ch"><span>${label}</span><button type="button" data-add="${s.id}|${kind}">+ Add</button></div>${rows.length?rows.map((x,i)=>`<div class="scv2-row"><textarea data-edit="${s.id}|${kind}|${i}">${esc(x)}</textarea><select data-move="${s.id}|${kind}|${i}"><option value="">Move…</option>${kind!=='included'?'<option value="included">Included</option>':''}${kind!=='customerSupplies'?'<option value="customerSupplies">Customer</option>':''}${kind!=='notIncluded'?'<option value="notIncluded">Not incl.</option>':''}</select><button type="button" class="scv2-x" data-del="${s.id}|${kind}|${i}">×</button></div>`).join(''):'<div class="scv2-empty">No items</div>'}</div>`}
   function html(){const r=record(),e=estimate(),d=draft();if(!r||!e||!d)return'';const live=e.customerScopePublished===true;const shared=/sent|opened|question|accepted|invoiced|paid|completed/i.test(C(r.status));return`<div class="scv2-top"><div><h3>🧾 CUSTOMER SCOPE CONTROL</h3><p>Edit exactly what the customer should see. Changes stay private until you publish.</p></div><span class="scv2-badge ${live?'live':''}">${live?'● PUBLISHED':'● PRIVATE DRAFT'}</span></div>${shared?'<div class="scv2-warn">⚠ This estimate has already been shared. Draft edits are private; publishing will update the customer’s existing quote link.</div>':''}<div>${A(d.services).map(s=>`<div class="scv2-svc"><div class="scv2-head"><input class="scv2-title" data-title="${s.id}" value="${esc(s.title)}"><div class="scv2-price">SERVICE PRICE<b>${money(s.baseSubtotal)}</b></div></div><div class="scv2-cols">${items(s,'included','✓ Included','inc')}${items(s,'customerSupplies','◆ Customer Supplies','sup')}${items(s,'notIncluded','— Not Included','out')}</div></div>`).join('')}</div><div class="scv2-actions"><button type="button" class="scv2-btn sec" id="scv2-reset">↻ Rebuild from AI</button><button type="button" class="scv2-btn" id="scv2-save">💾 Save Draft</button><button type="button" class="scv2-btn pub" id="scv2-publish">📤 Publish Scope</button>${live?'<button type="button" class="scv2-btn danger" id="scv2-freeze">🔒 Freeze / Unpublish</button>':''}</div><div class="scv2-note">Scope wording is controlled here. Price changes still use your existing Labor / Materials tables, so totals remain consistent.</div>`}
 
-  async function save(fields,msg){const r=record();if(!r)return false;try{const res=await fetch('/.netlify/functions/save-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:r.ref,estimate:fields})});const j=await res.json().catch(()=>({}));if(!res.ok)throw new Error(j.error||'Save failed');Object.assign(r.estimate,fields);if(typeof toast==='function')toast(msg||'✓ Saved');return true}catch(err){if(typeof toast==='function')toast('Save failed: '+err.message,true);else alert('Save failed: '+err.message);return false}}
+  async function save(fields,msg){const r=record();if(!r)return false;try{const res=await sbcScopeFetch('/.netlify/functions/save-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:r.ref,estimate:fields})});const j=await res.json().catch(()=>({}));if(!res.ok)throw new Error(j.error||'Save failed');Object.assign(r.estimate,fields);if(typeof toast==='function')toast(msg||'✓ Saved');return true}catch(err){if(typeof toast==='function')toast('Save failed: '+err.message,true);else alert('Save failed: '+err.message);return false}}
 
   function bind(root){
     root.querySelectorAll('[data-edit]').forEach(el=>el.addEventListener('input',()=>{const [id,k,i]=el.dataset.edit.split('|');const s=service(id);if(s){s[k][+i]=el.value;touch()}}));
