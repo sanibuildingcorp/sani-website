@@ -86,13 +86,20 @@ body{font-family:var(--body);background:var(--beige);color:var(--ink);-webkit-fo
 .footer strong{font-family:var(--display);letter-spacing:2px;color:var(--gold-2);font-size:14px}
 .footer a{color:var(--gold-2);text-decoration:none;font-weight:600}
 .btn-row{display:flex;gap:10px;margin-top:18px}
+/* The route back to the estimate. Deliberately quiet — it is a way out, not a
+   call to action competing with Sign & Approve — but a full-width tap target,
+   because it is most needed on a phone mid-read. */
+.back-est{display:block;margin:0 0 12px;padding:12px 14px;border:1px solid var(--line,#e2e5ea);border-radius:10px;background:#fff;color:var(--navy,#0a1628);text-decoration:none;font-weight:700;font-size:14.5px;line-height:1.35}
+.back-est:hover{background:#f7f9fb}
+#back-to-estimate-foot .back-est{margin:12px 0 0}
+.back-sub{display:block;font-weight:400;font-size:12.5px;color:#5b6b7f;margin-top:2px}
 .btn{flex:1;padding:13px;border:1.5px solid var(--gold);border-radius:10px;background:#fff;color:var(--ink);font-family:var(--body);font-weight:700;font-size:13.5px;cursor:pointer;text-align:center;text-decoration:none}
 .btn-dark{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:var(--gold);border:none}
 @media (max-width:560px){ .parties{grid-template-columns:1fr} .info-label{width:115px;min-width:115px} }
 @media print{
   body{background:#fff}
   .hero{border-radius:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .btn-row,.sig-card .sig-tools,.back-wrap{display:none}
+  .btn-row,.sig-card .sig-tools,.back-wrap,.back-est{display:none}
 }
 </style>
 </head>
@@ -116,6 +123,15 @@ body{font-family:var(--body);background:var(--beige);color:var(--ink);-webkit-fo
 
   <!-- MAIN -->
   <div id="state-main" style="display:none">
+    <!-- ══ THE WAY BACK. ══════════════════════════════════════════════════════
+         This page was a dead end. The estimate now sends the customer here to
+         approve, the link opens in a new place, and once here there was nothing
+         pointing back — no route to the scope, the prices, or the message box
+         that is the only way to ask a question. A customer with a question at
+         the moment of signing had to close the page and hunt for the original
+         email.
+         Rendered by JS once the ref is known, so it never shows a broken link. -->
+    <div id="back-to-estimate"></div>
     <div class="hero">
       <a class="brand" href="https://www.sanibuildingcorp.com">SANI BUILDING CORP</a>
       <div class="tag">Service Agreement</div>
@@ -204,10 +220,14 @@ body{font-family:var(--body);background:var(--beige);color:var(--ink);-webkit-fo
       <!-- POST-SIGN DEPOSIT INFO -->
       <div id="deposit-wrap"></div>
 
-      <div class="btn-row">
+      <div class="btn-row" id="btn-row">
         <button class="btn" onclick="window.print()">⬇ Download / Print</button>
         <a class="btn btn-dark" href="https://www.sanibuildingcorp.com">Visit Website ↗</a>
       </div>
+      <!-- The same way back, at the foot of a long document. A customer who has
+           read to the bottom and has a question should not have to scroll all
+           the way up again to find the route to the message box. -->
+      <div id="back-to-estimate-foot"></div>
 
       <div class="footer">
         <strong>SANI BUILDING CORP</strong><br>
@@ -227,6 +247,33 @@ var carry = null; // selections carried over from the quote page
 
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function fmt(n){ return "$" + Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+/* ══ ALWAYS A WAY BACK TO THE ESTIMATE. ══════════════════════════════════════
+   The estimate sends the customer here to approve, so this page has to send
+   them back — to the scope, the prices, and above all the message box, which is
+   the only place they can ask a question. Without it, a customer who reads the
+   payment schedule and wants to check one line has nowhere to go.
+
+   Both copies are written by this one function: top, so it is visible the moment
+   they land, and foot, so a reader who reached the signature block does not have
+   to scroll back up. `?ref=` is the customer's own permanent link — no key, no
+   login — so it always works for whoever is holding this page.
+
+   Hidden entirely when printing: a printed contract with "Back to your estimate"
+   on it looks like a mistake. */
+function renderBackLink(){
+  if(!ref) return;
+  var href = "/quote.html?ref=" + encodeURIComponent(ref);
+  var html =
+    '<a class="back-est" href="' + href + '">' +
+      '<span aria-hidden="true">&larr;</span> Back to your estimate' +
+      '<span class="back-sub">scope, prices, and ask us a question</span>' +
+    '</a>';
+  ["back-to-estimate","back-to-estimate-foot"].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+}
 
 try { carry = JSON.parse(sessionStorage.getItem("sbc-approve-" + ref) || "null"); } catch(e) { carry = null; }
 
@@ -297,6 +344,7 @@ function render(){
 
   document.getElementById("state-loading").style.display="none";
   document.getElementById("state-main").style.display="block";
+  renderBackLink();
 
   // Parties
   document.getElementById("cust-name").textContent = cust.name || "—";
