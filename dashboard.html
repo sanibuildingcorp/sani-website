@@ -4954,6 +4954,33 @@ function renderScopeControl() {
     html += '</div>';
   });
 
+  /* ══ SAY IT OUT LOUD WHEN THE SCREEN AND THE CUSTOMER DISAGREE. ════════════
+     The panel edits a DRAFT. The customer reads publishedCustomerScope. Those are
+     two different objects and they are allowed to differ - that is the whole point
+     of drafting privately. What is NOT acceptable is that the difference was
+     invisible, so a panel showing one Carpentry card sat next to a live customer
+     page showing Painting and Carpentry, and nothing on screen said so. */
+  (function () {
+    var pub = est.customerScopePublished === true && est.publishedCustomerScope &&
+              Array.isArray(est.publishedCustomerScope.services) ? est.publishedCustomerScope.services : null;
+    if (!pub || !pub.length) return;
+    var nm = function (x) { return String((x && (x.name || x.title)) || "").trim().toLowerCase(); };
+    var here = d.services.map(nm).filter(Boolean).sort().join("|");
+    var there = pub.map(nm).filter(Boolean).sort().join("|");
+    if (here === there) return;
+    html += '<div class="sc-svc" style="border-color:#b05c4c">' +
+      '<div class="sc-svc-head"><b style="color:#b05c4c">\u26a0 Your customer is NOT seeing this</b></div>' +
+      '<div style="padding:10px 12px;font-size:13px;line-height:1.55">' +
+        'Their live quote right now shows: <b>' + esc(pub.map(function (x) { return String(x.name || x.title || "").trim(); }).filter(Boolean).join(", ")) + '</b>.<br>' +
+        'This panel is showing your private draft: <b>' + esc(d.services.map(function (x) { return String(x.name || "").trim(); }).filter(Boolean).join(", ") || "nothing") + '</b>.<br><br>' +
+        'Publish to make theirs match yours, or load theirs to start from what they actually have.' +
+      '</div>' +
+      '<div class="sc-merge-row">' +
+        '<button class="btn-secondary" onclick="scopeLoadPublished()">\u2b07 Load what the customer sees</button>' +
+      '</div>' +
+    '</div>';
+  })();
+
   /* ══ ALTERNATIVES WERE INVISIBLE HERE AND VISIBLE TO THE CUSTOMER. ═════════
      estimate.options is rendered on quote.html as priced "Alternatives" under a
      service card. Nothing in this dashboard ever displayed it. A customer was
@@ -4962,7 +4989,7 @@ function renderScopeControl() {
      (The Finishing Options panel below is a different thing entirely — it edits
      finishGroups, not estimate.options.) They are listed here, with the price the
      customer sees and a way to withdraw one. */
-  var _opts = (est.options || []).filter(function (o) { return o; });
+  var _opts = scopeAllAlternatives();
   html += '<div class="sc-svc"><div class="sc-svc-head"><b>Alternatives the customer is shown</b></div>';
   if (!_opts.length) {
     html += '<div class="sc-empty" style="padding:10px 12px;color:var(--ink-muted,#8a9bb0)">None. Nothing extra is being offered on the customer\'s quote.</div>';
@@ -5492,16 +5519,97 @@ function scopeRenameService(si, val) {
     scopeRetargetParked(was, null, now, null);
   }
 }
-/* Withdraw an alternative so it stops appearing on the customer's quote. It carries
-   no money in the grand total, so nothing else has to move. */
-function scopeRemoveOption(oi) {
+/* ══ WHERE AN ALTERNATIVE ACTUALLY LIVES. ═══════════════════════════════════
+   quote.html reads priced alternatives from THREE fields, not one:
+     estimate.serviceBreakdown[].options   <- what it renders in practice
+     estimate.options                      <- legacy/top-level
+     estimate.optionSelections[svc].alternatives
+   My first version of this panel read only `estimate.options`, so it said "None"
+   while the customer was being shown "Option A — $3,400.00" off serviceBreakdown.
+   Reading one of three sources is the same mistake as classifying a line twice:
+   the screen and the customer disagree and only the customer finds out. */
+/* Replace the private draft with exactly what the customer is reading, so the
+   contractor can edit forward from the real thing instead of guessing. */
+function scopeLoadPublished() {
   var est = (currentRecord && currentRecord.estimate) || {};
-  var o = (est.options || [])[oi];
-  if (!o) return;
-  if (!confirm("Stop offering \"" + String(o.label || "this alternative") + "\" to the customer?\n\nIt is not part of the grand total, so your price does not change.")) return;
-  est.options = (est.options || []).filter(function (_, i) { return i !== oi; });
+  var pub = est.publishedCustomerScope && est.publishedCustomerScope.services;
+  if (!pub || !pub.length) return;
+  if (!confirm("Replace your draft with exactly what the customer is seeing now?\n\nUnsaved draft edits are lost. Nothing on the customer's side changes.")) return;
+  est.manualCustomerScopeDraft = { services: pub.map(function (sv) {
+    return {
+      name: String((sv && (sv.name || sv.title)) || "Service").trim() || "Service",
+      published: true,
+      included: (sv.included || []).slice(),
+      supplied: (sv.supplied || sv.customerSupplies || []).slice(),
+      excluded: (sv.excluded || sv.notIncluded || []).slice()
+    };
+  }) };
   renderScopeControl();
-  toast("Alternative removed — publish or re-send for the customer to see it go");
+  toast("Draft now matches the customer's quote");
+}
+
+function scopeAllAlternatives() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var out = [];
+  function add(o, src, si) {
+    if (!o) return;
+    var label = String(o.label || o.name || "Alternative").trim();
+    out.push({ label: label, description: String(o.description || ""), price: Number(o.price) || 0, src: src, si: si });
+  }
+  (est.options || []).forEach(function (o) { add(o, "top", -1); });
+  (est.serviceBreakdown || []).forEach(function (r, ri) {
+    (r && r.options || []).forEach(function (o) { add(o, "breakdown", ri); });
+  });
+  Object.keys(est.optionSelections || {}).forEach(function (k) {
+    ((est.optionSelections[k] || {}).alternatives || []).forEach(function (o) { add(o, "selection", k); });
+  });
+  var seen = {}, uniq = [];
+  out.forEach(function (o) {
+    var k = o.label.toLowerCase() + "|" + o.price;
+    if (seen[k]) return; seen[k] = 1; uniq.push(o);
+  });
+  return uniq;
+}
+
+/* ══ REMOVING MUST REMOVE IT EVERYWHERE, AND MUST SAVE. ═════════════════════
+   The first version of this button edited one array in memory and re-rendered.
+   The screen changed, nothing was written to the server, and the customer's page
+   kept showing the offer. A control that appears to work and does not is worse
+   than no control. This strips the alternative from every field quote.html reads
+   and writes the record before it tells you it is done. */
+async function scopeRemoveOption(oi) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var all = scopeAllAlternatives();
+  var target = all[oi];
+  if (!target) return;
+  var key = String(target.label || "").trim().toLowerCase();
+  var same = function (o) {
+    return String((o && (o.label || o.name)) || "").trim().toLowerCase() === key;
+  };
+  if (!confirm("Stop showing \"" + target.label + "\" to the customer?\n\n" +
+               "It is not part of your grand total, so your price does not change.\n" +
+               "This saves straight away and updates their live quote link.")) return;
+
+  est.options = (est.options || []).filter(function (o) { return !same(o); });
+  (est.serviceBreakdown || []).forEach(function (r) {
+    if (r && Array.isArray(r.options)) r.options = r.options.filter(function (o) { return !same(o); });
+  });
+  Object.keys(est.optionSelections || {}).forEach(function (k) {
+    var sel = est.optionSelections[k];
+    if (sel && Array.isArray(sel.alternatives)) sel.alternatives = sel.alternatives.filter(function (o) { return !same(o); });
+  });
+  (est.publishedCustomerScope && est.publishedCustomerScope.services || []).forEach(function (sv) {
+    if (sv && Array.isArray(sv.options)) sv.options = sv.options.filter(function (o) { return !same(o); });
+  });
+
+  try {
+    await saveDraft();
+    renderScopeControl();
+    toast("\u2713 Removed and saved \u2014 the customer's quote no longer shows it");
+  } catch (e) {
+    renderScopeControl();
+    toast("Removed on screen but SAVE FAILED \u2014 the customer may still see it: " + e.message, true);
+  }
 }
 
 function scopeAddService() {
