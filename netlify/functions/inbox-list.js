@@ -12,9 +12,20 @@
 // Call our own functions on the NETLIFY-DIRECT host, not the public domain:
 // the public domain sits behind Cloudflare, which can block server-to-server
 // fetches from datacenter IPs (symptom: every source empty -> "No customers yet").
+/* ══ OWN ORIGIN FIRST, NOW THAT THE SIBLING IS GATED. ═══════════════════════
+   DASHBOARD_KEY holds a DIFFERENT VALUE IN EACH DEPLOY CONTEXT (5 values in 5
+   contexts on this site). A function sends the key from the context IT is
+   running in, so a preview-context function calling the hardcoded PRODUCTION
+   URL presents the preview key to production's gate and gets a 401.
+
+   Production was always fine - same context both ends. Previews were not, and
+   this list only survived them by accident: production 401s, `!r.ok` throws,
+   and the loop falls through to its own origin where the key does match.
+   Relying on that is relying on the order of an array. Own origin goes first;
+   the fixed production URL stays as the fallback it was always meant to be. */
 const BASES = [
-  "https://velvety-horse-2aa6e3.netlify.app",
   process.env.URL || "https://www.sanibuildingcorp.com",
+  "https://velvety-horse-2aa6e3.netlify.app",
 ];
 
 exports.handler = async function (event) {
