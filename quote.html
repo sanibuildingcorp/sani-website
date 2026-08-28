@@ -459,9 +459,24 @@ function messageBox(open){
 
    The contract now appears on the quote whenever the contractor ticked that box,
    or whenever a contract has actually been written for the job. */
+/* ══ UNTICKING THE BOX HAS TO ACTUALLY MEAN SOMETHING. ═══════════════════════
+   The rule was `ticked OR a contract exists`. The second half was added when the
+   contract had no route to the customer at all, and it quietly cancelled the
+   first: once a contract had been written for a job — and one gets written for
+   most of them — the section appeared whether the box was ticked or not. The
+   checkbox says "Leave unchecked for quote-only approval (no contract)" and it
+   could not deliver that.
+
+   An explicit NO now wins. The `has` fallback is kept only for records where the
+   contractor never made a choice at all: the flag predates this field on older
+   estimates, and stripping the contract off a quote a customer already has —
+   possibly one they signed against — to honour a preference never expressed
+   would be worse than showing it. */
 function contractHtml(r){
  const has=!!(r&&r.contract&&(r.contract.sections||r.contract.clauses||r.contract.scope));
- if(!(r&&r.includeContractForCustomer===true)&&!has)return'';
+ const chose=r?r.includeContractForCustomer:undefined;
+ if(chose===false)return'';
+ if(chose!==true&&!has)return'';
  const url='/contract.html?ref='+encodeURIComponent(ref);
  return`<section class="card"><div class="ey">Contract</div>
  <p style="margin:0 0 14px">The full contract for this project — scope, payment schedule, warranty and terms — is on its own page. Please read it and sign there.</p>
