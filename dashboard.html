@@ -3899,6 +3899,7 @@ function renderEdit() {
       '<div id="markup-advice" style="display:none;margin-top:10px;padding:10px 12px;border-radius:9px;' +
         'background:var(--gold-soft,rgba(212,181,114,0.12));border:1px solid var(--line,rgba(212,181,114,0.28));' +
         'font-size:12.5px;line-height:1.5;color:var(--ink,#1a2433)"></div>' +
+      stampedTotalHtml(currentRecord) +
       '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
       '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
     '</div>' +
@@ -4307,6 +4308,55 @@ function recalc() {
   updateCvPreview();
 }
 
+/* ══ THE PRICE THAT OVERRIDES EVERY OTHER PRICE ═══════════════════════════════
+   record.customerFinalTotal is stamped when the customer accepts, or when they
+   add a paid option. From then on quote.html, send-quote and the contract
+   generator ALL prefer it over the line items — it IS the price.
+
+   And it was completely invisible. This panel showed the lines adding to
+   $20,000.03 while the stamp still said $10,000.01, so the customer's page and
+   every regenerated contract quoted the old number and nothing on the screen
+   even hinted at it. Hours were lost to "it's still regenerate with old price".
+
+   Now it is stated wherever the totals are, with one button to make them agree.
+   Named function, using only esc/fmt2 from this same script block. */
+function stampedTotalHtml(r) {
+  if (!r || r.customerFinalTotal == null) return "";
+  var stamped = Number(r.customerFinalTotal);
+  if (!isFinite(stamped) || stamped <= 0) return "";
+  var lines = 0;
+  try { lines = Number(calcCustomerView(r.estimate || {}).customerTotal) || 0; } catch (e) { lines = 0; }
+  if (!(lines > 0) || Math.abs(lines - stamped) <= 1) return "";
+  return '<div style="margin-top:12px;border:1.5px solid #dc2626;background:rgba(220,38,38,.08);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:var(--ink)">'
+    + '<strong style="color:#b91c1c">The customer is being quoted ' + fmt(stamped) + ', not ' + fmt(lines) + '.</strong><br>'
+    + '<span style="color:var(--ink-soft)">A price was agreed at ' + fmt(stamped) + ' and it overrides these lines everywhere the customer looks — their quote page, the emailed total and the contract. Changing the lines alone does not move it.</span><br>'
+    + '<button type="button" onclick="restampCustomerTotal()" style="margin-top:9px;padding:9px 16px;background:#b91c1c;color:#fff;border:none;border-radius:8px;font-family:var(--body,inherit);font-size:11.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">Charge ' + fmt(lines) + ' instead</button>'
+    + '</div>';
+}
+
+async function restampCustomerTotal() {
+  if (!currentRecord) return;
+  var lines = 0;
+  try { lines = Number(calcCustomerView(currentRecord.estimate || {}).customerTotal) || 0; } catch (e) { lines = 0; }
+  if (!(lines > 0)) return;
+  var was = Number(currentRecord.customerFinalTotal) || 0;
+  if (!confirm('Change the price the customer is quoted from ' + fmt(was) + ' to ' + fmt(lines) + '?\n\n'
+    + 'This is what they will see on their quote page and what a regenerated contract will state.')) return;
+  try {
+    var r = await sbcFetch("/.netlify/functions/save-estimate", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: currentRecord.ref, customerFinalTotal: lines }),
+    });
+    if (!r.ok) throw new Error("Save failed (" + r.status + ")");
+    currentRecord.customerFinalTotal = Math.round(lines * 100) / 100;
+    renderEdit();
+    toast("✓ The customer is now quoted " + fmt(lines));
+  } catch (e) {
+    console.error(e);
+    toast("Could not update the price: " + e.message, true);
+  }
+}
+
 /* ===== SET TOTAL TO A NUMBER (SimplyWise-style) ===== */
 function _stEnsureModal() {
   if (document.getElementById("set-total-overlay")) return;
@@ -4489,6 +4539,20 @@ function applySetTotal(){
     var newMatSub = targetSub - laborPart;
     if(newMatSub < -0.005){ warn.textContent = "Too low — labor alone is " + fmt(laborPart*mk) + "."; warn.style.display="block"; return; }
     _stScaleBucket(est.materials, Math.max(0,newMatSub), "materials");
+  }
+
+  /* ══ AND RE-STAMP THE AGREED PRICE. ════════════════════════════════════════
+     record.customerFinalTotal is the price the customer was last shown, and
+     quote.html, send-quote and the contract generator ALL prefer it over the
+     line items. Rescaling the lines without touching it changed nothing the
+     customer or the contract could see: on SBC-260821-KQNQ the lines said
+     $20,000.03, the stamp still said $10,000.01, and every regeneration of the
+     contract dutifully produced the old price.
+     Typing a total is the contractor stating the price. So it becomes the
+     stamped price too — there is no reading of this action where he meant the
+     customer to keep seeing the old number. */
+  if (currentRecord.customerFinalTotal != null) {
+    currentRecord.customerFinalTotal = Math.round(target * 100) / 100;
   }
 
   renderLines("labor", est.labor);
@@ -6630,7 +6694,15 @@ async function saveDraft() {
     const r = await sbcFetch("/.netlify/functions/save-estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref, estimate: est, status: currentRecord.status === "new" ? "drafted" : currentRecord.status }),
+      /* customerFinalTotal travels with the save. It is the price the customer's
+         quote and the contract both read in preference to the lines, so a draft
+         that moved the price and left the stamp behind would save an estimate
+         nobody downstream can see. Only sent when one already exists — this must
+         never CREATE a stamp on a job that had none. */
+      body: JSON.stringify(Object.assign(
+        { ref: currentRecord.ref, estimate: est, status: currentRecord.status === "new" ? "drafted" : currentRecord.status },
+        currentRecord.customerFinalTotal != null ? { customerFinalTotal: currentRecord.customerFinalTotal } : {}
+      )),
     });
     if (!r.ok) throw new Error("Save failed");
     toast("✓ Draft saved");
