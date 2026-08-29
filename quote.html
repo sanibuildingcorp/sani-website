@@ -506,9 +506,25 @@ function fmtWhen(iso){
  const d=new Date(iso);if(!isFinite(d.getTime()))return'';
  return d.toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}
 /* Sticky project bar. Present on every render, not only the first. */
-function pinHtml(r,ct){
+/* THE STICKY BAR SHOWS THE SAME NUMBER AS THE PAGE.
+   It used to be handed the totals object and print ct.total while the hero
+   printed the total WITH the customer's chosen options added — so a customer who
+   added a $2,950 option saw $9,397.04 pinned to the top of a page whose headline
+   said $12,347.04. Two prices on one screen is not a rounding complaint; it is a
+   reason not to sign. It now takes the finished figure, not the ingredients. */
+function pinHtml(r,total){
  const e=r.estimate||{},rq=r.request||{};
- return `<div class="pin"><div class="pl"><div class="pref">Estimate ${E(ref)}</div><div class="ptit">${E(e.projectTitle||rq.service||'Your project')}</div></div><div class="pr2">${M(ct.total)}</div></div>`}
+ return `<div class="pin"><div class="pl"><div class="pref">Estimate ${E(ref)}</div><div class="ptit">${E(e.projectTitle||rq.service||'Your project')}</div></div><div class="pr2">${M(total)}</div></div>`}
+/* ══ ONE PRICE, AND AFTER APPROVAL THE AGREED ONE. ══════════════════════════
+   Before approval the customer is building their own total: the quote plus
+   whatever options they have ticked. Once they approve, quote-response stamps
+   customerFinalTotal — a figure that ALREADY includes those options, checked
+   against this server's own copy of the record. Adding the options to it a
+   second time bills the same work twice on screen. The stamped number is what
+   was agreed, so once it exists nothing is added to it. */
+function shownTotal(ct){
+ if(ct.stamped!=null)return ct.stamped;
+ return Math.round((ct.total+chosenTotal())*100)/100}
 /* One photo of the job, if there is one. Photos live in two places depending on
    how the record was created; take the first that actually carries image data. */
 function heroPhoto(r){
@@ -620,8 +636,8 @@ function actionHtml(c,approved,needsContract){
   return`<section class="actions"><a class="approve" style="display:inline-block;text-align:center;text-decoration:none" href="${url}">Review &amp; sign the contract to approve &rarr;</a><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><div class="muted" style="padding:0 4px 10px;font-size:13px">This project is approved by signing the contract — scope, payment schedule and warranty are all set out there.</div>${messageBox(false)}`;
  }
  return`<section class="actions"><button class="approve" onclick="P('a')">Approve estimate</button><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><section class="card panel" id="a"><input id="sig" value="${E(c.name||'')}"><button class="approve" onclick="S('accept')">Confirm approval</button></section>${messageBox(false)}`}
-function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r);app.innerHTML=`${pinHtml(r,ct)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||r.status||'Sent'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e)||'Please refer to the estimate details provided by Sani Building Corp.')}</div></section><section class="card prices">${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
-function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal+chosenFor(x.title).reduce((t,o)=>t+o.price,0))}</b></div>`).join(''),addedRows=chosenIds().map(k=>chosen[k]).map(o=>`<div class="pr added"><b>${E(o.label)}</b><b>+${M(o.price)}</b></div>`).join(''),shown=Math.round((ct.total+chosenTotal())*100)/100;app.innerHTML=`${pinHtml(r,ct)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(shown)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}${addedRows}<div class="pr total"><span>Your estimate</span><span>${M(shown)}</span></div></section>${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal+chosenFor(s.title).reduce((t,o)=>t+o.price,0))}</b></div><div class="body">${list('Included in this service','in',withChosen(s))}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',withoutChosen(s))}${optsHtml(s)}${details(e,s)}</div></section>`).join('')}${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
+function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r);app.innerHTML=`${pinHtml(r,ct.total)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||r.status||'Sent'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e)||'Please refer to the estimate details provided by Sani Building Corp.')}</div></section><section class="card prices">${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
+function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal+chosenFor(x.title).reduce((t,o)=>t+o.price,0))}</b></div>`).join(''),addedRows=chosenIds().map(k=>chosen[k]).map(o=>`<div class="pr added"><b>${E(o.label)}</b><b>+${M(o.price)}</b></div>`).join(''),shown=shownTotal(ct);app.innerHTML=`${pinHtml(r,shown)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(shown)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}${addedRows}<div class="pr total"><span>Your estimate</span><span>${M(shown)}</span></div></section>${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal+chosenFor(s.title).reduce((t,o)=>t+o.price,0))}</b></div><div class="body">${list('Included in this service','in',withChosen(s))}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',withoutChosen(s))}${optsHtml(s)}${details(e,s)}</div></section>`).join('')}${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
 /* Seed the picker from the record before the first paint. A customer who added
    two options and approved must see those two options still added when they open
    their link again — the selection is on the record, and this page is the only
@@ -632,10 +648,21 @@ function seedChosen(r){
  if(seeded)return;seeded=true;
  A(r&&r.customerOptionSelections).forEach(function(o){
   if(!o||!o.label)return;
+  /* adoptedAt means the contractor has already written this option into the
+     estimate as a real line — the service subtotal and the scope now carry it.
+     Seeding it here as well would add the same money on top a second time. */
+  if(o.adoptedAt)return;
   const id=o.id||optId(o.label);
   chosen[id]={id:id,label:o.label,price:Number(o.price)||0,section:o.section||''}})}
 function render(r){seedChosen(r);let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r)}
-function track(){new Image().src='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now()}
+function track(){
+ /* The reload that follows an approval is not the customer opening the quote —
+    see S('accept'). One marker, spent once, so a genuine re-open later still
+    notifies. */
+ try{
+  if(sessionStorage.getItem('sbcSkipTrack')===ref){sessionStorage.removeItem('sbcSkipTrack');return}
+ }catch(e){}
+ new Image().src='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now()}
 window.P=id=>{document.querySelectorAll('.panel').forEach(x=>x.classList.remove('open'));let el=document.getElementById(id);if(el)el.classList.add('open')};
 window.S=async a=>{
  const st=document.getElementById('st'),box=document.getElementById('msg'),btn=document.getElementById('sendbtn');
@@ -675,7 +702,17 @@ window.S=async a=>{
   if(j&&j.notified===false){st.className='sendnote bad';st.textContent=(j.error||'Saved — but our notification did not go out. Please call (332) 277-0990.')}
   else{st.className='sendnote';st.textContent='Sent. We usually reply the same day — your reply will appear right here.'}
  }
- if(a==='accept'){setTimeout(()=>location.reload(),900);return}
+ if(a==='accept'){
+  /* ══ AN APPROVAL IS NOT AN OPEN. ══════════════════════════════════════════
+     Accepting reloads the page so the customer sees the approved state. The
+     reload runs render(), render() calls track(), and track() pings
+     track-quote-open — which emails the contractor "👀 Customer opened quote
+     again (open #5)". So every approval produced an ACCEPTED email followed a
+     second later by an OPENED email, and the open one landed on top of his
+     inbox. It reads as though pressing Approve only opened the quote.
+     A marker survives the reload; the next track() spends it and stays quiet. */
+  try{sessionStorage.setItem('sbcSkipTrack',ref)}catch(e){}
+  setTimeout(()=>location.reload(),900);return}
  if(card&&card.scrollIntoView)card.scrollIntoView({behavior:'smooth',block:'end'});
 };
 /* ══ PREVIEW MODE — THE REAL PAGE, THE UNSENT ESTIMATE. ══════════════════════
