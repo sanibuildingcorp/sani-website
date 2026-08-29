@@ -3427,11 +3427,23 @@ function renderEdit() {
       '<div style="color:#2f7d4f;font-weight:700;font-size:13px;margin-bottom:8px">✓ CUSTOMER ADDED ' +
       optSel.length + ' OPTION' + (optSel.length > 1 ? 'S' : '') + ' — +$' + sum.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + '</div>' +
       optSel.map(function(o) {
-        return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line-soft)">' +
+        var done = !!o.adoptedAt;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px solid var(--line-soft)">' +
           '<span>' + esc(o.label || '') + (o.section ? ' <span style="color:var(--ink-muted)">· ' + esc(o.section) + '</span>' : '') + '</span>' +
-          '<b style="white-space:nowrap;color:#2f7d4f">+$' + (Number(o.price) || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + '</b></div>';
+          '<span style="display:flex;align-items:center;gap:9px;white-space:nowrap">' +
+            '<b style="color:#2f7d4f">+$' + (Number(o.price) || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + '</b>' +
+            (done
+              ? '<span style="font-size:11.5px;color:#2f7d4f;font-weight:600">✓ in the estimate</span>'
+              : '<button class="btn-mini" data-adopt="' + escAttr(o.id || '') + '" onclick="adoptCustomerOption(this)" ' +
+                'style="border:1px solid #2f7d4f;background:#2f7d4f;color:#fff;border-radius:6px;padding:6px 11px;font:600 12px system-ui;cursor:pointer">Add to the estimate</button>') +
+          '</span></div>';
       }).join('') +
-      '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:9px;line-height:1.5">They chose these on the quote page. The price was re-checked here against this record before it was accepted — add the work to the scope before you invoice.</div>' +
+      /* Why a button and not "press Regenerate": the generator is not
+         deterministic, so regenerating an estimate the customer has already seen
+         comes back with different prices for work they were already quoted. This
+         adds one line at exactly the price they were shown, with no AI call, and
+         the server refuses the whole thing if the total lands anywhere else. */
+      '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:9px;line-height:1.5">They chose these on the quote page, and the price was re-checked here before it was accepted. <b>Add to the estimate</b> writes the work in at exactly that price — no AI, nothing else moves. Do not use Regenerate for this: it reprices the whole job.</div>' +
     '</div>';
   })();
   /* A total the customer's browser sent that this server would not stand behind.
@@ -4416,8 +4428,80 @@ function applySetTotal(){
 }
 
 /* ===== AI GENERATE ===== */
+/* ══ ADD ONE CHOSEN OPTION INTO THE ESTIMATE. NO AI. ═════════════════════════
+   The customer ticked an option at a price they were shown, and that price is
+   now a promise. Regenerate cannot keep it — the generator is not deterministic
+   and reprices the whole job — so this writes the work in at exactly the quoted
+   figure, and the server refuses if the customer-facing total lands anywhere
+   other than old total + that option. */
+async function adoptCustomerOption(btn) {
+  var id = btn && btn.getAttribute('data-adopt');
+  if (!id || !currentRecord) return;
+  var was = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Adding…';
+  try {
+    var res = await sbcFetch('/.netlify/functions/adopt-option', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: currentRecord.ref, optionId: id }),
+    });
+    var d = await res.json();
+    if (!res.ok || !d.ok) {
+      btn.disabled = false; btn.textContent = was;
+      if (window.toast) toast(d && d.reason ? d.reason : 'Could not add that option', true);
+      return;
+    }
+    if (window.toast) toast('Added "' + d.label + '" at $' + Number(d.price).toLocaleString('en-US') + ' — total is now $' + Number(d.customerTotalAfter).toLocaleString('en-US'));
+    await openEdit(currentRecord.ref);   /* reload the record so every panel shows the new line */
+  } catch (e) {
+    btn.disabled = false; btn.textContent = was;
+    if (window.toast) toast('Could not reach the server', true);
+  }
+}
+
+/* ══ REGENERATE REPRICES A JOB THE CUSTOMER MAY ALREADY HAVE BEEN QUOTED. ════
+   The generator is not deterministic. Run it twice on the same request with
+   nothing changed and the numbers differ — which is fine on a draft nobody has
+   seen, and is a broken promise once a customer has looked at a price or, worse,
+   chosen an option at one. The old confirm said "this will replace the current
+   scope and line items", which is true and far too mild: it never mentioned that
+   the price the customer is holding will change. */
+var CUSTOMER_HAS_SEEN = ["sent", "opened", "accepted", "review_requested", "invoiced", "paid", "completed"];
+function regenerateWarning(r) {
+  if (!r) return "";
+  var seen = CUSTOMER_HAS_SEEN.indexOf(String(r.status || "")) !== -1;
+  var chosen = (r.customerOptionSelections || []).length;
+  if (!seen && !chosen) return "";
+
+  var lines = ["This reprices the WHOLE job with a new AI draft.", ""];
+  if (seen) {
+    var t = null;
+    /* calcCustomerView is this page's mirror of lib/customer-total.js, and a
+       stamped total the customer accepted against wins over the lines. */
+    try {
+      var stamped = (r.customerFinalTotal != null && Number(r.customerFinalTotal) > 0) ? Number(r.customerFinalTotal) : null;
+      t = stamped != null ? stamped : calcCustomerView(r.estimate || {}).customerTotal;
+    } catch (e) { t = null; }
+    lines.push("This customer has already seen this estimate" +
+      (t ? " at $" + Number(t).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : "") + ".");
+  }
+  if (chosen) {
+    lines.push(chosen + " option" + (chosen > 1 ? "s they chose" : " they chose") +
+      " had a fixed price on their quote. Regenerating does not keep those prices.");
+    lines.push("");
+    lines.push("To add an option they chose, use the green \u201cAdd to the estimate\u201d button instead \u2014 it keeps the exact price they were shown.");
+  }
+  lines.push("");
+  lines.push("Regenerate anyway?");
+  return lines.join("\n");
+}
+
 async function generateAI(isRegenerate) {
-  if (isRegenerate && !confirm("This will replace the current scope and line items with a new AI draft. Continue?")) return;
+  if (isRegenerate) {
+    var warn = regenerateWarning(currentRecord);
+    if (warn) { if (!confirm(warn)) return; }
+    else if (!confirm("This will replace the current scope and line items with a new AI draft. Continue?")) return;
+  }
   const btn = document.getElementById("gen-btn");
   btn.disabled = true;
   btn.innerHTML = '<span class="ai-spin"></span> Generating…';
