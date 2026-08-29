@@ -52,7 +52,10 @@
       id: "wide",
       icon: "🚪",
       label: "The whole room",
-      hint: "Stand in the doorway and fit the whole space in",
+      /* The 0.5x tip is the actionable half. In a small bathroom there is nowhere
+         to step back to, and the phone's ultra-wide is the only thing that fits
+         the room in one frame. */
+      hint: "From the doorway — use 0.5× if the room is small",
       /* The one shot the estimate genuinely cannot be built without. It is what
          turns "a cracked tile" into "a 40 sq ft bathroom with a cracked tile". */
       essential: true,

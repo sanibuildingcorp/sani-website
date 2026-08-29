@@ -199,6 +199,14 @@ console.log('\nwhen the camera does open\n');
   ok('...and it does not fall back', fellBack === 0);
   ok('the video is inline, or iOS hijacks the whole screen full-screen',
     c.made.some(n => n.tagName === 'video' && n.muted === true));
+  /* THE VIEWFINDER SHOWS THE WHOLE SENSOR. `cover` filled the tall portrait
+     stage by cutting the left and right off a landscape feed — the preview
+     showed LESS of the room than the phone's own camera app, and the capture
+     used the full frame, so what was framed was not what was taken. */
+  ok('THE PREVIEW IS NOT CROPPED — it shows everything the lens is giving us',
+    c.made.some(n => n.tagName === 'video' && /object-fit:contain/.test(n.style.cssText)),
+    (c.made.find(n => n.tagName === 'video') || {}).style &&
+    (c.made.find(n => n.tagName === 'video')).style.cssText);
   ok('a coaching loop is running', c.__ticks.length === 1);
 
   /* Drive one frame through it. The stub frame is one flat surface. */
@@ -296,18 +304,26 @@ function zoomButtons(c) {
     btns.map(b => b.textContent).join(' '));
 }
 {
-  /* A phone with one lens. It can still crop inwards — a 2x button is real, it
-     genuinely crops — so the bar is not a lie and is allowed to show. What must
-     NEVER appear is a stop below 1x, because there is no glass behind it and no
-     software can invent the picture. */
+  /* A phone whose ultra-wide this page cannot reach — which is MOST iPhones,
+     because iOS does not reliably expose it as its own device. The phone's own
+     camera app does have that lens, and its 0.5x fits a whole small bathroom in
+     one frame. Offering a 2x button to somebody who needs to get WIDER is worse
+     than useless, so the bar hands over instead. */
+  let fellBack = 0, why = null;
   const c = mkbrowser({ devices: [{ kind: 'videoinput', deviceId: 'c1', label: 'Back Camera' }] });
-  open(c, { slot: 'wide', onFallback: () => {} });
+  open(c, { slot: 'wide', onFallback: (w) => { fellBack++; why = w; } });
   await settle(); await settle(); await settle();
   const btns = zoomButtons(c);
-  ok('A PHONE WITH NO ULTRA-WIDE IS NEVER OFFERED A WIDER VIEW THAN IT HAS',
-    btns.every(b => b.__stop >= 1), btns.map(b => b.__stop).join(','));
-  ok('...though cropping inwards is real, so 2x is allowed to be there',
-    btns.length === 0 || btns.some(b => b.__stop === 2), btns.map(b => b.__stop).join(','));
+  ok('A PHONE WITH NO REACHABLE ULTRA-WIDE IS NEVER OFFERED A WIDER VIEW THAN IT HAS',
+    btns.every(b => !b.__stop || b.__stop >= 1), btns.map(b => b.__stop).join(','));
+  ok('...it is told where the 0.5× actually lives instead',
+    btns.length === 1 && /0\.5×/.test(btns[0].innerHTML || ''), btns.map(b => b.innerHTML).join(' | '));
+  ok('...and no useless 2× is offered to somebody who needs to get wider',
+    !btns.some(b => b.__stop === 2));
+  btns[0].onclick({ stopPropagation() {} });
+  await settle();
+  ok('...and tapping it opens the phone camera', fellBack === 1 && why === 'library');
+  ok('...releasing our camera first, because iOS allows only one', c.__stopped >= 1);
 }
 {
   const c = mkbrowser();
