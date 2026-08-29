@@ -95,8 +95,8 @@ function mkctx(opts) {
   ctx.window = ctx; ctx.globalThis = ctx;
 
   const el = {};
-  ['contact-file-preview', 'contact-upload-title'].forEach(function (id) {
-    el[id] = { innerHTML: '', textContent: '' };
+  ['contact-file-preview', 'contact-upload-title', 'contact-shot-grid', 'contact-shot-nudge'].forEach(function (id) {
+    el[id] = { innerHTML: '', textContent: '', className: '' };
   });
   ctx.document = {
     getElementById: function (id) { return el[id] || null; },
@@ -149,14 +149,21 @@ function mkctx(opts) {
   };
 
   vm.createContext(ctx);
+  /* The real shared module, loaded the way the browser loads it — so the tiles
+     here are rendered from the same list the live page uses. */
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'photo-slots.js'), 'utf8'), ctx);
   vm.runInContext('var contactFiles = []; var CONTACT_MAX_FILES = 8; var CONTACT_MAX_BYTES = 15*1024*1024;', ctx);
   ['contactEsc', 'contactReadAsDataUrl', 'contactCompressImage', 'contactHandleFiles',
-    'contactRemoveFile', 'contactRenderFiles', 'contactUploadFiles', 'contactUploadRef']
+    'contactRemoveFile', 'contactRenderFiles', 'contactRenderShots', 'contactRenderNudge',
+    'contactUploadFiles', 'contactUploadRef']
     .forEach(function (n) { vm.runInContext(ext(n), ctx); });
   return ctx;
 }
 const file = (name, type, size) => ({ name: name, type: type || 'image/jpeg', size: size || 2000000 });
 const pick = (ctx, files) => vm.runInContext('contactHandleFiles(EV)', Object.assign(ctx, { EV: { target: { files: files, value: 'x' } } }));
+/* The same handler, called the way a named shot's tile calls it. */
+const pickSlot = (ctx, files, slot) => vm.runInContext('contactHandleFiles(EV,' + JSON.stringify(slot) + ')',
+  Object.assign(ctx, { EV: { target: { files: files, value: 'x' } } }));
 
 (async function () {
 
@@ -167,7 +174,7 @@ const pick = (ctx, files) => vm.runInContext('contactHandleFiles(EV)', Object.as
   ok('two photos are taken', c.contactFiles.length === 2, JSON.stringify(c.contactFiles.map(f => f.name)));
   ok('a photo off a phone is shrunk before it goes anywhere',
     c.contactFiles[0].data === 'data:image/jpeg;base64,COMPRESSED', c.contactFiles[0].data);
-  ok('the label says how many are attached', /2 files attached/.test(c.el['contact-upload-title'].textContent), c.el['contact-upload-title'].textContent);
+  ok('the loose-files bucket says how many it is holding', /2 other files/.test(c.el['contact-upload-title'].textContent), c.el['contact-upload-title'].textContent);
 }
 {
   const c = mkctx();
@@ -175,7 +182,7 @@ const pick = (ctx, files) => vm.runInContext('contactHandleFiles(EV)', Object.as
   ok('a PDF drawing is taken as-is, not run through the image compressor',
     c.contactFiles.length === 1 && c.contactFiles[0].kind === 'file' && /base64,RAW$/.test(c.contactFiles[0].data),
     JSON.stringify(c.contactFiles[0]));
-  ok('...and one file is counted in the singular', /1 file attached/.test(c.el['contact-upload-title'].textContent), c.el['contact-upload-title'].textContent);
+  ok('...and one is counted in the singular', /1 other file\b/.test(c.el['contact-upload-title'].textContent), c.el['contact-upload-title'].textContent);
 }
 {
   const c = mkctx({ imageDecodeFails: true });
@@ -205,7 +212,7 @@ const pick = (ctx, files) => vm.runInContext('contactHandleFiles(EV)', Object.as
   ok('one can be removed', c.contactFiles.length === 1 && c.contactFiles[0].name === 'b.jpg');
   vm.runInContext('contactRemoveFile(0)', c);
   ok('...and removing the last one puts the prompt back',
-    /Tap to add photos or files/.test(c.el['contact-upload-title'].textContent), c.el['contact-upload-title'].textContent);
+    /Anything else/.test(c.el['contact-upload-title'].textContent), c.el['contact-upload-title'].textContent);
 }
 {
   const c = mkctx();
@@ -214,6 +221,70 @@ const pick = (ctx, files) => vm.runInContext('contactHandleFiles(EV)', Object.as
   const c2 = mkctx({ imageDecodeFails: true });
   await pick(c2, [unreadable]);
   ok('a file that cannot be read at all is skipped without throwing', c2.contactFiles.length === 0);
+}
+
+/* ── the named shots, through the real handler ──────────────────────────── */
+{
+  const c = mkctx();
+  await pickSlot(c, [file('doorway.jpg')], 'wide');
+  ok('a photo taken for a named shot is filed under it',
+    c.contactFiles.length === 1 && c.contactFiles[0].slot === 'wide', JSON.stringify(c.contactFiles));
+  ok('...and its tile shows as filled', /class="shot filled"/.test(c.el['contact-shot-grid'].innerHTML), c.el['contact-shot-grid'].innerHTML.slice(0, 200));
+  ok('...and it is NOT drawn again in the loose bucket', c.el['contact-file-preview'].innerHTML === '', c.el['contact-file-preview'].innerHTML);
+}
+{
+  const c = mkctx();
+  await pickSlot(c, [file('first.jpg')], 'wide');
+  await pickSlot(c, [file('second.jpg')], 'wide');
+  ok('picking the same shot again REPLACES it — one whole-room photo, not two',
+    c.contactFiles.length === 1 && c.contactFiles[0].name === 'second.jpg', JSON.stringify(c.contactFiles.map(f => f.name)));
+}
+{
+  const c = mkctx();
+  await pickSlot(c, [file('a.jpg'), file('b.jpg')], 'close');
+  ok('a named shot takes one photo even if they pick several', c.contactFiles.length === 1);
+}
+{
+  /* Eight loose close-ups, then the doorway shot. The cap must not be what
+     stands between Zura and the one photo that makes the job estimable. */
+  const c = mkctx();
+  await pick(c, new Array(8).fill(0).map((_, i) => file('close' + i + '.jpg')));
+  ok('the loose bucket still stops at eight', c.contactFiles.length === 8);
+  await pickSlot(c, [file('doorway.jpg')], 'wide');
+  ok('THE WIDE SHOT GETS THROUGH ANYWAY — the cap must never block the one that matters',
+    c.contactFiles.length === 9 && c.contactFiles.some(f => f.slot === 'wide'), 'have ' + c.contactFiles.length);
+}
+{
+  const c = mkctx();
+  await pick(c, [file('close.jpg')]);
+  ok('loose photos are filed as "other"', c.contactFiles[0].slot === 'other');
+  ok('THE NUDGE APPEARS once photos exist with no wide shot',
+    /doorway/.test(c.el['contact-shot-nudge'].textContent) && /on/.test(c.el['contact-shot-nudge'].className),
+    c.el['contact-shot-nudge'].textContent);
+  await pickSlot(c, [file('doorway.jpg')], 'wide');
+  ok('...and goes away once they send it',
+    c.el['contact-shot-nudge'].textContent === '' && !/ on/.test(c.el['contact-shot-nudge'].className));
+}
+{
+  const c = mkctx();
+  ok('nothing is said to somebody who has sent nothing', c.el['contact-shot-nudge'].textContent === '');
+}
+{
+  const c = mkctx();
+  await pickSlot(c, [file('doorway.jpg')], 'wide');
+  await pick(c, [file('loose.jpg')]);
+  const out = await vm.runInContext('contactUploadFiles("r")', c);
+  ok('the slot travels with each uploaded link',
+    out.length === 2 && out[0].slot === 'wide' && out[1].slot === 'other', JSON.stringify(out));
+}
+{
+  const c = mkctx();
+  const grid = () => c.el['contact-shot-grid'].innerHTML;
+  vm.runInContext('contactRenderShots()', c);
+  ok('all four tiles are drawn', (grid().match(/class="shot(?: filled)?"/g) || []).length === 4, grid().slice(0, 120));
+  ok('each tile has its own file input', (grid().match(/type="file"/g) || []).length === 4);
+  ok('the wide shot is marked as the one that matters most', /Matters most/.test(grid()));
+  ok('...and only it is', (grid().match(/Matters most/g) || []).length === 1);
 }
 
 /* ── the preview ────────────────────────────────────────────────────────── */

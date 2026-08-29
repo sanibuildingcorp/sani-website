@@ -6955,9 +6955,20 @@ var leadsCache = null;
 function leadPhotosHtml(L) {
   var photos = (L && Array.isArray(L.photos)) ? L.photos.filter(Boolean) : [];
   if (!photos.length) return "";
+  /* Which named shot each one is. Kept as a plain lookup rather than importing
+     the customer-side list: the dashboard is a different page and must not fail
+     to render a lead because a script it does not load is missing. */
+  var SLOT_NAMES = { wide: "Whole room", area: "The area", close: "Close-up", scale: "With scale", other: "" };
+  var slots = (L && Array.isArray(L.photoSlots)) ? L.photoSlots : [];
+  /* No wide shot is the single most useful thing to know at a glance — it is why
+     an estimate off these photos would be a guess at the area. */
+  var hasWide = slots.indexOf("wide") !== -1;
+  var warn = (slots.length && !hasWide)
+    ? '<span style="font-weight:600;color:#b8860b"> · no wide shot</span>'
+    : '';
   return '<div style="margin:0 0 10px">'
     + '<div style="font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-muted,#8a9bb0);margin-bottom:6px">'
-    +   '📷 ' + photos.length + (photos.length === 1 ? ' photo' : ' photos') + ' attached'
+    +   '📷 ' + photos.length + (photos.length === 1 ? ' photo' : ' photos') + ' attached' + warn
     + '</div>'
     + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
     + photos.map(function (u, i) {
@@ -6965,11 +6976,15 @@ function leadPhotosHtml(L) {
            thumbnail to show, so it gets a labelled chip instead of a broken
            picture. */
         var isImg = /\.(jpe?g|png|gif|webp|avif|heic|heif)(\?|$)/i.test(u);
-        return '<a href="' + esc(u) + '" target="_blank" rel="noopener" '
-          + 'style="display:block;width:64px;height:64px;border:1px solid var(--line,rgba(13,27,42,.2));border-radius:7px;overflow:hidden;background:#f1f3f6;text-decoration:none">'
+        var name = SLOT_NAMES[slots[i]] || "";
+        return '<a href="' + esc(u) + '" target="_blank" rel="noopener" title="' + esc(name || u) + '" '
+          + 'style="display:block;width:64px;text-decoration:none">'
+          + '<span style="display:block;width:64px;height:64px;border:1px solid var(--line,rgba(13,27,42,.2));border-radius:7px;overflow:hidden;background:#f1f3f6">'
           + (isImg
               ? '<img src="' + esc(u) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block">'
               : '<span style="display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;font-weight:700;color:var(--ink,#1a2433)">📎 ' + (i + 1) + '</span>')
+          + '</span>'
+          + (name ? '<span style="display:block;font-size:9.5px;line-height:1.3;margin-top:3px;color:var(--ink-muted,#8a9bb0);text-align:center">' + esc(name) + '</span>' : '')
           + '</a>';
       }).join("")
     + '</div></div>';
