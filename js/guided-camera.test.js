@@ -34,9 +34,13 @@ function mkbrowser(opts) {
       videoWidth: opts.videoWidth === undefined ? 1920 : opts.videoWidth,
       videoHeight: opts.videoHeight === undefined ? 1080 : opts.videoHeight,
       width: 0, height: 0, clicked: 0,
+      listeners: {},
       appendChild(c) { this.children.push(c); c.parentNode = this; return c; },
       removeChild(c) { this.children = this.children.filter(x => x !== c); c.parentNode = null; return c; },
       setAttribute() {}, click() { this.clicked++; },
+      addEventListener(type, fn) { (this.listeners[type] = this.listeners[type] || []).push(fn); },
+      removeEventListener(type, fn) { this.listeners[type] = (this.listeners[type] || []).filter(f => f !== fn); },
+      fire(type, ev) { (this.listeners[type] || []).slice().forEach(f => f(ev)); },
       getContext() {
         return {
           drawImage() {},
@@ -93,11 +97,39 @@ function mkbrowser(opts) {
     ctx.navigator = { mediaDevices: { getUserMedia() { return Promise.resolve(stream); } } };
   }
 
+  /* The camera list a phone hands back. Default: an iPhone with an ultra-wide. */
+  ctx.__devices = opts.devices || [
+    { kind: 'videoinput', deviceId: 'front1', label: 'Front Camera' },
+    { kind: 'videoinput', deviceId: 'back1', label: 'Back Camera' },
+    { kind: 'videoinput', deviceId: 'backuw', label: 'Back Ultra Wide Camera' },
+  ];
+  ctx.__opened = [];
+  if (ctx.navigator.mediaDevices) {
+    ctx.navigator.mediaDevices.enumerateDevices = function () {
+      return opts.enumerateFails ? Promise.reject(new Error('no'))
+        : Promise.resolve(ctx.__devices);
+    };
+    const base = ctx.navigator.mediaDevices.getUserMedia;
+    ctx.navigator.mediaDevices.getUserMedia = function (c) {
+      const wanted = c && c.video && c.video.deviceId && c.video.deviceId.exact;
+      if (wanted) {
+        ctx.__opened.push(wanted);
+        if (opts.lensSwitchFails) return Promise.reject(new Error('cannot open lens'));
+        return Promise.resolve({ getTracks: () => [{ stop() { ctx.__stopped++; } }] });
+      }
+      return base.call(this, c);
+    };
+  }
+
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'camera-coach.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'camera-zoom.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'guided-camera.js'), 'utf8'), ctx);
   return ctx;
 }
+
+/* Touch handlers registered on the stage by the camera. */
+function touches(pairs) { return pairs.map(p => ({ clientX: p[0], clientY: p[1] })); }
 
 const open = (ctx, o) => vm.runInContext('openGuidedCamera(OPTS)', Object.assign(ctx, { OPTS: o }));
 const settle = () => new Promise(r => setTimeout(r, 0));
@@ -232,6 +264,132 @@ console.log('\nwhen the camera does open\n');
   open(c, { slot: 'wide', onFallback: () => fellBack++ });
   await settle(); await settle();
   ok('a rejected play() (autoplay policy) does not tear the camera down', fellBack === 0 && c.__ticks.length === 1);
+}
+
+/* ══ ZOOM ════════════════════════════════════════════════════════════════════
+   "If room is to small and they have to take pictures for whole room let them
+    zoom out by fingers touching"
+
+   The coach says "step back until the whole room fits in". In a Brooklyn
+   bathroom there is nowhere to step back TO. Without this the advice is just
+   nagging at somebody who is already against the door. */
+console.log('\nzooming out in a room too small to step back in\n');
+
+/* The stage is the element the pinch handlers live on. */
+function stageOf(c) { return c.made.find(n => n.listeners && n.listeners.touchstart); }
+function zoomButtons(c) {
+  const bar = c.made.find(n => n.style.cssText.indexOf('bottom:64px') !== -1);
+  return bar ? bar.children : [];
+}
+
+{
+  const c = mkbrowser();
+  open(c, { slot: 'wide', onFallback: () => {} });
+  await settle(); await settle(); await settle();
+  const btns = zoomButtons(c);
+  ok('AN IPHONE GETS A 0.5x BUTTON — the one that fits a small bathroom in frame',
+    btns.length >= 2 && btns.some(b => b.__stop === 0.5), btns.map(b => b.__stop).join(','));
+  ok('...alongside 1x', btns.some(b => b.__stop === 1));
+  ok('...and the bar is actually shown',
+    c.made.find(n => n.style.cssText.indexOf('bottom:64px') !== -1).style.display === 'flex');
+  ok('the labels read like a camera app', btns.map(b => b.textContent).join(' ').indexOf('0.5×') !== -1,
+    btns.map(b => b.textContent).join(' '));
+}
+{
+  /* A phone with one lens. It can still crop inwards — a 2x button is real, it
+     genuinely crops — so the bar is not a lie and is allowed to show. What must
+     NEVER appear is a stop below 1x, because there is no glass behind it and no
+     software can invent the picture. */
+  const c = mkbrowser({ devices: [{ kind: 'videoinput', deviceId: 'c1', label: 'Back Camera' }] });
+  open(c, { slot: 'wide', onFallback: () => {} });
+  await settle(); await settle(); await settle();
+  const btns = zoomButtons(c);
+  ok('A PHONE WITH NO ULTRA-WIDE IS NEVER OFFERED A WIDER VIEW THAN IT HAS',
+    btns.every(b => b.__stop >= 1), btns.map(b => b.__stop).join(','));
+  ok('...though cropping inwards is real, so 2x is allowed to be there',
+    btns.length === 0 || btns.some(b => b.__stop === 2), btns.map(b => b.__stop).join(','));
+}
+{
+  const c = mkbrowser();
+  open(c, { slot: 'wide', onFallback: () => {} });
+  await settle(); await settle(); await settle();
+  const half = zoomButtons(c).find(b => b.__stop === 0.5);
+  half.onclick({ stopPropagation() {} });
+  await settle(); await settle();
+  ok('TAPPING 0.5x OPENS THE ULTRA-WIDE LENS — the only way to get a wider picture',
+    c.__opened.indexOf('backuw') !== -1, JSON.stringify(c.__opened));
+  ok('...and the old camera is released, because iOS allows only one at a time',
+    c.__stopped >= 1, 'stopped=' + c.__stopped);
+}
+{
+  const c = mkbrowser();
+  open(c, { slot: 'wide', onFallback: () => {} });
+  await settle(); await settle(); await settle();
+  const st = stageOf(c);
+  ok('the stage listens for pinches', !!st);
+  st.fire('touchstart', { touches: touches([[100, 100], [200, 200]]) });
+  let prevented = 0;
+  st.fire('touchmove', { touches: touches([[140, 140], [160, 160]]), preventDefault() { prevented++; } });
+  await settle(); await settle();
+  ok('PINCHING FINGERS TOGETHER REACHES FOR THE WIDER LENS',
+    c.__opened.indexOf('backuw') !== -1, JSON.stringify(c.__opened));
+  ok('...and the page itself does not zoom instead', prevented >= 1);
+}
+{
+  const c = mkbrowser();
+  open(c, { slot: 'wide', onFallback: () => {} });
+  await settle(); await settle(); await settle();
+  const st = stageOf(c);
+  ok('a one-finger touch is not a pinch',
+    (function () {
+      try { st.fire('touchstart', { touches: touches([[10, 10]]) });
+            st.fire('touchmove', { touches: touches([[20, 20]]), preventDefault() {} });
+            return c.__opened.length === 0; } catch (e) { return 'threw: ' + e.message; }
+    })() === true);
+}
+{
+  /* The zoomed photo must be the photo they framed. */
+  const c = mkbrowser();
+  let photo = null;
+  open(c, { slot: 'wide', onPhoto: d => { photo = d; }, onFallback: () => {} });
+  await settle(); await settle(); await settle();
+  const drawn = [];
+  const shutter = c.made.find(n => n.tagName === 'button' && n.style.cssText.indexOf('border-radius:50%') !== -1);
+  shutter.onclick();
+  ok('a photo still comes out with zoom wired in', photo === 'data:image/jpeg;base64,CAPTURED');
+}
+{
+  const c = mkbrowser({ lensSwitchFails: true });
+  open(c, { slot: 'wide', onFallback: () => {} });
+  await settle(); await settle(); await settle();
+  const half = zoomButtons(c).find(b => b.__stop === 0.5);
+  half.onclick({ stopPropagation() {} });
+  await settle(); await settle();
+  ok('A LENS THAT REFUSES TO OPEN LEAVES THE CAMERA RUNNING — never a black screen',
+    c.document.body.children.length === 1, 'overlay children=' + c.document.body.children.length);
+  ok('...and the shutter still works afterwards',
+    (function () {
+      let p = null;
+      const c2 = c.made.find(n => n.tagName === 'button' && n.style.cssText.indexOf('border-radius:50%') !== -1);
+      try { c2.onclick(); return true; } catch (e) { return 'threw: ' + e.message; }
+    })() === true);
+}
+{
+  const c = mkbrowser({ enumerateFails: true });
+  let fellBack = 0;
+  open(c, { slot: 'wide', onFallback: () => fellBack++ });
+  await settle(); await settle(); await settle();
+  ok('a browser that will not list its cameras still gives a working camera, just no zoom bar',
+    fellBack === 0 && c.__ticks.length === 1);
+}
+{
+  /* enumerateDevices missing entirely — older browsers. */
+  const c = mkbrowser();
+  delete c.navigator.mediaDevices.enumerateDevices;
+  let fellBack = 0;
+  open(c, { slot: 'wide', onFallback: () => fellBack++ });
+  await settle(); await settle(); await settle();
+  ok('no enumerateDevices at all is survived', fellBack === 0 && c.__ticks.length === 1);
 }
 
 /* ══ THE PAGES USE IT ════════════════════════════════════════════════════════ */

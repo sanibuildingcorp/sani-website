@@ -126,6 +126,18 @@
       "backdrop-filter:blur(3px);pointer-events:none;transition:background .18s,color .18s", "Starting camera…");
     stage.appendChild(coach);
 
+    /* ── ZOOM ─────────────────────────────────────────────────────────────────
+       "If room is to small and they have to take pictures for whole room let
+        them zoom out by fingers touching"
+       In a Brooklyn bathroom there is nowhere to step back to, so "step back"
+       has to come with a way to obey it. Wider can only come from a WIDER LENS —
+       see js/camera-zoom.js — so this switches to the 0.5x ultra-wide rather
+       than scaling anything. Hidden entirely on a phone that has only one lens
+       and nothing to offer. */
+    var zoomBar = el("div", "position:absolute;left:0;right:0;bottom:64px;display:none;" +
+      "justify-content:center;gap:8px;pointer-events:auto");
+    stage.appendChild(zoomBar);
+
     var foot = el("div", "display:flex;align-items:center;justify-content:space-between;gap:14px;" +
       "padding:16px 22px 22px;background:rgba(0,0,0,.9);flex-shrink:0");
     /* Always available, always: some people simply have the photo already. */
@@ -158,7 +170,12 @@
       if (closed) return;
       try {
         if (video.readyState >= 2 && video.videoWidth) {
-          sctx.drawImage(video, 0, 0, ANALYSE_W, ANALYSE_H);
+          /* THE COACH READS WHAT THEY ARE LOOKING AT, cropped exactly as the
+             preview is. Reading the raw sensor instead would have it arguing
+             about a view the person cannot see — telling somebody zoomed out to
+             0.5x, with the whole room in frame, that they are too close. */
+          var c = analyseCrop(video.videoWidth, video.videoHeight);
+          sctx.drawImage(video, c.sx, c.sy, c.sw, c.sh, 0, 0, ANALYSE_W, ANALYSE_H);
           var d = sctx.getImageData(0, 0, ANALYSE_W, ANALYSE_H).data;
           var gray = toGrayLocal(d, ANALYSE_W * ANALYSE_H);
           paintCoach(coachForLocal(opts.slot, frameStatsLocal(gray, ANALYSE_W, ANALYSE_H)));
@@ -168,6 +185,130 @@
            shutter still works and the photo is still what matters. */
       }
     }
+
+    /* ── the zoom state ─────────────────────────────────────────────────── */
+    var ladder = null;      /* built once the stream is live and labels exist */
+    var zoom = 1;           /* what the person asked for, across all lenses */
+    var digital = 1;        /* the crop on top of whichever lens is open */
+    var switching = false;
+
+    function analyseCrop(vw, vh) {
+      return (typeof cropRect === "function")
+        ? cropRect(vw, vh, digital)
+        : { sx: 0, sy: 0, sw: vw, sh: vh };
+    }
+
+    /* Cropping shown in the preview. The video element is scaled up and the
+       stage clips it, which is the same picture the capture will produce. */
+    function paintZoom() {
+      try {
+        video.style.transform = digital > 1 ? "scale(" + digital + ")" : "";
+        video.style.transformOrigin = "center center";
+      } catch (e) {}
+      if (!ladder || !zoomBar.children.length) return;
+      for (var i = 0; i < zoomBar.children.length; i++) {
+        var b = zoomBar.children[i];
+        var on = Math.abs(Number(b.__stop) - zoom) < 0.001;
+        b.style.background = on ? "rgba(255,255,255,.92)" : "rgba(0,0,0,.55)";
+        b.style.color = on ? "#000" : "#fff";
+        b.textContent = (typeof labelFor === "function") ? labelFor(b.__stop) : String(b.__stop);
+      }
+    }
+
+    /* Go to a zoom level: open a different lens if this one cannot reach it,
+       then crop the rest of the way. */
+    function applyZoom(z) {
+      if (!ladder || switching) return;
+      var want = (typeof deviceForZoom === "function") ? deviceForZoom(ladder, z) : null;
+      if (!want) return;
+      zoom = want.zoom;
+      var sameLens = currentDeviceId === want.deviceId || !want.deviceId;
+      digital = want.digital;
+      paintZoom();
+      if (sameLens) return;
+
+      /* A different piece of glass. iOS allows only one camera at a time, so the
+         old track has to be stopped before the new one is asked for. */
+      switching = true;
+      var oldStream = stream;
+      navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: want.deviceId } },
+        audio: false,
+      }).then(function (s) {
+        switching = false;
+        if (closed) { try { s.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} return; }
+        try { if (oldStream) oldStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+        stream = s;
+        currentDeviceId = want.deviceId;
+        try { video.srcObject = s; var p = video.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+        paintZoom();
+      }, function () {
+        /* The lens would not open. Stay where we are rather than ending up with
+           no camera at all — the previous stream was never stopped. */
+        switching = false;
+        zoom = lastGoodZoom;
+        digital = lastGoodDigital;
+        paintZoom();
+      });
+      lastGoodZoom = zoom; lastGoodDigital = digital;
+    }
+    var currentDeviceId = "";
+    var lastGoodZoom = 1, lastGoodDigital = 1;
+
+    /* Built after permission is granted — before that every label is "". */
+    function buildZoomUi() {
+      if (typeof buildZoomLadder !== "function") return;
+      var enumerate = navigator.mediaDevices && navigator.mediaDevices.enumerateDevices;
+      if (typeof enumerate !== "function") return;
+      navigator.mediaDevices.enumerateDevices().then(function (devices) {
+        if (closed) return;
+        ladder = buildZoomLadder(devices);
+        try {
+          var track = stream && stream.getVideoTracks && stream.getVideoTracks()[0];
+          var settings = track && track.getSettings && track.getSettings();
+          if (settings && settings.deviceId) currentDeviceId = settings.deviceId;
+        } catch (e) {}
+
+        var stops = (typeof buttonStops === "function") ? buttonStops(ladder) : [1];
+        /* Nothing to offer: one lens, no wider view to reach. Showing a dead
+           control would be worse than showing none. */
+        if (stops.length < 2) return;
+        zoomBar.innerHTML = "";
+        stops.forEach(function (st) {
+          var b = el("button", "min-width:46px;padding:7px 10px;border:none;border-radius:999px;" +
+            "font-size:12.5px;font-weight:700;cursor:pointer;background:rgba(0,0,0,.55);color:#fff");
+          b.__stop = st;
+          b.onclick = function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); applyZoom(st); };
+          zoomBar.appendChild(b);
+        });
+        zoomBar.style.display = "flex";
+        paintZoom();
+      }, function () {});
+    }
+
+    /* ── pinch ──────────────────────────────────────────────────────────── */
+    var pinchFrom = 0, pinchZoomFrom = 1;
+    function spread(t) {
+      var dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    stage.addEventListener("touchstart", function (e) {
+      if (!e.touches || e.touches.length !== 2) return;
+      pinchFrom = spread(e.touches);
+      pinchZoomFrom = zoom;
+    }, { passive: true });
+    stage.addEventListener("touchmove", function (e) {
+      if (!e.touches || e.touches.length !== 2 || !pinchFrom || !ladder) return;
+      if (e.preventDefault) e.preventDefault();   /* or the page pinch-zooms instead */
+      var now = spread(e.touches);
+      if (!now) return;
+      var next = (typeof pinchZoom === "function")
+        ? pinchZoom(pinchZoomFrom, now / pinchFrom, ladder) : zoom;
+      /* Only act on a real change: switching lens on every pixel of movement
+         would thrash the camera. */
+      if (Math.abs(next - zoom) > 0.02) applyZoom(next);
+    }, { passive: false });
+    stage.addEventListener("touchend", function () { pinchFrom = 0; }, { passive: true });
 
     function teardown() {
       closed = true;
@@ -190,11 +331,16 @@
       try {
         var vw = video.videoWidth, vh = video.videoHeight;
         if (!vw || !vh) return;
-        var w = Math.min(vw, CAPTURE_MAX_W);
-        var h = Math.round(vh * (w / vw));
+        /* WHAT THEY FRAMED IS WHAT THEY GET. The preview is cropped by the
+           zoom, so the saved photo has to be cropped identically — otherwise
+           somebody carefully frames a room at 1.4x and receives a wider,
+           different picture. */
+        var c = analyseCrop(vw, vh);
+        var w = Math.min(c.sw, CAPTURE_MAX_W);
+        var h = Math.round(c.sh * (w / c.sw));
         var out = document.createElement("canvas");
         out.width = w; out.height = h;
-        out.getContext("2d").drawImage(video, 0, 0, w, h);
+        out.getContext("2d").drawImage(video, c.sx, c.sy, c.sw, c.sh, 0, 0, w, h);
         var data = out.toDataURL("image/jpeg", 0.85);
         teardown();
         if (typeof opts.onPhoto === "function") opts.onPhoto(data);
@@ -229,6 +375,9 @@
       var p = video.play();
       if (p && typeof p.catch === "function") p.catch(function () {});
       paintCoach({ state: "warn", text: opts.startText || "Line up your shot" });
+      /* Only now: before permission is granted every camera label is an empty
+         string, so the ultra-wide is indistinguishable from the rest. */
+      try { buildZoomUi(); } catch (e) {}
       timer = setInterval(tick, TICK_MS);
     }, function (err) {
       /* Denied, dismissed, no camera, or blocked by an in-app browser. All the
