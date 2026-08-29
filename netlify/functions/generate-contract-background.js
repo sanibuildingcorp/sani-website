@@ -75,6 +75,15 @@ exports.handler = async function (event) {
       return (s.groupName || s.group || "") + ": " + (s.optionName || s.option || "");
     }).filter(function (t) { return t !== ": "; });
 
+    /* ══ THE OPTIONS THE CUSTOMER ADDED ARE PART OF THE JOB. ══════════════════
+       They are already part of the PRICE — customerTotals reads the stamped
+       total above, which quote-response raised by exactly these. A contract that
+       charges for Article 32 remediation and never mentions it in the scope is a
+       dispute waiting to be had, and the customer would be right. */
+    const addedOptions = (record.customerOptionSelections || [])
+      .map(function (o) { return String((o && o.label) || "").trim(); })
+      .filter(Boolean);
+
     const projectAddress = record.projectAddress || customer.address || "";
 
     const prompt = `You are a contracts specialist for Sani Building Corp, an insured NYC renovation contractor (2954 Brighton 12th Street, Brooklyn, NY 11235 · 332-277-0990 · contact@sanibuildingcorp.com).
@@ -93,6 +102,7 @@ ${String(est.scopeOfWork || "(see labor items)").slice(0, 1200)}
 - Labor items: ${(est.labor || []).map(function (i) { return i.item; }).filter(Boolean).join("; ").slice(0, 600) || "(none)"}
 - Materials: ${materialNames.join("; ").slice(0, 600) || "(none listed)"}
 - Selected finishes: ${(chosen.length ? chosen : finishDefaults).join("; ") || "(standard finishes)"}
+- OPTIONAL WORK THE CUSTOMER ADDED (already included in the contract total — every one of these MUST appear in scopeOfWork): ${addedOptions.join("; ") || "(none)"}
 - Special customer notes: ${String(reqData.description || "(none)").slice(0, 400)}
 
 OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact shape:
@@ -158,7 +168,7 @@ RULES:
       projectAddress: projectAddress,
       sections: {
         projectType: parsed.projectType || est.projectTitle || "Renovation Project",
-        scopeOfWork: Array.isArray(parsed.scopeOfWork) ? parsed.scopeOfWork : [],
+        scopeOfWork: withAddedOptions(Array.isArray(parsed.scopeOfWork) ? parsed.scopeOfWork : [], addedOptions),
         materialsList: Array.isArray(parsed.materialsList) ? parsed.materialsList : materialNames,
         timeline: parsed.timeline || est.timelineText || "To be scheduled",
         paymentSchedule: schedule,
@@ -228,6 +238,27 @@ function callClaude(apiKey, prompt) {
     req.write(payload);
     req.end();
   });
+}
+
+/* THE PROMPT ASKS; THIS DECIDES.
+   Every option the customer paid for has to be in the contract scope. The model
+   is told to include them and usually does, but "usually" is not a contract
+   term: anything it left out is appended verbatim. Matched loosely, on the
+   distinctive words of the label, so a line the model rewrote in its own
+   contract language is recognised rather than duplicated. */
+function withAddedOptions(scope, addedOptions) {
+  const out = Array.isArray(scope) ? scope.slice() : [];
+  (addedOptions || []).forEach(function (label) {
+    const words = String(label).toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/)
+      .filter(function (w) { return w.length > 4 && !/^option$/.test(w); });
+    const key = words.slice(0, 3);
+    const already = out.some(function (line) {
+      const t = String(line).toLowerCase();
+      return key.length > 0 && key.every(function (w) { return t.indexOf(w) !== -1; });
+    });
+    if (!already) out.push(label);
+  });
+  return out;
 }
 
 function cors() {

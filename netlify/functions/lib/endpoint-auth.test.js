@@ -151,9 +151,11 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
   console.log("\n7. quote-response: open to the customer, but they cannot set the price");
   {
     const { handler } = require(FN("quote-response"));
-    const accept = (finalTotal) => handler({
+    const accept = (finalTotal, extra) => handler({
       httpMethod: "POST", headers: {},
-      body: JSON.stringify({ ref: "SBC-260805-XQNQ", action: "accept", signature: "A Customer", finalTotal: finalTotal }),
+      body: JSON.stringify(Object.assign(
+        { ref: "SBC-260805-XQNQ", action: "accept", signature: "A Customer", finalTotal: finalTotal },
+        extra || {})),
     });
 
     reset();
@@ -177,11 +179,32 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
       Math.abs(Number(STORE["SBC-260805-XQNQ"].customerFinalTotal) - 20300) < 0.005,
       "stamped " + STORE["SBC-260805-XQNQ"].customerFinalTotal);
 
+    /* ══ HIGHER THAN THE QUOTE NEEDS A REASON. ═════════════════════════════
+       This used to assert that any total at or above the quote was honoured.
+       Half a rule: it would have written the quote plus a million dollars onto
+       the contract, and nobody could have explained the line. A raise is
+       legitimate when the customer bought something — a priced alternative or a
+       finish upgrade — and those are now priced from THIS record. */
     reset();
-    await accept(23800);
-    t("accepting HIGHER (paid finish options) is honoured",
+    await accept(23800, { finishSelections: [{ group: "Wall tile", option: "Large-format porcelain", upgrade: 3500 }] });
+    t("accepting HIGHER with a paid finish upgrade is honoured",
       Math.abs(Number(STORE["SBC-260805-XQNQ"].customerFinalTotal) - 23800) < 0.005,
       "stamped " + STORE["SBC-260805-XQNQ"].customerFinalTotal);
+
+    reset();
+    await accept(23800);
+    t("...but a bare raise with nothing bought is refused",
+      Math.abs(Number(STORE["SBC-260805-XQNQ"].customerFinalTotal) - 20300) < 0.005,
+      "stamped " + STORE["SBC-260805-XQNQ"].customerFinalTotal);
+
+    reset();
+    await accept(1000000);
+    t("...and the quote plus a million dollars certainly is",
+      Math.abs(Number(STORE["SBC-260805-XQNQ"].customerFinalTotal) - 20300) < 0.005,
+      "stamped " + STORE["SBC-260805-XQNQ"].customerFinalTotal);
+    t("...with the attempt recorded", 
+      !!(STORE["SBC-260805-XQNQ"].rejectedFinalTotal || {}).allowedAtMost,
+      JSON.stringify(STORE["SBC-260805-XQNQ"].rejectedFinalTotal));
 
     for (const junk of [0, -5000, "free", null, NaN, Infinity]) {
       reset();
