@@ -306,6 +306,8 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 </div></section>
 
 <script src="js/photo-slots.js"></script>
+<script src="js/camera-coach.js"></script>
+<script src="js/guided-camera.js"></script>
 <script>
 /* ══ PHOTOS AND FILES ═════════════════════════════════════════════════════════
    Chosen files are held here as data URIs until the moment of submit, then
@@ -375,11 +377,47 @@ function contactRenderShots(){
         + '<span class="shot-label">' + contactEsc(s.label) + '</span>'
         + '<span class="shot-hint">' + contactEsc(s.hint) + '</span>'
         + (s.essential ? '<span class="shot-need">Matters most</span>' : '');
-    return '<label class="shot' + (held ? ' filled' : '') + '" for="' + inputId + '">' + inner + '</label>'
+    /* A button, not a <label for>. Tapping it tries the in-page camera first —
+       the one that can actually say "step back" — and only opens the ordinary
+       file picker when that is not possible. A label would go straight to the
+       picker and there would be nowhere to put the coach. */
+    return '<div class="shot' + (held ? ' filled' : '') + '" role="button" tabindex="0" '
+      + 'onclick="contactOpenShot(\'' + s.id + '\')">' + inner + '</div>'
       + '<input type="file" id="' + inputId + '" accept="image/*,application/pdf,.pdf,.heic,.heif" '
       + 'onchange="contactHandleFiles(event,\'' + s.id + '\')" style="display:none">';
   }).join("");
   contactRenderNudge();
+}
+
+/* Tapping a named shot. Every route out of the guided camera — unsupported
+   browser, denied permission, no camera at all, an in-app browser that blocks
+   it, "choose from library", or anything thrown anywhere inside it — ends at the
+   ordinary file picker. A lead must never be lost to a clever camera. */
+function contactOpenShot(slotId){
+  var input = document.getElementById("contact-shot-" + slotId);
+  function picker(){ if (input) input.click(); }
+  var s = (typeof slotById === "function") ? slotById(slotId) : null;
+  if (typeof openGuidedCamera !== "function" || typeof cameraAvailable !== "function" || !cameraAvailable()) {
+    picker(); return;
+  }
+  try {
+    openGuidedCamera({
+      slot: slotId,
+      label: s ? s.label : "Take a photo",
+      hint: s ? s.hint : "",
+      onPhoto: function(dataUrl){ contactAddShotPhoto(slotId, dataUrl); },
+      onFallback: picker,
+    });
+  } catch (err) { console.error("guided camera failed to open", err); picker(); }
+}
+
+/* A photo taken in the guided camera. Already a JPEG data URI at the same size
+   the compressor would have produced, so it joins the list directly. */
+function contactAddShotPhoto(slotId, dataUrl){
+  if (!dataUrl) return;
+  contactFiles = contactFiles.filter(function(p){ return !p || p.slot !== slotId; });
+  contactFiles.push({ name: slotId + ".jpg", data: dataUrl, kind: "image", slot: slotId });
+  contactRenderFiles();
 }
 
 /* One sentence, only once they have started sending photos, never a block on
