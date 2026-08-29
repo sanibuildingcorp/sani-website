@@ -35,6 +35,7 @@ exports.handler = async function (event) {
       aiError,
       aiStartedAt,
       aiFinishedAt,
+      customerFinalTotal,
     } = JSON.parse(event.body);
 
     if (!ref) {
@@ -57,6 +58,32 @@ exports.handler = async function (event) {
     if (aiError !== undefined) existing.aiError = aiError;
     if (aiStartedAt !== undefined) existing.aiStartedAt = aiStartedAt;
     if (aiFinishedAt !== undefined) existing.aiFinishedAt = aiFinishedAt;
+
+    /* ══ THE STAMPED CUSTOMER TOTAL ═══════════════════════════════════════════
+       record.customerFinalTotal is the price the customer was last shown and
+       agreed to. quote.html, send-quote and generate-contract-background ALL
+       prefer it over the line items — so while it is set, it is the price, full
+       stop.
+       It was written only by the customer accepting (quote-response) and by
+       adopt-option, and there was no way at all to correct it from the dashboard.
+       So a contractor could raise a price by every means the UI offers — rescale
+       the lines, type a new total, regenerate — and the customer's quote and the
+       contract both went on quoting the old number, silently. On SBC-260821-KQNQ
+       that was $10,000.01 against a $20,000.03 estimate, and pressing Regenerate
+       produced a fresh contract still carrying the old price.
+       Now it can be re-stamped, which is a deliberate act: the contractor is
+       saying "this is the new agreed price". null clears it and hands the truth
+       back to the line items. Anything that is not a positive number is refused
+       rather than stored, because a zero or a NaN here would quote $0.00 across
+       the customer's page, the contract and the invoice at once. */
+    if (customerFinalTotal !== undefined) {
+      if (customerFinalTotal === null) {
+        delete existing.customerFinalTotal;
+      } else {
+        const n = Number(customerFinalTotal);
+        if (Number.isFinite(n) && n > 0) existing.customerFinalTotal = Math.round(n * 100) / 100;
+      }
+    }
 
     existing.updatedAt = new Date().toISOString();
     await store.setJSON(ref, existing);
