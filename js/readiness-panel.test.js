@@ -96,6 +96,43 @@ console.log('\n4b. It says whether the job was held or re-read');
   t('the reason cannot inject markup', nasty.indexOf('<img src=x') === -1, nasty.slice(0, 300));
 }
 
+/* ══ WHY THE SECOND DRAFT HAPPENED ════════════════════════════════════════
+   The repair pass costs a quarter of the wait, and its reason used to exist
+   only as one truncated sentence the AI wrote about itself. */
+console.log('\n4c. It says what the first draft failed');
+{
+  const rep = run({ pricingReadiness: { status: 'READY_TO_ESTIMATE' },
+    generationTiming: { totalMs: 278000, repairMs: 69000 },
+    repairReport: { ms: 69000, failures: ['No cleanup labor is included.', 'No site/floor protection labor or material is included.'], stillFailingAfter: [] } });
+  t('it says how many checks failed', /failed 2 checks/.test(rep), rep.slice(0, 400));
+  t('...and how long the second draft cost', /69s/.test(rep));
+  t('...and names each failure verbatim', /No cleanup labor is included/.test(rep) && /site\/floor protection/.test(rep));
+  t('...and says the repair cleared them', /All cleared by the second draft/.test(rep));
+
+  const one = run({ pricingReadiness: { status: 'READY_TO_ESTIMATE' }, generationTiming: { totalMs: 1 },
+    repairReport: { ms: 1000, failures: ['Estimate contains no labor lines.'], stillFailingAfter: [] } });
+  t('one failure is not called "1 checks"', /failed 1 check —/.test(one), one.slice(0, 300));
+
+  const bad = run({ pricingReadiness: { status: 'READY_TO_ESTIMATE' }, generationTiming: { totalMs: 1 },
+    repairReport: { ms: 5000, failures: ['a'], stillFailingAfter: ['Selected trade "Painting" has no labor line.'] } });
+  t('a repair that did not fix everything says so', /Still failing after the repair/.test(bad), bad.slice(0, 400));
+  /* esc() turns the quote into &quot; — which is the escaping working, so the
+     assertion matches the escaped form rather than weakening the escaping. */
+  t('...and names what is still wrong', /Painting&quot; has no labor line/.test(bad), bad.slice(0, 500));
+
+  const skipped = run({ pricingReadiness: { status: 'READY_TO_ESTIMATE' }, generationTiming: { totalMs: 1 },
+    repairReport: { ms: 5000, failures: ['a'], stillFailingAfter: [], skippedBecause: 'repair returned no labor lines' } });
+  t('a repair that was thrown away says why', /The repair was not used: repair returned no labor lines/.test(skipped));
+
+  t('an estimate whose first draft passed says nothing about repairs',
+    !/first draft failed/.test(run({ pricingReadiness: { status: 'READY_TO_ESTIMATE' }, generationTiming: { totalMs: 1 } })));
+  t('an empty report says nothing',
+    !/first draft failed/.test(run({ pricingReadiness: { status: 'READY_TO_ESTIMATE' }, generationTiming: { totalMs: 1 }, repairReport: { failures: [] } })));
+  t('a failure string cannot inject markup',
+    run({ pricingReadiness: { status: 'READY_TO_ESTIMATE' }, generationTiming: { totalMs: 1 },
+      repairReport: { failures: ['<img src=x onerror=alert(1)>'] } }).indexOf('<img src=x') === -1);
+}
+
 console.log('\n5. Nothing it renders can break the page');
 {
  const nasty=run({pricingReadiness:{status:'NEEDS_CUSTOMER_QUESTIONS',reason:'<img src=x onerror=alert(1)>'},

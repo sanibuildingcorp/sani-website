@@ -135,6 +135,7 @@ exports.handler = async function handler(event) {
     estimate = applyDeterministicPricing(estimate, projectAnalysis, input);
     timing.deterministicMs += Date.now() - deterministicStarted;
     let validation = validateEstimate(estimate, projectAnalysis, input);
+    let repairReport = null;
 
     if (!validation.passed) {
       /* THE REPAIR PASS IS AN IMPROVEMENT, NEVER A REQUIREMENT.
@@ -186,6 +187,29 @@ exports.handler = async function handler(event) {
         timing.repairSkipped = String((repairError && repairError.message) || repairError).slice(0, 200);
       }
       timing.repairMs = Date.now() - repairStarted;
+
+      /* ══ WHY THE REPAIR PASS RAN. ═══════════════════════════════════════════
+         The block above says these failures should be "visible in the dashboard
+         rather than silent", and until now they were not written down anywhere.
+         On the ordinary path the repair succeeds, `validation` is replaced by
+         the PASSING result, and the reason 69 of 278 seconds went on a second
+         draft is lost — which is exactly the question that could not be answered
+         from the contractor's screenshots.
+
+         This is a report, not a judgement: it says what the first draft was
+         missing and how long the second one cost. Seeing the same failure on
+         every small bathroom job is what will show whether the estimator is
+         genuinely forgetting something or a check is too eager for the size of
+         the work. */
+      repairReport = {
+        ranAt: new Date().toISOString(),
+        ms: timing.repairMs,
+        accepted: !timing.repairSkipped,
+        skippedBecause: timing.repairSkipped || "",
+        failures: (preRepairValidation.failures || []).slice(0, 20),
+        warnings: (preRepairValidation.warnings || []).slice(0, 20),
+        stillFailingAfter: (validation.failures || []).slice(0, 20),
+      };
     }
 
     /* LIVE MATERIAL PRICES — real products, real retail prices.
@@ -227,6 +251,9 @@ exports.handler = async function handler(event) {
     timing.totalMs = Date.now() - timing.startedAt;
     estimate.generationTiming = { ...timing };
     estimate.validation = validation;
+    /* Null on the ordinary path where the first draft passed — the panel then
+       says nothing, which is the right amount to say. */
+    estimate.repairReport = repairReport;
     if (marketResearch) estimate.marketResearch = marketResearch;
     estimate.pricingReadiness = projectAnalysis.pricing_readiness;
     estimate.clarificationQuestions = projectAnalysis.clarification_questions;

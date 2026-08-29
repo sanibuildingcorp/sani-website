@@ -3538,6 +3538,31 @@ function renderEdit() {
           '</div>';
     }
 
+    /* ══ WHY THE SECOND DRAFT HAPPENED. ════════════════════════════════════
+       A repair pass costs a quarter of the wait — 69 seconds of 278 on one
+       live estimate — and until now the only trace of it was one truncated
+       sentence the AI wrote about itself. These are the checks the FIRST draft
+       actually failed, verbatim. Seeing the same one on every small bathroom
+       job is what shows whether the estimator keeps forgetting something or a
+       check is simply too eager for the size of the work. */
+    var rr = est.repairReport;
+    if (rr && (rr.failures || []).length) {
+      html += '<details style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line-soft)">' +
+        '<summary style="cursor:pointer;font-size:12px;color:#c8892f;font-weight:600">' +
+          '\u{1F527} The first draft failed ' + rr.failures.length + ' check' + (rr.failures.length > 1 ? 's' : '') +
+          ' — a second draft was written' + (Number(rr.ms) ? ' (' + Math.round(Number(rr.ms) / 1000) + 's)' : '') +
+        '</summary>' +
+        '<ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6;color:var(--ink-soft)">' +
+          rr.failures.map(function (f) { return '<li>' + esc(String(f)) + '</li>'; }).join('') +
+        '</ul>' +
+        ((rr.stillFailingAfter || []).length
+          ? '<div style="font-size:12px;color:#c83c3c;margin-top:8px">Still failing after the repair: ' +
+              rr.stillFailingAfter.map(function (f) { return esc(String(f)); }).join('; ') + '</div>'
+          : '<div style="font-size:12px;color:#2f7d4f;margin-top:8px">All cleared by the second draft.</div>') +
+        (rr.skippedBecause ? '<div style="font-size:12px;color:#c83c3c;margin-top:6px">The repair was not used: ' + esc(String(rr.skippedBecause)) + '</div>' : '') +
+      '</details>';
+    }
+
     if (st) {
       html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
           '<span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:' + st.c +
