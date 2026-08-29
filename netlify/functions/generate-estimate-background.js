@@ -24,6 +24,8 @@ const { priceMaterialsLive, serperShopping } = require("./lib/material-prices");
 /* The customer's own answers to the questions he was asked. See
    buildConversationForEstimator. */
 const thread = require("./lib/thread");
+/* Pin the job so Regenerate re-prices it instead of re-deciding it. */
+const { resolveScopePin } = require("./lib/scope-pin");
 
 /* Claude Opus 5. Thinking is ON BY DEFAULT on this model and shares the max_tokens
    budget with the response text, which is why every call site below was raised.
@@ -72,13 +74,34 @@ exports.handler = async function handler(event) {
     const input = buildEstimatorInput(record, body);
     const timing = { startedAt: Date.now(), analysisMs: 0, estimateMs: 0, repairMs: 0, deterministicMs: 0, repairUsed: false };
 
+    /* ══ THE JOB IS DECIDED ONCE. ══════════════════════════════════════════════
+       This stage answers "what job is this?", and it used to answer it again on
+       every single generation — so an ambiguous sentence like "my bathroom is
+       old and there's water coming through the ceiling" produced a $3,710
+       ceiling repair one day and a $20,895 bathroom renovation the next. The
+       prices were not drifting; the JOB was being redefined.
+
+       The answer is now pinned to the exact request it was derived from, and
+       reused while that request is unchanged. Anything the customer or the
+       contractor actually says — a reply in the thread, an edited description,
+       a different service, a note in the extra-request box — makes the pin
+       stale and the job is read again automatically. Re-reading an UNCHANGED
+       request is a deliberate act with its own button. */
     const analysisStarted = Date.now();
-    const analysisPrompt = buildProjectAnalysisPrompt(input);
-    const rawAnalysis = openaiKey
-      ? await callOpenAI(openaiKey, analysisPrompt)
-      : await callClaude(anthropicKey, analysisPrompt, 16000);
-    const projectAnalysis = normalizeProjectAnalysis(parseAiJson(rawAnalysis, "project analysis"), input);
+    const pin = resolveScopePin(record, input, body);
+    let projectAnalysis;
+    if (pin.reuse) {
+      projectAnalysis = pin.analysis;
+    } else {
+      const analysisPrompt = buildProjectAnalysisPrompt(input);
+      const rawAnalysis = openaiKey
+        ? await callOpenAI(openaiKey, analysisPrompt)
+        : await callClaude(anthropicKey, analysisPrompt, 16000);
+      projectAnalysis = normalizeProjectAnalysis(parseAiJson(rawAnalysis, "project analysis"), input);
+    }
     timing.analysisMs = Date.now() - analysisStarted;
+    timing.scopeReused = pin.reuse;
+    timing.scopeReason = pin.reason;
 
     /* LIVE MARKET PRICING — advisory only.
        Runs between the analysis and the estimate so the estimator sees current
@@ -209,6 +232,11 @@ exports.handler = async function handler(event) {
     estimate.clarificationQuestions = projectAnalysis.clarification_questions;
 
     record.projectAnalysis = projectAnalysis;
+    /* The pin travels with the analysis: this exact scope, for this exact
+       request. A later generation compares its own inputs against it. */
+    record.scopeFingerprint = pin.fingerprint;
+    record.scopePinnedAt = pin.reuse ? (record.scopePinnedAt || new Date().toISOString()) : new Date().toISOString();
+    record.scopeReusedLastRun = pin.reuse;
     record.estimate = estimate;
     record.status = record.status === "new" ? "drafted" : record.status;
     record.updatedAt = new Date().toISOString();

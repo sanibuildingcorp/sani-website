@@ -3520,6 +3520,24 @@ function renderEdit() {
       '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-muted,#8a9bb0);margin-bottom:8px">\u{1F9ED} How sure is this estimate?</div>' +
       '<div style="background:#fafbfd;border:1px solid var(--line,rgba(255,255,255,.1));border-radius:10px;padding:12px 14px">';
 
+    /* ══ WHICH JOB WAS PRICED, AND WAS IT RE-DECIDED? ══════════════════════
+       The single fact that explains a total jumping from $3,710 to $20,895 on
+       the same request. Pinned means the scope was held and only the price was
+       redone; re-read means the AI decided again what the job is, and the scope
+       itself may have moved. Shown before anything else, because if the job
+       changed nothing below it is comparable to the last run. */
+    if (typeof tm.scopeReused === "boolean") {
+      html += tm.scopeReused
+        ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line-soft)">' +
+            '<span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#2f7d4f;border:1px solid #2f7d4f;border-radius:20px;padding:2px 9px">\u{1F4CC} Same job as before</span>' +
+            '<span style="font-size:12px;color:var(--ink-muted)">Scope held — only the price was redone.</span>' +
+          '</div>'
+        : '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line-soft)">' +
+            '<span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#c8892f;border:1px solid #c8892f;border-radius:20px;padding:2px 9px">\u21BB Job re-read</span>' +
+            '<span style="font-size:12px;color:var(--ink-muted)">' + esc(String(tm.scopeReason || "the job was worked out again")) + '</span>' +
+          '</div>';
+    }
+
     if (st) {
       html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
           '<span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:' + st.c +
@@ -3682,7 +3700,14 @@ function renderEdit() {
           aiToggleHtml +
           aiExtraHtml +
         '</div>' +
-        '<button class="btn-ai" id="gen-btn" onclick="generateAI(true)">Regenerate with AI</button>' +
+        /* ══ TWO DIFFERENT ACTS, TWO DIFFERENT BUTTONS. ═══════════════════
+           Re-pricing the job that is already pinned, and re-deciding what the
+           job IS, used to be the same button — which is how one request became
+           a $3,710 ceiling repair and a $20,895 bathroom renovation on two
+           presses. They are separated here because they carry different risk. */
+        '<button class="btn-ai" id="gen-btn" onclick="generateAI(true,false)">Re-price this job</button>' +
+        '<button class="btn-secondary" style="margin-top:8px;font-size:12.5px" onclick="generateAI(true,true)">↻ Re-read the job from scratch</button>' +
+        '<div style="font-size:11px;color:var(--ink-muted);margin-top:7px;line-height:1.5;max-width:260px">Re-price keeps the same scope of work. Re-read lets the AI decide again what the job is — use it when the customer tells you something new.</div>' +
       '</div>'
     ) +
     /* House Rules: the contractor's own pricing, applied to EVERY estimate. Saved once,
@@ -4484,13 +4509,19 @@ async function adoptCustomerOption(btn) {
    scope and line items", which is true and far too mild: it never mentioned that
    the price the customer is holding will change. */
 var CUSTOMER_HAS_SEEN = ["sent", "opened", "accepted", "review_requested", "invoiced", "paid", "completed"];
-function regenerateWarning(r) {
+function regenerateWarning(r, reanalyze) {
   if (!r) return "";
   var seen = CUSTOMER_HAS_SEEN.indexOf(String(r.status || "")) !== -1;
   var chosen = (r.customerOptionSelections || []).length;
-  if (!seen && !chosen) return "";
+  /* Re-reading the job is worth warning about even on a draft nobody has seen:
+     it can come back a different job, which is the whole reason it has its own
+     button. Re-pricing only needs a warning once a price is out there. */
+  if (!seen && !chosen && !reanalyze) return "";
 
-  var lines = ["This reprices the WHOLE job with a new AI draft.", ""];
+  var lines = reanalyze
+    ? ["This lets the AI decide again what this job IS, not only what it costs.",
+       "The scope of work and the prices can both come back different.", ""]
+    : ["This reprices the WHOLE job with a new AI draft. The scope of work stays as it is.", ""];
   if (seen) {
     var t = null;
     /* calcCustomerView is this page's mirror of lib/customer-total.js, and a
@@ -4513,11 +4544,13 @@ function regenerateWarning(r) {
   return lines.join("\n");
 }
 
-async function generateAI(isRegenerate) {
+async function generateAI(isRegenerate, reanalyze) {
   if (isRegenerate) {
-    var warn = regenerateWarning(currentRecord);
+    var warn = regenerateWarning(currentRecord, reanalyze);
     if (warn) { if (!confirm(warn)) return; }
-    else if (!confirm("This will replace the current scope and line items with a new AI draft. Continue?")) return;
+    else if (!confirm(reanalyze
+      ? "This lets the AI decide again what this job IS, not just what it costs. The scope and the prices can both change. Continue?"
+      : "This re-prices the same scope of work with a new AI draft. Continue?")) return;
   }
   const btn = document.getElementById("gen-btn");
   btn.disabled = true;
@@ -4538,6 +4571,9 @@ async function generateAI(isRegenerate) {
     const payload = JSON.stringify({
       ref: ref,
       jobId: jobId,
+      /* false (the default) re-prices the pinned job; true lets the AI decide
+         again what the job is. See netlify/functions/lib/scope-pin.js. */
+      reanalyze: reanalyze === true,
       usePhotoAnalysis: aiChk("use-photo-analysis"),
       useDescription: aiChk("use-description"),
       useAnswers: aiChk("use-answers"),
