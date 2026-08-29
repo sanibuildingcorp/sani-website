@@ -105,6 +105,25 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
   div[style*="grid-template-columns:1fr 300px"]{display:flex!important;flex-direction:column!important}
   div[style*="min-height:220px"]{min-height:200px!important}
 }
+/* ── PHOTO / FILE UPLOAD ──────────────────────────────────────────────────────
+   Matches the estimate form's upload zone so the two entry points look like the
+   same company. Deliberately a big tap target: most of this form is filled in on
+   a phone, standing in the room being photographed. */
+.contact-upload{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  border:1.5px dashed var(--border);background:#fafafa;padding:26px 18px;cursor:pointer;
+  text-align:center;transition:border-color .2s,background .2s}
+.contact-upload:hover,.contact-upload.is-over{border-color:var(--gold);background:#fffdf7}
+.contact-upload svg{width:26px;height:26px;stroke:var(--gold);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.contact-upload-title{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#1a2433}
+.contact-upload-hint{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--gray)}
+.contact-file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;margin-top:12px}
+.contact-file-grid:empty{display:none}
+.contact-thumb{position:relative;aspect-ratio:1;border:1px solid var(--border);background:#f4f4f4;overflow:hidden}
+.contact-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.contact-thumb .doc{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:4px;padding:6px;text-align:center}
+.contact-thumb .doc-name{font-size:10px;line-height:1.25;color:var(--gray);word-break:break-word;overflow:hidden;max-height:2.5em}
+.contact-thumb button{position:absolute;top:3px;right:3px;width:22px;height:22px;border:none;border-radius:50%;
+  background:rgba(0,0,0,.62);color:#fff;font-size:15px;line-height:1;cursor:pointer;padding:0}
 </style>
 <link rel="stylesheet" href="partials/site.css">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.sanibuildingcorp.com/"}, {"@type": "ListItem", "position": 2, "name": "Contact Us", "item": "https://www.sanibuildingcorp.com/contact"}]}</script>
@@ -187,6 +206,38 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
           <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Describe Your Project *</label>
           <textarea name="message" required placeholder="Tell us about your project - size, current condition, timeline..." rows="5" style="width:100%;border:1.5px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:vertical;background:#fafafa"></textarea>
         </div>
+
+        <!-- ── PHOTOS / FILES ───────────────────────────────────────────────────
+             The page already tells people "photos help, so send them by text or
+             email if you can" — and then gave them nowhere to put one. This is
+             that nowhere, filled in.
+
+             The files do NOT ride along in the form post. Netlify caps a form
+             submission at 6 MB and one modern phone photo can be 8, so attaching
+             them directly would fail the whole submission — losing the LEAD to
+             save the picture, which is exactly the wrong trade. Instead each file
+             is shrunk in the browser, uploaded to storage through the same
+             upload-photo function the estimate form has used since July, and only
+             the resulting links travel with the submission.
+
+             The file input has deliberately NO name attribute: an unnamed input is
+             not serialised into the FormData, which is what keeps the post small.
+             The two hidden fields below carry the links instead, and are declared
+             here in the markup so Netlify's form parser registers them as columns.
+             ────────────────────────────────────────────────────────────────── -->
+        <div>
+          <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Photos or Files <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <label for="contact-files" class="contact-upload" id="contact-upload-zone">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <div class="contact-upload-title" id="contact-upload-title">Tap to add photos or files</div>
+            <div class="contact-upload-hint">Photos, PDFs or drawings &mdash; up to 8, 15&nbsp;MB each</div>
+          </label>
+          <input type="file" id="contact-files" accept="image/*,application/pdf,.pdf,.heic,.heif" multiple onchange="contactHandleFiles(event)" style="display:none">
+          <div class="contact-file-grid" id="contact-file-preview"></div>
+        </div>
+        <input type="hidden" name="photos" id="contact-photos-field">
+        <input type="hidden" name="photo_count" id="contact-photo-count-field">
+
         <button type="submit" style="background:var(--gold);color:#000;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:16px 32px;border:none;cursor:pointer;transition:background .2s;width:100%">Submit Request — It&apos;s Free</button>
       </form>
       <div id="successMsg" style="display:none;background:#f0f9f0;border:1.5px solid #2d8a2d;padding:28px;margin-top:20px;text-align:center">
@@ -224,8 +275,151 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 </div></section>
 
 <script>
+/* ══ PHOTOS AND FILES ═════════════════════════════════════════════════════════
+   Chosen files are held here as data URIs until the moment of submit, then
+   uploaded and replaced by links. Nothing is uploaded while someone is still
+   typing: a customer who changes their mind and closes the tab leaves nothing
+   behind, and a lead is never held up by a file they removed anyway.
+   ═════════════════════════════════════════════════════════════════════════ */
+var contactFiles = [];
+var CONTACT_MAX_FILES = 8;
+var CONTACT_MAX_BYTES = 15 * 1024 * 1024;
+
+function contactEsc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function contactReadAsDataUrl(file){
+  return new Promise(function(resolve,reject){
+    var r = new FileReader();
+    r.onload = function(ev){ resolve(ev.target.result); };
+    r.onerror = function(){ reject(new Error("read failed")); };
+    r.readAsDataURL(file);
+  });
+}
+/* A phone photo is 4-8 MB and 4000px wide. Nobody needs that to see a cracked
+   tile, and every byte is time on a cellular connection while the customer
+   waits on the submit button. */
+function contactCompressImage(file,maxWidth,quality){
+  maxWidth = maxWidth || 1600; quality = quality || 0.85;
+  return new Promise(function(resolve,reject){
+    var reader = new FileReader(); reader.onerror = reject;
+    reader.onload = function(e){
+      var img = new Image(); img.onerror = reject;
+      img.onload = function(){
+        var w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round(h * (maxWidth / w)); w = maxWidth; }
+        var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL("image/jpeg",quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function contactHandleFiles(e){
+  var picked = Array.prototype.slice.call(e.target.files || []);
+  var room = CONTACT_MAX_FILES - contactFiles.length;
+  if (picked.length > room) {
+    alert("You can attach up to " + CONTACT_MAX_FILES + " files. The first " + Math.max(room,0) + " were added — email the rest to contact@sanibuildingcorp.com.");
+    picked = picked.slice(0, Math.max(room,0));
+  }
+  var title = document.getElementById("contact-upload-title");
+  var was = title ? title.textContent : "";
+  if (title && picked.length) title.textContent = "Processing…";
+  for (var i = 0; i < picked.length; i++) {
+    var file = picked[i];
+    if (file.size > CONTACT_MAX_BYTES) {
+      alert('"' + file.name + '" is larger than 15 MB. Please email that one to contact@sanibuildingcorp.com instead.');
+      continue;
+    }
+    var isImage = (file.type || "").indexOf("image/") === 0;
+    try {
+      /* HEIC comes off an iPhone with an image/* type that canvas cannot decode,
+         so compression throws — the raw read below is what carries those. */
+      var data = isImage ? await contactCompressImage(file,1600,0.85) : await contactReadAsDataUrl(file);
+      contactFiles.push({ name: file.name, data: data, kind: isImage ? "image" : "file" });
+    } catch (err) {
+      try {
+        var raw = await contactReadAsDataUrl(file);
+        contactFiles.push({ name: file.name, data: raw, kind: isImage ? "image" : "file" });
+      } catch (e2) { console.error("could not read", file.name, e2); }
+    }
+    contactRenderFiles();
+  }
+  if (title) title.textContent = was;
+  contactRenderFiles();
+  e.target.value = "";   /* so picking the same file twice still fires onchange */
+}
+
+function contactRemoveFile(i){ contactFiles.splice(i,1); contactRenderFiles(); }
+
+function contactRenderFiles(){
+  var host = document.getElementById("contact-file-preview");
+  if (!host) return;
+  host.innerHTML = contactFiles.map(function(p,i){
+    var body = (p.kind === "image" && /^data:image\//.test(String(p.data||"")))
+      ? '<img src="' + contactEsc(p.data) + '" alt="">'
+      : '<div class="doc"><span style="font-size:19px">📎</span><span class="doc-name">' + contactEsc(p.name || "file") + '</span></div>';
+    return '<div class="contact-thumb">' + body
+      + '<button type="button" aria-label="Remove" onclick="contactRemoveFile(' + i + ')">×</button></div>';
+  }).join("");
+  var title = document.getElementById("contact-upload-title");
+  if (title) {
+    title.textContent = contactFiles.length
+      ? (contactFiles.length + (contactFiles.length === 1 ? " file attached" : " files attached") + " — tap to add more")
+      : "Tap to add photos or files";
+  }
+}
+
+/* Upload everything and hand back the links. A file that fails to upload is
+   DROPPED, never retried into a hang and never allowed to throw: the lead is
+   worth more than the photograph, and Zura can always ask for it by reply. */
+async function contactUploadFiles(ref){
+  var out = [];
+  for (var i = 0; i < contactFiles.length; i++) {
+    var p = contactFiles[i];
+    if (!p || typeof p.data !== "string" || p.data.indexOf("data:") !== 0) continue;
+    try {
+      var r = await fetch("/.netlify/functions/upload-photo",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ base64:p.data, ref:ref })
+      });
+      var j = await r.json().catch(function(){ return null; });
+      if (r.ok && j && j.url) out.push({ name: p.name || ("file-" + (i+1)), url: j.url });
+    } catch (err) { console.error("upload failed for " + (p.name || ("#"+(i+1))), err); }
+  }
+  return out;
+}
+
+/* Groups a customer's files under one folder in storage, and gives the links a
+   recognisable shape when they land in the dashboard. */
+function contactUploadRef(now){
+  var d = new Date(typeof now === "number" ? now : Date.now());
+  var p = function(n){ return String(n).padStart(2,"0"); };
+  return "contact-" + String(d.getFullYear()).slice(2) + p(d.getMonth()+1) + p(d.getDate())
+    + "-" + Math.random().toString(36).slice(2,6);
+}
+
 const form = document.getElementById("estimateForm");
-if(form){form.addEventListener("submit",async function(e){e.preventDefault();const data=new FormData(form);try{await fetch("/",{method:"POST",body:data});
+if(form){form.addEventListener("submit",async function(e){e.preventDefault();
+/* Upload BEFORE the FormData is read, so the hidden fields below are already
+   filled by the time the submission is built. */
+var subBtn=form.querySelector('button[type="submit"]');var subLabel=subBtn?subBtn.innerHTML:"";
+if(contactFiles.length&&subBtn){subBtn.disabled=true;subBtn.innerHTML="Uploading photos…";}
+var uploaded=[];
+try{ if(contactFiles.length) uploaded=await contactUploadFiles(contactUploadRef()); }
+catch(_){ uploaded=[]; }   /* never block the lead on a failed upload */
+if(subBtn){subBtn.disabled=false;subBtn.innerHTML=subLabel;}
+var pf=document.getElementById("contact-photos-field");
+var pc=document.getElementById("contact-photo-count-field");
+if(pf)pf.value=uploaded.map(function(u){return u.url;}).join("\n");
+if(pc)pc.value=String(uploaded.length);
+const data=new FormData(form);try{await fetch("/",{method:"POST",body:data});
 /* Send the customer their confirmation email directly (Netlify's own
    submission-created trigger is unreliable on this site — see SEO-LOG.md). */
 try{
@@ -238,7 +432,9 @@ try{
       service:(data.get("service")||"").trim(),
       area:(data.get("borough")||"").trim(),
       address:(data.get("address")||"").trim(),
-      details:(data.get("message")||"").trim()
+      details:(data.get("message")||"").trim(),
+      photos:uploaded.map(function(u){return u.url;}),
+      photoCount:uploaded.length
     })}).catch(function(){});
   }
 }catch(_){}
