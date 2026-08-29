@@ -118,6 +118,27 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 .contact-upload-hint{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--gray)}
 .contact-file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;margin-top:12px}
 .contact-file-grid:empty{display:none}
+/* ── THE NAMED SHOTS ──────────────────────────────────────────────────────────
+   Four tiles, each saying where to stand. A tile is the whole tap target, so on
+   a phone there is no small thing to hit. */
+.shot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:380px){.shot-grid{grid-template-columns:1fr}}
+.shot{position:relative;display:flex;flex-direction:column;gap:3px;border:1.5px dashed var(--border);
+  background:#fafafa;padding:14px 12px;cursor:pointer;min-height:96px;transition:border-color .2s,background .2s}
+.shot:hover{border-color:var(--gold);background:#fffdf7}
+.shot.filled{border-style:solid;border-color:#2d8a2d;background:#f4faf4}
+.shot-ico{font-size:19px;line-height:1}
+.shot-label{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#1a2433}
+.shot-hint{font-family:'DM Sans',sans-serif;font-size:11.5px;line-height:1.35;color:var(--gray)}
+.shot-need{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);font-weight:700}
+.shot-shot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shot-badge{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.62);color:#fff;
+  font-size:10.5px;font-weight:600;padding:4px 7px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.shot-badge button{background:none;border:none;color:#fff;font-size:15px;line-height:1;cursor:pointer;padding:0 2px}
+/* One sentence when the wide shot is missing. Never a block on submitting. */
+.shot-nudge{display:none;margin-top:12px;border-left:3px solid var(--gold);background:#fffaf0;
+  padding:11px 13px;font-family:'DM Sans',sans-serif;font-size:12.5px;line-height:1.55;color:#4a3c22}
+.shot-nudge.on{display:block}
 .contact-thumb{position:relative;aspect-ratio:1;border:1px solid var(--border);background:#f4f4f4;overflow:hidden}
 .contact-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .contact-thumb .doc{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:4px;padding:6px;text-align:center}
@@ -226,10 +247,16 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
              here in the markup so Netlify's form parser registers them as columns.
              ────────────────────────────────────────────────────────────────── -->
         <div>
-          <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Photos or Files <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
-          <label for="contact-files" class="contact-upload" id="contact-upload-zone">
+          <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Photos <span style="text-transform:none;letter-spacing:0">(optional &mdash; but they change the estimate a lot)</span></label>
+          <p style="font-size:12.5px;color:var(--gray);line-height:1.6;margin:-2px 0 12px">A close-up of the damage tells us what is wrong. A shot from the doorway tells us how big it is. We need both to give you a real number.</p>
+          <!-- The named shots are rendered from js/photo-slots.js so this page and
+               the estimate form can never disagree about what "wide" means. -->
+          <div class="shot-grid" id="contact-shot-grid"></div>
+          <div class="shot-nudge" id="contact-shot-nudge"></div>
+
+          <label for="contact-files" class="contact-upload" id="contact-upload-zone" style="margin-top:12px">
             <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <div class="contact-upload-title" id="contact-upload-title">Tap to add photos or files</div>
+            <div class="contact-upload-title" id="contact-upload-title">Anything else &mdash; tap to add</div>
             <div class="contact-upload-hint">Photos, PDFs or drawings &mdash; up to 8, 15&nbsp;MB each</div>
           </label>
           <input type="file" id="contact-files" accept="image/*,application/pdf,.pdf,.heic,.heif" multiple onchange="contactHandleFiles(event)" style="display:none">
@@ -237,6 +264,10 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
         </div>
         <input type="hidden" name="photos" id="contact-photos-field">
         <input type="hidden" name="photo_count" id="contact-photo-count-field">
+        <!-- Which named shot each link above is, one per line, same order. Kept
+             in its own field so `photos` stays a clean list of URLs and every
+             submission made before today still parses. -->
+        <input type="hidden" name="photo_slots" id="contact-photo-slots-field">
 
         <button type="submit" style="background:var(--gold);color:#000;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:16px 32px;border:none;cursor:pointer;transition:background .2s;width:100%">Submit Request — It&apos;s Free</button>
       </form>
@@ -274,6 +305,7 @@ footer{background:#080808;padding:52px 28px 28px;border-top:1px solid rgba(240,1
 <p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">Prefer to write? Email <a href="mailto:contact@sanibuildingcorp.com" style="color:#c8860a;font-weight:600">contact@sanibuildingcorp.com</a> or use the estimate form &mdash; either way, a real person from our Brooklyn office answers, seven days a week.</p>
 </div></section>
 
+<script src="js/photo-slots.js"></script>
 <script>
 /* ══ PHOTOS AND FILES ═════════════════════════════════════════════════════════
    Chosen files are held here as data URIs until the moment of submit, then
@@ -320,12 +352,63 @@ function contactCompressImage(file,maxWidth,quality){
   });
 }
 
-async function contactHandleFiles(e){
+/* ── THE NAMED SHOTS ────────────────────────────────────────────────────────
+   Rendered from PHOTO_SLOTS (js/photo-slots.js), never from a list written out
+   again here. Each tile owns one file input; a filled tile shows the photo with
+   its name across the bottom. */
+function contactRenderShots(){
+  var grid = document.getElementById("contact-shot-grid");
+  if (!grid || typeof PHOTO_SLOTS === "undefined") return;
+  grid.innerHTML = PHOTO_SLOTS.map(function(s){
+    var held = null, heldAt = -1;
+    for (var i = 0; i < contactFiles.length; i++) {
+      if (contactFiles[i] && contactFiles[i].slot === s.id) { held = contactFiles[i]; heldAt = i; break; }
+    }
+    var inputId = "contact-shot-" + s.id;
+    var inner = held
+      ? (/^data:image\//.test(String(held.data||""))
+          ? '<img class="shot-shot" src="' + contactEsc(held.data) + '" alt="">'
+          : '')
+        + '<div class="shot-badge"><span>' + contactEsc(s.label) + '</span>'
+        + '<button type="button" aria-label="Remove" onclick="event.preventDefault();event.stopPropagation();contactRemoveFile(' + heldAt + ')">×</button></div>'
+      : '<span class="shot-ico">' + s.icon + '</span>'
+        + '<span class="shot-label">' + contactEsc(s.label) + '</span>'
+        + '<span class="shot-hint">' + contactEsc(s.hint) + '</span>'
+        + (s.essential ? '<span class="shot-need">Matters most</span>' : '');
+    return '<label class="shot' + (held ? ' filled' : '') + '" for="' + inputId + '">' + inner + '</label>'
+      + '<input type="file" id="' + inputId + '" accept="image/*,application/pdf,.pdf,.heic,.heif" '
+      + 'onchange="contactHandleFiles(event,\'' + s.id + '\')" style="display:none">';
+  }).join("");
+  contactRenderNudge();
+}
+
+/* One sentence, only once they have started sending photos, never a block on
+   submitting — many customers genuinely do not know what they are looking at. */
+function contactRenderNudge(){
+  var box = document.getElementById("contact-shot-nudge");
+  if (!box || typeof photoNudge !== "function") return;
+  var msg = photoNudge(contactFiles);
+  box.textContent = msg;
+  box.className = "shot-nudge" + (msg ? " on" : "");
+}
+
+async function contactHandleFiles(e, slot){
   var picked = Array.prototype.slice.call(e.target.files || []);
-  var room = CONTACT_MAX_FILES - contactFiles.length;
-  if (picked.length > room) {
-    alert("You can attach up to " + CONTACT_MAX_FILES + " files. The first " + Math.max(room,0) + " were added — email the rest to contact@sanibuildingcorp.com.");
-    picked = picked.slice(0, Math.max(room,0));
+  /* A named shot holds exactly one photo — picking again replaces it rather than
+     stacking a second "whole room" nobody asked for. */
+  if (slot) {
+    picked = picked.slice(0,1);
+    contactFiles = contactFiles.filter(function(p){ return !p || p.slot !== slot; });
+  }
+  /* The cap is on the free-for-all bucket. A named shot is always allowed
+     through: refusing the one photo that makes the job estimable, because the
+     customer already sent eight close-ups, would be exactly backwards. */
+  if (!slot) {
+    var room = CONTACT_MAX_FILES - contactFiles.length;
+    if (picked.length > room) {
+      alert("You can attach up to " + CONTACT_MAX_FILES + " files. The first " + Math.max(room,0) + " were added — email the rest to contact@sanibuildingcorp.com.");
+      picked = picked.slice(0, Math.max(room,0));
+    }
   }
   var title = document.getElementById("contact-upload-title");
   var was = title ? title.textContent : "";
@@ -341,11 +424,11 @@ async function contactHandleFiles(e){
       /* HEIC comes off an iPhone with an image/* type that canvas cannot decode,
          so compression throws — the raw read below is what carries those. */
       var data = isImage ? await contactCompressImage(file,1600,0.85) : await contactReadAsDataUrl(file);
-      contactFiles.push({ name: file.name, data: data, kind: isImage ? "image" : "file" });
+      contactFiles.push({ name: file.name, data: data, kind: isImage ? "image" : "file", slot: slot || "other" });
     } catch (err) {
       try {
         var raw = await contactReadAsDataUrl(file);
-        contactFiles.push({ name: file.name, data: raw, kind: isImage ? "image" : "file" });
+        contactFiles.push({ name: file.name, data: raw, kind: isImage ? "image" : "file", slot: slot || "other" });
       } catch (e2) { console.error("could not read", file.name, e2); }
     }
     contactRenderFiles();
@@ -359,20 +442,26 @@ function contactRemoveFile(i){ contactFiles.splice(i,1); contactRenderFiles(); }
 
 function contactRenderFiles(){
   var host = document.getElementById("contact-file-preview");
-  if (!host) return;
-  host.innerHTML = contactFiles.map(function(p,i){
+  if (!host) { contactRenderShots(); return; }
+  /* Only the loose ones. A photo held against a named shot is already on show
+     inside its own tile, and drawing it twice makes it look like two photos. */
+  var loose = [];
+  contactFiles.forEach(function(p,i){ if (p && (!p.slot || p.slot === "other")) loose.push({ p: p, i: i }); });
+  host.innerHTML = loose.map(function(e){
+    var p = e.p;
     var body = (p.kind === "image" && /^data:image\//.test(String(p.data||"")))
       ? '<img src="' + contactEsc(p.data) + '" alt="">'
       : '<div class="doc"><span style="font-size:19px">📎</span><span class="doc-name">' + contactEsc(p.name || "file") + '</span></div>';
     return '<div class="contact-thumb">' + body
-      + '<button type="button" aria-label="Remove" onclick="contactRemoveFile(' + i + ')">×</button></div>';
+      + '<button type="button" aria-label="Remove" onclick="contactRemoveFile(' + e.i + ')">×</button></div>';
   }).join("");
   var title = document.getElementById("contact-upload-title");
   if (title) {
-    title.textContent = contactFiles.length
-      ? (contactFiles.length + (contactFiles.length === 1 ? " file attached" : " files attached") + " — tap to add more")
-      : "Tap to add photos or files";
+    title.textContent = loose.length
+      ? (loose.length + (loose.length === 1 ? " other file" : " other files") + " — tap to add more")
+      : "Anything else — tap to add";
   }
+  contactRenderShots();
 }
 
 /* Upload everything and hand back the links. A file that fails to upload is
@@ -390,7 +479,7 @@ async function contactUploadFiles(ref){
         body:JSON.stringify({ base64:p.data, ref:ref })
       });
       var j = await r.json().catch(function(){ return null; });
-      if (r.ok && j && j.url) out.push({ name: p.name || ("file-" + (i+1)), url: j.url });
+      if (r.ok && j && j.url) out.push({ name: p.name || ("file-" + (i+1)), url: j.url, slot: p.slot || "other" });
     } catch (err) { console.error("upload failed for " + (p.name || ("#"+(i+1))), err); }
   }
   return out;
@@ -405,6 +494,11 @@ function contactUploadRef(now){
     + "-" + Math.random().toString(36).slice(2,6);
 }
 
+/* Draw the named shots as soon as the page is up. Guarded because it runs before
+   anyone has touched anything, and a missing js/photo-slots.js must leave the
+   rest of this form working rather than take the page down with it. */
+try{ contactRenderShots(); }catch(err){ console.error("photo slots unavailable", err); }
+
 const form = document.getElementById("estimateForm");
 if(form){form.addEventListener("submit",async function(e){e.preventDefault();
 /* Upload BEFORE the FormData is read, so the hidden fields below are already
@@ -417,8 +511,12 @@ catch(_){ uploaded=[]; }   /* never block the lead on a failed upload */
 if(subBtn){subBtn.disabled=false;subBtn.innerHTML=subLabel;}
 var pf=document.getElementById("contact-photos-field");
 var pc=document.getElementById("contact-photo-count-field");
+var ps=document.getElementById("contact-photo-slots-field");
 if(pf)pf.value=uploaded.map(function(u){return u.url;}).join("\n");
 if(pc)pc.value=String(uploaded.length);
+/* Same order as the links above, one per line. This is what turns "a picture"
+   into "the shot from the doorway" once it reaches the dashboard. */
+if(ps)ps.value=uploaded.map(function(u){return u.slot||"other";}).join("\n");
 const data=new FormData(form);try{await fetch("/",{method:"POST",body:data});
 /* Send the customer their confirmation email directly (Netlify's own
    submission-created trigger is unreliable on this site — see SEO-LOG.md). */
@@ -434,6 +532,7 @@ try{
       address:(data.get("address")||"").trim(),
       details:(data.get("message")||"").trim(),
       photos:uploaded.map(function(u){return u.url;}),
+      photoSlots:uploaded.map(function(u){return u.slot||"other";}),
       photoCount:uploaded.length
     })}).catch(function(){});
   }

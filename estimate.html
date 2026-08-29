@@ -76,6 +76,28 @@ p.subtitle{font-size:14px;color:var(--gray);line-height:1.6;margin-bottom:24px;m
 .upload-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--cream)}
 .upload-hint{font-size:12px;color:var(--gray);margin-top:4px}
 #photo-input{display:none}
+/* ── THE NAMED SHOTS ──────────────────────────────────────────────────────────
+   A close-up says what is wrong; a shot from the doorway says how big it is.
+   Asking for them by name is the only way a web page can guide the framing —
+   "Take Photo" hands off to the phone's own camera app, which this page cannot
+   see into. See js/photo-slots.js. */
+.shot-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+@media(max-width:400px){.shot-grid{grid-template-columns:1fr}}
+.shot{position:relative;display:flex;flex-direction:column;gap:3px;border:2px dashed var(--border);
+  border-radius:12px;padding:13px 12px;background:rgba(255,255,255,.02);cursor:pointer;min-height:94px;transition:all .2s;overflow:hidden}
+.shot:hover{border-color:var(--gold);background:rgba(201,168,76,.05)}
+.shot.filled{border-style:solid;border-color:#4c9a5a;background:rgba(76,154,90,.08)}
+.shot-ico{font-size:18px;line-height:1}
+.shot-label{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.4px;color:var(--cream)}
+.shot-hint{font-size:11.5px;line-height:1.35;color:var(--gray)}
+.shot-need{font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);font-weight:700}
+.shot-shot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shot-badge{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.68);color:#fff;font-size:10.5px;
+  font-weight:600;padding:4px 7px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.shot-badge button{background:none;border:none;color:#fff;font-size:15px;line-height:1;cursor:pointer;padding:0 2px}
+.shot-nudge{display:none;border-left:3px solid var(--gold);background:rgba(201,168,76,.09);border-radius:0 8px 8px 0;
+  padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--cream);margin-bottom:14px}
+.shot-nudge.on{display:block}
 .photo-preview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
 .photo-thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:rgba(0,0,0,.3)}
 .photo-thumb img{width:100%;height:100%;object-fit:cover}
@@ -321,9 +343,12 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
         <label class="input-label" for="description-field">In your own words <span class="req">*</span></label>
         <textarea class="textarea-field" id="description-field" oninput="saveDesc();updateStep5()" placeholder="For example: 'Kitchen floor grout is cracked and stained, about 400 sq ft of quarry tile. Restaurant, needs to be done overnight before our next inspection.'"></textarea>
       </div>
+      <!-- Rendered from js/photo-slots.js, the same list the contact form uses. -->
+      <div class="shot-grid" id="shot-grid"></div>
+      <div class="shot-nudge" id="shot-nudge"></div>
       <label for="photo-input" class="upload-zone">
         <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        <div class="upload-title">Tap to add photos or files</div>
+        <div class="upload-title">Anything else — tap to add</div>
         <div class="upload-hint">Photos, PDFs or drawings — up to 8, 15&nbsp;MB each (optional)</div>
       </label>
       <input type="file" id="photo-input" accept="image/*,application/pdf,.pdf,.heic,.heif" multiple onchange="handlePhotos(event)">
@@ -458,6 +483,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 </footer>
 
 <script src="partials/site.js"></script>
+<script src="js/photo-slots.js"></script>
 <script>
 const formData={service:null,serviceLabel:null,serviceAnswers:{},customerSupplies:[],customerSuppliesOther:'',propertyType:null,description:'',photos:[],photoAnalysis:[],timeline:null,name:'',phone:'',email:'',address:''};
 // Capture the "In your own words" textarea (Step 4) into formData so it reaches the
@@ -687,8 +713,55 @@ function readAsDataUrl(file){
     r.readAsDataURL(file);
   });
 }
-async function handlePhotos(e){
-  const files=Array.from(e.target.files).slice(0,8-formData.photos.length);
+/* ── THE NAMED SHOTS ──────────────────────────────────────────────────────────
+   "customers many times sends photos where shows just damage very close which is
+    very difficult to identify areas or figure dimensions"
+   Four tiles that say where to stand, drawn from the shared list in
+   js/photo-slots.js so this page and the contact form cannot drift apart. */
+function renderShotGrid(){
+  const grid=document.getElementById('shot-grid');
+  if(!grid||typeof PHOTO_SLOTS==='undefined')return;
+  grid.innerHTML=PHOTO_SLOTS.map(function(s){
+    let held=null,heldAt=-1;
+    for(let i=0;i<formData.photos.length;i++){
+      if(formData.photos[i]&&formData.photos[i].slot===s.id){held=formData.photos[i];heldAt=i;break;}
+    }
+    const inputId='shot-input-'+s.id;
+    const inner=held
+      ? (/^data:image\//.test(String(held.data||''))?`<img class="shot-shot" src="${esc(held.data)}" alt="">`:'')
+        + `<div class="shot-badge"><span>${esc(s.label)}</span>`
+        + `<button type="button" aria-label="Remove" onclick="event.preventDefault();event.stopPropagation();removeShot(${heldAt})">×</button></div>`
+      : `<span class="shot-ico">${s.icon}</span>`
+        + `<span class="shot-label">${esc(s.label)}</span>`
+        + `<span class="shot-hint">${esc(s.hint)}</span>`
+        + (s.essential?'<span class="shot-need">Matters most</span>':'');
+    return `<label class="shot${held?' filled':''}" for="${inputId}">${inner}</label>`
+      + `<input type="file" id="${inputId}" accept="image/*,application/pdf,.pdf,.heic,.heif" `
+      + `onchange="handlePhotos(event,'${s.id}')" style="display:none">`;
+  }).join('');
+  renderShotNudge();
+}
+function renderShotNudge(){
+  const box=document.getElementById('shot-nudge');
+  if(!box||typeof photoNudge!=='function')return;
+  const msg=photoNudge(formData.photos);
+  box.textContent=msg;
+  box.className='shot-nudge'+(msg?' on':'');
+}
+function removeShot(i){formData.photos.splice(i,1);renderPhotoPreview();}
+
+async function handlePhotos(e,slot){
+  let files=Array.from(e.target.files);
+  if(slot){
+    /* One photo per named shot: picking again replaces it rather than stacking a
+       second "whole room". And a named shot is never refused for being over the
+       count — turning away the one photo that makes the job estimable, because
+       eight close-ups got there first, would be exactly backwards. */
+    files=files.slice(0,1);
+    formData.photos=formData.photos.filter(function(p){return !p||p.slot!==slot;});
+  }else{
+    files=files.slice(0,8-formData.photos.length);
+  }
   const uz=document.querySelector('.upload-title');const ot=uz?uz.textContent:'';
   if(uz)uz.textContent='Processing...';
   for(const file of files){
@@ -696,9 +769,9 @@ async function handlePhotos(e){
     const isImage=(file.type||'').indexOf('image/')===0;
     try{
       const data=isImage?await compressImage(file,1600,0.85):await readAsDataUrl(file);
-      formData.photos.push({name:file.name,data:data,kind:isImage?'image':'file'});
+      formData.photos.push({name:file.name,data:data,kind:isImage?'image':'file',slot:slot||'other'});
     }catch(err){
-      try{const raw=await readAsDataUrl(file);formData.photos.push({name:file.name,data:raw,kind:isImage?'image':'file'});}
+      try{const raw=await readAsDataUrl(file);formData.photos.push({name:file.name,data:raw,kind:isImage?'image':'file',slot:slot||'other'});}
       catch(e2){console.error('could not read',file.name,e2);}
     }
     renderPhotoPreview();
@@ -711,12 +784,21 @@ function updateStep5(){
   if(btn)btn.disabled=!(t&&t.value.trim().length>=10);
 }
 function renderPhotoPreview(){
-  document.getElementById('photo-preview').innerHTML=formData.photos.map(function(p,i){
-    const body=(p.kind==='file')
-      ? `<div class="file-thumb"><span class="file-ico">\u{1F4CE}</span><span class="file-name">${esc(p.name||'file')}</span></div>`
-      : `<img src="${p.data}" alt="">`;
-    return `<div class="photo-thumb">${body}<button class="photo-remove" onclick="formData.photos.splice(${i},1);renderPhotoPreview()">\u00D7</button></div>`;
-  }).join('');
+  const host=document.getElementById('photo-preview');
+  if(host){
+    /* Only the loose ones \u2014 a photo held against a named shot already shows
+       inside its own tile, and drawing it twice looks like two photos. */
+    const loose=[];
+    formData.photos.forEach(function(p,i){ if(p&&(!p.slot||p.slot==='other'))loose.push({p:p,i:i}); });
+    host.innerHTML=loose.map(function(e){
+      const p=e.p;
+      const body=(p.kind==='file')
+        ? `<div class="file-thumb"><span class="file-ico">\u{1F4CE}</span><span class="file-name">${esc(p.name||'file')}</span></div>`
+        : `<img src="${p.data}" alt="">`;
+      return `<div class="photo-thumb">${body}<button class="photo-remove" onclick="formData.photos.splice(${e.i},1);renderPhotoPreview()">\u00D7</button></div>`;
+    }).join('');
+  }
+  renderShotGrid();
 }
 function showStep(s){document.querySelectorAll('.step').forEach(x=>x.classList.remove('active'));document.querySelector(`[data-step="${s}"]`).classList.add('active');}
 function goToStep(s){
@@ -841,11 +923,11 @@ async function uploadPhotosForSubmit(ref){
       try{
         const r=await fetch('/.netlify/functions/upload-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:data,ref:ref})});
         const j=await r.json().catch(function(){return null;});
-        if(r.ok&&j&&j.url){out.push({name:(p.name||('photo-'+(i+1))),data:j.url});continue;}
+        if(r.ok&&j&&j.url){out.push({name:(p.name||('photo-'+(i+1))),data:j.url,slot:p.slot||'other'});continue;}
       }catch(err){console.error('upload-photo failed for #'+(i+1),err);}
       // If this one fails, skip it rather than bloat the payload with base64.
     }else if(data){
-      out.push({name:(p.name||('photo-'+(i+1))),data:data}); // already a URL
+      out.push({name:(p.name||('photo-'+(i+1))),data:data,slot:p.slot||'other'}); // already a URL
     }
   }
   return out;

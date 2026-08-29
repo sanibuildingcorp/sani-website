@@ -40,6 +40,10 @@ exports.handler = async function (event) {
              this is a newline-separated string on the submission. Split here so
              the dashboard never has to know that. */
           photos: splitLinks(d.photos),
+          /* Which named shot each link is — "wide", "close", and so on, in the
+             same order. Submissions from before the slots existed have none, so
+             this is routinely empty and the dashboard must cope. */
+          photoSlots: splitSlots(d.photo_slots, splitLinks(d.photos).length),
           createdAt: s.created_at,
         });
       });
@@ -66,6 +70,22 @@ function splitLinks(value) {
     .map(function (s) { return String(s || "").trim(); })
     .filter(function (s) { return /^https?:\/\//i.test(s); })
     .slice(0, 20);
+}
+
+/* The slot ids that go with the links, padded or trimmed to line up with them
+   exactly. A mismatch would put "the whole room" under a close-up, which is worse
+   than saying nothing — so anything unrecognised becomes "", and the dashboard
+   simply shows no label for that one. */
+const KNOWN_SLOTS = ["wide", "area", "close", "scale", "other"];
+function splitSlots(value, count) {
+  const n = Math.max(0, Number(count) || 0);
+  const parts = !value ? [] : (Array.isArray(value) ? value : String(value).split(/[\r\n,]+/));
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const raw = String(parts[i] == null ? "" : parts[i]).trim().toLowerCase();
+    out.push(KNOWN_SLOTS.indexOf(raw) === -1 ? "" : raw);
+  }
+  return out;
 }
 
 function apiGet(path, token) {
@@ -101,3 +121,4 @@ function cors() {
 /* Exposed for js/contact-upload.test.js. Netlify only ever calls .handler, so
    this changes nothing about how the function runs. */
 module.exports.splitLinks = splitLinks;
+module.exports.splitSlots = splitSlots;

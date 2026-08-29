@@ -492,11 +492,50 @@ function buildEstimatorInput(record, body) {
       groupedAnswers: body.useAnswers === false ? {} : groupedAnswers,
       customerSupplies,
       photoAnalysis: body.usePhotoAnalysis === false ? [] : photoAnalysis,
+      /* WHICH SHOTS THE CUSTOMER ACTUALLY SENT.
+         A close-up of a cracked tile is a photograph of a crack, not of a job —
+         it cannot say whether the room is 30 square feet or 300. The form now
+         asks for the shots by name, so the analyst can be told that this picture
+         is the whole room from the doorway and that one is the detail, instead of
+         being handed four images and left to guess which is which.
+         Deliberately NOT part of the scope fingerprint (lib/scope-pin.js): how a
+         photo was framed is not a change to the job, and adding a key there would
+         stale every pin in storage and re-read every job once, for nothing. */
+      photoShots: body.usePhotoAnalysis === false ? [] : photoShots(request),
       /* Answers the customer gave AFTER the form, in reply to being asked. */
       conversation: body.useConversation === false ? [] : conversation,
     },
     contractor: { extraRequest: cleanText(body.extraRequest), houseRules: cleanText(body.houseRules) },
   };
+}
+
+/* The named shots on the record, as short readable lines for the analyst.
+   Mirrors the slot ids in js/photo-slots.js — kept as a plain table here rather
+   than imported, because that file is browser-side and a server function must not
+   depend on it to describe a record it has already been handed. A slot id this
+   does not recognise is skipped rather than shown raw to the AI. */
+const SHOT_LABELS = {
+  wide: "the whole room, shot from the doorway",
+  area: "the whole wall / floor / section to be worked on",
+  close: "a close-up of the damage or detail",
+  scale: "a shot with a tape measure or other object for scale",
+};
+function photoShots(request) {
+  const photos = Array.isArray(request && request.photos) ? request.photos : [];
+  const out = [];
+  photos.forEach(function (p) {
+    const label = SHOT_LABELS[String((p && p.slot) || "")];
+    if (label) out.push(label);
+  });
+  /* Said plainly whenever the WIDE shot is the one missing — not merely when
+     nothing is labelled at all. Close-ups present and no wide shot is exactly
+     the case the contractor complained about, and it is the case where inferring
+     an area from the pictures would be inventing one. */
+  const hasWide = photos.some(function (p) { return p && p.slot === "wide"; });
+  if (photos.length && !hasWide) {
+    out.push("photos were sent, but none of them is a wide shot of the room — do not infer room dimensions from them");
+  }
+  return out;
 }
 
 /* The last MAX_CONVERSATION_MESSAGES messages, oldest-first within that window so
