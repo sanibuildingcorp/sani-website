@@ -484,6 +484,8 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 
 <script src="partials/site.js"></script>
 <script src="js/photo-slots.js"></script>
+<script src="js/camera-coach.js"></script>
+<script src="js/guided-camera.js"></script>
 <script>
 const formData={service:null,serviceLabel:null,serviceAnswers:{},customerSupplies:[],customerSuppliesOther:'',propertyType:null,description:'',photos:[],photoAnalysis:[],timeline:null,name:'',phone:'',email:'',address:''};
 // Capture the "In your own words" textarea (Step 4) into formData so it reaches the
@@ -735,11 +737,39 @@ function renderShotGrid(){
         + `<span class="shot-label">${esc(s.label)}</span>`
         + `<span class="shot-hint">${esc(s.hint)}</span>`
         + (s.essential?'<span class="shot-need">Matters most</span>':'');
-    return `<label class="shot${held?' filled':''}" for="${inputId}">${inner}</label>`
+    /* A button, not a <label for>: tapping it tries the in-page camera first —
+       the only place a web page can say "step back" — and falls through to the
+       ordinary picker when that is not possible. */
+    return `<div class="shot${held?' filled':''}" role="button" tabindex="0" onclick="openShot('${s.id}')">${inner}</div>`
       + `<input type="file" id="${inputId}" accept="image/*,application/pdf,.pdf,.heic,.heif" `
       + `onchange="handlePhotos(event,'${s.id}')" style="display:none">`;
   }).join('');
   renderShotNudge();
+}
+
+/* Every way out of the guided camera — unsupported, denied, no camera, an
+   in-app browser that blocks it, "choose from library", anything thrown — ends
+   at the ordinary file picker. */
+function openShot(slotId){
+  const input=document.getElementById('shot-input-'+slotId);
+  function picker(){ if(input)input.click(); }
+  const s=(typeof slotById==='function')?slotById(slotId):null;
+  if(typeof openGuidedCamera!=='function'||typeof cameraAvailable!=='function'||!cameraAvailable()){picker();return;}
+  try{
+    openGuidedCamera({
+      slot:slotId,
+      label:s?s.label:'Take a photo',
+      hint:s?s.hint:'',
+      onPhoto:function(dataUrl){addShotPhoto(slotId,dataUrl);},
+      onFallback:picker
+    });
+  }catch(err){console.error('guided camera failed to open',err);picker();}
+}
+function addShotPhoto(slotId,dataUrl){
+  if(!dataUrl)return;
+  formData.photos=formData.photos.filter(function(p){return !p||p.slot!==slotId;});
+  formData.photos.push({name:slotId+'.jpg',data:dataUrl,kind:'image',slot:slotId});
+  renderPhotoPreview();
 }
 function renderShotNudge(){
   const box=document.getElementById('shot-nudge');
