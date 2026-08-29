@@ -107,7 +107,14 @@
     video.setAttribute("playsinline", "");     /* or iOS takes the video fullscreen */
     video.setAttribute("webkit-playsinline", "");
     video.muted = true; video.autoplay = true;
-    video.style.cssText = "width:100%;height:100%;object-fit:cover;display:block";
+    /* CONTAIN, NOT COVER. The stage is a tall portrait box and the camera feed is
+       landscape, so `cover` filled it by throwing away the left and right of the
+       sensor — the viewfinder showed LESS of the room than the phone's own camera
+       app does at 1x, which is the opposite of the point in a small bathroom.
+       Worse, the capture used the full frame, so what was framed was not what was
+       taken. `contain` shows the entire field of view the lens is giving us, and
+       the photo then matches the preview exactly. */
+    video.style.cssText = "width:100%;height:100%;object-fit:contain;display:block;background:#000";
     stage.appendChild(video);
 
     /* A frame to shoot into. Purely a guide — it crops nothing. */
@@ -268,6 +275,28 @@
           var settings = track && track.getSettings && track.getSettings();
           if (settings && settings.deviceId) currentDeviceId = settings.deviceId;
         } catch (e) {}
+
+        /* ── WHEN THIS CAMERA CANNOT GO WIDE ENOUGH ────────────────────────────
+           iOS does not reliably hand a web page the 0.5x ultra-wide as its own
+           device, so on most iPhones this ladder starts at 1x. The phone's OWN
+           camera app has that lens and its 0.5x button fits a whole small room
+           in one frame — which is the entire thing being asked for here.
+           Pretending otherwise, or offering a 2x button to somebody who needs to
+           get WIDER, is worse than useless. So say it plainly and hand over. */
+        if (!ladder.canZoomOut) {
+          zoomBar.innerHTML = "";
+          var wide = el("button", "padding:9px 15px;border:none;border-radius:999px;font-size:12px;" +
+            "font-weight:700;cursor:pointer;background:rgba(255,255,255,.92);color:#111;max-width:86%;line-height:1.3",
+            "Room too small? Use your phone camera at 0.5×");
+          wide.onclick = function (ev) {
+            if (ev && ev.stopPropagation) ev.stopPropagation();
+            teardown();
+            if (typeof opts.onFallback === "function") opts.onFallback("library");
+          };
+          zoomBar.appendChild(wide);
+          zoomBar.style.display = "flex";
+          return;
+        }
 
         var stops = (typeof buttonStops === "function") ? buttonStops(ladder) : [1];
         /* Nothing to offer: one lens, no wider view to reach. Showing a dead
