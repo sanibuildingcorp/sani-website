@@ -135,6 +135,56 @@ const R = (c, code) => vm.runInContext(code, c);
     ok('and neither does the auth flag', R(c, 'sbcIsAuthed()') === false);
   }
 
+  /* ══════════════════════════════════════════════════════════════════════════
+     9. EVERY GATED ENDPOINT IS CALLED THROUGH sbcFetch
+     A gate on the server and a bare fetch() in the dashboard is not security —
+     it is a broken tab. The two halves have to move together, and they were
+     written on different days by the time this mattered, so the pairing is
+     asserted rather than remembered.
+     ══════════════════════════════════════════════════════════════════════════ */
+  console.log('\n9. The dashboard sends the key to every gated endpoint');
+  {
+    const fs = require('fs'), path = require('path');
+    const DASH = fs.readFileSync(path.join(__dirname, '..', 'dashboard.html'), 'utf8');
+    const FN_DIR = path.join(__dirname, '..', 'netlify', 'functions');
+
+    /* Which endpoints actually require a key, read off the functions themselves
+       rather than from a list here that would drift. */
+    const gated = fs.readdirSync(FN_DIR)
+      .filter(f => f.endsWith('.js'))
+      .filter(f => /require-dashboard-key/.test(fs.readFileSync(path.join(FN_DIR, f), 'utf8')))
+      .map(f => f.replace(/\.js$/, ''));
+
+    ok('gated endpoints were found to check at all', gated.length >= 5, gated.join(', '));
+
+    /* The invariant is that the KEY TRAVELS, not that one particular helper
+       carries it. One call deliberately cannot use sbcFetch — it lives inside a
+       fetch wrapper, where calling sbcFetch would recurse — and attaches
+       x-sbc-key by hand instead. That is fine; a call with neither is not. */
+    const unkeyed = [];
+    gated.forEach(function (name) {
+      const re = new RegExp('(\\w+)\\(\\s*["\'`]/\\.netlify/functions/' + name + '(?:[?"\'`])', 'g');
+      let m;
+      while ((m = re.exec(DASH)) !== null) {
+        if (m[1] === 'sbcFetch') continue;
+        /* Does this particular call site attach the header itself? */
+        const window_ = DASH.slice(m.index, m.index + 500);
+        if (!/x-sbc-key/.test(window_)) unkeyed.push(name + ' via ' + m[1] + '()');
+      }
+    });
+    ok('NO GATED ENDPOINT IS CALLED WITHOUT A KEY — that would just 401',
+      unkeyed.length === 0, unkeyed.join('; '));
+
+    /* The one that prompted this: contact-leads was ungated, then gated, and its
+       caller had to change in the same breath. */
+    ok('contact-leads specifically goes through sbcFetch',
+      /sbcFetch\("\/\.netlify\/functions\/contact-leads"\)/.test(DASH));
+    ok('...and the endpoint really does require the key',
+      /require-dashboard-key/.test(fs.readFileSync(path.join(FN_DIR, 'contact-leads.js'), 'utf8')));
+    ok('...and advertises the header it now demands',
+      /Access-Control-Allow-Headers": "Content-Type, x-sbc-key/.test(fs.readFileSync(path.join(FN_DIR, 'contact-leads.js'), 'utf8')));
+  }
+
   console.log('\n──────────────────────────────');
   console.log('  ' + pass + ' passed, ' + fail + ' failed');
   console.log('──────────────────────────────');

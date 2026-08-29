@@ -6995,7 +6995,9 @@ async function renderLeadsTab() {
   if (!leadsCache) {
     host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading leads…</h3></div>';
     try {
-      var r = await fetch("/.netlify/functions/contact-leads");
+      /* sbcFetch, not fetch: contact-leads is gated now, and a bare fetch sends
+         no key and comes back 401. */
+      var r = await sbcFetch("/.netlify/functions/contact-leads");
       var data = await r.json();
       if (!r.ok) throw new Error(data.error || "Load failed");
       leadsCache = data.leads || [];

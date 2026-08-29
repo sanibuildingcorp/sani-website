@@ -1,8 +1,25 @@
 // netlify/functions/contact-leads.js
 // Returns recent contact-form submissions (Netlify Forms) so the dashboard
 // can show website leads next to estimates. Read-only.
+//
+// ── WHY THIS IS GATED ────────────────────────────────────────────────────────
+// "Read-only" is not the same as harmless. One unauthenticated GET returned the
+// last hundred leads in full: every name, phone number, email address, home
+// address and message. lib/require-dashboard-key.js was written when four other
+// endpoints were found in that state, and its own header comment named this file
+// as still being in it.
+//
+// Adding photos made it worse rather than better. The links now on each lead
+// point at pictures of the inside of a customer's home, and they are public
+// Supabase URLs — so leaking the list leaks the photographs too, to anyone who
+// ever guessed the function name.
+//
+// The dashboard is the only caller, and it already sends the key through
+// sbcFetch(). Nothing a customer does touches this endpoint, so gating it costs
+// nothing and closes the whole list.
 
 const https = require("https");
+const { requireDashboardKey } = require("./lib/require-dashboard-key");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -11,6 +28,9 @@ exports.handler = async function (event) {
   if (event.httpMethod !== "GET") {
     return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
   }
+
+  const denied = requireDashboardKey(event, cors());
+  if (denied) return denied;
 
   const siteId = process.env.MY_SITE_ID;
   const token = process.env.NETLIFY_AUTH_TOKEN || process.env.MY_BLOBS_TOKEN;
@@ -112,9 +132,13 @@ function apiGet(path, token) {
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    /* x-sbc-key must be advertised now that the endpoint requires it, or a
+       preflight refuses the very header the caller has to send. */
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Content-Type": "application/json",
+    /* Never cached: this is a list of customers' names and phone numbers. */
+    "Cache-Control": "no-store",
   };
 }
 
