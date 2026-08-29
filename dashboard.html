@@ -1156,10 +1156,13 @@ body {
   padding: 4px 0;
   gap: 12px;
 }
+/* No text-transform. This column used to hold an id ("wallCond"), where
+   capitalising helped. It now holds the question the customer actually read, and
+   Title Case turns a sentence into a headline: "Is The Leak Still Active, Or Has
+   It Been Stopped?". Let the question read the way it was asked. */
 .answer-row .ak {
   color: var(--ink-muted);
-  text-transform: capitalize;
-  min-width: 140px;
+  min-width: 160px;
   font-size: 12px;
 }
 .answer-row .av { color: var(--ink-soft); flex: 1; }
