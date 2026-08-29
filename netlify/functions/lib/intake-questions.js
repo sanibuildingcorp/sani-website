@@ -99,6 +99,28 @@ const GENERIC_PATTERNS = [
   /\bcertificate of insurance\b|\bboard approval\b|\bbuilding (rules|management)\b/i,
 ];
 
+/* ══ ONE ESCAPE HATCH, NOT THREE. ═══════════════════════════════════════════
+   The prompt tells the model not to write its own "not sure" option, because
+   the code appends one. The model wrote one anyway - and on the live form that
+   produced two of them side by side:
+
+     Still leaking now / Stopped, but stains remain /
+     Not sure where it's coming from / I'm not sure / Other - let me explain
+
+   Two ways to say "I don't know", plus the form's own "Other", on one screen.
+   A customer reading that has to work out whether the two are different, and
+   the extra taps are the ones people quit on.
+
+   So: recognise an uncertainty answer the model already wrote, and skip adding
+   ours. The model's version usually says MORE - "not sure where it's coming
+   from" is a real answer about a leak whose source is unknown, which is scope
+   information; "I'm not sure" is only an absence. Keep the informative one. */
+const ALREADY_UNSURE = /^\s*(?:i\s*'?m\s+)?not\s+sure\b|^\s*unsure\b|^\s*(?:i\s+)?do\s?n\s*'?\s*t\s+know\b|^\s*no\s+idea\b|^\s*not\s+certain\b|^\s*can\s*'?t\s+tell\b|^\s*hard\s+to\s+say\b/i;
+
+function hasUnsureOption(options) {
+  return (options || []).some((o) => ALREADY_UNSURE.test(String(o || "")));
+}
+
 function isGenericSubject(text) {
   const t = String(text || "");
   return GENERIC_PATTERNS.some((re) => re.test(t));
@@ -271,8 +293,12 @@ function normalizeQuestions(raw, input) {
     item.topic = topic;
     item.topicLabel = (topic && TOPIC_LABELS[topic]) || single || "Project Details";
 
-    // The escape hatch, added in code so it is on every choice question, always.
-    if (item.type !== "text") item.options = item.options.concat([NOT_SURE]);
+    /* The escape hatch — but only when the question does not already have one.
+       The form itself adds "Other — let me explain" underneath every choice
+       question, so a third way to say "I don't know" is clutter, not kindness. */
+    if (item.type !== "text" && !hasUnsureOption(item.options)) {
+      item.options = item.options.concat([NOT_SURE]);
+    }
 
     out.push(item);
     if (out.length >= cap) break;
@@ -299,6 +325,7 @@ module.exports = {
   PRICE_DRIVERS,
   NOT_SURE,
   topicsIn,
+  hasUnsureOption,
   isBannedQuestion,
   maxQuestions,
   planPrompt,

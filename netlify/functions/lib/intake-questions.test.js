@@ -10,6 +10,7 @@ const {
   maxQuestions,
   planPrompt,
   topicsIn,
+  hasUnsureOption,
   NOT_SURE,
 } = require("./intake-questions");
 
@@ -124,6 +125,86 @@ t("a text question does not get options", () => {
 t("the model cannot add its own 'not sure' twice", () => {
   const out = normalizeQuestions({ questions: [q({ options: ["A", "B"] })] }, IN1);
   assert.strictEqual(out[0].options.filter((o) => o === NOT_SURE).length, 1);
+});
+
+/* ── ONE ESCAPE HATCH, NOT THREE ───────────────────────────────────────────
+   Seen on the live form: "Not sure where it's coming from" and "I'm not sure"
+   one above the other, with "Other — let me explain" under both. The model
+   wrote its own uncertainty option despite being told not to, and the code
+   appended a second. Three ways to say "I don't know" on one screen. */
+t("the model's own uncertainty option is recognised", () => {
+  assert.ok(hasUnsureOption(["Still leaking", "Not sure where it's coming from"]));
+  assert.ok(hasUnsureOption(["Staying put", "Not sure yet"]));
+  assert.ok(hasUnsureOption(["A", "Unsure"]));
+  assert.ok(hasUnsureOption(["A", "I don't know"]));
+  assert.ok(hasUnsureOption(["A", "No idea"]));
+  assert.ok(hasUnsureOption(["A", "Can't tell"]));
+});
+t("a real answer is not mistaken for an uncertainty option", () => {
+  // These say something. Only a leading "not sure"-style phrase counts.
+  assert.ok(!hasUnsureOption(["Still leaking now", "Stopped, but stains remain"]));
+  assert.ok(!hasUnsureOption(["Everything stays where it is", "Moving one or more fixtures"]));
+  assert.ok(!hasUnsureOption(["House", "Apartment/co-op", "Condo"]));
+  assert.ok(!hasUnsureOption(["Sure, go ahead"]));
+});
+t("no second 'not sure' is added when the model wrote one", () => {
+  const out = normalizeQuestions({ questions: [q({
+    label: "Is the leak still active, or has it been stopped?",
+    topic: "water",
+    options: ["Still leaking now", "Stopped, but stains remain", "Not sure where it's coming from"],
+  })] }, IN1);
+  assert.deepStrictEqual(out[0].options,
+    ["Still leaking now", "Stopped, but stains remain", "Not sure where it's coming from"]);
+});
+t("the more informative wording is the one kept", () => {
+  // "Not sure where it's coming from" is scope information - the source is
+  // unknown and has to be found. "I'm not sure" is only an absence.
+  const out = normalizeQuestions({ questions: [q({
+    topic: "water", options: ["Still leaking", "Not sure where it's coming from"],
+  })] }, IN1);
+  assert.ok(out[0].options.indexOf("Not sure where it's coming from") !== -1);
+  assert.strictEqual(out[0].options.indexOf(NOT_SURE), -1);
+});
+t("a question with no uncertainty option still gets one", () => {
+  const out = normalizeQuestions({ questions: [q({ options: ["House", "Apartment/co-op", "Condo"] })] }, IN1);
+  assert.strictEqual(out[0].options[out[0].options.length - 1], NOT_SURE);
+});
+
+/* ══ THE ESCAPE HATCH IS NEVER OPTIONAL. ═══════════════════════════════════
+   Zura's rule, in his words: "many customers doesn't have a answers, they
+   don't know in deep what's going on and let's keep for them."
+
+   He is right, and it is worth saying why in code: a customer who cannot
+   answer and has no way to say so will either guess or leave. A guess is the
+   worse outcome of the two, because it arrives looking like a fact and gets
+   priced like one.
+
+   So: EVERY multiple-choice question reaches the customer with a way to say "I
+   don't know" - either the model's own wording or ours. Deduplicating the two
+   must never be able to leave a question with neither. This test walks a set of
+   shapes that have caught real bugs and proves the guarantee holds for all of
+   them. ("Other - let me explain" is added by the form itself, on top of this,
+   for the customer who has an answer but not one of the listed ones.) */
+t("EVERY choice question always offers a way to say 'I don't know'", () => {
+  const shapes = [
+    { name: "plain options",        options: ["House", "Apartment/co-op", "Condo"] },
+    { name: "model wrote its own",  options: ["Still leaking now", "Not sure where it's coming from"] },
+    { name: "model wrote 'not sure yet'", options: ["Staying put", "Not sure yet"] },
+    { name: "model wrote ours verbatim",  options: ["Yes", "No", NOT_SURE] },
+    { name: "two choices only",     options: ["Yes", "No"] },
+    { name: "the maximum five",     options: ["a", "b", "c", "d", "e"] },
+    { name: "odd casing",           options: ["Yes", "NOT SURE"] },
+  ];
+  shapes.forEach((shape) => {
+    const out = normalizeQuestions({ questions: [q({ options: shape.options })] }, IN1);
+    assert.strictEqual(out.length, 1, shape.name + ": question was dropped");
+    assert.ok(hasUnsureOption(out[0].options),
+      shape.name + ": no escape hatch — " + JSON.stringify(out[0].options));
+    // ...and exactly one of them, never a stacked pair.
+    const unsure = out[0].options.filter((o) => /not sure|unsure|don't know|no idea/i.test(o));
+    assert.strictEqual(unsure.length, 1,
+      shape.name + ": " + unsure.length + " uncertainty options — " + JSON.stringify(out[0].options));
+  });
 });
 
 /* ── shape coercion ────────────────────────────────────────────────────── */
