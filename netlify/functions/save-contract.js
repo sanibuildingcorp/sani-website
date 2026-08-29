@@ -1,9 +1,13 @@
 // netlify/functions/save-contract.js
 // Saves the contractor's edits to the AI-generated contract.
 // Blocked once the customer has signed.
-// POST { ref, sections:{projectType, scopeOfWork[], materialsList[], timeline, paymentSchedule[{label,amount}], clauses{}} }
+// POST { ref, sections:{projectType, scopeOfWork[], materialsList[], timeline, paymentSchedule[{label,amount}], clauses{}}, retotal? }
+//
+// `retotal: true` brings the contract's PRICE up to the estimate's. The figure is
+// computed here, never taken from the request. See lib/contract-total.js.
 
 const { getStore } = require("@netlify/blobs");
+const { contractDrift, rescaleSchedule } = require("./lib/contract-total");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -14,7 +18,8 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { ref, sections } = JSON.parse(event.body || "{}");
+    const body = JSON.parse(event.body || "{}");
+    const { ref, sections } = body;
     if (!ref || !sections || typeof sections !== "object") {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref or sections" }) };
     }
@@ -35,10 +40,32 @@ exports.handler = async function (event) {
 
     const prev = record.contract || { generatedAt: new Date().toISOString(), total: 0 };
     const c = sections.clauses || {};
+
+    /* ── THE TOTAL ─────────────────────────────────────────────────────────────
+       This was `total: prev.total`, full stop — so the contract's price could not
+       be changed by any edit at all. Update the estimate because the customer
+       asked for more work, come here to bring the contract along, and the number
+       simply stayed where it was. That is how a contract came to say $10,000.01
+       against a $20,000.03 estimate.
+
+       Changing it is a deliberate act (`retotal: true`), and the new figure is
+       computed HERE from the record rather than read from the request. The price
+       on a contract is not the browser's to assert — a client that could name it
+       could name any number. */
+    let nextTotal = prev.total;
+    if (body.retotal === true) {
+      const drift = contractDrift(record);
+      if (drift.estimateTotal > 0) nextTotal = drift.estimateTotal;
+    }
+
     record.contract = {
       generatedAt: prev.generatedAt || new Date().toISOString(),
       editedAt: new Date().toISOString(),
-      total: prev.total,
+      total: nextTotal,
+      /* Kept so the panel can say what it moved from, and so a rescale is
+         distinguishable from an ordinary edit in the record. */
+      retotaledAt: body.retotal === true && nextTotal !== prev.total ? new Date().toISOString() : prev.retotaledAt,
+      retotaledFrom: body.retotal === true && nextTotal !== prev.total ? prev.total : prev.retotaledFrom,
       customerName: prev.customerName || (record.customer && record.customer.name) || "",
       projectAddress: clean(sections.projectAddress, 300) || prev.projectAddress || "",
       sections: {
@@ -46,10 +73,18 @@ exports.handler = async function (event) {
         scopeOfWork: cleanArr(sections.scopeOfWork, 30),
         materialsList: cleanArr(sections.materialsList, 40),
         timeline: clean(sections.timeline, 400),
-        paymentSchedule: (Array.isArray(sections.paymentSchedule) ? sections.paymentSchedule : [])
-          .map(function (p) { return { label: clean(p.label, 200), amount: Math.round((Number(p.amount) || 0) * 100) / 100 }; })
-          .filter(function (p) { return p.label; })
-          .slice(0, 8),
+        /* On a retotal the LABELS are the contractor's and the AMOUNTS are the
+           server's: each row keeps its share of the job, scaled to the new total,
+           with the rounding remainder on the last row so the schedule sums to the
+           price exactly. Doing it here rather than trusting the browser's
+           arithmetic means the two can never disagree on a signature page. */
+        paymentSchedule: (function () {
+          const rows = (Array.isArray(sections.paymentSchedule) ? sections.paymentSchedule : [])
+            .map(function (p) { return { label: clean(p.label, 200), amount: Math.round((Number(p.amount) || 0) * 100) / 100 }; })
+            .filter(function (p) { return p.label; })
+            .slice(0, 8);
+          return body.retotal === true ? rescaleSchedule(rows, nextTotal) : rows;
+        })(),
         clauses: {
           hiddenConditions: clean(c.hiddenConditions, 1200),
           changeOrder: clean(c.changeOrder, 1200),

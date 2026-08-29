@@ -10042,6 +10042,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     }
 
     var s = ct.sections;
+    var drift = contractDriftHtml(currentRecord);
     if (ct.signed){
       panel.innerHTML = head +
         '<div style="background:rgba(22,163,74,0.10);border:1px solid #16a34a;border-radius:9px;padding:12px 14px;margin:10px 0">'+
@@ -10054,7 +10055,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     }
 
     if (!window.__sbcContractOpen){
-      panel.innerHTML = head + includeBox +
+      panel.innerHTML = head + includeBox + drift +
         '<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;line-height:1.5">Contract ready — <strong>'+esc2(s.projectType||'project')+'</strong> · <strong style="color:var(--gold-2)">'+fmt2(ct.total)+'</strong>'+(ct.editedAt?' · edited '+new Date(ct.editedAt).toLocaleDateString():'')+'</div>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
           '<button onclick="window.__sbcContractOpen=true;renderContractPanel()" style="padding:12px 22px;background:var(--gold);color:#102236;border:none;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer">✏️ View / Edit Contract</button>'+
@@ -10072,7 +10073,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     }).join('');
 
     var c = s.clauses || {};
-    panel.innerHTML = head + includeBox +
+    panel.innerHTML = head + includeBox + drift +
       '<button onclick="window.__sbcContractOpen=false;renderContractPanel()" style="background:none;border:1.5px solid var(--line);color:var(--ink-soft);border-radius:8px;padding:7px 14px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;margin-bottom:10px">▲ Hide contract</button>'+
       '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:6px">Edit anything below — the customer sees this exact contract when they tap Review Contract &amp; Approve. Contract total: <strong style="color:var(--gold-2)">'+fmt2(ct.total)+'</strong>'+(ct.editedAt?' · edited '+new Date(ct.editedAt).toLocaleDateString():'')+'</div>'+
 
@@ -10119,7 +10120,130 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     document.getElementById('sbc-cs-rows').appendChild(div);
   };
 
-  window.sbcGenContract = function(force){
+  /* ══ THE CONTRACT HAS TO FOLLOW THE PRICE ═══════════════════════════════════
+     "I updated price in this project, customer requested and now i try update
+      contract too but it's still regenerate with old price"
+
+     The contract IS built from the scope and the estimate total — but once, and
+     then never revisited. The price then changes and the contract keeps its old
+     number and its old payment rows, silently. On the job that produced this the
+     estimate said $20,000.03 and the contract still said $10,000.01, split
+     4000 / 4000 / 2000.01. A customer could have signed for half the job.
+
+     Nothing anywhere said so. Now it does, and fixing it re-scales the money
+     while leaving every word of hand-edited scope alone — because regenerating
+     to correct a NUMBER throws away the wording and costs a minute of waiting.
+
+     A SIGNED contract is never offered this. It is a record of what somebody
+     agreed to; if the price moved afterwards that is a new agreement and a human
+     decision, so it is reported and nothing else. */
+  window.contractDriftHtml = function(rec){
+    var d = contractDriftOf(rec);
+    if (!d.hasContract) return '';
+    if (d.signed){
+      if (Math.abs(d.delta) <= 1) return '';
+      /* Stated, never acted on. */
+      return '<div style="background:rgba(220,38,38,.08);border:1.5px solid #dc2626;border-radius:9px;padding:12px 14px;margin:2px 0 14px;font-size:12.5px;line-height:1.5;color:var(--ink)">'+
+        '<strong style="color:#b91c1c">The estimate has changed since this contract was signed.</strong><br>'+
+        'Signed for <strong>'+fmt2(d.contractTotal)+'</strong>, the estimate is now <strong>'+fmt2(d.estimateTotal)+'</strong>. '+
+        'A signed contract is not edited — agree the change with the customer and issue a new one.'+
+        '</div>';
+    }
+    if (!d.drifted) return '';
+    return '<div style="background:rgba(200,134,10,.10);border:1.5px solid var(--gold);border-radius:9px;padding:12px 14px;margin:2px 0 14px;font-size:12.5px;line-height:1.5;color:var(--ink)">'+
+      '<strong>This contract still says '+fmt2(d.contractTotal)+'.</strong> The estimate is now <strong style="color:var(--gold-2)">'+fmt2(d.estimateTotal)+'</strong>.<br>'+
+      '<span style="color:var(--ink-soft)">Updating keeps every word you have written and only moves the money — each payment keeps its share of the job.</span><br>'+
+      '<button onclick="sbcRetotalContract()" style="margin-top:9px;padding:9px 16px;background:var(--gold);color:#102236;border:none;border-radius:8px;font-family:var(--body);font-size:11.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">Update contract to '+fmt2(d.estimateTotal)+'</button>'+
+      '</div>';
+  };
+
+  /* Kept next to the panel that uses it rather than imported: the server has its
+     own copy in lib/contract-total.js, and contract-drift.test.js runs the two
+     against the same cases so they cannot come to disagree. */
+  window.contractDriftOf = function(rec){
+    var r = rec || {};
+    var ct = (r.contract && typeof r.contract === 'object') ? r.contract : null;
+    var hasContract = !!(ct && ct.sections);
+    var signed = !!(ct && ct.signed);
+    var contractTotal = ct ? (Math.round((Number(ct.total)||0)*100)/100) : 0;
+    var estimateTotal = 0;
+    try { estimateTotal = Math.round((customerTotalOf(r))*100)/100; } catch(e){ estimateTotal = 0; }
+    var delta = Math.round((estimateTotal - contractTotal)*100)/100;
+    return {
+      hasContract: hasContract, signed: signed,
+      contractTotal: contractTotal, estimateTotal: estimateTotal, delta: delta,
+      drifted: hasContract && !signed && estimateTotal > 0 && Math.abs(delta) > 1
+    };
+  };
+
+  /* The number the CUSTOMER is being charged — the stamped total when one
+     exists, otherwise whatever the visible lines add up to. Same precedence as
+     lib/customer-total.js, which is what the contract generator reads. */
+  window.customerTotalOf = function(rec){
+    var r = rec || {}, e = r.estimate || {};
+    if (r.customerFinalTotal != null){
+      var stamped = Number(r.customerFinalTotal);
+      if (isFinite(stamped) && stamped > 0) return stamped;
+    }
+    /* calcCustomerView, not calcTotal: the contract must state what the CUSTOMER
+       is charged, which depends on the show-labor / show-materials toggles.
+       calcTotal is the internal grand total and can differ from it. */
+    var ct = (typeof calcCustomerView === 'function') ? calcCustomerView(e) : null;
+    if (ct && isFinite(Number(ct.customerTotal))) return Number(ct.customerTotal);
+    return 0;
+  };
+
+  /* Each row keeps its share of the job, so "40% now, 40% at the midpoint" stays
+     40% now and 40% at the midpoint. The rounding remainder lands on the last
+     row, so the schedule sums to the total exactly rather than being a cent out
+     on the signature page. */
+  window.rescaleScheduleRows = function(schedule, newTotal){
+    var t = Math.round((Number(newTotal)||0)*100)/100;
+    var rows = (schedule||[]).filter(Boolean);
+    if (!rows.length || !(t > 0)) return rows;
+    var sum = rows.reduce(function(s,p){ return s + (Number(p.amount)||0); }, 0);
+    if (!(sum > 0)) return rows;
+    var f = t / sum;
+    var out = rows.map(function(p){
+      return { label: String(p.label||'Payment'), amount: Math.round((Number(p.amount)||0)*f*100)/100 };
+    });
+    var got = out.reduce(function(s,p){ return s + p.amount; }, 0);
+    out[out.length-1].amount = Math.round((out[out.length-1].amount + (t - got))*100)/100;
+    return out;
+  };
+
+  window.sbcRetotalContract = async function(){
+    if (!currentRecord || !currentRecord.contract) return;
+    var d = contractDriftOf(currentRecord);
+    if (!d.drifted){ if (window.toast) toast('The contract already matches the estimate'); return; }
+    if (d.signed) return;   /* belt and braces — the button is never drawn here */
+    if (!confirm('Update the contract from ' + fmt2(d.contractTotal) + ' to ' + fmt2(d.estimateTotal) + '?\n\n'
+      + 'The payment schedule is re-scaled so each payment keeps its share. Nothing you have written is changed.')) return;
+
+    /* The sections go up unchanged — every word he wrote stays his. The TOTAL and
+       the rescaled amounts are computed on the server from the record, so the
+       price on a contract is never something the browser asserted. */
+    try {
+      var r = await sbcFetch('/.netlify/functions/save-contract', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          ref: currentRecord.ref,
+          sections: currentRecord.contract.sections || {},
+          retotal: true
+        })
+      });
+      var data = await r.json().catch(function(){ return null; });
+      if (!r.ok || !data || !data.contract) throw new Error((data && data.error) || ('Save failed (' + r.status + ')'));
+      currentRecord.contract = data.contract;   /* what the server actually stored */
+      renderContractPanel();
+      if (window.toast) toast('✓ Contract updated to ' + fmt2(currentRecord.contract.total));
+    } catch(e){
+      console.error(e);
+      if (window.toast) toast('Could not update the contract: ' + e.message, true);
+    }
+  };
+
+  window.sbcGenContract = function(force, sinceTs){
     if (!currentRecord) return;
     var theRef = currentRecord.ref;
     var btn = document.getElementById('sbc-ct-gen');
@@ -10131,6 +10255,13 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ ref: theRef, force: !!force })
     }).catch(function(){});
+    /* The generatedAt we are trying to move PAST, so a contract that never
+       regenerated cannot be mistaken for the new one. Passed in by Regenerate,
+       which clears currentRecord.contract before calling and would otherwise
+       have nothing left to compare against. */
+    var startedWith = (typeof sinceTs === 'number' && sinceTs > 0) ? sinceTs
+      : ((currentRecord.contract && currentRecord.contract.generatedAt)
+          ? Date.parse(currentRecord.contract.generatedAt) : 0);
     var started = Date.now(), tries = 0;
     var iv = setInterval(function(){
       tries++;
@@ -10139,7 +10270,17 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
         .then(function(r){ return r.json(); })
         .then(function(rec){
           if (!currentRecord || currentRecord.ref !== theRef){ clearInterval(iv); return; }
-          if (rec && rec.contract && rec.contract.sections){
+          /* ONLY A CONTRACT NEWER THAN THE ONE WE STARTED WITH.
+             This used to accept any contract carrying sections — including the
+             OLD one still sitting on the record. Pressing Generate when a
+             contract already existed made the server answer "cached" and skip
+             (it is a background function, so that reply never reaches here), the
+             first poll found the previous contract untouched, and the dashboard
+             announced "✓ Contract ready" over the very same stale total the
+             contractor was trying to replace. That is what "it's still
+             regenerate with old price" looked like from this side. */
+          var gen = rec && rec.contract && rec.contract.generatedAt ? Date.parse(rec.contract.generatedAt) : 0;
+          if (rec && rec.contract && rec.contract.sections && (!startedWith || gen > startedWith)){
             clearInterval(iv);
             currentRecord.contract = rec.contract;
             renderContractPanel();
@@ -10160,9 +10301,13 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 
   window.sbcRegenContract = function(){
     if (!confirm('Regenerate the contract with AI? Your edits will be replaced.')) return;
+    /* Captured BEFORE the local copy is cleared: it is what the poller compares
+       against to tell the new contract from the one still on the server. */
+    var since = (currentRecord.contract && currentRecord.contract.generatedAt)
+      ? Date.parse(currentRecord.contract.generatedAt) : 0;
     currentRecord.contract = null;
     renderContractPanel();
-    sbcGenContract(true);
+    sbcGenContract(true, since);
   };
 
   window.sbcSaveContract = function(){
