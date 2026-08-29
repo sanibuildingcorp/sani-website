@@ -26,6 +26,10 @@ const { priceMaterialsLive, serperShopping } = require("./lib/material-prices");
 const thread = require("./lib/thread");
 /* Pin the job so Regenerate re-prices it instead of re-deciding it. */
 const { resolveScopePin } = require("./lib/scope-pin");
+/* The contractor's hand-made settings, carried across the wholesale replacement
+   of record.estimate below. This used to happen only in the browser, so locking
+   the phone mid-generation deleted them. See lib/contractor-owned-fields.js. */
+const { preserveContractorFields, preservedFieldNames } = require("./lib/contractor-owned-fields");
 
 /* Claude Opus 5. Thinking is ON BY DEFAULT on this model and shares the max_tokens
    budget with the response text, which is why every call site below was raised.
@@ -64,6 +68,11 @@ exports.handler = async function handler(event) {
     const store = storage.store;
     const record = storage.record;
     if (!record) return jsonResponse(404, { error: "Estimate not found", stage: "load_estimate" });
+
+    /* Snapshot BEFORE anything downstream can touch it. record.estimate is about
+       to be replaced wholesale, and the parts of it a human configured by hand
+       have to survive that whether or not a browser is still awake to help. */
+    const previousEstimate = record.estimate && typeof record.estimate === "object" ? record.estimate : null;
 
     record.aiStatus = "running";
     record.aiJobId = String(body.jobId || "").trim();
@@ -264,6 +273,11 @@ exports.handler = async function handler(event) {
     record.scopeFingerprint = pin.fingerprint;
     record.scopePinnedAt = pin.reuse ? (record.scopePinnedAt || new Date().toISOString()) : new Date().toISOString();
     record.scopeReusedLastRun = pin.reuse;
+    /* Quote photos, customer view mode, contract, a manually set total, finish
+       groups, parked lines. The AI does not know they exist and would drop every
+       one of them. */
+    estimate.preservedContractorFields = preservedFieldNames(previousEstimate);
+    preserveContractorFields(previousEstimate, estimate);
     record.estimate = estimate;
     record.status = record.status === "new" ? "drafted" : record.status;
     record.updatedAt = new Date().toISOString();

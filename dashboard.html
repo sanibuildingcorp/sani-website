@@ -3316,6 +3316,11 @@ async function openEdit(ref) {
     if (!currentRecord.estimate) currentRecord.estimate = {};
     normalizeDisplayFlags(currentRecord.estimate);
     renderEdit();
+    /* If a generation for this record was still running when the phone was
+       locked, pick it back up. Deliberately after renderEdit() — it needs the
+       button that renderEdit draws — and deliberately not awaited, so a running
+       job never delays the record opening. */
+    resumeGenerationIfRunning(ref);
   } catch (e) {
     card.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>' + esc(e.message) + '</h3>'
       + '<p style="font-size:12.5px;color:var(--ink-muted,#8a9bb0);margin:6px 0 14px">Ref ' + esc(ref) + ' — this record won\'t open. You can retry or delete it.</p>'
@@ -4569,6 +4574,216 @@ function regenerateWarning(r, reanalyze) {
   return lines.join("\n");
 }
 
+/* ══ A GENERATION HAS TO SURVIVE A LOCKED PHONE ═══════════════════════════════
+   "in the process of generating if i fold browser or phone the generator stops
+    and do not keeps continuously, because of it's takes longer i can't keep
+    open till it's finish"
+
+   It does not actually stop. generate-estimate-background is a Netlify BACKGROUND
+   function: the browser's part is over in 200ms — it posts the job, gets a 202,
+   and the estimator runs on Netlify's side for up to fifteen minutes with nothing
+   connected to it. Locking the phone cannot touch that.
+
+   What stopped was the WATCHING. The poll loop lived entirely in this page:
+
+     - a locked screen freezes setTimeout, so the loop stalls mid-wait;
+     - iOS then discards the backgrounded page outright, and the loop, the jobId
+       and the whole run are gone with it;
+     - the old loop counted 160 ticks rather than looking at the clock, so even a
+       page that survived came back with a meaningless idea of how long it had
+       been waiting;
+     - and nothing anywhere on disk remembered that a generation was in flight,
+       so there was no way back to it.
+
+   The estimate itself was always finishing. The contractor just never got told,
+   pressed Generate again, and paid for a second run of a job that was already
+   done.
+
+   So the run is written down before the browser is allowed to go to sleep, the
+   deadline is wall-clock, and coming back to the page — waking it, restoring it
+   from the back/forward cache, or reopening the record after the page was thrown
+   away entirely — polls immediately instead of waiting on a throttled timer.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+var AI_JOB_KEY = "sbcAiJobs";
+/* The background function's own ceiling. The browser must not give up first —
+   that was the old 8-minute limit's mistake. */
+var AI_JOB_MAX_MS = 15 * 60 * 1000;
+
+/* localStorage throws outright in Safari private mode, and a generation must not
+   fail because of where it was being watched from. Every access is guarded, and
+   losing the note only costs the automatic reconnect — never the estimate. */
+function aiJobsRead() {
+  try {
+    var raw = localStorage.getItem(AI_JOB_KEY);
+    var map = raw ? JSON.parse(raw) : null;
+    return (map && typeof map === "object" && !Array.isArray(map)) ? map : {};
+  } catch (_) { return {}; }
+}
+function aiJobsWrite(map) {
+  try { localStorage.setItem(AI_JOB_KEY, JSON.stringify(map || {})); } catch (_) {}
+}
+/* Keyed by ref, not a single slot: starting a generation on one estimate and
+   opening another must not lose the first one's thread. Entries past the
+   deadline are dropped on every touch, so this cannot grow forever. */
+function aiJobStart(ref, jobId, now) {
+  /* typeof, not `||`: a timestamp is a number, and `||` would quietly reject a
+     legitimate 0 and reach for the real clock instead. */
+  var t = typeof now === "number" ? now : Date.now();
+  var map = aiJobsPrune(aiJobsRead(), t);
+  map[ref] = { jobId: jobId, startedAt: t };
+  aiJobsWrite(map);
+  return map;
+}
+function aiJobsPrune(map, now) {
+  var t = typeof now === "number" ? now : Date.now();
+  var out = {};
+  Object.keys(map || {}).forEach(function (k) {
+    var j = map[k];
+    if (j && typeof j.startedAt === "number" && (t - j.startedAt) < AI_JOB_MAX_MS) out[k] = j;
+  });
+  return out;
+}
+function aiJobClear(ref) {
+  var map = aiJobsPrune(aiJobsRead());
+  delete map[ref];
+  aiJobsWrite(map);
+}
+function aiJobFor(ref, now) {
+  var raw = aiJobsRead();
+  var map = aiJobsPrune(raw, now);
+  /* Sweep on the way past. A run nobody ever came back to would otherwise sit in
+     storage for good, since the only other sweep is on starting another one. */
+  if (Object.keys(map).length !== Object.keys(raw).length) aiJobsWrite(map);
+  var j = map[ref];
+  return (j && typeof j.jobId === "string" && j.jobId) ? j : null;
+}
+
+/* WHAT ONE POLL OF THE RECORD MEANS. Pure, so the reconnect and the live loop
+   cannot disagree about when a run is finished — they call this same function.
+   A record whose aiJobId is not ours is a PREVIOUS run: still "wait", never
+   "done", or a stale success would be accepted as this one's. */
+function aiPollVerdict(rec, jobId, elapsedMs) {
+  /* The record is read BEFORE the clock. A run that finished at 15:01 is still a
+     finished run, and throwing it away for being late would be the same bug in a
+     new hat. The deadline only ends a wait that has nothing to show. */
+  if (rec && rec.aiJobId === jobId) {
+    if (rec.aiStatus === "error") return { state: "error", message: rec.aiError || "The estimator reported an error" };
+    if (rec.aiStatus === "done" && rec.estimate && (rec.estimate.labor || []).length) return { state: "done" };
+  }
+  if (elapsedMs >= AI_JOB_MAX_MS) return { state: "timeout" };
+  return { state: "wait" };
+}
+
+/* Wait, but stop waiting the instant the page is looked at again. A phone that
+   has been asleep for four minutes should poll on the unlock, not on whenever
+   the frozen timer decides to catch up. */
+function sleepUntilVisibleOr(ms) {
+  return new Promise(function (resolve) {
+    var fired = false;
+    function fire() {
+      if (fired) return;
+      fired = true;
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pageshow", fire);
+      window.removeEventListener("focus", fire);
+      resolve();
+    }
+    function onVis() { if (!document.hidden) fire(); }
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pageshow", fire);   /* back/forward cache restore */
+    window.addEventListener("focus", fire);
+    setTimeout(fire, ms);
+  });
+}
+
+/* Watch a run to its end. Called both by the click that starts one and by the
+   reconnect that finds one already going. Looks the button up every tick instead
+   of holding a reference, because a re-render replaces the element. */
+async function watchGeneration(ref, jobId, startedAt) {
+  while (true) {
+    var elapsed = Date.now() - startedAt;
+    var btn = document.getElementById("gen-btn");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="ai-spin"></span> Generating… ' + Math.round(elapsed / 1000) + 's';
+    }
+    var rec = null;
+    try {
+      var pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+      if (pr.ok) rec = await pr.json();
+    } catch (_) { rec = null; }
+
+    var v = aiPollVerdict(rec, jobId, Date.now() - startedAt);
+    if (v.state === "done") { aiJobClear(ref); return { estimate: rec.estimate, status: rec.status }; }
+    if (v.state === "error") { aiJobClear(ref); throw new Error(v.message); }
+    if (v.state === "timeout") {
+      aiJobClear(ref);
+      throw new Error("Still running after 15 minutes — check Netlify → Logs → Functions → generate-estimate-background");
+    }
+    await sleepUntilVisibleOr(3000);
+  }
+}
+
+/* Put a finished run onto the open record. One place, so the click path and the
+   reconnect path can never apply it differently. */
+function applyGeneratedEstimate(data) {
+  /* Regeneration replaces record.estimate wholesale, so snapshot every
+     contractor-owned setting first and put it back afterwards. Without this,
+     pressing Regenerate silently wipes hand-configured Customer View Mode
+     choices, a manually set total, finish groups, contract settings and quote
+     photos - none of which the AI knows anything about.
+     Only keys that actually exist are restored, so a brand-new estimate still
+     takes the estimator's own defaults.
+     The server now does this too, in lib/contractor-owned-fields.js, because
+     this restore only ever ran while a browser was awake — and a locked phone
+     is exactly when it was not. Both run; they agree; this one also still covers
+     the older non-background generate-estimate.js path. */
+  var keepFields = {};
+  if (currentRecord.estimate) {
+    CONTRACTOR_OWNED_ESTIMATE_FIELDS.forEach(function (k) {
+      if (currentRecord.estimate[k] !== undefined && currentRecord.estimate[k] !== null) {
+        keepFields[k] = currentRecord.estimate[k];
+      }
+    });
+  }
+  currentRecord.estimate = data.estimate;
+  Object.keys(keepFields).forEach(function (k) {
+    currentRecord.estimate[k] = keepFields[k];
+  });
+  normalizeDisplayFlags(currentRecord.estimate);
+  currentRecord.status = data.status;
+  renderEdit();
+}
+
+/* Called after a record is opened. If a generation for it was still running when
+   this page was last awake, pick the thread back up — including the case where
+   the page was destroyed and rebuilt in between, which is what actually happens
+   on a locked phone. */
+async function resumeGenerationIfRunning(ref) {
+  var job = aiJobFor(ref);
+  if (!job) return;
+  /* It may well have finished while the phone was in a pocket. openEdit has just
+     fetched the record, so check that copy before polling for another. */
+  var v = aiPollVerdict(currentRecord, job.jobId, Date.now() - job.startedAt);
+  if (v.state === "done") {
+    aiJobClear(ref);
+    toast("✓ This estimate finished while you were away");
+    return;
+  }
+  if (v.state === "error" || v.state === "timeout") { aiJobClear(ref); return; }
+  toast("Still generating — picking it back up");
+  try {
+    applyGeneratedEstimate(await watchGeneration(ref, job.jobId, job.startedAt));
+    toast("✓ AI estimate generated");
+  } catch (e) {
+    console.error(e);
+    var btn = document.getElementById("gen-btn");
+    if (btn) { btn.disabled = false; btn.textContent = "Generate Estimate"; }
+    toast("AI generation failed: " + e.message, true);
+  }
+}
+
 async function generateAI(isRegenerate, reanalyze) {
   if (isRegenerate) {
     var warn = regenerateWarning(currentRecord, reanalyze);
@@ -4593,6 +4808,9 @@ async function generateAI(isRegenerate, reanalyze) {
     // Unique identity for this generation run. Prevents a stale previous aiStatus=done
     // record from being accepted before the new background job stamps running.
     const jobId = "ai-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+    /* Wall clock, not a tick count. A frozen timer must not be able to convince
+       the page that four minutes of sleep were four seconds of waiting. */
+    const startedAt = Date.now();
     const payload = JSON.stringify({
       ref: ref,
       jobId: jobId,
@@ -4618,54 +4836,16 @@ async function generateAI(isRegenerate, reanalyze) {
     });
     if (kick.status !== 202 && !kick.ok) throw new Error("Could not start the estimator (" + kick.status + ")");
 
-    /* Poll every 3s for up to 8 minutes. The estimator makes up to three AI calls
-       (project analysis, pricing, optional repair) and a long written scope like a
-       multi-trade apartment can legitimately take several minutes. The background
-       function itself is allowed 15 minutes, so the browser must not give up first. */
-    let data = null;
-    for (let i = 0; i < 160; i++) {
-      await new Promise(function (res) { setTimeout(res, 3000); });
-      btn.innerHTML = '<span class="ai-spin"></span> Generating… ' + ((i + 1) * 3) + 's';
-      let rec;
-      try {
-        const pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
-        if (!pr.ok) continue;
-        rec = await pr.json();
-      } catch (_) { continue; }
-      // Only accept state written by THIS generation click. A previous run may still
-      // be marked done for a few seconds before the background function starts.
-      if (!rec || rec.aiJobId !== jobId) continue;
-      const st = rec.aiStatus;
-      if (st === "error") throw new Error(rec.aiError || "The estimator reported an error");
-      if (st === "done" && rec.estimate && (rec.estimate.labor || []).length) {
-        data = { estimate: rec.estimate, status: rec.status };
-        break;
-      }
-    }
-    if (!data) throw new Error("Timed out after 8 minutes — check Netlify → Logs → Functions → generate-estimate-background");
+    /* WRITTEN DOWN BEFORE THE PHONE IS ALLOWED TO SLEEP. From here on the run
+       exists independently of this page: the estimator is on Netlify's side and
+       the note of it is on disk, so a discarded tab costs a reconnect, not the
+       estimate. */
+    aiJobStart(ref, jobId, startedAt);
 
-    /* Regeneration replaces record.estimate wholesale, so snapshot every
-       contractor-owned setting first and put it back afterwards. Without this,
-       pressing Regenerate silently wipes hand-configured Customer View Mode
-       choices, a manually set total, finish groups, contract settings and quote
-       photos - none of which the AI knows anything about.
-       Only keys that actually exist are restored, so a brand-new estimate still
-       takes the estimator's own defaults. */
-    var keepFields = {};
-    if (currentRecord.estimate) {
-      CONTRACTOR_OWNED_ESTIMATE_FIELDS.forEach(function (k) {
-        if (currentRecord.estimate[k] !== undefined && currentRecord.estimate[k] !== null) {
-          keepFields[k] = currentRecord.estimate[k];
-        }
-      });
-    }
-    currentRecord.estimate = data.estimate;
-    Object.keys(keepFields).forEach(function (k) {
-      currentRecord.estimate[k] = keepFields[k];
-    });
-    normalizeDisplayFlags(currentRecord.estimate);
-    currentRecord.status = data.status;
-    renderEdit();
+    /* Polls every 3s, or immediately on waking, until the background function
+       stamps this jobId done. Fifteen minutes to match what that function is
+       actually allowed — the browser must not give up first. */
+    applyGeneratedEstimate(await watchGeneration(ref, jobId, startedAt));
     toast("✓ AI estimate generated");
   } catch (e) {
     console.error(e);
