@@ -71,6 +71,31 @@ console.log('\n4. Where the time went');
  t('a repair pass is called out when it ran', /A repair pass ran/.test(h));
 }
 
+/* ══ WHICH JOB WAS PRICED ═════════════════════════════════════════════════
+   The one fact that explains a total jumping from $3,710 to $20,895 on the
+   same request: whether this run held the scope or decided it again. */
+console.log('\n4b. It says whether the job was held or re-read');
+{
+  const held = run({ pricingReadiness: { status: 'READY_TO_ESTIMATE', confidence_score: 70 },
+                       generationTiming: { totalMs: 1000, scopeReused: true, scopeReason: 're-pricing the same job that was pinned before' } });
+  t('a pinned run says the job is the same as before', /Same job as before/.test(held), held.slice(0, 300));
+  t('...and says the scope was held', /Scope held/.test(held));
+  t('...and does not claim it was re-read', !/Job re-read/.test(held));
+
+  const fresh = run({ pricingReadiness: { status: 'READY_TO_ESTIMATE', confidence_score: 70 },
+                        generationTiming: { totalMs: 1000, scopeReused: false, scopeReason: 'the request changed since the scope was pinned — reading it again' } });
+  t('a re-read run says so', /Job re-read/.test(fresh), fresh.slice(0, 300));
+  t('...and gives the reason', /the request changed/.test(fresh));
+  t('...and does not claim the job was held', !/Same job as before/.test(fresh));
+
+  const old = run({ pricingReadiness: { status: 'READY_TO_ESTIMATE', confidence_score: 70 }, generationTiming: { totalMs: 1000 } });
+  t('a record from before this existed claims neither', !/Same job as before/.test(old) && !/Job re-read/.test(old));
+
+  const nasty = run({ pricingReadiness: { status: 'READY_TO_ESTIMATE' },
+                        generationTiming: { totalMs: 1, scopeReused: false, scopeReason: '<img src=x onerror=alert(1)>' } });
+  t('the reason cannot inject markup', nasty.indexOf('<img src=x') === -1, nasty.slice(0, 300));
+}
+
 console.log('\n5. Nothing it renders can break the page');
 {
  const nasty=run({pricingReadiness:{status:'NEEDS_CUSTOMER_QUESTIONS',reason:'<img src=x onerror=alert(1)>'},
