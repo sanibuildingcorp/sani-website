@@ -9,10 +9,14 @@
 //   seo-publish            holds GITHUB_TOKEN - commits to the repo
 //   publish-image-to-page  holds GITHUB_TOKEN - commits to the repo
 //
-// No key, no password, no referer check. `contact-leads.js` is in the same state
-// and is NOT the pattern to copy; `send-reply.js` and `thread-reply.js` are, and
-// this is their check lifted into one place so a fifth endpoint cannot invent a
-// fifth slightly-different version of it.
+// No key, no password, no referer check. `send-reply.js` and `thread-reply.js`
+// were the pattern to copy, and this is their check lifted into one place so a
+// fifth endpoint cannot invent a fifth slightly-different version of it.
+//
+// `contact-leads.js` was named here as still being in that state. It is not any
+// more — it calls this gate too. It returned the last hundred leads in full to
+// anyone who guessed the URL, which mattered more once each lead started
+// carrying links to photographs of the inside of a customer's home.
 //
 // TWO RULES THAT MUST NOT BE RELAXED:
 //

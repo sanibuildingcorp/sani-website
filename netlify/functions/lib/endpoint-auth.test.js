@@ -65,6 +65,11 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["list-estimates", "GET", null],
     ["seo-publish", "POST", { slug: "painting", html: "<html>owned</html>" }],
     ["publish-image-to-page", "POST", { page: "painting", imageBase64: "AAAA" }],
+    /* One unauthenticated GET used to return the last hundred leads in full —
+       every name, phone, email, home address and message. It mattered more once
+       each lead started carrying links to photographs of the inside of a
+       customer's home. */
+    ["contact-leads", "GET", null],
   ];
 
   for (const [name, method, body] of GATED) {
