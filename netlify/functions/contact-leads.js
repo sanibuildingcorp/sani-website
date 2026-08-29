@@ -35,6 +35,11 @@ exports.handler = async function (event) {
           borough: d.borough || d.area || "",
           address: d.address || "",
           message: d.message || d.description || s.body || "",
+          /* Photos the customer attached on the contact form. Stored as links
+             (contact.html uploads them and posts the URLs, never the files), so
+             this is a newline-separated string on the submission. Split here so
+             the dashboard never has to know that. */
+          photos: splitLinks(d.photos),
           createdAt: s.created_at,
         });
       });
@@ -48,6 +53,20 @@ exports.handler = async function (event) {
     return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
   }
 };
+
+/* One submission's photo field into a list of links. Netlify stores whatever the
+   form posted, and older submissions predate the field entirely, so this has to
+   cope with a missing value, a single link, a newline- or comma-separated list,
+   and an array if the shape ever changes. Only http(s) links are returned — a
+   lead is untrusted input, and it renders straight into an href. */
+function splitLinks(value) {
+  if (!value) return [];
+  const parts = Array.isArray(value) ? value : String(value).split(/[\r\n,]+/);
+  return parts
+    .map(function (s) { return String(s || "").trim(); })
+    .filter(function (s) { return /^https?:\/\//i.test(s); })
+    .slice(0, 20);
+}
 
 function apiGet(path, token) {
   return new Promise(function (resolve, reject) {
@@ -78,3 +97,7 @@ function cors() {
     "Content-Type": "application/json",
   };
 }
+
+/* Exposed for js/contact-upload.test.js. Netlify only ever calls .handler, so
+   this changes nothing about how the function runs. */
+module.exports.splitLinks = splitLinks;
