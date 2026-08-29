@@ -85,6 +85,21 @@ summary{font-size:13.5px;font-weight:600;cursor:pointer;color:var(--muted)}
 .opts{background:#fdf9f0;border:1px solid #ecdcb4;border-radius:8px;padding:13px;margin-top:14px}
 .opt{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #eee0c0;font-size:14.5px}
 .opt:first-of-type{border-top:0}
+/* The option picker. An alternative the customer can actually take, rather than
+   a price they can only look at. */
+.opt.on{background:#fffdf6}
+.opt-main{flex:1;min-width:0}
+.opt-side{display:flex;flex-direction:column;align-items:flex-end;gap:7px;white-space:nowrap}
+.opt-add{border:1px solid #b4933f;background:#fff;color:#7a6220;border-radius:7px;
+  padding:7px 13px;font:600 13px system-ui;cursor:pointer;-webkit-appearance:none}
+.opt-add:hover{background:#fdf6e6}
+.opt-add.on{background:#2f7d4f;border-color:#2f7d4f;color:#fff}
+.opt-add:disabled{opacity:.55;cursor:not-allowed}
+.opt-added{font-size:12px;color:#2f7d4f;font-weight:600}
+.opts .sum{display:flex;justify-content:space-between;gap:12px;margin-top:12px;
+  padding-top:11px;border-top:1px solid #e0cf9e;font-weight:700;font-size:14.5px}
+.opts .hint{font-size:12.5px;color:var(--muted);margin-top:9px;line-height:1.45}
+.pr.added{color:#2f7d4f}
 .muted{font-size:13px;color:var(--muted)}
 .scope-text{white-space:pre-wrap;font-size:14.5px;color:#2c3846}
 
@@ -145,6 +160,75 @@ function isOption(item){return /\boption\s*[ab12]\b|alternate/i.test(N(item))}fu
    here on purpose - and netlify/functions/lib/customer-total.test.js extracts
    THIS function and asserts it agrees with the library across every toggle
    state. If you change one, change both; the test will tell you if you didn't. */
+/* ══ THE OPTIONS THE CUSTOMER HAS ADDED TO THEIR OWN JOB. ════════════════════
+   Alternatives used to be printed as a price with no way to say yes. Now each
+   one has a button, more than one can be taken together, and the total, the
+   service subtotal and the scope all move when it is pressed.
+
+   Held as IDS, never as labels or indexes. The same id is re-derived on the
+   server from its own copy of the record, and the price charged comes from
+   there — see netlify/functions/lib/quote-options.js, which computes the id the
+   same way from the same field. An index would break the moment the contractor
+   reordered the list; a label match would break on a comma. */
+let chosen = Object.create(null);
+function optNorm(s){return String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim()}
+function optId(label){
+ const b=optNorm(label);let h=5381;
+ for(let i=0;i<b.length;i++)h=((h<<5)+h+b.charCodeAt(i))>>>0;
+ const slug=b.replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40);
+ return 'opt-'+(slug||'x')+'-'+h.toString(36)}
+function optLetter(label){const m=optNorm(label).match(/\boption\s+([a-f])\b/);return m?m[1].toUpperCase():''}
+function chosenIds(){return Object.keys(chosen)}
+function isChosen(label){return !!chosen[optId(label)]}
+/* What the added options come to. Read off the CHOSEN map, which stores the
+   price that was on screen when the button was pressed. */
+function chosenTotal(){let t=0;for(const k in chosen)t+=Number(chosen[k].price)||0;return Math.round(t*100)/100}
+function chosenFor(title){const out=[];for(const k in chosen){if(chosen[k].section===title)out.push(chosen[k])}return out}
+/* Toggle. Full re-render afterwards, because the price, the service subtotal,
+   the included list and the not-included list all change together — and this
+   page having ONE rendering path is the reason the dashboard preview can be
+   trusted to show what the customer sees. */
+window.TOG=function(id,label,price,section){
+ /* Two places this must not fire: the contractor's preview, where every control
+    is inert on purpose, and an approved estimate, where the price is settled and
+    changing it on screen would show the customer a number nobody agreed to. */
+ if(document.body.getAttribute('data-sbc-preview')==='1')return;
+ if(isApproved(rec))return;
+ if(chosen[id])delete chosen[id];
+ else chosen[id]={id:id,label:label,price:Number(price)||0,section:section||''};
+ const box=document.getElementById('msg'),draft=box?box.value:'';
+ const y=window.scrollY;
+ render(rec);
+ const nb=document.getElementById('msg');if(nb&&draft)nb.value=draft;
+ window.scrollTo(0,y);
+};
+function optsHtml(s){
+ const list=A(s.options);if(!list.length)return '';
+ const rows=list.map(o=>{
+  const id=optId(o.label),on=!!chosen[id];
+  return `<div class="opt${on?' on':''}"><div class="opt-main"><b>${E(o.label)}</b>${o.description?`<div class="muted">${E(o.description)}</div>`:''}</div>`+
+   `<div class="opt-side"><b>${M(o.price)}</b>`+
+   `<button class="opt-add${on?' on':''}" onclick="TOG('${E(id)}',this.dataset.l,${Number(o.price)||0},this.dataset.s)" data-l="${E(o.label)}" data-s="${E(s.title)}">${on?'✓ Added':'Add to my estimate'}</button>`+
+   (on?'<span class="opt-added">Included in your total</span>':'')+
+   `</div></div>`}).join('');
+ const mine=chosenFor(s.title);
+ const sum=mine.length?`<div class="sum"><span>Added to this service</span><span>${M(mine.reduce((t,o)=>t+o.price,0))}</span></div>`:'';
+ return `<div class="opts"><div class="label">Alternatives</div>${rows}${sum}<div class="hint">These are optional. Add any you want — you can take more than one — and your total updates straight away. Nothing is charged until you approve.</div></div>`}
+/* The scope has to move with the money. An option the customer added belongs in
+   "Included in this service", and any "Not included" line that exists only to
+   point at it — "…see Option A" — has to go, because leaving it there tells the
+   customer the thing they just paid for is excluded. */
+function withChosen(s){
+ const mine=chosenFor(s.title);if(!mine.length)return A(s.included);
+ return A(s.included).concat(mine.map(o=>'Added at your request — '+o.label))}
+function withoutChosen(s){
+ const mine=chosenFor(s.title);if(!mine.length)return A(s.notIncluded);
+ const letters=mine.map(o=>optLetter(o.label)).filter(Boolean);
+ const labels=mine.map(o=>optNorm(o.label));
+ return A(s.notIncluded).filter(x=>{
+  const t=optNorm(x);
+  if(labels.some(l=>l&&t.indexOf(l)!==-1))return false;
+  return !letters.some(L=>new RegExp('\\boption\\s+'+L.toLowerCase()+'\\b').test(t))})}
 function calc(e){
  const l=A(e.labor).reduce((s,x)=>s+LT(x),0),m=A(e.materials).reduce((s,x)=>s+LT(x),0),k=1+(+e.markupPct||0)/100;
  const r2=x=>Math.round((Number(x)||0)*100)/100;
@@ -537,13 +621,28 @@ function actionHtml(c,approved,needsContract){
  }
  return`<section class="actions"><button class="approve" onclick="P('a')">Approve estimate</button><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><section class="card panel" id="a"><input id="sig" value="${E(c.name||'')}"><button class="approve" onclick="S('accept')">Confirm approval</button></section>${messageBox(false)}`}
 function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r);app.innerHTML=`${pinHtml(r,ct)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||r.status||'Sent'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e)||'Please refer to the estimate details provided by Sani Building Corp.')}</div></section><section class="card prices">${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
-function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal)}</b></div>`).join('');app.innerHTML=`${pinHtml(r,ct)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(ct.total)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal)}</b></div><div class="body">${list('Included in this service','in',s.included)}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',s.notIncluded)}${A(s.options).length?`<div class="opts"><div class="label">Alternatives</div>${A(s.options).map(o=>`<div class="opt"><span><b>${E(o.label)}</b>${o.description?`<div class="muted">${E(o.description)}</div>`:''}</span><b>${M(o.price)}</b></div>`).join('')}</div>`:''}${details(e,s)}</div></section>`).join('')}${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
-function render(r){let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r)}
+function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal+chosenFor(x.title).reduce((t,o)=>t+o.price,0))}</b></div>`).join(''),addedRows=chosenIds().map(k=>chosen[k]).map(o=>`<div class="pr added"><b>${E(o.label)}</b><b>+${M(o.price)}</b></div>`).join(''),shown=Math.round((ct.total+chosenTotal())*100)/100;app.innerHTML=`${pinHtml(r,ct)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div><div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div><div><small>Timeline</small>${E(e.timelineText||'TBD')}</div><div><small>Total</small>${M(shown)}</div></div>${heroPhoto(r)}</section><section class="card"><div class="ey">Project summary</div><p>${E(e.summary||'Estimate based on the project information provided.')}</p></section><section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}${addedRows}<div class="pr total"><span>Your estimate</span><span>${M(shown)}</span></div></section>${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal+chosenFor(s.title).reduce((t,o)=>t+o.price,0))}</b></div><div class="body">${list('Included in this service','in',withChosen(s))}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',withoutChosen(s))}${optsHtml(s)}${details(e,s)}</div></section>`).join('')}${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r))}`;track()}
+/* Seed the picker from the record before the first paint. A customer who added
+   two options and approved must see those two options still added when they open
+   their link again — the selection is on the record, and this page is the only
+   copy of it they will ever look at. Seeded once: after that the live map wins,
+   so a toggle is not undone by the re-render it triggers. */
+let seeded=false;
+function seedChosen(r){
+ if(seeded)return;seeded=true;
+ A(r&&r.customerOptionSelections).forEach(function(o){
+  if(!o||!o.label)return;
+  const id=o.id||optId(o.label);
+  chosen[id]={id:id,label:o.label,price:Number(o.price)||0,section:o.section||''}})}
+function render(r){seedChosen(r);let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r)}
 function track(){new Image().src='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now()}
 window.P=id=>{document.querySelectorAll('.panel').forEach(x=>x.classList.remove('open'));let el=document.getElementById(id);if(el)el.classList.add('open')};
 window.S=async a=>{
  const st=document.getElementById('st'),box=document.getElementById('msg'),btn=document.getElementById('sendbtn');
- const p={ref,action:a,finalTotal:calc(rec.estimate||{}).total};
+ /* The total the customer is looking at, and the ids that explain why it is
+    higher than the quote. The server re-prices those ids against its own copy
+    and refuses anything above quote + what actually resolved. */
+ const p={ref,action:a,finalTotal:Math.round((calc(rec.estimate||{}).total+chosenTotal())*100)/100,optionSelections:chosenIds()};
  if(a==='accept')p.signature=document.getElementById('sig').value;
  if(a==='question'){
   p.questionText=(box&&box.value||'').trim();

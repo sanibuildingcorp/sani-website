@@ -3415,6 +3415,35 @@ function renderEdit() {
       '</div>';
     }).join("");
 
+  /* ══ WHAT THE CUSTOMER ADDED TO THEIR OWN JOB. ════════════════════════════
+     The quote page now lets them take the priced alternatives — one, or several
+     together — and the total they approved includes them. That has to be the
+     first thing visible on the record, because it changes both the price and
+     the work, and it arrived without anyone here typing it. */
+  const optSel = Array.isArray(r.customerOptionSelections) ? r.customerOptionSelections : [];
+  const optHtml = !optSel.length ? "" : (function() {
+    const sum = optSel.reduce(function(t, o) { return t + (Number(o.price) || 0); }, 0);
+    return '<div style="background:rgba(47,125,79,.10);border:1.5px solid #2f7d4f;border-radius:12px;padding:13px 15px;margin-top:12px">' +
+      '<div style="color:#2f7d4f;font-weight:700;font-size:13px;margin-bottom:8px">✓ CUSTOMER ADDED ' +
+      optSel.length + ' OPTION' + (optSel.length > 1 ? 'S' : '') + ' — +$' + sum.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + '</div>' +
+      optSel.map(function(o) {
+        return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line-soft)">' +
+          '<span>' + esc(o.label || '') + (o.section ? ' <span style="color:var(--ink-muted)">· ' + esc(o.section) + '</span>' : '') + '</span>' +
+          '<b style="white-space:nowrap;color:#2f7d4f">+$' + (Number(o.price) || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + '</b></div>';
+      }).join('') +
+      '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:9px;line-height:1.5">They chose these on the quote page. The price was re-checked here against this record before it was accepted — add the work to the scope before you invoice.</div>' +
+    '</div>';
+  })();
+  /* A total the customer's browser sent that this server would not stand behind.
+     Never silent: it means they saw one number and the record holds another. */
+  const rejHtml = !r.rejectedFinalTotal ? "" :
+    '<div style="background:rgba(200,60,60,.10);border:1.5px solid #c83c3c;border-radius:12px;padding:12px 15px;margin-top:12px;font-size:12.5px;line-height:1.55">' +
+      '<b style="color:#c83c3c">A submitted total was refused</b><br>' +
+      esc(String(r.rejectedFinalTotal.reason || '')) + ' — they sent $' +
+      (Number(r.rejectedFinalTotal.value) || 0).toLocaleString('en-US') + '. The record holds $' +
+      (Number(r.customerFinalTotal) || 0).toLocaleString('en-US') + '.' +
+    '</div>';
+
   const photosHtml = (req.photos || []).slice(0, 10).map(function(p) {
     return '<img src="' + esc(p.data) + '" alt="customer photo" onclick="openLightbox(\'' + esc(p.data) + '\')" style="cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">';
   }).join("");
@@ -3602,6 +3631,7 @@ function renderEdit() {
       '</div>' +
       (req.description ? '<div class="cust-field" style="margin-top:8px"><span class="lbl">Description</span><span class="val" style="font-size:13px;line-height:1.6;white-space:pre-wrap">' + esc(req.description) + '</span></div>' : "") +
       (answersHtml ? '<div class="answers-list">' + answersHtml + '</div>' : "") +
+      optHtml + rejHtml +
       (photosHtml ? '<div class="cust-photos">' + photosHtml + '</div>' : "") +
       analysisHtml +
       readinessHtml +
@@ -6286,6 +6316,10 @@ function previewBeforeSend(est, cv, visibility) {
       /* The pending edits, not what is in storage. */
       estimate: est,
       customerFinalTotal: currentRecord.customerFinalTotal,
+      /* Options the customer already added. On a first send there are none; on a
+         re-send after they chose some, the preview has to show them chosen, or
+         it is not what the customer will see. */
+      customerOptionSelections: currentRecord.customerOptionSelections,
       thread: currentRecord.thread,
       /* ══ THE CONTRACT DECISION, AS IT STANDS RIGHT NOW. ════════════════════
          quote.html shows its Contract section from these two fields, and the

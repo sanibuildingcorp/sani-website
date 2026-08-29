@@ -17,7 +17,34 @@
    above it is honoured while anything below it is refused and logged. Choosing
    to pay more is not an attack; paying less is.
    ═══════════════════════════════════════════════════════════════════════════ */
-function acceptFinalTotal(record, submitted) {
+/* ══ THE OPTIONS THE CUSTOMER TICKED ARE PRICED HERE, NOT IN THEIR BROWSER. ══
+   The quote page lets the customer add priced alternatives to their own job.
+   That means the total they submit is legitimately HIGHER than the quote — so
+   the old rule ("never below the quote") had to stay, and a second half had to
+   be added, because on its own it would have accepted the quote plus a million
+   dollars and written that into the contract.
+
+   The ids arrive from the browser. The PRICES do not: every id is re-resolved
+   against this record's own options and the money comes from there. A submitted
+   total is accepted only up to quote + the options that actually resolved. */
+function applyOptionSelection(record, ids) {
+  const resolved = resolveSelection(record.estimate || {}, ids);
+  record.customerOptionSelections = selectionSnapshot(resolved.selected);
+  record.customerOptionTotal = resolved.total;
+  if (resolved.unknown.length) {
+    record.rejectedOptionSelections = { ids: resolved.unknown, at: new Date().toISOString() };
+  }
+  return resolved;
+}
+
+function acceptFinalTotal(record, submitted, optionIds, finishSelections) {
+  /* The selection is recorded whether or not a total came with it: the
+     contractor needs to know what was chosen even if the arithmetic is refused. */
+  const resolved = optionIds === undefined ? null : applyOptionSelection(record, optionIds);
+  const optionsTotal = resolved ? resolved.total : Number(record.customerOptionTotal) || 0;
+  /* The other legitimate reason a submitted total sits above the quote. */
+  const upgrades = finishUpgradeTotal(record.estimate || {}, finishSelections);
+
   if (submitted == null) return;
 
   const n = Number(submitted);
@@ -37,9 +64,20 @@ function acceptFinalTotal(record, submitted) {
     return;
   }
 
+  const ceiling = Math.round((base + optionsTotal + upgrades) * 100) / 100;
+
   if (n < base - 0.005) {
     record.rejectedFinalTotal = { value: n, expectedAtLeast: base, at: new Date().toISOString(), reason: "below the quoted total" };
     record.customerFinalTotal = base;
+    return;
+  }
+
+  /* Above the quote is only legitimate to the extent the customer bought
+     options. Anything beyond that is not a choice they were offered, so the
+     record keeps the price this server can justify. */
+  if (n > ceiling + 0.005) {
+    record.rejectedFinalTotal = { value: n, allowedAtMost: ceiling, at: new Date().toISOString(), reason: "above the quote plus the options selected" };
+    record.customerFinalTotal = ceiling;
     return;
   }
 
@@ -49,6 +87,7 @@ function acceptFinalTotal(record, submitted) {
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
+const { resolveSelection, selectionSnapshot, finishUpgradeTotal } = require("./lib/quote-options");
 const thread = require("./lib/thread");
 const buildMessageEmail = require("./lib/message-email");
 
@@ -61,7 +100,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { ref, action, signature, declineReason, questionText, finishSelections, materialsSelections, finalTotal } = JSON.parse(event.body);
+    const { ref, action, signature, declineReason, questionText, finishSelections, materialsSelections, finalTotal, optionSelections } = JSON.parse(event.body);
     if (!ref || !action) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref or action" }) };
     }
@@ -108,13 +147,13 @@ exports.handler = async function (event) {
       record.signature = signature || "";
       if (finishSelections) record.customerSelections = finishSelections;
       if (materialsSelections) record.customerMaterialSelections = materialsSelections;
-      acceptFinalTotal(record, finalTotal);
+      acceptFinalTotal(record, finalTotal, optionSelections, finishSelections);
     } else if (action === "review") {
       record.status = "review_requested";
       record.reviewRequestedAt = new Date().toISOString();
       if (finishSelections) record.customerSelections = finishSelections;
       if (materialsSelections) record.customerMaterialSelections = materialsSelections;
-      acceptFinalTotal(record, finalTotal);
+      acceptFinalTotal(record, finalTotal, optionSelections, finishSelections);
     } else if (action === "question") {
       /* THE THREAD IS APPEND-ONLY.
          record.customerQuestion was one string, rewritten on every question, so
