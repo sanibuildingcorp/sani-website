@@ -164,6 +164,113 @@ ok('a service with no alternatives renders nothing',
 ok('...and its lists are untouched',
   run('withChosen({title:"Painting",included:["a","b"],notIncluded:["c"]}).length') === 2);
 
+/* ══ ONE PRICE ON THE PAGE ═════════════════════════════════════════════════
+   From a live approved estimate: the sticky bar said $9,397.04 while the
+   headline said $12,347.04. Two prices on one screen is not a rounding
+   complaint — it is a reason not to sign. The bar was handed the totals object
+   and printed ct.total; the hero printed the total with the chosen options
+   added. And once the customer HAS approved, the stamped figure already
+   includes those options, so adding them again bills the same work twice. */
+console.log('\nthe page shows one price, and after approval the agreed one\n');
+vm.runInContext(ext('shownTotal'), ctx);
+vm.runInContext(ext('pinHtml'), ctx);
+vm.runInContext('var ref = "SBC-260828-394Z";', ctx);
+const shownTotal = (ct) => run('shownTotal(' + JSON.stringify(ct) + ')');
+
+run('chosen = Object.create(null)');
+ok('with nothing chosen the shown total is the quote',
+  shownTotal({ total: 9397.04, stamped: null }) === 9397.04);
+
+run(`chosen[${JSON.stringify(id(L_A))}] = {id:${JSON.stringify(id(L_A))}, label:${JSON.stringify(L_A)}, price:2950, section:'Bathroom'}`);
+ok('before approval the chosen option is added',
+  shownTotal({ total: 9397.04, stamped: null }) === 12347.04,
+  String(shownTotal({ total: 9397.04, stamped: null })));
+ok('AFTER approval the stamped total wins — the option is not added twice',
+  shownTotal({ total: 12347.04, stamped: 12347.04 }) === 12347.04,
+  'got ' + shownTotal({ total: 12347.04, stamped: 12347.04 }) + ', double-counting would give 15297.04');
+ok('a clamped stamp is shown as stamped, not as what the browser hoped for',
+  shownTotal({ total: 9397.04, stamped: 9397.04 }) === 9397.04);
+
+ok('the sticky bar prints the number it is given, not a different one',
+  run('pinHtml({estimate:{projectTitle:"Bedroom Renovation"},request:{}}, 12347.04)').indexOf('$12,347.04') !== -1,
+  run('pinHtml({estimate:{projectTitle:"Bedroom Renovation"},request:{}}, 12347.04)'));
+ok('...and never both prices at once',
+  run('pinHtml({estimate:{projectTitle:"x"},request:{}}, 12347.04)').indexOf('9,397.04') === -1);
+
+/* ── an option already written into the estimate is not counted again ───── */
+vm.runInContext(ext('seedChosen'), ctx);
+{
+  run('chosen = Object.create(null); seeded = false;');
+  vm.runInContext('var seeded = false;', ctx);
+  run('chosen = Object.create(null)');
+  run('seedChosen({customerOptionSelections:[{id:"x1",label:"Option A — thing",price:2950,section:"Bathroom"}]})');
+  ok('a selection the contractor has NOT yet added is seeded', run('chosenTotal()') === 2950);
+}
+{
+  vm.runInContext('seeded = false;', ctx);
+  run('chosen = Object.create(null)');
+  run('seedChosen({customerOptionSelections:[{id:"x2",label:"Option A — thing",price:2950,section:"Bathroom",adoptedAt:"2026-08-29T02:40:00Z"}]})');
+  ok('...but one already written into the estimate is NOT — that would bill it twice',
+    run('chosenTotal()') === 0, 'chosenTotal is ' + run('chosenTotal()'));
+}
+
+/* ══ AN APPROVAL IS NOT AN OPEN ════════════════════════════════════════════
+   Approving reloads the page; the reload calls render(); render() calls
+   track(); track() pings track-quote-open, which emails "👀 Customer opened
+   quote again (open #5)". So every approval sent an ACCEPTED email and then, a
+   second later, an OPENED one — and the open landed on top of his inbox, so
+   pressing Approve looked like it had only opened the quote. */
+console.log('\napproving must not fire an "opened quote" notification\n');
+{
+  const store = {};
+  const hits = [];
+  const tctx = {
+    console, String, Number, Date, encodeURIComponent,
+    sessionStorage: {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+    },
+    Image: function () { const o = {}; Object.defineProperty(o, 'src', { set: (v) => hits.push(v) }); return o; },
+  };
+  tctx.window = tctx; tctx.globalThis = tctx;
+  vm.createContext(tctx);
+  vm.runInContext('var ref = "SBC-260828-394Z";', tctx);
+  vm.runInContext(ext('track'), tctx);
+
+  vm.runInContext('track()', tctx);
+  ok('a normal open notifies', hits.length === 1 && /track-quote-open/.test(hits[0]), JSON.stringify(hits));
+
+  store.sbcSkipTrack = 'SBC-260828-394Z';
+  vm.runInContext('track()', tctx);
+  ok('the reload straight after an approval does NOT notify', hits.length === 1, JSON.stringify(hits));
+  ok('...and the marker is spent, not left behind', !('sbcSkipTrack' in store));
+
+  vm.runInContext('track()', tctx);
+  ok('a genuine re-open later still notifies', hits.length === 2, JSON.stringify(hits));
+
+  store.sbcSkipTrack = 'SBC-SOMEONE-ELSE';
+  vm.runInContext('track()', tctx);
+  ok('a marker left by a DIFFERENT estimate does not silence this one', hits.length === 3);
+}
+{
+  /* Private browsing throws on sessionStorage. A notification is worth less than
+     a quote page that renders. */
+  const hits = [];
+  const tctx = {
+    console, String, Number, Date, encodeURIComponent,
+    get sessionStorage() { throw new Error('denied'); },
+    Image: function () { const o = {}; Object.defineProperty(o, 'src', { set: (v) => hits.push(v) }); return o; },
+  };
+  tctx.window = tctx; tctx.globalThis = tctx;
+  vm.createContext(tctx);
+  vm.runInContext('var ref = "SBC-1";', tctx);
+  vm.runInContext(ext('track'), tctx);
+  let threw = false;
+  try { vm.runInContext('track()', tctx); } catch (e) { threw = true; }
+  ok('blocked storage does not break the page', !threw && hits.length === 1, JSON.stringify(hits));
+}
+
 /* ══ THE CROSS-CHECK ═══════════════════════════════════════════════════════
    quote.html and the server must reach the same id from the same label. If
    they ever drift, the customer's selection is dropped in silence. */
