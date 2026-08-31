@@ -212,7 +212,10 @@ console.log('\nthe services hub page renders, and its tile cards work\n');
      service a card is for — the whole reason this was easy to miss. */
   [['Tile Installation NYC', 'bg-9'], ['Commercial Tile Installation NYC', 'bg-10'], ['Grout Repair and Regrouting NYC', 'bg-11']]
     .forEach(function (pair) {
-      const re = new RegExp('images/services/' + pair[1] + '\\.jpg"[^>]*alt="' + pair[0]);
+      /* The (\?v=\d+)? is not optional decoration: these src values carry a
+         cache-buster, and an assertion that forbids one passes today and fails
+         the next time the buster is bumped. */
+      const re = new RegExp('images/services/' + pair[1] + '\\.jpg(\\?v=\\d+)?"[^>]*alt="' + pair[0]);
       ok('services.html — the "' + pair[0].replace(' — Sani Building Corp', '') + '" card still points at ' + pair[1],
         re.test(SVC));
       ok('...and ' + pair[1] + '.jpg is on disk', fs.existsSync(path.join(ROOT, 'images/services/' + pair[1] + '.jpg')));
@@ -225,7 +228,7 @@ console.log('\nthe services hub page renders, and its tile cards work\n');
   const FL = read('flooring.html');
   ok('flooring.html — the TILE slot is a real photo now, not stock',
     fs.existsSync(path.join(ROOT, 'images/flooring/tile.jpg')) &&
-    /src="images\/flooring\/tile\.jpg" alt="[^"]*"\s*>/.test(FL));
+    /src="images\/flooring\/tile\.jpg(\?v=\d+)?" alt="[^"]*"\s*>/.test(FL));
   /* Deliberately asserted as still-stock, so the day someone uploads real
      hardwood and carpet photos this line fails and reminds them to drop the
      fallback too. */
@@ -280,6 +283,46 @@ console.log('\nevery page previews a real photo when the link is shared\n');
     caseBug.length === 0, caseBug.join('\n        '));
   ok('the homepage in particular previews a real photo',
     /property="og:image" content="[^"]*images\/hero\/home-hero\.png"/.test(read('index.html')));
+}
+
+/* ══ THE CACHE STILL HELD THE 404 ═════════════════════════════════════════
+   The photos shipped, the deploy went green, and the page still drew six dark
+   navy boxes — the card's own onerror fallback, firing because the browser could
+   not fetch the image.
+     Uploading a file does not un-cache its absence. Every one of these URLs
+   returned 404 for months, and the site sits behind Cloudflare with no
+   Cache-Control rule for images (netlify.toml sets one for /*.html only), so the
+   edge kept serving the cached miss to a page that was, by then, correct.
+     A fresh query string makes each one a URL nothing has seen before, so no
+   cache anywhere can answer from the old miss. The site already used this
+   pattern (?v=1784330406477 elsewhere); it just was not applied to the paths
+   that had actually been failing.
+     Asserted so a later edit cannot quietly drop the buster off a path whose
+   404 may still be sitting in someone's browser. */
+console.log('\nthe formerly-missing photos are versioned past the cached 404\n');
+{
+  const NEEDS_BUSTER = {
+    'commercial-tile-installation.html': 'images/commercial-tile-installation/',
+    'tile-grouting-restoration.html': 'images/tile-grouting-restoration/',
+    'services.html': 'images/services/bg-',
+    'flooring.html': 'images/flooring/tile.jpg',
+  };
+  Object.keys(NEEDS_BUSTER).forEach(function (f) {
+    const html = read(f);
+    const prefix = NEEDS_BUSTER[f];
+    /* src="" only — the og:image tags deliberately stay on a stable URL, because
+       a social scraper caches by URL and a changing one re-fetches forever. */
+    const re = new RegExp('src="(' + prefix.replace(/[/\-]/g, '\\$&') + '[^"]*)"', 'g');
+    const bare = [];
+    let m;
+    while ((m = re.exec(html)) !== null) {
+      if (!/\?v=\d+/.test(m[1])) bare.push(m[1]);
+    }
+    ok(f + ' — every refilled photo carries a ?v= cache-buster', bare.length === 0, bare.join(', '));
+  });
+  ok('the og:image tags were left on stable URLs, so social previews are not re-fetched forever',
+    !/property="og:image" content="[^"]*\?v=/.test(read('commercial-tile-installation.html')) &&
+    !/property="og:image" content="[^"]*\?v=/.test(read('tile-grouting-restoration.html')));
 }
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
