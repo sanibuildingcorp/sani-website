@@ -1920,7 +1920,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/bathroom.jpg" alt="Bathroom renovation in Brooklyn NYC"></div>
         <div class="strip-label">Bathroom<br>Renovations</div>
       </a>
-      <a href="/painting" class="strip-item">
+      <a href="/services" class="strip-item">
         <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/interior.jpg" alt="Interior renovation in NYC apartment"></div>
         <div class="strip-label">Interior<br>Renovations</div>
       </a>
@@ -1962,7 +1962,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
         <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/bathroom.jpg" alt="Bathroom renovation in Brooklyn NYC"></div>
         <div class="strip-label">Bathroom<br>Renovations</div>
       </a>
-      <a href="/painting" class="strip-item" aria-hidden="true">
+      <a href="/services" class="strip-item" aria-hidden="true">
         <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/interior.jpg" alt="Interior renovation in NYC apartment"></div>
         <div class="strip-label">Interior<br>Renovations</div>
       </a>
@@ -2540,7 +2540,13 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 
       <form class="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="estimateForm">
         <input type="hidden" name="form-name" value="contact">
-        <p class="cf-hp"><label>Don't fill this out: <input name="bot-field"></label></p>
+        <!-- Netlify's spam honeypot. .cf-hp parks it off-screen at zero height so
+             no sighted visitor ever sees it, but without aria-hidden a screen
+             reader still announced "Don't fill this out" in the middle of the
+             form, and anything reading the raw markup sees it too. Hidden from
+             assistive tech and taken out of the tab order; bots read the DOM and
+             are caught exactly as before. -->
+        <p class="cf-hp" aria-hidden="true"><label>Don't fill this out: <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
 
         <div class="cf-field">
           <label for="cf-name">Full Name <span class="req">*</span></label>
