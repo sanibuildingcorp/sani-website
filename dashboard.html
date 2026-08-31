@@ -3899,6 +3899,7 @@ function renderEdit() {
       '<div id="markup-advice" style="display:none;margin-top:10px;padding:10px 12px;border-radius:9px;' +
         'background:var(--gold-soft,rgba(212,181,114,0.12));border:1px solid var(--line,rgba(212,181,114,0.28));' +
         'font-size:12.5px;line-height:1.5;color:var(--ink,#1a2433)"></div>' +
+      sentVersionHtml(currentRecord) +
       stampedTotalHtml(currentRecord) +
       '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
       '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
@@ -4306,6 +4307,54 @@ function recalc() {
     totEl.value = fmt(q * r);
   });
   updateCvPreview();
+}
+
+/* ══ WHAT THE CUSTOMER IS LOOKING AT RIGHT NOW ════════════════════════════════
+   "whatever i will do any taste updates in my dashboard i don't have to worry in
+    them side will not change anything till i sent them update estimate"
+
+   The quote link used to render live, so every edit here appeared on their page
+   at once. It is frozen at send now — but a freeze the contractor cannot SEE is
+   its own trap: he would edit for an hour believing the customer had the new
+   figures, and they would still be holding the old ones.
+
+   So this says which version they hold, and whether the draft has moved since.
+   Named function, using only fmt/esc from this same script block. */
+function sentVersionHtml(r) {
+  var v = r && r.sentVersion;
+  if (!v || !v.at) {
+    if (!r || !r.estimate) return "";
+    return '<div style="margin-top:12px;border:1px dashed var(--line,rgba(13,27,42,.22));border-radius:12px;padding:10px 13px;font-size:12.5px;color:var(--ink-muted,#8a9bb0)">'
+      + 'Not sent yet — nothing of this is visible to the customer.'
+      + '</div>';
+  }
+  var when = '';
+  try {
+    when = new Date(v.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  } catch (e) { when = ''; }
+
+  /* Compared on the contractor's content only. A customer replying in the thread
+     is not the contractor changing the quote, and must not light this up. */
+  var moved = false;
+  try {
+    moved = JSON.stringify(r.estimate || {}) !== JSON.stringify(v.estimate || {})
+      || ((r.customerFinalTotal != null ? r.customerFinalTotal : null) !== (v.customerFinalTotal != null ? v.customerFinalTotal : null));
+  } catch (e) { moved = false; }
+
+  var head = '<strong>The customer is looking at version ' + (Number(v.n) || 1) + '</strong>'
+    + (when ? ' · sent ' + esc(when) : '');
+
+  if (!moved) {
+    return '<div style="margin-top:12px;border:1px solid #16a34a;background:rgba(22,163,74,.07);border-radius:12px;padding:10px 13px;font-size:12.5px;line-height:1.5;color:var(--ink,#1a2433)">'
+      + '✓ ' + head + '. Your draft matches it.'
+      + '</div>';
+  }
+  return '<div style="margin-top:12px;border:1.5px solid var(--gold,#c8860a);background:rgba(200,134,10,.09);border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--ink,#1a2433)">'
+    + head + '.<br>'
+    + '<strong style="color:var(--gold-2,#b8720a)">You have changed things since.</strong> '
+    + '<span style="color:var(--ink-soft)">Nothing you have edited is visible to them — their page still shows version ' + (Number(v.n) || 1) + '. '
+    + 'Send it again when you are ready and they will get version ' + ((Number(v.n) || 1) + 1) + '.</span>'
+    + '</div>';
 }
 
 /* ══ THE PRICE THAT OVERRIDES EVERY OTHER PRICE ═══════════════════════════════
