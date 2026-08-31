@@ -187,5 +187,100 @@ PAGES.forEach(function (p) {
     broken.length === 0, broken.join(', '));
 });
 
+/* ══ THE HUB PAGE THAT FEEDS THEM ═════════════════════════════════════════
+   /services is where a visitor picks a trade, and it carried nine <img> cards
+   pointing at files that were never uploaded — with no fallback at all, so they
+   rendered as broken-image icons rather than as the wrong photo. Three of the
+   nine were the tile cards themselves: Tile Installation, Commercial Tile and
+   Grout Repair, the three links into the pages fixed above. A visitor arriving
+   to choose a tile contractor was shown three broken boxes.
+
+   Filled from the folder each service already owns. flooring.html's tile slot
+   got the same treatment; its other six slots (hardwood, LVP, carpet,
+   refinishing, subfloor, team) still fall back to stock because there are no
+   photographs of that work in the repository to use instead. That is reported,
+   not papered over — a tile photo standing in for hardwood would be a worse
+   lie than the stock photo it replaced. */
+console.log('\nthe services hub page renders, and its tile cards work\n');
+{
+  const SVC = read('services.html');
+  const paths = imagePaths(SVC);
+  const missing = paths.filter(function (f) { return !fs.existsSync(path.join(ROOT, f)); });
+  ok('services.html — every card photo exists on disk', missing.length === 0, missing.join('\n        '));
+
+  /* Anchored on the alt text, because the bg-N filenames say nothing about which
+     service a card is for — the whole reason this was easy to miss. */
+  [['Tile Installation NYC', 'bg-9'], ['Commercial Tile Installation NYC', 'bg-10'], ['Grout Repair and Regrouting NYC', 'bg-11']]
+    .forEach(function (pair) {
+      const re = new RegExp('images/services/' + pair[1] + '\\.jpg"[^>]*alt="' + pair[0]);
+      ok('services.html — the "' + pair[0].replace(' — Sani Building Corp', '') + '" card still points at ' + pair[1],
+        re.test(SVC));
+      ok('...and ' + pair[1] + '.jpg is on disk', fs.existsSync(path.join(ROOT, 'images/services/' + pair[1] + '.jpg')));
+    });
+
+  ok('services.html — no card is the forty-folder placeholder',
+    paths.every(function (f) { return !/\/project-1\.jpg$/.test(f); }));
+}
+{
+  const FL = read('flooring.html');
+  ok('flooring.html — the TILE slot is a real photo now, not stock',
+    fs.existsSync(path.join(ROOT, 'images/flooring/tile.jpg')) &&
+    /src="images\/flooring\/tile\.jpg" alt="[^"]*"\s*>/.test(FL));
+  /* Deliberately asserted as still-stock, so the day someone uploads real
+     hardwood and carpet photos this line fails and reminds them to drop the
+     fallback too. */
+  ok('flooring.html — the six non-tile slots are still on stock, and still known about',
+    (FL.match(/unsplash/g) || []).length === 6, (FL.match(/unsplash/g) || []).length + ' remaining');
+}
+
+/* ══ THE PICTURE ON EVERY LINK HE SENDS ═══════════════════════════════════
+   Found while finishing the tile work, and worth more than any of it: THIRTY-ONE
+   pages — the homepage among them — set og:image and twitter:image to
+   images/<folder>/project-1.jpg, the same placeholder. Every time Zura texted a
+   customer a link, or a customer forwarded one, WhatsApp, iMessage, Facebook and
+   LinkedIn all drew the preview card with a blank grey box where his work should
+   be. It never showed up in the site itself, which is why it survived this long.
+
+   Two older faults surfaced in the same sweep:
+     - index.html asked for images/hero/home-hero.PNG while the file on disk is
+       home-hero.png. Case-insensitive on a Mac, a 404 on Netlify's Linux hosts —
+       so the HOMEPAGE preview was broken everywhere but the machine it was
+       written on.
+     - handyman-manhattan.html pointed at images/handyman/manhattan-hero.jpg,
+       which does not exist.
+
+   Every preview now resolves to a real photograph, and this asserts it stays
+   that way. The check is deliberately site-wide rather than tile-only: the
+   defect was site-wide, and a per-page assertion would not have found it. */
+console.log('\nevery page previews a real photo when the link is shared\n');
+{
+  const pages = fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html'); });
+  const bad = [], placeholder = [], caseBug = [];
+  pages.forEach(function (f) {
+    const html = read(f);
+    const re = /(?:property="og:image"|name="twitter:image") content="https:\/\/www\.sanibuildingcorp\.com\/(images\/[^"]+)"/g;
+    let m;
+    while ((m = re.exec(html)) !== null) {
+      const ref = m[1].split('?')[0];
+      if (!fs.existsSync(path.join(ROOT, ref))) bad.push(f + ' -> ' + ref);
+      if (/\/project-1\.jpg$/.test(ref)) placeholder.push(f);
+      /* Compare against the real directory listing: existsSync alone would pass
+         on a case-insensitive filesystem and still 404 on Netlify. */
+      const dir = path.join(ROOT, path.dirname(ref));
+      if (fs.existsSync(dir) && fs.readdirSync(dir).indexOf(path.basename(ref)) === -1) {
+        caseBug.push(f + ' -> ' + ref);
+      }
+    }
+  });
+  ok('EVERY og:image AND twitter:image ON THE SITE RESOLVES TO A FILE ON DISK',
+    bad.length === 0, bad.join('\n        '));
+  ok('...and none of them is the placeholder that was in forty folders',
+    placeholder.length === 0, Array.from(new Set(placeholder)).join(', '));
+  ok('...and every one matches the filename EXACTLY, because Netlify serves from Linux',
+    caseBug.length === 0, caseBug.join('\n        '));
+  ok('the homepage in particular previews a real photo',
+    /property="og:image" content="[^"]*images\/hero\/home-hero\.png"/.test(read('index.html')));
+}
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
