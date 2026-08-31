@@ -8,6 +8,7 @@
 const https = require("https");
 const nodemailer = require("nodemailer");
 const { getStore } = require("@netlify/blobs");
+const { buildSentVersion } = require("./lib/sent-version");
 const customerTotals = require("./lib/customer-total");
 
 function isValidEmail(e) {
@@ -163,6 +164,18 @@ exports.handler = async function (event) {
     record.includeContractForCustomer = includeContract === true;
     record.status = "sent";
     record.sentAt = new Date().toISOString();
+
+    /* ══ FREEZE WHAT IS BEING SENT ═════════════════════════════════════════════
+       The quote link renders live from this record, so every later edit — a rate
+       tried out, a total being experimented with, an AI regeneration mid-flight —
+       used to appear on the customer's page the moment it was saved.
+
+       From here the customer sees THIS, and only this, until the next send. The
+       snapshot is taken after includeContractForCustomer is set above, so it
+       records the contract decision actually being sent.
+       See lib/sent-version.js for which fields freeze and which stay live. */
+    record.sentVersionN = (Number(record.sentVersionN) || 0) + 1;
+    record.sentVersion = buildSentVersion(record, record.sentVersionN);
     record.updatedAt = record.sentAt;
     record.openedAt = null;
     await store.setJSON(ref, record);

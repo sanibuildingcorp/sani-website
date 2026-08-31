@@ -12,6 +12,7 @@
 
 const { getStore } = require("@netlify/blobs");
 const thread = require("./lib/thread");
+const { applySentVersion } = require("./lib/sent-version");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -41,6 +42,16 @@ exports.handler = async function (event) {
        ever receive their own conversation. */
     if (isQuoteRequest) {
       const view = buildCustomerView(data, isDraftPreview);
+      /* ══ THE CUSTOMER SEES WHAT WAS SENT ══════════════════════════════════════
+         Not what is being edited right now. Everything the contractor authored —
+         lines, prices, totals, scope, options, contract — comes from the frozen
+         version; everything the CUSTOMER owns (their thread, their selections,
+         their acceptance) stays live. See lib/sent-version.js.
+
+         Skipped for ?previewScope=1, which exists so the contractor can look at
+         an unpublished draft: freezing that would show him the old one and make
+         the preview useless. */
+      if (!isDraftPreview) applySentVersion(data, view);
       view.thread = thread.normalizeThread(data);
       /* Rate-limiter bookkeeping is ours, not theirs. */
       delete view.threadRate;
