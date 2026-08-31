@@ -7556,6 +7556,78 @@ const SERVICE_ICONS = {
 
 let currentHandymanBooking = null;
 
+/* ══ HAS A PRICE BEEN SENT TO THIS CUSTOMER? ═════════════════════════════════
+   "i sent confirmation to the customer but then in my dashboard still showing
+    new, ones i will reopen in my dashboard i maybe not remember what i sent
+    and what not"
+
+   Two different things were being shown as one. `status` is about the WORK —
+   new, confirmed, in progress, completed. `agreement_status` is about whether a
+   confirmation with a price has gone out. Only the first was ever displayed, so
+   a booking that had been quoted looked exactly like one that had not.
+
+   The information was there the whole time: handyman-send-confirmation sets
+   bookings.agreement_status the moment the email goes. Nothing read it. */
+function handymanSentBadge(b) {
+  var st = String((b && b.agreement_status) || "").toLowerCase();
+  if (!st) return "";
+  var look = {
+    sent: ["📤 SENT", "#1d4ed8", "rgba(29,78,216,.10)"],
+    signed: ["✍️ SIGNED", "#15803d", "rgba(21,128,61,.12)"],
+    changes_requested: ["↩ CHANGES ASKED", "#b45309", "rgba(180,83,9,.12)"],
+  }[st];
+  if (!look) look = [st.toUpperCase().replace(/_/g, " "), "#475569", "rgba(71,85,105,.10)"];
+  return '<span class="badge" style="color:' + look[1] + ';background:' + look[2] + ';border:1px solid ' + look[1] + '33">' + look[0] + '</span>';
+}
+
+/* WHAT WAS SENT, AND WHEN. Opened weeks later, the booking has to answer this
+   on its own — "i maybe not remember what i sent and what not". Reads the
+   agreements rows handyman-get now attaches: every confirmation ever sent for
+   this booking, newest first, with the exact figures that went out. */
+function handymanSentPanel(b) {
+  var rows = (b && Array.isArray(b.agreements)) ? b.agreements : [];
+  if (!rows.length) {
+    /* Said explicitly rather than left blank — "nothing sent yet" is the single
+       most useful fact about a booking, and an empty space does not say it. */
+    return '<div class="h-section"><div class="h-section-title">📤 Sent to customer</div>' +
+      '<div style="font-size:13px;color:var(--ink-muted)">Nothing sent yet — this customer has not been given a price.</div></div>';
+  }
+  function money(a) {
+    var n = Number(a);
+    return isFinite(n) ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '—';
+  }
+  function priceOf(a) {
+    if (String(a.pricing_mode) === 'fixed' && a.fixed_price != null) return money(a.fixed_price) + ' fixed';
+    if (String(a.pricing_mode) === 'capped' && a.price_max != null) return 'up to ' + money(a.price_max);
+    if (a.price_min != null && a.price_max != null) return money(a.price_min) + '–' + money(a.price_max);
+    if (a.fixed_price != null) return money(a.fixed_price);
+    return '—';
+  }
+  return '<div class="h-section"><div class="h-section-title">📤 Sent to customer</div>' +
+    rows.map(function (a, i) {
+      var when = a.created_at ? new Date(a.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+      var st = String(a.status || '').toLowerCase();
+      var appt = [a.appointment_date, a.appointment_time, a.duration_text].filter(Boolean).join(' · ');
+      return '<div style="border:1px solid var(--line,rgba(13,27,42,.14));border-radius:10px;padding:11px 13px;margin-bottom:8px;' +
+        (i === 0 ? 'background:rgba(29,78,216,.04)' : 'opacity:.72') + '">' +
+        '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline">' +
+          '<strong style="font-size:14px">' + esc(priceOf(a)) + '</strong>' +
+          '<span style="font-size:11.5px;color:var(--ink-muted)">' + esc(when) + (i === 0 ? '' : ' · superseded') + '</span>' +
+        '</div>' +
+        (appt ? '<div style="font-size:12.5px;color:var(--ink-soft);margin-top:3px">📅 ' + esc(appt) + '</div>' : '') +
+        (a.pay_now_enabled && a.pay_now_amount > 0
+          ? '<div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px">💳 ' + esc(a.pay_now_label || 'Deposit') + ' ' + esc(money(a.pay_now_amount)) + ' on signing</div>' : '') +
+        (a.scope_summary ? '<div style="font-size:12.5px;line-height:1.5;color:var(--ink-soft);margin-top:5px">' + esc(String(a.scope_summary).slice(0, 300)) + '</div>' : '') +
+        (a.special_notes ? '<div style="font-size:12px;color:var(--ink-muted);margin-top:4px">📝 ' + esc(a.special_notes) + '</div>' : '') +
+        '<div style="margin-top:7px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+          handymanSentBadge({ agreement_status: st }) +
+          (a.token ? '<a href="/agreement.html?token=' + encodeURIComponent(a.token) + '" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:var(--gold-2,#b45309)">Open what they saw →</a>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('') +
+    '</div>';
+}
+
 function renderHandymanList() {
   const host = document.getElementById("list-host");
 
@@ -7598,6 +7670,13 @@ function renderHandymanList() {
           '</div>' +
           '<div class="h-badges">' +
             '<span class="badge h-' + status + '">' + esc(status) + '</span>' +
+            /* WHETHER A CONFIRMATION HAS GONE OUT. The booking status (new /
+               confirmed / in-progress) is about the WORK; agreement_status is
+               about whether a price was ever sent to this customer, and it was
+               written on the record all along and shown nowhere. So a booking
+               that had been quoted looked identical to one that had not, and
+               after a day there was no way to remember which was which. */
+            handymanSentBadge(b) +
             '<span class="badge h-' + conf + '">' + (b.confidence_score || 0) + '% · ' + esc(conf) + '</span>' +
             (urgency === "today" ? '<span class="badge h-urgency-today">⚡ TODAY</span>' :
              urgency === "this-week" ? '<span class="badge h-urgency-this-week">📅 This Week</span>' : '') +
@@ -7780,6 +7859,8 @@ function renderHandymanModal(b) {
         '<div class="ebv">' + (b.deposit_amount > 0 ? '$' + b.deposit_amount : 'None') + '</div>' +
       '</div>' +
     '</div>' +
+    /* What has actually gone out to this customer, and what was in it. */
+    handymanSentPanel(b) +
     '<div class="h-section" style="border-bottom:none;padding-bottom:0;margin-bottom:14px">' +
       '<div class="h-section-title">🎯 Booking Status</div>' +
       '<div class="h-status-row">' +
@@ -8035,9 +8116,14 @@ async function sendConfirmation() {
     btn.innerHTML = '✓ Sent';
     toast('✓ Confirmation sent to customer');
 
+    /* Reopen the booking so it shows what was just sent. Without this the
+       detail sat there still saying NEW with nothing sent, immediately after
+       sending — which is exactly the confusion this whole change is about. */
+    var sentRef = currentHandymanBooking && currentHandymanBooking.ref;
     setTimeout(function() {
       closeConfirmationModal();
       loadEstimates();
+      if (sentRef) openHandymanDetail(sentRef);
     }, 2500);
   } catch (e) {
     console.error(e);
