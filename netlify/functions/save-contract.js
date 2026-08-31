@@ -66,8 +66,22 @@ exports.handler = async function (event) {
          distinguishable from an ordinary edit in the record. */
       retotaledAt: body.retotal === true && nextTotal !== prev.total ? new Date().toISOString() : prev.retotaledAt,
       retotaledFrom: body.retotal === true && nextTotal !== prev.total ? prev.total : prev.retotaledFrom,
-      customerName: prev.customerName || (record.customer && record.customer.name) || "",
-      projectAddress: clean(sections.projectAddress, 300) || prev.projectAddress || "",
+      /* ── WHO AND WHERE, ON THE SIGNATURE PAGE ──────────────────────────────
+         customerName was `prev || record.customer.name` — never read from the
+         edit at all — and projectAddress fell back to the previous value the
+         moment the field was absent, which it always was, because the dashboard
+         had no input for either. Both were captured once at generation and
+         frozen. Correcting a company name or a job address on the estimate left
+         the CONTRACT naming the old one, and the only way out was to regenerate
+         and lose every hand-edited word of scope.
+         Now an edit wins where one is given, and the old fallbacks remain for
+         every caller that sends neither. */
+      customerName: (sections.customerName !== undefined
+        ? clean(sections.customerName, 200)
+        : "") || prev.customerName || (record.customer && record.customer.name) || "",
+      projectAddress: (sections.projectAddress !== undefined
+        ? clean(sections.projectAddress, 300)
+        : "") || prev.projectAddress || "",
       sections: {
         projectType: clean(sections.projectType, 200) || "Renovation Project",
         scopeOfWork: cleanArr(sections.scopeOfWork, 30),

@@ -10149,6 +10149,15 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       '<button onclick="window.__sbcContractOpen=false;renderContractPanel()" style="background:none;border:1.5px solid var(--line);color:var(--ink-soft);border-radius:8px;padding:7px 14px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;margin-bottom:10px">▲ Hide contract</button>'+
       '<div style="font-size:12px;color:var(--ink-muted);margin-bottom:6px">Edit anything below — the customer sees this exact contract when they tap Review Contract &amp; Approve. Contract total: <strong style="color:var(--gold-2)">'+fmt2(ct.total)+'</strong>'+(ct.editedAt?' · edited '+new Date(ct.editedAt).toLocaleDateString():'')+'</div>'+
 
+      /* ── WHO AND WHERE ────────────────────────────────────────────────────
+         These two are printed at the top of the contract the customer signs,
+         and until now there was no field for either. They were captured once
+         when the contract was generated and frozen there — so correcting a
+         company name or a job address on the estimate left the CONTRACT still
+         naming the old one, with no way at all to fix it short of regenerating
+         and losing every word of edited scope. */
+      contractIdentityHtml(currentRecord, LBL, IN)+
+
       '<label style="'+LBL+'">Project Type</label>'+
       '<input type="text" id="sbc-ct-type" value="'+esc2(s.projectType)+'" style="'+IN+'">'+
 
@@ -10179,6 +10188,49 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
         '<button onclick="window.open(\'/contract.html?ref=\'+encodeURIComponent(currentRecord.ref))" style="padding:12px 20px;background:#fff;border:1.5px solid var(--gold);color:var(--ink);border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;cursor:pointer">👁 Preview as Customer</button>'+
         '<button onclick="sbcRegenContract()" style="padding:12px 20px;background:#fff;border:1.5px solid rgba(13,27,42,0.16);color:var(--ink-soft);border-radius:9px;font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer">↻ Regenerate with AI</button>'+
       '</div>';
+  };
+
+  /* The name and address on the signature page, made editable — and told when
+     they disagree with the estimate, which is the case that produced this:
+     an address corrected on the estimate while the contract kept the old one.
+     A one-tap "use the estimate's" beside each, so a correction made once does
+     not have to be typed twice. */
+  window.contractIdentityHtml = function(rec, LBL, IN){
+    var ct = (rec && rec.contract) || {};
+    var estName = ((rec && rec.customer && rec.customer.name) || '').trim();
+    var estAddr = (((rec && rec.projectAddress) || (rec && rec.customer && rec.customer.address) || '')).trim();
+    var ctName = String(ct.customerName || '').trim();
+    var ctAddr = String(ct.projectAddress || '').trim();
+
+    function note(what, mine, theirs, fillId){
+      if (!theirs || !mine || mine === theirs) return '';
+      return '<div style="font-size:11.5px;line-height:1.45;color:#b45309;margin:-6px 0 10px">'
+        + 'The estimate says <strong>'+esc2(theirs)+'</strong>. '
+        + '<button type="button" onclick="sbcUseEstimate'+fillId+'()" style="background:none;border:none;padding:0;color:#b45309;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer">Use that</button>'
+        + '</div>';
+    }
+
+    return '<label style="'+LBL+'">Customer / Company name</label>'+
+      '<input type="text" id="sbc-ct-name" value="'+esc2(ctName)+'" style="'+IN+'">'+
+      note('name', ctName, estName, 'Name')+
+      '<label style="'+LBL+'">Project address</label>'+
+      '<input type="text" id="sbc-ct-address" value="'+esc2(ctAddr)+'" style="'+IN+'">'+
+      note('address', ctAddr, estAddr, 'Address')+
+      /* The address also gets written INTO the scope prose by the AI ("...at 327
+         West 76th Street"), and correcting the field above does not touch that
+         sentence. Said out loud, because it is exactly what was missed. */
+      (ctAddr && estAddr && ctAddr !== estAddr
+        ? '<div style="font-size:11.5px;line-height:1.45;color:#b45309;margin:-4px 0 12px">The old address may also appear inside the Scope of Work text below — check it.</div>'
+        : '');
+  };
+  window.sbcUseEstimateName = function(){
+    var el = document.getElementById('sbc-ct-name');
+    if (el && currentRecord && currentRecord.customer) el.value = (currentRecord.customer.name || '').trim();
+  };
+  window.sbcUseEstimateAddress = function(){
+    var el = document.getElementById('sbc-ct-address');
+    if (!el || !currentRecord) return;
+    el.value = ((currentRecord.projectAddress || (currentRecord.customer && currentRecord.customer.address) || '')).trim();
   };
 
   window.sbcAddSchedRow = function(){
@@ -10399,7 +10451,12 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       a = Math.round(a * 100) / 100;
       if (l) sched.push({ label:l, amount:a });
     });
+    function fieldVal(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; }
     var sections = {
+      /* The name and address printed at the top of the signature page. Sent even
+         when blank, so clearing one is a real edit rather than a silent no-op. */
+      customerName: fieldVal('sbc-ct-name'),
+      projectAddress: fieldVal('sbc-ct-address'),
       projectType: document.getElementById('sbc-ct-type').value.trim(),
       scopeOfWork: lines('sbc-ct-scope'),
       materialsList: lines('sbc-ct-mats'),
