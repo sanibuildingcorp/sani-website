@@ -17,7 +17,10 @@ exports.handler = async function (event) {
 
   try {
     const body = JSON.parse(event.body || "{}");
-    const {
+    /* `let`, not `const`: a resend takes every one of these from the invoice
+       already on the record, so the customer receives the identical document
+       rather than a new one built from whatever the form happened to hold. */
+    let {
       ref,
       invoiceType,        // "deposit" | "final" | "full" | "custom"
       amount,             // dollar amount
@@ -39,14 +42,48 @@ exports.handler = async function (event) {
     if (!ref) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
     }
-    if (!amount || Number(amount) <= 0) {
-      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Invalid amount" }) };
-    }
 
     const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
     const record = await store.get(ref, { type: "json" });
     if (!record) {
       return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "Estimate not found" }) };
+    }
+
+    /* ══ RESENDING AN INVOICE THAT ALREADY EXISTS ══════════════════════════════
+       There was no way to send the same invoice twice. This function numbers
+       every invoice one-up from how many the record already has, so pressing
+       Send again produced INV-...-03 — a THIRD invoice for money already billed,
+       sitting on the record and in the customer's inbox looking like a new
+       charge. The only options were to send a duplicate or to say nothing.
+
+       A resend names the invoice it is resending. Every figure then comes from
+       the stored row — number, amount, type, due date, work performed, payment
+       details — so the customer gets the identical document, and the record
+       gains a resend count rather than another invoice. */
+    const resendNumber = String(body.resendNumber || "").trim();
+    let resendTarget = null;
+    if (resendNumber) {
+      resendTarget = (record.invoices || []).find(function (i) { return i && i.number === resendNumber; }) || null;
+      if (!resendTarget) {
+        return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "No invoice " + resendNumber + " on this estimate" }) };
+      }
+      invoiceType = resendTarget.type || invoiceType;
+      amount = resendTarget.amount;
+      dueDate = resendTarget.dueDate || dueDate;
+      memo = resendTarget.memo || memo;
+      workPerformed = resendTarget.workPerformed || workPerformed;
+      paymentMethod = resendTarget.paymentMethod || paymentMethod;
+      paymentDetails = resendTarget.paymentDetails || paymentDetails;
+      paymentLink = resendTarget.paymentLink || paymentLink;
+      includePaymentLink = resendTarget.includePaymentLink;
+      workDate = resendTarget.workDate || workDate;
+      projectAddress = resendTarget.projectAddress || projectAddress;
+    }
+
+    /* Checked after the resend has supplied its figures, or a resend would have
+       to repeat the amount back to the server to get past this. */
+    if (!amount || Number(amount) <= 0) {
+      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Invalid amount" }) };
     }
 
     const resendKey = process.env.RESEND_API_KEY;
@@ -71,9 +108,11 @@ exports.handler = async function (event) {
     const reqData = record.request || {};
     const jobAddress = clean(projectAddress) || record.projectAddress || "";
 
-    // Generate invoice number (one-up per estimate)
+    // Generate invoice number (one-up per estimate) — or keep the one being resent
     const invoiceCount = (record.invoices || []).length + 1;
-    const invoiceNumber = `INV-${ref.replace("SBC-", "")}-${String(invoiceCount).padStart(2, "0")}`;
+    const invoiceNumber = resendTarget
+      ? resendTarget.number
+      : `INV-${ref.replace("SBC-", "")}-${String(invoiceCount).padStart(2, "0")}`;
 
     // URL to online invoice page
     const invoiceUrl = `${siteUrl}/invoice.html?ref=${encodeURIComponent(ref)}&inv=${encodeURIComponent(invoiceNumber)}`;
@@ -272,13 +311,21 @@ exports.handler = async function (event) {
     };
 
     record.invoices = record.invoices || [];
-    record.invoices.push(invoice);
-
-    // Update top-level status to "invoiced" unless already at "paid"
-    if (record.status !== "paid") {
-      record.status = "invoiced";
+    if (resendTarget) {
+      /* The SAME invoice went out again. Counted, dated, and left otherwise
+         alone — its status especially: an invoice already marked paid must not
+         be dragged back to "sent" just because a copy was emailed. */
+      resendTarget.resentAt = nowIso;
+      resendTarget.resendCount = (Number(resendTarget.resendCount) || 0) + 1;
+      resendTarget.sentTo = recipientEmail;
+    } else {
+      record.invoices.push(invoice);
+      // Update top-level status to "invoiced" unless already at "paid"
+      if (record.status !== "paid") {
+        record.status = "invoiced";
+      }
     }
-    record.lastInvoiceAt = invoice.sentAt;
+    record.lastInvoiceAt = nowIso;
     record.updatedAt = invoice.sentAt;
     await store.setJSON(ref, record);
 
@@ -287,6 +334,8 @@ exports.handler = async function (event) {
       headers: cors(),
       body: JSON.stringify({
         success: true,
+        resent: !!resendTarget,
+        resendCount: resendTarget ? resendTarget.resendCount : 0,
         invoiceNumber,
         invoiceUrl,
         sentTo: recipientEmail,

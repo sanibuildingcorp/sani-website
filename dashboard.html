@@ -7002,7 +7002,15 @@ function detailInvoicesHtml(r) {
       + '<span style="margin-left:auto;font-weight:800;font-size:13.5px">' + fmt(Number(inv.amount) || 0) + '</span>'
       + '<span class="badge ' + (paid ? 'paid' : 'unpaid-warn') + '">' + (paid ? 'PAID' : 'UNPAID') + '</span>'
       + btn
+      /* RESEND THE SAME INVOICE. There was no way to do this: pressing Send
+         again builds a NEW invoice numbered one past the last, so chasing an
+         unpaid bill meant emailing the customer a second charge for money
+         already billed. This sends the identical document instead. */
+      + '<button type="button" title="Email this same invoice again" onclick="resendInvoice(\'' + esc(inv.number) + '\')" style="font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;border:1px solid var(--gold,#c8860a);background:transparent;color:var(--gold-2,#b8720a);cursor:pointer">\u21bb Resend</button>'
       + '<button type="button" title="Delete this invoice" onclick="deleteInvoice(\'' + esc(inv.number) + '\',' + (Number(inv.amount) || 0) + ')" style="font-size:13px;padding:5px 9px;border-radius:8px;border:1px solid rgba(239,68,68,0.35);background:transparent;color:#dc2626;cursor:pointer">\ud83d\uddd1</button>'
+      + (Number(inv.resendCount) > 0
+          ? '<span style="flex-basis:100%;font-size:11px;color:var(--ink-muted,#8a9bb0)">Resent ' + Number(inv.resendCount) + (Number(inv.resendCount) === 1 ? ' time' : ' times') + (inv.resentAt ? ' \u00b7 last ' + fmtDate(inv.resentAt) : '') + '</span>'
+          : '')
       + '</div>';
   }).join('');
   var unpaidTot = invs.filter(function(i){ return i.status !== "paid"; })
@@ -7107,6 +7115,37 @@ async function renderLeadsTab() {
 }
 
 /* Delete one invoice (accidental duplicates). Destructive — double confirmed. */
+/* Email the SAME invoice again — same number, same amount, same everything.
+   Sending afresh would have created another invoice numbered one past the last,
+   so chasing an unpaid bill meant billing the customer twice for one job. The
+   server takes every figure from the stored invoice; nothing here can change
+   what it says. */
+async function resendInvoice(invoiceNumber) {
+  if (!currentRecord) return;
+  var inv = (currentRecord.invoices || []).find(function (i) { return i && i.number === invoiceNumber; });
+  if (!inv) { toast('Invoice ' + invoiceNumber + ' not found', true); return; }
+  var to = (currentRecord.customer && currentRecord.customer.email) || '';
+  if (!confirm('Email ' + invoiceNumber + ' again' + (to ? ' to ' + to : '') + '?\n\n'
+    + fmt(Number(inv.amount) || 0) + ' — the same invoice, not a new one.'
+    + (inv.status === 'paid' ? '\n\nNote: this invoice is already marked PAID.' : ''))) return;
+  try {
+    var r = await sbcFetch('/.netlify/functions/send-invoice', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: currentRecord.ref, resendNumber: invoiceNumber }),
+    });
+    var data = await r.json().catch(function () { return null; });
+    if (!r.ok || !data || data.error) throw new Error((data && data.error) || ('Send failed (' + r.status + ')'));
+    inv.resendCount = data.resendCount || ((Number(inv.resendCount) || 0) + 1);
+    inv.resentAt = new Date().toISOString();
+    var host = document.getElementById('detail-invoices');
+    if (host) host.outerHTML = detailInvoicesHtml(currentRecord);
+    toast('✓ ' + invoiceNumber + ' sent again' + (data.sentTo ? ' to ' + data.sentTo : ''));
+  } catch (e) {
+    console.error(e);
+    toast('Could not resend: ' + e.message, true);
+  }
+}
+
 async function deleteInvoice(invoiceNumber, amount) {
   if (!currentRecord) return;
   if (!confirm("Delete invoice " + invoiceNumber + " (" + fmt(amount) + ")?")) return;
