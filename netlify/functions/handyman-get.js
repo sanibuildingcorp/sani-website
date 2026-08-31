@@ -44,7 +44,30 @@ exports.handler = async function (event) {
       if (!Array.isArray(data) || data.length === 0) {
         return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "Not found" }) };
       }
-      return { statusCode: 200, headers: cors(), body: JSON.stringify(data[0]) };
+      const booking = data[0];
+
+      /* ── WHAT WAS ACTUALLY SENT TO THIS CUSTOMER ─────────────────────────────
+         Sending a confirmation writes a full agreements row — the price, the
+         appointment, the duration, the scope summary and the deposit — and sets
+         bookings.agreement_status. The dashboard never read any of it, so after
+         a day or two there was no way to tell a booking that had been quoted
+         from one that had not, or to see what number went out.
+         Attached here, newest first, so the booking answers "what did I send?"
+         on its own. Never fatal: a booking that cannot load its agreements is
+         still a booking, and the detail view has to open. */
+      try {
+        const agreements = await supabaseRequest(
+          supabaseUrl, supabaseKey, "GET",
+          `/rest/v1/agreements?booking_ref=eq.${encodeURIComponent(ref)}&order=created_at.desc`,
+          null
+        );
+        booking.agreements = Array.isArray(agreements) ? agreements : [];
+      } catch (e) {
+        console.error("handyman-get: agreements lookup failed:", e.message);
+        booking.agreements = [];
+      }
+
+      return { statusCode: 200, headers: cors(), body: JSON.stringify(booking) };
     }
 
     // Return list
