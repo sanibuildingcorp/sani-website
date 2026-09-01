@@ -392,5 +392,68 @@ console.log('\nthe formerly-missing photos are versioned past the cached 404\n')
     !/property="og:image" content="[^"]*\?v=/.test(read('tile-grouting-restoration.html')));
 }
 
+/* ══ THE COST PAGE ════════════════════════════════════════════════════════
+   The largest easy cluster in this market, and the site had nothing in it:
+   "tile installation cost" 4,400/mo at difficulty 13, "tile installation cost
+   per square foot" 1,600 at 14, "bathroom tile installation cost" 1,600 at 21.
+   Sweeten, Chapter and MyHome hold page one of "bathroom remodel nyc" on cost
+   guides alone, and none of them swings a hammer.
+     Every figure on the page is one Sani already publishes in his own FAQs —
+   $15–$35/sq ft bathroom, $18–$45/sq ft commercial, $8–$15 regrout, $3–$6 clean
+   and seal. Nothing was invented. If he corrects a number, it has to be
+   corrected in both places, which is what the consistency check below is for. */
+console.log('\nthe tile cost page says the same numbers as the rest of the site\n');
+{
+  const COST = 'tile-installation-cost-nyc.html';
+  ok('the cost page exists', fs.existsSync(path.join(ROOT, COST)));
+  const C = read(COST);
+
+  ok('its title leads with the exact phrase people search',
+    /<title>Tile Installation Cost NYC/.test(C), (C.match(/<title>([^<]*)/) || [])[1]);
+
+  /* The prices must not drift from the service pages they came from. */
+  const pairs = [
+    ['$15–$35 per square foot', 'bathroom-floor-tile-installation.html', '$15–$35'],
+    ['$18–$45 per square foot', 'commercial-tile-installation.html', '$18–$45'],
+    ['$8–$15 per square foot', 'tile-grouting-restoration.html', '$8–$15'],
+    ['$3–$6 per square foot', 'tile-grouting-restoration.html', '$3–$6'],
+  ];
+  pairs.forEach(function (p) {
+    ok('the ' + p[2] + ' figure matches ' + p[1].replace('.html', ''),
+      C.indexOf(p[2]) !== -1 && read(p[1]).indexOf(p[2]) !== -1);
+  });
+
+  ok('every schema block on it parses', (function () {
+    const blocks = C.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g) || [];
+    if (!blocks.length) return 'no blocks';
+    for (let i = 0; i < blocks.length; i++) {
+      const body = blocks[i].replace(/^<script type="application\/ld\+json">/, '').replace(/<\/script>$/, '');
+      try { JSON.parse(body); } catch (e) { return 'block ' + (i + 1) + ': ' + e.message; }
+    }
+    return true;
+  })() === true);
+
+  ok('it is in the sitemap, or Google has to find it by luck',
+    read('sitemap.xml').indexOf('/tile-installation-cost-nyc') !== -1);
+
+  /* A page nothing links to is a page that does not get crawled. */
+  const inbound = fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html') && f !== COST; })
+    .filter(function (f) { return read(f).indexOf('href="/tile-installation-cost-nyc"') !== -1; });
+  ok('at least three other pages link to it', inbound.length >= 3, inbound.length + ': ' + inbound.join(', '));
+
+  ok('it reuses the shared menu and footer rather than duplicating them',
+    /id="site-menu"/.test(C) && /id="site-footer"/.test(C) && /partials\/site\.js/.test(C));
+  ok('THE STANDING RULES HOLD — no "licensed", no TV mounting',
+    !/licensed/i.test(C) && !/tv mount/i.test(C));
+  ok('...and US spelling, on a New York contractor\'s site',
+    !/colour|levelling|whilst|organise/i.test(C));
+
+  /* The reason this page exists at all is that /contact and /gallery were
+     flagged for a thin text-to-markup ratio. This one is not thin. */
+  const text = C.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  ok('it is mostly words, not markup — the point of a cost guide',
+    text.length / C.length > 0.15, (text.length / C.length).toFixed(3) + ' ratio, ' + Math.round(text.length / 1024) + ' KB of text');
+}
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
