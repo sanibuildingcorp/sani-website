@@ -649,6 +649,27 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
 })();
 </script>
 
+
+<!-- RELATED SERVICES — server-rendered on purpose. The site menu and footer are
+     injected by partials/site.js, so a crawler that does not run JavaScript sees
+     only the links written into the page itself. Semrush (JS rendering disabled)
+     was reporting these pages as orphaned or single-link for exactly that reason. -->
+<style>.sbc-ilink{display:inline-block;padding:11px 20px;background:#fff;border:1px solid rgba(10,22,40,0.12);border-radius:30px;color:#0a1628;text-decoration:none;font-size:14px;font-weight:500;transition:all .2s}.sbc-ilink:hover{border-color:#c8860a;color:#c8860a;box-shadow:0 4px 16px rgba(0,0,0,.06)}</style>
+<section style="padding:72px 28px;background:#f7f5f2">
+  <div style="max-width:960px;margin:0 auto;text-align:center">
+    <div style="color:#c8860a;font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:600;margin-bottom:14px">Explore More</div>
+    <h2 style="font-family:'Playfair Display',serif;font-size:clamp(24px,3.5vw,34px);color:#0a1628;margin:0 0 28px;line-height:1.2">Related Services &amp; Service Areas</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+      <a class="sbc-ilink" href="/services">All Services</a>
+      <a class="sbc-ilink" href="/bathroom-renovation">Bathroom Renovation NYC</a>
+      <a class="sbc-ilink" href="/commercial-tile-installation">Commercial Tile Installation NYC</a>
+      <a class="sbc-ilink" href="/handyman">Handyman Services NYC</a>
+      <a class="sbc-ilink" href="/gallery">Our Work</a>
+      <a class="sbc-ilink" href="/about">About Sani Building Corp</a>
+    </div>
+  </div>
+</section>
+
 <div id="site-footer"></div>
 
 <!-- Loads menu/footer partials + mobile menu functions + GA4 -->
