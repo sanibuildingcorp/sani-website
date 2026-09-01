@@ -229,11 +229,11 @@ console.log('\nthe services hub page renders, and its tile cards work\n');
   ok('flooring.html — the TILE slot is a real photo now, not stock',
     fs.existsSync(path.join(ROOT, 'images/flooring/tile.jpg')) &&
     /src="images\/flooring\/tile\.jpg(\?v=\d+)?" alt="[^"]*"\s*>/.test(FL));
-  /* Deliberately asserted as still-stock, so the day someone uploads real
-     hardwood and carpet photos this line fails and reminds them to drop the
-     fallback too. */
-  ok('flooring.html — the six non-tile slots are still on stock, and still known about',
-    (FL.match(/unsplash/g) || []).length === 6, (FL.match(/unsplash/g) || []).length + ' remaining');
+  /* This line used to assert the OPPOSITE — that six slots were still on stock,
+     as a reminder to come back to them. They have been filled from Sani's own
+     photographs, so the reminder becomes the guarantee. */
+  ok('flooring.html — no slot serves stock any more',
+    (FL.match(/unsplash/g) || []).length === 0, (FL.match(/unsplash/g) || []).length + ' remaining');
 }
 
 /* ══ THE PICTURE ON EVERY LINK HE SENDS ═══════════════════════════════════
@@ -281,8 +281,75 @@ console.log('\nevery page previews a real photo when the link is shared\n');
     placeholder.length === 0, Array.from(new Set(placeholder)).join(', '));
   ok('...and every one matches the filename EXACTLY, because Netlify serves from Linux',
     caseBug.length === 0, caseBug.join('\n        '));
-  ok('the homepage in particular previews a real photo',
-    /property="og:image" content="[^"]*images\/hero\/home-hero\.png"/.test(read('index.html')));
+  /* The homepage card is a JPEG on purpose. WhatsApp, iMessage and LinkedIn are
+     inconsistent about WebP, and a preview that fails is worse than a heavier
+     one — while the page itself serves the WebP, where only browsers look. */
+  ok('the homepage previews a real photo, as a JPEG the scrapers can all read',
+    /property="og:image" content="[^"]*images\/hero\/home-hero-og\.jpg"/.test(read('index.html')));
+}
+
+/* ══ NO PAGE SHOWS ANOTHER COMPANY'S WORK ═════════════════════════════════
+   122 image slots were serving Unsplash stock photographs, each one captioned
+   with alt text that said "Sani Building Corp". Another 84 were missing with no
+   fallback at all, so they simply rendered broken. Semrush's site audit counted
+   the second group as "Broken internal images - 120 pages".
+     Both are gone. Every slot is now one of Sani's own photographs, and every
+   stock fallback has been deleted rather than left dormant — a missing file must
+   fail VISIBLY, because a silent substitution is how 122 slots came to be
+   advertising somebody else's kitchens in the first place.
+     Where filling a slot meant using a photo from a different borough than the
+   page is about, the alt text had its location claim removed. The page title and
+   H1 still carry the location keyword; the alt text no longer asserts something
+   about the photograph that cannot be checked. */
+console.log('\nno page anywhere serves stock photography or a broken image\n');
+{
+  const pages = fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html'); });
+  const stock = pages.filter(function (f) { return /unsplash/i.test(read(f)); });
+  ok('NOT ONE PAGE ON THE SITE REFERENCES UNSPLASH — in an <img>, a fallback, or a CSS url()',
+    stock.length === 0, stock.join(', '));
+
+  const missing = [];
+  pages.concat(fs.readdirSync(path.join(ROOT, 'partials')).filter(function (f) { return f.endsWith('.html'); })
+    .map(function (f) { return path.join('partials', f); }))
+    .forEach(function (f) {
+      const html = read(f);
+      const seen = new Set();
+      let m;
+      const re1 = /(?:src|data-img)="(images\/[^"?]+)/g;
+      while ((m = re1.exec(html)) !== null) seen.add(m[1]);
+      const re2 = /url\(['"]?(images\/[^)'"?]+)/g;
+      while ((m = re2.exec(html)) !== null) seen.add(m[1]);
+      seen.forEach(function (p) { if (!fs.existsSync(path.join(ROOT, p))) missing.push(f + ' -> ' + p); });
+    });
+  ok('EVERY IMAGE REFERENCE ON EVERY PAGE RESOLVES TO A FILE ON DISK',
+    missing.length === 0, missing.slice(0, 12).join('\n        '));
+}
+
+/* ══ THE HOMEPAGE HERO ════════════════════════════════════════════════════
+   The old hero was an AI-generated stock collage whose largest panel showed a
+   man mounting a television — a service Sani does not offer and has a standing
+   rule never to mention. It was the first thing every visitor saw.
+     It is now built from six of Zura's own job photographs: a finished
+   apartment, large-format tile being set with a level, a marble shower, a
+   brownstone stair restoration with his crew on site, a rebuilt roof deck, and a
+   waterproofed shower pan. Multi-service, and all of it his. */
+console.log('\nthe homepage hero is Sani\'s own work, and light enough to paint fast\n');
+{
+  const HERO = 'images/hero/home-hero.webp';
+  ok('the hero exists and is the WebP the page asks for', fs.existsSync(path.join(ROOT, HERO)));
+  const kb = fs.statSync(path.join(ROOT, HERO)).size / 1024;
+  ok('...and is under 200 KB, because it is the Largest Contentful Paint on mobile',
+    kb < 200, Math.round(kb) + ' KB');
+  const old = fs.statSync(path.join(ROOT, 'images/hero/home-hero.png')).size / 1024;
+  ok('...and is lighter than the stock collage it replaced',
+    kb < old, Math.round(kb) + ' KB vs ' + Math.round(old) + ' KB');
+  const IDX = read('index.html');
+  ok('the page, the preload hint and the CSS variable all point at the same hero',
+    (IDX.match(/images\/hero\/home-hero\.webp/g) || []).length >= 3);
+  ok('...and none of them still points at the old PNG',
+    !/src="images\/hero\/home-hero\.png/.test(IDX) && !/preload[^>]*home-hero\.png/.test(IDX));
+  ok('the hero is still preloaded at high priority — that work was already right',
+    /rel="preload" as="image"[^>]*home-hero\.webp[^>]*fetchpriority="high"/.test(IDX));
 }
 
 /* ══ THE CACHE STILL HELD THE 404 ═════════════════════════════════════════
