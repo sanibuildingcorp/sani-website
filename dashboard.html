@@ -1269,6 +1269,10 @@ body {
   outline: none; border-color: var(--gold);
 }
 .field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+/* The timeline and notes boxes grow to fit whatever the AI wrote into them, but
+   stop before one paragraph pushes every other control off the screen. Past that
+   they scroll, and the drag handle still works. */
+.field textarea.grow-box { max-height: 340px; overflow-y: auto; }
 
 /* ============ CUSTOMER SCOPE CONTROL ============ */
 .sc-panel{border:1px solid var(--line);border-radius:12px}
@@ -3807,13 +3811,25 @@ function renderEdit() {
       '</table>' +
     '</details>' +
     '<div class="form-row">' +
+      /* TEXTAREAS, NOT SINGLE-LINE INPUTS. The AI writes a full paragraph into
+         both of these — the timeline on a co-op job runs to several hundred
+         words about sampling, lab turnaround and board review — and an
+         <input type="text"> showed about forty characters of it with the rest
+         scrolled off sideways. It could not be read or edited.
+         Both are read with .value.trim(), which behaves identically on a
+         textarea, so nothing downstream changes. The closing tag is tight
+         against the value on purpose: a newline after <textarea> is swallowed by
+         the HTML parser, but any other leading whitespace is kept and would be
+         saved back into the record. */
       '<div class="field">' +
         '<label>Estimated Timeline (customer sees)</label>' +
-        '<input type="text" id="f-timeline" value="' + esc(est.timelineText || "") + '" placeholder="e.g. 5-7 business days">' +
+        '<textarea id="f-timeline" rows="5" class="grow-box" placeholder="e.g. 5-7 business days" ' +
+          'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+2+\'px\'">' + esc(est.timelineText || "") + '</textarea>' +
       '</div>' +
       '<div class="field">' +
         '<label>Internal Notes (NOT shown to customer)</label>' +
-        '<input type="text" id="f-notes" value="' + esc(est.notes || "") + '" placeholder="Reminders, assumptions, things to verify">' +
+        '<textarea id="f-notes" rows="5" class="grow-box" placeholder="Reminders, assumptions, things to verify" ' +
+          'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+2+\'px\'">' + esc(est.notes || "") + '</textarea>' +
       '</div>' +
     '</div>' +
 
@@ -3931,6 +3947,13 @@ function renderEdit() {
      rules endpoint must never stop the estimate editor from opening. */
   try { loadHouseRules(); } catch (hrErr) { console.error("house rules load failed:", hrErr); }
   document.getElementById("f-markup").addEventListener("input", recalc);
+  /* Size the two long-text boxes to whatever is already in them, so a paragraph
+     written by the AI is readable the moment the estimate opens rather than only
+     after the first keystroke. Kept inline and dependency-free on purpose. */
+  ["f-timeline", "f-notes"].forEach(function (id) {
+    var box = document.getElementById(id);
+    if (box) { box.style.height = "auto"; box.style.height = (box.scrollHeight + 2) + "px"; }
+  });
   renderQuotePhotoPreview();
   selectedRenderPhotoData = null;
   currentRenderBase64 = null;
