@@ -36,3 +36,10 @@ Disallow: /.netlify/
 Disallow: /netlify/functions/
 
 Sitemap: https://www.sanibuildingcorp.com/sitemap.xml
+
+# ─── AI assistants ───
+# All AI crawlers are welcome. A plain-text summary of the business and every
+# service page lives at /llms.txt — the emerging convention for exactly this.
+# Referenced here because a crawler otherwise has to guess the path.
+# LLM-Content: https://www.sanibuildingcorp.com/llms.txt
+
