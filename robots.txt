@@ -1,4 +1,17 @@
 User-agent: *
+# ─── Content Signals: how automated systems may use this content ───
+# https://contentsignals.org/ — every value below is YES on purpose. This
+# business WANTS to be read, summarized and recommended by AI assistants: a
+# customer found Sani Building Corp by asking ChatGPT about cabinetry, then
+# called. Saying no here would quietly cost those jobs.
+#   search   = yes   index it for search results
+#   ai-input = yes   use it to answer someone's question live  <- the one that matters
+#   ai-train = yes   train on it
+#   use=full = yes   summarize and reproduce it, not merely link to it
+#
+# Cloudflare's "managed robots.txt" toggle writes ai-train=no in place of this.
+# Leave that toggle OFF. It reverses the whole line.
+Content-signal: search=yes, ai-input=yes, ai-train=yes, use=full
 Allow: /
 
 # ─── Public, crawlable pages ───

@@ -71,6 +71,58 @@ console.log('\nno AI crawler is blocked — this fails silently if it ever break
     star.join(', '));
 }
 
+/* ══ CONTENT SIGNALS ══════════════════════════════════════════════════════
+ * A second, quieter way to say no. robots.txt Disallow controls whether a bot
+ * may FETCH a page; Content-Signal controls what it may DO with what it fetched.
+ * A site can be fully crawlable and still say "do not use this to answer
+ * questions", which for this business would be the worst of both worlds — the
+ * crawl cost with none of the referrals.
+ *
+ * Cloudflare's dashboard has a "managed robots.txt" toggle that writes
+ *   Content-signal: search=yes, ai-train=no, use=reference
+ * over the top of this file. One click, no warning, and the line inverts. That
+ * is precisely the kind of silent reversal these assertions exist to catch, so
+ * the check below is written to fail on ANY "=no", not only the ones set today.
+ */
+console.log('\nautomated systems are told they may USE the content, not just read it\n');
+{
+  /* Pull the directive out of the catch-all group. */
+  let group = null, signal = null;
+  ROBOTS.split('\n').forEach(function (line) {
+    const l = line.replace(/#.*$/, '').trim();
+    if (!l) return;
+    const m = l.match(/^([A-Za-z-]+)\s*:\s*(.*)$/);
+    if (!m) return;
+    const key = m[1].toLowerCase();
+    if (key === 'user-agent') group = m[2].trim();
+    else if (key === 'content-signal' && group === '*') signal = m[2].trim().toLowerCase();
+  });
+
+  ok('THE CONTENT-SIGNAL LINE EXISTS, in the catch-all group', signal !== null, signal || 'not found');
+
+  const fields = {};
+  (signal || '').split(',').forEach(function (p) {
+    const kv = p.trim().split('=');
+    if (kv.length === 2) fields[kv[0].trim()] = kv[1].trim();
+  });
+
+  ok('search=yes — it may be indexed', fields.search === 'yes', fields.search);
+  ok('AI-INPUT=YES — it may be used to answer a live question. This is the one that won the cabinetry job.',
+    fields['ai-input'] === 'yes', fields['ai-input']);
+  ok('ai-train=yes — it may be trained on', fields['ai-train'] === 'yes', fields['ai-train']);
+  ok('use=full — it may be summarized, not merely linked', fields.use === 'full', fields.use);
+
+  /* The catch-all. Any future field set to "no" fails here even though no
+     assertion above knows its name. */
+  const denied = Object.keys(fields).filter(function (k) { return fields[k] === 'no'; });
+  ok('NOTHING IS SET TO "no" — a managed-robots.txt click would show up right here',
+    denied.length === 0, denied.join(', '));
+
+  /* The rest of the file has to keep meaning what it says. */
+  ok('...and the catch-all group still allows the site root',
+    /^\s*Allow:\s*\/\s*$/m.test(ROBOTS));
+}
+
 /* ══ llms.txt COVERS THE WHOLE BUSINESS ═══════════════════════════════════ */
 console.log('\nllms.txt maps every public page, not a subset\n');
 {
