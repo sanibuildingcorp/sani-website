@@ -88,9 +88,14 @@ li:before{position:absolute;left:0;top:7px}
 /* options + detail */
 details{margin-top:14px;border-top:1px solid #eef1f4;padding-top:12px}
 summary{font-size:13.5px;font-weight:600;cursor:pointer;color:var(--muted)}
-.lines{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
-.lines td{padding:8px 6px;border-bottom:1px solid #f0f2f5}
-.lines td:last-child{text-align:right;white-space:nowrap}
+/* The breakdown table. Money is matched by NAME, never by position: with the
+   "…with prices" switch off there is no money cell, and a :last-child rule then
+   landed on the description - right-aligning every line and forbidding it to
+   wrap, so long material names ran off the edge and were cut in half. */
+.lines{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;table-layout:fixed}
+.lines td{padding:8px 6px;border-bottom:1px solid #f0f2f5;vertical-align:top;overflow-wrap:anywhere}
+.lines td:first-child{width:74px;color:var(--muted)}
+.lines td.amt{text-align:right;white-space:nowrap;width:94px}
 .opts{background:#fdf9f0;border:1px solid #ecdcb4;border-radius:8px;padding:13px;margin-top:14px}
 .opt{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #eee0c0;font-size:14.5px}
 .opt:first-of-type{border-top:0}
@@ -488,7 +493,10 @@ function details(e,s){
  if(!z.length)return'';
  const anyPrice=z.some(x=>x.price);
  const label=anyPrice?'View detailed labor & materials':'View what is included in detail';
- return `<details><summary>${label} (${z.length})</summary><table class="lines">${z.map(x=>`<tr><td>${x.t}</td><td${x.price?'':' colspan="2"'}>${E(itemText(x.item))}</td>${x.price?`<td>${M(LT(x)*ct.k)}</td>`:''}</tr>`).join('')}</table></details>`}
+ /* colspan only when a money column actually exists on some other row, and the
+    money cell is marked as money so the stylesheet never has to guess from its
+    position which cell holds a price. */
+ return `<details><summary>${label} (${z.length})</summary><table class="lines">${z.map(x=>`<tr><td>${x.t}</td><td${(!x.price&&anyPrice)?' colspan="2"':''}>${E(itemText(x.item))}</td>${x.price?`<td class="amt">${M(LT(x)*ct.k)}</td>`:''}</tr>`).join('')}</table></details>`}
 function isV7(e){
  /* Which LAYOUT to render, not which WORDING to use.
     This used to require customerScopePublished===true, which meant a perfectly good
