@@ -1302,6 +1302,13 @@ body {
    separation from the one above it. */
 .sc-pane.sc-group{border-top:1px solid var(--line)}
 .sc-row{display:flex;gap:6px;align-items:center;margin-bottom:5px}
+/* Ticked = the customer sees this line. Unticked = they do not, and it stays
+   here so nothing is lost by turning it off. */
+.sc-check{display:flex;align-items:center;flex:0 0 auto;cursor:pointer;padding:2px}
+.sc-check input{width:17px;height:17px;cursor:pointer;accent-color:var(--gold)}
+.sc-row-off .sc-item{opacity:.5;text-decoration:line-through;background:#fafbfc}
+.sc-offtag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);flex:0 0 auto;padding:0 4px}
+.sc-offn{font-weight:700;color:var(--gold)}
 .sc-item{flex:1;min-width:0;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:6px 8px}
 .sc-move{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:5px;background:#fff;max-width:110px}
 .sc-del{border:none;background:none;color:#c0392b;font-size:14px;cursor:pointer;padding:2px 5px}
@@ -5478,7 +5485,9 @@ function renderScopeControl() {
     html += '<div class="sc-counts">' +
       '<span>' + (lab.length + mat.length) + ' price lines</span>' +
       groups.map(function (g) {
-        return '<span>' + ((svc[g.key] || []).length) + ' ' + g.tab.toLowerCase() + '</span>';
+        var offN = (svc[g.key + 'Off'] || []).length;
+        return '<span>' + ((svc[g.key] || []).length) + ' ' + g.tab.toLowerCase() +
+               (offN ? ' <b class="sc-offn">+' + offN + ' not shown</b>' : '') + '</span>';
       }).join('') +
     '</div>';
 
@@ -5540,20 +5549,12 @@ function renderScopeControl() {
       var items = svc[g.key] || [];
       html += '<div class="sc-pane sc-group ' + g.cls + '">' +
         '<div class="sc-group-label">' + g.label + ' <span class="sc-group-n">' + items.length + '</span></div>';
-      if (!items.length) html += '<div class="sc-empty">' + g.empty + '</div>';
-      items.forEach(function (txt, ii) {
-        html += '<div class="sc-row">' +
-          '<input class="sc-item" value="' + esc(txt) + '" onchange="scopeEditItem(' + si + ',\'' + g.key + '\',' + ii + ',this.value)">' +
-          '<select class="sc-move" onchange="scopeMoveItem(' + si + ',\'' + g.key + '\',' + ii + ',this.value);this.selectedIndex=0">' +
-            '<option value="">move…</option>' +
-            (g.key !== "included" ? '<option value="included">→ Included</option>' : '') +
-            (g.key !== "supplied" ? '<option value="supplied">→ Customer supplies</option>' : '') +
-            (g.key !== "excluded" ? '<option value="excluded">→ Not included</option>' : '') +
-            '<option value="__svc">→ another service…</option>' +
-          '</select>' +
-          '<button class="sc-del" onclick="scopeDeleteItem(' + si + ',\'' + g.key + '\',' + ii + ')" title="Delete">✕</button>' +
-        '</div>';
-      });
+      var offItems = svc[g.key + "Off"] || [];
+      if (!items.length && !offItems.length) html += '<div class="sc-empty">' + g.empty + '</div>';
+      /* Shown first, then the ones turned off - still on screen, still readable,
+         one click from coming back. */
+      items.forEach(function (txt, ii) { html += scopeItemRow(si, g.key, ii, txt, true); });
+      offItems.forEach(function (txt, oi) { html += scopeItemRow(si, g.key, oi, txt, false); });
       html += '<button class="sc-add" onclick="scopeAddItem(' + si + ',\'' + g.key + '\')">+ Add</button>' +
         '</div>';
     });
@@ -5920,6 +5921,60 @@ function scopePriceAdd(si, kind) {
 function scopeAddItem(si, key) {
   scopeDraft().services[si][key].push("");
   renderScopeControl();
+}
+
+/* ══ THE TICK BOX ON EVERY LINE ════════════════════════════════════════════
+   "everything i need control with check point"
+
+   Ticked, the customer sees the line. Unticked, they do not - and the wording
+   stays on the contractor's screen so unticking is never a loss. It moves
+   between `included` and `includedOff`, `supplied`/`suppliedOff`,
+   `excluded`/`excludedOff`. quote.html reads only the first of each pair, so it
+   needs no change at all and older records without the Off arrays behave exactly
+   as they did.
+
+   A TICK BOX MOVES WORDING AND NOTHING ELSE. No subtotal, no price line, no
+   parked money moves when one is clicked. Deleting an exclusion still returns
+   its parked money, because deleting is a different act from hiding - and that
+   path is untouched, which is why an unticked line offers no delete button. To
+   remove it for good, tick it back on first and use the ✕ that was always
+   there. */
+function scopeToggleItem(si, key, ii, on) {
+  var d = scopeDraft(), svc = d.services[si];
+  if (!svc) return;
+  var offKey = key + "Off";
+  /* Read the source and bounds-check BEFORE touching anything. An earlier version
+     created the empty off-list first, so a click on an index that does not exist
+     still mutated the record - a write with no visible effect, which is the kind
+     that shows up later as a diff nobody can explain. */
+  var from = on ? svc[offKey] : svc[key];
+  if (!Array.isArray(from) || ii < 0 || ii >= from.length) return;
+  var toKey = on ? key : offKey;
+  if (!Array.isArray(svc[toKey])) svc[toKey] = [];
+  svc[toKey] = svc[toKey].concat(from.splice(ii, 1));
+  renderScopeControl();
+}
+
+/* One line in a wording group, in either state. */
+function scopeItemRow(si, gkey, ii, txt, on) {
+  var arrKey = on ? gkey : gkey + "Off";
+  return '<div class="sc-row' + (on ? '' : ' sc-row-off') + '">' +
+    '<label class="sc-check" title="' + (on ? 'The customer sees this line' : 'Hidden from the customer') + '">' +
+      '<input type="checkbox"' + (on ? ' checked' : '') +
+      ' onchange="scopeToggleItem(' + si + ',\'' + gkey + '\',' + ii + ',this.checked)"></label>' +
+    '<input class="sc-item" value="' + esc(txt) + '" ' +
+      'onchange="scopeEditItem(' + si + ',\'' + arrKey + '\',' + ii + ',this.value)">' +
+    (on
+      ? '<select class="sc-move" onchange="scopeMoveItem(' + si + ',\'' + gkey + '\',' + ii + ',this.value);this.selectedIndex=0">' +
+          '<option value="">move&hellip;</option>' +
+          (gkey !== "included" ? '<option value="included">&rarr; Included</option>' : '') +
+          (gkey !== "supplied" ? '<option value="supplied">&rarr; Customer supplies</option>' : '') +
+          (gkey !== "excluded" ? '<option value="excluded">&rarr; Not included</option>' : '') +
+          '<option value="__svc">&rarr; another service&hellip;</option>' +
+        '</select>' +
+        '<button class="sc-del" onclick="scopeDeleteItem(' + si + ',\'' + gkey + '\',' + ii + ')" title="Delete">&#10005;</button>'
+      : '<span class="sc-offtag">not shown</span>') +
+  '</div>';
 }
 function scopeEditItem(si, key, ii, val) {
   var d = scopeDraft(), svc = d.services[si];
@@ -6644,10 +6699,15 @@ function scopeCleanCopy() {
          instead of re-deriving its own from the raw line items. Without this
          the dashboard showed five services and the customer quote showed two. */
       var nm2 = String(s2.name || "General").trim() || "General";
+      /* The unticked lines travel with the scope. Without this, every checkbox
+         reset itself on the next reload. quote.html reads only included/supplied/
+         excluded, so carrying them costs the customer nothing. */
       return { name: nm2,
                subtotal: Number(scopeServiceSubtotal(nm2)) || 0,
-               included: clean(s2.included), supplied: clean(s2.supplied), excluded: clean(s2.excluded) };
-    }).filter(function (s2) { return s2.included.length || s2.supplied.length || s2.excluded.length || s2.subtotal > 0; }),
+               included: clean(s2.included), supplied: clean(s2.supplied), excluded: clean(s2.excluded),
+               includedOff: clean(s2.includedOff), suppliedOff: clean(s2.suppliedOff), excludedOff: clean(s2.excludedOff) };
+    }).filter(function (s2) { return s2.included.length || s2.supplied.length || s2.excluded.length ||
+               s2.includedOff.length || s2.suppliedOff.length || s2.excludedOff.length || s2.subtotal > 0; }),
     updatedAt: new Date().toISOString()
   };
 }

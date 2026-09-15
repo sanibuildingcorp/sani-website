@@ -75,6 +75,10 @@ vm.runInContext(`
 `, ctx);
 vm.runInContext(ext('scopeAlreadyShared').replace(/\{[\s\S]*\}/, '{ return SHARED === true }'), ctx);
 vm.runInContext(ext('scopeDraft').replace(/\{[\s\S]*\}/, '{ return DRAFT }'), ctx);
+/* The real row builder, not a stand-in: the point of this file is what the
+   contractor actually sees on screen. Its own behaviour is covered by
+   js/scope-checkbox.test.js. */
+vm.runInContext(ext('scopeItemRow'), ctx);
 vm.runInContext(ext('renderScopeControl'), ctx);
 
 const DRAFT = {
