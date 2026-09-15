@@ -1294,6 +1294,13 @@ body {
 .sc-sup{border-left-color:#c8860a}
 .sc-exc{border-left-color:#b0b0b0}
 .sc-group-label{font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-muted);margin-bottom:6px;font-weight:700}
+/* A read-out, not a control. The tab strip it replaces hid three quarters of
+   every service card behind display:none. */
+.sc-counts{display:flex;flex-wrap:wrap;gap:6px 14px;padding:9px 12px;background:#fbfcfd;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--ink-muted);font-weight:600;letter-spacing:.02em}
+.sc-group-n{display:inline-block;margin-left:4px;padding:0 5px;border-radius:7px;background:var(--line);color:var(--ink-muted);font-size:10px;line-height:15px;vertical-align:1px}
+/* Each group is now a block on the page rather than a pane, so it needs its own
+   separation from the one above it. */
+.sc-pane.sc-group{border-top:1px solid var(--line)}
 .sc-row{display:flex;gap:6px;align-items:center;margin-bottom:5px}
 .sc-item{flex:1;min-width:0;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:6px 8px}
 .sc-move{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:5px;background:#fff;max-width:110px}
@@ -5441,11 +5448,11 @@ function renderScopeControl() {
 
   if (shared) {
     html += '<div class="sc-warn">This estimate has already been shared with the customer. ' +
-      'Draft edits stay private. Publishing a new scope will immediately change what their existing quote link displays.</div>';
+      'Anything you save here changes what their existing quote link shows, straight away.</div>';
   }
   html += '<div class="sc-status">' +
-    (published ? '<span class="sc-pill sc-pill-live">Published scope is live</span>'
-               : '<span class="sc-pill sc-pill-draft">Draft only &mdash; customer still sees the standard quote</span>') +
+    (published ? '<span class="sc-pill sc-pill-live">Saved &mdash; this is exactly what the customer sees</span>'
+               : '<span class="sc-pill sc-pill-draft">Not saved yet &mdash; press Save below and the customer sees this</span>') +
     '</div>';
 
   d.services.forEach(function (svc, si) {
@@ -5462,17 +5469,21 @@ function renderScopeControl() {
           'onchange="scopeSetServiceTotal(' + si + ', this.value)">' +
       '</div>';
 
-    /* tab strip */
-    html += '<div class="sc-tabs">' +
-      '<button class="sc-tab' + (open === 0 ? ' on' : '') + '" onclick="scopeSetTab(' + si + ',0)">Prices<span class="n">' + (lab.length + mat.length) + '</span></button>';
-    groups.forEach(function (g, gi2) {
-      html += '<button class="sc-tab' + (open === gi2 + 1 ? ' on' : '') + '" onclick="scopeSetTab(' + si + ',' + (gi2 + 1) + ')">' +
-        g.tab + '<span class="n">' + ((svc[g.key] || []).length) + '</span></button>';
-    });
-    html += '</div>';
+    /* NOTHING IS HIDDEN BEHIND A TAB.
+       These four groups used to be tab panes with display:none on three of them,
+       so the contractor could see the prices or the exclusions but never both,
+       and pressed Send having read a quarter of the card. A quote goes out once.
+       Every part of it is now on screen at the same time; the row below is a
+       count, not a control. */
+    html += '<div class="sc-counts">' +
+      '<span>' + (lab.length + mat.length) + ' price lines</span>' +
+      groups.map(function (g) {
+        return '<span>' + ((svc[g.key] || []).length) + ' ' + g.tab.toLowerCase() + '</span>';
+      }).join('') +
+    '</div>';
 
-    /* pane 0 - price lines */
-    html += '<div class="sc-pane"' + (open === 0 ? '' : ' style="display:none"') + '>';
+    /* price lines */
+    html += '<div class="sc-pane">';
     [{ kind: "labor", label: "Labor", rows: lab }, { kind: "materials", label: "Materials", rows: mat }].forEach(function (blk) {
       html += '<div class="sc-kind">' + blk.label + '</div>';
       if (!blk.rows.length) {
@@ -5524,11 +5535,11 @@ function renderScopeControl() {
     });
     html += '</div>';
 
-    /* panes 1-3 - wording */
-    groups.forEach(function (g, gi2) {
+    /* the three wording groups, all open, directly under the prices */
+    groups.forEach(function (g) {
       var items = svc[g.key] || [];
-      html += '<div class="sc-pane sc-group ' + g.cls + '"' + (open === gi2 + 1 ? '' : ' style="display:none"') + '>' +
-        '<div class="sc-group-label">' + g.label + '</div>';
+      html += '<div class="sc-pane sc-group ' + g.cls + '">' +
+        '<div class="sc-group-label">' + g.label + ' <span class="sc-group-n">' + items.length + '</span></div>';
       if (!items.length) html += '<div class="sc-empty">' + g.empty + '</div>';
       items.forEach(function (txt, ii) {
         html += '<div class="sc-row">' +
@@ -5659,9 +5670,8 @@ function renderScopeControl() {
       }).join("")) +
       '<button class="btn-secondary" onclick="scopeAddService()">+ Add Service</button>' +
       '<button class="btn-secondary" onclick="scopeRebuildFromAI()">↻ Rebuild Draft from AI</button>' +
-      '<button class="btn-secondary" onclick="scopeSaveDraft()">💾 Save Scope Draft</button>' +
-      '<button class="btn-secondary" onclick="scopePreview()">👁 Preview Draft</button>' +
-      '<button class="btn-primary" onclick="scopePublish()">🚀 Publish Customer Scope</button>' +
+      '<button class="btn-secondary" onclick="scopePreview()">👁 Preview what the customer sees</button>' +
+      '<button class="btn-primary" onclick="scopePublish()">💾 Save — the customer sees exactly this</button>' +
     '</div>' +
     '<div id="sc-preview" class="sc-preview" style="display:none"></div>' +
   '</div>';
@@ -6699,11 +6709,20 @@ function scopeStampBreakdown() {
   });
 }
 
+/* THERE IS NO PRIVATE DRAFT ANY MORE.
+   Saving and publishing used to be two buttons. Editing a card down to one
+   service and pressing Save left the customer looking at the AI's original four
+   - same money, grouped differently - and the only warning was a line of text in
+   a panel. A quote went out showing Painting, Kitchen, Carpentry and Electrical
+   for a plaster patch.
+   Saving now IS publishing: what is on this screen is what the customer gets.
+   The confirm survives only for an estimate already sent, because changing a
+   live quote under someone who may have it open is a different act from writing
+   one nobody has seen. */
 async function scopePublish() {
-  var msg = scopeAlreadyShared()
-    ? "This estimate has already been shared. Publishing will IMMEDIATELY change what the customer sees at their existing quote link.\n\nPublish now?"
-    : "Publish this scope to the customer's quote?";
-  if (!confirm(msg)) return;
+  if (scopeAlreadyShared() && !confirm(
+    "This estimate has already been sent. Saving will IMMEDIATELY change what the customer sees at their existing quote link.\n\nSave and update their quote?"
+  )) return;
   var clean = scopeCleanCopy();
   currentRecord.estimate.manualCustomerScopeDraft = clean;
   currentRecord.estimate.publishedCustomerScope = clean;
