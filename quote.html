@@ -47,7 +47,16 @@ body{margin:0;background:var(--p);color:var(--n);font-family:var(--f);line-heigh
 .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
 .meta div{border-top:1px solid rgba(255,255,255,.16);padding-top:9px;font-size:14px;font-weight:600}
 .meta small{display:block;color:#a9bacb;font-weight:400;font-size:12.5px;margin-bottom:3px}
-.heroimg{width:100%;border-radius:8px;margin-top:16px;display:block;max-height:230px;object-fit:cover}
+.heroimg{width:100%;border-radius:8px;margin-top:16px;display:block;max-height:230px;object-fit:cover;cursor:zoom-in}
+/* More than one photo shares the space instead of stacking six full-width
+   pictures down the page. auto-fit keeps it one column on a narrow phone. */
+.herogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:16px}
+.herogrid .heroimg{margin-top:0;max-height:165px}
+/* Tap any photo to see it properly. A 145px thumbnail of a shower is no use to
+   someone deciding whether to spend several thousand dollars. */
+.photobox{position:fixed;inset:0;background:rgba(8,14,24,.94);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px;cursor:zoom-out}
+.photobox.on{display:flex}
+.photobox img{max-width:100%;max-height:92vh;border-radius:10px;display:block}
 
 /* cards */
 .card,.svc{background:#fff;border:1px solid var(--l);border-radius:10px;margin-top:14px}
@@ -525,13 +534,30 @@ function pinHtml(r,total){
 function shownTotal(ct){
  if(ct.stamped!=null)return ct.stamped;
  return Math.round((ct.total+chosenTotal())*100)/100}
-/* One photo of the job, if there is one. Photos live in two places depending on
-   how the record was created; take the first that actually carries image data. */
+/* EVERY photo of the job. Photos live in two places depending on how the record
+   was created - the ones the customer sent with their request, and the ones the
+   contractor attached to the quote - and both belong here.
+
+   This used to end in .find(), which returns the first match and stops. The
+   dashboard offers six, stores six and previews six; the customer opened the
+   quote and saw one. Nothing errored, so nothing gave it away. */
 function heroPhoto(r){
  const rq=r.request||{},e=r.estimate||{};
- const p=[...A(rq.photos),...A(e.quotePhotos)].find(x=>x&&x.data);
- if(!p)return'';
- return `<img class="heroimg" alt="Your project" src="${E(p.data)}">`}
+ const ps=[...A(rq.photos),...A(e.quotePhotos)].filter(x=>x&&x.data);
+ if(!ps.length)return'';
+ const img=(p,i)=>`<img class="heroimg" alt="Project photo ${i+1}" src="${E(p.data)}" onclick="zoomPhoto(this)">`;
+ if(ps.length===1)return img(ps[0],0);
+ return `<div class="herogrid">${ps.map(img).join('')}</div>`}
+/* Full screen on tap. Built from the element that was clicked rather than from
+   a copy of the URL, so nothing about the image can break the handler. */
+function zoomPhoto(el){
+ let b=document.getElementById('photobox');
+ if(!b){b=document.createElement('div');b.id='photobox';b.className='photobox';
+  b.innerHTML='<img alt="Project photo">';
+  b.onclick=()=>b.classList.remove('on');
+  document.body.appendChild(b)}
+ b.querySelector('img').src=el.src;
+ b.classList.add('on')}
 /* NOTHING IS EVER DELETED. Oldest first, both sides, every date kept. If there is
    ever a disagreement about what was agreed, this list is the answer - which is
    why it renders straight from the stored thread and never filters it. */

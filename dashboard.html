@@ -4006,7 +4006,12 @@ function renderQuotePhotoPreview() {
   if (!photos.length) { el.innerHTML = ""; return; }
   el.innerHTML = photos.map(function(p, i) {
     return '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--line)">' +
-      '<img src="' + esc(p.data) + '" style="width:100%;height:100%;object-fit:cover;cursor:pointer" onclick="openLightbox(\'' + esc(p.data) + '\')">' +
+      /* The index, not the image. Before a save p.data is a base64 data URL of a
+         1200px JPEG - inlining it here put a few hundred thousand characters
+         into an onclick attribute, and esc() does not escape the apostrophe
+         that closes the string, so one apostrophe anywhere in it killed the
+         handler and the thumbnail simply would not open. */
+      '<img src="' + esc(p.data) + '" style="width:100%;height:100%;object-fit:cover;cursor:pointer" onclick="openLightbox(' + i + ')">' +
       '<button onclick="removeQuotePhoto(' + i + ')" style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;border:none;cursor:pointer;font-size:13px;line-height:1">×</button>' +
     '</div>';
   }).join("");
@@ -8054,7 +8059,15 @@ async function saveContractorNotes(ref) {
   }
 }
 
+/* Takes either a url or the index of a quote photo. The quote-photo thumbnails
+   pass an index because their image may be a base64 data URL far too long to
+   inline into an onclick attribute; every other call site still passes a url. */
 function openLightbox(url) {
+  if (typeof url === "number") {
+    var ps = (currentRecord && currentRecord.estimate && currentRecord.estimate.quotePhotos) || [];
+    url = (ps[url] && ps[url].data) || "";
+    if (!url) return;
+  }
   document.getElementById("lightbox-img").src = url;
   document.getElementById("lightbox-modal").style.display = "flex";
   document.getElementById("lightbox-modal").classList.add("show");

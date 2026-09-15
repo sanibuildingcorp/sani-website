@@ -71,6 +71,58 @@ console.log('\nno AI crawler is blocked — this fails silently if it ever break
     star.join(', '));
 }
 
+/* ══ CONTENT SIGNALS ══════════════════════════════════════════════════════
+ * A second, quieter way to say no. robots.txt Disallow controls whether a bot
+ * may FETCH a page; Content-Signal controls what it may DO with what it fetched.
+ * A site can be fully crawlable and still say "do not use this to answer
+ * questions", which for this business would be the worst of both worlds — the
+ * crawl cost with none of the referrals.
+ *
+ * Cloudflare's dashboard has a "managed robots.txt" toggle that writes
+ *   Content-signal: search=yes, ai-train=no, use=reference
+ * over the top of this file. One click, no warning, and the line inverts. That
+ * is precisely the kind of silent reversal these assertions exist to catch, so
+ * the check below is written to fail on ANY "=no", not only the ones set today.
+ */
+console.log('\nautomated systems are told they may USE the content, not just read it\n');
+{
+  /* Pull the directive out of the catch-all group. */
+  let group = null, signal = null;
+  ROBOTS.split('\n').forEach(function (line) {
+    const l = line.replace(/#.*$/, '').trim();
+    if (!l) return;
+    const m = l.match(/^([A-Za-z-]+)\s*:\s*(.*)$/);
+    if (!m) return;
+    const key = m[1].toLowerCase();
+    if (key === 'user-agent') group = m[2].trim();
+    else if (key === 'content-signal' && group === '*') signal = m[2].trim().toLowerCase();
+  });
+
+  ok('THE CONTENT-SIGNAL LINE EXISTS, in the catch-all group', signal !== null, signal || 'not found');
+
+  const fields = {};
+  (signal || '').split(',').forEach(function (p) {
+    const kv = p.trim().split('=');
+    if (kv.length === 2) fields[kv[0].trim()] = kv[1].trim();
+  });
+
+  ok('search=yes — it may be indexed', fields.search === 'yes', fields.search);
+  ok('AI-INPUT=YES — it may be used to answer a live question. This is the one that won the cabinetry job.',
+    fields['ai-input'] === 'yes', fields['ai-input']);
+  ok('ai-train=yes — it may be trained on', fields['ai-train'] === 'yes', fields['ai-train']);
+  ok('use=full — it may be summarized, not merely linked', fields.use === 'full', fields.use);
+
+  /* The catch-all. Any future field set to "no" fails here even though no
+     assertion above knows its name. */
+  const denied = Object.keys(fields).filter(function (k) { return fields[k] === 'no'; });
+  ok('NOTHING IS SET TO "no" — a managed-robots.txt click would show up right here',
+    denied.length === 0, denied.join(', '));
+
+  /* The rest of the file has to keep meaning what it says. */
+  ok('...and the catch-all group still allows the site root',
+    /^\s*Allow:\s*\/\s*$/m.test(ROBOTS));
+}
+
 /* ══ llms.txt COVERS THE WHOLE BUSINESS ═══════════════════════════════════ */
 console.log('\nllms.txt maps every public page, not a subset\n');
 {
@@ -108,15 +160,47 @@ console.log('\nthe business facts agree with each other everywhere\n');
 {
   /* Three different review counts on one site is the kind of contradiction that
      makes an AI trust the source less. */
+  /* THE HOLE THIS ONCE HAD. The first version of this assertion matched only
+     the two phrasings it happened to know: "N Google Reviews" and the schema's
+     reviewCount. The site's most common wording is "4.9 Star Rated · 66
+     Reviews" — no "Google" in it — so 29 occurrences of a stale 66 sat next to
+     a schema saying 67 and this test passed anyway. It reported consistency it
+     had not checked. The pattern below now takes ANY number followed by
+     "review"/"reviews", whatever words sit in front of it.
+
+     Two counts on the page are NOT the business's: each reviewer card on the
+     homepage shows how many reviews that PERSON has written ("2 reviews",
+     "Local Guide · 9 reviews"). Those live in .review-meta-sub /
+     .review-modal-sub and are stripped before counting. */
   const counts = new Set();
-  fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html'); }).forEach(function (f) {
-    const h = read(f);
-    (h.match(/"reviewCount":\s*"(\d+)"/g) || []).forEach(function (m) { counts.add(m.match(/(\d+)/)[1]); });
-    (h.match(/(\d+)\s+Google\s+[Rr]eviews/g) || []).forEach(function (m) { counts.add(m.match(/(\d+)/)[1]); });
-  });
-  (LLMS.match(/(\d+)\s+Google\s+reviews/g) || []).forEach(function (m) { counts.add(m.match(/(\d+)/)[1]); });
-  ok('ONE review count across the whole site and llms.txt, not three',
+  const collect = (text) => {
+    text.split('\n')
+      .filter(function (line) { return !/review-(meta-sub|modal-sub)/.test(line); })
+      /* An escaped em-dash is —, and "— Google review" reads to a
+         naive number-then-word pattern as "2014 Google review". Strip the
+         escapes before counting rather than widen the pattern and lose real
+         matches. */
+      .map(function (line) { return line.replace(/\\u[0-9a-fA-F]{4}/g, '-'); })
+      .forEach(function (line) {
+        (line.match(/(\d+)\s+(?:Google\s+)?[Rr]eviews?\b/g) || [])
+          .forEach(function (m) { counts.add(m.match(/(\d+)/)[1]); });
+        (line.match(/"reviewCount":\s*"(\d+)"/g) || [])
+          .forEach(function (m) { counts.add(m.match(/(\d+)/)[1]); });
+      });
+  };
+  /* Contractor-only tools are disallowed in robots.txt, so nothing they say is
+     a claim to a crawler. */
+  const PRIVATE = new Set(['dashboard.html', 'dashboard-shell.html', 'image-studio.html',
+    'page-editor.html', 'seo-content.html', 'bid-analyzer.html', 'keyword-volumes.html']);
+  fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html') && !PRIVATE.has(f); })
+    .forEach(function (f) { collect(read(f)); });
+  collect(LLMS);
+  ok('ONE review count everywhere — visible text, schema and llms.txt agree',
     counts.size === 1, Array.from(counts).sort().join(' / '));
+
+  /* And it has to be the number Google actually shows. */
+  ok('...and that number is 67, which is what Google shows',
+    counts.size === 1 && counts.has('67'), Array.from(counts).join(' / '));
 
   const PHONE = '(332) 277-0990', ADDR = '2954 Brighton 12th Street';
   ok('llms.txt carries the same phone number as the schema', LLMS.indexOf(PHONE) !== -1);
