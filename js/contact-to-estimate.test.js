@@ -72,8 +72,13 @@ const MIKE = {
   area: 'Manhattan',
   address: '221 West 82nd Street',
   details: "Looking for a quote on a bathroom reno. Tub, tiling, vanity and shower fixtures. Have a heated floor and would like to keep that. There's a washer dryer in a closet in the bathroom as well which is fine the way it is.",
+  /* The shape of a real upload URL, with a placeholder host. Pasting the live
+     Supabase project address in here failed the Netlify build outright: its
+     secret scanner matches the value of SUPABASE_URL against every deployed
+     file, finds it, and stops the deploy. Nothing under test cares what the
+     host is. */
   photos: Array.from({ length: 8 }, (_, i) =>
-    'https://rjwcdywwapldikyxvsrq.supabase.co/storage/v1/object/public/estimate-photos/contact-260915-q5w0/17895089' + i + '.jpg'),
+    'https://example-project.supabase.co/storage/v1/object/public/estimate-photos/contact-260915-q5w0/17895089' + i + '.jpg'),
   photoSlots: ['wide', 'other', 'other', 'other', 'other', 'other', 'other', 'other']
 };
 
