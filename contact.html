@@ -545,7 +545,11 @@ if(form){form.addEventListener("submit",async function(e){e.preventDefault();
 var subBtn=form.querySelector('button[type="submit"]');var subLabel=subBtn?subBtn.innerHTML:"";
 if(contactFiles.length&&subBtn){subBtn.disabled=true;subBtn.innerHTML="Uploading photos…";}
 var uploaded=[];
-try{ if(contactFiles.length) uploaded=await contactUploadFiles(contactUploadRef()); }
+/* One id per submission, made BEFORE the upload so the photo folder and the
+   estimate record that owns those photos carry the same four characters - and so
+   a retry lands on the same ref instead of creating a second copy of one lead. */
+var contactRef=contactUploadRef();
+try{ if(contactFiles.length) uploaded=await contactUploadFiles(contactRef); }
 catch(_){ uploaded=[]; }   /* never block the lead on a failed upload */
 if(subBtn){subBtn.disabled=false;subBtn.innerHTML=subLabel;}
 var pf=document.getElementById("contact-photos-field");
@@ -573,6 +577,24 @@ try{
       photos:uploaded.map(function(u){return u.url;}),
       photoSlots:uploaded.map(function(u){return u.slot||"other";}),
       photoCount:uploaded.length
+    })}).catch(function(){});
+    /* AND PUT THE LEAD IN THE DASHBOARD. Until this call, a contact submission
+       existed only as an email: Mike Siudym's bathroom, eight photos and a
+       written scope, with nothing to open and nothing the AI could read. Fired
+       alongside the confirmation, never in front of it, and its failure is
+       swallowed the same way - the customer has already been told we have their
+       request, so nothing here may take that back. */
+    fetch("/.netlify/functions/contact-to-estimate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      contactRef:contactRef,
+      name:(data.get("name")||"").trim(),
+      email:(data.get("email")||"").trim(),
+      phone:(data.get("phone")||"").trim(),
+      service:(data.get("service")||"").trim(),
+      area:(data.get("borough")||"").trim(),
+      address:(data.get("address")||"").trim(),
+      details:(data.get("message")||"").trim(),
+      photos:uploaded.map(function(u){return u.url;}),
+      photoSlots:uploaded.map(function(u){return u.slot||"other";})
     })}).catch(function(){});
   }
 }catch(_){}
