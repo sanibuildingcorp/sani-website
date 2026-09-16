@@ -104,13 +104,40 @@ console.log('\nthe conversation sits with the assistant, not at the bottom\n');
   const gen = at('AI ESTIMATE GENERATOR');
   const project = at('\u{1F4CB} PROJECT');
   const actions = at('modal-actions');
+  const desc = at('<span class="lbl">Description</span>');
+
+  /* NESTING, NOT NEIGHBOURHOOD. The first version of this asked whether the
+     conversation came before the literal "'</div>' +\n    stepBar(2". Moving the
+     block back below the card carried its own '</div>' + down with it, which
+     recreated that exact string - so the assertion passed against the layout it
+     was written to forbid. Depth is the thing being claimed, so count depth: how
+     many divs are open, in the builder's own literals, where the block sits. */
+  const depthAt = (idx) => {
+    const open = view.indexOf('<div class="cust-panel">');
+    const seg = view.slice(open, idx);
+    return (seg.match(/<div/g) || []).length - (seg.match(/<\/div>/g) || []).length;
+  };
 
   ok('all five landmarks were located',
     [ask, conv, gen, project, actions].every(v => v > 0),
     'ask=' + ask + ' conv=' + conv + ' gen=' + gen + ' project=' + project + ' actions=' + actions);
 
-  ok('THE CONVERSATION IS DIRECTLY AFTER THE ASSISTANT', conv > ask,
-    'assistant at ' + ask + ', conversation at ' + conv);
+  /* "Still need to move up conversation." It had already come up from the bottom
+     of the page to just under the request card, and that was still not it. What
+     the customer answered IS the request - it reads with the description, not
+     after the card that holds the description. So: above the assistant now, and
+     inside the card rather than below its closing tag. */
+  ok('THE CONVERSATION IS ABOVE THE ASSISTANT', conv < ask,
+    'conversation at ' + conv + ', assistant at ' + ask);
+  /* Measured at the block's OPENING TAG, not at the id inside it - inside, its
+     own wrapper has already added a level, so a block sitting below the closed
+     card still reads as depth 1 and the check passes on the wrong layout. */
+  ok('THE CONVERSATION IS INSIDE THE REQUEST CARD, not below it',
+    depthAt(at('<div class="section cnv-inline"')) === 1,
+    'conversation opens at div depth ' + depthAt(at('<div class="section cnv-inline"')) +
+    ', assistant sits at ' + depthAt(ask) + ' — both should be 1, inside the card');
+  ok('...under what the customer typed, not above it', desc > 0 && conv > desc,
+    'description at ' + desc + ', conversation at ' + conv);
   ok('THE CONVERSATION IS ABOVE THE GENERATOR — this is the whole complaint',
     conv < gen, 'conversation at ' + conv + ', generator at ' + gen);
   ok('...above the labor and materials too', conv < project);
@@ -143,6 +170,8 @@ console.log('\nnothing else changed places\n');
   ok('the send buttons are still last', at('modal-actions') > at('CUSTOMER VIEW MODE'));
   ok('the assistant is still inside the request card, above the generator',
     at('askPanelHtml(r)') < at('AI ESTIMATE GENERATOR'));
+  ok('the conversation kept its own styling label, since .section is unstyled',
+    DASH.indexOf('.cnv-inline-title{') !== -1 && DASH.indexOf('cnv-inline-title">\u{1F4AC} Conversation') !== -1);
 }
 
 console.log('\nevery script block in dashboard.html still parses\n');
