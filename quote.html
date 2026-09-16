@@ -129,7 +129,7 @@ button{padding:15px;border:0;border-radius:6px;font-weight:700;font-family:var(-
 .approved{background:#edf7f1;border:1px solid #bcdfcc;color:#155e3c;padding:14px;border-radius:8px;margin-top:16px;font-size:14px}
 
 /* message thread */
-.thr{display:flex;flex-direction:column;gap:10px;padding:4px 0 2px}
+.thr{display:flex;flex-direction:column;gap:10px;padding:4px 6px 2px 0;max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .att{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .att img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--l);display:block}
 .att .file{font-size:13px;padding:6px 10px;border-radius:8px;background:#fff;border:1px solid var(--l);color:var(--n-deep);text-decoration:none}
@@ -794,7 +794,16 @@ function replyFromHash(){
  if(m.scrollIntoView)m.scrollIntoView({behavior:'smooth',block:'center'});
  setTimeout(()=>{try{m.focus()}catch(e){}},350);
  return true}
-function render(r){seedChosen(r);let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r);replyFromHash()}
+/* THE THREAD IS A WINDOW, NOT A LIST THAT GROWS. "in customer side the
+   conversation getting larger and larger after every new message." The
+   dashboard's conversation scrolls inside a fixed box; the customer's did not,
+   so a long exchange pushed the reply box further down the page with every
+   message. Same box here (.thr, 420px), opened at the newest message, and
+   re-scrolled after a send so the message just sent is the one in view. */
+function threadScrollBottom(){
+ const el=document.querySelector('#thread-wrap .thr');
+ if(el)el.scrollTop=el.scrollHeight}
+function render(r){seedChosen(r);let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r);threadScrollBottom();replyFromHash()}
 function track(){
  /* The reload that follows an approval is not the customer opening the quote —
     see S('accept'). One marker, spent once, so a genuine re-open later still
@@ -840,6 +849,7 @@ window.S=async a=>{
  else if(j&&j.message)rec.thread=[...A(rec.thread),j.message];
  const wrap=document.getElementById('thread-wrap');
  if(wrap)wrap.innerHTML=threadInner(rec);
+ threadScrollBottom();
  const card=document.getElementById('thread-card');
  if(box)box.value='';
  msgFiles=[];msgPreview();
