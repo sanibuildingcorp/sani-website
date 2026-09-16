@@ -117,7 +117,7 @@ function page(hash) {
 /* The render line contains "||{}" so a [^}]* in the middle of this regex
    could never reach the call - the first version failed on a correct page. */
 ok('render() calls it after drawing the page, for both layouts',
-  /function render\(r\)\{seedChosen\(r\);/.test(QUOTE) && /renderLegacy\(r\);replyFromHash\(\)\}/.test(QUOTE));
+  /function render\(r\)\{seedChosen\(r\);/.test(QUOTE) && /renderLegacy\(r\);(?:threadScrollBottom\(\);)?replyFromHash\(\)\}/.test(QUOTE));
 ok('the panel id it opens is the one the message box actually has', /id="q"><div class="ey"[^>]*>Send us a message/.test(QUOTE));
 ok('P() is still the function that opens a panel', /window\.P=id=>\{document\.querySelectorAll\('\.panel'\)/.test(QUOTE));
 
