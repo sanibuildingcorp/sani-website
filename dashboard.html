@@ -3077,7 +3077,9 @@ function renderTabs() {
   counts.handyman = handymanBookings.length;
   counts.customers = Array.isArray(custCache) ? custCache.length : 0;
   counts.visits = visits.filter(function(v){ return !v.done; }).length;
-  counts.seo = seoInsightCount;
+  /* counts.seo used to read seoInsightCount here. That global went with the SEO
+     Brain tab; left in place this line threw a ReferenceError inside renderTabs
+     and took the whole list page down with it - which a parse check cannot see. */
   counts.visitors = visitorsLiveCount;
   document.getElementById("tabs-row").innerHTML = TABS.map(function(t) {
     return '<button class="tab ' + (activeTab === t.id ? "active" : "") + '" data-tab="' + t.id + '">' +
@@ -3122,9 +3124,23 @@ async function loadEstimates() {
       fetch("/.netlify/functions/visits").catch(function(e) { console.error("Visits load failed:", e); return null; })
     ]);
 
+    /* A FAILED LIST IS AN ERROR, NOT AN EMPTY LIST. This used to fall through
+       with estimates = [] and the page said "No estimates here yet" - the same
+       words it uses when the business genuinely has none - for a 401 (key gone),
+       a 500 (Blobs) or a 502 (Netlify killed the function at 10s). He read that
+       as every estimate being deleted. Say what happened, with the status. */
     if (estimateRes && estimateRes.ok) {
       const data = await estimateRes.json();
       estimates = data.estimates || [];
+    } else {
+      let detail = "";
+      try { const t = await estimateRes.text(); const j = JSON.parse(t); detail = String(j.error || j.message || ""); } catch (e) {}
+      const code = estimateRes ? estimateRes.status : 0;
+      const why = code === 401 ? "Your dashboard key was refused. Log out and log in again."
+        : code === 502 || code === 504 ? "The list took longer than Netlify allows. Press Retry."
+        : code === 0 ? "The request never reached the server. Check your connection and press Retry."
+        : "The server could not read the estimates.";
+      throw new Error("Could not load estimates (HTTP " + code + "). " + why + (detail ? " — " + detail : ""));
     }
     if (handymanRes && handymanRes.ok) {
       const data = await handymanRes.json();
@@ -8772,18 +8788,10 @@ window.addEventListener('load', function() {
 });
 </script>
 
-
-    <div class="drawer-sub">Dashboard</div>
-  </div>
-  <nav class="drawer-nav" id="drawer-nav">
-    <!-- filled by JS -->
-  </nav>
-  <div class="drawer-footer">
-    <a href="/estimate" target="_blank">↗ Customer Form</a>
-    <button onclick="loadEstimates(); closeDrawer();">⟳ Refresh Data</button>
-    <button onclick="logout()">⎋ Logout</button>
-  </div>
-</div>
+<!-- An orphaned fragment of an older mobile drawer used to sit here: a
+     "Dashboard" label, an empty nav and a footer with Customer Form / Refresh
+     Data / Logout. Its opening tags were lost long ago, so the three buttons
+     rendered in the normal flow at the bottom of every list page. Removed. -->
 
 
 

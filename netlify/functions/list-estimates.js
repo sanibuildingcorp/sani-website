@@ -31,15 +31,13 @@ exports.handler = async function (event) {
     const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
     const { blobs } = await store.list();
 
-    const estimates = [];
-    for (const blob of blobs) {
-      try {
-        const data = await store.get(blob.key, { type: "json" });
-        if (data) estimates.push(data);
-      } catch (e) {
-        console.error("Failed to load", blob.key, e.message);
-      }
-    }
+    /* READ IN PARALLEL, A FEW AT A TIME. This used to await each record in
+       turn: one round trip per estimate, in series. At ~60ms each that is
+       harmless for thirty records and past Netlify's 10-second kill for a
+       couple of hundred - and the dashboard then showed "No estimates here
+       yet", as if the business had none. Reads are independent, so they run
+       concurrently, capped so a big store does not open hundreds of sockets. */
+    const estimates = await readAll(store, blobs.map((b) => b.key), READ_CONCURRENCY);
 
     // Sort newest first
     estimates.sort((a, b) => {
@@ -91,6 +89,29 @@ exports.handler = async function (event) {
   }
 };
 
+
+const READ_CONCURRENCY = 12;
+
+async function readAll(store, keys, limit) {
+  const out = new Array(keys.length);
+  let next = 0;
+  async function worker() {
+    while (next < keys.length) {
+      const i = next++;
+      try {
+        out[i] = await store.get(keys[i], { type: "json" });
+      } catch (e) {
+        console.error("Failed to load", keys[i], e.message);
+        out[i] = null;
+      }
+    }
+  }
+  const workers = [];
+  for (let w = 0; w < Math.max(1, Math.min(limit, keys.length)); w++) workers.push(worker());
+  await Promise.all(workers);
+  return out.filter(Boolean);
+}
+exports._readAll = readAll;
 
 function cors() {
   return {
