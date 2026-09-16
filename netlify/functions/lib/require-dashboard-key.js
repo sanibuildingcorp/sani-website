@@ -6,8 +6,8 @@
 //
 //   list-estimates         every customer's name, address, phone, email, price
 //   save-estimate          rewrite any estimate, on any job, at any time
-//   seo-publish            holds GITHUB_TOKEN - commits to the repo
-//   publish-image-to-page  holds GITHUB_TOKEN - commits to the repo
+//   seo-publish            held GITHUB_TOKEN - committed to the repo (deleted)
+//   publish-image-to-page  held GITHUB_TOKEN - committed to the repo (deleted)
 //
 // No key, no password, no referer check. `send-reply.js` and `thread-reply.js`
 // were the pattern to copy, and this is their check lifted into one place so a

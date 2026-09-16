@@ -455,7 +455,6 @@ function buildEstimatorInput(record, body) {
     groupedAnswers[trade].push({ question: asked, answer: Array.isArray(value) ? value.join(", ") : String(value) });
   });
   const customerSupplies = Array.isArray(request.customerSupplies) ? request.customerSupplies.map(cleanText).filter(Boolean) : [];
-  const photoAnalysis = Array.isArray(request.photoAnalysis) ? request.photoAnalysis : [];
 
   /* ══ THE CONVERSATION IS PART OF THE BRIEF. ═════════════════════════════════
      The whole point of the thread is that a customer who could not describe the
@@ -491,7 +490,10 @@ function buildEstimatorInput(record, body) {
       description: body.useDescription === false ? "" : cleanText(request.description),
       groupedAnswers: body.useAnswers === false ? {} : groupedAnswers,
       customerSupplies,
-      photoAnalysis: body.usePhotoAnalysis === false ? [] : photoAnalysis,
+      /* The gpt-4o-mini "photoAnalysis" text that used to travel here is retired
+         with the dashboard card and toggle that carried it. The estimator never
+         saw the photographs themselves; it saw that text, and only when the
+         toggle was on - which by default it was not. */
       /* WHICH SHOTS THE CUSTOMER ACTUALLY SENT.
          A close-up of a cracked tile is a photograph of a crack, not of a job —
          it cannot say whether the room is 30 square feet or 300. The form now
@@ -501,7 +503,7 @@ function buildEstimatorInput(record, body) {
          Deliberately NOT part of the scope fingerprint (lib/scope-pin.js): how a
          photo was framed is not a change to the job, and adding a key there would
          stale every pin in storage and re-read every job once, for nothing. */
-      photoShots: body.usePhotoAnalysis === false ? [] : photoShots(request),
+      photoShots: photoShots(request),
       /* Answers the customer gave AFTER the form, in reply to being asked. */
       conversation: body.useConversation === false ? [] : conversation,
     },

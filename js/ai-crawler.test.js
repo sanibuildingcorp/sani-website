@@ -67,7 +67,7 @@ console.log('\nno AI crawler is blocked — this fails silently if it ever break
   /* The contractor tools SHOULD stay blocked. If that ever inverts, the
      dashboard becomes training data. */
   ok('the contractor-only tools are still disallowed, as they must be',
-    ['/dashboard', '/image-studio', '/page-editor'].every(function (p) { return star.indexOf(p) !== -1; }),
+    ['/dashboard', '/keyword-volumes', '/bid-analyzer'].every(function (p) { return star.indexOf(p) !== -1; }),
     star.join(', '));
 }
 
@@ -190,8 +190,7 @@ console.log('\nthe business facts agree with each other everywhere\n');
   };
   /* Contractor-only tools are disallowed in robots.txt, so nothing they say is
      a claim to a crawler. */
-  const PRIVATE = new Set(['dashboard.html', 'dashboard-shell.html', 'image-studio.html',
-    'page-editor.html', 'seo-content.html', 'bid-analyzer.html', 'keyword-volumes.html']);
+  const PRIVATE = new Set(['dashboard.html', 'dashboard-shell.html', 'bid-analyzer.html', 'keyword-volumes.html']);
   fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html') && !PRIVATE.has(f); })
     .forEach(function (f) { collect(read(f)); });
   collect(LLMS);
@@ -218,8 +217,8 @@ ok('robots.txt points at it', /llms\.txt/i.test(ROBOTS));
 /* ══ THE STRUCTURED DATA AI ACTUALLY MINES ════════════════════════════════ */
 console.log('\nthe structured data an AI reads instead of the JavaScript menu\n');
 {
-  const SKIPH = new Set(['dashboard.html', 'image-studio.html', 'page-editor.html', 'dashboard-shell.html',
-    'bid-analyzer.html', 'seo-content.html', 'keyword-volumes.html', 'invoice.html', 'agreement.html',
+  const SKIPH = new Set(['dashboard.html', 'dashboard-shell.html',
+    'bid-analyzer.html', 'keyword-volumes.html', 'invoice.html', 'agreement.html',
     'contract.html', 'quote.html', 'estimate.html', 'handyman-estimate.html',
     'googlee822c2a7421a7276.html', '404.html', 'review.html']);
   const pages = fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html') && !SKIPH.has(f); });

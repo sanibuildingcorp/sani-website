@@ -2,9 +2,9 @@
 //  dashboard-login
 //  Verifies the dashboard password SERVER-SIDE so it never ships inside page
 //  JavaScript. Before this existed the password was a const in dashboard.html,
-//  bid-analyzer.html, page-editor.html, seo-content.html, keyword-volumes.html
-//  and image-studio.html — readable by anyone who viewed source on the live
-//  site, and by anyone reading this public repo.
+//  bid-analyzer.html, keyword-volumes.html and three since-deleted tool pages —
+//  readable by anyone who viewed source on the live site, and by anyone
+//  reading this public repo.
 //
 //  Env vars used: DASHBOARD_PASSWORD  (required — the dashboard password)
 //                 VISITS_KEY          (optional — handed back after a correct
@@ -18,8 +18,8 @@
 //  It was only ever obtainable by typing it into a box on dashboard.html ("Enter
 //  the send key above (one time)") and it lived in localStorage from then on.
 //  That worked for the one page that asked, and left every other contractor page
-//  - image-studio, page-editor, seo-content - with no way to authenticate at
-//  all, which is precisely why their endpoints were left ungated. Handing the
+//  with no way to authenticate at all, which is precisely why their endpoints
+//  were left ungated. Handing the
 //  key back after a correct password puts every one of those pages on the same
 //  footing as the reply box, so the endpoints CAN be gated without breaking a
 //  tool the contractor uses. The hand-typed box still works and still wins; this

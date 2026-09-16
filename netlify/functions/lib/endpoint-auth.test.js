@@ -63,8 +63,9 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
   const GATED = [
     ["save-estimate", "POST", { ref: "SBC-260805-XQNQ", estimate: { labor: [], materials: [] } }],
     ["list-estimates", "GET", null],
-    ["seo-publish", "POST", { slug: "painting", html: "<html>owned</html>" }],
-    ["publish-image-to-page", "POST", { page: "painting", imageBase64: "AAAA" }],
+    /* seo-publish and publish-image-to-page used to be listed here. Both are
+       deleted - the SEO writer and the image tools are retired - and with them
+       the only two functions that held GITHUB_TOKEN. */
     /* One unauthenticated GET used to return the last hundred leads in full —
        every name, phone, email, home address and message. It mattered more once
        each lead started carrying links to photographs of the inside of a

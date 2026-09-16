@@ -5,8 +5,8 @@
    It is verified by netlify/functions/dashboard-login.js against the
    DASHBOARD_PASSWORD environment variable in Netlify.
 
-   Loaded by: dashboard.html, bid-analyzer.html, page-editor.html,
-              seo-content.html, keyword-volumes.html, image-studio.html
+   Loaded by: dashboard.html, bid-analyzer.html, keyword-volumes.html
+   (page-editor, seo-content and image-studio were retired and deleted)
 
    Everything here is a `var` or a function declaration on purpose. Both hoist,
    so a page can call these before its own `const`s are initialised without the
@@ -33,15 +33,15 @@ function sbcVisitsKey() {
 }
 
 /* ══ THE WRITE KEY, IN ONE PLACE, FOR EVERY CONTRACTOR PAGE. ═════════════════
-   save-estimate, list-estimates, seo-publish and publish-image-to-page were all
-   reachable by anyone who knew the URL - no key, no password, nothing. Anyone
-   could read every customer's name, address, phone and price, rewrite any
-   estimate, or commit to the GitHub repo.
+   save-estimate and list-estimates (and, until they were deleted, seo-publish
+   and publish-image-to-page) were all reachable by anyone who knew the URL - no
+   key, no password, nothing. Anyone could read every customer's name, address,
+   phone and price, or rewrite any estimate.
 
    The reason they were open is mundane: only dashboard.html had a key to send.
    It read localStorage "sbcKey", typed in once by hand, and no other tool page
-   had any equivalent - so gating those endpoints would have broken image-studio,
-   page-editor and seo-content outright.
+   had any equivalent - so gating those endpoints would have broken the other
+   tool pages outright.
 
    dashboard-login.js now hands the key back after a correct password, exactly
    as it already did for the Live Visitors key, and this reads it. Both sources

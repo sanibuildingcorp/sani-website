@@ -359,42 +359,8 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
       </div>
     </div>
 
-    <!-- STEP 6: AI Photo Analysis -->
-    <div class="step" data-step="6">
-      <div class="eyebrow">Step 4 · AI Analysis</div>
-      <h2 class="title" id="analysis-title">Analyzing your photos...</h2>
-      <p class="subtitle" id="analysis-subtitle">Our AI is reviewing each photo to identify the issue and suggest next steps.</p>
-      <div id="analysis-scanning">
-        <div class="scan-stage">
-          <div class="scan-ring"></div><div class="scan-ring-2"></div>
-          <div class="scan-photo"><img id="scan-photo-img" src="" alt=""></div>
-          <div class="scan-particle"></div><div class="scan-particle"></div><div class="scan-particle"></div><div class="scan-particle"></div><div class="scan-particle"></div>
-        </div>
-        <div class="scan-label" id="scan-label">Analyzing...</div>
-        <div class="scan-progress" id="scan-progress">Photo 1 of 1</div>
-      </div>
-      <div id="analysis-results" style="display:none">
-        <div class="hero-banner">
-          <div class="hero-banner-icon">🤖</div>
-          <div class="hero-banner-text">
-            <div class="hero-banner-title">AI Analysis Complete</div>
-            <div class="hero-banner-sub">Preliminary diagnosis · Final inspection always confirms scope &amp; pricing</div>
-          </div>
-        </div>
-        <div class="analysis-stack" id="analysis-cards"></div>
-        <div class="disclaimer-note">⚠️ <strong>This is a preliminary AI analysis</strong> — not a final diagnosis. Our contractor will confirm scope, pricing, and any safety considerations during the on-site visit before any work begins.</div>
-      </div>
-      <div id="analysis-no-photos" style="display:none">
-        <div class="no-photos-state">
-          <div class="no-photos-icon">📸</div>
-          <div class="no-photos-text"><strong>No photos to analyze.</strong><br>That's totally fine — we'll get the details during your on-site visit.</div>
-        </div>
-      </div>
-      <div class="step-nav">
-        <button class="btn-back" onclick="goToStep(5)">← Back</button>
-        <button class="btn-continue" id="continue-6" onclick="goToStep(3)">Continue →</button>
-      </div>
-    </div>
+    <!-- STEP 6 (AI Photo Analysis) removed: nothing called goToStep(6) since it
+         was retired from the flow, and the function it fetched did not exist. -->
 
     <!-- STEP 7: Timeline -->
     <div class="step" data-step="7">
@@ -488,7 +454,7 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 <script src="js/camera-zoom.js"></script>
 <script src="js/guided-camera.js"></script>
 <script>
-const formData={service:null,serviceLabel:null,serviceAnswers:{},customerSupplies:[],customerSuppliesOther:'',propertyType:null,description:'',photos:[],photoAnalysis:[],timeline:null,name:'',phone:'',email:'',address:''};
+const formData={service:null,serviceLabel:null,serviceAnswers:{},customerSupplies:[],customerSuppliesOther:'',propertyType:null,description:'',photos:[],timeline:null,name:'',phone:'',email:'',address:''};
 // Capture the "In your own words" textarea (Step 4) into formData so it reaches the
 // review screen, the submit payload, and the dashboard. Without this it stays empty.
 function saveDesc(){var e=document.getElementById('description-field');if(e)formData.description=e.value.trim();}
@@ -582,8 +548,7 @@ async function planIntakeQuestions(){
          what to ask, so it never spends a question on something the photo shows.
          Files that are not images (PDFs, plans) are left out — the endpoint drops
          them anyway, and sending them only makes the customer wait longer. */
-      photos:(formData.photos||[]).filter(function(p){return p&&p.kind!=='file'&&/^data:image\//.test(String(p.data||''))}).slice(0,3).map(function(p){return {data:p.data}}),
-      photoNotes:(formData.photoAnalysis||[]).map(function(a){return a&&a.detected?String(a.detected):''}).filter(Boolean)
+      photos:(formData.photos||[]).filter(function(p){return p&&p.kind!=='file'&&/^data:image\//.test(String(p.data||''))}).slice(0,3).map(function(p){return {data:p.data}})
     })});
     const data=await res.json();
     intakeReadAs=String((data&&data.readAs)||'');
@@ -857,7 +822,6 @@ function renderReview(){
       ${allSupplies().length?`<div class="review-row"><span class="review-label">You supply</span><span class="review-value">${esc(allSupplies().join(' · '))}</span></div>`:''}
       ${formData.description?`<div class="review-row"><span class="review-label">Notes</span><span class="review-value">${esc(formData.description)}</span></div>`:''}
       ${formData.photos.length?`<div class="review-row"><span class="review-label">Photos</span><span class="review-value">${formData.photos.length} attached</span></div>`:''}
-      ${formData.photoAnalysis.length?`<div class="review-row"><span class="review-label">AI Analysis</span><span class="review-value">${formData.photoAnalysis.map(a=>esc(a.detected||'—')).join(' · ')}</span></div>`:''}
       ${formData.timeline?`<div class="review-row"><span class="review-label">Timeline</span><span class="review-value">${esc(formData.timeline)}</span></div>`:''}
     </div>
     <div class="review-block">
@@ -975,13 +939,8 @@ async function submitForm(){
     photos=await uploadPhotosForSubmit(ref);
   }catch(e){console.error('photo upload step failed',e);photos=[];}
 
-  // 2) Strip heavy base64 thumbnails out of the AI analysis (server doesn't need them)
-  const analysisLite=(formData.photoAnalysis||[]).map(function(a){
-    const c=Object.assign({},a);delete c._photoThumb;return c;
-  });
-
   btn.textContent='Sending...';
-  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,customerSupplies:allSupplies(),answerTopics:answerTopics,answerLabels:answerLabels,intakeReadAs:intakeReadAs,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,photoAnalysis:analysisLite,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
+  const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,customerSupplies:allSupplies(),answerTopics:answerTopics,answerLabels:answerLabels,intakeReadAs:intakeReadAs,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
   try{
     const res=await fetch('/.netlify/functions/estimate-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!res.ok){let m='Server error '+res.status;if(res.status===413)m='Photos too large.';btn.disabled=false;btn.textContent='Try Again';alert('Something went wrong: '+m+'\n\nRef: '+ref+'. Call (332) 277-0990.');return;}
@@ -995,42 +954,8 @@ function showSuccess(ref){
   document.getElementById('ref-date').textContent=next.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
   goToStep('success');
 }
-const MAX_PHOTOS_TO_ANALYZE=4;
-// AI photo analysis retired from the flow (Zura, Jul 27) - upload only.
-function proceedFromPhotos(){saveDesc();goToStep(9);}
-async function startPhotoAnalysis(){
-  formData.photoAnalysis=[];
-  document.getElementById('analysis-scanning').style.display='block';
-  document.getElementById('analysis-results').style.display='none';
-  document.getElementById('analysis-no-photos').style.display='none';
-  document.getElementById('continue-6').disabled=true;
-  document.getElementById('continue-6').textContent='Analyzing...';
-  const photos=formData.photos.slice(0,MAX_PHOTOS_TO_ANALYZE);const total=photos.length;
-  document.getElementById('analysis-cards').innerHTML='';
-  if(total>1)document.getElementById('analysis-title').textContent='Analyzing your '+total+' photos...';
-  for(let i=0;i<total;i++){
-    const p=photos[i];
-    document.getElementById('scan-photo-img').src=p.data;
-    document.getElementById('scan-label').textContent='Analyzing photo '+(i+1);
-    document.getElementById('scan-progress').textContent='Photo '+(i+1)+' of '+total;
-    try{
-      const res=await fetch('/.netlify/functions/estimate-analyze-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoBase64:p.data,service:formData.service,serviceLabel:formData.serviceLabel,photoIndex:i+1,photoCount:total})});
-      if(!res.ok)throw new Error(''+res.status);
-      const r=await res.json();r._photoThumb=p.data;formData.photoAnalysis.push(r);
-    }catch(err){formData.photoAnalysis.push({detected:'Analysis unavailable',category:'other',confidence:'low',description:'Our team will review this photo personally.',recommendedAction:'Manual review by contractor',safetyFlag:false,needsInspection:true,suggestedQuestions:[],disclaimerNote:'AI was unavailable.',_photoThumb:p.data,fallback:true});}
-  }
-  document.getElementById('analysis-scanning').style.display='none';
-  document.getElementById('analysis-results').style.display='block';
-  document.getElementById('analysis-cards').innerHTML=formData.photoAnalysis.map(renderAnalysisCard).join('');
-  document.getElementById('analysis-title').textContent="Here's what we found";
-  document.getElementById('analysis-subtitle').textContent='AI-detected issues from your photos.';
-  document.getElementById('continue-6').disabled=false;document.getElementById('continue-6').textContent='Continue →';
-}
-function renderAnalysisCard(a,idx){
-  const cl=(a.confidence||'low').toUpperCase();const sc=a.safetyFlag?' safety':'';
-  const sb=a.safetyFlag?'<div class="safety-banner"><div class="safety-banner-icon">⚠️</div><div class="safety-banner-text"><strong>Safety note:</strong> This requires in-person inspection by a professional before any work can be quoted or performed.</div></div>':'';
-  return '<div class="analysis-card'+sc+'"><div class="analysis-card-header">'+(a._photoThumb?'<div class="analysis-photo-thumb"><img src="'+esc(a._photoThumb)+'" alt=""></div>':'')+'<div class="analysis-card-title"><div class="analysis-eyebrow">Photo '+(idx+1)+' · Detected</div><div class="analysis-detected">'+esc(a.detected||'—')+'</div><span class="confidence-pill '+(a.confidence||'low')+'"><span class="confidence-dot"></span>'+cl+' Confidence</span></div></div>'+(a.description?'<div class="analysis-row"><span class="analysis-row-label">What we see</span><span class="analysis-row-value">'+esc(a.description)+'</span></div>':'')+(a.recommendedAction?'<div class="analysis-row"><span class="analysis-row-label">Recommended</span><span class="analysis-row-value action">'+esc(a.recommendedAction)+'</span></div>':'')+(a.estimatedComplexity?'<div class="analysis-row"><span class="analysis-row-label">Complexity</span><span class="analysis-row-value">'+esc(a.estimatedComplexity.charAt(0).toUpperCase()+a.estimatedComplexity.slice(1))+'</span></div>':'')+sb+'</div>';
-}
+/* The AI photo analysis step and its two functions are removed. Retired from
+   the flow on Jul 27 and unreachable since; deleted now. */
 renderServices();
 
 /* ===== SBC FUNNEL TRACKING (GA4) — source page + step-by-step + abandon + complete ===== */

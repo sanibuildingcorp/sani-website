@@ -151,9 +151,12 @@ ok('a missing photo-slots.js leaves the contact form working rather than taking 
    size. The same picture unlabelled is just another image. */
 console.log('\nthe estimator is told what it is looking at\n');
 const GEN = fs.readFileSync(path.join(__dirname, '..', 'netlify', 'functions', 'generate-estimate-background.js'), 'utf8');
-ok('the shots reach the estimator input', /photoShots: body\.usePhotoAnalysis === false \? \[\] : photoShots\(request\)/.test(GEN));
-ok('...and are switched off by the same toggle that switches photos off',
-  /photoShots: body\.usePhotoAnalysis === false/.test(GEN));
+ok('the shots reach the estimator input', /photoShots: photoShots\(request\),/.test(GEN));
+/* They used to be switched off together with the retired "AI photo analysis"
+   toggle - which was off by default, so by default the estimator was never told
+   which shots it had. The toggle is gone; the shot list always travels now. */
+ok('...and are always sent — no toggle switches them off any more',
+  !/usePhotoAnalysis/.test(GEN));
 ok('THE PIN IS NOT DISTURBED — framing is not a change of job, and a new key there would stale every record',
   !/photoShots/.test(fs.readFileSync(path.join(__dirname, '..', 'netlify', 'functions', 'lib', 'scope-pin.js'), 'utf8')));
 {

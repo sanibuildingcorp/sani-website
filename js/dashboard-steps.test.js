@@ -134,17 +134,16 @@ console.log('\nthe conversation sits with the assistant, not at the bottom\n');
     'assistant at ' + ask + ', conversation at ' + conv);
   {
     const readiness = at('readinessHtml');
-    const analysis = at('analysisHtml');
     const step3 = at('stepBar(3,');
     ok('"HOW SURE IS THIS ESTIMATE?" IS UNDER THE GENERATOR, not in the request card',
-      readiness > gen && analysis > gen,
-      'generator at ' + gen + ', readiness at ' + readiness + ', photo analysis at ' + analysis);
+      readiness > gen, 'generator at ' + gen + ', readiness at ' + readiness);
     ok('...and before step 3, so the verdict comes with the price it judges',
-      readiness < step3 && analysis < step3, 'readiness at ' + readiness + ', step 3 at ' + step3);
+      readiness < step3, 'readiness at ' + readiness + ', step 3 at ' + step3);
     ok('...rendered only when there is one - no empty box on a fresh request',
-      /\(\(analysisHtml \|\| readinessHtml\) \?/.test(view));
-    ok('neither is rendered a second time anywhere in the view',
-      (view.match(/readinessHtml/g) || []).length === 2 && (view.match(/analysisHtml/g) || []).length === 2,
+      /\(readinessHtml \?/.test(view));
+    /* The AI photo-analysis card used to share this box. It is retired. */
+    ok('it is not rendered a second time anywhere in the view, and the photo-analysis card is gone',
+      (view.match(/readinessHtml/g) || []).length === 2 && (view.match(/analysisHtml/g) || []).length === 0,
       'readinessHtml ×' + (view.match(/readinessHtml/g) || []).length + ', analysisHtml ×' + (view.match(/analysisHtml/g) || []).length);
   }
   /* Measured at the block's OPENING TAG, not at the id inside it - inside, its
