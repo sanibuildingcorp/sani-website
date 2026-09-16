@@ -135,12 +135,32 @@ function buildMessageEmail(o) {
         '<div style="background:#faf8f4;border:1px solid #e8e2d9;border-radius:10px;padding:16px 18px;white-space:pre-wrap;font-size:15px;line-height:1.65">' +
           esc(String(message.text || "")) +
         "</div>" +
-        '<div style="text-align:center;margin:24px 0 4px">' +
-          '<a href="' + quoteUrl + '" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">' +
-            (audience === "contractor" ? "Open the estimate &rarr;" : "View your project &amp; reply &rarr;") +
-          "</a>" +
-        "</div>" +
-        '<p style="font-size:13px;color:#888;text-align:center;margin:6px 0 0">Everything about this job — the estimate, the photos and every message — stays at that one link.</p>' +
+        /* THE REPLY CARD. A customer reading this on a phone sees a message and,
+           at the bottom of the screen, Gmail's own Reply button. Pressing that
+           sends their answer as a fresh email to the contractor's inbox, outside
+           the conversation the estimate lives in - "the conversation will come
+           to our email as new". So the first thing under the message is now a
+           box that looks like a place to type. It is a link: tapping it opens
+           the project page with the reply box open and the cursor in it. An
+           email cannot carry a real text field (Gmail strips forms), so the
+           affordance is the point - the typing happens one tap away, in the
+           place where every message is kept. The contractor's copy keeps the
+           plain button; he replies from the dashboard. */
+        (audience === "customer"
+          ? '<div style="margin:22px 0 0">' +
+              '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin:0 0 6px">Reply to Zurabi</div>' +
+              '<a href="' + quoteUrl + '#reply" style="display:block;background:#ffffff;border:1.5px solid #cfd6de;border-radius:10px;padding:16px 18px;text-decoration:none;color:#9aa4ae;font-size:15px;line-height:1.5">' +
+                'Tap here to type your reply…' +
+              "</a>" +
+              '<div style="text-align:center;margin:14px 0 4px">' +
+                '<a href="' + quoteUrl + '#reply" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">Open my project &amp; reply &rarr;</a>' +
+              "</div>" +
+              '<p style="font-size:13px;color:#888;text-align:center;margin:6px 0 0">Replying there keeps your estimate, your photos and every message together in one place.</p>' +
+            "</div>"
+          : '<div style="text-align:center;margin:24px 0 4px">' +
+              '<a href="' + quoteUrl + '" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">Open the estimate &rarr;</a>' +
+            "</div>" +
+            '<p style="font-size:13px;color:#888;text-align:center;margin:6px 0 0">Everything about this job — the estimate, the photos and every message — stays at that one link.</p>') +
         signOff +
       "</div>" +
 
@@ -164,10 +184,11 @@ function buildMessageEmail(o) {
       : "") +
     (audience === "contractor" ? (customer.name || "Your customer") + " wrote:" : "A message about your project:") + "\n\n" +
     String(message.text || "") + "\n\n" +
-    "Everything about this job stays at this one link:\n" + quoteUrl + "\n\n" +
     (audience === "contractor"
-      ? "Reply from the dashboard, or just reply to this email.\n"
-      : "Best,\nZurabi\nSani Building Corp · Brooklyn, NY · Fully insured\n(332) 277-0990\n");
+      ? "Everything about this job stays at this one link:\n" + quoteUrl + "\n\n" +
+        "Reply from the dashboard, or just reply to this email.\n"
+      : "Reply here - it keeps your estimate, photos and every message together:\n" + quoteUrl + "#reply\n\n" +
+        "Best,\nZurabi\nSani Building Corp · Brooklyn, NY · Fully insured\n(332) 277-0990\n");
 
   return { subject: subject, html: html, text: text, quoteUrl: quoteUrl, total: total };
 }

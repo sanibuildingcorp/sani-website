@@ -729,7 +729,20 @@ function seedChosen(r){
   if(o.adoptedAt)return;
   const id=o.id||optId(o.label);
   chosen[id]={id:id,label:o.label,price:Number(o.price)||0,section:o.section||''}})}
-function render(r){seedChosen(r);let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r)}
+/* ARRIVING FROM THE EMAIL'S REPLY CARD. The message email links here with
+   #reply. Whatever state the quote is in - priced (box behind a button),
+   unpriced or approved (box already open) - open the box, bring it into view
+   and put the cursor in it, so the tap on "type your reply" lands on a place
+   to type. Nothing is sent; the customer still presses Send. */
+function replyFromHash(){
+ if(String(location.hash||'')!=='#reply')return false;
+ if(typeof P==='function')P('q');
+ const m=document.getElementById('msg');
+ if(!m)return false;
+ if(m.scrollIntoView)m.scrollIntoView({behavior:'smooth',block:'center'});
+ setTimeout(()=>{try{m.focus()}catch(e){}},350);
+ return true}
+function render(r){seedChosen(r);let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r);replyFromHash()}
 function track(){
  /* The reload that follows an approval is not the customer opening the quote —
     see S('accept'). One marker, spent once, so a genuine re-open later still
