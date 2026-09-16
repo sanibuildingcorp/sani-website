@@ -2905,8 +2905,6 @@ function logout() {
 function showApp() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").classList.add("show");
-  var fab = document.getElementById("send-link-fab");
-  if (fab) fab.style.display = "flex";
   renderTabs();
   loadEstimates();
   custWarm();
@@ -4029,11 +4027,12 @@ function renderEdit() {
         '<textarea id="f-timeline" rows="5" class="grow-box" placeholder="e.g. 5-7 business days" ' +
           'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+2+\'px\'">' + esc(est.timelineText || "") + '</textarea>' +
       '</div>' +
-      '<div class="field">' +
-        '<label>Internal Notes (NOT shown to customer)</label>' +
-        '<textarea id="f-notes" rows="5" class="grow-box" placeholder="Reminders, assumptions, things to verify" ' +
-          'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+2+\'px\'">' + esc(est.notes || "") + '</textarea>' +
-      '</div>' +
+      /* INTERNAL NOTES IS NO LONGER ON THE PAGE. "I need to remove the section
+         internal not showing customer." The AI wrote a paragraph of repair notes
+         into it on every regenerate and it sat between the timeline and step 4
+         as a wall of text he never used. The value is still carried in
+         est.notes - gatherForm keeps whatever the record has - so nothing the AI
+         wrote is lost, it is just not shown. */
     '</div>' +
 
     stepBar(4, 'Decide what the customer sees', 'Photos on their quote, the wording of each service, and which prices show.') +
@@ -4148,7 +4147,7 @@ function renderEdit() {
   /* Size the two long-text boxes to whatever is already in them, so a paragraph
      written by the AI is readable the moment the estimate opens rather than only
      after the first keystroke. Kept inline and dependency-free on purpose. */
-  ["f-timeline", "f-notes"].forEach(function (id) {
+  ["f-timeline"].forEach(function (id) {
     var box = document.getElementById(id);
     if (box) { box.style.height = "auto"; box.style.height = (box.scrollHeight + 2) + "px"; }
   });
@@ -6987,7 +6986,9 @@ function gatherForm() {
     summary: document.getElementById("f-summary").value.trim(),
     scopeOfWork: document.getElementById("f-scope").value.trim(),
     timelineText: document.getElementById("f-timeline").value.trim(),
-    notes: document.getElementById("f-notes").value.trim(),
+    /* No notes box on the page any more - carry the record's own value through
+       untouched rather than blanking it on every save. */
+    notes: String((currentRecord.estimate && currentRecord.estimate.notes) || "").trim(),
     markupPct: parseFloat(document.getElementById("f-markup").value) || 0,
     showLaborCost: currentRecord.estimate.showLaborCost !== false,
     showMaterialsCost: currentRecord.estimate.showMaterialsCost === true,
@@ -9226,6 +9227,10 @@ window.addEventListener('load', function() {
   </div>
   <div id="sbc-nav" style="flex:1;padding:8px 0"></div>
   <div style="padding:12px 16px;border-top:1px solid rgba(13,27,42,0.08)">
+    <!-- The two actions that used to float over every screen. Same modals, same
+         behaviour; they just live in the menu now instead of on top of the page. -->
+    <button id="menu-send-link" onclick="sbcCloseDrawer();var o=document.getElementById('send-link-overlay');if(o){o.style.display='flex';document.body.style.overflow='hidden';}" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📤 Send Estimate Link</button>
+    <button id="menu-new-invoice" onclick="sbcCloseDrawer();sbcOpenNewInv()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">➕ New Invoice</button>
     <a href="/estimate" target="_blank" style="display:block;padding:12px 14px;background:#eef2f7;border-radius:10px;color:#44536a;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">↗ Customer Form</a>
     <button onclick="loadEstimates()" style="display:block;width:100%;padding:12px 14px;background:#eef2f7;border-radius:10px;color:#44536a;font-size:13px;border:none;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">⟳ Refresh</button>
     <button onclick="logout()" style="display:block;width:100%;padding:12px 14px;background:#eef2f7;border-radius:10px;color:#44536a;font-size:13px;border:none;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">⎋ Logout</button>
@@ -9355,35 +9360,10 @@ if (document.readyState === 'loading') {
 
 <!-- ===== SEND ESTIMATE LINK BUTTON + MODAL ===== -->
 
-<!-- Floating Button -->
-<button id="send-link-fab" onclick="(function(){var o=document.getElementById('send-link-overlay');if(o){o.style.display='flex';document.body.style.overflow='hidden';}})()" style="
-  display:none;
-  position:fixed;
-  bottom:calc(24px + env(safe-area-inset-bottom, 0px));
-  right:20px;
-  z-index:800;
-  background:linear-gradient(135deg,#b8930a,#96770a);
-  color:#0b1828;
-  border:none;
-  border-radius:28px;
-  padding:14px 20px;
-  font-family:Inter,sans-serif;
-  font-size:13px;
-  font-weight:700;
-  letter-spacing:1px;
-  text-transform:uppercase;
-  cursor:pointer;
-  box-shadow:0 4px 20px rgba(212,181,114,0.45);
-  display:flex;
-  align-items:center;
-  gap:8px;
-  -webkit-tap-highlight-color:transparent;
-  transition:transform .15s,box-shadow .15s;
-" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(212,181,114,0.55)'"
-   onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(212,181,114,0.45)'">
-  <span style="font-size:16px">📤</span>
-  <span>Send Estimate Link</span>
-</button>
+<!-- The floating gold "Send Estimate Link" button is gone from here. It hovered
+     over the bottom-right of every screen - on top of the quote photos and the
+     send row of an open estimate - and he asked for it off the front screen.
+     The modal below is unchanged; it now opens from the ☰ menu. -->
 
 <!-- Modal Overlay -->
 <div id="send-link-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9500;align-items:center;justify-content:center;padding:20px">
@@ -10293,15 +10273,10 @@ function sbcCreateInv(){
 document.getElementById('sbc-newinv-modal').addEventListener('click',function(e){
   if(e.target.id==='sbc-newinv-modal')sbcCloseNewInv();
 });
-// Self-inject the floating "New Invoice" button (above the existing gold FAB)
-(function(){
-  var b=document.createElement('button');
-  b.id='sbc-newinv-fab';
-  b.innerHTML='➕ NEW INVOICE';
-  b.setAttribute('onclick','sbcOpenNewInv()');
-  b.style.cssText='position:fixed;bottom:96px;right:16px;z-index:9000;background:#ffffff;color:#b8930a;border:1.5px solid #c8860a;border-radius:30px;padding:13px 20px;font-size:12px;font-weight:700;letter-spacing:1.5px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.5);font-family:inherit';
-  document.body.appendChild(b);
-})();
+/* The floating "New Invoice" button that used to be injected here is gone -
+   "i don't need this buttons on front screen". It sat over the bottom of every
+   page, on top of the photos and the send row. The same action now lives in the
+   ☰ menu, next to Send Estimate Link. */
 </script>
 <!-- ════════════════ END NEW INVOICE FEATURE ════════════════ -->
 
@@ -11179,7 +11154,6 @@ try {
   try {
     var _ls = document.getElementById("login-screen"); if (_ls) _ls.style.display = "none";
     var _app = document.getElementById("app"); if (_app) _app.classList.add("show");
-    var _fab = document.getElementById("send-link-fab"); if (_fab) _fab.style.display = "flex";
     renderTabs();
     loadEstimates();
   } catch (e2) { console.error("fallback render failed:", e2); }
