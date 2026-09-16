@@ -90,6 +90,7 @@ const customerTotals = require("./lib/customer-total");
 const { resolveSelection, selectionSnapshot, finishUpgradeTotal } = require("./lib/quote-options");
 const thread = require("./lib/thread");
 const buildMessageEmail = require("./lib/message-email");
+const buildApprovedEmail = require("./lib/approved-email");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -239,6 +240,31 @@ exports.handler = async function (event) {
       }
     }
 
+    /* THE CUSTOMER'S RECEIPT. "customer have to see confirmation email too for
+       letting them feel one step is done." Sent on accept only, to the address
+       on the record, separately from the contractor's copy: a failure on one
+       side must never hide the other, so each is tried and reported on its own.
+       Approval by signing the contract is confirmed by sign-contract.js and
+       never reaches this branch. */
+    let customerNotified = false;
+    if (action === "accept" && resendKey && record.customer && record.customer.email) {
+      try {
+        const receipt = buildApprovedEmail({ ref: ref, record: record });
+        await sendResend(resendKey, {
+          from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",
+          to: [record.customer.email],
+          reply_to: contractorEmail,
+          subject: receipt.subject,
+          html: receipt.html,
+          text: receipt.text,
+          headers: { "X-Entity-Ref-ID": ref },
+        });
+        customerNotified = true;
+      } catch (e) {
+        console.error("Customer approval receipt failed:", e.message);
+      }
+    }
+
     /* Saved and notified are reported separately. A saved message must never
        claim success when the other side was never told - the page tells the
        customer to call instead. */
@@ -249,6 +275,7 @@ exports.handler = async function (event) {
         success: true,
         status: record.status,
         notified: notified,
+        customerNotified: customerNotified,
         error: notified ? undefined : notifyError,
         message: newMessage,
         thread: threadOut,
@@ -337,8 +364,14 @@ async function notifyContractor(resendKey, contractorEmail, record, action, sign
 </div>
 </body></html>`;
 
+  /* WHY THE ACCEPTED EMAIL NEVER ARRIVED. This was the one sender left in the
+     whole system on onboarding@resend.dev - Resend's sandbox address, which
+     delivers only to the Resend account's own login email and refuses every
+     other recipient. Every other email here goes out from the verified domain
+     and arrives. The customer pressed Approve, the dashboard said ACCEPTED,
+     and the contractor's inbox stayed empty. */
   return sendResend(resendKey, {
-    from: "Sani Building Corp <onboarding@resend.dev>",
+    from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
     to: [contractorEmail],
     reply_to: customer.email,
     subject: `${emoji} ${isAccept ? "ACCEPTED" : (isReview ? "REVIEW NEEDED" : (isQuestion ? "QUESTION (still open)" : "DECLINED"))}: ${customer.name} — ${est.projectTitle || record.request?.service} (${record.ref})`,
