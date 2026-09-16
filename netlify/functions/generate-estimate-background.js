@@ -97,28 +97,30 @@ exports.handler = async function handler(event) {
        stale and the job is read again automatically. Re-reading an UNCHANGED
        request is a deliberate act with its own button. */
     const analysisStarted = Date.now();
-    let analysisEngine = openaiKey ? `OpenAI ${OPENAI_ANALYSIS_MODEL}` : `Anthropic ${CLAUDE_MODEL}`;
+    let analysisEngine = anthropicKey ? `Anthropic ${CLAUDE_MODEL}` : `OpenAI ${OPENAI_ANALYSIS_MODEL}`;
     const pin = resolveScopePin(record, input, body);
     let projectAnalysis;
     if (pin.reuse) {
       projectAnalysis = pin.analysis;
     } else {
       const analysisPrompt = buildProjectAnalysisPrompt(input);
-      /* THE PHOTOGRAPHS GO TO THE READER. Until now the estimator never saw a
-         customer's photos - it saw a line of text about them, and only when a
-         toggle was on. "like i showing many times screen shots for
-         explanation": when photos are attached, the understanding stage runs
-         on Claude with the images in the message, labelled by shot. With no
-         photos the path is exactly what it was. */
+      /* ONE READER, WITH OR WITHOUT PHOTOS. For a day this ran on Claude when
+         photos were attached and on gpt-5-mini when they were not - so the same
+         job was understood by a different model depending on whether the
+         customer took a picture. Reading the job is where the scope gets
+         decided, and the scope is what every later stage prices. It is now the
+         same model that prices it, every time; OpenAI is kept only as the
+         fallback for a deployment with no Anthropic key. The photographs go in
+         as labelled image blocks: "like i showing many times screen shots for
+         explanation". */
       const photoBlocks = anthropicKey ? photoBlocksForClaude(record.request) : [];
       let rawAnalysis;
-      if (photoBlocks.length) {
+      if (anthropicKey) {
         rawAnalysis = await callClaude(anthropicKey, analysisPrompt, 16000, null, photoBlocks);
-        analysisEngine = `Anthropic ${CLAUDE_MODEL} (with ${photoBlocks.length / 2} photos)`;
+        analysisEngine = `Anthropic ${CLAUDE_MODEL}` + (photoBlocks.length ? ` (with ${photoBlocks.length / 2} photos)` : "");
       } else {
-        rawAnalysis = openaiKey
-          ? await callOpenAI(openaiKey, analysisPrompt)
-          : await callClaude(anthropicKey, analysisPrompt, 16000);
+        rawAnalysis = await callOpenAI(openaiKey, analysisPrompt);
+        analysisEngine = `OpenAI ${OPENAI_ANALYSIS_MODEL}`;
       }
       projectAnalysis = normalizeProjectAnalysis(parseAiJson(rawAnalysis, "project analysis"), input);
     }

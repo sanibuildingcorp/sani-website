@@ -53,10 +53,13 @@ Return a JSON array of materials. Each item must have:
 
 Return ONLY a valid JSON array, no other text, no markdown.`;
 
+    /* gpt-5-mini replaces gpt-4o-mini. No `temperature` (the GPT-5 family
+       rejects it), `max_completion_tokens` instead of `max_tokens`, and a bigger
+       cap because it now also covers reasoning tokens - kept minimal here. */
     const raw = await openaiPost(openaiKey, JSON.stringify({
-      model: "gpt-4o-mini",
-      max_tokens: 1500,
-      temperature: 0.3,
+      model: process.env.MINI_MODEL || "gpt-5-mini",
+      max_completion_tokens: 2500,
+      reasoning_effort: "minimal",
       messages: [{ role: "user", content: prompt }]
     }));
 

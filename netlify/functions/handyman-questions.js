@@ -91,10 +91,13 @@ async function generateFromPhotos(apiKey, serviceName, photos, subcategory) {
     content.push({ type: "image_url", image_url: { url: "data:image/jpeg;base64," + clean, detail: "low" } });
   });
 
+  /* gpt-5-mini replaces gpt-4o-mini. No `temperature` (the GPT-5 family
+     rejects it), `max_completion_tokens` instead of `max_tokens`, and a bigger
+     cap because it now also covers reasoning tokens - kept minimal here. */
   const payload = {
-    model: "gpt-4o-mini",
-    max_tokens: 900,
-    temperature: 0.4,
+    model: process.env.MINI_MODEL || "gpt-5-mini",
+    max_completion_tokens: 2000,
+    reasoning_effort: "minimal",
     messages: [{ role: "user", content: content }]
   };
 

@@ -131,7 +131,7 @@ exports.handler = async function (event) {
       try {
         await supabaseRequest(supabaseUrl, supabaseKey, "POST", "/rest/v1/ai_analyses", {
           booking_ref: ref,
-          model: (aiResult.meta && aiResult.meta.model) || "gpt-4o-mini",
+          model: (aiResult.meta && aiResult.meta.model) || process.env.MINI_MODEL || "gpt-5-mini",
           prompt_version: "v1.0",
           raw_response: aiResult.rawResponse,
           prompt_tokens: (aiResult.meta && aiResult.meta.promptTokens) || null,
