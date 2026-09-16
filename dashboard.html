@@ -1302,6 +1302,27 @@ body {
    separation from the one above it. */
 .sc-pane.sc-group{border-top:1px solid var(--line)}
 .sc-row{display:flex;gap:6px;align-items:center;margin-bottom:5px}
+/* ── Ask AI, inside the customer request card ─────────────────────────── */
+.ask-panel{margin-top:14px;border:1px solid var(--line);border-radius:11px;background:#fbfcfd;overflow:hidden}
+.ask-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:11px 13px 0}
+.ask-title{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
+.ask-sub{font-size:11.5px;color:var(--ink-muted)}
+.ask-quick{display:flex;flex-wrap:wrap;gap:6px;padding:9px 13px 11px}
+.ask-chip{font-size:11.5px;border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 11px;cursor:pointer;color:var(--ink);line-height:1.2}
+.ask-chip:hover{border-color:var(--gold);color:var(--gold)}
+.ask-log{max-height:340px;overflow-y:auto;padding:0 13px;display:flex;flex-direction:column;gap:9px}
+.ask-empty{font-size:12px;color:var(--ink-muted);padding:2px 0 6px}
+.ask-msg{max-width:100%}
+.ask-me .ask-body{background:var(--gold-soft,rgba(212,181,114,.16));border:1px solid var(--line)}
+.ask-ai .ask-body{background:#fff;border:1px solid var(--line)}
+.ask-body{border-radius:9px;padding:9px 11px;font-size:13px;line-height:1.62;white-space:pre-wrap;word-break:break-word}
+.ask-copy{margin-top:5px;font-size:11px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 9px;cursor:pointer;color:var(--ink-muted)}
+.ask-copy:hover{border-color:var(--gold);color:var(--gold)}
+.ask-send{display:flex;gap:7px;align-items:flex-end;padding:11px 13px 0}
+.ask-send textarea{flex:1;min-width:0;font-size:13px;line-height:1.5;border:1px solid var(--line);border-radius:9px;padding:8px 10px;resize:vertical;font-family:inherit}
+.ask-send .btn-primary{flex:0 0 auto;padding:9px 16px;font-size:13px}
+.ask-note{font-size:11px;color:var(--ink-muted);padding:8px 13px 12px;line-height:1.45}
+@media(max-width:600px){.ask-send{flex-direction:column;align-items:stretch}.ask-send .btn-primary{width:100%}}
 /* Ticked = the customer sees this line. Unticked = they do not, and it stays
    here so nothing is lost by turning it off. */
 .sc-check{display:flex;align-items:center;flex:0 0 auto;cursor:pointer;padding:2px}
@@ -3393,6 +3414,122 @@ function cnvMessagesHtml(r) {
       "</div>" + esc(m.text) + "</div>";
   }).join("");
 }
+/* ══ ASK AI ════════════════════════════════════════════════════════════════
+   "sometimes the customers description is very low and need ask questions for
+    clarification and collect more information ... a personal AI assistance
+    where i can chat with him"
+
+   A contact-form lead arrives with whatever the customer felt like typing -
+   "something for test" is a real one. Pressing Generate on two words produces an
+   estimate built almost entirely of assumptions, and that only becomes obvious
+   after it is written.
+
+   The panel does two things. It drafts the questions worth asking about THIS
+   job, and it answers anything else he types. It never sends anything: the
+   questions land in the conversation box that already exists, further down the
+   same record, and he presses Send there after reading them. Every word that
+   reaches a customer still passes under his eye. */
+var ASK_LOG = {};   /* ref -> [{role, text}], kept for as long as the tab lives */
+
+function askPanelHtml(r) {
+  var ref = String((r && r.ref) || "");
+  var log = ASK_LOG[ref] || [];
+  return '<div class="ask-panel">' +
+      '<div class="ask-head">' +
+        '<span class="ask-title">\u{1F4AC} Ask AI</span>' +
+        '<span class="ask-sub">about this request, or anything else</span>' +
+      '</div>' +
+      '<div class="ask-quick">' +
+        '<button type="button" class="ask-chip" onclick="askQuick(\'What should I ask this customer before I can price this job?\')">What should I ask them?</button>' +
+        '<button type="button" class="ask-chip" onclick="askQuick(\'Is there enough information here to price this job, or do I need a site visit? Say which.\')">Enough to price?</button>' +
+        '<button type="button" class="ask-chip" onclick="askQuick(\'What could go wrong on this job that I should look for at the site visit?\')">What could go wrong?</button>' +
+      '</div>' +
+      '<div class="ask-log" id="ask-log">' + (log.length ? log.map(askBubble).join("") : '<div class="ask-empty">Nothing asked yet.</div>') + '</div>' +
+      '<div class="ask-send">' +
+        '<textarea id="ask-text" rows="2" maxlength="2000" placeholder="Ask anything…"></textarea>' +
+        '<button type="button" class="btn-primary" id="ask-btn" onclick="askSend()">Ask</button>' +
+      '</div>' +
+      '<div class="ask-note" id="ask-note">Nothing here is sent to the customer. Use “Copy to customer message” and press Send yourself.</div>' +
+    '</div>';
+}
+
+function askBubble(m, i) {
+  var mine = m.role !== "assistant";
+  return '<div class="ask-msg ' + (mine ? "ask-me" : "ask-ai") + '">' +
+      '<div class="ask-body">' + esc(m.text) + '</div>' +
+      (mine ? "" :
+        '<button type="button" class="ask-copy" onclick="askCopyToCustomer(' + i + ')">→ Copy to customer message</button>') +
+    '</div>';
+}
+
+function askRender() {
+  var el = document.getElementById("ask-log");
+  if (!el) return;
+  var log = ASK_LOG[String(currentRecord && currentRecord.ref)] || [];
+  el.innerHTML = log.length ? log.map(askBubble).join("") : '<div class="ask-empty">Nothing asked yet.</div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+function askQuick(text) {
+  var box = document.getElementById("ask-text");
+  if (box) box.value = text;
+  askSend();
+}
+
+async function askSend() {
+  if (!currentRecord) return;
+  var ref = String(currentRecord.ref || "");
+  var box = document.getElementById("ask-text");
+  var btn = document.getElementById("ask-btn");
+  var note = document.getElementById("ask-note");
+  var text = box ? String(box.value || "").trim() : "";
+  if (!text) return;
+
+  if (!ASK_LOG[ref]) ASK_LOG[ref] = [];
+  ASK_LOG[ref].push({ role: "user", text: text });
+  if (box) box.value = "";
+  askRender();
+
+  if (btn) { btn.disabled = true; btn.textContent = "Thinking…"; }
+  if (note) note.textContent = "Thinking…";
+  try {
+    var key = (typeof sbcKey === "function" ? sbcKey() : "");
+    var res = await fetch("/.netlify/functions/assistant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-sbc-key": key },
+      body: JSON.stringify({ ref: ref, messages: ASK_LOG[ref] }),
+    });
+    var data = await res.json();
+    if (!res.ok || !data.reply) throw new Error(data.error || ("Assistant returned " + res.status));
+    ASK_LOG[ref].push({ role: "assistant", text: data.reply });
+  } catch (e) {
+    /* The question stays in the log so he can see what he asked and try again;
+       dropping it would make a failure look like the panel ignored him. */
+    ASK_LOG[ref].push({ role: "assistant", text: "⚠ " + e.message });
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Ask"; }
+    if (note) note.textContent = "Nothing here is sent to the customer. Use “Copy to customer message” and press Send yourself.";
+    askRender();
+  }
+}
+
+/* Puts the answer in the conversation box further down this same record and
+   scrolls to it. It does NOT send. thread-reply is a tested path with its own
+   emailing and its own Send button, and a question the contractor has not read
+   must never reach a customer because a panel was convenient. */
+function askCopyToCustomer(i) {
+  var log = ASK_LOG[String(currentRecord && currentRecord.ref)] || [];
+  var m = log[i];
+  if (!m || m.role !== "assistant") return;
+  var box = document.getElementById("cnv-text");
+  if (!box) { toast("Open the Conversation section first", true); return; }
+  box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + m.text;
+  var sec = document.getElementById("cnv-section");
+  if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "center" });
+  box.focus();
+  toast("Copied into the customer message — read it, then press Send reply");
+}
+
 function cnvPanelHtml(r) {
   const est = r.estimate || {}, req = r.request || {}, cust = r.customer || {};
   /* The price in this header is the CUSTOMER-FACING total, the same number on
@@ -3728,6 +3865,11 @@ function renderEdit() {
       (answersHtml ? '<div class="answers-list">' + answersHtml + '</div>' : "") +
       optHtml + rejHtml +
       (photosHtml ? '<div class="cust-photos">' + photosHtml + '</div>' : "") +
+      /* The assistant sits INSIDE the request card, under what the customer
+         wrote and above the Generate button - because the question it answers
+         is "is there enough here to price yet", and that has to be asked before
+         the button is pressed, not after. */
+      askPanelHtml(r) +
       analysisHtml +
       readinessHtml +
     '</div>' +
