@@ -2,7 +2,7 @@
 //  dashboard-login
 //  Verifies the dashboard password SERVER-SIDE so it never ships inside page
 //  JavaScript. Before this existed the password was a const in dashboard.html,
-//  bid-analyzer.html, keyword-volumes.html and three since-deleted tool pages —
+//  bid-analyzer.html and four since-deleted tool pages —
 //  readable by anyone who viewed source on the live site, and by anyone
 //  reading this public repo.
 //

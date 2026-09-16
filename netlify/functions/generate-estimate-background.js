@@ -97,15 +97,29 @@ exports.handler = async function handler(event) {
        stale and the job is read again automatically. Re-reading an UNCHANGED
        request is a deliberate act with its own button. */
     const analysisStarted = Date.now();
+    let analysisEngine = openaiKey ? `OpenAI ${OPENAI_ANALYSIS_MODEL}` : `Anthropic ${CLAUDE_MODEL}`;
     const pin = resolveScopePin(record, input, body);
     let projectAnalysis;
     if (pin.reuse) {
       projectAnalysis = pin.analysis;
     } else {
       const analysisPrompt = buildProjectAnalysisPrompt(input);
-      const rawAnalysis = openaiKey
-        ? await callOpenAI(openaiKey, analysisPrompt)
-        : await callClaude(anthropicKey, analysisPrompt, 16000);
+      /* THE PHOTOGRAPHS GO TO THE READER. Until now the estimator never saw a
+         customer's photos - it saw a line of text about them, and only when a
+         toggle was on. "like i showing many times screen shots for
+         explanation": when photos are attached, the understanding stage runs
+         on Claude with the images in the message, labelled by shot. With no
+         photos the path is exactly what it was. */
+      const photoBlocks = anthropicKey ? photoBlocksForClaude(record.request) : [];
+      let rawAnalysis;
+      if (photoBlocks.length) {
+        rawAnalysis = await callClaude(anthropicKey, analysisPrompt, 16000, null, photoBlocks);
+        analysisEngine = `Anthropic ${CLAUDE_MODEL} (with ${photoBlocks.length / 2} photos)`;
+      } else {
+        rawAnalysis = openaiKey
+          ? await callOpenAI(openaiKey, analysisPrompt)
+          : await callClaude(anthropicKey, analysisPrompt, 16000);
+      }
       projectAnalysis = normalizeProjectAnalysis(parseAiJson(rawAnalysis, "project analysis"), input);
     }
     timing.analysisMs = Date.now() - analysisStarted;
@@ -304,7 +318,7 @@ exports.handler = async function handler(event) {
       status: record.status,
       warning: persistenceWarning,
       aiProviders: {
-        understanding: openaiKey ? `OpenAI ${OPENAI_ANALYSIS_MODEL}` : `Anthropic ${CLAUDE_MODEL}`,
+        understanding: analysisEngine,
         estimating: anthropicKey ? `Anthropic ${CLAUDE_MODEL}` : `OpenAI ${OPENAI_ANALYSIS_MODEL}`,
         customerPresentation: "Deterministic Sani Building Corp template",
       },
@@ -540,6 +554,34 @@ function photoShots(request) {
   return out;
 }
 
+/* THE PHOTOS THEMSELVES, AS IMAGE BLOCKS FOR THE UNDERSTANDING STAGE.
+   Each image is preceded by a one-line label saying which shot it is, using
+   the same words photoShots() uses, so "Photo 2 - a close-up" and the picture
+   are read together. Skipped: non-image uploads (PDFs, plans), formats the API
+   does not take (HEIC), anything without usable data. Capped so a customer who
+   attaches twenty photos does not turn one job into a twenty-image prompt. */
+const MAX_PHOTOS_TO_READ = 8;
+function photoBlocksForClaude(request) {
+  const photos = Array.isArray(request && request.photos) ? request.photos : [];
+  const blocks = [];
+  let n = 0;
+  for (let i = 0; i < photos.length && n < MAX_PHOTOS_TO_READ; i++) {
+    const p = photos[i];
+    const data = String((p && p.data) || "").trim();
+    if (!data || (p && p.kind === "file")) continue;
+    let source = null;
+    const m = /^data:(image\/(?:jpeg|png|gif|webp));base64,([A-Za-z0-9+/=]+)$/.exec(data);
+    if (m) source = { type: "base64", media_type: m[1], data: m[2] };
+    else if (/^https?:\/\//i.test(data) && !/\.(pdf|heic|heif)(?:[?#]|$)/i.test(data)) source = { type: "url", url: data };
+    if (!source) continue;
+    n += 1;
+    const label = SHOT_LABELS[String((p && p.slot) || "")] || "a photo the customer attached, shot not stated";
+    blocks.push({ type: "text", text: "Photo " + n + " \u2014 " + label });
+    blocks.push({ type: "image", source: source });
+  }
+  return blocks;
+}
+
 /* The last MAX_CONVERSATION_MESSAGES messages, oldest-first within that window so
    the exchange still reads in order, and hard-capped on characters so one long
    message cannot swallow the prompt. Returns [] for a record with no thread,
@@ -582,7 +624,7 @@ function normalizeSelectedServices(request) {
 }
 
 function buildProjectAnalysisPrompt(input) {
-  return `You are the Senior Project Intake Manager and Renovation Scope Analyst for Sani Building Corp, an experienced, fully insured NYC-metro renovation and repair contractor.\n\nYou DO NOT generate prices in this stage. Your job is to understand what the customer is trying to accomplish, even when the customer uses imperfect homeowner language, mixes technical terms, omits details, or appears to contradict themselves.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nFULL CUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nCORE ANALYSIS RULES:\n1. Read every source together: selected services, description, answers, customer-supplied items, photos, address, contractor corrections, and request.conversation - the messages exchanged AFTER the form was submitted.\n1a. request.conversation is the single most valuable field on the record when it is not empty. It exists because the customer could not describe the job in the form and was asked a direct question, and it holds the answer in their own words: a measurement, a room they forgot, a fixture they have already bought, a correction to something they wrote earlier. A LATER MESSAGE BEATS AN EARLIER ONE, and both beat the original form, because it is the most recent thing the person actually said. If a reply gives you a quantity the form left blank, use it and stop treating it as missing. If a reply contradicts the description, follow the reply and record the change in assumptions. Messages from the contractor are authoritative over the customer's where they conflict. Never ask again, in clarification_questions, for something a reply has already answered.\n2. Contractor notes are authoritative and override customer statements only where they directly conflict.\n3. Separate confirmed scope, reasonably implied scope, assumptions, exclusions, missing information and conflicts.\n4. Translate homeowner language into contractor-level scope without changing intent.\n5. Never silently invent major work. Normal enabling work may be listed as implied, with a reason.\n6. Distinguish keeping, repairing, refinishing, replacing in the same location, relocating, supplying and installing.\n7. "Fixtures remain in current locations" normally means no relocation; it does NOT mean the fixtures remain existing when replacement is requested elsewhere.\n8. Customer-supplied finish materials eliminate only the purchase price of those finish items. They do NOT eliminate installation labor, handling, rough materials, adhesives, fasteners, waterproofing, plumbing connections, electrical connections, protection, disposal or consumables.\n9. Every selected trade must be represented. Never let one dominant trade erase another selected trade.\n10. Extract all quantities: square feet, linear feet, dimensions, fixture counts, window counts, room counts and floor level.\n11. Identify site conditions: occupied/vacant, walk-up/elevator, floor, debris route, parking/loading, work hours, building rules and protection.\n12. Ask only questions that materially change scope, labor, materials, schedule, risk or price.\n13. Do not ask low-impact cosmetic questions merely to fill a form.\n14. Use one status:\n   READY_TO_ESTIMATE — major scope, quantities, supply responsibility and site conditions are sufficiently clear.\n   PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS — a useful estimate is possible but defined assumptions are required.\n   NEEDS_CUSTOMER_QUESTIONS — critical information is missing and would materially change the estimate.\n   SITE_VISIT_REQUIRED — online information cannot responsibly establish scope/price.\n15. Never choose the smallest possible interpretation just to lower price. Use the most reasonable professional interpretation supported by the full record.\n16. If the customer requested alternatives (for example replace all windows vs replace some and repair others), preserve EACH option separately.\n17. Identify customer exclusions EXACTLY, and record each one against the trade it belongs to in confirmed_scope[].customer_exclusions - NOT in the top-level exclusions array. "Kitchen is excluded from painting" belongs to Painting. "Bathroom is excluded from flooring" belongs to Flooring. "No underlayment", "no transition strips" and "no baseboards" are THREE separate exclusions on Flooring, not one. Every sentence in which the customer says something is not wanted, not included, or is excluded becomes one entry, phrased close to his own words. Never merge several into one, and never drop one because it seems obvious from the scope. He wrote these limits down; he must be able to read every one of them back against the service it applies to.\n17b. The top-level exclusions array is ONLY for project-wide risks the customer did not raise himself: permits, concealed conditions, asbestos or mold, structural work, work outside normal hours. A generic risk exclusion must never take the place of something the customer actually asked to leave out.\n18. Keep questions homeowner-friendly and include "Not sure" where appropriate.\n\nReturn JSON only with EXACT top-level structure:\n{\n  "project_summary": "",\n  "project_type": "repair | partial renovation | full renovation | installation | replacement | restoration | mixed",\n  "selected_trades": [],\n  "confirmed_scope": [\n    { "trade": "", "scope_items": [], "quantities": {}, "customer_exclusions": [] }\n  ],\n  "inferred_scope": [\n    { "trade": "", "item": "", "reason": "", "requires_confirmation": true }\n  ],\n  "customer_supplied_finish_materials": [],\n  "contractor_supplied_finish_materials": [],\n  "contractor_supplied_rough_materials": [],\n  "site_conditions": {\n    "occupied_status": "",\n    "floor_number": "",\n    "elevator_access": "",\n    "walk_up": "",\n    "work_hours": "",\n    "debris_access": "",\n    "parking_loading": "",\n    "building_requirements": "",\n    "protection_requirements": ""\n  },\n  "quantities": {},\n  "assumptions": [],\n  "exclusions": [],\n  "conflicts": [\n    { "issue": "", "likely_interpretation": "", "needs_confirmation": true }\n  ],\n  "missing_information": [\n    { "question": "", "reason_needed": "", "priority": "critical | pricing | site_condition | optional", "affected_trade": "" }\n  ],\n  "clarification_questions": [\n    {\n      "id": "",\n      "question": "",\n      "helper_text": "",\n      "type": "single_select | multi_select | number | short_text | photo_request",\n      "options": [],\n      "affected_trade": "",\n      "pricing_importance": "critical | high | medium"\n    }\n  ],\n  "pricing_readiness": {\n    "status": "READY_TO_ESTIMATE | PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS | NEEDS_CUSTOMER_QUESTIONS | SITE_VISIT_REQUIRED",\n    "confidence_score": 0,\n    "reason": ""\n  }\n}`;
+  return `You are the Senior Project Intake Manager and Renovation Scope Analyst for Sani Building Corp, an experienced, fully insured NYC-metro renovation and repair contractor.\n\nYou DO NOT generate prices in this stage. Your job is to understand what the customer is trying to accomplish, even when the customer uses imperfect homeowner language, mixes technical terms, omits details, or appears to contradict themselves.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nFULL CUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nCORE ANALYSIS RULES:\n1. Read every source together: selected services, description, answers, customer-supplied items, photos, address, contractor corrections, and request.conversation - the messages exchanged AFTER the form was submitted.\n1a. request.conversation is the single most valuable field on the record when it is not empty. It exists because the customer could not describe the job in the form and was asked a direct question, and it holds the answer in their own words: a measurement, a room they forgot, a fixture they have already bought, a correction to something they wrote earlier. A LATER MESSAGE BEATS AN EARLIER ONE, and both beat the original form, because it is the most recent thing the person actually said. If a reply gives you a quantity the form left blank, use it and stop treating it as missing. If a reply contradicts the description, follow the reply and record the change in assumptions. Messages from the contractor are authoritative over the customer's where they conflict. Never ask again, in clarification_questions, for something a reply has already answered.\n1b. PHOTOGRAPHS. If images are attached to this message they are the customer's own photos, each labelled by which shot it is. Read them for existing condition, materials, fixtures, layout, access and damage, and use them to confirm or correct what the description says. Never measure a room from a photograph and never invent a quantity from one - a wide shot tells you what the room is, not how big it is.\n2. Contractor notes are authoritative and override customer statements only where they directly conflict.\n3. Separate confirmed scope, reasonably implied scope, assumptions, exclusions, missing information and conflicts.\n4. Translate homeowner language into contractor-level scope without changing intent.\n5. Never silently invent major work. Normal enabling work may be listed as implied, with a reason.\n6. Distinguish keeping, repairing, refinishing, replacing in the same location, relocating, supplying and installing.\n7. "Fixtures remain in current locations" normally means no relocation; it does NOT mean the fixtures remain existing when replacement is requested elsewhere.\n8. Customer-supplied finish materials eliminate only the purchase price of those finish items. They do NOT eliminate installation labor, handling, rough materials, adhesives, fasteners, waterproofing, plumbing connections, electrical connections, protection, disposal or consumables.\n9. Every selected trade must be represented. Never let one dominant trade erase another selected trade.\n10. Extract all quantities: square feet, linear feet, dimensions, fixture counts, window counts, room counts and floor level.\n11. Identify site conditions: occupied/vacant, walk-up/elevator, floor, debris route, parking/loading, work hours, building rules and protection.\n12. Ask only questions that materially change scope, labor, materials, schedule, risk or price.\n13. Do not ask low-impact cosmetic questions merely to fill a form.\n14. Use one status:\n   READY_TO_ESTIMATE — major scope, quantities, supply responsibility and site conditions are sufficiently clear.\n   PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS — a useful estimate is possible but defined assumptions are required.\n   NEEDS_CUSTOMER_QUESTIONS — critical information is missing and would materially change the estimate.\n   SITE_VISIT_REQUIRED — online information cannot responsibly establish scope/price.\n15. Never choose the smallest possible interpretation just to lower price. Use the most reasonable professional interpretation supported by the full record.\n16. If the customer requested alternatives (for example replace all windows vs replace some and repair others), preserve EACH option separately.\n17. Identify customer exclusions EXACTLY, and record each one against the trade it belongs to in confirmed_scope[].customer_exclusions - NOT in the top-level exclusions array. "Kitchen is excluded from painting" belongs to Painting. "Bathroom is excluded from flooring" belongs to Flooring. "No underlayment", "no transition strips" and "no baseboards" are THREE separate exclusions on Flooring, not one. Every sentence in which the customer says something is not wanted, not included, or is excluded becomes one entry, phrased close to his own words. Never merge several into one, and never drop one because it seems obvious from the scope. He wrote these limits down; he must be able to read every one of them back against the service it applies to.\n17b. The top-level exclusions array is ONLY for project-wide risks the customer did not raise himself: permits, concealed conditions, asbestos or mold, structural work, work outside normal hours. A generic risk exclusion must never take the place of something the customer actually asked to leave out.\n18. Keep questions homeowner-friendly and include "Not sure" where appropriate.\n\nReturn JSON only with EXACT top-level structure:\n{\n  "project_summary": "",\n  "project_type": "repair | partial renovation | full renovation | installation | replacement | restoration | mixed",\n  "selected_trades": [],\n  "confirmed_scope": [\n    { "trade": "", "scope_items": [], "quantities": {}, "customer_exclusions": [] }\n  ],\n  "inferred_scope": [\n    { "trade": "", "item": "", "reason": "", "requires_confirmation": true }\n  ],\n  "customer_supplied_finish_materials": [],\n  "contractor_supplied_finish_materials": [],\n  "contractor_supplied_rough_materials": [],\n  "site_conditions": {\n    "occupied_status": "",\n    "floor_number": "",\n    "elevator_access": "",\n    "walk_up": "",\n    "work_hours": "",\n    "debris_access": "",\n    "parking_loading": "",\n    "building_requirements": "",\n    "protection_requirements": ""\n  },\n  "quantities": {},\n  "assumptions": [],\n  "exclusions": [],\n  "conflicts": [\n    { "issue": "", "likely_interpretation": "", "needs_confirmation": true }\n  ],\n  "missing_information": [\n    { "question": "", "reason_needed": "", "priority": "critical | pricing | site_condition | optional", "affected_trade": "" }\n  ],\n  "clarification_questions": [\n    {\n      "id": "",\n      "question": "",\n      "helper_text": "",\n      "type": "single_select | multi_select | number | short_text | photo_request",\n      "options": [],\n      "affected_trade": "",\n      "pricing_importance": "critical | high | medium"\n    }\n  ],\n  "pricing_readiness": {\n    "status": "READY_TO_ESTIMATE | PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS | NEEDS_CUSTOMER_QUESTIONS | SITE_VISIT_REQUIRED",\n    "confidence_score": 0,\n    "reason": ""\n  }\n}`;
 }
 
 /* The contractor's own pricing rules, rendered as an instruction rather than left
@@ -1061,13 +1103,19 @@ function callClaudeWithSearch(apiKey, prompt, maxTokens) {
   ]);
 }
 
-function callClaude(apiKey, prompt, maxTokens, tools) {
+function callClaude(apiKey, prompt, maxTokens, tools, imageBlocks) {
+  /* With images the user turn is an array of blocks - the labelled photos
+     first, the prompt last. Without them it is the plain string it always was,
+     so every existing call produces a byte-identical request. */
+  const content = (imageBlocks && imageBlocks.length)
+    ? imageBlocks.concat([{ type: "text", text: prompt }])
+    : prompt;
   const payload = JSON.stringify({
     model: CLAUDE_MODEL,
     max_tokens: maxTokens,
     output_config: { effort: CLAUDE_EFFORT },
     ...(tools && tools.length ? { tools: tools } : {}),
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content: content }],
   });
   return new Promise((resolve, reject) => {
     const req = https.request(

@@ -54,6 +54,12 @@ const GONE = [
   'netlify/functions/generate-image-background.js', 'netlify/functions/get-render-status.js',
   'netlify/functions/image-context.js', 'netlify/functions/publish-image.js',
   'netlify/functions/publish-image-to-page.js',
+  /* Second pass, at his answer: the weekly SEO job, the SEO Brain tab's two
+     functions, the Search Console pull that only they used, and the Keyword
+     Volumes page. */
+  'netlify/functions/seo-weekly-run.js', 'netlify/functions/seo-ai-analyze.js',
+  'netlify/functions/seo-dashboard-data.js', 'netlify/functions/fetch-search-console.js',
+  'keyword-volumes.html',
 ];
 GONE.forEach(function (f) { ok(f + ' is deleted', !fs.existsSync(path.join(ROOT, f))); });
 
@@ -72,7 +78,8 @@ console.log('\nno page, script or function still reaches for one of them\n');
   const files = walk(ROOT, []);
   const NAMES = ['seo-content', 'image-studio', 'page-editor', 'seo-content-engine', 'seo-publish',
     'generate-image-background', 'get-render-status', 'image-context', 'publish-image', 'find-finishes',
-    'estimate-analyze-photo'];
+    'estimate-analyze-photo', 'seo-weekly-run', 'seo-ai-analyze', 'seo-dashboard-data', 'fetch-search-console',
+    'keyword-volumes'];
   const hits = [];
   files.forEach(function (p) {
     const src = fs.readFileSync(p, 'utf8');
@@ -92,6 +99,8 @@ console.log('\nthe dashboard no longer offers what is gone\n');
 ok('no Images tab', DASH.indexOf('"images"') === -1 && DASH.indexOf("'images'") === -1);
 ok('no Page Editor tab', DASH.indexOf('pageeditor') === -1);
 ok('no Content Studio dispatch', DASH.indexOf('renderContentStudio') === -1);
+ok('no SEO Brain or Keyword Volumes tab code either',
+  DASH.indexOf('renderSeoTab') === -1 && DASH.indexOf('renderKeywordVolumes') === -1 && DASH.indexOf('runSeoNow') === -1);
 ok('no iframe onto a deleted page', !/<iframe src="\/(seo-content|image-studio|page-editor)/.test(DASH));
 ok('the "add render to quote" path is gone', DASH.indexOf('addRenderToQuote') === -1 && DASH.indexOf('currentRenderBase64') === -1);
 ok('the "detect finishes from render" path is gone', DASH.indexOf('sbcfDetectFromRender') === -1 && DASH.indexOf('sbcfUseInRender') === -1);
@@ -155,8 +164,8 @@ console.log('\ntwo environment variables have no user left\n');
 console.log('\nrobots.txt no longer names pages that do not exist\n');
 {
   const R = read('robots.txt');
-  ok('the deleted tools are no longer listed', !/image-studio|seo-content|page-editor/.test(R));
-  ok('the dashboard and the remaining tools still are', /Disallow: \/dashboard/.test(R) && /Disallow: \/keyword-volumes/.test(R) && /Disallow: \/bid-analyzer/.test(R));
+  ok('the deleted tools are no longer listed', !/image-studio|seo-content|page-editor|keyword-volumes/.test(R));
+  ok('the dashboard and the remaining tool still are', /Disallow: \/dashboard/.test(R) && /Disallow: \/bid-analyzer/.test(R));
 }
 
 console.log('\nevery script block in dashboard.html still parses\n');

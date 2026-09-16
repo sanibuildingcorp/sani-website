@@ -5,8 +5,8 @@
    It is verified by netlify/functions/dashboard-login.js against the
    DASHBOARD_PASSWORD environment variable in Netlify.
 
-   Loaded by: dashboard.html, bid-analyzer.html, keyword-volumes.html
-   (page-editor, seo-content and image-studio were retired and deleted)
+   Loaded by: dashboard.html and bid-analyzer.html
+   (page-editor, seo-content, image-studio and keyword-volumes were retired)
 
    Everything here is a `var` or a function declaration on purpose. Both hoist,
    so a page can call these before its own `const`s are initialised without the
