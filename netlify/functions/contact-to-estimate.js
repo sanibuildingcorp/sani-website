@@ -65,10 +65,16 @@ exports.handler = async function (event) {
         description: str(b.details).slice(0, 4000),
         propertyType: str(b.propertyType),
         photoCount: photos.length,
-        // Same shape the estimate form writes, so the dashboard and the quote
-        // page read these without knowing which form they came from.
+        // THE FIELD IS CALLED data, NOT url. Everything that reads a customer
+        // photo reads p.data - the dashboard's request panel, quote.html's
+        // heroPhoto, send-quote's attachment count - and estimate.html has
+        // written it that way since July:
+        //     { name: 'photo-1', data: j.url, slot: 'wide' }
+        // "data" holds a hosted URL after upload; it is only a data: URL before
+        // one. Writing { url } instead produced a record that looked complete in
+        // the dashboard and rendered a broken image in every single place.
         photos: photos.map(function (url, i) {
-          return { url: url, slot: slots[i] || "other" };
+          return { name: "photo-" + (i + 1), data: url, slot: slots[i] || "other" };
         }),
       },
       estimate: {
