@@ -699,8 +699,12 @@ function priced(r){
  return calc(e).total>0}
 
 function actionHtml(c,approved,needsContract,hasPrice){
- /* Nothing priced: the only thing to do here is answer. */
- if(hasPrice===false)return messageBox(false);
+ /* Nothing priced: the only thing to do here is answer, so the box is OPEN.
+    messageBox(false) renders it behind `.panel{display:none}` - it is normally
+    revealed by the "Request changes / ask a question" button, and that button is
+    deliberately gone here. Passing false left the customer a page of questions
+    and no way on earth to reply to them. */
+ if(hasPrice===false)return`<div class="muted" style="padding:2px 4px 10px;font-size:13.5px">Reply below and we will price the job as soon as we have your answers.</div>${messageBox(true)}`;
  if(approved)return`<div class="approved">✓ This estimate has been approved. The approved scope and price remain on record, and this link stays live for the whole job — message us here any time.</div>${messageBox(true)}`;
  if(needsContract){
   const url='/contract.html?ref='+encodeURIComponent(ref);

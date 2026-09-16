@@ -144,7 +144,18 @@ console.log('\nnothing priced: no money on the page, and nothing to approve\n');
 
   ok('THE QUESTIONS ARE THERE, which is the entire reason they opened the link',
     html.indexOf('What do you want changed') !== -1);
-  ok('...and a box to answer in', /messageBox|id="q"|textarea/i.test(html));
+  /* PRESENT IS NOT THE SAME AS USABLE. This asked only whether a textarea
+     appeared anywhere in the markup. It did - inside `.panel{display:none}`,
+     which is revealed by the "Request changes / ask a question" button, and that
+     button is deliberately gone on an unpriced quote. The assertion passed and
+     the customer opened a page of six questions with no way to answer them.
+     It now checks the box is OPEN, and that the thing that sends it is there. */
+  ok('THE REPLY BOX IS OPEN, not rendered behind display:none',
+    /<section class="card panel open" id="q">/.test(html),
+    (html.match(/<section class="card panel[^"]*" id="q">/) || ['no panel at all'])[0]);
+  ok('...with a textarea in it', /<textarea id="msg"/.test(html));
+  ok('...and a button that actually sends', /onclick="S\('question'\)"/.test(html));
+  ok('...and a line telling them to reply', /Reply below/.test(html));
 
   ok('placeholder prose is not shown as if it were a real summary',
     html.indexOf('Estimate based on the project information provided') === -1 &&
@@ -168,6 +179,8 @@ console.log('\na priced estimate is completely unchanged\n');
     html.indexOf('Full bathroom refit') !== -1 && html.indexOf('Strip out and retile') !== -1);
   ok('the Status cell is back too', /<small>Status<\/small>/.test(html));
   ok('the Total cell is back', /<small>Total<\/small>/.test(html));
+  ok('...and its reply box is still the closed one behind the ask button, as before',
+    /<section class="card panel" id="q">/.test(html) && /P\('q'\)/.test(html));
 }
 
 /* ══ WHAT COUNTS AS PRICED ════════════════════════════════════════════════ */
