@@ -122,13 +122,31 @@ console.log('\nthe conversation sits with the assistant, not at the bottom\n');
     [ask, conv, gen, project, actions].every(v => v > 0),
     'ask=' + ask + ' conv=' + conv + ' gen=' + gen + ' project=' + project + ' actions=' + actions);
 
-  /* "Still need to move up conversation." It had already come up from the bottom
-     of the page to just under the request card, and that was still not it. What
-     the customer answered IS the request - it reads with the description, not
-     after the card that holds the description. So: above the assistant now, and
-     inside the card rather than below its closing tag. */
-  ok('THE CONVERSATION IS ABOVE THE ASSISTANT', conv < ask,
-    'conversation at ' + conv + ', assistant at ' + ask);
+  /* THE ORDER, IN HIS WORDS: "first is customer details, second need ask to
+     AI, 3th need conversation, 4th need generate estimate, 5th need how sure
+     this estimate". The conversation came up from the bottom of the page in
+     two moves; this pins where it landed - under the assistant, inside the
+     card - and the readiness verdict below the generator, not above it. */
+  ok('THE ASSISTANT IS DIRECTLY UNDER WHAT THE CUSTOMER SENT, above the conversation',
+    desc > 0 && ask > desc && ask < conv,
+    'description at ' + desc + ', assistant at ' + ask + ', conversation at ' + conv);
+  ok('THE CONVERSATION IS UNDER THE ASSISTANT', conv > ask,
+    'assistant at ' + ask + ', conversation at ' + conv);
+  {
+    const readiness = at('readinessHtml');
+    const analysis = at('analysisHtml');
+    const step3 = at('stepBar(3,');
+    ok('"HOW SURE IS THIS ESTIMATE?" IS UNDER THE GENERATOR, not in the request card',
+      readiness > gen && analysis > gen,
+      'generator at ' + gen + ', readiness at ' + readiness + ', photo analysis at ' + analysis);
+    ok('...and before step 3, so the verdict comes with the price it judges',
+      readiness < step3 && analysis < step3, 'readiness at ' + readiness + ', step 3 at ' + step3);
+    ok('...rendered only when there is one - no empty box on a fresh request',
+      /\(\(analysisHtml \|\| readinessHtml\) \?/.test(view));
+    ok('neither is rendered a second time anywhere in the view',
+      (view.match(/readinessHtml/g) || []).length === 2 && (view.match(/analysisHtml/g) || []).length === 2,
+      'readinessHtml ×' + (view.match(/readinessHtml/g) || []).length + ', analysisHtml ×' + (view.match(/analysisHtml/g) || []).length);
+  }
   /* Measured at the block's OPENING TAG, not at the id inside it - inside, its
      own wrapper has already added a level, so a block sitting below the closed
      card still reads as depth 1 and the check passes on the wrong layout. */
