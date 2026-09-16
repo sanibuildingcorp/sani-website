@@ -8,7 +8,9 @@ const t=(n,c,d)=>{c?pass++:fail++;console.log((c?'PASS  ':'FAIL  ')+n+(d?'\n    
 
 /* Lift the IIFE out of renderEdit and run it against a chosen `est`. */
 const start=SRC.indexOf('var readinessHtml = (function () {');
-const end=SRC.indexOf("var analysisHtml = paList.length ?");
+/* The block used to end at the photo-analysis card, which is gone; the next
+   statement after the IIFE is now showAiBar. */
+const end=SRC.indexOf("const showAiBar =");
 const BLOCK=SRC.slice(start,end);
 
 function run(est){

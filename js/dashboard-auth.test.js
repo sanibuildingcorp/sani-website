@@ -155,7 +155,9 @@ const R = (c, code) => vm.runInContext(code, c);
       .filter(f => /require-dashboard-key/.test(fs.readFileSync(path.join(FN_DIR, f), 'utf8')))
       .map(f => f.replace(/\.js$/, ''));
 
-    ok('gated endpoints were found to check at all', gated.length >= 5, gated.join(', '));
+    /* Was >= 5. seo-publish and publish-image-to-page were deleted with the SEO
+       writer and the image tools, so four remain. */
+    ok('gated endpoints were found to check at all', gated.length >= 4, gated.join(', '));
 
     /* The invariant is that the KEY TRAVELS, not that one particular helper
        carries it. One call deliberately cannot use sbcFetch — it lives inside a

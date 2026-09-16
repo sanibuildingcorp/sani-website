@@ -18,19 +18,11 @@ Allow: /
 # /estimate, /handyman-estimate, /review use a noindex meta tag (NOT blocked here),
 # so Googlebot must be able to crawl them to actually see the noindex.
 
-# ─── Block internal/admin tools (never index — keyword-volumes leaks SEO strategy) ───
+# ─── Block internal/admin tools (never index) ───
 Disallow: /dashboard
 Disallow: /dashboard.html
-Disallow: /image-studio
-Disallow: /image-studio.html
-Disallow: /seo-content
-Disallow: /seo-content.html
-Disallow: /keyword-volumes
-Disallow: /keyword-volumes.html
 Disallow: /bid-analyzer
 Disallow: /bid-analyzer.html
-Disallow: /page-editor
-Disallow: /page-editor.html
 
 # ─── Block private customer-document pages (opened via tokenized email links, no SEO value) ───
 Disallow: /invoice

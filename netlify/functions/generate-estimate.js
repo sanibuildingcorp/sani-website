@@ -254,7 +254,6 @@ function buildEstimatorInput(record, body) {
     ? request.customerSupplies.map(cleanText).filter(Boolean)
     : [];
 
-  const photoAnalysis = Array.isArray(request.photoAnalysis) ? request.photoAnalysis : [];
 
   return {
     ref: cleanText(body.ref),
@@ -273,7 +272,6 @@ function buildEstimatorInput(record, body) {
       description: body.useDescription === false ? "" : cleanText(request.description),
       groupedAnswers: body.useAnswers === false ? {} : groupedAnswers,
       customerSupplies,
-      photoAnalysis: body.usePhotoAnalysis === false ? [] : photoAnalysis,
     },
     contractor: {
       extraRequest: cleanText(body.extraRequest),

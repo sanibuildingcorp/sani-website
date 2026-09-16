@@ -172,14 +172,16 @@ const LEGACY = 'estimate-ai-question';
   {
     const f = stub({ [PLANNER]: { questions: PLANNED } });
     const c = mkCtx(f);
-    vm.runInContext("formData.propertyType='Brownstone / Townhouse';formData.photos=[{},{}];formData.photoAnalysis=[{detected:'Cracked wall tile'}];", c);
+    vm.runInContext("formData.propertyType='Brownstone / Townhouse';formData.photos=[{},{}];", c);
     await vm.runInContext('startStep2()', c);
     const b = f.calls[0].body;
     ok('the description is sent', b.description.indexOf('hallway paint is peeling') !== -1);
     ok('both services are counted', b.serviceCount === 2, String(b.serviceCount));
     ok('the property type is sent', b.propertyType === 'Brownstone / Townhouse');
     ok('the photo count is sent', b.photoCount === 2);
-    ok('what the photos showed is sent', b.photoNotes[0] === 'Cracked wall tile');
+    /* photoNotes used to carry what the retired AI photo-analysis step had read
+       into each photo. That step is deleted, so the field is not sent at all. */
+    ok('no photoNotes field is sent any more', !('photoNotes' in b), JSON.stringify(b.photoNotes));
   }
 
   /* ── going back and starting over ────────────────────────────────────── */

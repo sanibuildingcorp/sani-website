@@ -8,7 +8,7 @@ function setupGATracking(){window.gtag&&(document.querySelectorAll('a[href^="tel
     if(q.get("owner")==="0"){localStorage.removeItem("sbc_owner");}
     if(localStorage.getItem("sbc_owner")==="1")return;
     var p=location.pathname;
-    if(/dashboard|image-studio|seo-content|keyword-volumes|quote|invoice|contract|agreement/.test(p))return;
+    if(/dashboard|quote|invoice|contract|agreement/.test(p))return;
 
     /* page trail for this browser tab session */
     var trail=[];
