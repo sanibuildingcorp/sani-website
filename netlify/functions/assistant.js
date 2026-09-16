@@ -132,7 +132,8 @@ async function recordContext(ref) {
     .map(function (k) { return "  - " + k.replace(/-/g, " ") + ": " + str(answers[k]); });
 
   const thread = arr(rec.thread).slice(-8).map(function (m) {
-    return "  " + (m && m.from === "contractor" ? "Sani" : "Customer") + ": " + str(m && m.text);
+    const files = Array.isArray(m && m.attachments) ? m.attachments.map(function (f) { return str(f && f.name); }).filter(Boolean) : [];
+    return "  " + (m && m.from === "contractor" ? "Sani" : "Customer") + ": " + str(m && m.text) + (files.length ? " [attached: " + files.join(", ") + "]" : "");
   });
 
   return [

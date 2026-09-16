@@ -135,6 +135,7 @@ function buildMessageEmail(o) {
         '<div style="background:#faf8f4;border:1px solid #e8e2d9;border-radius:10px;padding:16px 18px;white-space:pre-wrap;font-size:15px;line-height:1.65">' +
           esc(String(message.text || "")) +
         "</div>" +
+        attachmentsHtml(message.attachments) +
         /* THE REPLY CARD. A customer reading this on a phone sees a message and,
            at the bottom of the screen, Gmail's own Reply button. Pressing that
            sends their answer as a fresh email to the contractor's inbox, outside
@@ -183,7 +184,8 @@ function buildMessageEmail(o) {
         String(previous.text).slice(0, 600) + "\n\n"
       : "") +
     (audience === "contractor" ? (customer.name || "Your customer") + " wrote:" : "A message about your project:") + "\n\n" +
-    String(message.text || "") + "\n\n" +
+    String(message.text || "") + "\n" +
+    attachmentsText(message.attachments) + "\n" +
     (audience === "contractor"
       ? "Everything about this job stays at this one link:\n" + quoteUrl + "\n\n" +
         "Reply from the dashboard, or just reply to this email.\n"
@@ -191,6 +193,28 @@ function buildMessageEmail(o) {
         "Best,\nZurabi\nSani Building Corp · Brooklyn, NY · Fully insured\n(332) 277-0990\n");
 
   return { subject: subject, html: html, text: text, quoteUrl: quoteUrl, total: total };
+}
+
+/* Files attached to the message: pictures as thumbnails that open full size,
+   anything else as a named link. Links only - the bytes live in storage. */
+function attachmentsHtml(list) {
+  const files = Array.isArray(list) ? list : [];
+  if (!files.length) return "";
+  return '<div style="margin:12px 0 0">' +
+    '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin:0 0 6px">Attached</div>' +
+    files.map(function (f) {
+      const url = String(f && f.url || ""), name = String(f && f.name || "file");
+      if (f && f.kind === "image") {
+        return '<a href="' + esc(url) + '" style="display:inline-block;margin:0 8px 8px 0"><img src="' + esc(url) + '" alt="' + esc(name) + '" width="120" style="width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid #e8e2d9;display:block"></a>';
+      }
+      return '<div style="margin:0 0 6px"><a href="' + esc(url) + '" style="color:#b8720a;font-size:14px">\uD83D\uDCC4 ' + esc(name) + '</a></div>';
+    }).join("") +
+  "</div>";
+}
+function attachmentsText(list) {
+  const files = Array.isArray(list) ? list : [];
+  if (!files.length) return "";
+  return "Attached:\n" + files.map(function (f) { return "- " + String(f.name || "file") + ": " + String(f.url || ""); }).join("\n") + "\n";
 }
 
 module.exports = buildMessageEmail;

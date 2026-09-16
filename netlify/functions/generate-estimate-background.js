@@ -113,7 +113,7 @@ exports.handler = async function handler(event) {
          fallback for a deployment with no Anthropic key. The photographs go in
          as labelled image blocks: "like i showing many times screen shots for
          explanation". */
-      const photoBlocks = anthropicKey ? photoBlocksForClaude(record.request) : [];
+      const photoBlocks = anthropicKey ? photoBlocksForClaude(record.request, record) : [];
       let rawAnalysis;
       if (anthropicKey) {
         rawAnalysis = await callClaude(anthropicKey, analysisPrompt, 16000, null, photoBlocks);
@@ -563,8 +563,18 @@ function photoShots(request) {
    does not take (HEIC), anything without usable data. Capped so a customer who
    attaches twenty photos does not turn one job into a twenty-image prompt. */
 const MAX_PHOTOS_TO_READ = 8;
-function photoBlocksForClaude(request) {
-  const photos = Array.isArray(request && request.photos) ? request.photos : [];
+function photoBlocksForClaude(request, record) {
+  const photos = (Array.isArray(request && request.photos) ? request.photos : []).slice();
+  /* Pictures the customer sent later, in a message ("here is the tile I
+     bought", "this is the crack") - after the form's own photos, so the wide
+     shot of the room is still read first. */
+  let msgs = [];
+  try { msgs = thread.normalizeThread(record || {}); } catch (e) { msgs = []; }
+  msgs.forEach(function (m) {
+    (Array.isArray(m && m.attachments) ? m.attachments : []).forEach(function (a) {
+      if (a && a.kind === "image" && a.url) photos.push({ name: a.name, data: a.url, kind: "image", slot: "message", from: m.from });
+    });
+  });
   const blocks = [];
   let n = 0;
   for (let i = 0; i < photos.length && n < MAX_PHOTOS_TO_READ; i++) {
@@ -577,7 +587,9 @@ function photoBlocksForClaude(request) {
     else if (/^https?:\/\//i.test(data) && !/\.(pdf|heic|heif)(?:[?#]|$)/i.test(data)) source = { type: "url", url: data };
     if (!source) continue;
     n += 1;
-    const label = SHOT_LABELS[String((p && p.slot) || "")] || "a photo the customer attached, shot not stated";
+    const label = p && p.slot === "message"
+      ? "a picture " + (p.from === "contractor" ? "the contractor" : "the customer") + " sent later in a message" + (p.name ? " (" + String(p.name).slice(0, 60) + ")" : "")
+      : (SHOT_LABELS[String((p && p.slot) || "")] || "a photo the customer attached, shot not stated");
     blocks.push({ type: "text", text: "Photo " + n + " \u2014 " + label });
     blocks.push({ type: "image", source: source });
   }
@@ -604,8 +616,12 @@ function buildConversationForEstimator(record, body) {
      chronological order - a correction is worth more than the greeting above it. */
   for (let i = recent.length - 1; i >= 0; i--) {
     const m = recent[i];
-    const said = cleanText(m && m.text);
-    if (!said) continue;
+    /* Files sent with the message are named in the text the reader gets, so
+       "see attached" is not a dead end; image attachments also go to the
+       reader as pictures - see photoBlocksForClaude. */
+    const files = Array.isArray(m && m.attachments) ? m.attachments.map(function (f) { return cleanText(f && f.name); }).filter(Boolean) : [];
+    const said = cleanText(m && m.text) + (files.length ? " [attached: " + files.join(", ") + "]" : "");
+    if (!cleanText(m && m.text)) continue;
     if (said.length > budget) break;
     budget -= said.length;
     out.unshift({

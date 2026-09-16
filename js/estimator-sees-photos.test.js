@@ -136,7 +136,7 @@ console.log('\nthe understanding stage actually uses it\n');
   ok('THE JOB IS READ BY CLAUDE WHETHER OR NOT THERE ARE PHOTOS',
     /if \(anthropicKey\) \{\s*rawAnalysis = await callClaude\(anthropicKey, analysisPrompt, 16000, null, photoBlocks\);/.test(SRC));
   ok('the photo blocks are built whenever there is an Anthropic key',
-    /const photoBlocks = anthropicKey \? photoBlocksForClaude\(record\.request\) : \[\];/.test(SRC));
+    /const photoBlocks = anthropicKey \? photoBlocksForClaude\(record\.request, record\) : \[\];/.test(SRC));
   ok('OpenAI is only the fallback for a deployment with no Anthropic key',
     /\} else \{\s*rawAnalysis = await callOpenAI\(openaiKey, analysisPrompt\);/.test(SRC) &&
     !/rawAnalysis = openaiKey\s*\?/.test(SRC));

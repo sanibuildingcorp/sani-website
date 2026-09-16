@@ -101,7 +101,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { ref, action, signature, declineReason, questionText, finishSelections, materialsSelections, finalTotal, optionSelections } = JSON.parse(event.body);
+    const { ref, action, signature, declineReason, questionText, finishSelections, materialsSelections, finalTotal, optionSelections, attachments } = JSON.parse(event.body);
     if (!ref || !action) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref or action" }) };
     }
@@ -162,7 +162,14 @@ exports.handler = async function (event) {
          of either. It is still written below because the old read path has not
          been removed yet; lib/thread.js migrates it into message zero for any
          record that predates the thread. Do not drop it until nothing reads it. */
-      const text = String(questionText || "").trim();
+      /* Files the customer attached - samples, a PDF, a drawing - already
+         uploaded by the page through upload-photo; only links arrive here, and
+         lib/thread.js allow-lists them. A message can be files alone: the text
+         then names them, so the thread, the email and the estimator all still
+         have a sentence to read. */
+      const files = thread.cleanAttachments(attachments);
+      let text = String(questionText || "").trim();
+      if (!text && files.length) text = "\uD83D\uDCCE Sent " + files.length + (files.length === 1 ? " file: " : " files: ") + files.map(function (f) { return f.name; }).join(", ");
       if (!text) {
         return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Write a message first." }) };
       }
@@ -181,7 +188,7 @@ exports.handler = async function (event) {
       record.threadRate = rate.state;
 
       previousMessage = lastThreadMessage(record);
-      const appended = thread.appendMessage(record, { from: "customer", text: text, via: "quote" });
+      const appended = thread.appendMessage(record, { from: "customer", text: text, via: "quote", attachments: files });
       if (appended.added) {
         record.thread = appended.thread;
         record.threadUpdatedAt = appended.message.at;

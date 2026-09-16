@@ -50,6 +50,30 @@ const RATE_MAX_IN_WINDOW = 12;
 
 const REF_RE = /\bSBC-\d{6}-[A-Z0-9]{4}\b/i;
 
+/* ATTACHMENTS. "From the customer side in the reply can we add photo and file
+   upload too? If they need to shows me some samples or pdf or files."
+   A message may carry links to files the customer uploaded through
+   upload-photo (Supabase storage). Only the LINK is stored - never the bytes -
+   so the record stays small. Each one is {name, url, kind}. The endpoint is
+   public, so this is an allow-list: https only, capped, names trimmed. */
+const MAX_ATTACHMENTS = 6;
+const MAX_ATTACHMENT_NAME = 120;
+const MAX_ATTACHMENT_URL = 600;
+
+function cleanAttachments(list) {
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  list.forEach(function (a) {
+    if (out.length >= MAX_ATTACHMENTS || !a || typeof a !== "object") return;
+    const url = text(a.url).slice(0, MAX_ATTACHMENT_URL);
+    if (!/^https:\/\/[^\s"'<>]+$/i.test(url)) return;
+    const name = text(a.name).slice(0, MAX_ATTACHMENT_NAME) || url.split("/").pop().split("?")[0] || "file";
+    const kind = a.kind === "image" || /\.(jpe?g|png|gif|webp)(?:[?#]|$)/i.test(url) ? "image" : "file";
+    out.push({ name: name, url: url, kind: kind });
+  });
+  return out;
+}
+
 function text(v) {
   return String(v == null ? "" : v).trim();
 }
@@ -91,6 +115,7 @@ function normalizeThread(record) {
       at: isoOr(m.at, new Date(0).toISOString()),
       via: text(m.via) || "quote",
       subject: text(m.subject).slice(0, 300) || undefined,
+      attachments: cleanAttachments(m.attachments).length ? cleanAttachments(m.attachments) : undefined,
     });
   });
 
@@ -143,6 +168,8 @@ function appendMessage(record, input) {
   };
   const subject = text(input && input.subject).slice(0, 300);
   if (subject) message.subject = subject;
+  const attachments = cleanAttachments(input && input.attachments);
+  if (attachments.length) message.attachments = attachments;
 
   thread.push(message);
   thread.sort(function (a, b) {
@@ -215,6 +242,8 @@ module.exports = {
   checkRate: checkRate,
   refFromText: refFromText,
   needsReply: needsReply,
+  cleanAttachments: cleanAttachments,
+  MAX_ATTACHMENTS: MAX_ATTACHMENTS,
   MAX_MESSAGE_CHARS: MAX_MESSAGE_CHARS,
   MAX_MESSAGES: MAX_MESSAGES,
   RATE_WINDOW_MS: RATE_WINDOW_MS,
