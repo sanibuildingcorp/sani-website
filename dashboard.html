@@ -1302,6 +1302,15 @@ body {
    separation from the one above it. */
 .sc-pane.sc-group{border-top:1px solid var(--line)}
 .sc-row{display:flex;gap:6px;align-items:center;margin-bottom:5px}
+/* ── The five step bars ───────────────────────────────────────────────────
+   Deliberately loud. On a long page the eye needs somewhere to land, and the
+   whole complaint was that everything looked the same weight. */
+.step-bar{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:26px 0 10px;padding:11px 14px;border-radius:11px;background:var(--ink,#0d1b2a);color:#fff}
+.step-bar:first-child{margin-top:4px}
+.step-n{flex:0 0 auto;width:23px;height:23px;border-radius:50%;background:var(--gold,#c8860a);color:#0d1b2a;font-size:12.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;align-self:center}
+.step-t{font-size:13.5px;font-weight:700;letter-spacing:.02em}
+.step-s{flex:1 1 100%;font-size:11.5px;color:#a9bacb;line-height:1.5}
+@media(max-width:600px){.step-bar{margin:20px 0 9px;padding:10px 12px}.step-t{font-size:13px}}
 /* ── Ask AI, inside the customer request card ─────────────────────────── */
 .ask-panel{margin-top:14px;border:1px solid var(--line);border-radius:11px;background:#fbfcfd;overflow:hidden}
 .ask-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:11px 13px 0}
@@ -3431,6 +3440,22 @@ function cnvMessagesHtml(r) {
    reaches a customer still passes under his eye. */
 var ASK_LOG = {};   /* ref -> [{role, text}], kept for as long as the tab lives */
 
+/* ══ ONE NUMBERED STEP PER THING YOU ACTUALLY DO ══════════════════════════
+   "In my dashboard i have mixed functions and i need them to be step by step"
+
+   The record page is long and everything on it looked equally important, so the
+   order had to be remembered rather than read. These five bars say what each
+   stretch of the page is FOR, in the order the work happens: read it, price it,
+   check the price, decide what the customer sees, send it. Nothing is hidden and
+   nothing is collapsed - it is the same page with its spine written on it. */
+function stepBar(n, title, sub) {
+  return '<div class="step-bar">' +
+      '<span class="step-n">' + n + '</span>' +
+      '<span class="step-t">' + esc(title) + '</span>' +
+      (sub ? '<span class="step-s">' + esc(sub) + '</span>' : '') +
+    '</div>';
+}
+
 function askPanelHtml(r) {
   var ref = String((r && r.ref) || "");
   var log = ASK_LOG[ref] || [];
@@ -3849,6 +3874,7 @@ function renderEdit() {
       '<button class="modal-close" onclick="closeEdit()">×</button>' +
     '</div>' +
     detailInvoicesHtml(r) +
+    stepBar(1, 'Read the job and ask what is missing', 'Their words, their photos, the assistant, and the thread with them.') +
     '<div class="cust-panel">' +
       '<h3 style="display:flex;align-items:center;justify-content:space-between"><span>📥 CUSTOMER REQUEST</span><button type="button" onclick="sbcEditCustomer()" style="font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold-2);padding:6px 12px;border-radius:8px;cursor:pointer">✏️ Edit</button></h3>' +
       '<div class="cust-grid">' +
@@ -3873,6 +3899,18 @@ function renderEdit() {
       analysisHtml +
       readinessHtml +
     '</div>' +
+    /* THE CONVERSATION BELONGS WITH THE ASSISTANT, NOT AT THE BOTTOM.
+       It used to sit under the money and above the actions - past the generator,
+       the labor table, the materials table, the scope cards and the totals. But
+       asking the customer something and asking the assistant what to ask are the
+       same task, thirty seconds apart, and they were at opposite ends of a very
+       long page. Reading the answer is step one of pricing the job, not the last
+       thing you do before sending. */
+    '<div class="section" id="cnv-section">' +
+      '<div class="section-title">💬 Conversation' + (threadNeedsReply(r) ? ' <span class="badge needs-reply">REPLY NEEDED</span>' : '') + '</div>' +
+      cnvPanelHtml(r) +
+    '</div>' +
+    stepBar(2, 'Let the AI price it', 'It reads the description, the photos and every message above.') +
     (showAiBar ?
       '<div class="ai-bar">' +
         '<div class="ai-bar-text">' +
@@ -3913,6 +3951,7 @@ function renderEdit() {
         '</div>' +
       '</div>' +
     '</details>' +
+    stepBar(3, 'Check the price it came back with', 'Title, scope, every labor and material line, timeline and your private notes.') +
     '<div class="form-section">' +
       '<h3>📋 PROJECT</h3>' +
       '<div class="field" style="margin-bottom:12px">' +
@@ -3989,6 +4028,7 @@ function renderEdit() {
       '</div>' +
     '</div>' +
 
+    stepBar(4, 'Decide what the customer sees', 'Photos on their quote, the wording of each service, and which prices show.') +
     '<div class="form-section">' +
       '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
       ((req.photos && req.photos.length > 0) ?
@@ -4076,13 +4116,7 @@ function renderEdit() {
       '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
       '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
     '</div>' +
-    /* The conversation, directly under the money, above the actions. Same project
-       header the customer sees at the top of their portal - ref, title, address
-       and the customer-facing total - so neither side has to ask which job. */
-    '<div class="section" id="cnv-section">' +
-      '<div class="section-title">💬 Conversation' + (threadNeedsReply(r) ? ' <span class="badge needs-reply">REPLY NEEDED</span>' : '') + '</div>' +
-      cnvPanelHtml(r) +
-    '</div>' +
+    stepBar(5, 'Send it', 'Preview first if you want. Nothing leaves here until you press send.') +
     '<div class="modal-actions">' +
       '<button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>' +
       (currentRecord && currentRecord.status === 'completed'
