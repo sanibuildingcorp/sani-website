@@ -2915,6 +2915,19 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
             address:(fd.get('address')||'').trim(),
             details:(fd.get('message')||'').trim()
           })}).catch(function(){});
+          /* AND PUT THE LEAD IN THE DASHBOARD, exactly as contact.html does.
+             This form carries no photo upload, so it sends no contactRef and the
+             function rolls its own reference. Failure is swallowed: the customer
+             has already been told their request is in. */
+          fetch('/.netlify/functions/contact-to-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+            name:(fd.get('name')||'').trim(),
+            email:(fd.get('email')||'').trim(),
+            phone:(fd.get('phone')||'').trim(),
+            service:(fd.get('service')||'').trim(),
+            area:(fd.get('borough')||'').trim(),
+            address:(fd.get('address')||'').trim(),
+            details:(fd.get('message')||'').trim()
+          })}).catch(function(){});
         }
       }catch(_){}
       form.querySelectorAll('.cf-field,.cf-submit,.cf-hp').forEach(function(el){el.style.display='none';});
