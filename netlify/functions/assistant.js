@@ -27,18 +27,45 @@
 //
 // TEN SECONDS. Netlify kills a synchronous function at 10s with no useful error.
 // A chat turn has to come back well inside that, so: Sonnet rather than Opus, a
-// hard cap on output, a trimmed context, and an explicit 8.5s abort that returns
-// a readable message instead of letting the platform kill it silently.
+// hard cap on output, a trimmed context, and a deadline measured from the moment
+// the handler starts.
+//
+// WHAT THE DEADLINE USED TO BE, AND WHY IT WAS NOT ENOUGH. The first version
+// gave the Claude call a fixed 8.5s and waited for the whole answer. On a
+// two-word "test request" the answer was short and came back in time. On a real
+// record - a five-part apartment renovation with a long description and saved
+// answers - "What should I ask them?" is a longer answer, and the clock ran out
+// while it was still being written. Netlify killed the function, sent back a
+// page that is not JSON, and Safari reported that as "The string did not match
+// the expected pattern" - its own wording for res.json() failing. Twice, on two
+// questions, in his screenshot. Nothing about the old record was unreadable; the
+// answer was simply longer than the time.
+//
+// So the answer is now STREAMED from Claude and accumulated here. When the
+// budget is nearly spent, whatever has arrived is returned as the reply, marked
+// truncated, and the panel says so. A cut-short answer he can read beats a
+// platform error he cannot.
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
 
 const MODEL = "claude-sonnet-5";
-const MAX_TOKENS = 1100;
-const ABORT_MS = 8500;
+const MAX_TOKENS = 800;
+/* Netlify's synchronous limit is 10,000ms. Everything - reading the record,
+   the round trip to Claude, building the response - has to fit under this. */
+const BUDGET_MS = 8800;
+/* The record read is normally ~200ms. If Blobs is slow, answer without it
+   rather than spend the budget waiting. */
+const RECORD_MS = 2000;
+
+/* The test harness shortens the budget so a stalled stream can be exercised in
+   milliseconds rather than nine seconds. Production never calls this. */
+let budgetMs = BUDGET_MS;
+exports._setBudgetForTests = function (ms) { budgetMs = ms; };
 
 exports.handler = async function (event) {
+  const started = Date.now();
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
   if (event.httpMethod !== "POST") return json(405, { error: "Method Not Allowed" });
 
@@ -66,19 +93,27 @@ exports.handler = async function (event) {
 
   let context = "";
   if (str(body.ref)) {
-    try { context = await recordContext(str(body.ref)); }
+    try { context = await withTimeout(recordContext(str(body.ref)), RECORD_MS); }
     catch (e) { context = ""; }   /* a chat without the record still works */
   }
 
   try {
-    const reply = await callClaude(apiKey, systemPrompt(context), turns);
-    if (!reply) return json(502, { error: "The assistant returned nothing. Try again." });
-    return json(200, { reply: reply });
+    const deadline = started + budgetMs;
+    const out = await callClaude(apiKey, systemPrompt(context), turns, deadline);
+    if (!out.text) return json(502, { error: "The assistant returned nothing. Try again." });
+    return json(200, { reply: out.text, truncated: out.truncated === true });
   } catch (err) {
     console.error("assistant error:", err && err.message);
     return json(502, { error: str(err && err.message) || "The assistant could not be reached" });
   }
 };
+
+function withTimeout(promise, ms) {
+  return new Promise(function (resolve, reject) {
+    const t = setTimeout(function () { reject(new Error("timed out")); }, ms);
+    promise.then(function (v) { clearTimeout(t); resolve(v); }, function (e) { clearTimeout(t); reject(e); });
+  });
+}
 
 /* ── WHAT THE ASSISTANT IS TOLD ABOUT THE JOB ─────────────────────────────
    Deliberately not the whole record. The internal notes, the markup and the
@@ -124,7 +159,7 @@ function systemPrompt(context) {
     "You are open inside his own dashboard, beside a customer request he is deciding how to price.",
     "",
     "HOW TO ANSWER HIM:",
-    "- Short. He is reading this on a phone between jobs. No preamble, no summary of what he just asked.",
+    "- Short. He is reading this on a phone between jobs. No preamble, no summary of what he just asked. Stay under about 150 words unless he asks for more; if there is more to say, end with one line offering it.",
     "- Plain English. He speaks English as a second language; keep sentences simple and never use jargon where a common word works.",
     "- Concrete. A number, a question to ask, a next step. Not a list of considerations.",
     "- If he asks for questions to send a customer, give them as a short numbered list, written the way a homeowner would be asked, not the way a contractor talks to another contractor. Ask only what changes the price, the scope, the schedule or the risk. Never more than six.",
@@ -142,15 +177,38 @@ function systemPrompt(context) {
   ].join("\n");
 }
 
-function callClaude(apiKey, system, turns) {
+/* Streams the answer and resolves { text, truncated }.
+   - text_delta events are appended as they arrive.
+   - At the deadline the socket is dropped and whatever has arrived is returned
+     with truncated:true. If nothing has arrived yet, that is a real timeout.
+   - A non-2xx status means the body is a JSON error, not a stream. */
+function callClaude(apiKey, system, turns, deadline) {
   const payload = JSON.stringify({
     model: MODEL,
     max_tokens: MAX_TOKENS,
+    stream: true,
     system: system,
     messages: turns.map(function (t) { return { role: t.role, content: t.text }; }),
   });
 
   return new Promise(function (resolve, reject) {
+    let text = "", done = false, timer = null, pending = "";
+    const finish = function (truncated) {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      if (!text.trim() && truncated) {
+        return reject(new Error("The assistant took too long. Ask again, or ask something shorter."));
+      }
+      resolve({ text: text.trim(), truncated: truncated === true });
+    };
+    const fail = function (err) {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      reject(err);
+    };
+
     const req = https.request(
       {
         hostname: "api.anthropic.com",
@@ -162,42 +220,68 @@ function callClaude(apiKey, system, turns) {
           "Content-Length": Buffer.byteLength(payload),
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
+          "Accept": "text/event-stream",
         },
       },
       function (res) {
+        const errorStatus = res.statusCode < 200 || res.statusCode >= 300;
         const chunks = [];
-        res.on("data", function (c) { chunks.push(c); });
+        res.on("data", function (c) {
+          if (errorStatus) { chunks.push(c); return; }
+          pending += c.toString("utf8");
+          /* SSE: frames are separated by a blank line; each has "data: {json}". */
+          let cut;
+          while ((cut = pending.indexOf("\n\n")) !== -1) {
+            const frame = pending.slice(0, cut);
+            pending = pending.slice(cut + 2);
+            const ev = parseFrame(frame);
+            if (!ev) continue;
+            if (ev.type === "content_block_delta" && ev.delta && ev.delta.type === "text_delta") {
+              /* Appended raw. A delta is often a single space or newline, and a
+                 trim here glues words together. */
+              if (typeof ev.delta.text === "string") text += ev.delta.text;
+            } else if (ev.type === "error") {
+              return fail(new Error((ev.error && ev.error.message) || "Claude returned an error"));
+            } else if (ev.type === "message_stop") {
+              finish(false);
+              req.destroy();
+              return;
+            }
+          }
+        });
         res.on("end", function () {
-          const raw = Buffer.concat(chunks).toString("utf8");
-          if (res.statusCode < 200 || res.statusCode >= 300) {
+          if (errorStatus) {
+            const raw = Buffer.concat(chunks).toString("utf8");
             let msg = "Claude returned " + res.statusCode;
             try { const j = JSON.parse(raw); if (j && j.error && j.error.message) msg = j.error.message; } catch (e) {}
-            return reject(new Error(msg));
+            return fail(new Error(msg));
           }
-          try {
-            const j = JSON.parse(raw);
-            const text = arr(j.content)
-              .filter(function (b) { return b && b.type === "text"; })
-              .map(function (b) { return b.text; })
-              .join("")
-              .trim();
-            resolve(text);
-          } catch (e) {
-            reject(new Error("Could not read the reply"));
-          }
+          finish(false);
         });
       }
     );
 
-    /* Netlify kills this at 10s without a usable error. Give up first, and say
-       something he can act on. */
-    req.setTimeout(ABORT_MS, function () {
-      req.destroy(new Error("The assistant took too long. Ask again, or ask something shorter."));
+    /* The deadline is measured from when the HANDLER started, not from here,
+       so time spent reading the record is already counted. */
+    const left = Math.max(250, deadline - Date.now());
+    timer = setTimeout(function () {
+      finish(true);
+      req.destroy();
+    }, left);
+
+    req.on("error", function (err) {
+      /* destroy() after finish() fires an error we already handled. */
+      if (!done) fail(err);
     });
-    req.on("error", reject);
     req.write(payload);
     req.end();
   });
+}
+
+function parseFrame(frame) {
+  const line = frame.split("\n").find(function (l) { return l.indexOf("data:") === 0; });
+  if (!line) return null;
+  try { return JSON.parse(line.slice(5).trim()); } catch (e) { return null; }
 }
 
 function str(v) { return String(v == null ? "" : v).trim(); }
