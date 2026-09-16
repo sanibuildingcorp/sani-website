@@ -2877,6 +2877,7 @@ const TABS = [
 
 let handymanBookings = [];
 let visits = [];
+var visitsGcal = false;   /* true when Netlify has GCAL_SYNC_URL + GCAL_SYNC_SECRET */
 let visitorsLiveCount = 0;
 let estimates = [];
 let activeTab = "all";
@@ -3155,6 +3156,7 @@ async function loadEstimates() {
     if (visitsRes && visitsRes.ok) {
       const data = await visitsRes.json();
       visits = data.visits || [];
+      visitsGcal = !!data.gcalConfigured;
     }
 
     renderTabs();
@@ -3202,11 +3204,19 @@ function renderVisitsTab(){
       +(v.address?'<div style="font-size:13.5px;margin:3px 0"><a href="'+maps+'" target="_blank" style="color:#7fa8e0;text-decoration:none">📍 '+esc(v.address)+'</a></div>':'')
       +(v.reason?'<div style="font-size:13px;color:#a7aebb;margin:3px 0">Why: '+esc(v.reason)+'</div>':'')
       +(v.notes?'<div style="font-size:12.5px;color:#8a93a3;margin:3px 0">'+esc(v.notes)+'</div>':'')
+      +gcalStateHtml(v)
       +'<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
       +(!v.done?'<button class="topbar-btn" onclick="markVisitDone(\''+v.id+'\',true)">✓ Done</button>':'<button class="topbar-btn" onclick="markVisitDone(\''+v.id+'\',false)">↩ Reopen</button>')
-      +'<a class="topbar-btn" style="text-decoration:none" target="_blank" href="'+gcalLink(v)+'">📆 Calendar</a>'
+      +(v.gcalEventId?'':'<a class="topbar-btn" style="text-decoration:none" target="_blank" href="'+gcalLink(v)+'">📆 Calendar</a>')
+      +(visitsGcal&&!v.gcalEventId?'<button class="topbar-btn" id="v-sync-'+esc(v.id)+'" onclick="syncVisit(\''+v.id+'\')">🔁 Sync to Google Calendar</button>':'')
       +'<button class="topbar-btn" onclick="deleteVisit(\''+v.id+'\')" style="color:#e07a7a">🗑 Delete</button>'
       +'</div></div></div>';
+  }
+  /* One line under the visit: in the calendar, or why not. */
+  function gcalStateHtml(v){
+    if(v.gcalEventId) return '<div style="font-size:12.5px;color:#5f9e77;margin:4px 0">📆 In Google Calendar · reminders 1 h and 1 day before</div>';
+    if(v.gcal&&v.gcal.status==="error") return '<div style="font-size:12.5px;color:#e07a7a;margin:4px 0">⚠ Google Calendar: '+esc(v.gcal.message||"failed")+'</div>';
+    return '';
   }
   var estOpts=estimates.map(function(e){
     var nm=(e.customer&&e.customer.name)||""; var ad=(e.customer&&e.customer.address)||(e.request&&e.request.address)||"";
@@ -3224,6 +3234,11 @@ function renderVisitsTab(){
     +'</div>'
     +'<button class="topbar-btn" onclick="createVisit()" style="margin-top:12px;background:#c9a84c;color:#0d1b2a;font-weight:700">+ Add visit</button>'
     +'<span id="v-msg" style="margin-left:10px;font-size:13px;color:#8a93a3"></span>'
+    +'<div id="v-gcal-state" style="margin-top:12px;font-size:12.5px;color:'+(visitsGcal?'#5f9e77':'#8a93a3')+'">'
+    +(visitsGcal
+      ?'📆 Google Calendar: connected — every visit is added automatically, with a reminder 1 hour and 1 day before. Mornings and evenings you also get the reminder email.'
+      :'📆 Google Calendar: not connected yet — use the 📆 Calendar button on each visit. To connect it, follow google-calendar/README.md in the site files (one-time, 5 minutes).')
+    +'</div>'
     +'</div></div>'
     + group("⚠ Today", open.filter(function(v){return visitDayKey(v.datetime)===tk;}), "#e0a13f")
     + group("→ Tomorrow", open.filter(function(v){return visitDayKey(v.datetime)===tm;}), "#7fa8e0")
@@ -3251,11 +3266,32 @@ async function createVisit(){
     var d=await r.json();
     if(!r.ok) throw new Error(d.error||"Failed");
     visits.push(d.visit); renderTabs(); renderVisitsTab();
+    var m2=document.getElementById("v-msg");
+    if(m2) m2.textContent=gcalSaveNote(d.gcal);
   }catch(e){ msg.textContent="✕ "+e.message; }
 }
+/* What to say next to "+ Add visit" once it is saved. */
+function gcalSaveNote(g){
+  if(!g) return "✓ Saved";
+  if(g.status==="ok") return "✓ Saved · 📆 added to Google Calendar";
+  if(g.status==="error") return "✓ Saved · ⚠ Google Calendar: "+(g.message||"failed")+" — press 🔁 Sync to retry";
+  return "✓ Saved";
+}
+async function syncVisit(id){
+  var b=document.getElementById("v-sync-"+id); if(b){ b.disabled=true; b.textContent="⏳ Syncing…"; }
+  try{
+    var r=await sbcFetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"sync",id:id})});
+    var d=await r.json();
+    if(!r.ok) throw new Error(d.error||"Failed");
+    var i=visits.findIndex(function(x){return x.id===id;}); if(i!==-1) visits[i]=d.visit;
+    renderVisitsTab();
+    var m=document.getElementById("v-msg"); if(m) m.textContent=gcalSaveNote(d.gcal);
+  }catch(e){ if(b){ b.disabled=false; b.textContent="🔁 Sync to Google Calendar"; } alert("Sync failed: "+e.message); }
+}
 async function markVisitDone(id,done){
-  await sbcFetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"update",id:id,patch:{done:done}})});
+  var r=await sbcFetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"update",id:id,patch:{done:done}})});
   var v=visits.find(function(x){return x.id===id;}); if(v) v.done=done;
+  try{ var d=await r.json(); if(d&&d.visit){ var i=visits.findIndex(function(x){return x.id===id;}); if(i!==-1) visits[i]=d.visit; } }catch(e){}
   renderTabs(); renderVisitsTab();
 }
 async function deleteVisit(id){
