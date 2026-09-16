@@ -130,6 +130,16 @@ button{padding:15px;border:0;border-radius:6px;font-weight:700;font-family:var(-
 
 /* message thread */
 .thr{display:flex;flex-direction:column;gap:10px;padding:4px 0 2px}
+.att{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.att img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--l);display:block}
+.att .file{font-size:13px;padding:6px 10px;border-radius:8px;background:#fff;border:1px solid var(--l);color:var(--n-deep);text-decoration:none}
+.attach-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 8px}
+.attach-btn{display:inline-block;padding:9px 14px;border:1.5px dashed var(--l);border-radius:8px;font-size:14px;color:var(--muted);cursor:pointer;background:#fff}
+.attach-btn input{display:none}
+.attach-prev{display:flex;flex-wrap:wrap;gap:6px}
+.attach-prev .it{position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--l);background:#f4f6f9;display:flex;align-items:center;justify-content:center;font-size:11px;text-align:center;padding:2px;color:var(--n-deep)}
+.attach-prev .it img{width:100%;height:100%;object-fit:cover}
+.attach-prev .it b{position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:#0b1828;color:#fff;font-size:12px;line-height:20px;text-align:center;cursor:pointer}
 .msg{max-width:86%;padding:11px 14px;border-radius:12px;font-size:14.5px;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
 .msg.them{align-self:flex-start;background:#f2f5f8;border:1px solid var(--l);border-bottom-left-radius:3px}
 .msg.me{align-self:flex-end;background:var(--n);color:#fff;border-bottom-right-radius:3px}
@@ -594,15 +604,57 @@ function threadInner(r){
  if(!t.length)return'<p class="muted" style="margin:2px 0 0">No messages yet. Anything you send below stays here permanently, and we are notified straight away.</p>';
  return `<div class="thr">${t.map(m=>{
   const mine=m.from!=='contractor';
-  return `<div class="msg ${mine?'me':'them'}"><div class="msgmeta">${mine?'You':'Sani Building Corp'}${fmtWhen(m.at)?' · '+E(fmtWhen(m.at)):''}</div>${E(m.text)}</div>`}).join('')}</div>`}
+  return `<div class="msg ${mine?'me':'them'}"><div class="msgmeta">${mine?'You':'Sani Building Corp'}${fmtWhen(m.at)?' · '+E(fmtWhen(m.at)):''}</div>${E(m.text)}${attHtml(m.attachments)}</div>`}).join('')}</div>`}
+/* Files sent with a message. Pictures as thumbnails, anything else as a named
+   link; both open in a new tab. Only https links ever reach here - the server
+   allow-lists them. */
+function attHtml(list){
+ const f=A(list);if(!f.length)return'';
+ return `<div class="att">${f.map(a=>a&&a.kind==='image'
+  ?`<a href="${E(a.url)}" target="_blank" rel="noopener"><img src="${E(a.url)}" alt="${E(a.name||'photo')}"></a>`
+  :`<a class="file" href="${E(a&&a.url)}" target="_blank" rel="noopener">\uD83D\uDCC4 ${E((a&&a.name)||'file')}</a>`).join('')}</div>`}
 function threadHtml(r){
  return `<section class="card" id="thread-card"><div class="ey">Messages</div><div id="thread-wrap">${threadInner(r)}</div></section>`}
 /* The approve buttons disappear once approved. THE MESSAGE BOX NEVER DOES.
    Before this, an approved estimate rendered a single "already approved" line and
    nothing else, so the link a customer had been given became a dead end the moment
    they used it - during the job, when they have the most to ask. */
+/* ATTACHMENTS ON A REPLY. "If they need to shows me some samples or pdf or
+   files." Picked files wait here until Send; pictures are shrunk on the phone
+   first (a 6 MB camera shot becomes ~300 KB), then everything goes through the
+   same upload-photo function the estimate form uses, and only the LINKS travel
+   with the message. Nothing is uploaded until the customer presses Send. */
+let msgFiles=[];
+const MSG_MAX_FILES=6,MSG_MAX_BYTES=15*1024*1024;
+function msgPick(ev){
+ const list=Array.from((ev&&ev.target&&ev.target.files)||[]);
+ list.forEach(f=>{if(msgFiles.length<MSG_MAX_FILES&&f&&f.size<=MSG_MAX_BYTES)msgFiles.push(f)});
+ try{ev.target.value=''}catch(e){}
+ msgPreview()}
+window.msgPick=msgPick;
+window.msgRemove=i=>{msgFiles.splice(i,1);msgPreview()};
+function msgPreview(){
+ const el=document.getElementById('attprev');if(!el)return;
+ el.innerHTML=msgFiles.map((f,i)=>`<div class="it">${/^image\//.test(f.type)?`<img alt="" src="${URL.createObjectURL(f)}">`:E((f.name||'file').slice(0,18))}<b onclick="msgRemove(${i})">\u00d7</b></div>`).join('')}
+function readAsDataUrl(f){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=e=>res(e.target.result);r.readAsDataURL(f)})}
+function shrinkImage(f,maxW,q){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=e=>{const img=new Image();img.onerror=rej;img.onload=()=>{let w=img.width,h=img.height;if(w>maxW){h=Math.round(h*(maxW/w));w=maxW}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',q))};img.src=e.target.result};r.readAsDataURL(f)})}
+/* Uploads what was picked and returns [{name,url,kind}]. A file that fails is
+   dropped with a console line, never allowed to sink the message. */
+async function uploadMsgFiles(){
+ const out=[];
+ for(const f of msgFiles){
+  try{
+   const isImg=/^image\//.test(f.type)||/\.(heic|heif)$/i.test(f.name||'');
+   let data;
+   try{data=isImg?await shrinkImage(f,1600,0.85):await readAsDataUrl(f)}catch(e){data=await readAsDataUrl(f)}
+   const r=await fetch('/.netlify/functions/upload-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:data,ref:ref})});
+   const j=await r.json().catch(()=>null);
+   if(r.ok&&j&&j.url)out.push({name:f.name||'file',url:j.url,kind:isImg?'image':'file'});
+  }catch(e){console.error('attachment upload failed',f&&f.name,e)}
+ }
+ return out}
 function messageBox(open){
- return `<section class="card panel${open?' open':''}" id="q"><div class="ey" style="margin-bottom:6px">Send us a message</div><textarea id="msg" rows="3" maxlength="4000" placeholder="Ask a question, or tell us what you would like changed"></textarea><button class="approve" id="sendbtn" onclick="S('question')">Send message</button><div id="st" class="sendnote"></div></section>`}
+ return `<section class="card panel${open?' open':''}" id="q"><div class="ey" style="margin-bottom:6px">Send us a message</div><textarea id="msg" rows="3" maxlength="4000" placeholder="Ask a question, or tell us what you would like changed"></textarea><div class="attach-row"><label class="attach-btn">\uD83D\uDCCE Add photos or files<input type="file" id="msgfile" accept="image/*,application/pdf,.pdf,.heic,.heif,.dwg,.dxf,.doc,.docx" multiple onchange="msgPick(event)"></label><div class="attach-prev" id="attprev"></div></div><button class="approve" id="sendbtn" onclick="S('question')">Send message</button><div id="st" class="sendnote"></div></section>`}
 /* ══ THE CONTRACT HAD NO ROUTE TO THE CUSTOMER. ═══════════════════════════════
    The dashboard has a checkbox reading "Include contract with this estimate. When
    checked, the customer must review & sign the contract to approve." Ticking it set
@@ -761,10 +813,16 @@ window.S=async a=>{
  if(a==='accept')p.signature=document.getElementById('sig').value;
  if(a==='question'){
   p.questionText=(box&&box.value||'').trim();
-  if(!p.questionText){if(st){st.className='sendnote bad';st.textContent='Write a message first.'}return}
+  if(!p.questionText&&!msgFiles.length){if(st){st.className='sendnote bad';st.textContent='Write a message first.'}return}
  }
  if(st){st.className='sendnote';st.textContent='Sending…'}
  if(btn)btn.disabled=true;
+ if(a==='question'&&msgFiles.length){
+  if(st)st.textContent='Uploading '+msgFiles.length+(msgFiles.length===1?' file…':' files…');
+  p.attachments=await uploadMsgFiles();
+  if(!p.attachments.length&&!p.questionText){if(btn)btn.disabled=false;if(st){st.className='sendnote bad';st.textContent='The upload did not go through. Please try again, or call (332) 277-0990.'}return}
+  if(st)st.textContent='Sending…'
+ }
  let rr,j;
  try{
   rr=await fetch('/.netlify/functions/quote-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
@@ -784,6 +842,7 @@ window.S=async a=>{
  if(wrap)wrap.innerHTML=threadInner(rec);
  const card=document.getElementById('thread-card');
  if(box)box.value='';
+ msgFiles=[];msgPreview();
  if(st){
   /* Saved and notified are different facts. A message that was written down but
      never delivered must not read as success. */

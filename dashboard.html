@@ -2650,6 +2650,9 @@ body {
 .cnv-send textarea{width:100%;min-height:74px;padding:10px 12px;border:1px solid #ccd3dc;border-radius:9px;font:inherit;font-size:14px;resize:vertical}
 .cnv-row{display:flex;gap:9px;align-items:center;margin-top:9px;flex-wrap:wrap}
 .cnv-note{font-size:11.5px;color:var(--ink-muted,#7a879b)}
+.cnv-att{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cnv-att img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid rgba(0,0,0,.12);display:block}
+.cnv-att .cnv-file{font-size:12.5px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.85);border:1px solid #dfe4ea;color:#152235;text-decoration:none}
 .cnv-note.bad{color:#c0392b;font-weight:700}
 .cnv-note.good{color:#1c6547;font-weight:700}
 .badge.needs-reply{background:#c0392b;color:#fff}
@@ -3412,8 +3415,20 @@ function cnvMessagesHtml(r) {
       '<div class="cnv-meta">' + (mine ? "You" : esc((r.customer && r.customer.name) || "Customer")) +
         (cnvWhen(m.at) ? " · " + esc(cnvWhen(m.at)) : "") +
         (m.via === "gmail" ? " · via email" : "") +
-      "</div>" + esc(m.text) + "</div>";
+      "</div>" + esc(m.text) + cnvAttachmentsHtml(m.attachments) + "</div>";
   }).join("");
+}
+/* Files the customer attached to a message: samples, a PDF, a drawing.
+   Pictures as thumbnails, anything else as a named link; everything opens in a
+   new tab. Links only - lib/thread.js allow-listed them on the way in. */
+function cnvAttachmentsHtml(list) {
+  const files = Array.isArray(list) ? list : [];
+  if (!files.length) return "";
+  return '<div class="cnv-att">' + files.map(function (f) {
+    const url = String((f && f.url) || ""), name = String((f && f.name) || "file");
+    if (f && f.kind === "image") return '<a href="' + esc(url) + '" target="_blank" rel="noopener"><img src="' + esc(url) + '" alt="' + esc(name) + '"></a>';
+    return '<a class="cnv-file" href="' + esc(url) + '" target="_blank" rel="noopener">\uD83D\uDCC4 ' + esc(name) + '</a>';
+  }).join("") + "</div>";
 }
 /* ══ ASK AI ════════════════════════════════════════════════════════════════
    "sometimes the customers description is very low and need ask questions for
