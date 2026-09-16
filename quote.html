@@ -158,8 +158,14 @@ button{padding:15px;border:0;border-radius:6px;font-weight:700;font-family:var(-
    on paper is otherwise just underlined text. */
 @media print{
  body{background:#fff;color:#000}
- .thr{max-height:none!important;overflow:visible!important}
- .msg{break-inside:avoid;border:1px solid #bbb;background:#fff!important;color:#000!important}
+ .thr{max-height:none!important;overflow:visible!important;display:block!important}
+ /* A bubble must not split across a page. Safari ignores break-inside on a
+    flex item, which is what a bubble is on screen - so on paper the thread is
+    a plain block and each bubble a block of its own, with the old alias too.
+    The first printed PDF had a message's header on page 5 and its text on 6. */
+ .msg{display:block;break-inside:avoid;page-break-inside:avoid;margin:0 0 10px;max-width:86%;border:1px solid #bbb;background:#fff!important;color:#000!important}
+ .msg.me{margin-left:14%}
+ .msg.them{margin-right:14%}
  .msg .msgmeta{color:#444!important}
  .panel,.actions,.printbtn,.attach-row,#sendbtn,.sendnote,.pinbar,.pin,button{display:none!important}
  .att a::after{content:" (" attr(href) ")";font-size:10px;color:#555;word-break:break-all}

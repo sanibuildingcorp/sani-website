@@ -29,8 +29,13 @@ ok('...and that footer is hidden on screen, shown on paper', /\.printnote\{displ
 
 console.log('\non paper the thread is the whole conversation\n');
 ok('THERE IS A PRINT STYLESHEET', PRINT.length > 0);
-ok('THE SCROLLING WINDOW IS OPENED UP — every message prints, not the three that fit', /\.thr\{max-height:none!important;overflow:visible!important\}/.test(PRINT));
-ok('a message is not split across pages', /\.msg\{[^}]*break-inside:avoid/.test(PRINT));
+ok('THE SCROLLING WINDOW IS OPENED UP — every message prints, not the three that fit', /\.thr\{max-height:none!important;overflow:visible!important[;}]/.test(PRINT));
+/* The first printed PDF split a bubble across pages 5 and 6 with
+   break-inside:avoid already set: Safari ignores it on a flex ITEM. So the
+   rule that matters is the thread becoming a block and each bubble a block. */
+ok('A MESSAGE IS NOT SPLIT ACROSS PAGES — the thread is a block on paper, not a flex column',
+  /\.thr\{[^}]*display:block!important/.test(PRINT) && /\.msg\{display:block;break-inside:avoid;page-break-inside:avoid/.test(PRINT));
+ok('...and the bubbles still sit left and right so who said what stays readable', /\.msg\.me\{margin-left:14%\}/.test(PRINT) && /\.msg\.them\{margin-right:14%\}/.test(PRINT));
 ok('buttons, the reply box and the attach control are dropped', /\.panel,\.actions,\.printbtn,\.attach-row,#sendbtn,\.sendnote,[^}]*button\{display:none!important\}/.test(PRINT));
 ok('attachment links print their address, since a link on paper is just underlined text', /\.att a::after\{content:" \(" attr\(href\) "\)"/.test(PRINT));
 ok('collapsed breakdowns are forced open', /details\{display:block\}/.test(PRINT));
