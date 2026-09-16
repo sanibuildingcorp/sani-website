@@ -3896,24 +3896,19 @@ function renderEdit() {
       (answersHtml ? '<div class="answers-list">' + answersHtml + '</div>' : "") +
       optHtml + rejHtml +
       (photosHtml ? '<div class="cust-photos">' + photosHtml + '</div>' : "") +
-      /* THE CONVERSATION IS PART OF THE REQUEST, NOT A FOOTNOTE TO IT.
-         It started at the very bottom of the page - past the generator, the labor
-         table, the materials table, the scope cards and the totals - then moved up
-         to just under this card. That was still wrong: what the customer answered
-         IS the request, the same as the description they typed, so it belongs
-         inside the card with it. It now reads in the order the job arrives:
-         their words, their photos, their answers - and only then the assistant. */
+      /* THE ORDER HE WORKS IN, spelled out by him:
+           1. the customer's details      2. ask the AI what is missing
+           3. the conversation with them   4. generate      5. how sure is it
+         So the assistant comes straight after what the customer sent - it is
+         the thing that reads the request and says what to ask - and the thread
+         with the customer sits under it, where the answers to those questions
+         land. Both stay INSIDE the request card: the conversation is part of the
+         request, not a footnote to it. */
+      askPanelHtml(r) +
       '<div class="section cnv-inline" id="cnv-section">' +
         '<div class="section-title cnv-inline-title">💬 Conversation' + (threadNeedsReply(r) ? ' <span class="badge needs-reply">REPLY NEEDED</span>' : '') + '</div>' +
         cnvPanelHtml(r) +
       '</div>' +
-      /* The assistant sits under everything the customer has said and above the
-         Generate button - because the question it answers is "is there enough
-         here to price yet", and that has to be asked before the button is
-         pressed, not after. */
-      askPanelHtml(r) +
-      analysisHtml +
-      readinessHtml +
     '</div>' +
     stepBar(2, 'Let the AI price it', 'It reads the description, the photos and every message above.') +
     (showAiBar ?
@@ -3956,6 +3951,14 @@ function renderEdit() {
         '</div>' +
       '</div>' +
     '</details>' +
+    /* "HOW SURE IS THIS ESTIMATE?" IS AN ANSWER, SO IT SITS UNDER THE QUESTION.
+       It used to be in the request card, above the Generate button - a verdict
+       on a price shown before the price existed. It is the generator's output:
+       the readiness status, the confidence, the timing, the photo analysis. It
+       now renders directly under the generator, and only once there is one. */
+    ((analysisHtml || readinessHtml) ?
+      '<div class="form-section" id="readiness-section">' + analysisHtml + readinessHtml + '</div>'
+      : '') +
     stepBar(3, 'Check the price it came back with', 'Title, scope, every labor and material line, timeline and your private notes.') +
     '<div class="form-section">' +
       '<h3>📋 PROJECT</h3>' +
