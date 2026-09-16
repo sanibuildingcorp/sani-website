@@ -2871,6 +2871,7 @@ const TABS = [
   { id: "completed", label: "Completed" },
   { id: "declined", label: "Declined" },
   { id: "handyman", label: "🔧 Handyman" },
+  { id: "visits", label: "📅 Visits" },
   { id: "customers", label: "👤 Customers" },
 ];
 
@@ -3124,7 +3125,9 @@ async function loadEstimates() {
     const [estimateRes, handymanRes, visitsRes] = await Promise.all([
       sbcFetch("/.netlify/functions/list-estimates").catch(function(e) { console.error("Estimates load failed:", e); return null; }),
       fetch("/.netlify/functions/handyman-get").catch(function(e) { console.error("Handyman load failed:", e); return null; }),
-      fetch("/.netlify/functions/visits").catch(function(e) { console.error("Visits load failed:", e); return null; })
+      /* sbcFetch: visits carry customer names and home addresses, so the
+         endpoint is gated like list-estimates and a bare fetch would 401. */
+      sbcFetch("/.netlify/functions/visits").catch(function(e) { console.error("Visits load failed:", e); return null; })
     ]);
 
     /* A FAILED LIST IS AN ERROR, NOT AN EMPTY LIST. This used to fall through
@@ -3244,20 +3247,20 @@ async function createVisit(){
   if(!v.customer||!v.datetime){ msg.textContent="Name and date/time required"; return; }
   msg.textContent="Saving…";
   try{
-    var r=await fetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create",visit:v})});
+    var r=await sbcFetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create",visit:v})});
     var d=await r.json();
     if(!r.ok) throw new Error(d.error||"Failed");
     visits.push(d.visit); renderTabs(); renderVisitsTab();
   }catch(e){ msg.textContent="✕ "+e.message; }
 }
 async function markVisitDone(id,done){
-  await fetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"update",id:id,patch:{done:done}})});
+  await sbcFetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"update",id:id,patch:{done:done}})});
   var v=visits.find(function(x){return x.id===id;}); if(v) v.done=done;
   renderTabs(); renderVisitsTab();
 }
 async function deleteVisit(id){
   if(!confirm("Delete this visit?")) return;
-  await fetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"delete",id:id})});
+  await sbcFetch("/.netlify/functions/visits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"delete",id:id})});
   visits=visits.filter(function(x){return x.id!==id;});
   renderTabs(); renderVisitsTab();
 }
@@ -8853,6 +8856,7 @@ var SBC_TABS = [
   {id:'declined', icon:'❌', label:'Declined'},
   null,
   {id:'handyman', icon:'🔧', label:'Handyman'},
+  {id:'visits',   icon:'📅', label:'Visits'},
   {id:'customers', icon:'👤', label:'Customers'},
 ];
 

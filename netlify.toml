@@ -1,6 +1,13 @@
 [build]
   functions = "netlify/functions"
 
+# Site-visit reminder email, twice a day. Cron is UTC:
+#   11:00 UTC = 7 am New York (summer) / 6 am (winter) -> "Today's visits"
+#   22:00 UTC = 6 pm New York (summer) / 5 pm (winter) -> "Tomorrow's visits"
+# The function reads the New York clock to decide which list to send.
+[functions."visit-reminders"]
+  schedule = "0 11,22 * * *"
+
 # Serve /dashboard through a top-level shell that writes the real dashboard HTML
 # into the same document, then loads Customer Scope Control. This keeps Safari
 # full-page screenshots working (no iframe) and avoids editing the huge dashboard.html.

@@ -71,6 +71,10 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
        each lead started carrying links to photographs of the inside of a
        customer's home. */
     ["contact-leads", "GET", null],
+    /* Site visits: a customer's name, home address and the hour he will be
+       there. Listed AND deleted from a bare request until it joined the gate. */
+    ["visits", "GET", null],
+    ["visits", "POST", { action: "delete", id: "V-ANY" }],
   ];
 
   for (const [name, method, body] of GATED) {
