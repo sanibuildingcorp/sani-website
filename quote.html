@@ -147,6 +147,28 @@ button{padding:15px;border:0;border-radius:6px;font-weight:700;font-family:var(-
 .msg.me .msgmeta{color:var(--g-light)}
 .msg.them .msgmeta{color:#6f7987}
 .sendnote{font-size:13px;color:var(--muted);margin-top:8px}
+.eyrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.printbtn{font:inherit;font-size:12.5px;font-weight:600;color:var(--n-deep);background:#fff;border:1px solid var(--l);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.printnote{display:none}
+/* PRINT: THE WHOLE RECORD, ON PAPER. "customer need to show proof from
+   conversation ... save or print out full estimate with conversation." On
+   screen the thread is a scrolling window; on paper it is every message, in
+   full, with its time. Buttons, inputs and the reply box are not part of a
+   record and are dropped; attachment links print their address, since a link
+   on paper is otherwise just underlined text. */
+@media print{
+ body{background:#fff;color:#000}
+ .thr{max-height:none!important;overflow:visible!important}
+ .msg{break-inside:avoid;border:1px solid #bbb;background:#fff!important;color:#000!important}
+ .msg .msgmeta{color:#444!important}
+ .panel,.actions,.printbtn,.attach-row,#sendbtn,.sendnote,.pinbar,.pin,button{display:none!important}
+ .att a::after{content:" (" attr(href) ")";font-size:10px;color:#555;word-break:break-all}
+ .att img{width:64px;height:64px}
+ details{display:block}details>summary{list-style:none}
+ .printnote{display:block;font-size:11px;color:#444;border-top:1px solid #bbb;padding-top:8px;margin-top:16px}
+ a{color:#000;text-decoration:none}
+ section.card,section.svc,section.hero{break-inside:avoid;box-shadow:none;border:1px solid #ccc}
+}
 .sendnote.bad{color:var(--r);font-weight:600}
 
 .footer{text-align:center;font-size:12.5px;color:#7b8794;padding:26px}
@@ -614,7 +636,21 @@ function attHtml(list){
   ?`<a href="${E(a.url)}" target="_blank" rel="noopener"><img src="${E(a.url)}" alt="${E(a.name||'photo')}"></a>`
   :`<a class="file" href="${E(a&&a.url)}" target="_blank" rel="noopener">\uD83D\uDCC4 ${E((a&&a.name)||'file')}</a>`).join('')}</div>`}
 function threadHtml(r){
- return `<section class="card" id="thread-card"><div class="ey">Messages</div><div id="thread-wrap">${threadInner(r)}</div></section>`}
+ return `<section class="card" id="thread-card"><div class="ey eyrow"><span>Messages</span><button type="button" class="printbtn" onclick="printQuote()">\uD83D\uDDA8 Print / save as PDF</button></div><div id="thread-wrap">${threadInner(r)}</div><div class="printnote">Printed record of estimate ${E(ref)} for ${E((r.customer&&r.customer.name)||'')} \u00b7 printed ${E(fmtWhen(new Date().toISOString()))} \u00b7 every message above is shown in full with its date and time \u00b7 live copy: ${E(location.origin+'/quote.html?ref='+encodeURIComponent(ref))}</div></section>`}
+/* PRINT / SAVE. The browser's print dialog also saves a PDF (on an iPhone,
+   the share sheet from the print preview). Before printing, every collapsed
+   breakdown is opened so nothing on paper is hidden behind a click; after,
+   each is put back the way it was. The scrolling thread box is expanded by the
+   print stylesheet, so the full conversation prints. */
+function printQuote(){
+ const ds=Array.from(document.querySelectorAll('details'));
+ const was=ds.map(d=>d.open);
+ ds.forEach(d=>{d.open=true});
+ const back=()=>{ds.forEach((d,i)=>{d.open=was[i]});window.removeEventListener('afterprint',back)};
+ window.addEventListener('afterprint',back);
+ try{window.print()}catch(e){back()}
+ return true}
+window.printQuote=printQuote;
 /* The approve buttons disappear once approved. THE MESSAGE BOX NEVER DOES.
    Before this, an approved estimate rendered a single "already approved" line and
    nothing else, so the link a customer had been given became a dead end the moment
