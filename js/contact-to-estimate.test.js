@@ -121,13 +121,69 @@ const MIKE = {
       rec.request.description.indexOf('washer dryer in a closet') !== -1);
     ok('ALL EIGHT PHOTOS ARRIVE', rec.request.photos.length === 8 && rec.request.photoCount === 8,
       rec.request.photos.length + ' photos');
-    ok('...in the shape the dashboard and the quote page already read',
-      rec.request.photos.every(p => typeof p.url === 'string' && typeof p.slot === 'string'),
+    /* THIS ASSERTION USED TO CHECK p.url AND CALL THAT "the shape the dashboard
+       and the quote page already read". It was wrong, and confidently so: the
+       field is p.data everywhere, and nothing here had ever asked a real reader.
+       The record looked complete in the dashboard and rendered a broken image in
+       every place a photo appears. Checked against the actual consumers below
+       rather than against what I assumed they wanted. */
+    ok('THE FIELD IS data, WHICH IS WHAT EVERY READER LOOKS FOR',
+      rec.request.photos.every(p => typeof p.data === 'string' && p.data.indexOf('http') === 0),
       JSON.stringify(rec.request.photos[0]));
     ok('...keeping which shot is which', rec.request.photos[0].slot === 'wide');
+    ok('...and a name, as the estimate form writes', rec.request.photos[0].name === 'photo-1');
     ok('the estimate half is empty and ready to be priced',
       rec.estimate.labor.length === 0 && rec.estimate.materials.length === 0 &&
       rec.estimate.scopeOfWork === '');
+  }
+
+  /* ══ THE REAL READERS, RUN AGAINST THE REAL RECORD ══════════════════════
+     Asking "does the object have the key I think it needs" is how the broken
+     photo shipped. These two take the record this function actually writes and
+     put it through the code that actually displays it. */
+  console.log('\nthe photos render where a photo is supposed to appear\n');
+  {
+    const vm = require('vm');
+    STORE.clear();
+    const r = await post(MIKE);
+    const rec = JSON.parse(STORE.get(r.body.ref));
+
+    /* 1. The dashboard's customer-request panel. */
+    const DASH = fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8');
+    const line = DASH.split('\n').find(l => l.indexOf('alt="customer photo"') !== -1);
+    ok('the dashboard still renders request photos on one findable line', !!line);
+    const dctx = { String };
+    vm.createContext(dctx);
+    vm.runInContext('function esc(s){return s==null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}', dctx);
+    dctx.p = rec.request.photos[0];
+    const img = vm.runInContext('(' + line.trim().replace(/^return\s+/, '').replace(/;$/, '') + ')', dctx);
+    ok('THE DASHBOARD IMAGE HAS A REAL src — a broken photo is what was reported',
+      /src="https?:\/\/[^"]+"/.test(img) && img.indexOf('src=""') === -1,
+      (img.match(/src="[^"]{0,70}/) || [''])[0]);
+
+    /* 2. The customer's quote page. */
+    const QUOTE = fs.readFileSync(path.join(ROOT, 'quote.html'), 'utf8');
+    const qctx = { String, Array, Object, Number };
+    qctx.window = qctx; vm.createContext(qctx);
+    vm.runInContext(QUOTE.split('\n').find(l => l.startsWith('const A=v=>Array.isArray')), qctx);
+    const s = QUOTE.search(/function heroPhoto\s*\(/);
+    let d = 0, body = '';
+    for (let j = QUOTE.indexOf('{', s); j < QUOTE.length; j++) {
+      if (QUOTE[j] === '{') d++;
+      else if (QUOTE[j] === '}') { d--; if (!d) { body = QUOTE.slice(s, j + 1); break; } }
+    }
+    vm.runInContext(body, qctx);
+    qctx.rec = rec;
+    const hero = vm.runInContext('heroPhoto(rec)', qctx);
+    ok('THE QUOTE PAGE SHOWS ALL EIGHT, not zero',
+      (hero.match(/<img[^>]*>/g) || []).length === 8, (hero.match(/<img[^>]*>/g) || []).length + ' rendered');
+    ok('...each with a real src', (hero.match(/src="https?:\/\//g) || []).length === 8);
+
+    /* 3. The quote email's attachment count. */
+    const SQ = fs.readFileSync(path.join(ROOT, 'netlify/functions/send-quote.js'), 'utf8');
+    const filt = SQ.split('\n').find(l => l.indexOf('photoCount') !== -1 && l.indexOf('p.data') !== -1);
+    ok('send-quote counts photos by the same field, and counts these', !!filt &&
+      rec.request.photos.filter(p => p && p.data).length === 8);
   }
 
   /* ══ WHAT IT MUST NOT DO ════════════════════════════════════════════════ */
