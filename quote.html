@@ -148,7 +148,7 @@ button{padding:15px;border:0;border-radius:6px;font-weight:700;font-family:var(-
 .msg.them .msgmeta{color:#6f7987}
 .sendnote{font-size:13px;color:var(--muted);margin-top:8px}
 .eyrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.printbtn{font:inherit;font-size:12.5px;font-weight:600;color:var(--n-deep);background:#fff;border:1px solid var(--l);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.printbtn{font:inherit;color:var(--n-deep);border-style:solid;white-space:nowrap}
 .printnote{display:none}
 /* PRINT: THE WHOLE RECORD, ON PAPER. "customer need to show proof from
    conversation ... save or print out full estimate with conversation." On
@@ -642,7 +642,7 @@ function attHtml(list){
   ?`<a href="${E(a.url)}" target="_blank" rel="noopener"><img src="${E(a.url)}" alt="${E(a.name||'photo')}"></a>`
   :`<a class="file" href="${E(a&&a.url)}" target="_blank" rel="noopener">\uD83D\uDCC4 ${E((a&&a.name)||'file')}</a>`).join('')}</div>`}
 function threadHtml(r){
- return `<section class="card" id="thread-card"><div class="ey eyrow"><span>Messages</span><button type="button" class="printbtn" onclick="printQuote()">\uD83D\uDDA8 Print / save as PDF</button></div><div id="thread-wrap">${threadInner(r)}</div><div class="printnote">Printed record of estimate ${E(ref)} for ${E((r.customer&&r.customer.name)||'')} \u00b7 printed ${E(fmtWhen(new Date().toISOString()))} \u00b7 every message above is shown in full with its date and time \u00b7 live copy: ${E(location.origin+'/quote.html?ref='+encodeURIComponent(ref))}</div></section>`}
+ return `<section class="card" id="thread-card"><div class="ey">Messages</div><div id="thread-wrap">${threadInner(r)}</div><div class="printnote">Printed record of estimate ${E(ref)} for ${E((r.customer&&r.customer.name)||'')} \u00b7 printed ${E(fmtWhen(new Date().toISOString()))} \u00b7 every message above is shown in full with its date and time \u00b7 live copy: ${E(location.origin+'/quote.html?ref='+encodeURIComponent(ref))}</div></section>`}
 /* PRINT / SAVE. The browser's print dialog also saves a PDF (on an iPhone,
    the share sheet from the print preview). Before printing, every collapsed
    breakdown is opened so nothing on paper is hidden behind a click; after,
@@ -696,7 +696,7 @@ async function uploadMsgFiles(){
  }
  return out}
 function messageBox(open){
- return `<section class="card panel${open?' open':''}" id="q"><div class="ey" style="margin-bottom:6px">Send us a message</div><textarea id="msg" rows="3" maxlength="4000" placeholder="Ask a question, or tell us what you would like changed"></textarea><div class="attach-row"><label class="attach-btn">\uD83D\uDCCE Add photos or files<input type="file" id="msgfile" accept="image/*,application/pdf,.pdf,.heic,.heif,.dwg,.dxf,.doc,.docx" multiple onchange="msgPick(event)"></label><div class="attach-prev" id="attprev"></div></div><button class="approve" id="sendbtn" onclick="S('question')">Send message</button><div id="st" class="sendnote"></div></section>`}
+ return `<section class="card panel${open?' open':''}" id="q"><div class="ey" style="margin-bottom:6px">Send us a message</div><textarea id="msg" rows="3" maxlength="4000" placeholder="Ask a question, or tell us what you would like changed"></textarea><div class="attach-row"><label class="attach-btn">\uD83D\uDCCE Add photos or files<input type="file" id="msgfile" accept="image/*,application/pdf,.pdf,.heic,.heif,.dwg,.dxf,.doc,.docx" multiple onchange="msgPick(event)"></label><button type="button" class="attach-btn printbtn" onclick="printQuote()">\uD83D\uDDA8 Print / save as PDF</button><div class="attach-prev" id="attprev"></div></div><button class="approve" id="sendbtn" onclick="S('question')">Send message</button><div id="st" class="sendnote"></div></section>`}
 /* ══ THE CONTRACT HAD NO ROUTE TO THE CUSTOMER. ═══════════════════════════════
    The dashboard has a checkbox reading "Include contract with this estimate. When
    checked, the customer must review & sign the contract to approve." Ticking it set

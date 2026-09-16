@@ -22,8 +22,15 @@ const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true 
 function ext(name) { const s = Q.search(new RegExp('function ' + name + '\\s*\\(')); if (s < 0) throw new Error('missing ' + name); let d = 0; for (let j = Q.indexOf('{', s); j < Q.length; j++) { if (Q[j] === '{') d++; else if (Q[j] === '}') { d--; if (!d) return Q.slice(s, j + 1); } } }
 const PRINT = (Q.match(/@media print\{[\s\S]*?\n\}/) || [''])[0];
 
-console.log('\nthe button is on the Messages card\n');
-ok('a Print / save as PDF button sits in the Messages card header', /id="thread-card"><div class="ey eyrow"><span>Messages<\/span><button type="button" class="printbtn" onclick="printQuote\(\)">[^<]*Print \/ save as PDF<\/button>/.test(Q));
+console.log('\nthe button sits in the message box, next to Add photos or files\n');
+/* It started in the Messages card header, small and grey. "Print or save
+   button is on conversation and also none visible, we may need add it below
+   next to the add photos or file." So: same row, same size and shape as the
+   attach button, a solid border so it reads as a button. */
+ok('THE PRINT BUTTON IS IN THE ATTACH ROW, right after Add photos or files',
+  /<label class="attach-btn">[^<]*Add photos or files<input[^>]*><\/label><button type="button" class="attach-btn printbtn" onclick="printQuote\(\)">[^<]*Print \/ save as PDF<\/button>/.test(Q));
+ok('...and no longer in the Messages header', !/eyrow/.test(Q.replace(/\.eyrow\{[^}]*\}/, '')) && /id="thread-card"><div class="ey">Messages<\/div>/.test(Q));
+ok('...styled like the attach button, solid border', /\.printbtn\{font:inherit;color:var\(--n-deep\);border-style:solid/.test(Q));
 ok('a printed footer names the estimate, the customer, the print time and the live link', /class="printnote">Printed record of estimate \$\{E\(ref\)\} for/.test(Q) && /live copy: \$\{E\(location\.origin\+'\/quote\.html\?ref='/.test(Q));
 ok('...and that footer is hidden on screen, shown on paper', /\.printnote\{display:none\}/.test(Q) && /\.printnote\{display:block/.test(PRINT));
 
