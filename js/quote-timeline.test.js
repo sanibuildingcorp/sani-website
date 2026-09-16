@@ -114,15 +114,25 @@ console.log('\nboth quote layouts use it — the old one and the current one\n')
     QUOTE.indexOf("<small>Timeline</small>${E(e.timelineText") === -1);
   ok('the card is placed in both renderers',
     (QUOTE.match(/\$\{timelineCard\(e\)\}/g) || []).length === 2);
-  /* Matched as plain text. A regex here has to cross the braces inside
-     ${E(e.summary||'…')}, which is how the first version of this line failed
-     against markup that was perfectly correct. */
+  /* THE PLACEMENT, NOT THE PUNCTUATION AROUND IT. This used to match the exact
+     string "</p></section>${timelineCard(e)}". Wrapping the summary card in a
+     conditional - so a record with no summary does not show an empty one - moved
+     the closing punctuation and the assertion failed on markup that was
+     perfectly correct and in exactly the right place. It now asks the question
+     it means: between the project summary and the next card, is the timeline. */
   ok('...directly after the project summary, where a customer looks for it',
-    QUOTE.split('</p></section>${timelineCard(e)}').length - 1 === 2 &&
-    QUOTE.split('Project summary').every((part, n) =>
-      n === 0 || part.indexOf('${timelineCard(e)}') < part.indexOf('<section class="card prices"')
-              || part.indexOf('<section class="card prices"') === -1),
-    'card follows the summary in ' + (QUOTE.split('</p></section>${timelineCard(e)}').length - 1) + ' of 2 renderers');
+    (function () {
+      let from = 0, good = 0;
+      for (let n = 0; n < 2; n++) {
+        const at = QUOTE.indexOf('Project summary', from);
+        if (at < 0) return 'only found ' + n + ' project summary blocks';
+        const card = QUOTE.indexOf('${timelineCard(e)}', at);
+        const nextSection = QUOTE.indexOf('<section class="card', at + 20);
+        if (card > 0 && (nextSection < 0 || card < nextSection)) good++;
+        from = at + 10;
+      }
+      return good === 2 ? true : 'timeline card follows the summary in ' + good + ' of 2 renderers';
+    })() === true);
 }
 
 /* ══ WHAT MUST NOT HAVE BROKEN ════════════════════════════════════════════ */

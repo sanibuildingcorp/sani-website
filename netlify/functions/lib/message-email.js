@@ -66,6 +66,15 @@ function buildMessageEmail(o) {
   const projectTitle = String(est.projectTitle || req.service || "Your project").trim();
   const address = String(customer.address || req.address || "").trim();
   const total = customerTotals(est, record).customerTotal;
+  /* Priced means somebody has actually put lines or a stamped figure on this
+     record - not merely that a total could be computed, because an empty record
+     computes to zero perfectly happily. */
+  const hasPrice =
+    est.customerFinalTotal != null ||
+    est.stampedTotal != null ||
+    (Array.isArray(est.labor) && est.labor.length > 0) ||
+    (Array.isArray(est.materials) && est.materials.length > 0) ||
+    Number(total) > 0;
   const quoteUrl = siteUrl + "/quote.html?ref=" + encodeURIComponent(ref);
 
   /* The ref lives in the SUBJECT on purpose. Gmail keeps the subject on reply,
@@ -110,7 +119,12 @@ function buildMessageEmail(o) {
         '<div style="font-size:11px;letter-spacing:2px;color:#8fa3b5;text-transform:uppercase">Estimate ' + esc(ref) + "</div>" +
         '<div style="font-size:18px;font-weight:bold;color:#ffffff;margin-top:5px">' + esc(projectTitle) + "</div>" +
         (address ? '<div style="font-size:13px;color:#a9bccc;margin-top:3px">' + esc(address) + "</div>" : "") +
-        '<div style="font-size:20px;font-weight:bold;color:#e0b84e;margin-top:10px">' + money(total) + "</div>" +
+        /* NO PRICE, NO PRICE LINE. The contractor can message a customer before
+           anything is priced - asking his questions first is the whole point of
+           asking them - and this header was printing "$0.00" in gold above a
+           note that only asked for answers. A zero shown as a price reads as a
+           quote for nothing. */
+        (hasPrice ? '<div style="font-size:20px;font-weight:bold;color:#e0b84e;margin-top:10px">' + money(total) + "</div>" : "") +
       "</div>" +
 
       '<div style="background:#ffffff;border-radius:0 0 14px 14px;padding:26px 28px">' +
@@ -143,7 +157,7 @@ function buildMessageEmail(o) {
     "Estimate " + ref + "\n" +
     projectTitle + "\n" +
     (address ? address + "\n" : "") +
-    money(total) + "\n\n" +
+    (hasPrice ? money(total) + "\n\n" : "") +
     (previous && previous.text
       ? "--- " + (previous.from === "contractor" ? "Sani Building Corp" : (customer.name || "Customer")) + " wrote ---\n" +
         String(previous.text).slice(0, 600) + "\n\n"
