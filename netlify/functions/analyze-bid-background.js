@@ -18,7 +18,7 @@
 // here → we insert bid_jobs row (processing) → Claude reads the PDF by URL → we validate
 // JSON, price it, save result → dashboard polls get-bid-analysis.js.
 
-const MODEL = "claude-sonnet-4-5-20250929";
+const MODEL = "claude-sonnet-5";
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };

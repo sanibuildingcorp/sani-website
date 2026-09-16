@@ -130,12 +130,17 @@ console.log('\ncallClaude puts the pictures in the message, and changes nothing 
 /* ══ WIRED INTO THE UNDERSTANDING STAGE ═══════════════════════════════════ */
 console.log('\nthe understanding stage actually uses it\n');
 {
-  ok('photos present → Claude, with the blocks',
-    /const photoBlocks = anthropicKey \? photoBlocksForClaude\(record\.request\) : \[\];/.test(SRC) &&
-    /callClaude\(anthropicKey, analysisPrompt, 16000, null, photoBlocks\)/.test(SRC));
-  ok('photos absent → the path that existed before, untouched',
-    /rawAnalysis = openaiKey\s*\?\s*await callOpenAI\(openaiKey, analysisPrompt\)\s*:\s*await callClaude\(anthropicKey, analysisPrompt, 16000\);/.test(SRC));
-  ok('the record says which engine read the job, and that it had the photos',
+  /* ONE READER. For a day the job was read by Claude when photos were
+     attached and by gpt-5-mini when they were not. The scope is decided in
+     this stage, so the reader must not change with the customer's camera. */
+  ok('THE JOB IS READ BY CLAUDE WHETHER OR NOT THERE ARE PHOTOS',
+    /if \(anthropicKey\) \{\s*rawAnalysis = await callClaude\(anthropicKey, analysisPrompt, 16000, null, photoBlocks\);/.test(SRC));
+  ok('the photo blocks are built whenever there is an Anthropic key',
+    /const photoBlocks = anthropicKey \? photoBlocksForClaude\(record\.request\) : \[\];/.test(SRC));
+  ok('OpenAI is only the fallback for a deployment with no Anthropic key',
+    /\} else \{\s*rawAnalysis = await callOpenAI\(openaiKey, analysisPrompt\);/.test(SRC) &&
+    !/rawAnalysis = openaiKey\s*\?/.test(SRC));
+  ok('the record says which engine read the job, and whether it had the photos',
     /understanding: analysisEngine,/.test(SRC) && /with \$\{photoBlocks\.length \/ 2\} photos/.test(SRC));
   ok('the reader is told what the images are, and told not to measure from them',
     /1b\. PHOTOGRAPHS\./.test(SRC) && /Never measure a room from a photograph/.test(SRC));

@@ -48,14 +48,19 @@ exports.handler = async function (event) {
       });
     });
 
+    /* gpt-5-mini replaces gpt-4o-mini (two generations older, same price).
+       The GPT-5 family rejects `temperature` and wants `max_completion_tokens`;
+       the cap is raised because it now also covers the model's own reasoning
+       tokens, which `reasoning_effort: "minimal"` keeps small for a job this
+       simple. MINI_MODEL in Netlify overrides it without a deploy. */
     const payload = {
-      model: "gpt-4o-mini",  // Cheaper, supports vision, fast
+      model: process.env.MINI_MODEL || "gpt-5-mini",  // Cheap, supports vision, fast
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userContent }
       ],
-      max_tokens: 1500,
-      temperature: 0.3,  // Lower = more consistent
+      max_completion_tokens: 2500,
+      reasoning_effort: "minimal",
       response_format: { type: "json_object" }  // Force JSON output
     };
 
