@@ -3527,9 +3527,24 @@ async function askSend() {
       headers: { "Content-Type": "application/json", "x-sbc-key": key },
       body: JSON.stringify({ ref: ref, messages: ASK_LOG[ref] }),
     });
-    var data = await res.json();
+    /* READ AS TEXT FIRST. When Netlify kills the function at 10s (or anything
+       upstream answers with an error page) the body is not JSON, and Safari's
+       res.json() rejects with "The string did not match the expected pattern" -
+       which is what he saw, twice, and could do nothing with. Parse it here and
+       say what actually happened. */
+    var raw = await res.text();
+    var data = null;
+    try { data = JSON.parse(raw); } catch (parseErr) { data = null; }
+    if (!data) {
+      console.error("assistant: non-JSON response", res.status, raw.slice(0, 300));
+      throw new Error("No answer came back (HTTP " + res.status + (/<html/i.test(raw) ? ", a web page instead of a reply" : "") +
+        "). It probably ran out of time. Ask again, or ask something shorter.");
+    }
     if (!res.ok || !data.reply) throw new Error(data.error || ("Assistant returned " + res.status));
-    ASK_LOG[ref].push({ role: "assistant", text: data.reply });
+    ASK_LOG[ref].push({
+      role: "assistant",
+      text: data.reply + (data.truncated ? "\n\n… (cut short by the time limit — ask \"continue\" for the rest)" : ""),
+    });
   } catch (e) {
     /* The question stays in the log so he can see what he asked and try again;
        dropping it would make a failure look like the panel ignored him. */

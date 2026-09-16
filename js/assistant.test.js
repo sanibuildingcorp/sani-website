@@ -25,12 +25,16 @@
  *    can be run in a loop by anyone who finds the URL.
  *
  * 3. IT MUST ANSWER INSIDE TEN SECONDS. Netlify kills a synchronous function at
- *    10s with no usable error, so the request has to give up first and say
- *    something readable.
+ *    10s with no usable error. The first version waited for the whole answer
+ *    under a fixed 8.5s cap; on a real five-part renovation record the answer
+ *    was longer than that, Netlify killed it, and Safari showed "The string did
+ *    not match the expected pattern" - its wording for res.json() on a page that
+ *    is not JSON. The answer is now streamed and whatever has arrived by the
+ *    deadline is returned, marked truncated. That is what section 3 exercises.
  *
- * The Claude call is stubbed at the https layer: what is under test is the
- * gate, the context, the guardrails in the prompt and the shape of the reply -
- * not Anthropic's servers.
+ * The Claude call is stubbed at the https layer as an SSE stream: what is under
+ * test is the gate, the context, the guardrails, the deadline and the shape of
+ * the reply - not Anthropic's servers.
  */
 const fs = require('fs'), path = require('path'), vm = require('vm'), Module = require('module');
 
@@ -40,7 +44,15 @@ const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true 
 
 /* ── stub @netlify/blobs and capture the outbound Claude request ─────────── */
 const STORE = new Map();
-let sent = null, stubStatus = 200, stubBody = null, stubTimeout = false;
+let sent = null;
+/* What the stub streams back. frames: SSE events in order; stall: never end the
+   stream after the frames; status/body: a non-2xx JSON error instead. */
+let stub = { status: 200, body: null, frames: null, stall: false, slowStore: false };
+const DEFAULT_TEXT = '1. How old is the building?\n2. Is the bathroom in use right now? Not sure is fine.';
+
+const sse = (obj) => 'event: ' + obj.type + '\ndata: ' + JSON.stringify(obj) + '\n\n';
+const deltas = (text) => text.split(/(?<= )/).map(t => ({ type: 'content_block_delta', delta: { type: 'text_delta', text: t } }));
+const fullStream = (text) => [{ type: 'message_start' }].concat(deltas(text), [{ type: 'message_stop' }]);
 
 const origResolve = Module._resolveFilename;
 Module._resolveFilename = function (request, ...rest) {
@@ -49,43 +61,58 @@ Module._resolveFilename = function (request, ...rest) {
 };
 require.cache['@netlify/blobs'] = {
   id: '@netlify/blobs', filename: '@netlify/blobs', loaded: true, exports: {
-    getStore: () => ({ get: async (k) => (STORE.has(k) ? JSON.parse(STORE.get(k)) : null) })
+    getStore: () => ({
+      get: (k) => new Promise((resolve) => {
+        const v = STORE.has(k) ? JSON.parse(STORE.get(k)) : null;
+        if (stub.slowStore) setTimeout(() => resolve(v), 5000); else resolve(v);
+      })
+    })
   }
 };
 
 const https = require('https');
 const realRequest = https.request;
 https.request = function (opts, cb) {
-  const chunks = [];
-  let timeoutFn = null;
-  const res = {
-    statusCode: stubStatus,
-    _end: null,
-    on(ev, fn) { if (ev === 'data') this._data = fn; if (ev === 'end') this._end = fn; return this; }
-  };
+  const res = { statusCode: stub.status, _data: null, _end: null, on(ev, fn) { if (ev === 'data') this._data = fn; if (ev === 'end') this._end = fn; return this; } };
+  let destroyed = false;
   return {
-    setTimeout(ms, fn) { timeoutFn = fn; this._timeoutMs = ms; },
+    setTimeout() {},
     on(ev, fn) { if (ev === 'error') this._err = fn; return this; },
     write(body) { sent = { opts, body: JSON.parse(body) }; },
-    destroy(err) { if (this._err) this._err(err); },
+    destroy() { destroyed = true; },
     end() {
-      if (stubTimeout) { if (timeoutFn) timeoutFn.call(this); return; }
       setImmediate(() => {
         cb(res);
-        if (res._data) res._data(Buffer.from(stubBody != null ? stubBody : JSON.stringify({
-          content: [{ type: 'text', text: '1. How old is the building?\n2. Is the bathroom in use right now? Not sure is fine.' }]
-        })));
-        if (res._end) res._end();
+        if (stub.status < 200 || stub.status >= 300) {
+          if (res._data) res._data(Buffer.from(stub.body || '{}'));
+          if (res._end) res._end();
+          return;
+        }
+        const frames = stub.frames || fullStream(DEFAULT_TEXT);
+        /* One frame per tick, split mid-frame once, to prove the parser
+           reassembles across chunk boundaries the way a real socket delivers. */
+        let i = 0;
+        const tick = () => {
+          if (destroyed) return;
+          if (i >= frames.length) { if (!stub.stall && res._end) res._end(); return; }
+          const s = sse(frames[i++]);
+          if (i === 2 && s.length > 10) {
+            res._data(Buffer.from(s.slice(0, 7)));
+            setImmediate(() => { if (!destroyed) { res._data(Buffer.from(s.slice(7))); setImmediate(tick); } });
+          } else {
+            res._data(Buffer.from(s));
+            setImmediate(tick);
+          }
+        };
+        tick();
       });
     },
-    _timeoutMs: 0
   };
 };
 
 process.env.DASHBOARD_KEY = 'test-key';
 process.env.ANTHROPIC_API_KEY = 'sk-test';
 const fn = require(path.join(ROOT, 'netlify/functions/assistant.js'));
-https.request = https.request; /* keep the stub installed for the whole file */
 
 const call = async (body, key) => {
   const res = await fn.handler({
@@ -95,6 +122,7 @@ const call = async (body, key) => {
   });
   return { code: res.statusCode, body: JSON.parse(res.body || '{}') };
 };
+const reset = () => { stub = { status: 200, body: null, frames: null, stall: false, slowStore: false }; fn._setBudgetForTests(8800); };
 
 const THIN = {
   ref: 'SBC-260915-UYE6', status: 'new', source: 'contact-form',
@@ -122,20 +150,71 @@ const THIN = {
     ok('the right key gets through', good.code === 200 && !!good.body.reply, JSON.stringify(good.body).slice(0, 80));
   }
 
+  /* ══ THE STREAM IS READ CORRECTLY ═══════════════════════════════════════ */
+  console.log('\nthe streamed answer is reassembled exactly\n');
+  {
+    reset(); sent = null;
+    const r = await call({ messages: [{ role: 'user', text: 'hi' }] });
+    ok('THE REPLY IS EVERY DELTA, IN ORDER, WITH ITS SPACES', r.body.reply === DEFAULT_TEXT, JSON.stringify(r.body.reply));
+    ok('a complete answer is not marked truncated', r.body.truncated === false);
+    ok('it asks Claude to stream', sent.body.stream === true);
+
+    /* A delta that is ONLY a space or a newline. The first draft ran every
+       delta through str(), which trims - so "How old" + " " + "is" came out
+       "How oldis". */
+    stub.frames = fullStream('a b\nc');
+    const sp = await call({ messages: [{ role: 'user', text: 'hi' }] });
+    ok('WHITESPACE-ONLY DELTAS ARE KEPT — otherwise words are glued together',
+      sp.body.reply === 'a b\nc', JSON.stringify(sp.body.reply));
+
+    stub.frames = [{ type: 'message_start' }, { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }];
+    const er = await call({ messages: [{ role: 'user', text: 'hi' }] });
+    ok('an error event inside the stream is reported in plain words',
+      er.code === 502 && /Overloaded/.test(er.body.error || ''), JSON.stringify(er.body));
+  }
+
   /* ══ 3. TEN SECONDS ═════════════════════════════════════════════════════ */
-  console.log('\nit gives up before Netlify kills it\n');
+  console.log('\nit gives up before Netlify kills it, and hands over what it has\n');
   {
     const src = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
-    const ms = Number((src.match(/ABORT_MS\s*=\s*(\d+)/) || [])[1]);
-    ok('THERE IS AN ABORT, AND IT IS UNDER TEN SECONDS', ms > 0 && ms < 10000, ms + 'ms');
+    const ms = Number((src.match(/BUDGET_MS\s*=\s*(\d+)/) || [])[1]);
+    ok('THERE IS A BUDGET, AND IT IS UNDER TEN SECONDS', ms > 0 && ms < 10000, ms + 'ms');
+    ok('it is measured from the start of the handler, not from the Claude call',
+      /const started = Date\.now\(\)/.test(src) && /started \+ budgetMs/.test(src));
     ok('the output is capped, so a long answer cannot run the clock out',
       Number((src.match(/MAX_TOKENS\s*=\s*(\d+)/) || [])[1]) <= 1500);
+    ok('the record read has its own, shorter, timeout',
+      /withTimeout\(recordContext\(/.test(src) && Number((src.match(/RECORD_MS\s*=\s*(\d+)/) || [])[1]) < ms);
 
-    stubTimeout = true;
+    /* THE CASE FROM THE SCREENSHOT: a long answer still being written at the
+       deadline. Stream two deltas, then hang. */
+    reset(); fn._setBudgetForTests(300);
+    stub.frames = [{ type: 'message_start' }].concat(deltas('1. How old is the building? 2. Is'));
+    stub.stall = true;
+    const t0 = Date.now();
+    const cut = await call({ messages: [{ role: 'user', text: 'What should I ask?' }] });
+    const took = Date.now() - t0;
+    ok('A STALLED ANSWER COMES BACK AS 200 WITH WHAT HAD ARRIVED — not a platform kill',
+      cut.code === 200 && cut.body.reply === '1. How old is the building? 2. Is', JSON.stringify(cut.body));
+    ok('...marked truncated, so the panel can say so', cut.body.truncated === true);
+    ok('...and it returned at the deadline, not whenever the socket felt like it', took < 1500, took + 'ms');
+
+    /* Nothing arrived at all. */
+    reset(); fn._setBudgetForTests(300);
+    stub.frames = [{ type: 'message_start' }]; stub.stall = true;
     const slow = await call({ messages: [{ role: 'user', text: 'hi' }] });
-    stubTimeout = false;
-    ok('a slow call returns a readable message, not a platform kill',
+    ok('a stream that never says anything is a readable timeout',
       slow.code === 502 && /took too long/i.test(slow.body.error || ''), JSON.stringify(slow.body));
+
+    /* Blobs is slow: the record is skipped and the question still gets answered. */
+    reset(); stub.slowStore = true; sent = null;
+    STORE.set(THIN.ref, JSON.stringify(THIN));
+    const t1 = Date.now();
+    const noRec = await call({ ref: THIN.ref, messages: [{ role: 'user', text: 'hi' }] });
+    ok('a slow record read is abandoned rather than spending the budget on it',
+      noRec.code === 200 && !!noRec.body.reply && (Date.now() - t1) < 3000 && /No job is open/.test(sent.body.system),
+      (Date.now() - t1) + 'ms');
+    reset();
   }
 
   /* ══ WHAT THE ASSISTANT IS TOLD ═════════════════════════════════════════ */
@@ -161,6 +240,8 @@ const THIN = {
       /Not sure/.test(sys));
     ok('it is told to answer anything, not only estimate questions',
       /unrelated to the job on screen/i.test(sys));
+    ok('it is told to keep answers short — the clock is the reason',
+      /under about 150 words/i.test(sys));
   }
 
   /* ══ THE CONVERSATION ═══════════════════════════════════════════════════ */
@@ -200,21 +281,70 @@ const THIN = {
   /* ══ WHEN CLAUDE MISBEHAVES ═════════════════════════════════════════════ */
   console.log('\nfailures say something he can act on\n');
   {
-    stubStatus = 429; stubBody = JSON.stringify({ error: { message: 'rate limit exceeded' } });
+    reset();
+    stub.status = 429; stub.body = JSON.stringify({ error: { message: 'rate limit exceeded' } });
     const limited = await call({ messages: [{ role: 'user', text: 'hi' }] });
     ok('an API error is passed through in plain words',
       limited.code === 502 && /rate limit/i.test(limited.body.error || ''), JSON.stringify(limited.body));
 
-    stubStatus = 200; stubBody = JSON.stringify({ content: [] });
+    reset();
+    stub.frames = [{ type: 'message_start' }, { type: 'message_stop' }];
     const blank = await call({ messages: [{ role: 'user', text: 'hi' }] });
     ok('an empty answer is reported, not shown as a blank bubble',
       blank.code === 502 && /returned nothing/i.test(blank.body.error || ''));
-    stubBody = null;
+    reset();
 
     const bad = await fn.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'test-key' }, body: '{oops' });
     ok('an unreadable body is refused', bad.statusCode === 400);
     ok('GET is refused', (await fn.handler({ httpMethod: 'GET', headers: {} })).statusCode === 405);
     ok('the browser preflight is answered', (await fn.handler({ httpMethod: 'OPTIONS' })).statusCode === 200);
+  }
+
+  /* ══ THE DASHBOARD SIDE OF THE SAME BUG ═════════════════════════════════ */
+  console.log('\nthe panel reads the reply as text first, so a dead function gets a real message\n');
+  {
+    const DASH = fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8');
+    const s = DASH.search(/async function askSend\s*\(/);
+    let d = 0, body = '';
+    for (let j = DASH.indexOf('{', s); j < DASH.length; j++) {
+      if (DASH[j] === '{') d++;
+      else if (DASH[j] === '}') { d--; if (!d) { body = DASH.slice(s, j + 1); break; } }
+    }
+    /* Comments stripped first: the code explains the bug in a comment that
+       names res.json(), and a search over the raw body found that and failed. */
+    const code = body.replace(/\/\*[\s\S]*?\*\//g, '');
+    ok('askSend NO LONGER CALLS res.json() — that is what produced "did not match the expected pattern"',
+      code.indexOf('res.json()') === -1 && code.indexOf('await res.text()') !== -1);
+    ok('a non-JSON body becomes a sentence with the status code in it',
+      /No answer came back \(HTTP " \+ res\.status/.test(body));
+    ok('a truncated reply is shown as truncated, with a way to get the rest',
+      /data\.truncated/.test(body) && /continue/.test(body));
+
+    /* Run it against a fetch that returns Netlify's dead-function page. */
+    const log = {};
+    const ctx = {
+      console: { error() {} }, String, JSON, Error, RegExp,
+      currentRecord: { ref: 'R1' }, ASK_LOG: log, sbcKey: () => 'k',
+      askRender() {},
+      document: { getElementById: (id) => id === 'ask-text' ? { value: 'What should I ask?' } : { textContent: '', disabled: false } },
+      fetch: async () => ({ ok: false, status: 502, text: async () => '<html><body>Task timed out</body></html>' }),
+    };
+    vm.createContext(ctx);
+    vm.runInContext(body, ctx);
+    await vm.runInContext('askSend()', ctx);
+    const last = (log.R1 || []).slice(-1)[0] || {};
+    ok('THE PANEL SHOWS WHAT HAPPENED, NOT SAFARI\'S PATTERN ERROR',
+      /HTTP 502/.test(last.text || '') && /web page/.test(last.text || '') && /shorter/.test(last.text || ''), last.text);
+
+    ctx.fetch = async () => ({ ok: true, status: 200, text: async () => JSON.stringify({ reply: '1. How old?', truncated: true }) });
+    await vm.runInContext('askSend()', ctx);
+    const cut = (log.R1 || []).slice(-1)[0] || {};
+    ok('a truncated reply carries the note', /1\. How old\?/.test(cut.text) && /cut short/.test(cut.text), cut.text);
+
+    ctx.fetch = async () => ({ ok: true, status: 200, text: async () => JSON.stringify({ reply: '1. How old?', truncated: false }) });
+    await vm.runInContext('askSend()', ctx);
+    const whole = (log.R1 || []).slice(-1)[0] || {};
+    ok('a whole reply carries no note', whole.text === '1. How old?', whole.text);
   }
 
   /* ══ 1. THE ONE THAT WOULD HURT MOST ════════════════════════════════════ */
