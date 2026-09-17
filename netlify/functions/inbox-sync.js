@@ -1,9 +1,11 @@
 // netlify/functions/inbox-sync.js
 // GMAIL → DASHBOARD SYNC (v3, Aug 2 2026 — proper MIME parsing via mailparser: human-readable bodies) — the missing half of the two-way CRM.
 //
-// WHAT IT DOES: connects to the contact@sanibuildingcorp.com mailbox over IMAP
-// (the address customers reply to - every customer-facing email carries it as
-// reply-to, see lib/addresses.js; info@ receives only alerts)
+// WHAT IT DOES: connects to the info@sanibuildingcorp.com Google account over
+// IMAP. contact@ - the address customers reply to, the reply-to on every
+// customer-facing email (lib/addresses.js) - is an ALIAS inside that same
+// account, not a separate login, so info@ is the user name and its inbox
+// holds both the customer replies and the alerts.
 // (Google App Password — no OAuth dance), reads recent inbox mail, and files
 // every message FROM A KNOWN CUSTOMER into Supabase lead_messages with
 // direction "in". inbox-list.js then surfaces them in that customer's
@@ -23,7 +25,7 @@
 // continues where this one stopped.
 //
 // SETUP (one-time, Netlify env, functions scope):
-//   GMAIL_USER         = contact@sanibuildingcorp.com  (the mailbox customer replies land in)
+//   GMAIL_USER         = info@sanibuildingcorp.com   (the account login; contact@ is an alias in it)
 //   GMAIL_APP_PASSWORD = 16-character Google App Password
 // Diagnostics: GET ?ping=1 → env/deploy status (no mailbox touch).
 
