@@ -5,6 +5,7 @@
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
+const ADDR = require("./lib/addresses");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -89,7 +90,7 @@ exports.handler = async function (event) {
 
     // ============ SEND NOTIFICATIONS ============
     const resendKey = process.env.RESEND_API_KEY;
-    const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+    const contractorEmail = ADDR.alertsTo();
 
     const tasks = [];
 
@@ -273,7 +274,7 @@ async function sendCustomerConfirmation(resendKey, contractorEmail, data) {
   return sendResend(resendKey, {
     from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
     to: [data.email],
-    reply_to: contractorEmail,
+    reply_to: ADDR.replyTo(),
     subject: `We got your request — Sani Building Corp (${data.ref})`,
     html,
   });

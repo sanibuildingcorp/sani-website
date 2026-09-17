@@ -5,6 +5,7 @@
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
+const ADDR = require("./lib/addresses");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -66,7 +67,7 @@ exports.handler = async function (event) {
 
     // ---- Emails ----
     const resendKey = process.env.RESEND_API_KEY;
-    const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+    const contractorEmail = ADDR.alertsTo();
     const siteUrl = process.env.SITE_URL || "https://www.sanibuildingcorp.com";
     const contractUrl = siteUrl + "/contract.html?ref=" + encodeURIComponent(ref);
     const customer = record.customer || {};
@@ -112,7 +113,7 @@ exports.handler = async function (event) {
             from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",
             to: [customer.email.trim()],
             bcc: [contractorEmail],
-            reply_to: contractorEmail,
+            reply_to: ADDR.replyTo(),
             subject: "Your signed agreement with Sani Building Corp — " + escapePlain(record.contract.sections.projectType || "Project"),
             html: `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px 16px;background:#f5f0e8">
               <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);border-radius:14px 14px 0 0;padding:30px 28px;text-align:center">

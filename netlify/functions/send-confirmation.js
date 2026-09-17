@@ -52,6 +52,7 @@
 //         is the Netlify Forms trigger, not this code or Resend.
 
 const https = require("https");
+const ADDR = require("./lib/addresses");
 
 exports.handler = async function (event) {
   const q = event.queryStringParameters || {};
@@ -216,13 +217,13 @@ async function sendConfirmation(o) {
     "Need us sooner? Call (332) 277-0990.\n\n" +
     "- Sani Building Corp\nFully Insured | 4.9 stars | NYC Metro | Since 2015\nsanibuildingcorp.com";
 
-  const contractorEmail = process.env.CONTRACTOR_EMAIL || "info@sanibuildingcorp.com";
+  const contractorEmail = ADDR.alertsTo();
 
   return postResend(key, {
-    from: "Sani Building Corp <contact@sanibuildingcorp.com>",
+    from: ADDR.FROM_SYSTEM,
     to: [o.email],
     bcc: [contractorEmail],
-    reply_to: "contact@sanibuildingcorp.com",
+    reply_to: ADDR.replyTo(),
     subject: "Request Received - Sani Building Corp",
     html: html,
     text: text,

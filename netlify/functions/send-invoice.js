@@ -6,6 +6,7 @@
 
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
+const ADDR = require("./lib/addresses");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -91,7 +92,7 @@ exports.handler = async function (event) {
       return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "RESEND_API_KEY not set" }) };
     }
 
-    const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+    const contractorEmail = ADDR.alertsTo();
     const siteUrl = process.env.SITE_URL || "https://www.sanibuildingcorp.com";
 
     // Apply any edited customer details from the invoice modal
@@ -280,7 +281,7 @@ exports.handler = async function (event) {
     const emailPayload = {
       from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",
       to: [recipientEmail],
-      reply_to: contractorEmail,
+      reply_to: ADDR.replyTo(),
       subject: `${typeLabel} ${invoiceNumber} from Sani Building Corp — ${amountFormatted}`,
       html,
     };
