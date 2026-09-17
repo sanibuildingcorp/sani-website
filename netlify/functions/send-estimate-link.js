@@ -8,6 +8,7 @@
 //   link  - estimate form URL (optional, defaults to SITE_URL/estimate)
 
 const https = require("https");
+const ADDR = require("./lib/addresses");
 
 function isValidEmail(e) {
   return typeof e === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
@@ -39,7 +40,7 @@ exports.handler = async function (event) {
       return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "RESEND_API_KEY not set" }) };
     }
 
-    const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+    const contractorEmail = ADDR.alertsTo();
     const siteUrl = process.env.SITE_URL || "https://www.sanibuildingcorp.com";
     const link = (body.link || `${siteUrl}/estimate`).trim();
     const firstName = name ? name.split(" ")[0] : "there";
@@ -107,7 +108,7 @@ exports.handler = async function (event) {
     await sendResend(resendKey, {
       from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",
       to: [recipientEmail],
-      reply_to: contractorEmail,
+      reply_to: ADDR.replyTo(),
       subject: `Your free estimate from Sani Building Corp, ${firstName}`,
       html,
       text: textBody,

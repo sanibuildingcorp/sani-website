@@ -89,6 +89,7 @@ const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
 const { resolveSelection, selectionSnapshot, finishUpgradeTotal } = require("./lib/quote-options");
 const thread = require("./lib/thread");
+const ADDR = require("./lib/addresses");
 const buildMessageEmail = require("./lib/message-email");
 const buildApprovedEmail = require("./lib/approved-email");
 
@@ -212,7 +213,7 @@ exports.handler = async function (event) {
 
     // Notify contractor
     const resendKey = process.env.RESEND_API_KEY;
-    const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+    const contractorEmail = ADDR.alertsTo();
 
     let notified = false;
     let notifyError = "";
@@ -260,7 +261,7 @@ exports.handler = async function (event) {
         await sendResend(resendKey, {
           from: "Zurabi at Sani Building Corp <estimates@sanibuildingcorp.com>",
           to: [record.customer.email],
-          reply_to: contractorEmail,
+          reply_to: ADDR.replyTo(),
           subject: receipt.subject,
           html: receipt.html,
           text: receipt.text,

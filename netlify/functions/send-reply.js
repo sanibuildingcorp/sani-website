@@ -4,10 +4,11 @@
 // replyToMid = Message-ID of the customer email being answered -> In-Reply-To/References
 // headers make Gmail stack the reply into the SAME conversation on the customer side.
 //  1. Auth: header must match process.env.DASHBOARD_KEY (set in Netlify env) — blocks open-relay abuse.
-//  2. Sends via Resend from contact@sanibuildingcorp.com (customer-facing address; Workspace alias of
+//  2. Sends via Resend from estimates@ (the system sender) with reply-to contact@ — see lib/addresses.js (customer-facing address; Workspace alias of
 //     info@, so replies land in the one inbox), BCC to CONTRACTOR_EMAIL (Gmail receipt).
 //  3. Logs the message to Supabase lead_messages so it appears in the customer's dashboard history forever.
 
+const ADDR = require("./lib/addresses");
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
   if (event.httpMethod !== "POST")    return { statusCode: 405, headers: cors(), body: JSON.stringify({ error: "Method Not Allowed" }) };
@@ -47,11 +48,11 @@ exports.handler = async function (event) {
     method: "POST",
     headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "Sani Building Corp <contact@sanibuildingcorp.com>",
+      from: ADDR.FROM_ZURABI,
       to: [email],
       headers: replyToMid ? { "In-Reply-To": replyToMid, "References": replyToMid } : undefined,
       bcc: bcc,
-      reply_to: "contact@sanibuildingcorp.com",
+      reply_to: ADDR.replyTo(),
       subject: subject,
       html: html,
       text: (name ? "Hi " + name.split(" ")[0] + ",\n\n" : "") + body + "\n\n— Sani Building Corp\n(332) 277-0990 · sanibuildingcorp.com",

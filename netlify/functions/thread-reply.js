@@ -22,6 +22,7 @@ const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const thread = require("./lib/thread");
 const buildMessageEmail = require("./lib/message-email");
+const ADDR = require("./lib/addresses");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
@@ -80,8 +81,8 @@ exports.handler = async function (event) {
         to: [to],
         /* His own inbox gets a copy, so the Gmail thread he actually lives in
            stays complete even when he replied from the dashboard. */
-        bcc: process.env.CONTRACTOR_EMAIL ? [process.env.CONTRACTOR_EMAIL] : undefined,
-        reply_to: process.env.CONTRACTOR_EMAIL || undefined,
+        bcc: [ADDR.alertsTo()],
+        reply_to: ADDR.replyTo(),
         subject: mail.subject,
         html: mail.html,
         text: mail.text,

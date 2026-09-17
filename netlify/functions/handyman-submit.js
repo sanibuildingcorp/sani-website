@@ -15,6 +15,7 @@
 // }
 
 const https = require("https");
+const ADDR = require("./lib/addresses");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -299,7 +300,7 @@ async function sendContractorEmail(booking, photoUrls) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) throw new Error("RESEND_API_KEY not set");
 
-  const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+  const contractorEmail = ADDR.alertsTo();
 
   const confidenceColor = booking.confidence_score >= 80 ? "#2ecc71"
                         : booking.confidence_score >= 50 ? "#d4a017" : "#e74c3c";
@@ -404,7 +405,7 @@ async function sendContractorEmail(booking, photoUrls) {
 </body></html>`;
 
   await sendResend(resendKey, {
-    from: "Sani Building Corp <contact@sanibuildingcorp.com>",
+    from: ADDR.FROM_SYSTEM,
     to: [contractorEmail],
     reply_to: booking.customer_email,
     subject: `🔧 NEW HANDYMAN: ${booking.service_name} · ${booking.confidence_label.toUpperCase()} · ${booking.customer_name}`,
@@ -419,7 +420,7 @@ async function sendCustomerEmail(booking) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) throw new Error("RESEND_API_KEY not set");
 
-  const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+  const contractorEmail = ADDR.alertsTo();
 
   // Send DIRECTLY to the customer from the verified domain (estimates@sanibuildingcorp.com);
   // contractor gets a BCC copy. Guard against a missing/mistyped customer email.
@@ -484,7 +485,7 @@ async function sendCustomerEmail(booking) {
     from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
     to: [recipient],
     bcc: [contractorEmail],
-    reply_to: contractorEmail,
+    reply_to: ADDR.replyTo(),
     subject: `Request Received: ${booking.service_name} · ${booking.ref}`,
     html: html
   });

@@ -19,6 +19,7 @@
 
 const https = require("https");
 const crypto = require("crypto");
+const ADDR = require("./lib/addresses");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -170,7 +171,7 @@ async function sendCustomerConfirmationEmail({ booking, agreement, displayPrice,
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) throw new Error("RESEND_API_KEY not set");
 
-  const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+  const contractorEmail = ADDR.alertsTo();
 
   // Send DIRECTLY to the customer from the verified domain (estimates@sanibuildingcorp.com);
   // contractor gets a BCC copy. Guard against a missing/mistyped customer email.
@@ -293,7 +294,7 @@ async function sendCustomerConfirmationEmail({ booking, agreement, displayPrice,
     from: "Sani Building Corp <estimates@sanibuildingcorp.com>",
     to: [recipient],
     bcc: [contractorEmail],
-    reply_to: contractorEmail,
+    reply_to: ADDR.replyTo(),
     subject: `✍️ Sign Your Service Agreement · ${booking.ref}`,
     html: html
   });

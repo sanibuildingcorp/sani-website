@@ -10,6 +10,7 @@
 
 const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
+const ADDR = require("./lib/addresses");
 
 const PIXEL = Buffer.from(
   "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
@@ -150,7 +151,7 @@ async function sendEmail(record, ref) {
   `;
 
   const from =
-    process.env.RESEND_FROM || "Sani Building Corp <estimates@sanibuildingcorp.com>";
+    process.env.RESEND_FROM || ADDR.FROM_SYSTEM;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

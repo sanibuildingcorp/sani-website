@@ -23,6 +23,7 @@ const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
 const R = require("./lib/visit-reminder");
+const ADDR = require("./lib/addresses");
 
 const JSON_HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 
@@ -82,7 +83,7 @@ exports.handler = async function (event) {
     if (!resendKey) {
       return { statusCode: 500, headers: JSON_HEADERS, body: JSON.stringify({ error: "RESEND_API_KEY not set", mode, dateKey, count: visits.length }) };
     }
-    const to = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+    const to = ADDR.alertsTo();
     const siteUrl = process.env.SITE_URL || "https://www.sanibuildingcorp.com";
     const mail = R.buildReminderEmail({ mode, dateKey, visits, siteUrl });
 

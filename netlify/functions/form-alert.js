@@ -18,6 +18,7 @@
 //  Uses existing env vars: RESEND_API_KEY, CONTRACTOR_EMAIL
 // ============================================================
 const https = require("https");
+const ADDR = require("./lib/addresses");
 
 // --- Known bot / crawler / automation user-agents -----------------
 const BOT_UA = /(bot|crawl|spider|slurp|headless|phantom|puppeteer|playwright|selenium|scrapy|curl|wget|python-requests|axios|go-http|java\/|libwww|okhttp|apache-http|monitor|uptime|pingdom|lighthouse|pagespeed|gtmetrix|preview|fetcher|archiver|facebookexternalhit|whatsapp|telegram|slackbot|discord|embedly|semrush|ahrefs|moz\.com|majestic|dotbot|petalbot|bytespider|amazonbot|gptbot|claudebot|anthropic|perplexity|ccbot|applebot|yandex|baidu|sogou|duckduckbot|bingbot|googlebot|adsbot|mediapartners)/i;
@@ -100,7 +101,7 @@ exports.handler = async (event) => {
   const service = String(data.service || "").slice(0, 80);
 
   const resendKey = process.env.RESEND_API_KEY;
-  const to = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+  const to = ADDR.alertsTo();
   if (!resendKey) {
     return { statusCode: 200, headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ result: "FAILED", error: "RESEND_API_KEY env var is missing in Netlify" }) };

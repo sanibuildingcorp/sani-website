@@ -2,6 +2,7 @@
 // Tracks email opens (via pixel) and quote page opens (via fetch)
 // Notifies contractor via email + SMS
 
+const ADDR = require("./lib/addresses");
 exports.handler = async (event) => {
   const isPixelRequest = event.httpMethod === 'GET';
   const headers = {
@@ -64,7 +65,7 @@ exports.handler = async (event) => {
     const TWILIO_SID = process.env.TWILIO_SID;
     const TWILIO_TOKEN = process.env.TWILIO_TOKEN;
     const TWILIO_FROM = process.env.TWILIO_FROM;
-    const CONTRACTOR_EMAIL = process.env.CONTRACTOR_EMAIL || 'contact@sanibuildingcorp.com';
+    const CONTRACTOR_EMAIL = ADDR.alertsTo();
     const CONTRACTOR_PHONE = process.env.CONTRACTOR_PHONE;
 
     const now = new Date();
@@ -125,7 +126,7 @@ exports.handler = async (event) => {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from: 'Sani Building Corp <noreply@sanibuildingcorp.com>',
+            from: ADDR.FROM_SYSTEM,
             to: [CONTRACTOR_EMAIL],
             subject: `${source === 'quote_page' ? '🔥' : '📧'} ${customer.name || 'Customer'} opened ${source === 'email' ? 'email' : 'quote'} - ${ref}`,
             html: emailHtml,

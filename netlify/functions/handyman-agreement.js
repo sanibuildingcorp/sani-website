@@ -9,6 +9,7 @@
 //   { token, action: "request_changes", changesText: "..." }
 
 const https = require("https");
+const ADDR = require("./lib/addresses");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -129,10 +130,10 @@ exports.handler = async function (event) {
           // ── Customer copy: the page promises "A copy has been sent to your email" — honor it ──
           try {
             await sendResend(process.env.RESEND_API_KEY, {
-              from: "Sani Building Corp <contact@sanibuildingcorp.com>",
+              from: ADDR.FROM_SYSTEM,
               to: [agreement.customer_email],
-              bcc: process.env.CONTRACTOR_EMAIL ? [process.env.CONTRACTOR_EMAIL] : undefined,
-              reply_to: "contact@sanibuildingcorp.com",
+              bcc: [ADDR.alertsTo()],
+              reply_to: ADDR.replyTo(),
               subject: `✅ Signed: ${agreement.service_name || "Service Agreement"} · ${agreement.booking_ref || ""}`,
               html: customerCopyHtml(agreement),
               text: "Your signed Sani Building Corp service agreement is confirmed."
@@ -243,7 +244,7 @@ async function uploadSignature(supabaseUrl, supabaseKey, path, base64Data) {
 async function notifyContractor({ type, agreement, signatureType, signatureData, changesText, ip, depositPaidClaimed }) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) throw new Error("RESEND_API_KEY not set");
-  const contractorEmail = process.env.CONTRACTOR_EMAIL || "sanibuildingcorp@gmail.com";
+  const contractorEmail = ADDR.alertsTo();
 
   let subject, html;
 
@@ -343,7 +344,7 @@ async function notifyContractor({ type, agreement, signatureType, signatureData,
   }
 
   await sendResend(resendKey, {
-    from: "Sani Building Corp <contact@sanibuildingcorp.com>",
+    from: ADDR.FROM_SYSTEM,
     to: [contractorEmail],
     reply_to: agreement.customer_email,
     subject: subject,

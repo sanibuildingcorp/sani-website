@@ -99,7 +99,9 @@ const reset = () => { STORE = { 'SBC-260915-UYE6': REC() }; sent = []; failNth =
     ok('THE CUSTOMER RECEIPT SAYS APPROVED IN THE SUBJECT, with the ref (inbox-sync reads it back)',
       /Approved/.test(p.subject) && /SBC-260915-UYE6/.test(p.subject) && /Full Gut Renovation/.test(p.subject), p.subject);
     ok('...from the verified domain, signed Zurabi', /estimates@sanibuildingcorp\.com/.test(p.from) && /Zurabi/.test(p.from));
-    ok('...replies reach the contractor', p.reply_to === 'zura@example.com');
+    /* Used to be the CONTRACTOR_EMAIL (the alerts box). One job per address
+       now: a customer's reply goes to contact@, the humans address. */
+    ok('...replies reach contact@, the humans address - not the alerts box', p.reply_to === 'contact@sanibuildingcorp.com', p.reply_to);
     /* The figure is whatever lib/customer-total says the customer sees for
        the record as saved - the same definition every other email uses - not
        a number this test adds up on its own. The first version assumed
