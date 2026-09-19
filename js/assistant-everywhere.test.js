@@ -109,6 +109,60 @@ const SCREEN = {
     ok('a screen that is not an object is ignored, not a crash', sent && /No job is open\. Answer whatever he asks\./.test(sent.system));
   }
 
+  /* ══ IT READS THE WHOLE ESTIMATE ════════════════════════════════════════ */
+  console.log('\nit reads the generated estimate, line by line\n');
+  {
+    /*   "Do this AI reading full generated estimate?"  It did not. */
+    const FULL = {
+      ref: 'SBC-FULL', status: 'sent', sentAt: '2026-09-18T10:00:00Z',
+      customer: { name: 'Jan', address: 'Upper East Side' },
+      request: { service: 'Carpentry', description: 'Molding install and closet' },
+      estimate: {
+        projectTitle: 'Upper East Side Apartment — Molding', timelineText: '5 to 7 days', markupPct: 25, notes: 'Internal band $8,000-$9,500. Squeeze the materials.',
+        showLaborCost: true, showMaterialsCost: false,
+        labor: [{ section: 'Carpentry', item: 'Floor and surface protection', qty: 4, unit: 'hrs', rate: 60 }, { section: 'Carpentry', item: 'Install customer-supplied molding', qty: 220, unit: 'ft', rate: 6.5 }],
+        materials: [{ section: 'Carpentry', item: '16-gauge finish nails', qty: 1, unit: 'box', rate: 16.99 }],
+        serviceBreakdown: [{ title: 'Carpentry', subtotal: 9181.16, included: ['Before any cutting begins, protection'], customerSupplies: [{ text: 'Lumber and wood material' }], notIncluded: ['Option D — Prime and paint'], options: [{ label: 'Option B — Replace 2 premium acoustic windows', price: 4393.75, description: 'each window' }] }],
+        options: [{ label: 'Option A — Crown molding', price: 1250 }],
+        finishGroups: [{ name: 'Paint sheen', options: [{ name: 'Eggshell', price: 0, isDefault: true }, { name: 'Satin', price: 120 }] }],
+        pricingReadiness: { status: 'PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS', confidence_score: 62, reason: 'Room sizes not given.' },
+        clarificationQuestions: [{ question: 'How many closets?' }],
+        generationTiming: { scopeReused: true },
+        assumptions: ['Ceilings are 9 ft'],
+      },
+      customerSelections: [{ group: 'Paint sheen', option: 'Satin', upgrade: 120 }],
+      invoices: [{ number: 'INV-7', amount: 3000, status: 'unpaid' }],
+      contract: { signedAt: '2026-09-19T00:00:00Z' },
+    };
+    STORES.estimates.set('SBC-FULL', JSON.stringify(FULL));
+    sent = null; reply = 'Labor is 2 lines.';
+    await call({ ref: 'SBC-FULL', messages: [{ role: 'user', text: 'why is labor so high?' }] });
+    const sys = sent.system;
+    ok('EVERY LABOR LINE IS THERE, with qty, unit, rate and line total', /\[Carpentry\] \| Install customer-supplied molding \| 220 ft \| @ \$6\.50 \| = \$1,430\.00/.test(sys) && /Floor and surface protection \| 4 hrs \| @ \$60\.00 \| = \$240\.00/.test(sys), sys.slice(sys.indexOf('LABOR LINES'), sys.indexOf('LABOR LINES') + 260));
+    ok('and every material line', /MATERIAL LINES \(1\)/.test(sys) && /16-gauge finish nails \| 1 box \| @ \$16\.99/.test(sys));
+    /* labor 240 + 1430 = 1670, x1.25 = 2087.50; materials hidden, so that is the customer total */
+    ok('the totals as the customer sees them - labor shown, materials hidden', /labor \$2,087\.50/.test(sys) && /materials \(hidden from customer\)/.test(sys) && /customer total \$2,087\.50/.test(sys), sys.slice(sys.indexOf('TOTALS THE CUSTOMER SEES'), sys.indexOf('TOTALS THE CUSTOMER SEES') + 200));
+    ok('the service card: included, customer supplies, not included, priced options', /Carpentry - \$9,181\.16/.test(sys) && /included: Before any cutting begins/.test(sys) && /customer supplies: Lumber and wood material/.test(sys) && /NOT included: Option D/.test(sys) && /priced options: Option B — Replace 2 premium acoustic windows \$4,393\.75 \(each window\)/.test(sys));
+    ok('the alternatives and the finish choices', /ALTERNATIVES OFFERED: Option A — Crown molding \$1,250\.00/.test(sys) && /Paint sheen: Eggshell \(default\) \$0\.00; Satin \$120\.00/.test(sys));
+    ok('what the customer chose', /WHAT THE CUSTOMER CHOSE: Paint sheen = Satin \(\+\$120\.00\)/.test(sys));
+    ok('how sure: status, confidence, reason, open questions, scope held', /PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS, confidence 62% - Room sizes not given\./.test(sys) && /open questions: How many closets\?/.test(sys) && /scope held from the previous run/.test(sys));
+    ok('assumptions, invoices, contract, dates', /ASSUMPTIONS MADE: Ceilings are 9 ft/.test(sys) && /INVOICES: INV-7 \$3,000\.00 unpaid/.test(sys) && /CONTRACT: signed 2026-09-19/.test(sys) && /SENT TO CUSTOMER: 2026-09-18/.test(sys));
+    ok('THE INTERNAL NOTES AND THE MARKUP ARE STILL NOT THERE', sys.indexOf('8,000') === -1 && sys.indexOf('Squeeze') === -1 && !/[Mm]arkup/.test(sys) && sys.indexOf('25%') === -1, (sys.match(/.*(8,000|Squeeze|arkup|25%).*/) || [''])[0]);
+    ok('it is told it may read and add up the lines, but still never price', /you MAY read them back, add them up/.test(sys) && /Never invent a price/.test(sys));
+
+    const huge = JSON.parse(JSON.stringify(FULL));
+    huge.estimate.labor = Array.from({ length: 400 }, (_, i) => ({ section: 'Carpentry', item: 'A rather long labor line description number ' + i, qty: i, unit: 'hrs', rate: 60 }));
+    STORES.estimates.set('SBC-HUGE', JSON.stringify(huge));
+    sent = null;
+    await call({ ref: 'SBC-HUGE', messages: [{ role: 'user', text: 'hi' }] });
+    ok('a huge estimate is cut, not sent whole', /estimate cut here/.test(sent.system) && sent.system.length < 16000, sent.system.length + ' chars');
+
+    STORES.estimates.set('SBC-THIN', JSON.stringify({ ref: 'SBC-THIN', status: 'new', customer: { name: 'x' }, request: { description: 'test request' }, estimate: {} }));
+    sent = null;
+    await call({ ref: 'SBC-THIN', messages: [{ role: 'user', text: 'hi' }] });
+    ok('a record with no estimate yet adds nothing', sent.system.indexOf('THE GENERATED ESTIMATE') === -1 && /test request/.test(sent.system));
+  }
+
   /* ══ IT REMEMBERS ═══════════════════════════════════════════════════════ */
   console.log('\nit remembers what he tells it\n');
   {
