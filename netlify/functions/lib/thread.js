@@ -236,7 +236,32 @@ function needsReply(record) {
   return thread[thread.length - 1].from === "customer";
 }
 
+/* ── WHICH ESTIMATE IS THIS EMAIL ABOUT, WHEN IT NAMES NONE ──────────────
+     "in my email inbox it's coming as a new email separate from the previous
+      conversation emails or separate from estimate conversation portal ...
+      identity same emails by customer names and email address"
+
+   A customer who hits Reply in Gmail keeps the ref in the subject and is
+   matched by refFromText(). A customer who writes a NEW email - "hi, any
+   update?" - names nothing, and until now that mail stayed in the CRM log
+   only, off the estimate and off the portal. The sender's address is known,
+   so: of that customer's estimates, take the one still in play (not
+   completed, not declined) with the most recent activity; if none is in
+   play, the most recent one. One customer, one job at a time is the common
+   case; the rare customer with two open jobs gets the one touched last,
+   which is the one being talked about. */
+function pickEstimateForEmail(list) {
+  const rows = (Array.isArray(list) ? list : []).filter(function (e) { return e && e.ref; });
+  if (!rows.length) return null;
+  const when = function (e) { return Date.parse(e.updatedAt || e.sentAt || e.submittedAt || 0) || 0; };
+  const open = rows.filter(function (e) { return ["completed", "declined"].indexOf(String(e.status || "")) === -1; });
+  const pool = open.length ? open : rows;
+  pool.sort(function (a, b) { return when(b) - when(a); });
+  return pool[0].ref;
+}
+
 module.exports = {
+  pickEstimateForEmail: pickEstimateForEmail,
   normalizeThread: normalizeThread,
   appendMessage: appendMessage,
   checkRate: checkRate,

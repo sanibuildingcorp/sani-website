@@ -22,7 +22,9 @@
 // TRIGGER: the dashboard calls this (POST, x-sbc-key = DASHBOARD_KEY) when the
 // Customers tab opens and via the "Sync inbox" button. Hard time budget keeps
 // it inside Netlify's 10s limit — a partial sync is fine, the next call
-// continues where this one stopped.
+// continues where this one stopped. ALSO ON A SCHEDULE, every 15 minutes
+// (netlify.toml), so a customer's email reaches the estimate, the portal and
+// the assistant without anyone pressing anything.
 //
 // SETUP (one-time, Netlify env, functions scope):
 //   GMAIL_USER         = info@sanibuildingcorp.com   (the account login; contact@ is an alias in it)
@@ -56,8 +58,15 @@ const thread = require("./lib/thread");
    still lands in lead_messages and the dashboard inbox - it just will not appear
    on the customer's portal. That is why the dashboard reply box is the primary
    path and this is the fallback. */
-async function bridgeToEstimateThread(row, fromAddr) {
-  const ref = thread.refFromText(row.subject, row.body);
+async function bridgeToEstimateThread(row, fromAddr, byEmail) {
+  /* The ref in the text wins. With no ref, the sender's address picks the
+     estimate - see thread.pickEstimateForEmail(). */
+  let ref = thread.refFromText(row.subject, row.body);
+  let matchedBy = "ref";
+  if (!ref) {
+    ref = thread.pickEstimateForEmail((byEmail && byEmail[fromAddr]) || []);
+    matchedBy = "email";
+  }
   if (!ref) return { bridged: false, reason: "no-ref" };
   try {
     const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
@@ -80,7 +89,7 @@ async function bridgeToEstimateThread(row, fromAddr) {
     if (from === "customer") record.lastCustomerMessageAt = appended.message.at;
     else record.lastContractorMessageAt = appended.message.at;
     await store.setJSON(ref, record);
-    return { bridged: true, ref: ref, from: from };
+    return { bridged: true, ref: ref, from: from, matchedBy: matchedBy };
   } catch (e) {
     return { bridged: false, reason: String((e && e.message) || e).slice(0, 120) };
   }
@@ -108,7 +117,7 @@ exports.handler = async function (event) {
   const bridgedToThreads = [];
 
   // 1) Known-customer set (this is the spam wall)
-  let known;
+  let known, byEmail = {};
   try {
     const [msgs, bookings, leads, ests] = await Promise.all([
       sbGet("/rest/v1/lead_messages?select=lead_email&limit=1000"),
@@ -133,6 +142,13 @@ exports.handler = async function (event) {
         .catch(() => ({})),
     ]);
     const estArr = (ests && (ests.records || ests.estimates || ests.list)) || (Array.isArray(ests) ? ests : []);
+    /* address -> that customer's estimates, for mail that names no ref */
+    byEmail = {};
+    estArr.forEach(function (e) {
+      const em = norm(((e && e.customer) || {}).email || (e && e.email));
+      if (!em) return;
+      (byEmail[em] = byEmail[em] || []).push({ ref: e.ref, status: e.status, updatedAt: e.updatedAt, sentAt: e.sentAt, submittedAt: e.submittedAt });
+    });
     known = new Set([]
       .concat((msgs || []).map((r) => norm(r.lead_email)))
       .concat((bookings || []).map((r) => norm(r.customer_email)))
@@ -201,8 +217,8 @@ exports.handler = async function (event) {
            additive: a mail that names an estimate ALSO joins that estimate's
            thread. A failure here must never stop the CRM write. */
         try {
-          const b = await bridgeToEstimateThread(row, fromAddr);
-          if (b.bridged) bridgedToThreads.push(b.ref + " (" + b.from + ")");
+          const b = await bridgeToEstimateThread(row, fromAddr, byEmail);
+          if (b.bridged) bridgedToThreads.push(b.ref + " (" + b.from + ", by " + b.matchedBy + ")");
         } catch (_) {}
         if (res.inserted) inserted++;
         else if (res.status === 409 || res.status === 200 || res.status === 204) matchedButDupe++;
