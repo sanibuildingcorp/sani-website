@@ -1330,6 +1330,7 @@ body {
 .ask-me .ask-body{background:var(--gold-soft,rgba(212,181,114,.16));border:1px solid var(--line)}
 .ask-ai .ask-body{background:#fff;border:1px solid var(--line)}
 .ask-body{border-radius:9px;padding:9px 11px;font-size:13px;line-height:1.62;white-space:pre-wrap;word-break:break-word}
+.ask-body a{color:var(--gold);text-decoration:underline;word-break:break-all}
 .ask-copy{margin-top:5px;font-size:11px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 9px;cursor:pointer;color:var(--ink-muted)}
 .ask-copy:hover{border-color:var(--gold);color:var(--gold)}
 .ask-send{display:flex;gap:7px;align-items:flex-end;padding:11px 13px 0}
@@ -3562,10 +3563,22 @@ function askPanelHtml(r) {
     '</div>';
 }
 
+/* URLs in an answer become links you can tap. The text is escaped FIRST,
+   then the links are found in the escaped text, so nothing a model or a
+   customer wrote can ever become markup - only http(s) URLs become <a>.
+   A trailing . , ) ; is left out of the link: "see https://x.com." */
+function aiLinkify(text) {
+  return esc(text).replace(/https?:\/\/[^\s<]+/g, function (u) {
+    var m = /[.,;:)\]]+$/.exec(u);
+    var tail = m ? m[0] : "";
+    var url = tail ? u.slice(0, -tail.length) : u;
+    return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>' + tail;
+  });
+}
 function askBubble(m, i) {
   var mine = m.role !== "assistant";
   return '<div class="ask-msg ' + (mine ? "ask-me" : "ask-ai") + '">' +
-      '<div class="ask-body">' + esc(m.text) + '</div>' +
+      '<div class="ask-body">' + (mine ? esc(m.text) : aiLinkify(m.text)) + '</div>' +
       (mine ? "" :
         '<button type="button" class="ask-copy" onclick="askCopyToCustomer(' + i + ')">→ Copy to customer message</button>') +
     '</div>';
@@ -3713,7 +3726,7 @@ function aiClose() {
 function aiBubble(m, i) {
   var mine = m.role !== "assistant";
   return '<div class="ask-msg ' + (mine ? "ask-me" : "ask-ai") + '">' +
-      '<div class="ask-body">' + esc(m.text) + '</div>' +
+      '<div class="ask-body">' + (mine ? esc(m.text) : aiLinkify(m.text)) + '</div>' +
       (!mine && currentRecord ? '<button type="button" class="ask-copy" onclick="aiCopyToCustomer(' + i + ')">→ Copy to customer message</button>' : '') +
     '</div>';
 }
