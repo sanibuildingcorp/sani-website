@@ -264,8 +264,9 @@ const THIN = {
     sent = null;
     const many = Array.from({ length: 30 }, (_, i) => ({ role: 'user', text: 'q' + i }));
     await call({ ref: THIN.ref, messages: many });
+    /* 12 at first; raised to 30 when he asked for more. Input is cheap in time. */
     ok('a long history is trimmed rather than allowed to run the clock out',
-      sent.body.messages.length === 12 && sent.body.messages[11].content === 'q29',
+      sent.body.messages.length === 30 && sent.body.messages[29].content === 'q29',
       sent.body.messages.length + ' turns sent');
 
     const empty = await call({ ref: THIN.ref, messages: [] });

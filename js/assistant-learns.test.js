@@ -171,9 +171,10 @@ const post = async (mod, body, headers) => { const r = await mod.handler({ httpM
     ok('the drawer saves under "global", separate from the estimate', JSON.parse(STORES['assistant-chats'].get('global')).length === 2 && JSON.parse(STORES['assistant-chats'].get('SBC-A')).length === 4);
     await post(fn, { messages: [{ role: 'user', text: 'no chat key here' }] });
     ok('a call with no chat key saves nothing', !STORES['assistant-chats'].has('') && STORES['assistant-chats'].size === 2);
-    for (let i = 0; i < 50; i++) await post(fn, { chat: 'BIG', messages: [{ role: 'user', text: 'q' + i }] });
+    for (let i = 0; i < 110; i++) await post(fn, { chat: 'BIG', messages: [{ role: 'user', text: 'q' + i }] });
     const big = JSON.parse(STORES['assistant-chats'].get('BIG'));
-    ok('a chat is capped at 80 turns, newest kept', big.length === 80 && big[big.length - 2].text === 'q49' && big[big.length - 1].role === 'assistant', big.length + ' turns, last user turn ' + big[big.length - 2].text);
+    ok('a chat is capped at 200 turns, newest kept', big.length === 200 && big[big.length - 2].text === 'q109' && big[big.length - 1].role === 'assistant', big.length + ' turns, last user turn ' + big[big.length - 2].text);
+    ok('the page sends the last 30 turns, and the server reads 30', /slice\(-30\)/.test(fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8')) && /const TURNS_SENT = 30;/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8')));
     ok('GET is still refused - history travels by POST', (await fn.handler({ httpMethod: 'GET', headers: {} })).statusCode === 405);
   }
 
