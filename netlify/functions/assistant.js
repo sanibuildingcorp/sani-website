@@ -49,6 +49,7 @@
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
+const customerTotals = require("./lib/customer-total");
 
 /* ── EVERYWHERE, NOT ONLY BESIDE ONE REQUEST ─────────────────────────────
    "i need personal AI assistant which can do everything, read everything in
@@ -195,7 +196,102 @@ async function recordContext(ref) {
     answerLines.length ? "\nANSWERS THEY ALREADY GAVE:\n" + answerLines.join("\n") : "",
     thread.length ? "\nMESSAGES SO FAR:\n" + thread.join("\n") : "",
     str(est.scopeOfWork) ? "\nSCOPE DRAFTED SO FAR:\n" + str(est.scopeOfWork).slice(0, 1200) : "",
+    estimateContext(rec),
   ].filter(Boolean).join("\n");
+}
+
+/* ── THE GENERATED ESTIMATE, LINE BY LINE ────────────────────────────────
+     "Do this AI reading full generated estimate?"
+
+   It did not. It had the request, the answers, the messages and the scope
+   text; not one price line. "Why is labor $9,247?" could not be answered.
+   Now every labor and material line goes in as the dashboard shows it (item,
+   qty, unit, rate, line total), each service card with its included / you
+   supply / not included lists and priced options, the finish groups, what
+   the customer chose, the totals the customer sees, the readiness verdict
+   with its confidence and open questions, the assumptions, the invoices and
+   the contract. Still NOT the internal notes and NOT the markup: an answer
+   here is one tap from the customer's reply box. Capped, because the clock. */
+const ESTIMATE_CHARS = 9000;
+function money(n) { const v = Number(n) || 0; return "$" + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+function estimateContext(rec) {
+  const est = (rec && rec.estimate) || {};
+  const labor = arr(est.labor), materials = arr(est.materials);
+  if (!labor.length && !materials.length && !arr(est.serviceBreakdown).length) return "";
+  const lines = ["", "THE GENERATED ESTIMATE, AS HE SEES IT IN THE DASHBOARD:"];
+  if (str(est.projectTitle)) lines.push("Title: " + str(est.projectTitle));
+  if (str(est.timelineText)) lines.push("Timeline: " + str(est.timelineText).slice(0, 300));
+
+  const row = function (l) {
+    const qty = Number(l && l.qty) || 0, rate = Number(l && l.rate) || 0;
+    return "  " + [str(l && l.section) ? "[" + str(l.section) + "]" : "", str(l && l.item), qty + " " + str(l && l.unit), "@ " + money(rate), "= " + money(qty * rate)].filter(Boolean).join(" | ");
+  };
+  if (labor.length) { lines.push("", "LABOR LINES (" + labor.length + "):"); labor.forEach(function (l) { lines.push(row(l)); }); }
+  if (materials.length) { lines.push("", "MATERIAL LINES (" + materials.length + "):"); materials.forEach(function (l) { lines.push(row(l)); }); }
+
+  let totals = null;
+  try { totals = customerTotals(est, rec); } catch (e) { totals = null; }
+  if (totals) {
+    lines.push("", "TOTALS THE CUSTOMER SEES:",
+      "  labor " + (totals.showLabor ? money(totals.laborAmount) : "(hidden from customer)"),
+      "  materials " + (totals.showMaterials ? money(totals.materialsAmount) : "(hidden from customer)"),
+      "  customer total " + money(totals.customerTotal) + (totals.stampedTotal != null ? " (agreed by the customer)" : ""));
+  }
+
+  const list = function (label, items) {
+    const a = arr(items).map(function (x) { return str(typeof x === "string" ? x : (x && (x.text || x.item || x.label || x.name))); }).filter(Boolean);
+    return a.length ? "    " + label + ": " + a.join("; ") : "";
+  };
+  const opts = function (o) {
+    return arr(o).map(function (x) { return str(x && (x.label || x.title || x.name)) + " " + money(x && x.price) + (str(x && x.description) ? " (" + str(x.description).slice(0, 120) + ")" : ""); }).filter(function (t) { return t.trim() !== money(0); });
+  };
+  const sb = arr(est.serviceBreakdown);
+  if (sb.length) {
+    lines.push("", "SERVICE CARDS THE CUSTOMER SEES:");
+    sb.forEach(function (s) {
+      if (!s) return;
+      lines.push("  " + str(s.title) + (s.subtotal != null ? " - " + money(s.subtotal) : ""));
+      [list("included", s.included), list("customer supplies", s.customerSupplies), list("NOT included", s.notIncluded)].filter(Boolean).forEach(function (l) { lines.push(l); });
+      const o = opts(s.options);
+      if (o.length) lines.push("    priced options: " + o.join("; "));
+    });
+  }
+  const topOpts = opts(est.options);
+  if (topOpts.length) lines.push("", "ALTERNATIVES OFFERED: " + topOpts.join("; "));
+
+  const fg = arr(est.finishGroups);
+  if (fg.length) {
+    lines.push("", "FINISH CHOICES OFFERED:");
+    fg.forEach(function (g) {
+      if (!g) return;
+      lines.push("  " + str(g.name) + ": " + arr(g.options).map(function (o) { return str(o && o.name) + (o && o.isDefault ? " (default)" : "") + " " + money(o && o.price); }).join("; "));
+    });
+  }
+  const sel = arr(rec.customerSelections);
+  if (sel.length) lines.push("", "WHAT THE CUSTOMER CHOSE: " + sel.map(function (x) { return str(x && x.group) + " = " + str(x && x.option) + (Number(x && x.upgrade) ? " (+" + money(x.upgrade) + ")" : ""); }).join("; "));
+
+  const pr = est.pricingReadiness || {};
+  if (str(pr.status) || arr(est.clarificationQuestions).length) {
+    lines.push("", "HOW SURE IS THIS ESTIMATE:");
+    if (str(pr.status)) lines.push("  " + str(pr.status) + (pr.confidence_score != null ? ", confidence " + Number(pr.confidence_score) + "%" : "") + (str(pr.reason) ? " - " + str(pr.reason).slice(0, 300) : ""));
+    const qs = arr(est.clarificationQuestions).map(function (q) { return str(q && (q.question || q)); }).filter(Boolean);
+    if (qs.length) lines.push("  open questions: " + qs.join(" | "));
+    const tm = est.generationTiming || {};
+    if (typeof tm.scopeReused === "boolean") lines.push("  " + (tm.scopeReused ? "scope held from the previous run, only the price was redone" : "the job was re-read this run: " + str(tm.scopeReason)));
+    const rr = est.repairReport;
+    if (rr && arr(rr.failures).length) lines.push("  checks the first draft failed: " + arr(rr.failures).map(function (f) { return str(typeof f === "string" ? f : (f && (f.message || f.check || f.text))); }).filter(Boolean).join(" | "));
+  }
+  const as = arr(est.assumptions).map(function (a) { return str(typeof a === "string" ? a : (a && (a.text || a.item))); }).filter(Boolean);
+  if (as.length) lines.push("", "ASSUMPTIONS MADE: " + as.join("; "));
+
+  const inv = arr(rec.invoices);
+  if (inv.length) lines.push("", "INVOICES: " + inv.map(function (i) { return str(i && (i.number || i.invoiceNumber)) + " " + money(i && i.amount) + " " + str(i && i.status); }).join("; "));
+  if (rec.contract) lines.push("CONTRACT: " + (rec.contract.signedAt ? "signed " + str(rec.contract.signedAt).slice(0, 10) : "drafted, not signed"));
+  if (str(rec.sentAt)) lines.push("SENT TO CUSTOMER: " + str(rec.sentAt).slice(0, 10));
+  if (str(rec.acceptedAt)) lines.push("ACCEPTED: " + str(rec.acceptedAt).slice(0, 10));
+
+  const text = lines.join("\n");
+  return text.length > ESTIMATE_CHARS ? text.slice(0, ESTIMATE_CHARS) + "\n  ... (estimate cut here)" : text;
 }
 
 /* ── MEMORY ──────────────────────────────────────────────────────────────
@@ -323,7 +419,7 @@ function systemPrompt(context, screen, memory) {
     "WHAT YOU MUST NOT DO:",
     "- Never use the word 'licensed' or make any claim about licensing. Say 'fully insured' if insurance comes up.",
     "- Never mention TV mounting as a service.",
-    "- Never invent a price, a rate or a total. He has a pricing system and it is not you. If he asks what something costs, say what the price depends on and what to measure, or tell him to run the estimator.",
+    "- Never invent a price, a rate or a total. He has a pricing system and it is not you. If he asks what something costs, say what the price depends on and what to measure, or tell him to run the estimator. When the estimate's lines are on screen below, you MAY read them back, add them up, compare them and point out what looks off (a quantity, a missing trade, a line that contradicts the customer's words) - that is reading, not pricing.",
     "- Never write as if you are the customer or draft something that pretends to be from them.",
     "- Do not tell him to go and look at the dashboard. He is in it.",
     "",
