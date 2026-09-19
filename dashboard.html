@@ -2768,6 +2768,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
     <button type="button" class="ask-chip" onclick="aiQuick('Who is waiting for my reply, and what is unpaid? Give me the list with names and refs.')">Who is waiting?</button>
     <button type="button" class="ask-chip" onclick="aiQuick('Plan my day from what is on the screen: visits, replies to write, quotes to follow up. Short list, most urgent first.')">Plan my day</button>
     <button type="button" class="ask-chip" onclick="aiQuick('Which sent quotes have had no answer for more than 5 days? For each, one short follow-up line I could send.')">Follow-ups</button>
+    <button type="button" class="ask-chip" onclick="aiQuick('What does my history say? Which kinds of jobs get accepted, at what prices, how many days to accept and to finish. Short, with refs.')">My history</button>
   </div>
   <div class="ask-log" id="ai-log"></div>
   <div class="ask-send">
@@ -3437,6 +3438,9 @@ async function openEdit(ref) {
        button that renderEdit draws — and deliberately not awaited, so a running
        job never delays the record opening. */
     resumeGenerationIfRunning(ref);
+    /* This job's own Ask AI conversation, saved on the server. Not awaited
+       either: the record is usable while it arrives. */
+    askLoadHistory(ref);
   } catch (e) {
     card.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>' + esc(e.message) + '</h3>'
       + '<p style="font-size:12.5px;color:var(--ink-muted,#8a9bb0);margin:6px 0 14px">Ref ' + esc(ref) + ' — this record won\'t open. You can retry or delete it.</p>'
@@ -3604,7 +3608,7 @@ async function askSend() {
       headers: { "Content-Type": "application/json", "x-sbc-key": key },
       /* The same snapshot the drawer sends, so the in-record panel sees the
          rest of the dashboard too and can act on it. */
-      body: JSON.stringify({ ref: ref, messages: ASK_LOG[ref], screen: (typeof aiScreen === "function" ? aiScreen() : null) }),
+      body: JSON.stringify({ ref: ref, chat: ref, messages: ASK_LOG[ref].slice(-12), screen: (typeof aiScreen === "function" ? aiScreen() : null) }),
     });
     /* READ AS TEXT FIRST. When Netlify kills the function at 10s (or anything
        upstream answers with an error page) the body is not JSON, and Safari's
@@ -3667,11 +3671,37 @@ function askCopyToCustomer(i) {
    (status, visit) ask him to confirm first. None of them sends anything to a
    customer: a draft lands in the reply box and he presses Send. */
 var AI_LOG = (function () { try { return JSON.parse(sessionStorage.getItem("sbc-ai-log") || "[]"); } catch (e) { return []; } })();
+var AI_LOADED = false;
 function aiSave() { try { sessionStorage.setItem("sbc-ai-log", JSON.stringify(AI_LOG.slice(-40))); } catch (e) {} }
+
+/* ── SAVED ON THE SERVER ──────────────────────────────────────────────────
+     "let's each estimate has own AI assistant with own history, and use main
+      brain and keep save in main memory"
+   Every exchange is stored by the assistant function itself, under the
+   estimate's ref or under "global" for the drawer. These two load it back:
+   the drawer once per page load, a record every time it opens. A history
+   never overwrites what he typed in this session. */
+async function aiHistory(key) {
+  try {
+    var r = await sbcFetch("/.netlify/functions/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "history", chat: key }) });
+    var d = await r.json();
+    return (r.ok && Array.isArray(d.messages)) ? d.messages : [];
+  } catch (e) { return []; }
+}
+async function aiLoadHistory() {
+  var m = await aiHistory("global");
+  if (m.length && !AI_LOG.length) { AI_LOG = m; aiSave(); aiRender(); }
+}
+async function askLoadHistory(ref) {
+  if (ASK_LOG[ref] && ASK_LOG[ref].length) return;
+  var m = await aiHistory(ref);
+  if (m.length && currentRecord && String(currentRecord.ref) === ref && !(ASK_LOG[ref] && ASK_LOG[ref].length)) { ASK_LOG[ref] = m; askRender(); }
+}
 function aiOpen() {
   var d = document.getElementById("ai-drawer"), o = document.getElementById("ai-overlay");
   if (!d) return;
   d.classList.add("show"); if (o) o.classList.add("show");
+  if (!AI_LOADED) { AI_LOADED = true; aiLoadHistory(); }
   aiRender();
   var t = document.getElementById("ai-text");
   if (t) setTimeout(function () { t.focus(); }, 60);
@@ -3763,7 +3793,7 @@ async function aiSend() {
     var res = await fetch("/.netlify/functions/assistant", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-sbc-key": (typeof sbcKey === "function" ? sbcKey() : "") },
-      body: JSON.stringify({ ref: currentRecord ? String(currentRecord.ref || "") : "", screen: aiScreen(), messages: AI_LOG.slice(-12) }),
+      body: JSON.stringify({ ref: currentRecord ? String(currentRecord.ref || "") : "", chat: "global", screen: aiScreen(), messages: AI_LOG.slice(-12) }),
     });
     /* Text first: a killed function answers with a page, not JSON. */
     var raw = await res.text();
