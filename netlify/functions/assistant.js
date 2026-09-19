@@ -51,6 +51,7 @@ const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
 const customerTotals = require("./lib/customer-total");
 const { insightsText } = require("./lib/insights");
+const chat = require("./lib/assistant-chat");
 
 /* ── EVERYWHERE, NOT ONLY BESIDE ONE REQUEST ─────────────────────────────
    "i need personal AI assistant which can do everything, read everything in
@@ -96,8 +97,15 @@ const TURNS_SENT = 30;
    drawer opens, so a conversation from last week is still there. The write
    happens after the answer and is given a short clock of its own; a slow
    store loses one turn, never the answer. */
-const CHAT_MAX = 200;
 const CHAT_WRITE_MS = 700;
+/* ── THE INTERNET, IN THE BACKGROUND ─────────────────────────────────────
+     "Add internet search to the assistant like you said"
+   One web search takes 3-5 seconds; the sync clock has 9. So a search is
+   an ACTION: {"type":"search","query":...} - the dashboard starts
+   assistant-search-background (15 minutes, not 10 seconds) with a job id,
+   polls {action:"job"} here, and the answer with its sources lands in the
+   same chat when it is ready. The model is told when a question needs it. */
+const JOB_MS = 1500;
 /* Netlify's synchronous limit is 10,000ms. Everything - reading the record,
    the round trip to Claude, building the response - has to fit under this. */
 const BUDGET_MS = 8800;
@@ -142,6 +150,15 @@ exports.handler = async function (event) {
     if (!key) return json(400, { error: "Which chat?" });
     const messages = await withTimeout(loadChat(key), RECORD_MS).catch(function () { return []; });
     return json(200, { chat: key, messages: messages });
+  }
+
+  /* Where a background search got to. Missing means not written yet:
+     the dashboard keeps polling until its own clock runs out. */
+  if (str(body.action) === "job") {
+    const id = jobIdOf(body.id);
+    if (!id) return json(400, { error: "Which job?" });
+    const job = await withTimeout(jobStore().get(id, { type: "json" }), JOB_MS).catch(function () { return null; });
+    return json(200, job && typeof job === "object" ? job : { status: "running" });
   }
 
   if (!turns.length) return json(400, { error: "Nothing to answer" });
@@ -349,24 +366,16 @@ async function loadInsights() {
   return insightsText(v);
 }
 
-/* ── SAVED CHATS ─────────────────────────────────────────────────────────── */
-function chatStore() {
-  return getStore({ name: "assistant-chats", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
+/* ── SAVED CHATS - see lib/assistant-chat.js ───────────────────────────── */
+const chatKeyOf = chat.chatKeyOf, loadChat = chat.loadChat, appendChat = chat.appendChat;
+
+/* ── SEARCH JOBS, written by assistant-search-background ────────────────── */
+function jobStore() {
+  return getStore({ name: "assistant-jobs", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
 }
-function chatKeyOf(v) {
+function jobIdOf(v) {
   const k = str(v);
-  return /^[A-Za-z0-9_-]{1,40}$/.test(k) ? k : "";
-}
-async function loadChat(key) {
-  const v = await chatStore().get(key, { type: "json" });
-  return Array.isArray(v) ? v.filter(function (m) { return m && str(m.text); }).map(function (m) { return { role: m.role === "assistant" ? "assistant" : "user", text: str(m.text), at: str(m.at) }; }) : [];
-}
-async function appendChat(key, userText, replyText) {
-  const cur = await loadChat(key);
-  const at = new Date().toISOString();
-  if (str(userText)) cur.push({ role: "user", text: str(userText).slice(0, 2000), at: at });
-  if (str(replyText)) cur.push({ role: "assistant", text: str(replyText).slice(0, 4000), at: at });
-  await chatStore().set(key, JSON.stringify(cur.slice(-CHAT_MAX)));
+  return /^[A-Za-z0-9_-]{6,60}$/.test(k) ? k : "";
 }
 
 /* ── THE SCREEN, AS TEXT ─────────────────────────────────────────────────
@@ -415,7 +424,7 @@ function screenContext(sc) {
    A closed list. The model writes  ACTION: {"type":...}  on its own line at
    the end; anything else on the line, or a type not here, is dropped. A
    truncated answer drops them all: half an action is worse than none. */
-const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"] };
+const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"], search: ["query"] };
 const TABS = ["all", "new", "drafted", "sent", "accepted", "invoiced", "paid", "completed", "declined", "handyman", "visits", "customers"];
 const STATUSES = ["new", "drafted", "sent", "accepted", "declined", "completed"];
 function extractActions(text, truncated) {
@@ -463,6 +472,7 @@ function systemPrompt(context, screen, memory, insights) {
     "- schedule a site visit:       ACTION: {\"type\":\"visit\",\"customer\":\"...\",\"address\":\"...\",\"datetime\":\"2026-09-20T10:00\",\"reason\":\"...\",\"ref\":\"SBC-...\"}   (New York time; the dashboard asks him to confirm)",
     "- draft a message to the customer of the OPEN estimate: ACTION: {\"type\":\"draft\",\"text\":\"...\"}   - it goes into the reply box only; HE presses Send after reading it",
     "- remember something for later: ACTION: {\"type\":\"remember\",\"text\":\"...\"}",
+    "- SEARCH THE INTERNET:          ACTION: {\"type\":\"search\",\"query\":\"...\"}   - use it whenever the answer needs current information from outside this dashboard: today's price of a product or material, a supplier or store, a building code, permit or co-op rule, a company, an address, the weather, anything that changes over time or that you are not sure of. Also whenever he says 'search online', 'check online', 'google it' or 'look it up'. Write the query the way a good search is written (specific, with New York or the borough when it matters). Say in ONE short line that you are checking online - the answer with its sources arrives in this chat in under a minute - and do not guess the answer yourself in the same reply.",
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "HIS HISTORY (below, when present) is real data from his own jobs, computed from every estimate. You may quote it - what was accepted at what price, how long jobs took to accept and to finish, who never answered - and use it to judge whether a new estimate is in his usual range, to plan follow-ups and to answer 'what do I usually charge for X'. It also says where his customers are by borough and how each borough answers, so 'is a $20k bathroom likely to be accepted in Queens' has an answer from his own jobs. Say the numbers with their refs. History is not a price for a new job; it is what happened before.",

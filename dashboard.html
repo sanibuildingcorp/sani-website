@@ -2775,7 +2775,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
     <textarea id="ai-text" rows="2" maxlength="2000" placeholder="Ask, or tell me what to do…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiSend();}"></textarea>
     <button type="button" class="btn-primary" id="ai-btn-send" onclick="aiSend()">Ask</button>
   </div>
-  <div class="ask-note" id="ai-note">It reads what is on your screen and remembers what you tell it to. Nothing here is sent to a customer: a draft goes into the reply box and you press Send.</div>
+  <div class="ask-note" id="ai-note">It reads what is on your screen, remembers what you tell it to, and searches online when a question needs it (say “search online…”). Nothing here is sent to a customer: a draft goes into the reply box and you press Send.</div>
 </div>
 
 <!-- EDIT MODAL -->
@@ -3811,18 +3811,68 @@ async function aiSend() {
   }
 }
 
+/* ── THE INTERNET, IN THE BACKGROUND ────────────────────────────────────────
+     "Add internet search to the assistant like you said"
+   A search cannot fit in the 9 seconds a sync function has, so it runs in
+   assistant-search-background with a job id. A placeholder bubble goes into
+   the log at once; this polls the job every few seconds and swaps the answer
+   (with its sources) in when it is done. The server also saves the answer to
+   the chat, so it is there again when the record is opened next week. */
+var AI_SEARCH_POLL_MS = 3000, AI_SEARCH_POLLS = 40;
+function aiJobId() { return "S-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8); }
+async function aiStartSearch(query, log, render) {
+  var q = String(query || "").trim();
+  if (!q) return;
+  var bubble = { role: "assistant", text: "🔎 Searching online for “" + q + "”…", pending: true };
+  log.push(bubble); if (render) render();
+  var id = aiJobId();
+  var chatKey = (log === AI_LOG) ? "global" : (currentRecord ? String(currentRecord.ref || "") : "");
+  var lastQ = "";
+  for (var i = log.length - 1; i >= 0; i--) { if (log[i].role !== "assistant") { lastQ = log[i].text; break; } }
+  try {
+    var history = log.filter(function (m) { return !m.pending; }).slice(-6);
+    var sc = (typeof aiScreen === "function") ? aiScreen() : null;
+    var ctx = sc && sc.record ? "Estimate " + sc.record.ref + ": " + (sc.record.title || "") + " for " + (sc.record.name || "") + (sc.record.total ? ", " + sc.record.total : "") : "";
+    var r = await sbcFetch("/.netlify/functions/assistant-search-background", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job: id, chat: chatKey, query: q, question: lastQ, history: history, context: ctx }) });
+    if (r.status !== 202 && !r.ok) { var e0 = await r.json().catch(function () { return {}; }); throw new Error(e0.error || ("HTTP " + r.status)); }
+  } catch (e) {
+    bubble.text = "⚠ Could not start the search: " + e.message; bubble.pending = false; if (render) render(); return;
+  }
+  for (var n = 0; n < AI_SEARCH_POLLS; n++) {
+    await new Promise(function (res) { setTimeout(res, AI_SEARCH_POLL_MS); });
+    var job = null;
+    try {
+      var pr = await sbcFetch("/.netlify/functions/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "job", id: id }) });
+      job = await pr.json();
+    } catch (e2) { job = null; }
+    if (job && job.status === "done") {
+      bubble.text = "🔎 " + String(job.answer || "").trim(); bubble.pending = false;
+      if (log === AI_LOG) aiSave(); if (render) render(); return;
+    }
+    if (job && job.status === "error") {
+      bubble.text = "⚠ The search failed: " + String(job.error || "unknown error"); bubble.pending = false; if (render) render(); return;
+    }
+  }
+  bubble.text = "⚠ The search is taking too long. It may still finish: reopen this chat in a minute."; bubble.pending = false; if (render) render();
+}
+
 /* Runs the actions an answer came with, one after another, and writes what
    happened into the log it was asked from (the drawer's or a record panel's). */
 async function aiRunActions(actions, log, render) {
   for (var i = 0; i < actions.length; i++) {
     var said = "";
-    try { said = await aiExec(actions[i]); }
+    try { said = await aiExec(actions[i], log, render); }
     catch (e) { said = "⚠ Could not do that: " + e.message; }
     if (said) { log.push({ role: "assistant", text: said }); if (log === AI_LOG) aiSave(); if (typeof render === "function") render(); }
   }
 }
-async function aiExec(a) {
+async function aiExec(a, log, render) {
   var t = String((a && a.type) || "");
+  if (t === "search") {
+    aiStartSearch(String(a.query || ""), log || AI_LOG, render || aiRender);
+    return "";
+  }
   if (t === "open") {
     var ref0 = String(a.ref || "");
     if (!estimates.some(function (e) { return e.ref === ref0; })) return "I don't see " + ref0 + " in the list.";
