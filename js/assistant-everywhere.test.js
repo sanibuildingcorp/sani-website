@@ -177,9 +177,9 @@ const SCREEN = {
     await call({ messages: [{ role: 'user', text: 'what did I say about Frank?' }], screen: SCREEN });
     ok('THE NOTE IS IN THE NEXT CALL\'S PROMPT', /THINGS HE ASKED YOU TO REMEMBER:\n- Frank Gaynor wants a call before 9 am/.test(sent.system));
 
-    for (let i = 0; i < 70; i++) { reply = 'ok\nACTION: {"type":"remember","text":"note ' + i + '"}'; await call({ messages: [{ role: 'user', text: 'r' }] }); }
+    for (let i = 0; i < 160; i++) { reply = 'ok\nACTION: {"type":"remember","text":"note ' + i + '"}'; await call({ messages: [{ role: 'user', text: 'r' }] }); }
     const many = JSON.parse(STORES['assistant-memory'].get('notes'));
-    ok('memory is capped, newest kept', many.length === 60 && many[59].text === 'note 69', many.length + ' notes');
+    ok('memory is capped at 150, newest kept', many.length === 150 && many[149].text === 'note 159', many.length + ' notes');
     STORES['assistant-memory'].clear();
   }
 

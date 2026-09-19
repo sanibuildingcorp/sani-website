@@ -84,7 +84,9 @@ const MAX_TOKENS = 800;
 /* The screen snapshot as text is capped here. 87 estimates come to ~10k. */
 const SCREEN_CHARS = 14000;
 const MEMORY_MS = 1500;
-const MEMORY_MAX = 60;
+const MEMORY_MAX = 150;
+/* How much of the chat the model re-reads on every question. */
+const TURNS_SENT = 30;
 /* ── CHATS THAT STAY ─────────────────────────────────────────────────────
      "let's each estimate has own AI assistant with own history, and use
       main brain and keep save in main memory"
@@ -94,7 +96,7 @@ const MEMORY_MAX = 60;
    drawer opens, so a conversation from last week is still there. The write
    happens after the answer and is given a short clock of its own; a slow
    store loses one turn, never the answer. */
-const CHAT_MAX = 80;
+const CHAT_MAX = 200;
 const CHAT_WRITE_MS = 700;
 /* Netlify's synchronous limit is 10,000ms. Everything - reading the record,
    the round trip to Claude, building the response - has to fit under this. */
@@ -123,15 +125,16 @@ exports.handler = async function (event) {
   try { body = JSON.parse(event.body || "{}"); }
   catch { return json(400, { error: "Unreadable request" }); }
 
-  /* The conversation so far, oldest first. Trimmed to the last 12 turns: this is
-     a working assistant beside one job, not an archive, and every extra turn is
-     time against a 10s ceiling. */
+  /* The conversation so far, oldest first. Trimmed to the last TURNS_SENT
+     turns. It was 12; he asked for more ("make the assistant read more
+     messages"), and 30 turns of chat is a few thousand input tokens, which
+     costs almost no time - the clock is spent on OUTPUT. */
   const turns = arr(body.messages)
     .map(function (m) {
       return { role: m && m.role === "assistant" ? "assistant" : "user", text: str(m && m.text) };
     })
     .filter(function (m) { return m.text; })
-    .slice(-12);
+    .slice(-TURNS_SENT);
 
   /* The saved conversation for one chat, so the page can show it again. */
   if (str(body.action) === "history") {

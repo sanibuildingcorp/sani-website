@@ -3608,7 +3608,7 @@ async function askSend() {
       headers: { "Content-Type": "application/json", "x-sbc-key": key },
       /* The same snapshot the drawer sends, so the in-record panel sees the
          rest of the dashboard too and can act on it. */
-      body: JSON.stringify({ ref: ref, chat: ref, messages: ASK_LOG[ref].slice(-12), screen: (typeof aiScreen === "function" ? aiScreen() : null) }),
+      body: JSON.stringify({ ref: ref, chat: ref, messages: ASK_LOG[ref].slice(-30), screen: (typeof aiScreen === "function" ? aiScreen() : null) }),
     });
     /* READ AS TEXT FIRST. When Netlify kills the function at 10s (or anything
        upstream answers with an error page) the body is not JSON, and Safari's
@@ -3672,7 +3672,7 @@ function askCopyToCustomer(i) {
    customer: a draft lands in the reply box and he presses Send. */
 var AI_LOG = (function () { try { return JSON.parse(sessionStorage.getItem("sbc-ai-log") || "[]"); } catch (e) { return []; } })();
 var AI_LOADED = false;
-function aiSave() { try { sessionStorage.setItem("sbc-ai-log", JSON.stringify(AI_LOG.slice(-40))); } catch (e) {} }
+function aiSave() { try { sessionStorage.setItem("sbc-ai-log", JSON.stringify(AI_LOG.slice(-200))); } catch (e) {} }
 
 /* ── SAVED ON THE SERVER ──────────────────────────────────────────────────
      "let's each estimate has own AI assistant with own history, and use main
@@ -3793,7 +3793,7 @@ async function aiSend() {
     var res = await fetch("/.netlify/functions/assistant", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-sbc-key": (typeof sbcKey === "function" ? sbcKey() : "") },
-      body: JSON.stringify({ ref: currentRecord ? String(currentRecord.ref || "") : "", chat: "global", screen: aiScreen(), messages: AI_LOG.slice(-12) }),
+      body: JSON.stringify({ ref: currentRecord ? String(currentRecord.ref || "") : "", chat: "global", screen: aiScreen(), messages: AI_LOG.slice(-30) }),
     });
     /* Text first: a killed function answers with a page, not JSON. */
     var raw = await res.text();
