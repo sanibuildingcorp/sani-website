@@ -50,8 +50,39 @@ const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
 
+/* ── EVERYWHERE, NOT ONLY BESIDE ONE REQUEST ─────────────────────────────
+   "i need personal AI assistant which can do everything, read everything in
+    my dashboard, analyze, plan's strategy ... whatever page i will open,
+    always personal AI assistant needs to read and if i ask questions then
+    answers, if i command do that then let's him do it"
+
+   Three additions, each a small thing on top of the panel above:
+
+   SCREEN.  The dashboard sends a compact snapshot of what he is looking at -
+   the open tab, every estimate as one line (ref, customer, service, status,
+   total, dates, unpaid, reply needed), the site visits, the handyman
+   bookings, the open record if there is one. It travels in the request
+   because the browser already holds it; reading it again from Blobs would
+   spend the ten seconds. Capped, so a big list cannot run the clock out.
+
+   MEMORY.  "Remember that ..." is kept in a Blobs store and read on every
+   call, so what he tells it on Monday it still knows on Friday. Nothing else
+   is stored: the chat itself lives in the browser.
+
+   ACTIONS.  When he tells it to do something the dashboard can do, it ends
+   its reply with a line  ACTION: {json}.  The line is stripped from the text
+   and returned as data; the DASHBOARD executes it with its own existing
+   functions (open a record, switch tab, change a status, add a visit, put a
+   draft in the reply box). "remember" is executed here. The list of actions
+   is closed: anything not on it is ignored. And still: NOTHING IS SENT TO A
+   CUSTOMER. A draft goes into the box; he presses Send. */
+
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 800;
+/* The screen snapshot as text is capped here. 87 estimates come to ~10k. */
+const SCREEN_CHARS = 14000;
+const MEMORY_MS = 1500;
+const MEMORY_MAX = 60;
 /* Netlify's synchronous limit is 10,000ms. Everything - reading the record,
    the round trip to Claude, building the response - has to fit under this. */
 const BUDGET_MS = 8800;
@@ -91,17 +122,30 @@ exports.handler = async function (event) {
 
   if (!turns.length) return json(400, { error: "Nothing to answer" });
 
-  let context = "";
-  if (str(body.ref)) {
-    try { context = await withTimeout(recordContext(str(body.ref)), RECORD_MS); }
-    catch (e) { context = ""; }   /* a chat without the record still works */
-  }
+  /* The record and the memory are read side by side, each on its own short
+     clock; either one missing still leaves a working assistant. */
+  const reads = await Promise.all([
+    str(body.ref) ? withTimeout(recordContext(str(body.ref)), RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
+    withTimeout(loadMemory(), MEMORY_MS).catch(function () { return []; }),
+  ]);
+  const context = reads[0];
+  const memory = reads[1];
+  const screen = screenContext(body.screen);
 
   try {
     const deadline = started + budgetMs;
-    const out = await callClaude(apiKey, systemPrompt(context), turns, deadline);
-    if (!out.text) return json(502, { error: "The assistant returned nothing. Try again." });
-    return json(200, { reply: out.text, truncated: out.truncated === true });
+    const out = await callClaude(apiKey, systemPrompt(context, screen, memory), turns, deadline);
+    const parsed = extractActions(out.text, out.truncated === true);
+    if (!parsed.text && !parsed.actions.length) return json(502, { error: "The assistant returned nothing. Try again." });
+
+    /* "remember" is the one action that lives here. Everything else is the
+       dashboard's to do, with its own functions and its own confirm. */
+    const toClient = [];
+    for (const a of parsed.actions) {
+      if (a.type === "remember") { try { await remember(memory, a.text); } catch (e) { /* memory is best effort */ } }
+      else toClient.push(a);
+    }
+    return json(200, { reply: parsed.text || "Done.", truncated: out.truncated === true, actions: toClient });
   } catch (err) {
     console.error("assistant error:", err && err.message);
     return json(502, { error: str(err && err.message) || "The assistant could not be reached" });
@@ -154,10 +198,119 @@ async function recordContext(ref) {
   ].filter(Boolean).join("\n");
 }
 
-function systemPrompt(context) {
+/* ── MEMORY ──────────────────────────────────────────────────────────────
+   One key in one store: a list of short notes he asked it to keep. */
+function memoryStore() {
+  return getStore({ name: "assistant-memory", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
+}
+async function loadMemory() {
+  const v = await memoryStore().get("notes", { type: "json" });
+  return Array.isArray(v) ? v : [];
+}
+async function remember(memory, text) {
+  const t = str(text).slice(0, 400);
+  if (!t) return;
+  const next = memory.concat([{ text: t, at: new Date().toISOString() }]).slice(-MEMORY_MAX);
+  memory.push({ text: t, at: next[next.length - 1].at });
+  await memoryStore().set("notes", JSON.stringify(next));
+}
+
+/* ── THE SCREEN, AS TEXT ─────────────────────────────────────────────────
+   Built from the snapshot the dashboard sends. Nothing here is fetched. */
+function screenContext(sc) {
+  if (!sc || typeof sc !== "object") return "";
+  const lines = [];
+  if (str(sc.today)) lines.push("TODAY (New York): " + str(sc.today));
+  lines.push("HE IS LOOKING AT: " + (str(sc.ref) ? "estimate " + str(sc.ref) + " (open)" : "the " + (str(sc.tab) || "all") + " tab"));
+  const c = sc.counts && typeof sc.counts === "object" ? sc.counts : null;
+  if (c) lines.push("COUNTS: " + Object.keys(c).map(function (k) { return k + " " + c[k]; }).join(", "));
+
+  const ests = arr(sc.estimates);
+  if (ests.length) {
+    lines.push("", "ALL ESTIMATES (" + ests.length + "), newest first. ref | customer | service | status | customer total | submitted | sent | unpaid | notes:");
+    ests.forEach(function (e) {
+      if (!e) return;
+      lines.push("  " + [str(e.ref), str(e.name), str(e.service), str(e.status), e.total != null ? "$" + Math.round(Number(e.total) || 0) : "-",
+        str(e.submitted) || "-", str(e.sent) || "-", Number(e.unpaid) > 0 ? "unpaid $" + Math.round(Number(e.unpaid)) : "-",
+        (e.needsReply ? "CUSTOMER WAITING FOR A REPLY" : "") + (e.invoices ? " " + e.invoices + " invoice(s)" : "")].join(" | ").trim());
+    });
+  }
+  const vis = arr(sc.visits);
+  if (vis.length) {
+    lines.push("", "SITE VISITS (open):");
+    vis.forEach(function (v) { if (v) lines.push("  " + [str(v.datetime), str(v.customer), str(v.address), str(v.reason), str(v.ref), v.inCalendar ? "in Google Calendar" : "not in calendar", "id " + str(v.id)].filter(Boolean).join(" | ")); });
+  }
+  const hm = arr(sc.handyman);
+  if (hm.length) {
+    lines.push("", "HANDYMAN BOOKINGS:");
+    hm.forEach(function (b) { if (b) lines.push("  " + [str(b.ref), str(b.customer), str(b.service), str(b.status), str(b.date) ? "preferred " + str(b.date) : "", str(b.submitted)].filter(Boolean).join(" | ")); });
+  }
+  if (sc.customers != null) lines.push("", "CUSTOMER DIRECTORY: " + Number(sc.customers) + " people");
+  const rec = sc.record && typeof sc.record === "object" ? sc.record : null;
+  if (rec) {
+    lines.push("", "THE OPEN ESTIMATE, AS THE DASHBOARD SHOWS IT:");
+    ["ref", "name", "status", "title", "total", "submitted", "sent", "accepted", "invoices", "unpaid", "contract"].forEach(function (k) {
+      if (rec[k] != null && str(rec[k])) lines.push("  " + k + ": " + str(rec[k]));
+    });
+  }
+  const text = lines.join("\n");
+  return text.length > SCREEN_CHARS ? text.slice(0, SCREEN_CHARS) + "\n  ... (list cut here)" : text;
+}
+
+/* ── ACTIONS ─────────────────────────────────────────────────────────────
+   A closed list. The model writes  ACTION: {"type":...}  on its own line at
+   the end; anything else on the line, or a type not here, is dropped. A
+   truncated answer drops them all: half an action is worse than none. */
+const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"] };
+const TABS = ["all", "new", "drafted", "sent", "accepted", "invoiced", "paid", "completed", "declined", "handyman", "visits", "customers"];
+const STATUSES = ["new", "drafted", "sent", "accepted", "declined", "completed"];
+function extractActions(text, truncated) {
+  const actions = [];
+  const kept = [];
+  String(text || "").split("\n").forEach(function (line) {
+    /* Any line that starts with ACTION: is taken off the text, well-formed or
+       not - a broken action shown to him as prose is just confusing. */
+    const m = /^\s*ACTION:\s*(.*)$/.exec(line);
+    if (!m) { kept.push(line); return; }
+    if (truncated) return;
+    let a = null;
+    try { a = JSON.parse(m[1]); } catch (e) { a = null; }
+    if (!a || typeof a !== "object") return;
+    const type = str(a.type);
+    const need = ACTION_TYPES[type];
+    if (!need) return;
+    if (!need.every(function (k) { return str(a[k]); })) return;
+    if (type === "tab" && TABS.indexOf(str(a.tab)) === -1) return;
+    if (type === "status" && STATUSES.indexOf(str(a.status)) === -1) return;
+    const clean = { type: type };
+    Object.keys(a).forEach(function (k) { if (k !== "type") clean[k] = str(a[k]).slice(0, 2000); });
+    actions.push(clean);
+  });
+  return { text: kept.join("\n").trim(), actions: actions };
+}
+
+function systemPrompt(context, screen, memory) {
+  const notes = arr(memory).map(function (n) { return "- " + str(n && n.text); }).filter(function (l) { return l !== "- "; });
   return [
     "You are the assistant to Zurab, who runs Sani Building Corp, a renovation and repair contractor in Brooklyn serving the five NYC boroughs and Long Island.",
-    "You are open inside his own dashboard, beside a customer request he is deciding how to price.",
+    "You are open inside his own dashboard - on every page of it. You see what he sees, you answer what he asks, and when he tells you to do something the dashboard can do, you do it.",
+    "",
+    "THE DASHBOARD:",
+    "- Tabs: All, New, Drafts, Sent, Accepted, Invoiced, Paid, Completed, Declined, Handyman, Visits, Customers.",
+    "- An open estimate has five steps: 1 Customer details (description, photos, this assistant, the conversation with the customer), 2 Generate estimate (the AI estimator, house rules), 3 Review and edit the lines, 4 Send to customer (their quote page), 5 How sure is this estimate.",
+    "- Customer replies arrive in the conversation of their estimate and by email to contact@. 'CUSTOMER WAITING FOR A REPLY' in the list means he has not answered yet.",
+    "- Site visits live in the Visits tab, go into his Google Calendar, and he gets a reminder email every morning (today) and evening (tomorrow).",
+    "- Invoices and contracts are made from an accepted estimate. Handyman bookings come from the small-jobs form.",
+    "",
+    "WHAT YOU CAN DO (actions). When he asks you to do one of these, do it: answer in one short line, then on its own last line write  ACTION: {json}  - one line per action, nothing after it.",
+    "- open an estimate:            ACTION: {\"type\":\"open\",\"ref\":\"SBC-...\"}",
+    "- switch tab:                  ACTION: {\"type\":\"tab\",\"tab\":\"sent\"}   (all, new, drafted, sent, accepted, invoiced, paid, completed, declined, handyman, visits, customers)",
+    "- change an estimate's status: ACTION: {\"type\":\"status\",\"ref\":\"SBC-...\",\"status\":\"completed\"}   (new, drafted, sent, accepted, declined, completed) - the dashboard asks him to confirm",
+    "- schedule a site visit:       ACTION: {\"type\":\"visit\",\"customer\":\"...\",\"address\":\"...\",\"datetime\":\"2026-09-20T10:00\",\"reason\":\"...\",\"ref\":\"SBC-...\"}   (New York time; the dashboard asks him to confirm)",
+    "- draft a message to the customer of the OPEN estimate: ACTION: {\"type\":\"draft\",\"text\":\"...\"}   - it goes into the reply box only; HE presses Send after reading it",
+    "- remember something for later: ACTION: {\"type\":\"remember\",\"text\":\"...\"}",
+    "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
+    "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "",
     "HOW TO ANSWER HIM:",
     "- Short. He is reading this on a phone between jobs. No preamble, no summary of what he just asked. Stay under about 150 words unless he asks for more; if there is more to say, end with one line offering it.",
@@ -174,8 +327,10 @@ function systemPrompt(context) {
     "- Never write as if you are the customer or draft something that pretends to be from them.",
     "- Do not tell him to go and look at the dashboard. He is in it.",
     "",
-    context ? context : "No job is open. Answer whatever he asks.",
-  ].join("\n");
+    notes.length ? "THINGS HE ASKED YOU TO REMEMBER:\n" + notes.join("\n") + "\n" : "",
+    context ? context : "No job is open." + (screen ? "" : " Answer whatever he asks."),
+    screen ? "\nWHAT IS ON HIS SCREEN:\n" + screen : "",
+  ].filter(Boolean).join("\n");
 }
 
 /* Streams the answer and resolves { text, truncated }.
