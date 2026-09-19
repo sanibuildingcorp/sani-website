@@ -50,6 +50,7 @@ const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
 const customerTotals = require("./lib/customer-total");
+const { insightsText } = require("./lib/insights");
 
 /* ── EVERYWHERE, NOT ONLY BESIDE ONE REQUEST ─────────────────────────────
    "i need personal AI assistant which can do everything, read everything in
@@ -84,6 +85,17 @@ const MAX_TOKENS = 800;
 const SCREEN_CHARS = 14000;
 const MEMORY_MS = 1500;
 const MEMORY_MAX = 60;
+/* ── CHATS THAT STAY ─────────────────────────────────────────────────────
+     "let's each estimate has own AI assistant with own history, and use
+      main brain and keep save in main memory"
+   Every exchange is appended to an assistant-chats store under the chat's
+   key: the estimate ref for the panel inside a record, "global" for the
+   drawer. The dashboard loads the history back when the record or the
+   drawer opens, so a conversation from last week is still there. The write
+   happens after the answer and is given a short clock of its own; a slow
+   store loses one turn, never the answer. */
+const CHAT_MAX = 80;
+const CHAT_WRITE_MS = 700;
 /* Netlify's synchronous limit is 10,000ms. Everything - reading the record,
    the round trip to Claude, building the response - has to fit under this. */
 const BUDGET_MS = 8800;
@@ -121,21 +133,32 @@ exports.handler = async function (event) {
     .filter(function (m) { return m.text; })
     .slice(-12);
 
+  /* The saved conversation for one chat, so the page can show it again. */
+  if (str(body.action) === "history") {
+    const key = chatKeyOf(body.chat);
+    if (!key) return json(400, { error: "Which chat?" });
+    const messages = await withTimeout(loadChat(key), RECORD_MS).catch(function () { return []; });
+    return json(200, { chat: key, messages: messages });
+  }
+
   if (!turns.length) return json(400, { error: "Nothing to answer" });
 
-  /* The record and the memory are read side by side, each on its own short
-     clock; either one missing still leaves a working assistant. */
+  /* The record, the memory and the history insights are read side by side,
+     each on its own short clock; any of them missing still leaves a working
+     assistant. */
   const reads = await Promise.all([
     str(body.ref) ? withTimeout(recordContext(str(body.ref)), RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
     withTimeout(loadMemory(), MEMORY_MS).catch(function () { return []; }),
+    withTimeout(loadInsights(), MEMORY_MS).catch(function () { return ""; }),
   ]);
   const context = reads[0];
   const memory = reads[1];
+  const insights = reads[2];
   const screen = screenContext(body.screen);
 
   try {
     const deadline = started + budgetMs;
-    const out = await callClaude(apiKey, systemPrompt(context, screen, memory), turns, deadline);
+    const out = await callClaude(apiKey, systemPrompt(context, screen, memory, insights), turns, deadline);
     const parsed = extractActions(out.text, out.truncated === true);
     if (!parsed.text && !parsed.actions.length) return json(502, { error: "The assistant returned nothing. Try again." });
 
@@ -146,7 +169,13 @@ exports.handler = async function (event) {
       if (a.type === "remember") { try { await remember(memory, a.text); } catch (e) { /* memory is best effort */ } }
       else toClient.push(a);
     }
-    return json(200, { reply: parsed.text || "Done.", truncated: out.truncated === true, actions: toClient });
+    const replyText = parsed.text || "Done.";
+    const chatKey = chatKeyOf(body.chat);
+    if (chatKey) {
+      const last = turns[turns.length - 1];
+      await withTimeout(appendChat(chatKey, last.role === "user" ? last.text : "", replyText), CHAT_WRITE_MS).catch(function () { /* one turn lost, answer kept */ });
+    }
+    return json(200, { reply: replyText, truncated: out.truncated === true, actions: toClient });
   } catch (err) {
     console.error("assistant error:", err && err.message);
     return json(502, { error: str(err && err.message) || "The assistant could not be reached" });
@@ -311,6 +340,32 @@ async function remember(memory, text) {
   await memoryStore().set("notes", JSON.stringify(next));
 }
 
+/* ── HISTORY INSIGHTS, written nightly by assistant-learn ───────────────── */
+async function loadInsights() {
+  const v = await memoryStore().get("insights", { type: "json" });
+  return insightsText(v);
+}
+
+/* ── SAVED CHATS ─────────────────────────────────────────────────────────── */
+function chatStore() {
+  return getStore({ name: "assistant-chats", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
+}
+function chatKeyOf(v) {
+  const k = str(v);
+  return /^[A-Za-z0-9_-]{1,40}$/.test(k) ? k : "";
+}
+async function loadChat(key) {
+  const v = await chatStore().get(key, { type: "json" });
+  return Array.isArray(v) ? v.filter(function (m) { return m && str(m.text); }).map(function (m) { return { role: m.role === "assistant" ? "assistant" : "user", text: str(m.text), at: str(m.at) }; }) : [];
+}
+async function appendChat(key, userText, replyText) {
+  const cur = await loadChat(key);
+  const at = new Date().toISOString();
+  if (str(userText)) cur.push({ role: "user", text: str(userText).slice(0, 2000), at: at });
+  if (str(replyText)) cur.push({ role: "assistant", text: str(replyText).slice(0, 4000), at: at });
+  await chatStore().set(key, JSON.stringify(cur.slice(-CHAT_MAX)));
+}
+
 /* ── THE SCREEN, AS TEXT ─────────────────────────────────────────────────
    Built from the snapshot the dashboard sends. Nothing here is fetched. */
 function screenContext(sc) {
@@ -385,7 +440,7 @@ function extractActions(text, truncated) {
   return { text: kept.join("\n").trim(), actions: actions };
 }
 
-function systemPrompt(context, screen, memory) {
+function systemPrompt(context, screen, memory, insights) {
   const notes = arr(memory).map(function (n) { return "- " + str(n && n.text); }).filter(function (l) { return l !== "- "; });
   return [
     "You are the assistant to Zurab, who runs Sani Building Corp, a renovation and repair contractor in Brooklyn serving the five NYC boroughs and Long Island.",
@@ -407,6 +462,7 @@ function systemPrompt(context, screen, memory) {
     "- remember something for later: ACTION: {\"type\":\"remember\",\"text\":\"...\"}",
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
+    "HIS HISTORY (below, when present) is real data from his own jobs, computed from every estimate. You may quote it - what was accepted at what price, how long jobs took to accept and to finish, who never answered - and use it to judge whether a new estimate is in his usual range, to plan follow-ups and to answer 'what do I usually charge for X'. Say the numbers with their refs. History is not a price for a new job; it is what happened before.",
     "",
     "HOW TO ANSWER HIM:",
     "- Short. He is reading this on a phone between jobs. No preamble, no summary of what he just asked. Stay under about 150 words unless he asks for more; if there is more to say, end with one line offering it.",
@@ -426,6 +482,7 @@ function systemPrompt(context, screen, memory) {
     notes.length ? "THINGS HE ASKED YOU TO REMEMBER:\n" + notes.join("\n") + "\n" : "",
     context ? context : "No job is open." + (screen ? "" : " Answer whatever he asks."),
     screen ? "\nWHAT IS ON HIS SCREEN:\n" + screen : "",
+    insights ? "\nWHAT HIS HISTORY SHOWS (from all his estimates, updated nightly):\n" + insights : "",
   ].filter(Boolean).join("\n");
 }
 

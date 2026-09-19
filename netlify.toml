@@ -8,6 +8,11 @@
 [functions."visit-reminders"]
   schedule = "0 11,22 * * *"
 
+# The assistant learns from his history once a night: what was accepted at
+# what price, how long jobs took, who never answered. 09:30 UTC = 5:30 am NY.
+[functions."assistant-learn"]
+  schedule = "30 9 * * *"
+
 # Serve /dashboard through a top-level shell that writes the real dashboard HTML
 # into the same document, then loads Customer Scope Control. This keeps Safari
 # full-page screenshots working (no iframe) and avoids editing the huge dashboard.html.
