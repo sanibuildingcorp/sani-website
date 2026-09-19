@@ -32,6 +32,39 @@ function serviceOf(rec) {
   const s = str(rec && rec.request && rec.request.service) || str(rec && rec.estimate && rec.estimate.projectTitle) || "Other";
   return (s.split(/[,;—–(/]| - /)[0] || "Other").trim().slice(0, 40) || "Other";
 }
+/* ── WHERE THE CUSTOMER IS ───────────────────────────────────────────────
+     "in which borough customers was, potentially in this borough customers
+      are more reach and potentially they will accept this estimate"
+   Read from the address: a ZIP is the surest tell (100xx Manhattan, 112xx
+   Brooklyn, 104xx Bronx, 103xx Staten Island, 11[0-1,3-6]xx Queens, 115-119
+   Long Island), then borough and neighbourhood names, then NJ. "New York,
+   NY" with no ZIP is Manhattan - that is how Manhattan customers write it. */
+const BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island", "Long Island", "New Jersey"];
+const QUEENS = /\b(astoria|flushing|forest hills|jackson heights|long island city|\blic\b|bayside|rego park|elmhurst|jamaica|woodside|sunnyside|ridgewood|kew gardens|fresh meadows|whitestone|howard beach|ozone park|corona|maspeth|glendale|middle village|college point|douglaston|little neck|far rockaway|rockaway|briarwood|hollis|bellerose|floral park|richmond hill|woodhaven|springfield gardens|laurelton|rosedale|st\.? albans|cambria heights)\b/i;
+const LI = /\b(nassau|suffolk|hempstead|garden city|great neck|manhasset|port washington|mineola|valley stream|long beach|lynbrook|oceanside|rockville centre|freeport|massapequa|levittown|hicksville|huntington|babylon|islip|smithtown|bay shore|patchogue|riverhead|montauk|hamptons|southampton|east hampton|westbury|syosset|jericho|plainview|oyster bay|roslyn|glen cove|merrick|bellmore|wantagh|seaford|farmingdale|melville|commack|brentwood|central islip|ronkonkoma|sayville|lake grove|stony brook|port jefferson|setauket)\b/i;
+function boroughOf(rec) {
+  const a = [rec && rec.customer && rec.customer.address, rec && rec.request && rec.request.address, rec && rec.customer && rec.customer.borough, rec && rec.request && rec.request.borough].map(str).filter(Boolean).join(" ");
+  if (!a) return "Unknown";
+  const zip = (a.match(/\b(1[01]\d{3})\b/) || [])[1];
+  if (zip) {
+    const n = Number(zip);
+    if (n >= 10001 && n <= 10299) return "Manhattan";
+    if (n >= 10301 && n <= 10399) return "Staten Island";
+    if (n >= 10401 && n <= 10499) return "Bronx";
+    if (n >= 11201 && n <= 11299) return "Brooklyn";
+    if ((n >= 11001 && n <= 11199) || (n >= 11351 && n <= 11499) || (n >= 11690 && n <= 11699)) return "Queens";
+    if (n >= 11500 && n <= 11999) return "Long Island";
+  }
+  if (/\bstaten island\b/i.test(a)) return "Staten Island";
+  if (/\bbrooklyn\b|\bbklyn\b/i.test(a)) return "Brooklyn";
+  if (/\bbronx\b/i.test(a)) return "Bronx";
+  if (/\bqueens\b/i.test(a) || QUEENS.test(a)) return "Queens";
+  if (/\bmanhattan\b|\bupper (east|west) side\b|\bharlem\b|\btribeca\b|\bsoho\b|\bchelsea\b|\bmidtown\b/i.test(a)) return "Manhattan";
+  if (/\bnew jersey\b|\bnj\b|\bjersey city\b|\bhoboken\b/i.test(a)) return "New Jersey";
+  if (/\blong island\b/i.test(a) || LI.test(a)) return "Long Island";
+  if (/\bnew york\b|\bnyc\b|\bny\b/i.test(a)) return "Manhattan";
+  return "Unknown";
+}
 function days(a, b) {
   const ta = Date.parse(a), tb = Date.parse(b);
   if (!Number.isFinite(ta) || !Number.isFinite(tb)) return null;
@@ -59,7 +92,7 @@ function rowOf(rec, now) {
   const accepted = !!(rec.acceptedAt || status === "accepted" || status === "completed");
   const declined = !!(rec.declinedAt || status === "declined");
   return {
-    ref: str(rec.ref), name: str(rec.customer && rec.customer.name), service: serviceOf(rec), status: status,
+    ref: str(rec.ref), name: str(rec.customer && rec.customer.name), service: serviceOf(rec), borough: boroughOf(rec), status: status,
     total: total, paid: paid,
     submittedAt: date(rec.submittedAt), sentAt: date(rec.sentAt), acceptedAt: date(rec.acceptedAt), declinedAt: date(rec.declinedAt), completedAt: date(est.completedAt),
     accepted: accepted, declined: declined,
@@ -102,9 +135,32 @@ function buildInsights(records, now) {
     };
   }).sort(function (a, b) { return b.count - a.count; }).slice(0, 15);
 
+  /* Per borough: the same counts and accepted prices, so "Manhattan says
+     yes to $20k bathrooms, Queens does not" is a thing it can read off. */
+  const byB = {};
+  rows.forEach(function (r) {
+    const b = byB[r.borough] || (byB[r.borough] = { borough: r.borough, count: 0, sent: 0, accepted: 0, declined: 0, noAnswer: 0, totals: [], sentTotals: [] });
+    b.count++;
+    if (r.sentAt) { b.sent++; if (r.total > 0) b.sentTotals.push(r.total); }
+    if (r.accepted) { b.accepted++; if (r.total > 0) b.totals.push(r.total); }
+    else if (r.declined) b.declined++;
+    else if (r.sentAt) b.noAnswer++;
+  });
+  const boroughs = Object.keys(byB).map(function (k) {
+    const b = byB[k];
+    const settled = b.accepted + b.declined + b.noAnswer;
+    return {
+      borough: b.borough, count: b.count, sent: b.sent, accepted: b.accepted, declined: b.declined, noAnswer: b.noAnswer,
+      acceptRate: settled ? Math.round(100 * b.accepted / settled) : null,
+      medianAccepted: median(b.totals), highestAccepted: b.totals.length ? Math.max.apply(null, b.totals) : null,
+      medianSent: median(b.sentTotals),
+      acceptedValue: b.totals.reduce(function (s, n) { return s + n; }, 0),
+    };
+  }).sort(function (a, b) { return b.count - a.count; });
+
   const recentAccepted = acc.filter(function (r) { return r.total > 0; })
     .sort(function (a, b) { return (b.acceptedAt || "").localeCompare(a.acceptedAt || ""); }).slice(0, 15)
-    .map(function (r) { return { ref: r.ref, name: r.name, service: r.service, total: r.total, acceptedAt: r.acceptedAt, daysToAccept: r.daysToAccept, completedAt: r.completedAt, daysToComplete: r.daysToComplete, paid: r.paid }; });
+    .map(function (r) { return { ref: r.ref, name: r.name, service: r.service, borough: r.borough, total: r.total, acceptedAt: r.acceptedAt, daysToAccept: r.daysToAccept, completedAt: r.completedAt, daysToComplete: r.daysToComplete, paid: r.paid }; });
 
   const followUp = noAnswer.filter(function (r) { return r.daysSinceSent != null && r.daysSinceSent >= 5; })
     .sort(function (a, b) { return b.daysSinceSent - a.daysSinceSent; }).slice(0, 15)
@@ -119,11 +175,11 @@ function buildInsights(records, now) {
     paidTotal: rows.reduce(function (s, r) { return s + r.paid; }, 0),
     medianDaysToAccept: median(acc.map(function (r) { return r.daysToAccept; })),
     medianDaysToComplete: median(acc.map(function (r) { return r.daysToComplete; })),
-    services: services, recentAccepted: recentAccepted, followUp: followUp,
+    services: services, boroughs: boroughs, recentAccepted: recentAccepted, followUp: followUp,
   };
 }
 
-const INSIGHTS_CHARS = 4500;
+const INSIGHTS_CHARS = 5500;
 function insightsText(ins) {
   if (!ins || typeof ins !== "object" || !ins.records) return "";
   const L = [];
@@ -140,10 +196,18 @@ function insightsText(ins) {
         + " | " + (s.medianDaysToAccept != null ? s.medianDaysToAccept : "-") + " | " + (s.medianDaysToComplete != null ? s.medianDaysToComplete : "-"));
     });
   }
+  if (ins.boroughs && ins.boroughs.length) {
+    L.push("BY BOROUGH (where | estimates | accepted / declined / no answer / rate | accepted price median, highest | median price of what was sent | accepted work):");
+    ins.boroughs.forEach(function (b) {
+      L.push("  " + b.borough + " | " + b.count + " | " + b.accepted + " / " + b.declined + " / " + b.noAnswer + (b.acceptRate != null ? " / " + b.acceptRate + "%" : "")
+        + " | " + (b.medianAccepted != null ? money(b.medianAccepted) + ", " + money(b.highestAccepted) : "-")
+        + " | " + (b.medianSent != null ? money(b.medianSent) : "-") + " | " + money(b.acceptedValue));
+    });
+  }
   if (ins.recentAccepted && ins.recentAccepted.length) {
     L.push("RECENT ACCEPTED JOBS (ref | customer | kind | price | accepted | days to accept | completed | paid):");
     ins.recentAccepted.forEach(function (r) {
-      L.push("  " + [r.ref, r.name, r.service, money(r.total), r.acceptedAt || "-", r.daysToAccept != null ? r.daysToAccept + "d" : "-", r.completedAt ? r.completedAt + (r.daysToComplete != null ? " (" + r.daysToComplete + "d)" : "") : "not yet", money(r.paid)].join(" | "));
+      L.push("  " + [r.ref, r.name, r.service + (r.borough ? ", " + r.borough : ""), money(r.total), r.acceptedAt || "-", r.daysToAccept != null ? r.daysToAccept + "d" : "-", r.completedAt ? r.completedAt + (r.daysToComplete != null ? " (" + r.daysToComplete + "d)" : "") : "not yet", money(r.paid)].join(" | "));
     });
   }
   if (ins.followUp && ins.followUp.length) {
@@ -156,4 +220,4 @@ function insightsText(ins) {
   return text.length > INSIGHTS_CHARS ? text.slice(0, INSIGHTS_CHARS) + "\n  ... (cut)" : text;
 }
 
-module.exports = { buildInsights, insightsText, serviceOf, days, median, rowOf };
+module.exports = { buildInsights, insightsText, serviceOf, boroughOf, days, median, rowOf, BOROUGHS };

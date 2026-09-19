@@ -57,6 +57,39 @@ const REC = [
   ok('THE TEXT SAYS IT IN ONE SCREEN', /6 estimates, 5 sent, 2 accepted, 1 declined, 2 sent with no answer\. Acceptance 40%/.test(text) && /Bathroom Renovation \| 2 \| 2 \/ 0 \/ 100% \| \$10,000 \[\$8,000-\$12,000\] \| 7 \| 25/.test(text) && /SBC-D \| Frank \| Painting \| \$4,000 \| 14d \(they wrote last - HE owes a reply\)/.test(text), text);
   ok('THE INTERNAL NOTES ARE NOT IN IT', JSON.stringify(ins).indexOf('9,000') === -1 && text.indexOf('Internal') === -1);
   ok('no records -> empty text, not a crash', I.insightsText(I.buildInsights([], NOW)) === '' && I.insightsText(null) === '');
+
+  /*   "in which borough customers was, potentially in this borough customers
+        are more reach and potentially they will accept this estimate" */
+  console.log('\nwhere the customers are, and how each borough answers\n');
+  const B = (addr) => I.boroughOf({ customer: { address: addr } });
+  ok('ZIP FIRST: 10023 Manhattan, 11235 Brooklyn, 11354 Queens, 10456 Bronx, 10314 Staten Island, 11530 Long Island',
+    /* addresses with the ZIP and NO borough word, so only the ZIP can decide */
+    B('263 West End Ave 10023') === 'Manhattan' && B('3855 Shore Pkwy 11235') === 'Brooklyn' && B('Main St 11354') === 'Queens' && B('E 161st St, Bronx 10456') === 'Bronx' && B('Victory Blvd 10314') === 'Staten Island' && B('Garden City, NY 11530') === 'Long Island');
+  ok('then names: Astoria is Queens, Upper West Side is Manhattan, Jersey City is New Jersey, Great Neck is Long Island',
+    B('31-20 Ditmars Blvd, Astoria') === 'Queens' && B('Upper West Side apt') === 'Manhattan' && B('Jersey City, NJ') === 'New Jersey' && B('Great Neck') === 'Long Island');
+  ok('"New York, NY" with no ZIP is Manhattan - that is how Manhattan customers write it', B('140 W 69th St, New York, New York') === 'Manhattan');
+  ok('no address at all is Unknown, not a crash', B('') === 'Unknown' && I.boroughOf({}) === 'Unknown');
+  ok('Brooklyn beats a stray "NY"', B('88 Bay 7th St, Brooklyn, NY') === 'Brooklyn');
+  {
+    const recs = [
+      { ref: 'M1', status: 'accepted', customer: { name: 'a', address: 'New York, NY 10023' }, request: { service: 'Bathroom' }, estimate: { labor: [{ qty: 1, rate: 20000 }] }, sentAt: '2026-09-01T00:00:00Z', acceptedAt: '2026-09-03T00:00:00Z' },
+      { ref: 'M2', status: 'accepted', customer: { name: 'b', address: 'Manhattan 10028' }, request: { service: 'Bathroom' }, estimate: { labor: [{ qty: 1, rate: 24000 }] }, sentAt: '2026-09-01T00:00:00Z', acceptedAt: '2026-09-03T00:00:00Z' },
+      { ref: 'M3', status: 'sent', customer: { name: 'c', address: 'Harlem 10027' }, request: { service: 'Bathroom' }, estimate: { labor: [{ qty: 1, rate: 30000 }] }, sentAt: '2026-09-01T00:00:00Z' },
+      { ref: 'Q1', status: 'declined', customer: { name: 'd', address: 'Astoria 11105' }, request: { service: 'Bathroom' }, estimate: { labor: [{ qty: 1, rate: 20000 }] }, sentAt: '2026-09-01T00:00:00Z', declinedAt: '2026-09-02T00:00:00Z' },
+      { ref: 'Q2', status: 'accepted', customer: { name: 'e', address: 'Flushing 11354' }, request: { service: 'Bathroom' }, estimate: { labor: [{ qty: 1, rate: 9000 }] }, sentAt: '2026-09-01T00:00:00Z', acceptedAt: '2026-09-02T00:00:00Z' },
+      { ref: 'B1', status: 'new', customer: { name: 'f', address: 'Brooklyn 11223' }, request: { service: 'Bathroom' }, estimate: {} },
+    ];
+    const ins = I.buildInsights(recs, NOW);
+    const man = ins.boroughs.find(b => b.borough === 'Manhattan'), qns = ins.boroughs.find(b => b.borough === 'Queens'), bk = ins.boroughs.find(b => b.borough === 'Brooklyn');
+    ok('MANHATTAN: 3 estimates, 2 accepted, 1 no answer -> 67%, accepted median $22,000, highest $24,000, median sent $24,000', man.count === 3 && man.accepted === 2 && man.noAnswer === 1 && man.acceptRate === 67 && man.medianAccepted === 22000 && man.highestAccepted === 24000 && man.medianSent === 24000, JSON.stringify(man));
+    ok('QUEENS: 2 estimates, 1 accepted at $9,000, 1 declined at $20,000 -> 50%', qns.count === 2 && qns.accepted === 1 && qns.declined === 1 && qns.acceptRate === 50 && qns.medianAccepted === 9000, JSON.stringify(qns));
+    ok('Brooklyn: 1 estimate never sent -> no rate', bk.count === 1 && bk.sent === 0 && bk.acceptRate === null);
+    ok('biggest borough first', ins.boroughs[0].borough === 'Manhattan');
+    const text = I.insightsText(ins);
+    /* columns: accepted / declined / no answer / rate */
+    ok('THE TEXT HAS THE BOROUGH TABLE', /BY BOROUGH/.test(text) && /Manhattan \| 3 \| 2 \/ 0 \/ 1 \/ 67% \| \$22,000, \$24,000 \| \$24,000 \| \$44,000/.test(text) && /Queens \| 2 \| 1 \/ 1 \/ 0 \/ 50%/.test(text), text.slice(text.indexOf('BY BOROUGH'), text.indexOf('BY BOROUGH') + 400));
+    ok('...and each recent accepted job names its borough', /M2 \| b \| Bathroom, Manhattan \| \$24,000/.test(text), text.slice(text.indexOf('RECENT'), text.indexOf('RECENT') + 200));
+  }
   const many = Array.from({ length: 300 }, (_, i) => ({ ref: 'SBC-' + i, status: 'accepted', customer: { name: 'Customer ' + i }, request: { service: 'Kind ' + (i % 40) }, estimate: { labor: [{ qty: 1, rate: 1000 + i }] }, sentAt: '2026-01-01T00:00:00Z', acceptedAt: '2026-01-0' + (1 + (i % 9)) + 'T00:00:00Z' }));
   ok('a big history is capped - 15 kinds, 15 recent, text under 5k', I.buildInsights(many, NOW).services.length === 15 && I.buildInsights(many, NOW).recentAccepted.length === 15 && I.insightsText(I.buildInsights(many, NOW)).length < 5000);
 }
