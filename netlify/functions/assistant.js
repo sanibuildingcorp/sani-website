@@ -111,7 +111,11 @@ const JOB_MS = 1500;
 const BUDGET_MS = 8800;
 /* The record read is normally ~200ms. If Blobs is slow, answer without it
    rather than spend the budget waiting. */
-const RECORD_MS = 2000;
+const RECORD_MS = 2500;
+/* The inbox emails with the open record's customer, from the CRM log
+   (Supabase lead_messages). Its own short clock inside the record read. */
+const EMAILS_MS = 1500;
+const EMAILS_MAX = 10;
 
 /* The test harness shortens the budget so a stalled stream can be exercised in
    milliseconds rather than nine seconds. Production never calls this. */
@@ -225,7 +229,9 @@ async function recordContext(ref) {
     .filter(function (k) { return str(answers[k]); })
     .map(function (k) { return "  - " + k.replace(/-/g, " ") + ": " + str(answers[k]); });
 
-  const thread = arr(rec.thread).slice(-8).map(function (m) {
+  /* "understand conversations": twenty messages, not eight, and the inbox
+     emails with this customer that never made it onto the thread. */
+  const thread = arr(rec.thread).slice(-20).map(function (m) {
     const files = Array.isArray(m && m.attachments) ? m.attachments.map(function (f) { return str(f && f.name); }).filter(Boolean) : [];
     return "  " + (m && m.from === "contractor" ? "Sani" : "Customer") + ": " + str(m && m.text) + (files.length ? " [attached: " + files.join(", ") + "]" : "");
   });
@@ -244,9 +250,37 @@ async function recordContext(ref) {
     str(req.description) || "(nothing)",
     answerLines.length ? "\nANSWERS THEY ALREADY GAVE:\n" + answerLines.join("\n") : "",
     thread.length ? "\nMESSAGES SO FAR:\n" + thread.join("\n") : "",
+    await emailContext(rec),
     str(est.scopeOfWork) ? "\nSCOPE DRAFTED SO FAR:\n" + str(est.scopeOfWork).slice(0, 1200) : "",
     estimateContext(rec),
   ].filter(Boolean).join("\n");
+}
+
+/* ── EMAILS WITH THIS CUSTOMER, FROM THE INBOX ───────────────────────────
+     "letting AI read my email, identity same emails by customer names and
+      email address and from request form and analyze and understand
+      conversations"
+   inbox-sync files every mail from a known customer into lead_messages,
+   and bridges it onto the estimate when it can. This reads the last few
+   for the open record's customer straight from that log, so even a mail
+   that reached no thread is in front of the assistant. Ones already on
+   the thread (same message id) are left out. Missing Supabase settings or
+   a slow read simply give nothing. */
+async function emailContext(rec) {
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SECRET_KEY;
+  const email = str(rec && rec.customer && rec.customer.email).toLowerCase();
+  if (!url || !key || !email || typeof fetch !== "function") return "";
+  let rows;
+  try {
+    rows = await withTimeout(fetch(url + "/rest/v1/lead_messages?lead_email=eq." + encodeURIComponent(email) + "&select=direction,subject,body,created_at,message_id&order=created_at.desc&limit=" + EMAILS_MAX,
+      { headers: { apikey: key, Authorization: "Bearer " + key } }).then(function (r) { return r.ok ? r.json() : []; }), EMAILS_MS);
+  } catch (e) { rows = []; }
+  const onThread = {};
+  arr(rec.thread).forEach(function (m) { if (m && m.id) onThread[str(m.id)] = true; });
+  const lines = arr(rows).filter(function (r) { return r && !(r.message_id && onThread[str(r.message_id)]); }).reverse().map(function (r) {
+    return "  " + str(r.created_at).slice(0, 10) + " " + (r.direction === "out" ? "Sani" : "Customer") + (str(r.subject) ? " [" + str(r.subject).slice(0, 80) + "]" : "") + ": " + str(r.body).replace(/\s+/g, " ").slice(0, 400);
+  });
+  return lines.length ? "\nEMAILS WITH THIS CUSTOMER (from the inbox, oldest first):\n" + lines.join("\n") : "";
 }
 
 /* ── THE GENERATED ESTIMATE, LINE BY LINE ────────────────────────────────

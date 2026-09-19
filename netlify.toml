@@ -13,6 +13,15 @@
 [functions."assistant-learn"]
   schedule = "30 9 * * *"
 
+# Pull customer emails from the info@ inbox into the estimate they are about,
+# every 15 minutes, so replies reach the conversation, the portal and the
+# assistant without pressing "Sync inbox".
+# (A separate tiny function, because a function that is on a schedule may
+# not be reachable by URL in production, and the dashboard's "Sync inbox"
+# button still calls inbox-sync directly.)
+[functions."inbox-sync-scheduled"]
+  schedule = "*/15 * * * *"
+
 # Serve /dashboard through a top-level shell that writes the real dashboard HTML
 # into the same document, then loads Customer Scope Control. This keeps Safari
 # full-page screenshots working (no iframe) and avoids editing the huge dashboard.html.
