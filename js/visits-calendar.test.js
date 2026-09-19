@@ -50,7 +50,7 @@ ok('VISITS.JS CALLS THE ONE GATE', /require\("\.\/lib\/require-dashboard-key"\)/
 ok('...before the store is opened', VISITS_FN.indexOf('requireDashboardKey(event') < VISITS_FN.indexOf('const s = store();'));
 ok('...and answers OPTIONS without a key, so the browser preflight passes', /httpMethod === "OPTIONS"/.test(VISITS_FN));
 const calls = HTML.match(/(?:sbcFetch|fetch)\("\/\.netlify\/functions\/visits"/g) || [];
-ok('THE PAGE TALKS TO IT FIVE TIMES: load, create, done, delete, sync', calls.length === 5, calls.length + ' calls');
+ok('THE PAGE TALKS TO IT SIX TIMES: load, create, done, delete, sync, and the assistant\'s "add a visit"', calls.length === 6, calls.length + ' calls');
 ok('...EVERY ONE THROUGH sbcFetch — a bare fetch would 401 in front of him', calls.every(c => c.indexOf('sbcFetch') === 0), calls.join('\n        '));
 ok('sbcFetch is the helper that attaches x-sbc-key', /headers\["x-sbc-key"\] = sbcKey\(\);/.test(fs.readFileSync(path.join(ROOT, 'js/dashboard-auth.js'), 'utf8')));
 

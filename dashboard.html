@@ -1337,6 +1337,17 @@ body {
 .ask-send .btn-primary{flex:0 0 auto;padding:9px 16px;font-size:13px}
 .ask-note{font-size:11px;color:var(--ink-muted);padding:8px 13px 12px;line-height:1.45}
 @media(max-width:600px){.ask-send{flex-direction:column;align-items:stretch}.ask-send .btn-primary{width:100%}}
+/* ── The assistant drawer, on every page ──────────────────────────────── */
+.ai-overlay{display:none;position:fixed;inset:0;background:rgba(3,9,18,.45);z-index:99980}
+.ai-overlay.show{display:block}
+.ai-drawer{display:none;position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:#fbfcfd;z-index:99981;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.25)}
+.ai-drawer.show{display:flex}
+.ai-head{display:flex;align-items:center;gap:8px;padding:14px 14px 8px;border-bottom:1px solid var(--line)}
+.ai-head .ask-sub{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-close{border:none;background:none;font-size:18px;cursor:pointer;color:var(--ink-muted);padding:4px 8px}
+.ai-drawer .ask-log{flex:1;max-height:none;padding:10px 13px}
+.ai-drawer .ask-note{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.ai-act{font-size:12px;color:var(--gold);padding:4px 0 0}
 /* Ticked = the customer sees this line. Unticked = they do not, and it stays
    here so nothing is lost by turning it off. */
 .sc-check{display:flex;align-items:center;flex:0 0 auto;cursor:pointer;padding:2px}
@@ -2286,6 +2297,8 @@ body {
   .topbar > button.topbar-btn {
     display: none;
   }
+  /* ...except the assistant, which he opens from anywhere */
+  .topbar > button#ai-open-btn { display: inline-flex; }
 
   /* Tabs — full-width scrollable, bigger tap targets */
   .tabs-row {
@@ -2730,7 +2743,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
   <span style="display:block;width:22px;height:2.5px;background:#b8930a;border-radius:2px"></span>
 </button>
     <div class="brand-mark">SANI <span class="sep">·</span><span class="sub">DASHBOARD</span></div>
-    
+    <button class="topbar-btn" id="ai-open-btn" onclick="aiOpen()" title="Your assistant — reads what is on screen, answers, and does what you tell it">✦ AI</button>
     <a href="/estimate" target="_blank" class="topbar-btn">↗ Customer Form</a>
     <button class="topbar-btn" onclick="loadEstimates()">⟳ Refresh</button>
     <button class="topbar-btn" onclick="logout()">Logout</button>
@@ -2741,6 +2754,27 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
   <div class="list-section">
     <div id="list-host"></div>
   </div>
+</div>
+
+<!-- AI ASSISTANT, ON EVERY PAGE -->
+<div id="ai-overlay" class="ai-overlay" onclick="aiClose()"></div>
+<div id="ai-drawer" class="ai-drawer" role="dialog" aria-label="Assistant">
+  <div class="ai-head">
+    <span class="ask-title">✦ Assistant</span>
+    <span class="ask-sub" id="ai-ctx"></span>
+    <button type="button" class="ai-close" onclick="aiClose()" aria-label="Close">✕</button>
+  </div>
+  <div class="ask-quick">
+    <button type="button" class="ask-chip" onclick="aiQuick('Who is waiting for my reply, and what is unpaid? Give me the list with names and refs.')">Who is waiting?</button>
+    <button type="button" class="ask-chip" onclick="aiQuick('Plan my day from what is on the screen: visits, replies to write, quotes to follow up. Short list, most urgent first.')">Plan my day</button>
+    <button type="button" class="ask-chip" onclick="aiQuick('Which sent quotes have had no answer for more than 5 days? For each, one short follow-up line I could send.')">Follow-ups</button>
+  </div>
+  <div class="ask-log" id="ai-log"></div>
+  <div class="ask-send">
+    <textarea id="ai-text" rows="2" maxlength="2000" placeholder="Ask, or tell me what to do…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiSend();}"></textarea>
+    <button type="button" class="btn-primary" id="ai-btn-send" onclick="aiSend()">Ask</button>
+  </div>
+  <div class="ask-note" id="ai-note">It reads what is on your screen and remembers what you tell it to. Nothing here is sent to a customer: a draft goes into the reply box and you press Send.</div>
 </div>
 
 <!-- EDIT MODAL -->
@@ -3568,7 +3602,9 @@ async function askSend() {
     var res = await fetch("/.netlify/functions/assistant", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-sbc-key": key },
-      body: JSON.stringify({ ref: ref, messages: ASK_LOG[ref] }),
+      /* The same snapshot the drawer sends, so the in-record panel sees the
+         rest of the dashboard too and can act on it. */
+      body: JSON.stringify({ ref: ref, messages: ASK_LOG[ref], screen: (typeof aiScreen === "function" ? aiScreen() : null) }),
     });
     /* READ AS TEXT FIRST. When Netlify kills the function at 10s (or anything
        upstream answers with an error page) the body is not JSON, and Safari's
@@ -3588,6 +3624,7 @@ async function askSend() {
       role: "assistant",
       text: data.reply + (data.truncated ? "\n\n… (cut short by the time limit — ask \"continue\" for the rest)" : ""),
     });
+    if (Array.isArray(data.actions) && data.actions.length && typeof aiRunActions === "function") aiRunActions(data.actions, ASK_LOG[ref], askRender);
   } catch (e) {
     /* The question stays in the log so he can see what he asked and try again;
        dropping it would make a failure look like the panel ignored him. */
@@ -3614,6 +3651,196 @@ function askCopyToCustomer(i) {
   if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "center" });
   box.focus();
   toast("Copied into the customer message — read it, then press Send reply");
+}
+
+/* ── THE ASSISTANT, ON EVERY PAGE ───────────────────────────────────────────
+     "personal AI assistant which can do everything, read everything in my
+      dashboard, analyze, plan's strategy ... whatever page i will open,
+      always personal AI assistant needs to read and if i ask questions then
+      answers, if i command do that then let's him do it"
+
+   A drawer that opens from the topbar or the ☰ menu on any tab, over any
+   record. Every question carries a snapshot of the screen (aiScreen), the
+   server keeps what he asks it to remember, and an answer may come back with
+   actions, which run HERE through the dashboard's own functions - openEdit,
+   renderTabs, save-estimate, the visits endpoint, the reply box. Two of them
+   (status, visit) ask him to confirm first. None of them sends anything to a
+   customer: a draft lands in the reply box and he presses Send. */
+var AI_LOG = (function () { try { return JSON.parse(sessionStorage.getItem("sbc-ai-log") || "[]"); } catch (e) { return []; } })();
+function aiSave() { try { sessionStorage.setItem("sbc-ai-log", JSON.stringify(AI_LOG.slice(-40))); } catch (e) {} }
+function aiOpen() {
+  var d = document.getElementById("ai-drawer"), o = document.getElementById("ai-overlay");
+  if (!d) return;
+  d.classList.add("show"); if (o) o.classList.add("show");
+  aiRender();
+  var t = document.getElementById("ai-text");
+  if (t) setTimeout(function () { t.focus(); }, 60);
+}
+function aiClose() {
+  var d = document.getElementById("ai-drawer"), o = document.getElementById("ai-overlay");
+  if (d) d.classList.remove("show"); if (o) o.classList.remove("show");
+}
+function aiBubble(m, i) {
+  var mine = m.role !== "assistant";
+  return '<div class="ask-msg ' + (mine ? "ask-me" : "ask-ai") + '">' +
+      '<div class="ask-body">' + esc(m.text) + '</div>' +
+      (!mine && currentRecord ? '<button type="button" class="ask-copy" onclick="aiCopyToCustomer(' + i + ')">→ Copy to customer message</button>' : '') +
+    '</div>';
+}
+function aiRender() {
+  var el = document.getElementById("ai-log");
+  if (!el) return;
+  el.innerHTML = AI_LOG.length ? AI_LOG.map(aiBubble).join("") : '<div class="ask-empty">Ask about anything on the dashboard, or tell me what to do.</div>';
+  el.scrollTop = el.scrollHeight;
+  var ctx = document.getElementById("ai-ctx");
+  if (ctx) ctx.textContent = currentRecord ? "looking at estimate " + String(currentRecord.ref || "") : "looking at the " + activeTab + " tab · " + estimates.length + " estimates";
+}
+function aiQuick(text) {
+  var box = document.getElementById("ai-text");
+  if (box) box.value = text;
+  aiSend();
+}
+function aiCopyToCustomer(i) {
+  var m = AI_LOG[i];
+  if (!m || m.role !== "assistant") return;
+  var box = document.getElementById("cnv-text");
+  if (!box) { toast("Open an estimate first", true); return; }
+  box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + m.text;
+  aiClose();
+  var sec = document.getElementById("cnv-section");
+  if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "center" });
+  box.focus();
+  toast("Copied into the customer message — read it, then press Send reply");
+}
+
+/* What the assistant is shown. Built from what the page already holds - no
+   request, no wait. Customer-facing totals only; the internal notes and the
+   markup stay out, because answers get copied to customers. */
+function aiScreen() {
+  function d(x) { return x ? String(x).slice(0, 10) : ""; }
+  var counts = {};
+  estimates.forEach(function (e) { var k = e.status || "?"; counts[k] = (counts[k] || 0) + 1; });
+  var s = {
+    today: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
+    tab: activeTab,
+    ref: currentRecord ? String(currentRecord.ref || "") : "",
+    counts: counts,
+    estimates: estimates.slice(0, 90).map(function (e) {
+      var est = e.estimate || {}, req = e.request || {};
+      return { ref: e.ref, name: (e.customer && e.customer.name) || "", service: est.projectTitle || req.service || "", status: e.status,
+        total: est.customerTotal != null ? est.customerTotal : est.grandTotal, submitted: d(e.submittedAt), sent: d(e.sentAt),
+        unpaid: e.unpaidTotal || 0, invoices: e.invoiceCount || 0,
+        needsReply: (typeof threadNeedsReply === "function") ? !!threadNeedsReply(e) : false };
+    }),
+    visits: visits.filter(function (v) { return !v.done; }).slice(0, 25).map(function (v) {
+      return { id: v.id, customer: v.customer, address: v.address, datetime: v.datetime, reason: v.reason, ref: v.ref, inCalendar: !!v.gcalEventId };
+    }),
+    handyman: handymanBookings.slice(0, 25).map(function (b) {
+      return { ref: b.ref, customer: b.customer_name, service: b.service_name || b.service_id, status: b.status, date: b.preferred_date, submitted: d(b.submitted_at) };
+    }),
+    customers: Array.isArray(custCache) ? custCache.length : null,
+  };
+  if (currentRecord) {
+    var r = currentRecord;
+    var le = estimates.filter(function (x) { return x.ref === r.ref; })[0] || {}, lest = le.estimate || {};
+    s.record = { ref: r.ref, name: (r.customer && r.customer.name) || "", status: r.status, title: (r.estimate && r.estimate.projectTitle) || "",
+      total: lest.customerTotal != null ? "$" + Math.round(lest.customerTotal) : "", submitted: d(r.submittedAt), sent: d(r.sentAt), accepted: d(r.acceptedAt),
+      invoices: (r.invoices || []).length, unpaid: le.unpaidTotal || 0,
+      contract: r.contract ? (r.contract.signedAt ? "signed " + d(r.contract.signedAt) : "drafted, not signed") : "" };
+  }
+  return s;
+}
+
+async function aiSend() {
+  var box = document.getElementById("ai-text"), btn = document.getElementById("ai-btn-send");
+  var text = box ? String(box.value || "").trim() : "";
+  if (!text) return;
+  AI_LOG.push({ role: "user", text: text });
+  if (box) box.value = "";
+  aiRender();
+  if (btn) { btn.disabled = true; btn.textContent = "Thinking…"; }
+  try {
+    var res = await fetch("/.netlify/functions/assistant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-sbc-key": (typeof sbcKey === "function" ? sbcKey() : "") },
+      body: JSON.stringify({ ref: currentRecord ? String(currentRecord.ref || "") : "", screen: aiScreen(), messages: AI_LOG.slice(-12) }),
+    });
+    /* Text first: a killed function answers with a page, not JSON. */
+    var raw = await res.text();
+    var data = null;
+    try { data = JSON.parse(raw); } catch (parseErr) { data = null; }
+    if (!data) throw new Error("No answer came back (HTTP " + res.status + (/<html/i.test(raw) ? ", a web page instead of a reply" : "") + "). It probably ran out of time. Ask again, or ask something shorter.");
+    if (!res.ok || !data.reply) throw new Error(data.error || ("Assistant returned " + res.status));
+    AI_LOG.push({ role: "assistant", text: data.reply + (data.truncated ? "\n\n… (cut short by the time limit — ask \"continue\" for the rest)" : "") });
+    if (Array.isArray(data.actions) && data.actions.length) await aiRunActions(data.actions, AI_LOG, aiRender);
+  } catch (e) {
+    AI_LOG.push({ role: "assistant", text: "⚠ " + e.message });
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Ask"; }
+    aiSave(); aiRender();
+  }
+}
+
+/* Runs the actions an answer came with, one after another, and writes what
+   happened into the log it was asked from (the drawer's or a record panel's). */
+async function aiRunActions(actions, log, render) {
+  for (var i = 0; i < actions.length; i++) {
+    var said = "";
+    try { said = await aiExec(actions[i]); }
+    catch (e) { said = "⚠ Could not do that: " + e.message; }
+    if (said) { log.push({ role: "assistant", text: said }); if (log === AI_LOG) aiSave(); if (typeof render === "function") render(); }
+  }
+}
+async function aiExec(a) {
+  var t = String((a && a.type) || "");
+  if (t === "open") {
+    var ref0 = String(a.ref || "");
+    if (!estimates.some(function (e) { return e.ref === ref0; })) return "I don't see " + ref0 + " in the list.";
+    aiClose();
+    openEdit(ref0);
+    return "Opened " + ref0 + ".";
+  }
+  if (t === "tab") {
+    if (currentRecord) closeEdit();
+    activeTab = String(a.tab || "all");
+    renderTabs(); renderList();
+    aiClose();
+    return "Showing the " + activeTab + " tab.";
+  }
+  if (t === "status") {
+    var ref = String(a.ref || ""), st = String(a.status || "");
+    var row = estimates.filter(function (e) { return e.ref === ref; })[0];
+    if (!row) return "I don't see " + ref + " in the list.";
+    if (!confirm("Change " + ref + " (" + ((row.customer && row.customer.name) || "") + ") from " + row.status + " to " + st + "?")) return "OK, not changed.";
+    var r = await sbcFetch("/.netlify/functions/save-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, status: st }) });
+    if (!r.ok) { var err = await r.json().catch(function () { return {}; }); throw new Error(err.error || "Update failed"); }
+    row.status = st;
+    if (currentRecord && currentRecord.ref === ref) currentRecord.status = st;
+    renderTabs(); renderList();
+    return ref + " is now " + st + ".";
+  }
+  if (t === "visit") {
+    var v = { customer: String(a.customer || ""), address: String(a.address || ""), datetime: String(a.datetime || ""), reason: String(a.reason || ""), ref: String(a.ref || "") };
+    if (!confirm("Add this site visit?\n\n" + v.customer + "\n" + v.address + "\n" + v.datetime.replace("T", " ") + (v.reason ? "\n" + v.reason : ""))) return "OK, not added.";
+    var rv = await sbcFetch("/.netlify/functions/visits", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", visit: v }) });
+    var dv = await rv.json().catch(function () { return {}; });
+    if (!rv.ok) throw new Error(dv.error || "Failed");
+    visits.push(dv.visit);
+    renderTabs(); if (activeTab === "visits") renderList();
+    return "Visit added for " + v.customer + (dv.gcal && dv.gcal.status === "ok" ? ", and it is in your Google Calendar." : ".");
+  }
+  if (t === "draft") {
+    var box = document.getElementById("cnv-text");
+    if (!box) return "Open the estimate first, then ask me for the draft again.";
+    box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + String(a.text || "");
+    aiClose();
+    var sec = document.getElementById("cnv-section");
+    if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "center" });
+    box.focus();
+    toast("The draft is in the customer message — read it, then press Send reply");
+    return "The draft is in the reply box. Read it and press Send.";
+  }
+  return "";
 }
 
 function cnvPanelHtml(r) {
@@ -8868,6 +9095,7 @@ window.addEventListener('load', function() {
   <div style="padding:12px 16px;border-top:1px solid rgba(13,27,42,0.08)">
     <!-- The two actions that used to float over every screen. Same modals, same
          behaviour; they just live in the menu now instead of on top of the page. -->
+    <button id="menu-ai" onclick="sbcCloseDrawer();aiOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">✦ AI Assistant</button>
     <button id="menu-send-link" onclick="sbcCloseDrawer();var o=document.getElementById('send-link-overlay');if(o){o.style.display='flex';document.body.style.overflow='hidden';}" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📤 Send Estimate Link</button>
     <button id="menu-new-invoice" onclick="sbcCloseDrawer();sbcOpenNewInv()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">➕ New Invoice</button>
     <a href="/estimate" target="_blank" style="display:block;padding:12px 14px;background:#eef2f7;border-radius:10px;color:#44536a;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">↗ Customer Form</a>
