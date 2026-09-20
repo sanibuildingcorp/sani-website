@@ -469,12 +469,8 @@ function estimateContext(rec, chars) {
       if (!s) return;
       lines.push("  " + str(s.title) + (s.subtotal != null ? " - " + money(s.subtotal) : ""));
       [list("included", s.included), list("customer supplies", s.customerSupplies), list("NOT included", s.notIncluded)].filter(Boolean).forEach(function (l) { lines.push(l); });
-      const o = opts(s.options);
-      if (o.length) lines.push("    priced options: " + o.join("; "));
     });
   }
-  const topOpts = opts(est.options);
-  if (topOpts.length) lines.push("", "ALTERNATIVES OFFERED: " + topOpts.join("; "));
 
   const fg = arr(est.finishGroups);
   if (fg.length) {

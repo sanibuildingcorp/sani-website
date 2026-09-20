@@ -1712,15 +1712,12 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
     const owner = singleBath ? 'Bathroom' : exclusionOwner(t, allowed);
     if (map[owner]) map[owner].notIncluded.push(t); else projectExclusions.push(t);
   });
-  (out.options || []).forEach(o => {
-    const s = singleBath ? 'Bathroom' : canonicalService(o.section, `${o.label || ''} ${o.description || ''}`, allowed);
-    if (!map[s]) return;
-    const opt = { label: text(o.label) || 'Alternative', description: text(o.description), price: money(o.price) };
-    map[s].options.push(opt);
-    /* This note used to be printed for Windows and no other trade. An alternative
-       is an alternative on every card. */
-    map[s].notIncluded.push(`${opt.label}${opt.price ? ` — $${opt.price.toFixed(2)}` : ''} alternative (not included in current total)`);
-  });
+  /* ALTERNATIVES ARE GONE. "I need to completely remove alternative offers, i
+     never use them and remove from everywhere." Whatever isolateAlternatives
+     parked in out.options (an "Option B" line the model wrote despite the
+     prompt) is dropped here: no card carries an option, no card prints an
+     "alternative (not included in current total)" note. */
+  out.options = [];
   services.forEach(s => {
     const v = map[s];
     v.included = dedupe(v.included);

@@ -48,7 +48,7 @@ function scopeCards(estimate) {
       included: uniq(A(s && (s.included || s.items || s.scope))),
       supplies: uniq(A(s && (s.customerSupplies || s.customerSupplied || s.supplied))),
       excluded: cleanExclusions(A(s && (s.notIncluded || s.exclusions || s.excluded))),
-      options: A(s && s.options).filter((o) => o && C(o.label)).map((o) => ({ label: C(o.label), description: C(o.description) })),
+      options: [],
     };
   });
   if (e.customerScopePublished === true && A(e.publishedCustomerScope && e.publishedCustomerScope.services).length) {
@@ -131,14 +131,8 @@ function buildScopePdf(view, opts) {
     section("Included in this service", GREEN, c.included, "•");
     section("Customer supplies", BROWN, c.supplies, "•");
     section("Not included", RED, c.excluded, "–");
-    if (c.options.length) {
-      doc.text("Optional alternatives — not part of the base scope unless selected", { size: 10.5, bold: true, color: GREY, after: 2 });
-      c.options.forEach(function (o) {
-        doc.text(o.label, { size: 10.5, bold: true, indent: 6, bullet: "•", after: 0 });
-        if (o.description) doc.text(o.description, { size: 10, color: GREY, indent: 18, after: 2 });
-      });
-      doc.space(6);
-    }
+    /* No "Optional alternatives" block: "I need to completely remove
+       alternative offers, i never use them and remove from everywhere." */
     doc.space(6);
   });
   if (!cards.length) doc.text("The scope of work for this project has not been written yet.", { size: 11, color: GREY });

@@ -1,27 +1,27 @@
 /* offer-options.test.js — run: node js/offer-options.test.js
  *
- *   "In this optional i need add check box for including or not including
- *    for send to the customer, always keeps uncheck and if i decide then i
- *    will check by my self"
+ *   "I need to completely remove alternative offers, i never use them and
+ *    remove from everywhere"
  *
- * Every priced alternative went straight onto the customer's quote. Now each
- * one has a checkbox in the dashboard, unchecked by default, and the customer
- * sees only the ones he checked. The decision travels with the estimate, is
- * frozen into the sent version, and gates what the customer can buy.
+ * This file used to prove the Alternatives checkbox. Alternatives are gone:
+ * the estimator is told never to write one and drops any it writes; the
+ * pricing pass puts none on a card and prints no "alternative (not included
+ * in current total)" note; the dashboard has no Alternatives panel; the
+ * customer's page and the scope PDF are never offered one, on any record,
+ * old or new; the assistant is not shown any. The one thing kept is an
+ * option a customer ALREADY ADDED to their bill on an old quote - its price
+ * is in the total they approved.
  */
 const fs = require('fs'), path = require('path'), vm = require('vm'), Module = require('module');
 const ROOT = path.join(__dirname, '..');
 const DASH = fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8');
 const QUOTE = fs.readFileSync(path.join(ROOT, 'quote.html'), 'utf8');
+const BG = fs.readFileSync(path.join(ROOT, 'netlify/functions/generate-estimate-background.js'), 'utf8');
+const GEN = fs.readFileSync(path.join(ROOT, 'netlify/functions/generate-estimate.js'), 'utf8');
+const PDF = fs.readFileSync(path.join(ROOT, 'netlify/functions/lib/scope-pdf.js'), 'utf8');
+const ASSIST = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true ? 'PASS  ' : 'FAIL  ') + n + (d ? '\n        ' + d : '')); };
-function ext(src, name) {
-  const s = src.search(new RegExp('(?:async )?function ' + name + '\\s*\\('));
-  if (s < 0) throw new Error('missing function ' + name);
-  let d = 0;
-  for (let j = src.indexOf('{', s); j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) return src.slice(s, j + 1); } }
-  throw new Error('unbalanced ' + name);
-}
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 const STORE = new Map();
@@ -29,19 +29,18 @@ const origResolve = Module._resolveFilename;
 Module._resolveFilename = function (request, ...rest) { if (request === '@netlify/blobs') return '@netlify/blobs'; return origResolve.call(this, request, ...rest); };
 require.cache['@netlify/blobs'] = { id: '@netlify/blobs', filename: '@netlify/blobs', loaded: true, exports: { getStore: () => ({ get: async (k) => (STORE.has(k) ? JSON.parse(STORE.get(k)) : null) }) } };
 const OO = require(path.join(ROOT, 'netlify/functions/lib/offered-options.js'));
-const SV = require(path.join(ROOT, 'netlify/functions/lib/sent-version.js'));
-const QO = require(path.join(ROOT, 'netlify/functions/lib/quote-options.js'));
+const DP = require(path.join(ROOT, 'netlify/functions/lib/deterministic-pricing.js'));
 const get = require(path.join(ROOT, 'netlify/functions/get-estimate.js'));
 
-const A = 'Option A — Crown molding premium', B = 'Option B — Prime and paint all new molding', D = 'Deduct — If only 3 closet units are reinstated';
+const A = 'Option A — Crown molding premium', B = 'Option B — Prime and paint all new molding';
 function est(over) {
   return Object.assign({
     projectTitle: 'Molding', markupPct: 25,
-    labor: [{ item: 'Install molding', qty: 220, unit: 'ft', rate: 6.5 }], materials: [],
-    serviceBreakdown: [{ title: 'Carpentry', subtotal: 1430, included: ['x'], options: [{ label: A, price: 1350 }, { label: B, price: 1350 }] }],
-    options: [{ label: A, price: 1350 }, { label: D, price: -520 }],
+    labor: [{ item: 'Install molding', qty: 220, unit: 'ft', rate: 6.5, section: 'Carpentry' }], materials: [],
+    serviceBreakdown: [{ title: 'Carpentry', subtotal: 1787.5, included: ['x'], notIncluded: ['Ceiling repairs', A + ' — $1350.00 alternative (not included in current total)'], options: [{ label: A, price: 1350 }, { label: B, price: 1350 }] }],
+    options: [{ label: A, price: 1350 }],
     optionSelections: { Windows: { alternatives: [{ label: B, price: 1350 }] } },
-    publishedCustomerScope: { services: [{ name: 'Carpentry', included: ['x'], options: [{ label: A, price: 1350 }] }] },
+    publishedCustomerScope: { services: [{ name: 'Carpentry', subtotal: 1787.5, included: ['x'], excluded: ['Ceiling repairs', A + ' — $1350.00 alternative (not included in current total)'], options: [{ label: A, price: 1350 }] }] },
   }, over || {});
 }
 const labels = (e) => {
@@ -53,114 +52,56 @@ const labels = (e) => {
   return out;
 };
 
-console.log('\nthe rule: nothing is offered until he checks it\n');
-{
-  const none = OO.stripUnoffered(est());
-  ok('UNDECIDED (no offeredOptions) SHOWS NONE', labels(none).length === 0 && Array.isArray(none.offeredOptions) && none.offeredOptions.length === 0, labels(none).join(', '));
-  const some = OO.stripUnoffered(est({ offeredOptions: ['option a — crown molding premium'] }));
-  ok('CHECKED ONES SHOW, everywhere quote.html reads them, unchecked ones are gone', labels(some).join('|') === ['top:' + A, 'svc:' + A, 'pub:' + A].join('|'), labels(some).join(', '));
-  const empty = OO.stripUnoffered(est({ offeredOptions: [] }));
-  ok('decided: none -> none', labels(empty).length === 0);
-  const legacy = OO.stripUnoffered(est(), { legacyAllowsAll: true });
-  ok('A VERSION FROZEN BEFORE THE CHECKBOX EXISTED KEEPS ALL OF THEM, and says so', labels(legacy).length === 6 && legacy.offeredOptions.length === 3, JSON.stringify(legacy.offeredOptions));
-  const kept = OO.stripUnoffered(est({ offeredOptions: [] }), { keep: [B] });
-  ok('what the customer already bought stays whatever the checkbox says', labels(kept).join('|') === ['svc:' + B, 'sel:' + B].join('|'), labels(kept).join(', '));
-  ok('case and spacing do not matter', OO.isOffered({ offeredOptions: ['  OPTION A —  crown molding premium '] }, A) === true);
-  const e2 = OO.setOffered(OO.setOffered(est(), A, true), B, true);
-  ok('check, check, uncheck', OO.setOffered(e2, A, false).offeredOptions.join('|') === OO.norm(B));
-}
+(async () => {
+  console.log('\n1. The server strip: nothing is offered, on any record\n');
+  {
+    ok('UNDECIDED -> none', labels(OO.stripUnoffered(est())).length === 0);
+    ok('A CHECKBOX FROM BEFORE (offeredOptions) NO LONGER OFFERS ANYTHING', labels(OO.stripUnoffered(est({ offeredOptions: [OO.norm(A)] }))).length === 0);
+    ok('A RECORD SENT BEFORE THE CHECKBOX EXISTED (legacyAllowsAll) OFFERS NOTHING EITHER', labels(OO.stripUnoffered(est(), { legacyAllowsAll: true })).length === 0);
+    const kept = OO.stripUnoffered(est(), { keep: [B] });
+    ok('what a customer already added to their bill stays (its price is in the total they approved)', labels(kept).join('|') === ['svc:' + B, 'sel:' + B].join('|'), labels(kept).join(', '));
+    const s = OO.stripUnoffered(est());
+    ok('THE "alternative (not included in current total)" NOTES ARE DROPPED from the cards and the published scope; other exclusions stay', s.serviceBreakdown[0].notIncluded.join('|') === 'Ceiling repairs' && s.publishedCustomerScope.services[0].excluded.join('|') === 'Ceiling repairs', JSON.stringify(s.serviceBreakdown[0].notIncluded));
+  }
 
-console.log('\nthe customer\'s page gets only what he checked\n');
-{
-  const base = { customer: { name: 'Jan', email: 'jan@example.com' }, request: { service: 'Carpentry' }, thread: [] };
-  const DECIDED = Object.assign(clone(base), { ref: 'SBC-DEC', status: 'sent', sentAt: '2026-09-18T00:00:00Z', estimate: est({ offeredOptions: [] }),
-    sentVersion: { snapshotVersion: 1, n: 1, at: '2026-09-18T00:00:00Z', estimate: est({ offeredOptions: [OO.norm(A)] }), customerFinalTotal: null } });
-  const LEGACY = Object.assign(clone(base), { ref: 'SBC-LEG', status: 'sent', sentAt: '2026-06-01T00:00:00Z', estimate: est(),
-    sentVersion: { snapshotVersion: 1, n: 1, at: '2026-06-01T00:00:00Z', estimate: est(), customerFinalTotal: null } });
-  const OLDER = Object.assign(clone(base), { ref: 'SBC-OLDER', status: 'accepted', sentAt: '2026-05-01T00:00:00Z', estimate: est() });
-  const DRAFT = Object.assign(clone(base), { ref: 'SBC-DRAFT', status: 'drafted', estimate: est() });
-  const BOUGHT = Object.assign(clone(base), { ref: 'SBC-BOUGHT', status: 'accepted', sentAt: '2026-09-18T00:00:00Z', estimate: est({ offeredOptions: [] }),
-    customerOptionSelections: [{ id: QO.optionId(B), label: B, price: 1350 }],
-    sentVersion: { snapshotVersion: 1, n: 1, at: '2026-09-18T00:00:00Z', estimate: est({ offeredOptions: [] }), customerFinalTotal: null } });
-  [DECIDED, LEGACY, OLDER, DRAFT, BOUGHT].forEach((r) => STORE.set(r.ref, JSON.stringify(r)));
-  const asCustomer = async (ref, q) => JSON.parse((await get.handler({ httpMethod: 'GET', headers: { referer: 'https://www.sanibuildingcorp.com/quote.html?ref=' + ref + (q || '') }, queryStringParameters: { ref } })).body);
-  const asDashboard = async (ref) => JSON.parse((await get.handler({ httpMethod: 'GET', headers: {}, queryStringParameters: { ref } })).body);
-  (async () => {
-    const v = await asCustomer('SBC-DEC');
-    ok('A SENT ESTIMATE SHOWS ONLY THE CHECKED ALTERNATIVE - from the sent version, not the live draft', labels(v.estimate).join('|') === ['top:' + A, 'svc:' + A, 'pub:' + A].join('|') && JSON.stringify(v).indexOf(B) === -1 && JSON.stringify(v).indexOf(D) === -1, labels(v.estimate).join(', '));
-    const l = await asCustomer('SBC-LEG');
-    ok('a version frozen before the checkbox existed still shows all of them', labels(l.estimate).length === 6 && l.estimate.offeredOptions.length === 3);
-    const o = await asCustomer('SBC-OLDER');
-    ok('...and so does an older record with no frozen version at all', labels(o.estimate).length === 6);
-    const p = await asCustomer('SBC-DRAFT', '&previewScope=1');
-    ok('HIS OWN DRAFT PREVIEW OF AN UNDECIDED ESTIMATE SHOWS NONE (the box starts unchecked)', labels(p.estimate).length === 0 && p.estimate.labor.length === 1, labels(p.estimate).join(', '));
-    const b = await asCustomer('SBC-BOUGHT');
-    ok('an option the customer already added stays on their page even if unchecked', labels(b.estimate).join('|') === ['svc:' + B, 'sel:' + B].join('|'), labels(b.estimate).join(', '));
-    const d = await asDashboard('SBC-DEC');
-    ok('THE DASHBOARD STILL GETS EVERY ALTERNATIVE, checked or not', labels(d.estimate).length === 6);
+  console.log('\n2. The customer\'s page and the scope link, through get-estimate\n');
+  {
+    const base = { customer: { name: 'Jan', email: 'jan@example.com' }, request: { service: 'Carpentry' }, thread: [] };
+    STORE.set('SBC-OLD', JSON.stringify(Object.assign({ ref: 'SBC-OLD', status: 'sent', sentAt: '2026-06-01T10:00:00Z', estimate: est() }, base)));
+    const r = await get.handler({ httpMethod: 'GET', headers: { referer: 'https://www.sanibuildingcorp.com/quote.html?ref=SBC-OLD' }, queryStringParameters: { ref: 'SBC-OLD' } });
+    const v = JSON.parse(r.body);
+    ok('AN OLD SENT RECORD FULL OF OPTIONS: the customer\'s page gets none, and no alternative note', labels(v.estimate).length === 0 && !JSON.stringify(v).includes('alternative (not included'), labels(v.estimate).join(', '));
+    const s = await get.handler({ httpMethod: 'GET', headers: { referer: 'https://www.sanibuildingcorp.com/quote.html?ref=SBC-OLD&sow=1' }, queryStringParameters: { ref: 'SBC-OLD', sow: '1' } });
+    const sv = JSON.parse(s.body);
+    ok('...the scope-only link neither', labels(sv.estimate).length === 0 && !JSON.stringify(sv).includes('alternative (not included'));
+    STORE.set('SBC-CHOSE', JSON.stringify(Object.assign({ ref: 'SBC-CHOSE', status: 'accepted', sentAt: '2026-06-01T10:00:00Z', estimate: est(), customerOptionSelections: [{ label: B, price: 1350 }] }, base)));
+    const c = JSON.parse((await get.handler({ httpMethod: 'GET', headers: { referer: 'https://www.sanibuildingcorp.com/quote.html?ref=SBC-CHOSE' }, queryStringParameters: { ref: 'SBC-CHOSE' } })).body);
+    ok('a customer who already added one keeps seeing it', labels(c.estimate).join('|') === ['svc:' + B, 'sel:' + B].join('|'));
+    ok('the PDF prints no "Optional alternatives" block and maps no options onto a card', !/doc\.text\("Optional alternatives/.test(PDF) && /options: \[\],/.test(PDF));
+    ok('quote.html drops the old alternative notes from "Not included" on the dashboard\'s live preview too', /const ALT_NOTE_RE=\/\\balternative \\\(not included in current total\\\)\\s\*\$\/i;/.test(QUOTE) && /!ALT_NOTE_RE\.test\(t\)/.test(QUOTE));
+  }
 
-    console.log('\nsending freezes the decision\n');
-    const v1 = SV.buildSentVersion({ estimate: est() }, 1);
-    ok('A SEND WITH NO DECISION FREEZES "NONE", never "all"', Array.isArray(v1.estimate.offeredOptions) && v1.estimate.offeredOptions.length === 0);
-    const v2 = SV.buildSentVersion({ estimate: est({ offeredOptions: [OO.norm(A)] }) }, 2);
-    ok('a send with a decision freezes it', v2.estimate.offeredOptions.join('|') === OO.norm(A));
-    ok('an old version with no key does not read as "unsent changes" forever', SV.hasUnsentChanges({ estimate: est(), sentVersion: { estimate: est() } }) === false);
-    ok('...but checking a box after sending does', SV.hasUnsentChanges({ estimate: est({ offeredOptions: [OO.norm(A)] }), sentVersion: { estimate: est() } }) === true);
-
-    console.log('\nthe customer can only buy what he checked\n');
-    const idA = QO.optionId(A), idB = QO.optionId(B);
-    const r1 = QO.resolveSelection(est({ offeredOptions: [OO.norm(A)] }), [idA, idB]);
-    ok('AN UNCHECKED OPTION DOES NOT RESOLVE, so it cannot raise the bill', r1.selected.length === 1 && r1.selected[0].label === A && r1.unknown.length === 1 && r1.total === 1350, JSON.stringify({ sel: r1.selected.map((o) => o.label), unknown: r1.unknown }));
-    const r2 = QO.resolveSelection(est(), [idA, idB]);
-    ok('an estimate from before the checkbox resolves as it always did', r2.selected.length === 2 && r2.unknown.length === 0);
-    const QR = fs.readFileSync(path.join(ROOT, 'netlify/functions/quote-response.js'), 'utf8');
-    ok('quote-response resolves the selection against the version the customer was SENT', /resolveSelection\(sent \|\| record\.estimate \|\| \{\}, ids\)/.test(QR) && /record\.sentVersion\.estimate/.test(QR));
-    const GE = fs.readFileSync(path.join(ROOT, 'netlify/functions/get-estimate.js'), 'utf8');
-    ok('get-estimate strips after the sent version is applied and before the unsent hide', GE.indexOf('applySentVersion(data, view)') < GE.indexOf('stripUnoffered(view.estimate') && GE.indexOf('stripUnoffered(view.estimate') < GE.indexOf('hideUnsentEstimate(view)'));
-
-    console.log('\nthe dashboard: one checkbox per alternative, unchecked until he checks it\n');
-    {
-      const rsc = ext(DASH, 'renderScopeControl');
-      ok('EACH ALTERNATIVE HAS A CHECKBOX that saves on change', /<input type="checkbox" class="sc-offer" onchange="scopeOfferOption\(' \+ oi \+ ', this\.checked\)"' \+ \(on \? ' checked' : ''\)/.test(rsc));
-      ok('...labelled Shown / Hidden, and the panel says unchecked stay hidden', /\(on \? 'Shown' : 'Hidden'\)/.test(rsc) && /Unchecked stay hidden/.test(rsc));
-      const saves = [], toasts = [];
-      const ctx = { String, Array, JSON, console, currentRecord: { ref: 'SBC-1', estimate: est() }, saveDraft: async () => { saves.push(clone(ctx.currentRecord.estimate.offeredOptions)); }, renderScopeControl: () => {}, toast: (t) => toasts.push(t), Number, Object };
-      vm.createContext(ctx);
-      vm.runInContext(ext(DASH, 'scopeOptionKey') + '\n' + ext(DASH, 'scopeOptionOffered') + '\n' + ext(DASH, 'scopeOfferOption') + '\n' + ext(DASH, 'scopeAllAlternatives'), ctx);
-      ok('UNCHECKED BY DEFAULT: an estimate with no decision offers nothing', vm.runInContext('scopeOptionOffered(' + JSON.stringify(A) + ')', ctx) === false && vm.runInContext('scopeOptionOffered(' + JSON.stringify(B) + ')', ctx) === false);
-      await vm.runInContext('scopeOfferOption(0, true)', ctx);
-      ok('CHECKING ONE STORES IT AND SAVES STRAIGHT AWAY', saves.length === 1 && saves[0].length === 1 && saves[0][0] === OO.norm(A) && vm.runInContext('scopeOptionOffered(' + JSON.stringify(A) + ')', ctx) === true, JSON.stringify(saves));
-      ok('...and says it will be shown on the next send', /will be shown to the customer on the next send/.test(toasts[0]), toasts[0]);
-      await vm.runInContext('scopeOfferOption(1, true)', ctx);
-      await vm.runInContext('scopeOfferOption(0, false)', ctx);
-      ok('unchecking removes only that one', saves.length === 3 && saves[2].length === 1 && saves[2][0] === OO.norm(D) && /stays hidden/.test(toasts[2]), JSON.stringify(saves[2]));
-      ok('deleting an alternative drops it from the decision too', /if \(Array\.isArray\(est\.offeredOptions\)\) est\.offeredOptions = est\.offeredOptions\.filter/.test(ext(DASH, 'scopeRemoveOption')));
-      const COF = require(path.join(ROOT, 'netlify/functions/lib/contractor-owned-fields.js'));
-      ok('the decision survives Save Draft and a regeneration (contractor-owned, both lists)', COF.CONTRACTOR_OWNED_ESTIMATE_FIELDS.indexOf('offeredOptions') !== -1 && /"lastMerge", "mergeHistory",\s*\/\/[^\n]*\n\s*"offeredOptions"/.test(DASH));
-    }
-
-    console.log('\nquote.html applies the same rule to the pre-send preview\n');
-    {
-      const chosen = {};
-      const qctx = { A: (v) => (Array.isArray(v) ? v : []), optNorm: OO.norm, isChosen: (l) => !!chosen[OO.norm(l)], Set, Array };
-      vm.createContext(qctx);
-      vm.runInContext(ext(QUOTE, 'offeredOnly'), qctx);
-      qctx.e = { offeredOptions: [OO.norm(A)] }; qctx.list = [{ label: A }, { label: B }];
-      ok('only checked alternatives are rendered', vm.runInContext('offeredOnly(e, list).map(o => o.label).join("|")', qctx) === A);
-      qctx.e = {};
-      ok('THE LIVE DRAFT IN THE PRE-SEND PREVIEW (no decision) RENDERS NONE', vm.runInContext('offeredOnly(e, list).length', qctx) === 0);
-      chosen[OO.norm(B)] = 1;
-      ok('what the customer already added stays', vm.runInContext('offeredOnly(e, list).map(o => o.label).join("|")', qctx) === B);
-      ok('build() runs every service card through it before rendering', /active\.forEach\(s=>\{s\.options=offeredOnly\(e,s\.options\)\}\);return finalizeServices\(e,active\)/.test(QUOTE));
-    }
-
-    [['dashboard.html', DASH], ['quote.html', QUOTE]].forEach(([name, src]) => {
-      const blocks = src.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];
-      let broken = null;
-      blocks.forEach(function (bl, i) { try { new vm.Script(bl.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')); } catch (e) { if (!broken) broken = 'block ' + (i + 1) + ': ' + e.message; } });
-      ok(name + ': all ' + blocks.length + ' script blocks parse', broken === null, broken || '');
+  console.log('\n3. The estimator never writes one; the pricing pass never keeps one\n');
+  {
+    [BG, GEN].forEach((src, i) => {
+      const name = i ? 'generate-estimate.js' : 'generate-estimate-background.js';
+      ok(name + ': the analyst is told NEVER to create options', /16\. NEVER create options or alternatives/.test(src) && !/preserve EACH option separately/.test(src));
+      ok(name + ': the estimator is told the same, and the schema shows options as empty', /NEVER produce options or alternatives/.test(src) && !/Option A — Replace all windows/.test(src) && /Never add options or alternatives; options stays an empty array\./.test(src));
+      ok(name + ': whatever the model writes as options is dropped', /options: \[\],/.test(src) && !/raw\.options/.test(src));
     });
-    console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
-    process.exit(fail ? 1 : 0);
-  })().catch((e) => { console.log('FAIL  the suite crashed instead of reporting\n        ' + (e && e.stack || e)); process.exit(1); });
-}
+    const out = DP.consolidateCustomerPresentation({ projectTitle: 'x', markupPct: 25, labor: [{ item: 'Install crown molding', qty: 10, unit: 'hrs', rate: 60, section: 'Carpentry' }], materials: [], customerSupplied: [], exclusions: [], options: [{ label: A, price: 1350, section: 'Carpentry' }] }, { selected_trades: ['Carpentry'], confirmed_scope: [] }, { request: { service: 'Carpentry', selectedServices: ['Carpentry'], description: 'crown molding' } });
+    ok('THE PRICING PASS: an option the model wrote anyway ends on no card, with no note, and options comes out empty', Array.isArray(out.serviceBreakdown) && out.serviceBreakdown.every((c) => !c.options.length && !c.notIncluded.some((t) => /alternative \(not included/.test(t))) && out.options.length === 0, JSON.stringify(out.serviceBreakdown));
+  }
+
+  console.log('\n4. The dashboard and the assistant\n');
+  {
+    ok('THE ALTERNATIVES PANEL IS GONE from Scope Control, with its checkbox and its handlers', !/<b>Alternatives<\/b>/.test(DASH) && !/scopeOfferOption|scopeRemoveOption|scopeAllAlternatives|scopeOptionOffered/.test(DASH) && !/Check the ones the customer may see as priced add-ons/.test(DASH));
+    ok('the assistant is shown no "priced options" and no "ALTERNATIVES OFFERED"', !/priced options: /.test(ASSIST) && !/ALTERNATIVES OFFERED/.test(ASSIST));
+    const blocks = DASH.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];
+    let broken = null;
+    blocks.forEach(function (bl, i) { try { new vm.Script(bl.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')); } catch (e) { if (!broken) broken = 'block ' + (i + 1) + ': ' + e.message; } });
+    ok('all ' + blocks.length + ' dashboard script blocks parse', broken === null, broken || '');
+  }
+  console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
+  process.exit(fail ? 1 : 0);
+})().catch((e) => { console.log('FAIL  the suite crashed instead of reporting\n        ' + (e && e.stack || e)); process.exit(1); });

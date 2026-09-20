@@ -318,7 +318,7 @@ CORE ANALYSIS RULES:
    NEEDS_CUSTOMER_QUESTIONS — critical information is missing and would materially change the estimate.
    SITE_VISIT_REQUIRED — online information cannot responsibly establish scope/price.
 15. Never choose the smallest possible interpretation just to lower price. Use the most reasonable professional interpretation supported by the full record.
-16. If the customer requested alternatives (for example replace all windows vs replace some and repair others), preserve EACH option separately.
+16. NEVER create options or alternatives. If the customer describes two ways to do a thing, scope the one they asked for (or the more reasonable one) and record the other in assumptions as not priced. No "Option A / Option B" anywhere.
 17. Identify customer exclusions exactly. If the customer says kitchen is excluded, do not include kitchen painting/flooring/etc.
 18. Keep questions homeowner-friendly and include "Not sure" where appropriate.
 
@@ -426,7 +426,7 @@ ESTIMATING METHOD:
 13. Do not inflate by adding arbitrary contingency inside labor quantities. Use reasonable NYC production rates and the provided markup field.
 14. Do not double-mark up individual line rates. Return base contractor cost/rate and markupPct separately.
 15. If required information is unknown but analysis permits a preliminary estimate, state the assumption instead of silently choosing the cheapest interpretation.
-16. Preserve customer-requested alternate options OUTSIDE the base estimate. Option prices must include complete incremental labor/material effect for that option.
+16. NEVER produce options or alternatives: no "Option A / Option B" lines, no alternate scope, no add-on offers. Price the base job only; an alternative the customer mentioned goes into assumptions as not priced. options must be an empty array.
 17. Do not put customer-supplied finish purchases in materials. Record them under customerSupplied.
 18. Do not omit low-visibility but real work such as setup, protection, hauling, cleanup or sealants.
 
@@ -453,9 +453,7 @@ OUTPUT JSON ONLY:
     { "section": "Bathroom", "item": "Vanity", "note": "Purchase price excluded; installation and required connections included" }
   ],
   "exclusions": [],
-  "options": [
-    { "section": "Windows", "label": "Option A — Replace all windows", "description": "", "price": 0 }
-  ],
+  "options": [],
   "timelineText": "",
   "markupPct": 25,
   "assumptions": [],
@@ -492,7 +490,7 @@ REPAIR RULES:
 - Customer-supplied finish materials still need installation labor and supporting materials.
 - Add missing protection, demolition, disposal, handling, preparation, cleanup and coordination only where the documented scope requires them.
 - Recalculate quantities/durations using realistic crew/production logic.
-- Preserve alternate options outside the base total.
+- Never add options or alternatives; options stays an empty array.
 - Do not solve a low-total warning by adding a fake lump sum or arbitrary "contingency" line.
 - Return the COMPLETE replacement estimate, not a patch.
 
@@ -600,14 +598,9 @@ function normalizeEstimate(raw, input, analysis) {
     materials: cleanLines(raw.materials),
     customerSupplied: supplied,
     exclusions: unique([...toStringArray(raw.exclusions), ...analysis.exclusions]).slice(0, 20),
-    options: (Array.isArray(raw.options) ? raw.options : [])
-      .map((o) => ({
-        label: cleanText(o.label),
-        description: cleanText(o.description),
-        price: positiveNumber(o.price),
-        section: titleCase(o.section || "General"),
-      }))
-      .filter((o) => o.label),
+    /* "I need to completely remove alternative offers, i never use them":
+       whatever the model wrote here is dropped. */
+    options: [],
     timelineText: cleanText(raw.timelineText),
     markupPct: clamp(Number(raw.markupPct) || DEFAULT_MARKUP, 0, 100),
     assumptions: unique([...toStringArray(raw.assumptions), ...analysis.assumptions]),
