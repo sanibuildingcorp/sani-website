@@ -219,15 +219,26 @@ console.log('\nthe email that carries the questions shows no price either\n');
   ok('so is the job and the address',
     out.html.indexOf('Bathroom Renovation') !== -1 && out.html.indexOf('3855 shore pkwy') !== -1);
 
+  /* A price reaches the customer's copy only once the estimate was SENT. A
+     priced draft he made for himself ("drafted", never sent) shows none -
+     see js/before-sending.test.js. So the priced case here is a sent one. */
+  const SENT = Object.assign(JSON.parse(JSON.stringify(PRICED)), { status: 'sent', sentAt: '2026-09-16T00:00:00Z' });
   const outP = build({
-    record: PRICED,
+    record: SENT,
     message: { from: 'contractor', text: 'Here is your price.', at: '2026-09-15T23:35:00Z' },
     siteUrl: 'https://www.sanibuildingcorp.com'
   });
-  ok('A PRICED ESTIMATE STILL SHOWS ITS TOTAL IN THE EMAIL',
+  ok('A PRICED, SENT ESTIMATE STILL SHOWS ITS TOTAL IN THE EMAIL',
     /\$[\d,]+\.\d\d/.test(outP.html) && outP.html.indexOf('$0.00') === -1,
     (outP.html.match(/\$[\d,]+\.\d\d/g) || []).join(' '));
   ok('...in the text copy too', /\$[\d,]+\.\d\d/.test(outP.text));
+  const outD = build({
+    record: PRICED,
+    message: { from: 'contractor', text: 'One question first.', at: '2026-09-15T23:35:00Z' },
+    siteUrl: 'https://www.sanibuildingcorp.com'
+  });
+  ok('a priced DRAFT that was never sent shows no price - he asked to keep it to himself until he sends', !/\$[\d,]+\.\d\d/.test(outD.html),
+    (outD.html.match(/\$[\d,]+\.\d\d/g) || []).join(' '));
   Module._resolveFilename = origResolve;
 }
 

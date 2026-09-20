@@ -42,7 +42,7 @@ async function syncChecks() {
 console.log('\ninbox-sync matches by address and runs every 15 minutes\n');
 {
   const src = fs.readFileSync(path.join(ROOT, 'netlify/functions/inbox-sync.js'), 'utf8');
-  ok('THE REF IN THE TEXT STILL WINS', /let ref = thread\.refFromText\(row\.subject, row\.body\);/.test(src));
+  ok('THE REF IN THE TEXT STILL WINS - subject, cleaned reply, or the raw body with the quoted header card', /let ref = thread\.refFromText\(row\.subject, row\.body, rawText\);/.test(src) && /const rawText = String\(bodyText \|\| ""\)\.slice\(0, 20000\);/.test(src) && src.indexOf('const rawText') < src.indexOf('bodyText = cleanBody(bodyText)'));
   ok('...and with no ref the sender\'s address picks the estimate', /if \(!ref\) \{\s*ref = thread\.pickEstimateForEmail\(\(byEmail && byEmail\[fromAddr\]\) \|\| \[\]\);/.test(src));
   ok('the address map is built from the estimate list, lower-cased', /byEmail\[em\] = byEmail\[em\] \|\| \[\]\)\.push\(\{ ref: e\.ref, status: e\.status, updatedAt: e\.updatedAt/.test(src) && /const em = norm\(/.test(src));
   ok('the bridge is told which way it matched, and the report says so', /matchedBy: matchedBy/.test(src) && /by " \+ b\.matchedBy/.test(src));
@@ -64,7 +64,7 @@ console.log('\ninbox-sync matches by address and runs every 15 minutes\n');
     ok('without the scheduler\'s body it refuses - not a public trigger', noSched.statusCode === 401 && calls.length === 1);
     global.fetch = prevFetch;
   }
-  ok('the CRM write still happens before the bridge, and a bridge failure cannot stop it', src.indexOf('await sbInsertIgnoreDupes("lead_messages", row)') < src.indexOf('await bridgeToEstimateThread(row, fromAddr, byEmail)') && /try \{\s*const b = await bridgeToEstimateThread/.test(src));
+  ok('the CRM write still happens before the bridge, and a bridge failure cannot stop it', src.indexOf('await sbInsertIgnoreDupes("lead_messages", row)') < src.indexOf('await bridgeToEstimateThread(row, fromAddr, byEmail, rawText)') && /try \{\s*const b = await bridgeToEstimateThread/.test(src));
 }
 }
 

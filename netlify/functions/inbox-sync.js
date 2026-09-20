@@ -58,10 +58,13 @@ const thread = require("./lib/thread");
    still lands in lead_messages and the dashboard inbox - it just will not appear
    on the customer's portal. That is why the dashboard reply box is the primary
    path and this is the fallback. */
-async function bridgeToEstimateThread(row, fromAddr, byEmail) {
-  /* The ref in the text wins. With no ref, the sender's address picks the
-     estimate - see thread.pickEstimateForEmail(). */
-  let ref = thread.refFromText(row.subject, row.body);
+async function bridgeToEstimateThread(row, fromAddr, byEmail, rawText) {
+  /* The ref in the text wins - subject, the cleaned reply, or the RAW body
+     with the quoted original still in it (the customer's email no longer
+     carries the ref in its subject; the header card they quote back does).
+     With no ref anywhere, the sender's address picks the estimate - see
+     thread.pickEstimateForEmail(). */
+  let ref = thread.refFromText(row.subject, row.body, rawText);
   let matchedBy = "ref";
   if (!ref) {
     ref = thread.pickEstimateForEmail((byEmail && byEmail[fromAddr]) || []);
@@ -201,6 +204,7 @@ exports.handler = async function (event) {
             bodyText = parsed.text || String(parsed.html || "").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ");
           }
         } catch (_) {}
+        const rawText = String(bodyText || "").slice(0, 20000);
         bodyText = cleanBody(bodyText).slice(0, 4000);
 
         const row = {
@@ -217,7 +221,7 @@ exports.handler = async function (event) {
            additive: a mail that names an estimate ALSO joins that estimate's
            thread. A failure here must never stop the CRM write. */
         try {
-          const b = await bridgeToEstimateThread(row, fromAddr, byEmail);
+          const b = await bridgeToEstimateThread(row, fromAddr, byEmail, rawText);
           if (b.bridged) bridgedToThreads.push(b.ref + " (" + b.from + ", by " + b.matchedBy + ")");
         } catch (_) {}
         if (res.inserted) inserted++;
