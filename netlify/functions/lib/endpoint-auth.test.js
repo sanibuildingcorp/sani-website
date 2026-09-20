@@ -78,6 +78,11 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     /* Emails the no-price scope link to any address he types. Contractor only:
        an open version would let anyone mail the scope of any job anywhere. */
     ["send-scope-link", "POST", { ref: "SBC-260805-XQNQ", to: "anyone@example.com" }],
+    /* Rewrites a customer's name, address, phone, email and the job description
+       on any estimate. Had no gate at all. */
+    ["update-customer", "POST", { ref: "SBC-260805-XQNQ", customer: { name: "Mallory" } }],
+    /* Reads the whole inbox and emails him; every run costs money. */
+    ["inbox-digest-background", "POST", { mode: "daily" }],
   ];
 
   for (const [name, method, body] of GATED) {

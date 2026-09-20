@@ -42,6 +42,43 @@ const OWN_PATTERNS = [
 
 const { getStore } = require("@netlify/blobs");
 const thread = require("./lib/thread");
+const inbox = require("./lib/inbox-store");
+
+/* ── THE ASSISTANT'S COPY OF THE INBOX ──────────────────────────────────
+     "Let's my AI read all emails direct from gmail"
+   Every inbound mail - not only known customers - goes into the "inbox"
+   Blobs store (lib/inbox-store.js), matched to an estimate by ref, by
+   address, or by the sender's NAME. The CRM log and the estimate threads
+   are untouched by this: it is one more place the same mail lives. Bodies
+   are downloaded only for mail not stored yet, a dozen per run at most; the
+   fifteen-minute schedule catches up. Newly filed customer mail is handed
+   to inbox-digest-background, which decides whether he needs an alert. */
+const NEW_DOWNLOADS_PER_RUN = 12;
+const INDEX_MS = 2000;
+const ALERT_MS = 2500;
+function withTimeout(promise, ms) {
+  return new Promise(function (resolve, reject) {
+    const t = setTimeout(function () { reject(new Error("timed out")); }, ms);
+    promise.then(function (v) { clearTimeout(t); resolve(v); }, function (e) { clearTimeout(t); reject(e); });
+  });
+}
+async function downloadText(client, uid) {
+  let bodyText = "";
+  try {
+    const dl = await client.download(uid);
+    if (dl && dl.content) {
+      const chunks = []; let size = 0;
+      for await (const ch of dl.content) {
+        size += ch.length;
+        if (size > 300 * 1024) break; // cap 300KB
+        chunks.push(ch);
+      }
+      const parsed = await simpleParser(Buffer.concat(chunks));
+      bodyText = parsed.text || String(parsed.html || "").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ");
+    }
+  } catch (_) {}
+  return String(bodyText || "");
+}
 
 /* THE GMAIL BRIDGE.
    Zura answers from his phone's Gmail app between jobs and always will. A design
@@ -120,7 +157,7 @@ exports.handler = async function (event) {
   const bridgedToThreads = [];
 
   // 1) Known-customer set (this is the spam wall)
-  let known, byEmail = {};
+  let known, byEmail = {}, customers = [];
   try {
     const [msgs, bookings, leads, ests] = await Promise.all([
       sbGet("/rest/v1/lead_messages?select=lead_email&limit=1000"),
@@ -152,6 +189,11 @@ exports.handler = async function (event) {
       if (!em) return;
       (byEmail[em] = byEmail[em] || []).push({ ref: e.ref, status: e.status, updatedAt: e.updatedAt, sentAt: e.sentAt, submittedAt: e.submittedAt });
     });
+    /* every estimate's customer, for matching by name as well as address */
+    customers = estArr.map(function (e) {
+      const c = (e && e.customer) || {};
+      return { ref: e.ref, status: e.status, updatedAt: e.updatedAt, sentAt: e.sentAt, submittedAt: e.submittedAt, name: c.name || "", email: c.email || e.email || "" };
+    }).filter(function (c) { return c.ref; });
     known = new Set([]
       .concat((msgs || []).map((r) => norm(r.lead_email)))
       .concat((bookings || []).map((r) => norm(r.customer_email)))
@@ -169,6 +211,13 @@ exports.handler = async function (event) {
     logger: false,
   });
   let seen = 0, inserted = 0, matchedButDupe = 0, skippedOwn = 0, skippedUnknown = 0, insertErrors = [];
+  let inboxStored = 0, inboxDownloads = 0;
+  const alertIds = [];
+  /* The assistant's inbox index, read once; a slow store means this run
+     files into the CRM only and the next run fills the inbox. */
+  let idx = null;
+  try { idx = await withTimeout(inbox.loadIndex(), INDEX_MS); } catch (_) { idx = null; }
+  const stored = idx ? inbox.knownIds(idx) : new Set();
   try {
     await client.connect();
     const lock = await client.getMailboxLock("INBOX");
@@ -185,25 +234,40 @@ exports.handler = async function (event) {
         const fromObj = (msg.envelope.from && msg.envelope.from[0]) || {};
         const fromAddr = norm((fromObj.address || ""));
         if (!fromAddr) continue;
-        if (OWN_PATTERNS.some((p) => fromAddr.indexOf(p) > -1)) { skippedOwn++; continue; }
-        if (!known.has(fromAddr)) { skippedUnknown++; continue; }
-
+        /* Our own sending addresses: never ours to read. System senders
+           (no-reply, the platforms): out of the CRM as before, but the
+           assistant's inbox keeps a line for them - a receipt, an order
+           confirmation, a bill is something he may ask about. */
+        const own = fromAddr.indexOf("@sanibuildingcorp.com") > -1 || fromAddr.indexOf("sanibuildingcorp@gmail.com") > -1;
+        if (own) { skippedOwn++; continue; }
+        const system = OWN_PATTERNS.some((p) => fromAddr.indexOf(p) > -1);
         const mid = String(msg.envelope.messageId || "").slice(0, 250) || ("uid-" + uids[i] + "-" + fromAddr);
-        // Download + parse the actual message only for matched customers (cheap: few per run)
-        let bodyText = "";
-        try {
-          const dl = await client.download(uids[i]);
-          if (dl && dl.content) {
-            const chunks = []; let size = 0;
-            for await (const ch of dl.content) {
-              size += ch.length;
-              if (size > 300 * 1024) break; // cap 300KB
-              chunks.push(ch);
-            }
-            const parsed = await simpleParser(Buffer.concat(chunks));
-            bodyText = parsed.text || String(parsed.html || "").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ");
+        const at = msg.envelope.date ? new Date(msg.envelope.date).toISOString() : new Date().toISOString();
+
+        if (system || !known.has(fromAddr)) {
+          if (system) skippedOwn++; else skippedUnknown++;
+          /* ── NOT A KNOWN CUSTOMER ADDRESS: the assistant's inbox still gets it ── */
+          if (!idx || stored.has(mid)) continue;
+          const noise = system || inbox.kindOf(fromAddr, false) === "notification";
+          let text = "";
+          if (!noise) {
+            if (inboxDownloads >= NEW_DOWNLOADS_PER_RUN) continue;
+            inboxDownloads++;
+            text = await downloadText(client, uids[i]);
           }
-        } catch (_) {}
+          const clean = noise ? "" : cleanBody(text).slice(0, 6000);
+          const mail = { id: mid, from: fromAddr, name: String(fromObj.name || ""), subject: String(msg.envelope.subject || "(no subject)"), text: clean, raw: text.slice(0, 20000), at: at };
+          const match = noise ? { ref: "", by: "" } : inbox.matchEstimate(mail, customers);
+          try {
+            const line = await inbox.saveMail(mail, match, false, idx);
+            stored.add(mid); inboxStored++;
+            if (line && line.kind === "customer") alertIds.push(mid);
+          } catch (_) {}
+          continue;
+        }
+
+        // Download + parse the actual message only for matched customers (cheap: few per run)
+        let bodyText = await downloadText(client, uids[i]);
         const rawText = String(bodyText || "").slice(0, 20000);
         bodyText = cleanBody(bodyText).slice(0, 4000);
 
@@ -227,6 +291,15 @@ exports.handler = async function (event) {
         if (res.inserted) inserted++;
         else if (res.status === 409 || res.status === 200 || res.status === 204) matchedButDupe++;
         else insertErrors.push("HTTP " + res.status + " " + String(res.detail || "").slice(0, 160));
+        /* ── AND THE ASSISTANT'S INBOX, matched the same way the bridge was ── */
+        if (idx && !stored.has(mid)) {
+          const mail = { id: mid, from: fromAddr, name: String(fromObj.name || ""), subject: row.subject, text: row.body, raw: rawText, at: at };
+          try {
+            const line = await inbox.saveMail(mail, inbox.matchEstimate(mail, customers), true, idx);
+            stored.add(mid); inboxStored++;
+            if (res.inserted && line && line.kind === "customer") alertIds.push(mid);
+          } catch (_) {}
+        }
       }
     } finally {
       lock.release();
@@ -237,11 +310,31 @@ exports.handler = async function (event) {
     return json(502, { error: "IMAP: " + String(e.message || e).slice(0, 250), hint: "Check GMAIL_APP_PASSWORD (needs 2-Step Verification on the Google account) and that IMAP is enabled in Gmail settings." });
   }
 
+  if (idx && idx.dirty) { try { await withTimeout(inbox.saveIndex(idx), INDEX_MS); } catch (_) {} }
+
+  /* New customer mail -> the alert job decides if he needs to hear about it
+     now (inbox-digest-background). Started, not waited for beyond a moment. */
+  let alerted = 0;
+  if (alertIds.length && process.env.DASHBOARD_KEY) {
+    const ids = alertIds.slice(0, 5);
+    const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(function () { ctrl.abort(); }, ALERT_MS) : null;
+    try {
+      await fetch((process.env.URL || "https://www.sanibuildingcorp.com").replace(/\/$/, "") + "/.netlify/functions/inbox-digest-background", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-sbc-key": process.env.DASHBOARD_KEY },
+        body: JSON.stringify({ mode: "alert", ids: ids }), signal: ctrl ? ctrl.signal : undefined,
+      });
+      alerted = ids.length;
+    } catch (_) { alerted = ids.length; /* a 202 is often cut off by the abort; the job runs anyway */ }
+    finally { if (timer) clearTimeout(timer); }
+  }
+
   return json(200, {
     ok: true, scanned: seen, newMessages: inserted, alreadySynced: matchedButDupe,
     skippedOwnOrSystem: skippedOwn, skippedNotACustomer: skippedUnknown,
     knownCustomers: known.size,
     bridgedToEstimateThreads: bridgedToThreads,
+    inbox: { stored: inboxStored, downloaded: inboxDownloads, indexed: idx ? idx.items.length : null, alertsQueued: alerted },
     insertErrors: insertErrors.slice(0, 3),
   });
 };

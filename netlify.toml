@@ -22,6 +22,13 @@
 [functions."inbox-sync-scheduled"]
   schedule = "*/15 * * * *"
 
+# The morning "Customer action list": the inbox of the last day and every
+# estimate waiting on him, read by the assistant and emailed to him. 11:30
+# UTC = 7:30 am New York (summer) / 6:30 am (winter). Sent only when there
+# is something on it.
+[functions."inbox-digest-scheduled"]
+  schedule = "30 11 * * *"
+
 # Serve /dashboard through a top-level shell that writes the real dashboard HTML
 # into the same document, then loads Customer Scope Control. This keeps Safari
 # full-page screenshots working (no iframe) and avoids editing the huge dashboard.html.

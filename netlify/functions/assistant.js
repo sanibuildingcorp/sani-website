@@ -52,6 +52,7 @@ const { requireDashboardKey } = require("./lib/require-dashboard-key");
 const customerTotals = require("./lib/customer-total");
 const { insightsText } = require("./lib/insights");
 const chat = require("./lib/assistant-chat");
+const inbox = require("./lib/inbox-store");
 
 /* ── EVERYWHERE, NOT ONLY BESIDE ONE REQUEST ─────────────────────────────
    "i need personal AI assistant which can do everything, read everything in
@@ -196,18 +197,21 @@ async function answer(body, clocks) {
     .slice(-TURNS_SENT);
   if (!turns.length) throw new Error("Nothing to answer");
 
+  const lastUser = turns.filter(function (t) { return t.role === "user"; }).slice(-1)[0];
   const reads = await Promise.all([
     str(body.ref) ? withTimeout(recordContext(str(body.ref)), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
     withTimeout(loadMemory(), c.memoryMs || MEMORY_MS).catch(function () { return []; }),
     withTimeout(loadInsights(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }),
+    withTimeout(inboxContext(str(body.ref), lastUser ? lastUser.text : ""), c.recordMs || RECORD_MS).catch(function () { return ""; }),
   ]);
   const context = reads[0];
   const memory = reads[1];
   const insights = reads[2];
+  const inboxText = reads[3];
   const screen = screenContext(body.screen);
 
   const deadline = c.deadline || (Date.now() + budgetMs);
-  const out = await callClaude(apiKey, systemPrompt(context, screen, memory, insights), turns, deadline);
+  const out = await callClaude(apiKey, systemPrompt(context, screen, memory, insights, inboxText), turns, deadline);
   const parsed = extractActions(out.text, out.truncated === true);
   if (!parsed.text && !parsed.actions.length) throw new Error("The assistant returned nothing. Try again.");
 
@@ -311,6 +315,38 @@ async function emailContext(rec) {
       : "none in the inbox log from " + email + " (the inbox is synced every 15 minutes; a mail from a different address than the one on this request would not be matched).");
   }
   return "\nEMAILS WITH THIS CUSTOMER (from the inbox, oldest first):\n" + lines.join("\n");
+}
+
+/* ── THE WHOLE INBOX ─────────────────────────────────────────────────────
+     "Let's my AI read all emails direct from gmail, then AI can pull out
+      any necessary information need for better estimate or update in
+      estimate after customer request by email"
+   inbox-sync keeps the assistant's own copy of the info@ mailbox (lib/
+   inbox-store.js): every inbound email, whoever sent it, matched to an
+   estimate by ref, address or name. On every question the newest 25 go in
+   as one line each, and the FULL TEXT of the ones that matter: the emails
+   about the open job, and the emails whose sender, subject or words match
+   what he asked ("what did Rafael write?"). Plus this morning's action
+   list, when there is one. Capped, because the clock. */
+const INBOX_LINES = 25;
+const INBOX_FULL = 4;
+const INBOX_FULL_CHARS = 1800;
+async function inboxContext(ref, question) {
+  const idx = await inbox.loadIndex();
+  if (!idx.items.length) return "\nTHE INBOX (info@, read every 15 minutes): nothing stored yet.";
+  const lines = inbox.indexLines(idx, INBOX_LINES);
+  const about = ref ? idx.items.filter(function (x) { return x.ref === ref && x.kind !== "notification"; }).slice(0, 3) : [];
+  const rel = inbox.pickRelevant(idx, question, ref, 3);
+  const seen = {}, want = [];
+  about.concat(rel).forEach(function (x) { if (x && !seen[x.key] && want.length < INBOX_FULL) { seen[x.key] = 1; want.push(x); } });
+  const full = await Promise.all(want.map(function (x) { return inbox.loadMail(x.key).catch(function () { return null; }); }));
+  const blocks = full.filter(Boolean).map(function (m) {
+    return "--- " + str(m.at).slice(0, 16).replace("T", " ") + " | " + (m.name ? m.name + " <" + m.from + ">" : m.from) + " | " + (m.subject || "(no subject)") + (m.ref ? " | about " + m.ref : "") + "\n" + str(m.text).slice(0, INBOX_FULL_CHARS);
+  });
+  let digest = "";
+  try { const d = await inbox.store().get("digest-latest", { type: "json" }); if (d && str(d.text)) digest = "\nTHIS MORNING'S ACTION LIST (" + str(d.at).slice(0, 10) + "):\n" + str(d.text).slice(0, 1500); } catch (e) { digest = ""; }
+  return "\nTHE INBOX (info@, every inbound email, read every 15 minutes; newest " + lines.length + " shown, one per line: date | from | subject | estimate | snippet):\n" + lines.join("\n") +
+    (blocks.length ? "\n\nFULL TEXT OF THE EMAILS THAT MATTER HERE:\n" + blocks.join("\n") : "") + digest;
 }
 
 /* ── THE GENERATED ESTIMATE, LINE BY LINE ────────────────────────────────
@@ -489,7 +525,7 @@ function screenContext(sc) {
    A closed list. The model writes  ACTION: {"type":...}  on its own line at
    the end; anything else on the line, or a type not here, is dropped. A
    truncated answer drops them all: half an action is worse than none. */
-const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"], search: ["query"] };
+const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"], search: ["query"], describe: ["ref", "text"] };
 const TABS = ["all", "new", "drafted", "sent", "accepted", "invoiced", "paid", "completed", "declined", "handyman", "visits", "customers"];
 const STATUSES = ["new", "drafted", "sent", "accepted", "declined", "completed"];
 function extractActions(text, truncated) {
@@ -517,7 +553,7 @@ function extractActions(text, truncated) {
   return { text: kept.join("\n").trim(), actions: actions };
 }
 
-function systemPrompt(context, screen, memory, insights) {
+function systemPrompt(context, screen, memory, insights, inboxText) {
   const notes = arr(memory).map(function (n) { return "- " + str(n && n.text); }).filter(function (l) { return l !== "- "; });
   return [
     "You are the assistant to Zurab, who runs Sani Building Corp, a renovation and repair contractor in Brooklyn serving the five NYC boroughs and Long Island.",
@@ -537,10 +573,12 @@ function systemPrompt(context, screen, memory, insights) {
     "- schedule a site visit:       ACTION: {\"type\":\"visit\",\"customer\":\"...\",\"address\":\"...\",\"datetime\":\"2026-09-20T10:00\",\"reason\":\"...\",\"ref\":\"SBC-...\"}   (New York time; the dashboard asks him to confirm)",
     "- draft a message to the customer of the OPEN estimate: ACTION: {\"type\":\"draft\",\"text\":\"...\"}   - it goes into the reply box only; HE presses Send after reading it",
     "- remember something for later: ACTION: {\"type\":\"remember\",\"text\":\"...\"}",
+    "- ADD A FACT FROM AN EMAIL TO AN ESTIMATE: ACTION: {\"type\":\"describe\",\"ref\":\"SBC-...\",\"text\":\"...\"}   - when a customer's email carries something the estimate needs (a measurement, a change of scope, a material, a date, a correction) and he asks you to put it in / update the estimate, write the fact in one or two plain sentences; the dashboard asks him to confirm, adds it to that estimate's customer description, and he presses Re-read the job to price it. Say in one line what you are adding. Never invent a fact; quote the email.",
     "- SEARCH THE INTERNET:          ACTION: {\"type\":\"search\",\"query\":\"...\"}   - use it whenever the answer needs current information from outside this dashboard: today's price of a product or material, a supplier or store, a building code, permit or co-op rule, a company, an address, the weather, anything that changes over time or that you are not sure of. Also whenever he says 'search online', 'check online', 'google it' or 'look it up'. Write the query the way a good search is written (specific, with New York or the borough when it matters). Say in ONE short line that you are checking online - the answer with its sources arrives in this chat in under a minute - and do not guess the answer yourself in the same reply.",
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "EMAILS WITH THIS CUSTOMER (below, when a job is open) are read from his inbox log, matched by the customer's email address. When he asks about an email from this customer, answer from that list. When the list says there are none, say exactly that - none in the inbox from that address - and never say you cannot see emails.",
+    "THE INBOX (below) is his whole info@ mailbox as of the last 15 minutes: every inbound email, one line each, newest first, with the estimate it is about when one could be matched (by ref, by address, or by the sender's name). The FULL TEXT of the emails about the open job and of the ones that match his question is given under it. Answer 'what did X write', 'did anyone email about Y', 'what does the manager need' from there, naming who wrote, when, and what. An email marked 'not a customer we know' may be a new lead, a building manager, a supplier - say so. If what he wants is not in the lines or the full texts shown, say which email you would need opened rather than guessing. Use the emails to pull requirements into an estimate with the describe action when he asks.",
     "HIS HISTORY (below, when present) is real data from his own jobs, computed from every estimate. You may quote it - what was accepted at what price, how long jobs took to accept and to finish, who never answered - and use it to judge whether a new estimate is in his usual range, to plan follow-ups and to answer 'what do I usually charge for X'. It also says where his customers are by borough and how each borough answers, so 'is a $20k bathroom likely to be accepted in Queens' has an answer from his own jobs. Say the numbers with their refs. History is not a price for a new job; it is what happened before.",
     "",
     "HOW TO ANSWER HIM:",
@@ -561,6 +599,7 @@ function systemPrompt(context, screen, memory, insights) {
     notes.length ? "THINGS HE ASKED YOU TO REMEMBER:\n" + notes.join("\n") + "\n" : "",
     context ? context : "No job is open." + (screen ? "" : " Answer whatever he asks."),
     screen ? "\nWHAT IS ON HIS SCREEN:\n" + screen : "",
+    inboxText || "",
     insights ? "\nWHAT HIS HISTORY SHOWS (from all his estimates, updated nightly):\n" + insights : "",
   ].filter(Boolean).join("\n");
 }
