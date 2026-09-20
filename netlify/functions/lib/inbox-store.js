@@ -124,9 +124,12 @@ async function saveMail(mail, match, known, idx) {
     from: norm(m.from), name: str(m.name).slice(0, 120), subject: str(m.subject).slice(0, 200),
     snippet: snippet(m.text), ref: str(mt.ref), by: str(mt.by), kind: kindOf(m.from, matched),
   };
+  /* which mailbox it arrived in: a Gmail he connected himself carries its
+     address here; info@ mail (inbox-sync) carries nothing */
+  if (str(m.box)) line.box = norm(m.box).slice(0, 120);
   await s.set(line.key, JSON.stringify({
     id: id, at: line.at, from: line.from, name: line.name, to: str(m.to).slice(0, 200), subject: line.subject,
-    text: str(m.text).slice(0, TEXT_CHARS), ref: line.ref, by: line.by, kind: line.kind,
+    text: str(m.text).slice(0, TEXT_CHARS), ref: line.ref, by: line.by, kind: line.kind, box: line.box || "",
   }));
   if (idx && Array.isArray(idx.items)) {
     idx.items = idx.items.filter(function (x) { return x && x.id !== id; });
@@ -169,7 +172,7 @@ function indexLines(index, limit) {
   const items = ((index && index.items) || []).filter(function (x) { return x.kind !== "notification"; }).slice(0, limit || 25);
   return items.map(function (x) {
     return "  " + str(x.at).slice(0, 10) + " | " + (x.name ? x.name + " <" + x.from + ">" : x.from) + " | " + (x.subject || "(no subject)") +
-      (x.ref ? " | about " + x.ref : "") + (x.kind === "other" ? " | not a customer we know" : "") + (x.snippet ? " | " + x.snippet.slice(0, 140) : "");
+      (x.ref ? " | about " + x.ref : "") + (x.kind === "other" ? " | not a customer we know" : "") + (x.box ? " | in " + x.box : "") + (x.snippet ? " | " + x.snippet.slice(0, 140) : "");
   });
 }
 

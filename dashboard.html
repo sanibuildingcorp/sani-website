@@ -9541,6 +9541,22 @@ window.addEventListener('load', function() {
     }
   }
 });
+/* Back from Google's sign-in (Connect a Gmail): the note goes on the
+   Customers tab, where the mailbox list is. */
+(function () {
+  var note = typeof gmailReturn === "function" ? gmailReturn() : "";
+  if (!note) return;
+  gmailNote = note;
+  if (typeof toast === "function") toast(note, /^⚠/.test(note));
+  var tries = 0;
+  var t = setInterval(function () {
+    tries++;
+    if (typeof renderList === "function" && typeof estimates !== "undefined" && Array.isArray(estimates) && document.getElementById("list-host")) {
+      clearInterval(t);
+      try { activeTab = "customers"; renderTabs(); renderList(); } catch (e) {}
+    } else if (tries > 60) clearInterval(t);
+  }, 500);
+})();
 /* ?ref=SBC-… opens that estimate once the list is in - the alert emails
    from the assistant link here. Polled, because the list loads after login. */
 (function () {
@@ -11244,6 +11260,75 @@ async function custSyncInbox(silent){
   el=document.getElementById('cust-sync-note'); if(el) el.textContent=custSyncState;
   if(custCache===null) renderCustomersTab();
 }
+/* ── A GMAIL HE CONNECTS HIMSELF ──────────────────────────────────────────
+     "if i will have a connect button in my dashboard and i will connect by
+      this button manually whatever email i need to connect to my dashboard
+      where AI can read direct from there full list of emails"
+   info@ is read with the app password in Netlify. Any other mailbox: press
+   Connect, sign in at Google, allow read-only, and it is on the list; the
+   assistant reads it every 15 minutes (gmail-sync). Disconnect revokes the
+   permission at Google and forgets it. No token ever reaches this page. */
+var GMAIL_ACCOUNTS = null, GMAIL_SETUP = true, gmailNote = "";
+function gmailPanelHtml(){
+  var list = GMAIL_ACCOUNTS;
+  var h = '<div style="background:#fff;border:1px solid rgba(13,27,42,0.1);border-radius:12px;padding:12px 14px">'
+    + '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">'
+    + '<div><strong style="font-size:13px">📧 Connected mailboxes</strong><div style="font-size:11px;color:#7a879b">info@ is always read. Connect any other Gmail and the assistant reads it too (read-only).</div></div>'
+    + '<button type="button" class="topbar-btn" style="font-size:11px;padding:6px 10px;white-space:nowrap" id="gmail-connect-btn" onclick="gmailConnect()">＋ Connect a Gmail</button></div>';
+  if (list === null) h += '<div style="font-size:12px;color:#7a879b;margin-top:8px">Loading…</div>';
+  else if (!list.length) h += '<div style="font-size:12px;color:#7a879b;margin-top:8px">No extra mailbox connected yet.</div>';
+  else h += list.map(function(a){
+    return '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:8px;font-size:12px">'
+      + '<div><strong>' + esc(a.email) + '</strong>'
+      + '<div style="color:' + (a.error ? '#b42318' : '#7a879b') + ';font-size:11px">' + esc(a.error ? '⚠️ ' + a.error : (a.lastSync ? 'Read ' + a.lastSync.slice(0, 16).replace('T', ' ') + (a.lastResult ? ' · ' + a.lastResult : '') : 'Connected · first read within 15 minutes')) + '</div></div>'
+      + '<button type="button" class="topbar-btn" style="font-size:11px;padding:5px 9px;white-space:nowrap" onclick="gmailRemove(\'' + esc(a.email) + '\')">Disconnect</button></div>';
+  }).join('');
+  if (!GMAIL_SETUP) h += '<div style="font-size:11px;color:#b42318;margin-top:8px">Google sign-in is not set up yet: add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Netlify.</div>';
+  if (gmailNote) h += '<div style="font-size:11px;color:#7a879b;margin-top:8px">' + esc(gmailNote) + '</div>';
+  return h + '</div>';
+}
+function gmailPaint(){ var el = document.getElementById('gmail-panel'); if (el) el.innerHTML = gmailPanelHtml(); }
+async function gmailLoadAccounts(){
+  try{
+    var r = await sbcFetch('/.netlify/functions/gmail-accounts', { method: 'POST', body: JSON.stringify({ action: 'list' }) });
+    var dta = await r.json();
+    if (r.ok && dta.ok) { GMAIL_ACCOUNTS = dta.accounts || []; GMAIL_SETUP = dta.setup !== false; }
+    else { GMAIL_ACCOUNTS = []; gmailNote = dta.error ? '⚠️ ' + String(dta.error).slice(0, 140) : ''; }
+  }catch(e){ GMAIL_ACCOUNTS = []; gmailNote = '⚠️ Could not load the mailbox list: ' + e.message; }
+  gmailPaint();
+}
+async function gmailConnect(){
+  var btn = document.getElementById('gmail-connect-btn'); if (btn) btn.disabled = true;
+  gmailNote = 'Opening Google sign-in…'; gmailPaint();
+  try{
+    var r = await sbcFetch('/.netlify/functions/gmail-connect', { method: 'POST', body: '{}' });
+    var dta = await r.json();
+    if (r.ok && dta.url) { location.href = dta.url; return; }
+    GMAIL_SETUP = dta.setup !== false;
+    gmailNote = '⚠️ ' + String(dta.error || ('Could not start (HTTP ' + r.status + ')')).slice(0, 160);
+  }catch(e){ gmailNote = '⚠️ Could not start: ' + e.message; }
+  gmailPaint();
+}
+async function gmailRemove(email){
+  if (!confirm('Disconnect ' + email + '? The assistant stops reading it; what it already read stays.')) return;
+  gmailNote = 'Disconnecting ' + email + '…'; gmailPaint();
+  try{
+    var r = await sbcFetch('/.netlify/functions/gmail-accounts', { method: 'POST', body: JSON.stringify({ action: 'remove', email: email }) });
+    var dta = await r.json();
+    if (r.ok && dta.ok) { GMAIL_ACCOUNTS = dta.accounts || []; gmailNote = '✓ ' + email + ' disconnected'; }
+    else gmailNote = '⚠️ ' + String(dta.error || ('HTTP ' + r.status)).slice(0, 140);
+  }catch(e){ gmailNote = '⚠️ ' + e.message; }
+  gmailPaint();
+}
+/* Back from Google: ?gmail=connected&email=… or ?gmail=error&msg=… */
+function gmailReturn(){
+  var m = /[?&]gmail=(connected|error)/.exec(location.search || '');
+  if (!m) return '';
+  var q = {}; String(location.search || '').slice(1).split('&').forEach(function(p){ var kv = p.split('='); q[kv[0]] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' ')); });
+  var note = m[1] === 'connected' ? '✓ ' + (q.email || 'Mailbox') + ' connected. The assistant reads it within 15 minutes.' : '⚠️ ' + (q.msg || 'Could not connect the mailbox');
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  return note;
+}
 async function renderCustomersTab(){
   var host=document.getElementById('list-host');
   if(!custCache){
@@ -11260,6 +11345,7 @@ async function renderCustomersTab(){
   }
   if(activeTab!=='customers') return;
   if(custOpenEmail){ renderCustomerDetail(custOpenEmail); return; }
+  if(GMAIL_ACCOUNTS===null){ gmailLoadAccounts(); }
   if(!custCache.length){ host.innerHTML='<div class="empty"><div class="empty-icon">👤</div><h3>No customers yet</h3><p>Estimates, handyman bookings and website leads all appear here automatically.</p></div>'; return; }
   var q=(custFilter||'').toLowerCase().trim();
   custView = q ? custCache.filter(function(c){
@@ -11272,6 +11358,7 @@ async function renderCustomersTab(){
     +'<input id="cust-search" placeholder="🔍 Find a customer — name, email or phone…" value="'+esc(custFilter)+'" oninput="custFilter=this.value;custRestoreFocus=true;renderCustomersTab()" style="flex:1;padding:12px 14px;border:1px solid rgba(13,27,42,0.15);border-radius:12px;font-size:14px;font-family:inherit;box-sizing:border-box;background:#fff">'
     +'<span style="font-size:12px;color:#7a879b;white-space:nowrap">'+custView.length+' of '+custCache.length+'</span><button class="topbar-btn" style="font-size:11px;padding:6px 10px;white-space:nowrap" onclick="custSyncInbox(false)">📥 Sync inbox</button></div>'
     +'<div id="cust-sync-note" style="font-size:11px;color:#7a879b;min-height:14px">'+esc(custSyncState||'')+'</div>'
+    +'<div id="gmail-panel">'+gmailPanelHtml()+'</div>'
     +(custView.length?'':'<div class="empty" style="padding:30px 0"><div class="empty-icon">🔍</div><h3>No match</h3><p>Try part of a name, email, or phone number.</p></div>');
   custView.forEach(function(c,idx){
     var last=c.timeline&&c.timeline[0];

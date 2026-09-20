@@ -405,7 +405,7 @@ async function inboxContext(ref, question) {
   });
   let digest = "";
   try { const d = await inbox.store().get("digest-latest", { type: "json" }); if (d && str(d.text)) digest = "\nTHIS MORNING'S ACTION LIST (" + str(d.at).slice(0, 10) + "):\n" + str(d.text).slice(0, 1500); } catch (e) { digest = ""; }
-  return "\nTHE INBOX (info@, every inbound email, read every 15 minutes; newest " + lines.length + " shown, one per line: date | from | subject | estimate | snippet):\n" + lines.join("\n") +
+  return "\nTHE INBOX (info@ and every Gmail he connected on the dashboard, every inbound email, read every 15 minutes; newest " + lines.length + " shown, one per line: date | from | subject | estimate | mailbox | snippet; no mailbox named means info@):\n" + lines.join("\n") +
     (blocks.length ? "\n\nFULL TEXT OF THE EMAILS THAT MATTER HERE:\n" + blocks.join("\n") : "") + digest;
 }
 
