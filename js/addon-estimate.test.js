@@ -135,7 +135,7 @@ const PARENT = {
     await vm.runInContext('addonCreate()', ctx);
     ok('no words -> nothing created, told so', posted.length === 0 && toasts.some((t) => /^!Say what the additional work is/.test(t)));
     const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
-    ok('THE ASSISTANT IS TOLD: never change the agreed estimate, point him to the button; on an add-on price only the new work', /ADDITIONAL WORK on an estimate the customer already agreed to[^"]*never change, reword or reprice that estimate[^"]*➕ ADD ADDITIONAL WORK/.test(A) && /THIS IS ADDITIONAL WORK to estimate/.test(A) && /Additional work made for this estimate/.test(A));
+    ok('THE ASSISTANT IS TOLD: never change the agreed estimate, point him to the button; on an add-on price only the new work', /ADDITIONAL WORK on an estimate the customer already agreed to[^"]*never change, reword or reprice the agreed services[^"]*➕ ADD A SERVICE TO THIS ESTIMATE[^"]*➕ ADD ADDITIONAL WORK \(SEPARATE ESTIMATE\)/.test(A) && /THIS IS ADDITIONAL WORK to estimate/.test(A) && /Additional work made for this estimate/.test(A));
     const blocks = DASH.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];
     let broken = null;
     blocks.forEach(function (bl, i) { try { new vm.Script(bl.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')); } catch (e) { if (!broken) broken = 'block ' + (i + 1) + ': ' + e.message; } });

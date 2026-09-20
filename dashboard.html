@@ -3449,6 +3449,8 @@ function addonLink(ref) {
 function addonHeaderHtml(r) {
   var h = '';
   if (r && r.parentRef) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work to ' + addonLink(r.parentRef) + ' · that estimate stays as agreed</div>';
+  var adds = Array.isArray(r && r.estimate && r.estimate.addedServices) ? r.estimate.addedServices : [];
+  if (adds.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Added as own sections: ' + adds.map(function (x) { return esc((x.titles || []).join(', ')) + (x.subtotal ? ' ' + fmt(x.subtotal) : '') + (x.at ? ' (' + esc(String(x.at).slice(0, 10)) + ')' : ''); }).join(' · ') + ' · the earlier services untouched</div>';
   var kids = Array.isArray(r && r.addonRefs) ? r.addonRefs : [];
   if (kids.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work: ' + kids.map(function (k) {
     var e = (typeof estimates !== 'undefined' && Array.isArray(estimates)) ? estimates.find(function (x) { return x && x.ref === k; }) : null;
@@ -4533,6 +4535,15 @@ function renderEdit() {
         '<button class="btn-ai" id="gen-btn" onclick="generateAI(true,false)">Re-price this job</button>' +
         '<button class="btn-secondary" style="margin-top:8px;font-size:12.5px" onclick="generateAI(true,true)">↻ Re-read the job from scratch</button>' +
         '<div style="font-size:11px;color:var(--ink-muted);margin-top:7px;line-height:1.5;max-width:260px">Re-price keeps the same scope of work. Re-read lets the AI decide again what the job is — use it when the customer tells you something new.</div>' +
+        /* ══ A SERVICE ADDED AFTER THE CUSTOMER AGREED. ═══════════════════
+             "i need freeze current previous generated estimate for bathroom
+              but i want generate additional painting service price and scope
+              of work which will add in same estimate with own scope of work
+              and price"
+           Neither button above can do that: both rebuild every service. This
+           one prices the NEW work alone and appends it as its own section. */
+        '<button class="btn-secondary" style="margin-top:10px;font-size:12.5px" onclick="addServiceAI()">➕ Add a service to this estimate</button>' +
+        '<div style="font-size:11px;color:var(--ink-muted);margin-top:7px;line-height:1.5;max-width:260px">Prices only the new service and adds it as its own section with its own scope and price. Everything already in this estimate stays exactly as it is.</div>' +
       '</div>'
     ) +
     /* House Rules: the contractor's own pricing, applied to EVERY estimate. Saved once,
@@ -5468,10 +5479,11 @@ function regenerateWarning(r, reanalyze) {
   if (!r) return "";
   var seen = CUSTOMER_HAS_SEEN.indexOf(String(r.status || "")) !== -1;
   var chosen = (r.customerOptionSelections || []).length;
+  var added = ((r.estimate && r.estimate.addedServices) || []);
   /* Re-reading the job is worth warning about even on a draft nobody has seen:
      it can come back a different job, which is the whole reason it has its own
      button. Re-pricing only needs a warning once a price is out there. */
-  if (!seen && !chosen && !reanalyze) return "";
+  if (!seen && !chosen && !reanalyze && !added.length) return "";
 
   var lines = reanalyze
     ? ["This lets the AI decide again what this job IS, not only what it costs.",
@@ -5493,6 +5505,10 @@ function regenerateWarning(r, reanalyze) {
       " had a fixed price on their quote. Regenerating does not keep those prices.");
     lines.push("");
     lines.push("To add an option they chose, use the green \u201cAdd to the estimate\u201d button instead \u2014 it keeps the exact price they were shown.");
+  }
+  if (added.length) {
+    lines.push("This estimate has " + added.length + " added service" + (added.length > 1 ? "s" : "") + " (" + added.map(function (x) { return (x.titles || []).join(", "); }).filter(Boolean).join("; ") + ").");
+    lines.push("Regenerating rebuilds EVERY service, including the ones already agreed. To add more work, use \u2795 Add a service instead.");
   }
   lines.push("");
   lines.push("Regenerate anyway?");
@@ -5551,12 +5567,12 @@ function aiJobsWrite(map) {
 /* Keyed by ref, not a single slot: starting a generation on one estimate and
    opening another must not lose the first one's thread. Entries past the
    deadline are dropped on every touch, so this cannot grow forever. */
-function aiJobStart(ref, jobId, now) {
+function aiJobStart(ref, jobId, now, extra) {
   /* typeof, not `||`: a timestamp is a number, and `||` would quietly reject a
      legitimate 0 and reach for the real clock instead. */
   var t = typeof now === "number" ? now : Date.now();
   var map = aiJobsPrune(aiJobsRead(), t);
-  map[ref] = { jobId: jobId, startedAt: t };
+  map[ref] = Object.assign({ jobId: jobId, startedAt: t }, extra && typeof extra === "object" ? extra : {});
   aiJobsWrite(map);
   return map;
 }
@@ -5640,7 +5656,7 @@ async function watchGeneration(ref, jobId, startedAt) {
     } catch (_) { rec = null; }
 
     var v = aiPollVerdict(rec, jobId, Date.now() - startedAt);
-    if (v.state === "done") { aiJobClear(ref); return { estimate: rec.estimate, status: rec.status }; }
+    if (v.state === "done") { aiJobClear(ref); return { estimate: rec.estimate, status: rec.status, customerFinalTotal: rec.customerFinalTotal }; }
     if (v.state === "error") { aiJobClear(ref); throw new Error(v.message); }
     if (v.state === "timeout") {
       aiJobClear(ref);
@@ -5652,7 +5668,19 @@ async function watchGeneration(ref, jobId, startedAt) {
 
 /* Put a finished run onto the open record. One place, so the click path and the
    reconnect path can never apply it differently. */
-function applyGeneratedEstimate(data) {
+function applyGeneratedEstimate(data, serverMerged) {
+  /* An added service was merged ON THE SERVER into the estimate as it stood,
+     contractor settings included: the published scope now carries the new
+     card and a stamped total already grew by it. Restoring this page's older
+     copies over that would throw the new card away. Take the record as is. */
+  if (serverMerged === true) {
+    currentRecord.estimate = data.estimate;
+    normalizeDisplayFlags(currentRecord.estimate);
+    currentRecord.status = data.status;
+    if (data.customerFinalTotal !== undefined) currentRecord.customerFinalTotal = data.customerFinalTotal;
+    renderEdit();
+    return;
+  }
   /* Regeneration replaces record.estimate wholesale, so snapshot every
      contractor-owned setting first and put it back afterwards. Without this,
      pressing Regenerate silently wipes hand-configured Customer View Mode
@@ -5699,13 +5727,50 @@ async function resumeGenerationIfRunning(ref) {
   if (v.state === "error" || v.state === "timeout") { aiJobClear(ref); return; }
   toast("Still generating — picking it back up");
   try {
-    applyGeneratedEstimate(await watchGeneration(ref, job.jobId, job.startedAt));
-    toast("✓ AI estimate generated");
+    applyGeneratedEstimate(await watchGeneration(ref, job.jobId, job.startedAt), job.addService === true);
+    toast(job.addService === true ? "✓ The added service is on the estimate" : "✓ AI estimate generated");
   } catch (e) {
     console.error(e);
     var btn = document.getElementById("gen-btn");
     if (btn) { btn.disabled = false; btn.textContent = "Generate Estimate"; }
     toast("AI generation failed: " + e.message, true);
+  }
+}
+
+/* ── ➕ ADD A SERVICE ──────────────────────────────────────────────────────
+   The estimator runs on the new work alone (body.addService) and the server
+   appends the result as its own section(s) - lib/add-service.js. The agreed
+   services are not regenerated: not a line, not a bullet, not a price. The
+   customer keeps seeing the frozen sent version until he sends again. */
+async function addServiceAI() {
+  var r = currentRecord;
+  if (!r || !r.ref) return;
+  if (!(r.estimate && (r.estimate.labor || []).length)) { toast("Generate and price the estimate first, then add a service to it", true); return; }
+  var what = prompt("What is the additional service? Say what and where, in one or two lines (for example: paint walls, ceiling, baseboard and doors in the bathroom; colors from her email). It is priced on its own and added as its own section. Everything already in this estimate stays exactly as it is.", "");
+  if (what === null) return;
+  what = String(what).trim();
+  if (!what) { toast("Say what the additional service is first", true); return; }
+  var btn = document.getElementById("gen-btn");
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="ai-spin"></span> Adding the service…'; }
+  try {
+    var ref = r.ref;
+    var jobId = "ai-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+    var startedAt = Date.now();
+    var kick = await fetch("/.netlify/functions/generate-estimate-background", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: ref, jobId: jobId, addService: { text: what }, houseRules: (function () { var b = document.getElementById("house-rules-text"); return b && b.value.trim() ? b.value : SBC_HOUSE_RULES; })() }),
+    });
+    if (kick.status !== 202 && !kick.ok) throw new Error("Could not start the estimator (" + kick.status + ")");
+    aiJobStart(ref, jobId, startedAt, { addService: true });
+    var data = await watchGeneration(ref, jobId, startedAt);
+    applyGeneratedEstimate(data, true);
+    var adds = (currentRecord.estimate && currentRecord.estimate.addedServices) || [];
+    var last = adds[adds.length - 1];
+    toast("✓ " + (last && last.titles ? last.titles.join(", ") : "The service") + " added as its own section" + (last && last.subtotal ? " · " + fmt(last.subtotal) : "") + ". The earlier services are untouched. Review it, then Send to Customer.");
+  } catch (e) {
+    console.error(e);
+    if (btn) { btn.disabled = false; btn.textContent = "Re-price this job"; }
+    toast("Could not add the service: " + e.message, true);
   }
 }
 
