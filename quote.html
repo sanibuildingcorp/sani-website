@@ -705,19 +705,21 @@ function printQuote(btn){
  const back=()=>{ds.forEach((d,i)=>{d.open=was[i]});window.removeEventListener('afterprint',back)};
  window.addEventListener('afterprint',back);
  printSeen=false;
- const seen=()=>{printSeen=true};
+ /* iOS Safari may first ask "This website has been blocked from automatically
+    printing - Ignore / Allow". Allow fires the print events late, so the note
+    is worded as a fallback ("if nothing opened") and removed the moment a
+    print event does arrive. */
+ const seen=()=>{printSeen=true;const h=document.getElementById('printhelp');if(h&&h.parentNode)h.parentNode.removeChild(h)};
  window.addEventListener('beforeprint',seen);
  window.addEventListener('afterprint',seen);
  try{window.print()}catch(e){back()}
- setTimeout(()=>{
-  window.removeEventListener('beforeprint',seen);window.removeEventListener('afterprint',seen);
-  if(!printSeen)printHelp(btn)},900);
+ setTimeout(()=>{if(!printSeen)printHelp(btn)},900);
  return true}
 function printHelp(btn){
  if(document.getElementById('printhelp'))return;
  const d=document.createElement('div');d.id='printhelp';
  d.setAttribute('style','margin-top:10px;padding:12px 14px;border:1px solid #ecd9a0;background:#fdf6e3;border-radius:8px;font-size:13.5px;line-height:1.5;color:#5b4a12');
- d.innerHTML='<b>Printing is not available inside this app’s browser.</b> Open this page in Safari or Chrome: tap the <b>⋯</b> or compass icon and choose <b>Open in browser</b>, then use <b>Share → Print</b> or <b>Save as PDF</b>.<div style="margin-top:8px"><button type="button" class="attach-btn printbtn" onclick="copyPageLink(this)">🔗 Copy page link</button></div>';
+ d.innerHTML='<b>If nothing opened:</b> if Safari asked, tap <b>Allow</b>. Inside the Gmail app’s browser printing is not available — open this page in Safari or Chrome (tap the <b>⋯</b> or compass icon, <b>Open in browser</b>), then use <b>Share → Print</b> or <b>Save as PDF</b>.<div style="margin-top:8px"><button type="button" class="attach-btn printbtn" onclick="copyPageLink(this)">🔗 Copy page link</button></div>';
  if(btn&&btn.parentNode)btn.parentNode.insertBefore(d,btn.nextSibling);else app.appendChild(d)}
 function copyPageLink(b){
  const u=location.href;

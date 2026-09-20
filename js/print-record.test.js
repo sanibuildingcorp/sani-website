@@ -87,8 +87,9 @@ console.log('\nan in-app browser (the Gmail app) ignores print() silently - the 
   vm.runInContext('printQuote(btn)', ctx);
   ok('nothing is said straight away - a real print dialog may still be opening', inserted === null && timer && timer.ms <= 1500);
   timer.fn();
-  ok('WHEN NO PRINT EVENT ARRIVED, A NOTE APPEARS UNDER THE BUTTON', where === 'after the button' && /Printing is not available inside this app/.test(inserted));
-  ok('...saying to open the page in Safari or Chrome and use Share → Print / Save as PDF', /Open in browser/.test(inserted) && /Share → Print/.test(inserted) && /Save as PDF/.test(inserted));
+  ok('WHEN NO PRINT EVENT ARRIVED, A NOTE APPEARS UNDER THE BUTTON, worded as a fallback', where === 'after the button' && /^<b>If nothing opened:<\/b>/.test(inserted) && /printing is not available/.test(inserted));
+  ok('...saying to tap Allow if Safari asked, or open the page in Safari or Chrome and use Share → Print / Save as PDF', /tap <b>Allow<\/b>/.test(inserted) && /Open in browser/.test(inserted) && /Share → Print/.test(inserted) && /Save as PDF/.test(inserted));
+  ok('a print event arriving late (Allow tapped) takes the note away', /const seen=\(\)=>\{printSeen=true;const h=document\.getElementById\('printhelp'\);if\(h&&h\.parentNode\)h\.parentNode\.removeChild\(h\)\}/.test(Q));
   ok('...with a button to copy the page link to paste there', /onclick="copyPageLink\(this\)"/.test(inserted) && /Copy page link/.test(inserted));
   ok('both print buttons hand themselves over, so the note lands next to the one pressed', (Q.match(/onclick="printQuote\(this\)"/g) || []).length === 2);
 }
