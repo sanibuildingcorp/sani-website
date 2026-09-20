@@ -5660,13 +5660,16 @@ function sleepUntilVisibleOr(ms) {
 /* Watch a run to its end. Called both by the click that starts one and by the
    reconnect that finds one already going. Looks the button up every tick instead
    of holding a reference, because a re-render replaces the element. */
-async function watchGeneration(ref, jobId, startedAt) {
+async function watchGeneration(ref, jobId, startedAt, label) {
   while (true) {
     var elapsed = Date.now() - startedAt;
     var btn = document.getElementById("gen-btn");
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<span class="ai-spin"></span> Generating… ' + Math.round(elapsed / 1000) + 's';
+      /* "Adding the service…" on an added service: the same word as a full
+         regeneration read as one, and one look at "Generating…" was enough
+         to make him think the agreed estimate was being rebuilt. */
+      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + Math.round(elapsed / 1000) + 's';
     }
     var rec = null;
     try {
@@ -5746,7 +5749,7 @@ async function resumeGenerationIfRunning(ref) {
   if (v.state === "error" || v.state === "timeout") { aiJobClear(ref); return; }
   toast("Still generating — picking it back up");
   try {
-    applyGeneratedEstimate(await watchGeneration(ref, job.jobId, job.startedAt), job.addService === true);
+    applyGeneratedEstimate(await watchGeneration(ref, job.jobId, job.startedAt, job.addService === true ? "Adding the service… (the rest stays as it is)" : ""), job.addService === true);
     toast(job.addService === true ? "✓ The added service is on the estimate" : "✓ AI estimate generated");
   } catch (e) {
     console.error(e);
@@ -5788,7 +5791,7 @@ async function addServiceAI(prefill, service) {
     });
     if (kick.status !== 202 && !kick.ok) throw new Error("Could not start the estimator (" + kick.status + ")");
     aiJobStart(ref, jobId, startedAt, { addService: true });
-    var data = await watchGeneration(ref, jobId, startedAt);
+    var data = await watchGeneration(ref, jobId, startedAt, "Adding the service… (the rest stays as it is)");
     applyGeneratedEstimate(data, true);
     var adds = (currentRecord.estimate && currentRecord.estimate.addedServices) || [];
     var last = adds[adds.length - 1];
