@@ -194,7 +194,17 @@ button{padding:15px;border:0;border-radius:6px;font-weight:700;font-family:var(-
 <script>
 (()=>{
 const q=new URLSearchParams(location.search),ref=q.get('ref'),app=document.getElementById('app');let rec;
-const A=v=>Array.isArray(v)?v:[],E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])),M=n=>'$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),C=s=>String(s??'').trim(),N=s=>C(s).toLowerCase(),LT=l=>(+l.qty||0)*(+l.rate||0),U=a=>{let r=[],z=new Set;A(a).forEach(x=>{x=C(x);let k=N(x).replace(/[^a-z0-9]+/g,' ');if(x&&!z.has(k)){z.add(k);r.push(x)}});return r};
+/* ══ SCOPE OF WORK ONLY (?sow=1) ══════════════════════════════════════════════
+   "building management need to see scope of work before they approve
+    permission ... just scope of work absolutely same everything just without
+    prices"
+   The same page, with no money on it and none of the customer's private
+   matters - no total, no service prices, no option prices, no contract, no
+   conversation, no approve button. The server already sends this page a
+   record with every price removed (lib/scope-only.js); SOW is the page's own
+   half: it never prints a dollar sign, and it never counts an open. */
+let SOW=q.get('sow')==='1';
+const A=v=>Array.isArray(v)?v:[],E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])),M=n=>SOW?'':'$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),C=s=>String(s??'').trim(),N=s=>C(s).toLowerCase(),LT=l=>(+l.qty||0)*(+l.rate||0),U=a=>{let r=[],z=new Set;A(a).forEach(x=>{x=C(x);let k=N(x).replace(/[^a-z0-9]+/g,' ');if(x&&!z.has(k)){z.add(k);r.push(x)}});return r};
 function trade(item,declared){const x=N(item),d=N(declared);if(/window|sash|balance|spring/.test(x))return'Windows';if(/bathroom painting|bath paint/.test(x))return'Bathroom';if(/shower|vanity|toilet|faucet|plumb|waterproof|membrane|grout|thinset|tile|glass enclosure|shower glass|bathroom|tub|drain|backer board/.test(x))return'Bathroom';if(/engineered hardwood|hardwood|subfloor|flooring|underlayment|transition|floor prep|floor removal/.test(x))return'Flooring';if(/interior paint|painting|painter|primer|spackle|patch|walls|ceilings|doors|trim/.test(x))return'Painting';if(d&&d!=='general')return C(declared);return'General'}
 function isOption(item){return /\boption\s*[ab12]\b|alternate/i.test(N(item))}function optionKey(item){let x=N(item);if(/option\s*a|option\s*1/.test(x))return'A';if(/option\s*b|option\s*2/.test(x))return'B';return''}
 /* THE CUSTOMER'S TOTAL IS WHAT THE CONTRACTOR CHOSE TO SHOW.
@@ -256,6 +266,8 @@ window.TOG=function(id,label,price,section){
 };
 function optsHtml(s){
  const list=A(s.options);if(!list.length)return '';
+ /* Scope only: the alternatives are listed as work, not sold. No price, no button. */
+ if(SOW)return `<div class="opts"><div class="label">Alternatives</div>${list.map(o=>`<div class="opt"><div class="opt-main"><b>${E(o.label)}</b>${o.description?`<div class="muted">${E(o.description)}</div>`:''}</div></div>`).join('')}<div class="hint">Optional alternatives. Not part of the base scope unless selected.</div></div>`;
  const rows=list.map(o=>{
   const id=optId(o.label),on=!!chosen[id];
   return `<div class="opt${on?' on':''}"><div class="opt-main"><b>${E(o.label)}</b>${o.description?`<div class="muted">${E(o.description)}</div>`:''}</div>`+
@@ -328,6 +340,10 @@ function laborLike(l){return !/allowance|material|membrane|thinset|grout|paint s
    either, or work the customer IS paying for becomes invisible. Fold its wording
    into the largest priced service, then drop the empty shell. */
 function foldZeroPriceServices(list){
+ /* With no prices on the page every card is a zero card; folding them all into
+    one would collapse the scope into a single service. Keep every card that
+    says something. */
+ if(SOW)return list.filter(s=>A(s.included).length||A(s.customerSupplies).length||A(s.notIncluded).length||A(s.options).length);
  const priced=list.filter(s=>s.subtotal>0||A(s.options).length||s.allowZero);
  if(!priced.length)return list.filter(s=>s.included.length||s.customerSupplies.length);
  const main=priced.reduce((a,b)=>(b.subtotal>a.subtotal?b:a),priced[0]);
@@ -536,8 +552,8 @@ function details(e,s){
     chose to hide, which is what it used to do. */
  const ct=calc(e);
  let z=[];
- if(e.showLaborLines===true)A(e.labor).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Labor',price:(e.showLaborLinePrices===true&&ct.showLabor)}));
- if(e.showMaterialLines===true)A(e.materials).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Material',price:(e.showMaterialLinePrices===true&&ct.showMat)}));
+ if(e.showLaborLines===true)A(e.labor).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Labor',price:(!SOW&&e.showLaborLinePrices===true&&ct.showLabor)}));
+ if(e.showMaterialLines===true)A(e.materials).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Material',price:(!SOW&&e.showMaterialLinePrices===true&&ct.showMat)}));
  if(!z.length)return'';
  const anyPrice=z.some(x=>x.price);
  const label=anyPrice?'View detailed labor & materials':'View what is included in detail';
@@ -579,7 +595,23 @@ function fmtWhen(iso){
    reason not to sign. It now takes the finished figure, not the ingredients. */
 function pinHtml(r,total){
  const e=r.estimate||{},rq=r.request||{};
- return `<div class="pin"><div class="pl"><div class="pref">Estimate ${E(ref)}</div><div class="ptit">${E(e.projectTitle||rq.service||'Your project')}</div></div><div class="pr2">${total==null?'':M(total)}</div></div>`}
+ return `<div class="pin"><div class="pl"><div class="pref">${SOW?'Scope of Work':'Estimate'} ${E(ref)}</div><div class="ptit">${E(e.projectTitle||rq.service||'Your project')}</div></div><div class="pr2">${total==null?'':M(total)}</div></div>`}
+/* The hero's status cell, and what sits at the foot of the page. On the scope
+   link there is nothing to approve and nobody to message: the foot says what
+   the page is and offers to print it, and nothing else. */
+function statusCell(hasPrice,approved,e){
+ if(SOW)return`<div><small>Document</small>Scope of work</div>`;
+ if(hasPrice)return`<div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div>`;
+ return`<div><small>Status</small>Waiting on your answers</div>`}
+function sowFoot(){
+ return`<section class="card"><div class="ey">About this document</div><p style="margin:0 0 14px">This page shows the scope of work for the project above. No pricing is included. Prepared by Sani Building Corp, fully insured · (332) 277-0990 · contact@sanibuildingcorp.com</p><button type="button" class="attach-btn printbtn" onclick="printQuote()">🖨 Print / save as PDF</button></section>`}
+function sowBanner(){
+ if(!SOW||document.getElementById('sowbar'))return;
+ const b=document.createElement('div');b.id='sowbar';
+ b.setAttribute('style','position:sticky;top:0;z-index:99;background:#1f7a52;color:#fff;padding:9px 14px;font:600 13px/1.4 system-ui;text-align:center');
+ b.textContent='SCOPE OF WORK — no pricing is shown on this page.';
+ document.body.insertBefore(b,document.body.firstChild);
+ document.title='Scope of Work | Sani Building Corp'}
 /* ══ ONE PRICE, AND AFTER APPROVAL THE AGREED ONE. ══════════════════════════
    Before approval the customer is building their own total: the quote plus
    whatever options they have ticked. Once they approve, quote-response stamps
@@ -797,6 +829,7 @@ function contractRequired(r){
    as a trick, and the one thing actually wanted from them - an answer to six
    questions - was underneath a button that had nothing to do with it. */
 function priced(r){
+ if(SOW)return false;
  const e=(r&&r.estimate)||{};
  if(e.customerFinalTotal!=null||e.stampedTotal!=null)return true;
  if(A(e.labor).length||A(e.materials).length)return true;
@@ -815,8 +848,8 @@ function actionHtml(c,approved,needsContract,hasPrice){
   return`<section class="actions"><a class="approve" style="display:inline-block;text-align:center;text-decoration:none" href="${url}">Review &amp; sign the contract to approve &rarr;</a><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><div class="muted" style="padding:0 4px 10px;font-size:13px">This project is approved by signing the contract — scope, payment schedule and warranty are all set out there.</div>${messageBox(false)}`;
  }
  return`<section class="actions"><button class="approve" onclick="P('a')">Approve estimate</button><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><section class="card panel" id="a"><input id="sig" value="${E(c.name||'')}"><button class="approve" onclick="S('accept')">Confirm approval</button></section>${messageBox(false)}`}
-function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r),hasPrice=priced(r);app.innerHTML=`${hasPrice?pinHtml(r,ct.total):pinHtml(r,null)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div>${hasPrice?`<div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div>`:`<div><small>Status</small>Waiting on your answers</div>`}<div><small>Timeline</small>${E(timelineShort(e.timelineText)||'TBD')}</div>${hasPrice?`<div><small>Total</small>${M(ct.total)}</div>`:''}</div>${heroPhoto(r)}</section>${E(e.summary)?`<section class="card"><div class="ey">Project summary</div><p>${E(e.summary)}</p></section>`:''}${timelineCard(e)}${E(legacyScope(e))?`<section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e))}</div></section>`:''}${hasPrice?`<section class="card prices">${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>`:''}${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r),hasPrice)}`;track()}
-function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),hasPrice=priced(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal+chosenFor(x.title).reduce((t,o)=>t+o.price,0))}</b></div>`).join(''),addedRows=chosenIds().map(k=>chosen[k]).map(o=>`<div class="pr added"><b>${E(o.label)}</b><b>+${M(o.price)}</b></div>`).join(''),shown=shownTotal(ct);app.innerHTML=`${hasPrice?pinHtml(r,shown):pinHtml(r,null)}<section class="hero"><div class="ey">Estimate ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div>${hasPrice?`<div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div>`:`<div><small>Status</small>Waiting on your answers</div>`}<div><small>Timeline</small>${E(timelineShort(e.timelineText)||'TBD')}</div>${hasPrice?`<div><small>Total</small>${M(shown)}</div>`:''}</div>${heroPhoto(r)}</section>${E(e.summary)?`<section class="card"><div class="ey">Project summary</div><p>${E(e.summary)}</p></section>`:''}${timelineCard(e)}${hasPrice?`<section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}${addedRows}<div class="pr total"><span>Your estimate</span><span>${M(shown)}</span></div></section>`:''}${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal+chosenFor(s.title).reduce((t,o)=>t+o.price,0))}</b></div><div class="body">${list('Included in this service','in',withChosen(s))}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',withoutChosen(s))}${optsHtml(s)}${details(e,s)}</div></section>`).join('')}${contractHtml(r,contractRequired(r),approved)}${threadHtml(r)}${actionHtml(c,approved,contractRequired(r),hasPrice)}`;track()}
+function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r),hasPrice=priced(r);app.innerHTML=`${hasPrice?pinHtml(r,ct.total):pinHtml(r,null)}<section class="hero"><div class="ey">${SOW?'Scope of Work':'Estimate'} ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div>${statusCell(hasPrice,approved,e)}<div><small>Timeline</small>${E(timelineShort(e.timelineText)||'TBD')}</div>${hasPrice?`<div><small>Total</small>${M(ct.total)}</div>`:''}</div>${heroPhoto(r)}</section>${E(e.summary)?`<section class="card"><div class="ey">Project summary</div><p>${E(e.summary)}</p></section>`:''}${timelineCard(e)}${E(legacyScope(e))?`<section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e))}</div></section>`:''}${hasPrice?`<section class="card prices">${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>`:''}${SOW?sowFoot():contractHtml(r,contractRequired(r),approved)+threadHtml(r)+actionHtml(c,approved,contractRequired(r),hasPrice)}`;track()}
+function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),hasPrice=priced(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal+chosenFor(x.title).reduce((t,o)=>t+o.price,0))}</b></div>`).join(''),addedRows=chosenIds().map(k=>chosen[k]).map(o=>`<div class="pr added"><b>${E(o.label)}</b><b>+${M(o.price)}</b></div>`).join(''),shown=shownTotal(ct);app.innerHTML=`${hasPrice?pinHtml(r,shown):pinHtml(r,null)}<section class="hero"><div class="ey">${SOW?'Scope of Work':'Estimate'} ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div>${statusCell(hasPrice,approved,e)}<div><small>Timeline</small>${E(timelineShort(e.timelineText)||'TBD')}</div>${hasPrice?`<div><small>Total</small>${M(shown)}</div>`:''}</div>${heroPhoto(r)}</section>${E(e.summary)?`<section class="card"><div class="ey">Project summary</div><p>${E(e.summary)}</p></section>`:''}${timelineCard(e)}${hasPrice?`<section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}${addedRows}<div class="pr total"><span>Your estimate</span><span>${M(shown)}</span></div></section>`:''}${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal+chosenFor(s.title).reduce((t,o)=>t+o.price,0))}</b></div><div class="body">${list('Included in this service','in',withChosen(s))}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',withoutChosen(s))}${optsHtml(s)}${details(e,s)}</div></section>`).join('')}${SOW?sowFoot():contractHtml(r,contractRequired(r),approved)+threadHtml(r)+actionHtml(c,approved,contractRequired(r),hasPrice)}`;track()}
 /* Seed the picker from the record before the first paint. A customer who added
    two options and approved must see those two options still added when they open
    their link again — the selection is on the record, and this page is the only
@@ -855,8 +888,10 @@ function replyFromHash(){
 function threadScrollBottom(){
  const el=document.querySelector('#thread-wrap .thr');
  if(el)el.scrollTop=el.scrollHeight}
-function render(r){seedChosen(r);let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r);threadScrollBottom();replyFromHash()}
+function render(r){seedChosen(r);if(r&&r.scopeOnly===true)SOW=true;sowBanner();let e=(r&&r.estimate)||{};if(isV7(e))renderV7(r);else renderLegacy(r);threadScrollBottom();replyFromHash()}
 function track(){
+ /* A building manager reading the scope is not the customer opening the quote. */
+ if(SOW)return;
  /* The reload that follows an approval is not the customer opening the quote —
     see S('accept'). One marker, spent once, so a genuine re-open later still
     notifies. */
@@ -967,7 +1002,7 @@ if(q.get('preview')==='1'){
  }
  return;
 }
-if(!ref){app.textContent='Estimate link is incomplete.';return}fetch('/.netlify/functions/get-estimate?ref='+encodeURIComponent(ref),{cache:'no-store'}).then(r=>r.json()).then(j=>render(j.record||j.estimateRecord||j.data||j)).catch(e=>app.textContent='Could not load estimate: '+e.message)
+if(!ref){app.textContent='Estimate link is incomplete.';return}fetch('/.netlify/functions/get-estimate?ref='+encodeURIComponent(ref)+(SOW?'&sow=1':''),{cache:'no-store'}).then(r=>r.json()).then(j=>render(j.record||j.estimateRecord||j.data||j)).catch(e=>app.textContent='Could not load estimate: '+e.message)
 })();
 </script>
 </body>
