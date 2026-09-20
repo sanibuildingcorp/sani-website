@@ -372,6 +372,7 @@ function estimateContext(rec) {
   if (rec.contract) lines.push("CONTRACT: " + (rec.contract.signedAt ? "signed " + str(rec.contract.signedAt).slice(0, 10) : "drafted, not signed"));
   if (str(rec.sentAt)) lines.push("SENT TO CUSTOMER: " + str(rec.sentAt).slice(0, 10));
   if (str(rec.acceptedAt)) lines.push("ACCEPTED: " + str(rec.acceptedAt).slice(0, 10));
+  if (str(est.completedOn) || str(est.completedAt)) lines.push("COMPLETED: " + (str(est.completedOn) || str(est.completedAt).slice(0, 10)));
 
   const text = lines.join("\n");
   return text.length > ESTIMATE_CHARS ? text.slice(0, ESTIMATE_CHARS) + "\n  ... (estimate cut here)" : text;
@@ -429,7 +430,7 @@ function screenContext(sc) {
       if (!e) return;
       lines.push("  " + [str(e.ref), str(e.name), str(e.service), str(e.status), e.total != null ? "$" + Math.round(Number(e.total) || 0) : "-",
         str(e.submitted) || "-", str(e.sent) || "-", Number(e.unpaid) > 0 ? "unpaid $" + Math.round(Number(e.unpaid)) : "-",
-        (e.needsReply ? "CUSTOMER WAITING FOR A REPLY" : "") + (e.invoices ? " " + e.invoices + " invoice(s)" : "")].join(" | ").trim());
+        (e.needsReply ? "CUSTOMER WAITING FOR A REPLY" : "") + (e.invoices ? " " + e.invoices + " invoice(s)" : "") + (str(e.completed) ? " completed " + str(e.completed) : "")].join(" | ").trim());
     });
   }
   const vis = arr(sc.visits);

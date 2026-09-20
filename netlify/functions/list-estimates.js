@@ -67,6 +67,9 @@ exports.handler = async function (event) {
       updatedAt: e.updatedAt,
       sentAt: e.sentAt,
       acceptedAt: e.acceptedAt,
+      /* When the job was finished - the list badge and the assistant read it. */
+      completedAt: e.estimate?.completedAt || null,
+      completedOn: e.estimate?.completedOn || null,
       unpaidTotal: (e.invoices || [])
         .filter((inv) => inv.status !== "paid")
         .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0),
