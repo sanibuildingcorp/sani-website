@@ -3416,6 +3416,8 @@ function renderList() {
             /* He works from a phone between jobs and will not be watching this
                screen. The badge is the one place a waiting customer message is
                visible without opening anything. */
+            (e.parentRef ? '<span class="badge" style="background:rgba(184,147,10,0.14);color:#96770a">➕ ADD-ON TO ' + esc(e.parentRef) + '</span>' : '') +
+            (Array.isArray(e.addonRefs) && e.addonRefs.length ? '<span class="badge" style="background:rgba(184,147,10,0.14);color:#96770a">➕ ' + e.addonRefs.length + ' ADD-ON' + (e.addonRefs.length > 1 ? 'S' : '') + '</span>' : '') +
             (threadNeedsReply(e) ? '<span class="badge needs-reply">💬 REPLY NEEDED</span>' : '') +
             (Number(e.unpaidTotal) > 0 ? '<span class="badge unpaid-warn">⚠ UNPAID ' + fmt(e.unpaidTotal) + '</span>' : '') +
             '<span style="font-size:11px;color:var(--ink-muted);letter-spacing:1px">' + esc(e.ref) + '</span>' +
@@ -3431,6 +3433,45 @@ function renderList() {
   document.querySelectorAll(".est-card").forEach(function(card) {
     card.addEventListener("click", function() { openEdit(card.dataset.ref); });
   });
+}
+
+/* ── ADDITIONAL WORK ON AN AGREED ESTIMATE ───────────────────────────────
+     "she already agreed with this current service estimate but then she add
+      additional service for painting, i need keep current estimate untouched"
+   The agreed estimate is not edited. ➕ ADD ADDITIONAL WORK makes a separate
+   estimate for the new work only, linked to it: same customer, same
+   address, his words as the request, priced and sent like any estimate,
+   with its own link and its own Accept. The original keeps its link, price,
+   scope and PDF exactly as agreed; the customer's page lists the add-on. */
+function addonLink(ref) {
+  return '<a href="#" onclick="openEdit(\'' + esc(ref) + '\');return false" style="color:var(--gold);font-weight:700">' + esc(ref) + '</a>';
+}
+function addonHeaderHtml(r) {
+  var h = '';
+  if (r && r.parentRef) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work to ' + addonLink(r.parentRef) + ' · that estimate stays as agreed</div>';
+  var kids = Array.isArray(r && r.addonRefs) ? r.addonRefs : [];
+  if (kids.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work: ' + kids.map(function (k) {
+    var e = (typeof estimates !== 'undefined' && Array.isArray(estimates)) ? estimates.find(function (x) { return x && x.ref === k; }) : null;
+    return addonLink(k) + (e ? ' (' + esc(e.status || '') + (e.estimate && e.estimate.grandTotal ? ' · ' + fmt(e.estimate.grandTotal) : '') + ')' : '');
+  }).join(', ') + '</div>';
+  return h;
+}
+async function addonCreate() {
+  var r = currentRecord;
+  if (!r || !r.ref) return;
+  var what = prompt('What is the additional work? One or two lines. The AI prices it as a SEPARATE estimate; ' + r.ref + ' stays exactly as agreed.', '');
+  if (what === null) return;
+  what = String(what).trim();
+  if (!what) { toast('Say what the additional work is first', true); return; }
+  toast('Creating the additional-work estimate…');
+  try {
+    var res = await sbcFetch('/.netlify/functions/create-estimate', { method: 'POST', body: JSON.stringify({ parentRef: r.ref, description: what, projectTitle: 'Additional work: ' + what.slice(0, 60) }) });
+    var dta = await res.json();
+    if (!res.ok || !dta.success) throw new Error(dta.error || ('HTTP ' + res.status));
+    toast('✓ ' + dta.ref + ' created. Price it and send it like any estimate.');
+    await loadEstimates();
+    openEdit(dta.ref);
+  } catch (e) { toast('Could not create it: ' + e.message, true); }
 }
 
 /* ===== EDIT MODAL ===== */
@@ -4434,6 +4475,7 @@ function renderEdit() {
       '<div>' +
         '<h2>' + esc(est.projectTitle || req.service || "ESTIMATE") + '</h2>' +
         '<div class="ref-sub">Ref ' + esc(r.ref) + ' · ' + esc((r.status || "new").toUpperCase()) + ' · Submitted ' + fmtDate(r.submittedAt) + '</div>' +
+        addonHeaderHtml(r) +
       '</div>' +
       '<button class="modal-close" onclick="closeEdit()">×</button>' +
     '</div>' +
@@ -4679,6 +4721,8 @@ function renderEdit() {
       stampedTotalHtml(currentRecord) +
       '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
       '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
+      (currentRecord && currentRecord.parentRef ? '' :
+        '<button type="button" onclick="addonCreate()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE)</button>') +
     '</div>' +
     stepBar(5, 'Send it', 'Preview first if you want. Nothing leaves here until you press send.') +
     (currentRecord && currentRecord.status === 'completed'
@@ -10501,9 +10545,8 @@ function sbcCreateInv(){
   var btn=document.getElementById('sbc-ni-create');
   btn.disabled=true;btn.textContent='Creating…';
 
-  fetch('/.netlify/functions/create-estimate',{
+  sbcFetch('/.netlify/functions/create-estimate',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
     body:JSON.stringify((function(){
       var payload={
         customer:{

@@ -64,6 +64,10 @@ exports.handler = async function (event) {
         grandTotal: customerTotals(e.estimate, e).grandTotal,
         customerTotal: customerTotals(e.estimate, e).customerTotal,
       },
+      /* Additional work: the agreed estimate this one belongs to, and the
+         add-ons made for this one (create-estimate parentRef). */
+      parentRef: e.parentRef || null,
+      addonRefs: Array.isArray(e.addonRefs) ? e.addonRefs : [],
       submittedAt: e.submittedAt,
       updatedAt: e.updatedAt,
       sentAt: e.sentAt,
