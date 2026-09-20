@@ -78,7 +78,7 @@ console.log('\nthe document: the same cards as the page, nothing priced, nothing
 (async () => {
   const view = require(path.join(ROOT, 'netlify/functions/get-estimate.js')).scopeView(clone(SENT));
   const cards = SP.scopeCards(view.estimate);
-  ok('TWO SERVICE CARDS, with included / supplies / not included / the checked alternative only', cards.length === 2 && cards[0].title === 'Carpentry' && cards[0].included.length === 2 && cards[1].supplies[0] === 'Paint' && cards[0].excluded.join('|') === 'Ceiling repairs' && cards[0].options.length === 1 && cards[0].options[0].label === 'Option A — Crown molding premium profile', JSON.stringify(cards).slice(0, 200));
+  ok('TWO SERVICE CARDS, with included / supplies / not included - and no alternative, checked or not', cards.length === 2 && cards[0].title === 'Carpentry' && cards[0].included.length === 2 && cards[1].supplies[0] === 'Paint' && cards[0].excluded.join('|') === 'Ceiling repairs' && cards[0].options.length === 0, JSON.stringify(cards).slice(0, 200));
   ok('an instruction written for the estimator is not a customer exclusion', cards[0].excluded.indexOf('Do not price this as a full renovation') === -1);
   const buf = SP.buildScopePdf(view, { now: '2026-09-20T12:00:00Z' });
   const s = buf.toString('latin1');
@@ -96,7 +96,7 @@ console.log('\nthe document: the same cards as the page, nothing priced, nothing
     ok('...both services with their sections', /Service 1[^\n]*Carpentry/.test(x) && /Service 2[^\n]*Painting/.test(x) && /Included in this service/.test(x) && /Customer supplies/.test(x) && /Not included/.test(x) && /Ceiling repairs/.test(x) && /Paint\n/.test(x));
     ok('...a long included line, wrapped, all of it there', /Install crown molding in the living room/.test(x) && /ready for paint/.test(x));
     ok('...the allowance line with the dollar figure scrubbed', /Allowance for corner blocks/.test(x));
-    ok('...the checked alternative by name with its description, and "no pricing" said twice', /Optional alternatives/.test(x) && /Option A — Crown molding premium profile/.test(x) && /Larger 5\.25" profile/.test(x) && (x.match(/no pricing is included|contains no pricing/gi) || []).length >= 2);
+    ok('...NO alternative in the PDF, and "no pricing" said twice', !/Optional alternatives/.test(x) && !/Option A — Crown molding premium profile/.test(x) && (x.match(/no pricing is included|contains no pricing/gi) || []).length >= 2);
     ok('...fully insured, never the forbidden word', /fully insured/.test(x) && !/licensed/i.test(x));
   } else console.log('skip  PyMuPDF not available - text read-back skipped');
   const legacy = SP.buildScopePdf({ ref: 'SBC-L', customer: { name: 'A' }, estimate: { projectTitle: 'Old job', scopeOfWork: 'Sand and refinish the floors.\nSeal.', exclusions: ['Furniture moving'] } }).toString('latin1');

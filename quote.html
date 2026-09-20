@@ -388,8 +388,11 @@ function pubList(e){
    generate-estimate-background.js, where the analysis object is available. The
    display layer cannot see it and any copy made here is the weaker one. */
 const INSTRUCTION_RE=/^\s*(do not|don't|dont|please do not|do NOT)\b|\bdo not (price|assume|treat|quote|estimate)\b|estimating instruction|note to estimator/i;
+const ALT_NOTE_RE=/\balternative \(not included in current total\)\s*$/i;
 function cleanExclusions(list){
- return A(list).filter(x=>{const t=C(x);return t&&!INSTRUCTION_RE.test(t)})}
+ /* "alternative (not included in current total)" notes are what the old
+    estimator printed beside an option; options are gone, so are the notes. */
+ return A(list).filter(x=>{const t=C(x);return t&&!INSTRUCTION_RE.test(t)&&!ALT_NOTE_RE.test(t)})}
 /* THE CARDS MUST ALWAYS ADD UP TO THE HEADLINE.
    A card's subtotal is built from every priced line - labor AND materials - so it
    sums to the GRAND total. The headline is whatever the toggles say the customer

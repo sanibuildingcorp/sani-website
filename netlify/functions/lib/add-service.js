@@ -122,7 +122,7 @@ function mergeAddedService(record, fresh, meta) {
     if (taken[key(title)]) { title = was + " (additional)"; let n = 2; while (taken[key(title)]) { title = was + " (additional " + (n++) + ")"; } }
     taken[key(title)] = true;
     rename[key(was)] = title;
-    return { title: title, included: arr(c.included).map(str).filter(Boolean), customerSupplies: arr(c.customerSupplies).map(str).filter(Boolean), notIncluded: arr(c.notIncluded).map(str).filter(Boolean), subtotal: round2(num(c.subtotal) * factor), options: arr(c.options).map(function (o) { return { label: str(o && o.label), description: str(o && o.description), price: round2(num(o && o.price) * factor) }; }).filter(function (o) { return o.label; }) };
+    return { title: title, included: arr(c.included).map(str).filter(Boolean), customerSupplies: arr(c.customerSupplies).map(str).filter(Boolean), notIncluded: arr(c.notIncluded).map(str).filter(Boolean), subtotal: round2(num(c.subtotal) * factor), options: [] };
   });
   if (!cards.length) {
     /* an estimator that wrote lines but no card: one card named after the service */
@@ -162,7 +162,6 @@ function mergeAddedService(record, fresh, meta) {
       home.included = home.included.concat(c.included);
       home.customerSupplies = home.customerSupplies.concat(c.customerSupplies);
       home.notIncluded = home.notIncluded.concat(c.notIncluded);
-      home.options = home.options.concat(c.options);
     });
     cards = priced;
   }

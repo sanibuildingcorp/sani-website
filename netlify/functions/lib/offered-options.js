@@ -88,14 +88,23 @@ function stripUnoffered(estimate, opts) {
   if (!est || typeof est !== "object") return est;
   const o = opts || {};
   const keep = new Set((Array.isArray(o.keep) ? o.keep : []).map(norm).filter(Boolean));
-  let set = offeredSet(est);
-
-  if (!set && o.legacyAllowsAll === true) {
-    /* Sent before the checkbox existed: the customer saw all of them. */
-    set = new Set();
-    eachOptionList(est, function (list) { list.forEach(function (x) { const k = labelOf(x); if (k) set.add(k); }); return list; });
-  }
-  if (!set) set = new Set();
+  /* ALTERNATIVES ARE NO LONGER OFFERED, ON ANY RECORD. "I need to completely
+     remove alternative offers, i never use them and remove from everywhere."
+     Nothing is ever offered: not what a checkbox once allowed, not "all of
+     them" on a record sent before the checkbox existed (legacyAllowsAll is
+     accepted and ignored). Only an option the customer ALREADY ADDED to their
+     bill (keep) survives, because its price is in the total they approved.
+     The "alternative (not included in current total)" notes the old
+     estimator printed beside an option go with it. */
+  const set = new Set();
+  const NOTE_RE = /\balternative \(not included in current total\)\s*$/i;
+  const dropNotes = function (card) {
+    if (!card) return;
+    if (Array.isArray(card.notIncluded)) card.notIncluded = card.notIncluded.filter(function (t) { return !NOTE_RE.test(String(t || "")); });
+    if (Array.isArray(card.excluded)) card.excluded = card.excluded.filter(function (t) { return !NOTE_RE.test(String(t || "")); });
+  };
+  (Array.isArray(est.serviceBreakdown) ? est.serviceBreakdown : []).forEach(dropNotes);
+  ((est.publishedCustomerScope && est.publishedCustomerScope.services) || []).forEach(dropNotes);
 
   const allowed = function (x) { const k = labelOf(x); return !!k && (set.has(k) || keep.has(k)); };
   eachOptionList(est, function (list) { return list.filter(allowed); });
