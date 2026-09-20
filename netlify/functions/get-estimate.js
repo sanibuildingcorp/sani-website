@@ -52,6 +52,7 @@ exports.handler = async function (event) {
        It is per-record and get-estimate is gated by ref, so a customer can only
        ever receive their own conversation. */
     if (isQuoteRequest) {
+      if (isScopeOnly) return { statusCode: 200, headers: cors(), body: JSON.stringify(scopeView(data)) };
       const view = buildCustomerView(data, isDraftPreview);
       /* ══ THE CUSTOMER SEES WHAT WAS SENT ══════════════════════════════════════
          Not what is being edited right now. Everything the contractor authored —
@@ -88,14 +89,13 @@ exports.handler = async function (event) {
       /* The scope link is his to hand out, sent or not: a building manager
          is asked for permission before the customer has anything to approve.
          Sent -> the sent scope; never sent -> the scope as it stands. */
-      if (!isDraftPreview && !isScopeOnly && !everSent(data)) hideUnsentEstimate(view);
+      if (!isDraftPreview && !everSent(data)) hideUnsentEstimate(view);
       view.thread = thread.normalizeThread(data);
       /* Rate-limiter bookkeeping is ours, not theirs. */
       delete view.threadRate;
       /* The raw frozen version is already applied above; sending it as well
          would hand the customer every alternative the gate just removed. */
       delete view.sentVersion;
-      if (isScopeOnly) return { statusCode: 200, headers: cors(), body: JSON.stringify(scopeOnlyView(view)) };
       return { statusCode: 200, headers: cors(), body: JSON.stringify(view) };
     }
 
@@ -107,6 +107,26 @@ exports.handler = async function (event) {
     return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
   }
 };
+
+/* ══ THE SCOPE-ONLY VIEW, FOR THE PAGE AND FOR THE PDF ══════════════════════
+   The same customer view - frozen to the sent version when there is one, the
+   alternatives he checked - then every price and private matter removed
+   (lib/scope-only.js). Never hidden for a never-sent record: the scope link
+   is his to hand out, and a building manager is asked for permission before
+   the customer has anything to approve. Sent -> the sent scope; never sent ->
+   the scope as it stands. scope-pdf.js lays this same object out as a file. */
+function scopeView(data) {
+  const view = buildCustomerView(data, false);
+  applySentVersion(data, view);
+  stripUnoffered(view.estimate, {
+    legacyAllowsAll: everSent(data),
+    keep: (Array.isArray(data.customerOptionSelections) ? data.customerOptionSelections : []).map(function (o) { return o && o.label; }),
+  });
+  delete view.threadRate;
+  delete view.sentVersion;
+  return scopeOnlyView(view);
+}
+exports.scopeView = scopeView;
 
 const SENT_STATUSES = ["sent", "opened", "question", "accepted", "invoiced", "paid", "completed", "declined"];
 function everSent(rec) {
