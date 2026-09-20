@@ -38,7 +38,14 @@ const SNAPSHOT_VERSION = 1;
    in here is either the customer's own (thread, selections, acceptance) or is
    internal and never reaches them. */
 function snapshotEstimate(estimate) {
-  return estimate && typeof estimate === "object" ? JSON.parse(JSON.stringify(estimate)) : {};
+  const copy = estimate && typeof estimate === "object" ? JSON.parse(JSON.stringify(estimate)) : {};
+  /* Which alternatives the customer may see is a decision the contractor makes
+     with a checkbox, unchecked by default. A send with no decision recorded is
+     a send with none offered - never "all of them". Only versions frozen before
+     the checkbox existed carry no key, and those are read as "all", because
+     that is what those customers were actually sent. */
+  if (!Array.isArray(copy.offeredOptions)) copy.offeredOptions = [];
+  return copy;
 }
 
 /**
@@ -110,8 +117,10 @@ function hasUnsentChanges(record) {
   const rec = record || {};
   const v = rec.sentVersion;
   if (!v || !v.estimate) return false;
+  /* Both sides through the same normalizer, so an old version with no
+     offeredOptions key does not read as "changed" forever. */
   const now = JSON.stringify(snapshotEstimate(rec.estimate));
-  const then = JSON.stringify(v.estimate);
+  const then = JSON.stringify(snapshotEstimate(v.estimate));
   if (now !== then) return true;
   const nowTotal = rec.customerFinalTotal != null ? rec.customerFinalTotal : null;
   const thenTotal = v.customerFinalTotal != null ? v.customerFinalTotal : null;

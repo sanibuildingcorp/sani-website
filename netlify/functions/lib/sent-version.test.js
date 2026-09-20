@@ -82,7 +82,9 @@ t("...and a send with no contract records that too", () => {
 t("junk does not throw", () => {
   assert.ok(buildSentVersion(null, 1));
   assert.ok(buildSentVersion({}, 0));
-  assert.deepStrictEqual(buildSentVersion({ estimate: "nonsense" }, 1).estimate, {});
+  /* A junk estimate freezes as empty - with the "none offered" decision, which
+     every frozen version now carries. */
+  assert.deepStrictEqual(buildSentVersion({ estimate: "nonsense" }, 1).estimate, { offeredOptions: [] });
 });
 
 /* ══ WHAT THE CUSTOMER RECEIVES ═══════════════════════════════════════════════ */

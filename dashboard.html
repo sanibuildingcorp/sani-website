@@ -5551,7 +5551,9 @@ var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   // Price lines parked by "Not included" - the money waiting to come back
   "parkedLines",
   // Snapshot that makes the last service merge reversible
-  "lastMerge", "mergeHistory"
+  "lastMerge", "mergeHistory",
+  // Which alternatives he checked to show the customer (none until he does)
+  "offeredOptions"
 ];
 
 var SCOPE_SHARED_STATUSES = ["sent", "opened", "accepted", "invoiced", "paid", "completed"];
@@ -6145,20 +6147,30 @@ function renderScopeControl() {
      (The Finishing Options panel below is a different thing entirely — it edits
      finishGroups, not estimate.options.) They are listed here, with the price the
      customer sees and a way to withdraw one. */
+  /* ══ NONE OF THEM IS SHOWN UNTIL HE CHECKS IT. ═════════════════════════════
+       "i need add check box for including or not including for send to the
+        customer, always keeps uncheck and if i decide then i will check by my self"
+     The checkbox is the decision. It saves straight away, and the customer's
+     copy picks it up on the next send. See lib/offered-options.js. */
   var _opts = scopeAllAlternatives();
-  html += '<div class="sc-svc"><div class="sc-svc-head"><b>Alternatives the customer is shown</b></div>';
+  html += '<div class="sc-svc"><div class="sc-svc-head"><b>Alternatives</b></div>';
   if (!_opts.length) {
     html += '<div class="sc-empty" style="padding:10px 12px;color:var(--ink-muted,#8a9bb0)">None. Nothing extra is being offered on the customer\'s quote.</div>';
   } else {
-    html += '<div class="sc-empty" style="padding:8px 12px;color:var(--ink-muted,#8a9bb0)">These appear on the customer\'s quote as priced add-ons. They are NOT in the grand total.</div>';
+    html += '<div class="sc-empty" style="padding:8px 12px;color:var(--ink-muted,#8a9bb0)">Check the ones the customer may see as priced add-ons. Unchecked stay hidden. They are NOT in the grand total.</div>';
     _opts.forEach(function (o, oi) {
+      var on = scopeOptionOffered(o.label);
       html += '<div class="sc-item" style="align-items:flex-start">' +
+        '<label style="display:flex;align-items:center;gap:8px;margin-right:10px;cursor:pointer;font-size:12px;white-space:nowrap;color:' + (on ? 'var(--gold-2,#8a6d1f)' : 'var(--ink-muted,#8a9bb0)') + '">' +
+          '<input type="checkbox" class="sc-offer" onchange="scopeOfferOption(' + oi + ', this.checked)"' + (on ? ' checked' : '') + ' style="accent-color:var(--gold,#c8860a);width:18px;height:18px">' +
+          (on ? 'Shown' : 'Hidden') +
+        '</label>' +
         '<div style="flex:1;min-width:0">' +
           '<b>' + esc(String(o.label || "Alternative")) + '</b>' +
           (o.description ? '<div style="color:var(--ink-muted,#8a9bb0);font-size:12px;margin-top:3px">' + esc(String(o.description)) + '</div>' : '') +
         '</div>' +
         '<b style="white-space:nowrap;margin:0 10px">' + fmt(Number(o.price) || 0) + '</b>' +
-        '<button class="sc-del" onclick="scopeRemoveOption(' + oi + ')" title="Stop offering this">✕</button>' +
+        '<button class="sc-del" onclick="scopeRemoveOption(' + oi + ')" title="Delete this alternative">✕</button>' +
       '</div>';
     });
   }
@@ -6799,6 +6811,38 @@ function scopeAllAlternatives() {
   return uniq;
 }
 
+/* ══ THE CHECKBOX: SHOW THIS ALTERNATIVE TO THE CUSTOMER, OR NOT. ═══════════
+   Stored on the estimate as offeredOptions, the normalized labels he checked.
+   Nothing is in it until he checks something. Saved straight away, like
+   removing one, because a control that only changes the screen lies. */
+function scopeOptionKey(label) {
+  return String(label == null ? "" : label).toLowerCase().replace(/\s+/g, " ").trim();
+}
+function scopeOptionOffered(label) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  if (!Array.isArray(est.offeredOptions)) return false;
+  var k = scopeOptionKey(label);
+  return est.offeredOptions.some(function (l) { return scopeOptionKey(l) === k; });
+}
+async function scopeOfferOption(oi, on) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var target = scopeAllAlternatives()[oi];
+  if (!target) return;
+  var k = scopeOptionKey(target.label);
+  var list = (Array.isArray(est.offeredOptions) ? est.offeredOptions : []).map(scopeOptionKey).filter(function (l) { return l && l !== k; });
+  if (on) list.push(k);
+  est.offeredOptions = list;
+  try {
+    await saveDraft();
+    renderScopeControl();
+    toast(on ? "✓ Saved — \"" + target.label + "\" will be shown to the customer on the next send"
+             : "✓ Saved — \"" + target.label + "\" stays hidden from the customer");
+  } catch (e) {
+    renderScopeControl();
+    toast("Changed on screen but SAVE FAILED: " + e.message, true);
+  }
+}
+
 /* ══ REMOVING MUST REMOVE IT EVERYWHERE, AND MUST SAVE. ═════════════════════
    The first version of this button edited one array in memory and re-rendered.
    The screen changed, nothing was written to the server, and the customer's page
@@ -6814,9 +6858,9 @@ async function scopeRemoveOption(oi) {
   var same = function (o) {
     return String((o && (o.label || o.name)) || "").trim().toLowerCase() === key;
   };
-  if (!confirm("Stop showing \"" + target.label + "\" to the customer?\n\n" +
+  if (!confirm("Delete \"" + target.label + "\" from this estimate?\n\n" +
                "It is not part of your grand total, so your price does not change.\n" +
-               "This saves straight away and updates their live quote link.")) return;
+               "To keep it but not show it, uncheck it instead. This saves straight away.")) return;
 
   est.options = (est.options || []).filter(function (o) { return !same(o); });
   (est.serviceBreakdown || []).forEach(function (r) {
@@ -6829,6 +6873,7 @@ async function scopeRemoveOption(oi) {
   (est.publishedCustomerScope && est.publishedCustomerScope.services || []).forEach(function (sv) {
     if (sv && Array.isArray(sv.options)) sv.options = sv.options.filter(function (o) { return !same(o); });
   });
+  if (Array.isArray(est.offeredOptions)) est.offeredOptions = est.offeredOptions.filter(function (l) { return scopeOptionKey(l) !== key; });
 
   try {
     await saveDraft();

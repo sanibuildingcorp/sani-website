@@ -28,7 +28,11 @@
    against this record's own options and the money comes from there. A submitted
    total is accepted only up to quote + the options that actually resolved. */
 function applyOptionSelection(record, ids) {
-  const resolved = resolveSelection(record.estimate || {}, ids);
+  /* Resolved against the version the customer was SENT when there is one: that
+     is the list they picked from, and the alternatives offered on it are the
+     ones the contractor checked at the time of sending. */
+  const sent = record.sentVersion && typeof record.sentVersion === "object" && record.sentVersion.estimate;
+  const resolved = resolveSelection(sent || record.estimate || {}, ids);
   record.customerOptionSelections = selectionSnapshot(resolved.selected);
   record.customerOptionTotal = resolved.total;
   if (resolved.unknown.length) {

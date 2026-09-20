@@ -115,7 +115,13 @@ function collectOptions(estimate) {
 function resolveSelection(estimate, ids) {
   const all = collectOptions(estimate);
   const byId = Object.create(null);
-  all.forEach(function (o) { byId[o.id] = o; });
+  /* Only what the contractor checked can be bought. An estimate that carries
+     the decision (offeredOptions is an array) resolves nothing outside it; one
+     frozen before the checkbox existed resolves everything, as it always did. */
+  const offered = Array.isArray((estimate || {}).offeredOptions)
+    ? new Set(estimate.offeredOptions.map(norm).filter(Boolean))
+    : null;
+  all.forEach(function (o) { if (!offered || offered.has(norm(o.label))) byId[o.id] = o; });
 
   const selected = [];
   const unknown = [];

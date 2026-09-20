@@ -51,7 +51,9 @@ const CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   // Price lines parked by "Not included" - the money waiting to come back
   "parkedLines",
   // Snapshot that makes the last service merge reversible
-  "lastMerge", "mergeHistory"
+  "lastMerge", "mergeHistory",
+  // Which alternatives he checked to show the customer (none until he does)
+  "offeredOptions"
 ];
 
 /**

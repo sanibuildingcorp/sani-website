@@ -481,7 +481,17 @@ if(!deterministic&&!hasSections){/* legacy records only: no sections to trust, s
  if(general&&active.length)active.forEach(x=>x.subtotal+=base>0?general*(x.subtotal/base):general/active.length);
  let sum=active.reduce((s,x)=>s+x.subtotal,0);
  if(sum>0&&c.total>0){let scale=c.total/sum;active.forEach(x=>x.subtotal*=scale)}}
-active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=cleanExclusions(U(s.notIncluded))});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}return finalizeServices(e,active)}
+active.forEach(s=>{s.included=U(s.included).filter(x=>!isOption(x));s.customerSupplies=U(s.customerSupplies);s.notIncluded=cleanExclusions(U(s.notIncluded))});if(deterministic){const w=get('Windows'),sel=e.optionSelections&&e.optionSelections.Windows;if(w&&sel){w.options=A(sel.alternatives).filter(o=>{const k=optionKey(o.label||'');return k==='B'||(!k&&/alternate|alternative/i.test(C(o.label)+' '+C(o.description)))}).map(o=>({label:o.label||'Option B — Alternate window scope',description:o.description||'Alternative window scope; not included in the current estimate total.',price:+o.price||0}));w.notIncluded=U(w.notIncluded).filter(x=>!/^option\s*b\b/i.test(C(x)))}}active.forEach(s=>{s.options=offeredOnly(e,s.options)});return finalizeServices(e,active)}
+/* ══ ONLY THE ALTERNATIVES THE CONTRACTOR CHECKED. ═══════════════════════════
+   The server strips the rest before this page ever gets the record, and names
+   what it kept in estimate.offeredOptions. This is the same rule applied once
+   more, because the dashboard's pre-send preview hands this page the LIVE
+   draft: with no decision recorded (no offeredOptions) nothing is offered -
+   the checkbox starts unchecked. An option the customer already added to their
+   bill always stays on the page. See netlify/functions/lib/offered-options.js */
+function offeredOnly(e,list){
+ const on=new Set(A(e&&e.offeredOptions).map(optNorm).filter(Boolean));
+ return A(list).filter(o=>o&&(on.has(optNorm(o.label))||isChosen(o.label)))}
 /* Published Customer Scope (set in the dashboard's Customer Scope Control).
    When the contractor has explicitly published a scope, its wording replaces the
    auto-derived Included / Customer Supplies / Not Included lists. Subtotals are
