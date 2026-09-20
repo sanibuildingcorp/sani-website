@@ -25,7 +25,7 @@ const ANSWER_MS = 90000;
 const RECORD_MS = 6000, MEMORY_MS = 5000, CHAT_WRITE_MS = 4000;
 /* No clock here, so the answer may be longer than the sync function's 800
    tokens: a reword action copying six lines exactly is not short. */
-const MAX_TOKENS = 1600;
+const MAX_TOKENS = 2500;
 
 function str(v) { return String(v == null ? "" : v).trim(); }
 function jobStore() {

@@ -47,7 +47,7 @@ const ask = async (fr, h) => { frames = fr; const r = await (h || fn).handler({ 
   console.log('\nthe background path has room for a long action\n');
   {
     await ask([{ type: 'message_start' }, { type: 'content_block_delta', delta: { type: 'text_delta', text: 'ok' } }, { type: 'message_stop' }], bg);
-    ok('assistant-background asks for 1600 tokens; the sync function keeps 800', sent.max_tokens === 1600 && (await ask([{ type: 'message_start' }, { type: 'content_block_delta', delta: { type: 'text_delta', text: 'ok' } }, { type: 'message_stop' }]), sent.max_tokens === 800));
+    ok('assistant-background asks for 2500 tokens; the sync function keeps 800', sent.max_tokens === 2500 && (await ask([{ type: 'message_start' }, { type: 'content_block_delta', delta: { type: 'text_delta', text: 'ok' } }, { type: 'message_stop' }]), sent.max_tokens === 800));
     const job = JSON.parse(STORES['assistant-jobs'].get('A-empty0001'));
     ok('...and the job carries the answer', job.status === 'done' && job.reply === 'ok');
     await ask([{ type: 'message_start' }, { type: 'message_delta', delta: { stop_reason: 'end_turn' } }, { type: 'message_stop' }], bg);
@@ -56,3 +56,13 @@ const ask = async (fr, h) => { frames = fr; const r = await (h || fn).handler({ 
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL  the suite crashed instead of reporting\n        ' + (e && e.stack || e)); process.exit(1); });
+/* appended: the cause, once the error named it */
+(async () => {
+  const fs2 = require('fs'), path2 = require('path');
+  const A = fs2.readFileSync(path2.join(__dirname, '..', 'netlify/functions/assistant.js'), 'utf8');
+  const C = fs2.readFileSync(path2.join(__dirname, '..', 'netlify/functions/lib/claude.js'), 'utf8');
+  const okk = (n, c) => { c === true ? pass++ : fail++; console.log((c === true ? 'PASS  ' : 'FAIL  ') + n); };
+  okk('THINKING IS SWITCHED OFF on the assistant call - the budget is for the words', /thinking: \{ type: "disabled" \},/.test(A));
+  okk('...and on the digest / alert calls', /thinking: \{ type: "disabled" \} \}, payload\)/.test(C));
+  okk('the max_tokens message names the stream, so a thinking-only stream shows as such', /ran out of room before writing anything \(stream: " \+ \(events/.test(A));
+})();

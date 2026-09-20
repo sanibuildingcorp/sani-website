@@ -682,6 +682,13 @@ function callClaude(apiKey, system, turns, deadline, maxTokens) {
     model: MODEL,
     max_tokens: maxTokens || MAX_TOKENS,
     stream: true,
+    /* ══ NO HIDDEN REASONING ═════════════════════════════════════════════
+       "The assistant ran out of room before writing anything." 1600 tokens
+       spent, zero words: the model was thinking - reasoning blocks stream
+       as thinking_delta, which is not text, and on a hard question it used
+       the whole budget before the first word. This assistant answers from
+       what is in front of it; the budget is for the answer. */
+    thinking: { type: "disabled" },
     system: system,
     messages: turns.map(function (t) { return { role: t.role, content: t.text }; }),
   });
@@ -706,7 +713,7 @@ function callClaude(apiKey, system, turns, deadline, maxTokens) {
         const events = Object.keys(seen).map(function (k) { return k + (seen[k] > 1 ? "×" + seen[k] : ""); }).join(", ");
         console.error("assistant: empty stream", { stopReason: stopReason, events: events, head: rawHead.slice(0, 400) });
         if (stopReason === "refusal") return reject(new Error("The assistant declined to answer that one. Say it another way."));
-        if (stopReason === "max_tokens") return reject(new Error("The assistant ran out of room before writing anything. Ask for less at once."));
+        if (stopReason === "max_tokens") return reject(new Error("The assistant ran out of room before writing anything (stream: " + (events || "no events") + "). Ask for less at once."));
         return reject(new Error("The assistant returned nothing (stop: " + (stopReason || "none") + "; stream: " + (events || "no events") + "). Try again."));
       }
       resolve({ text: text.trim(), truncated: truncated === true, stopReason: stopReason });
