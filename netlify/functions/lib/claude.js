@@ -15,7 +15,10 @@ const https = require("https");
  * @returns {Promise<object>} the message object
  */
 function messages(apiKey, payload, timeoutMs) {
-  const data = JSON.stringify(payload);
+  /* No hidden reasoning unless the caller asks for it: the budget is for
+     the answer (see assistant.js for why). */
+  const body = Object.assign({ thinking: { type: "disabled" } }, payload);
+  const data = JSON.stringify(body);
   return new Promise(function (resolve, reject) {
     const req = https.request(
       { hostname: "api.anthropic.com", port: 443, path: "/v1/messages", method: "POST",
