@@ -8028,15 +8028,72 @@ async function toggleInvoicePaid(invoiceNumber, makePaid) {
    Nothing sends automatically; the contractor presses send. */
 /* Scope of Work link — the same quote page with every price hidden (?sow=1).
    For building management / property managers who need the scope of work but
-   must not see the pricing between contractor and customer. */
+   must not see the pricing between contractor and customer.
+     "It's just shows scope of work copied but not sending or not open same
+      as send to customer"
+   So the button opens a window with the three things he does with the link:
+   open it, copy it, or email it - to the customer, or to any address he
+   types (the management office). Emailing goes through send-scope-link. */
+function scopeLinkUrl() {
+  return "https://www.sanibuildingcorp.com/quote.html?ref=" + encodeURIComponent(currentRecord.ref) + "&sow=1";
+}
 function copyScopeLink() {
   if (!currentRecord || !currentRecord.ref) { toast("Open an estimate first", true); return; }
-  var url = "https://www.sanibuildingcorp.com/quote.html?ref=" + encodeURIComponent(currentRecord.ref) + "&sow=1";
-  function done(){ toast("\u2713 Scope of Work link copied \u2014 no prices shown"); }
+  var url = scopeLinkUrl();
+  var cust = currentRecord.customer || {};
+  var sends = Array.isArray(currentRecord.scopeLinkSends) ? currentRecord.scopeLinkSends : [];
+  var last = sends.length ? sends[sends.length - 1] : null;
+  var old = document.getElementById("sow-overlay"); if (old) old.remove();
+  var ov = document.createElement("div");
+  ov.id = "sow-overlay";
+  ov.style.cssText = "position:fixed;inset:0;z-index:99990;background:rgba(5,13,26,.72);display:flex;align-items:center;justify-content:center;padding:18px";
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:22px 20px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+      '<div style="font-size:17px;font-weight:700;color:#0d1b2a">📋 Scope of Work — no prices</div>' +
+      '<div style="font-size:13px;color:#5a6577;margin:6px 0 14px">The customer\'s page with every price removed. For building management, a board, or the customer. ' + (currentRecord.sentAt || currentRecord.sentVersion ? 'Shows the scope as sent.' : 'Shows the scope as it is now.') + '</div>' +
+      '<input type="text" readonly value="' + esc(url) + '" onclick="this.select()" style="width:100%;padding:10px 12px;font-size:13px;border:1.5px solid var(--line,#d9dee6);border-radius:10px;box-sizing:border-box;color:#0d1b2a;background:#f7f8fa">' +
+      '<div style="display:flex;gap:10px;margin-top:12px">' +
+        '<button type="button" class="btn-secondary" style="flex:1" onclick="window.open(scopeLinkUrl(), \'_blank\')">👁 Open</button>' +
+        '<button type="button" class="btn-secondary" style="flex:1" onclick="scopeLinkCopy()">📋 Copy link</button>' +
+      '</div>' +
+      '<div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#5a6577;margin:18px 0 6px">Send by email</div>' +
+      '<input type="text" id="sow-to" value="' + esc(cust.email || "") + '" placeholder="management@building.com, customer@email.com" autocomplete="off" style="width:100%;padding:12px;font-size:15px;border:1.5px solid var(--gold-2,#c8a84c);border-radius:10px;box-sizing:border-box">' +
+      '<div style="font-size:12px;color:#5a6577;margin-top:6px">One or more addresses, separated by commas. The email names no price.' + (last ? ' Last sent ' + esc(fmtDate(last.at)) + ' to ' + esc((last.to || []).join(", ")) + '.' : '') + '</div>' +
+      '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">' +
+        '<button type="button" class="btn-secondary" onclick="document.getElementById(\'sow-overlay\').remove()">Close</button>' +
+        '<button type="button" class="btn-primary" id="sow-send" onclick="sendScopeLink(document.getElementById(\'sow-to\').value)">✉️ Send scope of work</button>' +
+      '</div></div>';
+  document.body.appendChild(ov);
+}
+function scopeLinkCopy() {
+  var url = scopeLinkUrl();
+  function done(){ toast("✓ Scope of Work link copied — no prices shown"); }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(done).catch(function(){ window.prompt("Copy this Scope of Work link:", url); });
   } else {
     window.prompt("Copy this Scope of Work link:", url);
+  }
+}
+async function sendScopeLink(to) {
+  if (!currentRecord || !currentRecord.ref) return;
+  var addr = String(to || "").trim();
+  if (!addr) { toast("Enter an email address", true); return; }
+  var btn = document.getElementById("sow-send");
+  if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
+  try {
+    var r = await sbcFetch("/.netlify/functions/send-scope-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: currentRecord.ref, to: addr }),
+    });
+    var data = await r.json().catch(function () { return {}; });
+    if (!r.ok) throw new Error(data.error || "Send failed");
+    currentRecord.scopeLinkSends = (currentRecord.scopeLinkSends || []).concat([{ to: data.sentTo, at: data.at }]);
+    currentRecord.scopeLinkSentAt = data.at;
+    var ov = document.getElementById("sow-overlay"); if (ov) ov.remove();
+    toast("✓ Scope of work sent to " + (data.sentTo || []).join(", ") + " — no prices");
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = "✉️ Send scope of work"; }
+    toast("Send failed: " + e.message, true);
   }
 }
 
