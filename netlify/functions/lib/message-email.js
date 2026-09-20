@@ -65,25 +65,44 @@ function buildMessageEmail(o) {
 
   const projectTitle = String(est.projectTitle || req.service || "Your project").trim();
   const address = String(customer.address || req.address || "").trim();
-  const total = customerTotals(est, record).customerTotal;
+  /* THE PRICE THE CUSTOMER HAS BEEN SENT, never the draft. A record he priced
+     for himself and never sent has no frozen version: the customer's copy of
+     a message then carries no price at all, the same as the portal. Records
+     sent before frozen versions existed (sentAt, or a status past drafted)
+     use their live estimate, as they always did. The contractor's copy shows
+     the live figure: it is his. */
+  const sentEst = record.sentVersion && record.sentVersion.estimate ? record.sentVersion.estimate : null;
+  const everSent = !!sentEst || !!record.sentAt || ["sent", "opened", "question", "accepted", "invoiced", "paid", "completed", "declined"].indexOf(String(record.status || "").toLowerCase()) !== -1;
+  const priceEst = audience === "contractor" ? est : (sentEst || (everSent ? est : {}));
+  /* The stamped figure follows the same seam as lib/sent-version.js: the
+     version's own stamp, else the live one only once the customer accepted. */
+  const stampRec = audience === "contractor" ? record
+    : sentEst ? { customerFinalTotal: record.sentVersion.customerFinalTotal != null ? record.sentVersion.customerFinalTotal : (record.acceptedAt ? record.customerFinalTotal : null) }
+    : (everSent ? record : {});
+  const total = customerTotals(priceEst, stampRec).customerTotal;
   /* Priced means somebody has actually put lines or a stamped figure on this
      record - not merely that a total could be computed, because an empty record
      computes to zero perfectly happily. */
   const hasPrice =
-    est.customerFinalTotal != null ||
-    est.stampedTotal != null ||
-    (Array.isArray(est.labor) && est.labor.length > 0) ||
-    (Array.isArray(est.materials) && est.materials.length > 0) ||
+    priceEst.customerFinalTotal != null ||
+    priceEst.stampedTotal != null ||
+    (Array.isArray(priceEst.labor) && priceEst.labor.length > 0) ||
+    (Array.isArray(priceEst.materials) && priceEst.materials.length > 0) ||
     Number(total) > 0;
   const quoteUrl = siteUrl + "/quote.html?ref=" + encodeURIComponent(ref);
 
-  /* The ref lives in the SUBJECT on purpose. Gmail keeps the subject on reply,
-     so when Zura answers from his phone instead of the dashboard, inbox-sync can
-     read the ref back out and put his reply into the thread. Do not "tidy" it
-     out - see refFromText() in lib/thread.js. */
+  /* THE SUBJECT A CUSTOMER READS. It was "Re: SBC-260806-C5FC — Apartment
+     Renovation — 3855 Shore Pkwy, 1K": a code first, then dashes. "Not
+     immediately understanding what is this email and from whom and why."
+     Now it is the project, in words, the same every time so Gmail keeps the
+     messages in one thread. The ref is no longer in the subject: inbox-sync
+     reads it out of the quoted header card in a reply (the raw body, before
+     quotes are stripped), and a reply with no ref at all is matched by the
+     customer's address. The contractor's copy keeps the ref first - it is
+     his alert, and he searches by it. */
   const subject = (audience === "contractor")
     ? ref + " — new message from " + (customer.name || "your customer")
-    : "Re: " + ref + " — " + projectTitle;
+    : "About your project: " + projectTitle;
 
   const heading = audience === "contractor"
     ? esc(customer.name || "Your customer") + " sent you a message"
@@ -150,8 +169,11 @@ function buildMessageEmail(o) {
         (audience === "customer"
           ? '<div style="margin:22px 0 0">' +
               '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin:0 0 6px">Reply to Zurabi</div>' +
-              '<a href="' + quoteUrl + '#reply" style="display:block;background:#ffffff;border:1.5px solid #cfd6de;border-radius:10px;padding:16px 18px;text-decoration:none;color:#9aa4ae;font-size:15px;line-height:1.5">' +
-                'Tap here to type your reply…' +
+              /* Gold and unmissable, above the button: "make it more visible
+                 for eyes catch and push customers for type in there". */
+              '<a href="' + quoteUrl + '#reply" style="display:block;background:#fff8e6;border:2px solid #c8860a;border-radius:12px;padding:18px 18px;text-decoration:none;color:#0a1628;font-size:17px;font-weight:bold;line-height:1.4">' +
+                '\u270D\uFE0F Tap here to type your reply' +
+                '<div style="font-size:13px;font-weight:normal;color:#6b5a2a;margin-top:6px">Opens your project page. Your reply goes straight to Zurabi.</div>' +
               "</a>" +
               '<div style="text-align:center;margin:14px 0 4px">' +
                 '<a href="' + quoteUrl + '#reply" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">Open my project &amp; reply &rarr;</a>' +

@@ -52,6 +52,19 @@ exports.handler = async function (event) {
          an unpublished draft: freezing that would show him the old one and make
          the preview useless. */
       if (!isDraftPreview) applySentVersion(data, view);
+      /* ══ NOTHING HE HAS NOT SENT ═══════════════════════════════════════════
+           "if i did generate estimate first only for my self in my dashboard
+            and then i have questions to the customer it's shows with price
+            and scope of work which i don't want share with them until i
+            finish estimate"
+         A record that was never sent has no frozen version, so the live draft
+         - lines, prices, scope, options - was what the portal showed. Now a
+         never-sent record shows the customer their own side only: the
+         conversation, their photos, their details, the project title. The
+         page says "Waiting on your answers" and no total. Records from before
+         frozen versions existed but that WERE sent (sentAt, or a status past
+         "drafted") are left whole, or every old quote link would go blank. */
+      if (!isDraftPreview && !everSent(data)) hideUnsentEstimate(view);
       view.thread = thread.normalizeThread(data);
       /* Rate-limiter bookkeeping is ours, not theirs. */
       delete view.threadRate;
@@ -66,6 +79,23 @@ exports.handler = async function (event) {
     return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
   }
 };
+
+const SENT_STATUSES = ["sent", "opened", "question", "accepted", "invoiced", "paid", "completed", "declined"];
+function everSent(rec) {
+  const r = rec || {};
+  if (r.sentVersion && typeof r.sentVersion === "object" && r.sentVersion.estimate) return true;
+  if (r.sentAt) return true;
+  return SENT_STATUSES.indexOf(String(r.status || "").toLowerCase()) !== -1;
+}
+function hideUnsentEstimate(view) {
+  const est = view.estimate || {};
+  view.estimate = { projectTitle: est.projectTitle || "", notSentYet: true };
+  delete view.customerFinalTotal;
+  delete view.contract;
+  view.includeContractForCustomer = false;
+  view.estimatePending = true;
+  return view;
+}
 
 function buildCustomerView(source, previewDraft) {
   // Clone so customer rendering can never mutate the stored source record.

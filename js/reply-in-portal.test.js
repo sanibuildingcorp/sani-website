@@ -54,17 +54,19 @@ console.log('\nthe customer email leads with a place to type\n');
   ok('THERE IS A REPLY CARD', card !== -1);
   ok('...directly under the message, before the button', msg !== -1 && card > msg && btn > card, 'msg@' + msg + ' card@' + card + ' btn@' + btn);
   ok('THE CARD IS A LINK — a box that looks tappable and is not would be worse than no box',
-    new RegExp('<a href="' + REPLY_URL.replace(/[.?]/g, '\\$&') + '"[^>]*>\\s*Tap here to type your reply').test(h));
+    new RegExp('<a href="' + REPLY_URL.replace(/[.?]/g, '\\$&') + '"[^>]*>\\s*(?:\\S+\\s)?Tap here to type your reply').test(h));
   ok('...and it opens the page at the reply box, not just the page', h.indexOf(REPLY_URL) !== -1);
-  ok('it is styled like an input, not like a button — white, bordered, grey placeholder text',
-    /border:1\.5px solid #cfd6de[^>]*color:#9aa4ae/.test(h));
+  ok('it is styled to be seen — gold border, cream fill, bold dark text, and it says the reply goes to Zurabi',
+    /border:2px solid #c8860a[^>]*color:#0a1628[^>]*font-weight:bold/.test(h) && /Your reply goes straight to Zurabi/.test(h));
   ok('it is labelled with who they are replying to', /Reply to Zurabi/.test(h));
   ok('the button points at the same place', new RegExp('<a href="' + REPLY_URL.replace(/[.?]/g, '\\$&') + '"[^>]*>Open my project').test(h));
   ok('...and says why: everything stays together', /keeps your estimate, your photos and every message together/.test(h));
   ok('the old wording ("View your project & reply") is gone from the customer copy', h.indexOf('View your project') === -1);
   ok('the plain-text version carries the #reply link too', cust.text.indexOf(REPLY_URL) !== -1);
-  ok('the ref is still in the subject (inbox-sync reads it back if they reply by email anyway)',
-    cust.subject.indexOf('SBC-260915-UYE6') !== -1);
+  /* The subject used to carry the ref for inbox-sync. It reads the ref out
+     of the quoted header card now, and matches by address without one. */
+  ok('THE SUBJECT IS THE PROJECT IN WORDS, no code first', cust.subject === 'About your project: Full Gut Renovation — 5 ft x 7 ft Bathroom', cust.subject);
+  ok('...and the ref is still in the header card, which a Gmail reply quotes back for inbox-sync', h.indexOf('Estimate SBC-260915-UYE6') !== -1);
 }
 console.log('\nthe contractor copy is unchanged - he replies from the dashboard\n');
 {
