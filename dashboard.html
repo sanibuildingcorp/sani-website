@@ -3599,6 +3599,38 @@ function aiLinkify(text) {
    next question only. Both panels share this; each has its own list. */
 var AI_PHOTOS = { ask: [], ai: [] };
 var AI_PHOTO_MAX = 3;
+/* A tall full-page screenshot is the common case: the customer view on his
+   phone is 1170 wide and 5000+ tall. Squeezed to 1400 on the long side the
+   words were unreadable ("too blurry/low-res to read the line text"), and
+   the model itself shrinks anything over ~1.15 megapixels, so one giant
+   picture is no better. So: width capped at PHOTO_W, and anything taller
+   than a piece is cut into PIECE_MAX overlapping pieces of about a
+   megapixel each, top to bottom - every piece is readable, and the strip
+   of overlap keeps a line cut in half whole in one of them. A normal photo
+   (not tall) is one piece, as before. Resolves to an array of data: URLs. */
+var PHOTO_W = 1400, PIECE_PX = 1150000, PIECE_MAX = 5, PIECE_OVERLAP = 60;
+function aiPieces(w, h) {
+  if (w > PHOTO_W) { h = Math.round(h * (PHOTO_W / w)); w = PHOTO_W; }
+  if (h <= 2 * w) { /* a photo, not a page: one piece, 1400 on the long side as before */
+    if (h > PHOTO_W) { w = Math.round(w * (PHOTO_W / h)); h = PHOTO_W; }
+    return { w: w, h: h, pieces: [[0, h]] };
+  }
+  var ph = Math.max(700, Math.floor(PIECE_PX / w));
+  /* too tall for one piece: keep the width unless even PIECE_MAX pieces
+     could not hold it, then shrink the whole thing until they can */
+  while (Math.ceil((h - PIECE_OVERLAP) / (ph - PIECE_OVERLAP)) > PIECE_MAX && w > 600) {
+    var f = 0.9; w = Math.round(w * f); h = Math.round(h * f); ph = Math.max(700, Math.floor(PIECE_PX / w));
+  }
+  var out = [], top = 0;
+  while (top < h && out.length < PIECE_MAX) {
+    var bottom = Math.min(h, top + ph);
+    if (out.length === PIECE_MAX - 1) bottom = h;
+    out.push([top, bottom]);
+    if (bottom >= h) break;
+    top = bottom - PIECE_OVERLAP;
+  }
+  return { w: w, h: h, pieces: out };
+}
 function aiShrink(file) {
   return new Promise(function (resolve, reject) {
     var reader = new FileReader();
@@ -3607,12 +3639,12 @@ function aiShrink(file) {
       var img = new Image();
       img.onerror = reject;
       img.onload = function () {
-        var w = img.width, h = img.height, MAX = 1400;
-        if (w > MAX) { h = Math.round(h * (MAX / w)); w = MAX; }
-        if (h > MAX) { w = Math.round(w * (MAX / h)); h = MAX; }
-        var c = document.createElement("canvas"); c.width = w; c.height = h;
-        c.getContext("2d").drawImage(img, 0, 0, w, h);
-        resolve(c.toDataURL("image/jpeg", 0.82));
+        var cut = aiPieces(img.width, img.height), sy = img.height / cut.h;
+        resolve(cut.pieces.map(function (p) {
+          var c = document.createElement("canvas"); c.width = cut.w; c.height = p[1] - p[0];
+          c.getContext("2d").drawImage(img, 0, p[0] * sy, img.width, (p[1] - p[0]) * sy, 0, 0, cut.w, p[1] - p[0]);
+          return c.toDataURL("image/jpeg", 0.82);
+        }));
       };
       img.src = ev.target.result;
     };
@@ -3623,7 +3655,7 @@ async function aiPickPhotos(which, ev) {
   var list = AI_PHOTOS[which] || (AI_PHOTOS[which] = []);
   var files = Array.from((ev && ev.target && ev.target.files) || []).slice(0, AI_PHOTO_MAX - list.length);
   for (var i = 0; i < files.length; i++) {
-    try { list.push({ name: files[i].name || "photo", data: await aiShrink(files[i]) }); }
+    try { var pieces = await aiShrink(files[i]); list.push({ name: files[i].name || "photo", data: pieces[0], pieces: pieces }); }
     catch (e) { toast("Could not read " + (files[i].name || "that file"), true); }
   }
   try { ev.target.value = ""; } catch (e) {}
@@ -3640,8 +3672,15 @@ function aiPhotoPreview(which) {
   if (el) el.innerHTML = aiPhotoThumbs(which);
 }
 /* What travels with the question, and what the bubble keeps. */
+function aiImagesOf(photos) {
+  var out = [];
+  (photos || []).forEach(function (p, i) {
+    (Array.isArray(p.pieces) && p.pieces.length ? p.pieces : [p.data]).forEach(function (d, j) { out.push({ data: d, photo: i + 1 }); });
+  });
+  return out;
+}
 function aiTakePhotos(which) {
-  var list = (AI_PHOTOS[which] || []).slice();
+  var list = (AI_PHOTOS[which] || []).map(function (p) { return { name: p.name, data: p.data, pieces: p.pieces }; });
   AI_PHOTOS[which] = [];
   aiPhotoPreview(which);
   return list;
@@ -3699,7 +3738,7 @@ async function askSend() {
        the background, so there is no ten-second clock on it. The photos go
        with THIS question only; the log keeps the thumbnails, not the bytes
        sent again. */
-    var data = await aiAsk({ ref: ref, chat: ref, messages: ASK_LOG[ref].slice(-30).map(aiTurn), images: photos.map(function (p) { return { data: p.data }; }), screen: (typeof aiScreen === "function" ? aiScreen() : null) });
+    var data = await aiAsk({ ref: ref, chat: ref, messages: ASK_LOG[ref].slice(-30).map(aiTurn), images: aiImagesOf(photos), screen: (typeof aiScreen === "function" ? aiScreen() : null) });
     ASK_LOG[ref].push({
       role: "assistant",
       text: data.reply + (data.truncated ? "\n\n… (cut short by the time limit — ask \"continue\" for the rest)" : ""),
@@ -3883,7 +3922,7 @@ async function aiSend() {
   aiRender();
   if (btn) { btn.disabled = true; btn.textContent = "Thinking…"; }
   try {
-    var data = await aiAsk({ ref: currentRecord ? String(currentRecord.ref || "") : "", chat: "global", screen: aiScreen(), messages: AI_LOG.slice(-30).map(aiTurn), images: photos.map(function (p) { return { data: p.data }; }) });
+    var data = await aiAsk({ ref: currentRecord ? String(currentRecord.ref || "") : "", chat: "global", screen: aiScreen(), messages: AI_LOG.slice(-30).map(aiTurn), images: aiImagesOf(photos) });
     AI_LOG.push({ role: "assistant", text: data.reply + (data.truncated ? "\n\n… (cut short by the time limit — ask \"continue\" for the rest)" : "") });
     if (Array.isArray(data.actions) && data.actions.length) await aiRunActions(data.actions, AI_LOG, aiRender);
   } catch (e) {

@@ -339,7 +339,7 @@ const THIN = {
       fetch: async () => ({ ok: false, status: 502, text: async () => '<html><body>Task timed out</body></html>' }),
     };
     vm.createContext(ctx);
-    vm.runInContext(body + '\n' + ask + '\nfunction aiAnswerJobId(){return "A-test01"}\nvar AI_PHOTOS={ask:[],ai:[]};function aiTakePhotos(){return []}function aiTurn(m){return {role:m.role,text:m.text}}', ctx);
+    vm.runInContext(body + '\n' + ask + '\nfunction aiAnswerJobId(){return "A-test01"}\nvar AI_PHOTOS={ask:[],ai:[]};function aiTakePhotos(){return []}function aiImagesOf(){return []}function aiTurn(m){return {role:m.role,text:m.text}}', ctx);
     await vm.runInContext('askSend()', ctx);
     const last = (log.R1 || []).slice(-1)[0] || {};
     ok('THE PANEL SHOWS WHAT HAPPENED, NOT SAFARI\'S PATTERN ERROR',
