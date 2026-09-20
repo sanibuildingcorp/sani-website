@@ -194,7 +194,7 @@ const FRESH = {
     const hctx = { esc: (s) => String(s), fmt: (n) => '$' + n, Array, String, estimates: [] };
     vm.createContext(hctx);
     vm.runInContext(ext(DASH, 'addonLink') + '\n' + ext(DASH, 'addonHeaderHtml'), hctx);
-    ok('the record header names the added section and the untouched earlier ones', /➕ Added as own sections: Painting \$1830 \(2026-09-20\) · the earlier services untouched/.test(vm.runInContext('addonHeaderHtml({ ref: "R", estimate: { addedServices: [{ titles: ["Painting"], subtotal: 1830, at: "2026-09-20T15:00:00Z" }] } })', hctx)));
+    ok('the record header names the added section and the untouched earlier ones', /➕ Added as own sections: Painting \$1830 \(2026-09-20\) <a [^>]*>↻ redo<\/a> <a [^>]*>✕ remove<\/a> · the earlier services untouched/.test(vm.runInContext('addonHeaderHtml({ ref: "R", estimate: { addedServices: [{ titles: ["Painting"], subtotal: 1830, at: "2026-09-20T15:00:00Z" }] } })', hctx)));
     const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
     ok('THE ASSISTANT points him to ➕ Add a service, never to regenerate, for work added after agreement', /never tell him to regenerate - regenerating rebuilds every service/.test(A) && /➕ ADD A SERVICE TO THIS ESTIMATE/.test(A));
     const blocks = DASH.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];
@@ -245,6 +245,102 @@ const FRESH = {
     ctx.confirm = () => false; calls.length = 0;
     ok('a declined brief adds nothing', (await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", text: "x" })', ctx)) === 'OK, not added.' && !calls.some((c) => c.url));
     ok('an unknown ref is refused', /I don't see SBC-000000-NOPE/.test(await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-000000-NOPE", text: "x" })', ctx)));
+  }
+  console.log('\n7. Taking an added section out again, whole\n');
+  {
+    const rec = clone(BASE);
+    const before = clone(rec);
+    lib.mergeAddedService(rec, clone(FRESH), { text: 'Paint the bathroom', service: 'Painting' });
+    const freshB = clone(FRESH); freshB.serviceBreakdown[0].title = 'Doors'; freshB.labor.forEach((l) => { l.section = 'Doors'; }); freshB.materials.forEach((l) => { l.section = 'Doors'; });
+    lib.mergeAddedService(rec, freshB, { text: 'doors', service: 'Doors' });
+    const mid = clone(rec);
+    const out = lib.removeAddedService(rec, 1);
+    ok('REMOVING THE SECOND ADDED SECTION drops its lines, its card, its rows, its scope text and its price - and nothing else', JSON.stringify(rec.estimate.labor) === JSON.stringify(mid.estimate.labor.slice(0, 5)) && rec.estimate.serviceBreakdown.length === 2 && rec.estimate.serviceBreakdown[1].title === 'Painting' && rec.estimate.publishedCustomerScope.services.length === 2 && rec.estimate.manualCustomerScopeDraft.services.length === 2 && !/DOORS:/.test(rec.estimate.scopeOfWork) && /PAINTING:/.test(rec.estimate.scopeOfWork) && rec.customerFinalTotal === mid.customerFinalTotal - out.subtotal && rec.estimate.addedServices.length === 1 && out.cards === 1 && out.laborLines === 3 && out.materialLines === 2, JSON.stringify(out));
+    lib.removeAddedService(rec, 0);
+    ok('REMOVING THE LAST ONE TOO PUTS THE RECORD BACK EXACTLY AS IT WAS BEFORE ANY ADD: every line, card, row, the scope text, the stamped total, no addedServices left', JSON.stringify(rec.estimate) === JSON.stringify(before.estimate) && rec.customerFinalTotal === before.customerFinalTotal, JSON.stringify(rec.estimate).slice(0, 200));
+    let threw = ''; try { lib.removeAddedService(rec, 0); } catch (e) { threw = e.message; }
+    ok('nothing left to remove -> refused', /No added service number 0/.test(threw));
+    /* through the endpoint */
+    const STORES3 = { estimates: new Map() };
+    const realLoad3 = Module._load;
+    Module._load = function (r, p, m) { if (r === '@netlify/blobs') return { getStore: () => ({ get: async (k) => (STORES3.estimates.has(k) ? JSON.parse(STORES3.estimates.get(k)) : null), setJSON: async (k, v) => { STORES3.estimates.set(k, JSON.stringify(v)); } }) }; return realLoad3(r, p, m); };
+    const withAdd = clone(BASE); lib.mergeAddedService(withAdd, clone(FRESH), { text: 'paint', service: 'Painting' });
+    STORES3.estimates.set(withAdd.ref, JSON.stringify(withAdd));
+    process.env.DASHBOARD_KEY = 'k';
+    const rm = require(path.join(ROOT, 'netlify/functions/remove-added-service.js'));
+    const noKey = await rm.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({ ref: withAdd.ref, index: 0 }) });
+    ok('the endpoint is contractor-only', noKey.statusCode === 401);
+    const r = await rm.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k' }, body: JSON.stringify({ ref: withAdd.ref, index: 0 }) });
+    const saved = JSON.parse(STORES3.estimates.get(withAdd.ref));
+    ok('...and with the key it removes and SAVES AT ONCE: the stored record is back to the agreed estimate', r.statusCode === 200 && JSON.parse(r.body).success === true && JSON.stringify(saved.estimate) === JSON.stringify(BASE.estimate) && saved.customerFinalTotal === BASE.customerFinalTotal, r.statusCode + ' ' + String(r.body).slice(0, 120));
+    const bad = await rm.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k' }, body: JSON.stringify({ ref: withAdd.ref, index: 5 }) });
+    ok('a wrong index -> 400, nothing changed', bad.statusCode === 400 && JSON.stringify(JSON.parse(STORES3.estimates.get(withAdd.ref)).estimate) === JSON.stringify(BASE.estimate));
+    Module._load = realLoad3;
+  }
+
+  console.log('\n8. The dashboard: loose cost stays off an added section, and the remove link\n');
+  {
+    /* a bathroom whose plumbing lines carry a section no card has, plus an added Painting */
+    const est = { markupPct: 25,
+      labor: [{ item: 'Demo', qty: 10, unit: 'hrs', rate: 60, section: 'Bathroom' }, { item: 'Rough plumbing', qty: 10, unit: 'hrs', rate: 60, section: 'Plumbing' }, { item: 'Patch and touch-up paint at walls', qty: 2, unit: 'hrs', rate: 60 }, { item: 'Paint walls two coats', qty: 10, unit: 'hrs', rate: 50, section: 'Painting' }],
+      materials: [], serviceBreakdown: [{ title: 'Bathroom', subtotal: 0 }, { title: 'Painting', subtotal: 0 }],
+      manualCustomerScopeDraft: { services: [{ name: 'Bathroom' }, { name: 'Painting' }] }, addedServices: [{ titles: ['Painting'], subtotal: 625 }] };
+    const ctx = { currentRecord: { estimate: est }, document: { getElementById: () => null }, String, Number, Array, Object, Math, calcTotal: (e) => ({ grand: Math.round(((10 * 60 + 10 * 60 + 2 * 60 + 10 * 50) * 1.25) * 100) / 100 }), scopeDraft: () => est.manualCustomerScopeDraft };
+    vm.createContext(ctx);
+    vm.runInContext(['scopeAddedTitles', 'scopeSectionOf', 'scopeUniqueServices', 'scopeCardNames', 'scopeCardTotals'].map((n) => ext(DASH, n)).join('\n'), ctx);
+    const totals = vm.runInContext('scopeCardTotals()', ctx);
+    ok('THE LOOSE PLUMBING COST AND THE UNTAGGED "touch-up paint" LINE STAY WITH THE BATHROOM: Painting is exactly its own lines, the bathroom keeps everything else', totals.byCard['Painting'] === 625 && totals.byCard['Bathroom'] === Math.round((600 + 600 + 120) * 1.25 * 100) / 100, JSON.stringify(totals.byCard));
+    ok('an untagged bathroom line that says "paint" is not filed under the added Painting section', vm.runInContext('scopeSectionOf({ item: "Patch and touch-up paint at walls" })', ctx) === 'Bathroom');
+    delete est.addedServices;
+    const plain = vm.runInContext('scopeCardTotals()', ctx);
+    ok('with no added section, the spread is as it always was (both cards share the loose cost)', plain.byCard['Painting'] > 625 && plain.byCard['Bathroom'] < Math.round((600 + 600 + 120) * 1.25 * 100) / 100);
+    ok('EACH ADDED SECTION HAS A "✕ remove" LINK in the record header', /onclick="addonRemove\(' \+ i \+ '\);return false"[^>]*>✕ remove<\/a>/.test(DASH));
+    const posted = []; const opened = []; const toasts = [];
+    const rctx = { currentRecord: { ref: 'SBC-260901-ARWQ', estimate: { addedServices: [{ titles: ['Painting (additional)'], subtotal: 8033.12 }] } }, confirm: (m) => { toasts.push('?' + m); return true; }, toast: (m, bad) => toasts.push((bad ? '!' : '') + m), fmt: (n) => '$' + n, JSON, String, Error, Array,
+      sbcFetch: async (url, o) => { posted.push({ url, body: JSON.parse(o.body) }); return { ok: true, status: 200, json: async () => ({ success: true, removed: { titles: ['Painting (additional)'], subtotal: 8033.12, stampedTo: 23582.94 } }) }; },
+      openEdit: async (ref) => { opened.push(ref); }, loadEstimates: () => { opened.push('list'); } };
+    vm.createContext(rctx);
+    vm.runInContext(ext(DASH, 'addonRemove'), rctx);
+    await vm.runInContext('addonRemove(0)', rctx);
+    ok('✕ remove ASKS ONCE, posts ref and index with the key, then reloads the record and the list', /Remove "Painting \(additional\)" from SBC-260901-ARWQ\?/.test(toasts[0]) && /This saves straight away/.test(toasts[0]) && posted.length === 1 && /remove-added-service/.test(posted[0].url) && posted[0].body.index === 0 && posted[0].body.ref === 'SBC-260901-ARWQ' && opened.join(',') === 'SBC-260901-ARWQ,list' && toasts.some((m) => /removed · total now \$23582\.94/.test(m)), JSON.stringify({ posted, opened, toasts }));
+    const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
+    ok('THE ASSISTANT adds a service only when asked, never offers it, never adds one already there', /ONLY WHEN HE ASKS to add it, and only once per request: never offer to fire it yourself, and never add a service that is already on the estimate/.test(A));
+  }
+  console.log('\n9. Redo one added section from a new brief - by the assistant, or by hand\n');
+  {
+    const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
+    ok('THE ACTION CARRIES "replace" and the assistant is told: the exact title, the COMPLETE new brief, never regenerate', /addservice: \["ref", "text"\]/.test(A) && /\\"replace\\" set to that section/.test(A) && /REDOING AN ADDED SECTION: when he asks to regenerate, redo, re-price or change an added section/.test(A) && /text holding the COMPLETE new brief/.test(A) && /Never use regenerate for this\./.test(A));
+    const posted = []; const toasts = []; let confirmed = '';
+    const ctx = {
+      String, JSON, Math, Date, Object, Array, Error, Promise, setTimeout, console: { error() {} }, fmt: (n) => '$' + n,
+      currentRecord: { ref: 'SBC-260901-ARWQ', estimate: { labor: [{ item: 'x', qty: 1, rate: 1 }], addedServices: [{ titles: ['Painting'], subtotal: 11269.98, text: 'paint the bathroom' }, { titles: ['Painting (additional)'], subtotal: 8033.12, text: 'whole apartment' }] } }, estimates: [{ ref: 'SBC-260901-ARWQ' }],
+      prompt: () => { posted.push({ prompted: true }); return 'never'; }, confirm: (m) => { confirmed = m; return true; }, toast: (m, bad) => toasts.push((bad ? '!' : '') + m), SBC_HOUSE_RULES: '',
+      document: { getElementById: () => ({ disabled: false, innerHTML: '', textContent: '', value: '' }) },
+      sbcFetch: async (url, o) => { posted.push({ url, body: JSON.parse(o.body) }); return { ok: true, status: 200, json: async () => ({ success: true, removed: { titles: ['Painting (additional)'], subtotal: 8033.12 }, estimate: { labor: [{ item: 'x', qty: 1, rate: 1 }], addedServices: [{ titles: ['Painting'], subtotal: 11269.98, text: 'paint the bathroom' }] }, customerFinalTotal: 23582.94 }) }; },
+      fetch: async (url, o) => { posted.push({ url, body: JSON.parse(o.body) }); return { ok: true, status: 202 }; },
+      aiJobStart() {}, watchGeneration: async () => ({ estimate: { labor: [], addedServices: [{ titles: ['Painting'] }, { titles: ['Painting (additional)'], subtotal: 5000 }] }, status: 'accepted' }),
+      normalizeDisplayFlags() {}, renderEdit() {}, CONTRACTOR_OWNED_ESTIMATE_FIELDS: [],
+    };
+    vm.createContext(ctx);
+    vm.runInContext([ext(DASH, 'addonIndexOf'), ext(DASH, 'addonRedo'), ext(DASH, 'addServiceAI'), ext(DASH, 'applyGeneratedEstimate'), ext(DASH, 'aiExec')].join('\n'), ctx);
+    const said = await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", replace: "painting (additional)", service: "Painting", text: "Paint the living room and both bedrooms only, two coats, Honey Badger 920." })', ctx);
+    const rm = posted.find((p) => p.url && /remove-added-service/.test(p.url)), kick = posted.find((p) => p.url && /generate-estimate-background/.test(p.url));
+    ok('FROM THE ASSISTANT: "replace" finds the section by title (any case), asks ONCE with the whole story, takes the old one out, then prices the new brief - no retyping, no second confirm', /Redo "Painting \(additional\)" on SBC-260901-ARWQ from this brief\?/.test(confirmed) && /The old section \(its lines, card and price, \$8033\.12\) comes out first/.test(confirmed) && rm && rm.body.index === 1 && kick && kick.body.addService.text === 'Paint the living room and both bedrooms only, two coats, Honey Badger 920.' && kick.body.addService.service === 'Painting' && posted.indexOf(rm) < posted.indexOf(kick) && !posted.some((p) => p.prompted), confirmed.slice(0, 120) + ' | ' + JSON.stringify(posted.map((p) => p.url)));
+    ok('...the record on screen already lost the old section before the new one started', ctx.currentRecord.customerFinalTotal === 23582.94);
+    ok('...and the chat says what happened', /Redoing "painting \(additional\)" on SBC-260901-ARWQ: the old section is out and the new brief is being priced as its own section; the earlier services stay as they are\./.test(said), said);
+    posted.length = 0;
+    const miss = await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", replace: "Flooring", text: "x" })', ctx);
+    ok('a title that is not an added section -> nothing happens, the sections are named', /I don't see an added section called "Flooring"/.test(miss) && /Painting/.test(miss) && posted.length === 0, miss);
+    /* by hand: ↻ redo offers the old brief for editing */
+    ok('EACH ADDED SECTION HAS "↻ redo" beside "✕ remove"', /onclick="addonRedo\(' \+ i \+ '\);return false"[^>]*>↻ redo<\/a>/.test(DASH));
+    let offered = '';
+    ctx.currentRecord.estimate.addedServices[0].text = 'paint the bathroom';
+    ctx.prompt = (msg, dflt) => { offered = dflt; return 'paint the bathroom, ceiling too'; };
+    posted.length = 0;
+    const byHand = await vm.runInContext('addonRedo(0)', ctx);
+    ok('BY HAND: the old brief is offered for editing, then out with the old, in with the new', offered === 'paint the bathroom' && byHand === true && posted.some((p) => p.url && /remove-added-service/.test(p.url) && p.body.index === 0) && posted.some((p) => p.url && /generate-estimate-background/.test(p.url) && p.body.addService.text === 'paint the bathroom, ceiling too'), JSON.stringify({ offered, posted: posted.map((p) => p.url) }));
+    ctx.prompt = () => '   '; posted.length = 0;
+    ok('an empty new brief changes nothing', (await vm.runInContext('addonRedo(0)', ctx)) === false && posted.length === 0);
   }
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);

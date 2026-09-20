@@ -92,6 +92,8 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     /* Creates estimate records, and links additional work to any customer's
        agreed job. Had no gate. */
     ["create-estimate", "POST", { customer: { name: "Mallory", email: "m@example.com" }, projectTitle: "Junk" }],
+    /* Takes an added section - lines, card, price - off any estimate. */
+    ["remove-added-service", "POST", { ref: "SBC-260805-XQNQ", index: 0 }],
     ["gmail-connect", "POST", {}],
     ["gmail-accounts", "POST", { action: "remove", email: "someone@example.com" }],
     ["gmail-sync", "POST", {}],

@@ -3450,7 +3450,7 @@ function addonHeaderHtml(r) {
   var h = '';
   if (r && r.parentRef) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work to ' + addonLink(r.parentRef) + ' · that estimate stays as agreed</div>';
   var adds = Array.isArray(r && r.estimate && r.estimate.addedServices) ? r.estimate.addedServices : [];
-  if (adds.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Added as own sections: ' + adds.map(function (x) { return esc((x.titles || []).join(', ')) + (x.subtotal ? ' ' + fmt(x.subtotal) : '') + (x.at ? ' (' + esc(String(x.at).slice(0, 10)) + ')' : ''); }).join(' · ') + ' · the earlier services untouched</div>';
+  if (adds.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Added as own sections: ' + adds.map(function (x, i) { return esc((x.titles || []).join(', ')) + (x.subtotal ? ' ' + fmt(x.subtotal) : '') + (x.at ? ' (' + esc(String(x.at).slice(0, 10)) + ')' : '') + ' <a href="#" onclick="addonRedo(' + i + ');return false" style="color:var(--gold);font-weight:700" title="Price this section again from a new brief; the rest stays as it is">↻ redo</a> <a href="#" onclick="addonRemove(' + i + ');return false" style="color:#b42318;font-weight:700" title="Remove this added section, its lines and its price">✕ remove</a>'; }).join(' · ') + ' · the earlier services untouched</div>';
   var kids = Array.isArray(r && r.addonRefs) ? r.addonRefs : [];
   if (kids.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work: ' + kids.map(function (k) {
     var e = (typeof estimates !== 'undefined' && Array.isArray(estimates)) ? estimates.find(function (x) { return x && x.ref === k; }) : null;
@@ -3458,6 +3458,70 @@ function addonHeaderHtml(r) {
   }).join(', ') + '</div>';
   return h;
 }
+/* ── AN ADDED SECTION, TAKEN OUT WHOLE ───────────────────────────────────
+     "when i trying delate one duplicate painting service card, it's effect
+      to the bathroom price too but also it's not deleting until i click in
+      save to customer sees and after page refreshing its still shows double
+      painting services"
+   The card, its lines, its rows on the published scope and the draft, its
+   scope text, and its share of the stamped total - gone together, saved at
+   once on the server (remove-added-service), the record reloaded. */
+async function addonRemove(i) {
+  var r = currentRecord;
+  if (!r || !r.ref) return;
+  var adds = (r.estimate && r.estimate.addedServices) || [];
+  var x = adds[i];
+  if (!x) return;
+  var what = (x.titles || []).join(', ');
+  if (!confirm('Remove "' + what + '" from ' + r.ref + '?\n\nIts lines, its card, its scope and its price' + (x.subtotal ? ' (' + fmt(x.subtotal) + ')' : '') + ' come out together. The earlier services stay exactly as they are. This saves straight away.')) return;
+  toast('Removing ' + what + '…');
+  try {
+    var res = await sbcFetch('/.netlify/functions/remove-added-service', { method: 'POST', body: JSON.stringify({ ref: r.ref, index: i }) });
+    var dta = await res.json();
+    if (!res.ok || !dta.success) throw new Error(dta.error || ('HTTP ' + res.status));
+    toast('✓ ' + what + ' removed' + (dta.removed && dta.removed.stampedTo != null ? ' · total now ' + fmt(dta.removed.stampedTo) : ''));
+    await openEdit(r.ref);
+    if (typeof loadEstimates === 'function') loadEstimates();
+  } catch (e) { toast('Could not remove it: ' + e.message, true); }
+}
+
+/* ── REDO ONE ADDED SECTION WITH A NEW BRIEF ────────────────────────────
+     "In the additional service generation i need same AI to be able to add
+      prompt for letting regenerate only additional service"
+   The old section comes out whole (remove-added-service), the new brief
+   is priced as its own section (addServiceAI). The agreed sections are
+   never regenerated. From the assistant (addservice with replace) or by
+   hand (↻ redo in the header, the old brief offered for editing). */
+function addonIndexOf(title) {
+  var adds = ((currentRecord && currentRecord.estimate) || {}).addedServices || [];
+  var k = String(title || "").trim().toLowerCase();
+  for (var i = 0; i < adds.length; i++) { if ((adds[i].titles || []).some(function (t) { return String(t || "").trim().toLowerCase() === k; })) return i; }
+  return -1;
+}
+async function addonRedo(i, brief, service) {
+  var r = currentRecord;
+  if (!r || !r.ref) return false;
+  var adds = (r.estimate && r.estimate.addedServices) || [];
+  var x = adds[i];
+  if (!x) return false;
+  var what = (x.titles || []).join(', ');
+  var text = String(brief || "").trim();
+  if (!text) {
+    text = prompt("New brief for \"" + what + "\" - the whole section is priced again from this text (the old one comes out first). Everything else in the estimate stays exactly as it is.", String(x.text || ""));
+    if (text === null) return false;
+    text = String(text).trim();
+    if (!text) { toast("Say what the section should be first", true); return false; }
+  } else if (!confirm("Redo \"" + what + "\" on " + r.ref + " from this brief?\n\n" + (service ? service + "\n" : "") + text + "\n\nThe old section (its lines, card and price" + (x.subtotal ? ", " + fmt(x.subtotal) : "") + ") comes out first. Everything else in the estimate stays exactly as it is.")) return false;
+  toast('Taking out ' + what + '…');
+  try {
+    var res = await sbcFetch('/.netlify/functions/remove-added-service', { method: 'POST', body: JSON.stringify({ ref: r.ref, index: i }) });
+    var dta = await res.json();
+    if (!res.ok || !dta.success) throw new Error(dta.error || ('HTTP ' + res.status));
+    if (dta.estimate) { currentRecord.estimate = dta.estimate; if (dta.customerFinalTotal !== undefined) currentRecord.customerFinalTotal = dta.customerFinalTotal; }
+  } catch (e) { toast('Could not take out ' + what + ': ' + e.message, true); return false; }
+  return addServiceAI(text, service || (x.titles && x.titles[0]) || "", true);
+}
+
 async function addonCreate() {
   var r = currentRecord;
   if (!r || !r.ref) return;
@@ -4177,6 +4241,13 @@ async function aiExec(a, log, render) {
       if (typeof openEdit === "function") openEdit(sref);
       for (var w = 0; w < 40 && !(currentRecord && currentRecord.ref === sref && currentRecord.estimate); w++) { await new Promise(function (r) { setTimeout(r, 250); }); }
       if (!(currentRecord && currentRecord.ref === sref)) return "Could not open " + sref + ". Open it and press ➕ Add a service to this estimate.";
+    }
+    var replace = String(a.replace || "").trim();
+    if (replace) {
+      var ai = addonIndexOf(replace);
+      if (ai < 0) return "I don't see an added section called \"" + replace + "\" on " + sref + ". The added sections are: " + (((currentRecord.estimate || {}).addedServices || []).map(function (x) { return (x.titles || []).join(', '); }).join('; ') || 'none') + ".";
+      var redone = await addonRedo(ai, brief, String(a.service || "").trim());
+      return redone === true ? "Redoing \"" + replace + "\" on " + sref + ": the old section is out and the new brief is being priced as its own section; the earlier services stay as they are." : "OK, left as it was.";
     }
     var started = await addServiceAI(brief, String(a.service || "").trim());
     return started === true ? "Adding it to " + sref + " as its own section; the earlier services stay as they are." : "OK, not added.";
@@ -5764,15 +5835,16 @@ async function resumeGenerationIfRunning(ref) {
    appends the result as its own section(s) - lib/add-service.js. The agreed
    services are not regenerated: not a line, not a bullet, not a price. The
    customer keeps seeing the frozen sent version until he sends again. */
-async function addServiceAI(prefill, service) {
+async function addServiceAI(prefill, service, alreadyConfirmed) {
   var r = currentRecord;
   if (!r || !r.ref) return false;
   if (!(r.estimate && (r.estimate.labor || []).length)) { toast("Generate and price the estimate first, then add a service to it", true); return false; }
   var what;
   if (typeof prefill === "string" && prefill.trim()) {
-    /* the assistant wrote the brief: show it whole, ask once */
+    /* the assistant wrote the brief: show it whole, ask once (unless the
+       caller - a redo - already asked with the whole story) */
     what = prefill.trim();
-    if (!confirm("Add this as its own section of " + r.ref + "?\n\n" + (service ? service + "\n" : "") + what + "\n\nIt is priced on its own. Everything already in this estimate stays exactly as it is.")) return false;
+    if (alreadyConfirmed !== true && !confirm("Add this as its own section of " + r.ref + "?\n\n" + (service ? service + "\n" : "") + what + "\n\nIt is priced on its own. Everything already in this estimate stays exactly as it is.")) return false;
   } else {
     what = prompt("What is the additional service? Say what and where, in one or two lines (for example: paint walls, ceiling, baseboard and doors in the bathroom; colors from her email). It is priced on its own and added as its own section. Everything already in this estimate stays exactly as it is.", "");
     if (what === null) return false;
@@ -5943,6 +6015,15 @@ function scopeAlreadyShared() {
    which knows what the customer actually bought. The dashboard's job is to display it,
    not to guess it again. Keyword fallback now only runs on a line with no section at
    all, and it can never invent a service the estimate does not already contain. */
+/* The titles of the sections added after the customer agreed (lib/add-service.js). */
+function scopeAddedTitles() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var out = [];
+  (Array.isArray(est.addedServices) ? est.addedServices : []).forEach(function (x) {
+    (Array.isArray(x && x.titles) ? x.titles : []).forEach(function (t) { var k = String(t || "").trim().toLowerCase(); if (k && out.indexOf(k) === -1) out.push(k); });
+  });
+  return out;
+}
 function scopeSectionOf(line) {
   if (line && line.section && String(line.section).trim()) return String(line.section).trim();
 
@@ -5960,7 +6041,11 @@ function scopeSectionOf(line) {
       if (t && known.indexOf(t) === -1) known.push(t);
     });
   }
-  /* Only a service this estimate already has may be returned. */
+  /* Only a service this estimate already has may be returned - and never a
+     section added after the customer agreed: a bathroom line that says
+     "paint" must not walk over to the Painting section added later. */
+  var addedTitles = scopeAddedTitles();
+  known = known.filter(function (k) { return addedTitles.indexOf(String(k).toLowerCase()) === -1; });
   var allow = function (name) { return known.some(function (k) { return k.toLowerCase() === name.toLowerCase(); }) ? name : ""; };
 
   var guess =
@@ -6055,7 +6140,17 @@ function scopeCardTotals() {
     /* Only cards that actually carry priced work share the pool. A card the contractor
        just added, with nothing in it yet, must not quietly absorb a slice of the
        coordination cost. */
-    var share = names.filter(function (nm) { return own[nm] > 0; });
+    /* ══ AND NEVER A SECTION ADDED AFTER THE CUSTOMER AGREED. ═══════════════
+         "it has been changed bathroom price too"
+       The original estimate files some lines under sections that have no card
+       of their own (Plumbing, Electrical, General on a one-card bathroom job).
+       They are "loose" and their cost was spread over EVERY card - so the day
+       a Painting section was added, the bathroom card quietly lost a slice of
+       its own plumbing to it. An added section owns exactly its own lines;
+       the loose cost stays with the cards that were there before. */
+    var addedTitles = scopeAddedTitles();
+    var share = names.filter(function (nm) { return own[nm] > 0 && addedTitles.indexOf(nm.toLowerCase()) === -1; });
+    if (!share.length) share = names.filter(function (nm) { return own[nm] > 0; });
     if (!share.length) share = names;
     var withLabor = share.filter(function (nm) { return ownLabor[nm] > 0; });
     var laborTotal = withLabor.reduce(function (a, nm) { return a + ownLabor[nm]; }, 0);
