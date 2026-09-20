@@ -3450,7 +3450,7 @@ function addonHeaderHtml(r) {
   var h = '';
   if (r && r.parentRef) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work to ' + addonLink(r.parentRef) + ' · that estimate stays as agreed</div>';
   var adds = Array.isArray(r && r.estimate && r.estimate.addedServices) ? r.estimate.addedServices : [];
-  if (adds.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Added as own sections: ' + adds.map(function (x) { return esc((x.titles || []).join(', ')) + (x.subtotal ? ' ' + fmt(x.subtotal) : '') + (x.at ? ' (' + esc(String(x.at).slice(0, 10)) + ')' : ''); }).join(' · ') + ' · the earlier services untouched</div>';
+  if (adds.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Added as own sections: ' + adds.map(function (x, i) { return esc((x.titles || []).join(', ')) + (x.subtotal ? ' ' + fmt(x.subtotal) : '') + (x.at ? ' (' + esc(String(x.at).slice(0, 10)) + ')' : '') + ' <a href="#" onclick="addonRemove(' + i + ');return false" style="color:#b42318;font-weight:700" title="Remove this added section, its lines and its price">✕ remove</a>'; }).join(' · ') + ' · the earlier services untouched</div>';
   var kids = Array.isArray(r && r.addonRefs) ? r.addonRefs : [];
   if (kids.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work: ' + kids.map(function (k) {
     var e = (typeof estimates !== 'undefined' && Array.isArray(estimates)) ? estimates.find(function (x) { return x && x.ref === k; }) : null;
@@ -3458,6 +3458,33 @@ function addonHeaderHtml(r) {
   }).join(', ') + '</div>';
   return h;
 }
+/* ── AN ADDED SECTION, TAKEN OUT WHOLE ───────────────────────────────────
+     "when i trying delate one duplicate painting service card, it's effect
+      to the bathroom price too but also it's not deleting until i click in
+      save to customer sees and after page refreshing its still shows double
+      painting services"
+   The card, its lines, its rows on the published scope and the draft, its
+   scope text, and its share of the stamped total - gone together, saved at
+   once on the server (remove-added-service), the record reloaded. */
+async function addonRemove(i) {
+  var r = currentRecord;
+  if (!r || !r.ref) return;
+  var adds = (r.estimate && r.estimate.addedServices) || [];
+  var x = adds[i];
+  if (!x) return;
+  var what = (x.titles || []).join(', ');
+  if (!confirm('Remove "' + what + '" from ' + r.ref + '?\n\nIts lines, its card, its scope and its price' + (x.subtotal ? ' (' + fmt(x.subtotal) + ')' : '') + ' come out together. The earlier services stay exactly as they are. This saves straight away.')) return;
+  toast('Removing ' + what + '…');
+  try {
+    var res = await sbcFetch('/.netlify/functions/remove-added-service', { method: 'POST', body: JSON.stringify({ ref: r.ref, index: i }) });
+    var dta = await res.json();
+    if (!res.ok || !dta.success) throw new Error(dta.error || ('HTTP ' + res.status));
+    toast('✓ ' + what + ' removed' + (dta.removed && dta.removed.stampedTo != null ? ' · total now ' + fmt(dta.removed.stampedTo) : ''));
+    await openEdit(r.ref);
+    if (typeof loadEstimates === 'function') loadEstimates();
+  } catch (e) { toast('Could not remove it: ' + e.message, true); }
+}
+
 async function addonCreate() {
   var r = currentRecord;
   if (!r || !r.ref) return;
@@ -5943,6 +5970,15 @@ function scopeAlreadyShared() {
    which knows what the customer actually bought. The dashboard's job is to display it,
    not to guess it again. Keyword fallback now only runs on a line with no section at
    all, and it can never invent a service the estimate does not already contain. */
+/* The titles of the sections added after the customer agreed (lib/add-service.js). */
+function scopeAddedTitles() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var out = [];
+  (Array.isArray(est.addedServices) ? est.addedServices : []).forEach(function (x) {
+    (Array.isArray(x && x.titles) ? x.titles : []).forEach(function (t) { var k = String(t || "").trim().toLowerCase(); if (k && out.indexOf(k) === -1) out.push(k); });
+  });
+  return out;
+}
 function scopeSectionOf(line) {
   if (line && line.section && String(line.section).trim()) return String(line.section).trim();
 
@@ -5960,7 +5996,11 @@ function scopeSectionOf(line) {
       if (t && known.indexOf(t) === -1) known.push(t);
     });
   }
-  /* Only a service this estimate already has may be returned. */
+  /* Only a service this estimate already has may be returned - and never a
+     section added after the customer agreed: a bathroom line that says
+     "paint" must not walk over to the Painting section added later. */
+  var addedTitles = scopeAddedTitles();
+  known = known.filter(function (k) { return addedTitles.indexOf(String(k).toLowerCase()) === -1; });
   var allow = function (name) { return known.some(function (k) { return k.toLowerCase() === name.toLowerCase(); }) ? name : ""; };
 
   var guess =
@@ -6055,7 +6095,17 @@ function scopeCardTotals() {
     /* Only cards that actually carry priced work share the pool. A card the contractor
        just added, with nothing in it yet, must not quietly absorb a slice of the
        coordination cost. */
-    var share = names.filter(function (nm) { return own[nm] > 0; });
+    /* ══ AND NEVER A SECTION ADDED AFTER THE CUSTOMER AGREED. ═══════════════
+         "it has been changed bathroom price too"
+       The original estimate files some lines under sections that have no card
+       of their own (Plumbing, Electrical, General on a one-card bathroom job).
+       They are "loose" and their cost was spread over EVERY card - so the day
+       a Painting section was added, the bathroom card quietly lost a slice of
+       its own plumbing to it. An added section owns exactly its own lines;
+       the loose cost stays with the cards that were there before. */
+    var addedTitles = scopeAddedTitles();
+    var share = names.filter(function (nm) { return own[nm] > 0 && addedTitles.indexOf(nm.toLowerCase()) === -1; });
+    if (!share.length) share = names.filter(function (nm) { return own[nm] > 0; });
     if (!share.length) share = names;
     var withLabor = share.filter(function (nm) { return ownLabor[nm] > 0; });
     var laborTotal = withLabor.reduce(function (a, nm) { return a + ownLabor[nm]; }, 0);

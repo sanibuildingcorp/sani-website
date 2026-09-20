@@ -183,15 +183,18 @@ function mergeAddedService(record, fresh, meta) {
   const scopeText = cards.map(function (c) { return c.title.toUpperCase() + ":\n" + c.included.map(function (i) { return "• " + i; }).join("\n"); }).join("\n\n");
   est.scopeOfWork = str(est.scopeOfWork) ? str(est.scopeOfWork) + "\n\n" + scopeText : scopeText;
   const pubRow = function (c) { return { name: c.title, subtotal: c.subtotal, included: c.included.slice(), supplied: c.customerSupplies.slice(), excluded: c.notIncluded.slice(), includedOff: [], suppliedOff: [], excludedOff: [] }; };
+  const stamps = {};
   if (est.publishedCustomerScope && Array.isArray(est.publishedCustomerScope.services)) {
+    stamps.published = est.publishedCustomerScope.updatedAt;
     est.publishedCustomerScope.services = est.publishedCustomerScope.services.concat(cards.map(pubRow));
     est.publishedCustomerScope.updatedAt = new Date().toISOString();
   }
   if (est.manualCustomerScopeDraft && Array.isArray(est.manualCustomerScopeDraft.services)) {
+    stamps.draft = est.manualCustomerScopeDraft.updatedAt;
     est.manualCustomerScopeDraft.services = est.manualCustomerScopeDraft.services.concat(cards.map(pubRow));
     est.manualCustomerScopeDraft.updatedAt = new Date().toISOString();
   }
-  const entry = { at: new Date().toISOString(), titles: cards.map(function (c) { return c.title; }), subtotal: added, text: str(meta && meta.text).slice(0, 600), laborLines: labor.length, materialLines: materials.length };
+  const entry = { at: new Date().toISOString(), titles: cards.map(function (c) { return c.title; }), subtotal: added, text: str(meta && meta.text).slice(0, 600), laborLines: labor.length, materialLines: materials.length, scopeText: scopeText, before: { scopeOfWork: snap.scopeOfWork, stamps: stamps } };
   est.addedServices = arr(est.addedServices).concat([entry]);
   /* a stamped total is the price she was shown: it grows by exactly the new work */
   let stampedFrom = null, stampedTo = null;
@@ -214,4 +217,61 @@ function snapshot(estimate) {
     projectTitle: e.projectTitle, summary: e.summary, timelineText: e.timelineText, scopeOfWork: e.scopeOfWork });
 }
 
-module.exports = { addServiceRequest, mergeAddedService, baseFingerprint, prefixFingerprint, snapshot, ADDED_MAX };
+/* ── AN ADDED SERVICE, TAKEN OUT AGAIN ────────────────────────────────────
+     "when i trying delate one duplicate painting service card, it's effect
+      to the bathroom price too but also it's not deleting until i click in
+      save to customer sees and after page refreshing its still shows double
+      painting services"
+   Removing a card in Scope Control leaves its lines behind and saves only
+   on publish. This reverses one addedServices entry whole: its lines (the
+   ones filed under its titles), its cards, its rows on the published scope
+   and the draft, its scope text, and the stamped total shrinks by exactly
+   what it grew. Everything else reads back as it was. Mutates `record`. */
+function removeAddedService(record, index) {
+  const rec = record || {};
+  const est = rec.estimate && typeof rec.estimate === "object" ? rec.estimate : null;
+  if (!est) throw new Error("This record has no estimate");
+  const adds = arr(est.addedServices);
+  const i = Number(index);
+  if (!Number.isInteger(i) || i < 0 || i >= adds.length) throw new Error("No added service number " + index + " on this estimate");
+  const entry = adds[i] || {};
+  const titles = arr(entry.titles).map(key).filter(Boolean);
+  if (!titles.length) throw new Error("That added service names no section");
+  const mine = function (name) { return titles.indexOf(key(name)) !== -1; };
+  const before = { labor: arr(est.labor).length, materials: arr(est.materials).length, cards: arr(est.serviceBreakdown).length };
+  est.labor = arr(est.labor).filter(function (l) { return !mine(l && l.section); });
+  est.materials = arr(est.materials).filter(function (l) { return !mine(l && l.section); });
+  est.serviceBreakdown = arr(est.serviceBreakdown).filter(function (c) { return !mine(c && (c.title || c.name)); });
+  est.scopeSections = arr(est.scopeSections).filter(function (s) { return !mine(s && s.title); });
+  est.customerSupplied = arr(est.customerSupplied).filter(function (x) { return !(x && typeof x === "object" && mine(x.section)); });
+  if (est.publishedCustomerScope && Array.isArray(est.publishedCustomerScope.services)) est.publishedCustomerScope.services = est.publishedCustomerScope.services.filter(function (s) { return !mine(s && (s.name || s.title)); });
+  if (est.manualCustomerScopeDraft && Array.isArray(est.manualCustomerScopeDraft.services)) est.manualCustomerScopeDraft.services = est.manualCustomerScopeDraft.services.filter(function (s) { return !mine(s && (s.name || s.title)); });
+  /* the scope text it appended comes out; the stamps it overwrote go back */
+  const b = entry.before || {};
+  if (str(entry.scopeText) && str(est.scopeOfWork).indexOf(str(entry.scopeText)) !== -1) {
+    est.scopeOfWork = str(est.scopeOfWork).replace(str(entry.scopeText), "").replace(/\n{3,}/g, "\n\n").trim();
+    if (b.scopeOfWork !== undefined && est.addedServices && adds.length === 1) est.scopeOfWork = b.scopeOfWork;
+  } else {
+    arr(entry.titles).forEach(function (t) {
+      const block = new RegExp("(?:\\n\\n)?" + str(t).toUpperCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ":\\n(?:• [^\\n]*(?:\\n|$))*", "g");
+      est.scopeOfWork = str(est.scopeOfWork).replace(block, "").trim();
+    });
+  }
+  const st = b.stamps || {};
+  if (adds.length === 1) {
+    if (est.publishedCustomerScope && st.published !== undefined) est.publishedCustomerScope.updatedAt = st.published;
+    if (est.manualCustomerScopeDraft && st.draft !== undefined) est.manualCustomerScopeDraft.updatedAt = st.draft;
+  }
+  const sub = round2(num(entry.subtotal));
+  let stampedFrom = null, stampedTo = null;
+  if (rec.customerFinalTotal != null && num(rec.customerFinalTotal) > 0 && sub > 0) {
+    stampedFrom = round2(rec.customerFinalTotal);
+    stampedTo = round2(Math.max(0, stampedFrom - sub));
+    rec.customerFinalTotal = stampedTo;
+  }
+  est.addedServices = adds.filter(function (x, k) { return k !== i; });
+  if (!est.addedServices.length) delete est.addedServices;
+  return { titles: arr(entry.titles), subtotal: sub, laborLines: before.labor - est.labor.length, materialLines: before.materials - est.materials.length, cards: before.cards - est.serviceBreakdown.length, stampedFrom: stampedFrom, stampedTo: stampedTo };
+}
+
+module.exports = { addServiceRequest, mergeAddedService, removeAddedService, baseFingerprint, prefixFingerprint, snapshot, ADDED_MAX };
