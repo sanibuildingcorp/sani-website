@@ -3450,7 +3450,7 @@ function addonHeaderHtml(r) {
   var h = '';
   if (r && r.parentRef) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work to ' + addonLink(r.parentRef) + ' · that estimate stays as agreed</div>';
   var adds = Array.isArray(r && r.estimate && r.estimate.addedServices) ? r.estimate.addedServices : [];
-  if (adds.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Added as own sections: ' + adds.map(function (x, i) { return esc((x.titles || []).join(', ')) + (x.subtotal ? ' ' + fmt(x.subtotal) : '') + (x.at ? ' (' + esc(String(x.at).slice(0, 10)) + ')' : '') + ' <a href="#" onclick="addonRemove(' + i + ');return false" style="color:#b42318;font-weight:700" title="Remove this added section, its lines and its price">✕ remove</a>'; }).join(' · ') + ' · the earlier services untouched</div>';
+  if (adds.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Added as own sections: ' + adds.map(function (x, i) { return esc((x.titles || []).join(', ')) + (x.subtotal ? ' ' + fmt(x.subtotal) : '') + (x.at ? ' (' + esc(String(x.at).slice(0, 10)) + ')' : '') + ' <a href="#" onclick="addonRedo(' + i + ');return false" style="color:var(--gold);font-weight:700" title="Price this section again from a new brief; the rest stays as it is">↻ redo</a> <a href="#" onclick="addonRemove(' + i + ');return false" style="color:#b42318;font-weight:700" title="Remove this added section, its lines and its price">✕ remove</a>'; }).join(' · ') + ' · the earlier services untouched</div>';
   var kids = Array.isArray(r && r.addonRefs) ? r.addonRefs : [];
   if (kids.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work: ' + kids.map(function (k) {
     var e = (typeof estimates !== 'undefined' && Array.isArray(estimates)) ? estimates.find(function (x) { return x && x.ref === k; }) : null;
@@ -3483,6 +3483,43 @@ async function addonRemove(i) {
     await openEdit(r.ref);
     if (typeof loadEstimates === 'function') loadEstimates();
   } catch (e) { toast('Could not remove it: ' + e.message, true); }
+}
+
+/* ── REDO ONE ADDED SECTION WITH A NEW BRIEF ────────────────────────────
+     "In the additional service generation i need same AI to be able to add
+      prompt for letting regenerate only additional service"
+   The old section comes out whole (remove-added-service), the new brief
+   is priced as its own section (addServiceAI). The agreed sections are
+   never regenerated. From the assistant (addservice with replace) or by
+   hand (↻ redo in the header, the old brief offered for editing). */
+function addonIndexOf(title) {
+  var adds = ((currentRecord && currentRecord.estimate) || {}).addedServices || [];
+  var k = String(title || "").trim().toLowerCase();
+  for (var i = 0; i < adds.length; i++) { if ((adds[i].titles || []).some(function (t) { return String(t || "").trim().toLowerCase() === k; })) return i; }
+  return -1;
+}
+async function addonRedo(i, brief, service) {
+  var r = currentRecord;
+  if (!r || !r.ref) return false;
+  var adds = (r.estimate && r.estimate.addedServices) || [];
+  var x = adds[i];
+  if (!x) return false;
+  var what = (x.titles || []).join(', ');
+  var text = String(brief || "").trim();
+  if (!text) {
+    text = prompt("New brief for \"" + what + "\" - the whole section is priced again from this text (the old one comes out first). Everything else in the estimate stays exactly as it is.", String(x.text || ""));
+    if (text === null) return false;
+    text = String(text).trim();
+    if (!text) { toast("Say what the section should be first", true); return false; }
+  } else if (!confirm("Redo \"" + what + "\" on " + r.ref + " from this brief?\n\n" + (service ? service + "\n" : "") + text + "\n\nThe old section (its lines, card and price" + (x.subtotal ? ", " + fmt(x.subtotal) : "") + ") comes out first. Everything else in the estimate stays exactly as it is.")) return false;
+  toast('Taking out ' + what + '…');
+  try {
+    var res = await sbcFetch('/.netlify/functions/remove-added-service', { method: 'POST', body: JSON.stringify({ ref: r.ref, index: i }) });
+    var dta = await res.json();
+    if (!res.ok || !dta.success) throw new Error(dta.error || ('HTTP ' + res.status));
+    if (dta.estimate) { currentRecord.estimate = dta.estimate; if (dta.customerFinalTotal !== undefined) currentRecord.customerFinalTotal = dta.customerFinalTotal; }
+  } catch (e) { toast('Could not take out ' + what + ': ' + e.message, true); return false; }
+  return addServiceAI(text, service || (x.titles && x.titles[0]) || "", true);
 }
 
 async function addonCreate() {
@@ -4204,6 +4241,13 @@ async function aiExec(a, log, render) {
       if (typeof openEdit === "function") openEdit(sref);
       for (var w = 0; w < 40 && !(currentRecord && currentRecord.ref === sref && currentRecord.estimate); w++) { await new Promise(function (r) { setTimeout(r, 250); }); }
       if (!(currentRecord && currentRecord.ref === sref)) return "Could not open " + sref + ". Open it and press ➕ Add a service to this estimate.";
+    }
+    var replace = String(a.replace || "").trim();
+    if (replace) {
+      var ai = addonIndexOf(replace);
+      if (ai < 0) return "I don't see an added section called \"" + replace + "\" on " + sref + ". The added sections are: " + (((currentRecord.estimate || {}).addedServices || []).map(function (x) { return (x.titles || []).join(', '); }).join('; ') || 'none') + ".";
+      var redone = await addonRedo(ai, brief, String(a.service || "").trim());
+      return redone === true ? "Redoing \"" + replace + "\" on " + sref + ": the old section is out and the new brief is being priced as its own section; the earlier services stay as they are." : "OK, left as it was.";
     }
     var started = await addServiceAI(brief, String(a.service || "").trim());
     return started === true ? "Adding it to " + sref + " as its own section; the earlier services stay as they are." : "OK, not added.";
@@ -5791,15 +5835,16 @@ async function resumeGenerationIfRunning(ref) {
    appends the result as its own section(s) - lib/add-service.js. The agreed
    services are not regenerated: not a line, not a bullet, not a price. The
    customer keeps seeing the frozen sent version until he sends again. */
-async function addServiceAI(prefill, service) {
+async function addServiceAI(prefill, service, alreadyConfirmed) {
   var r = currentRecord;
   if (!r || !r.ref) return false;
   if (!(r.estimate && (r.estimate.labor || []).length)) { toast("Generate and price the estimate first, then add a service to it", true); return false; }
   var what;
   if (typeof prefill === "string" && prefill.trim()) {
-    /* the assistant wrote the brief: show it whole, ask once */
+    /* the assistant wrote the brief: show it whole, ask once (unless the
+       caller - a redo - already asked with the whole story) */
     what = prefill.trim();
-    if (!confirm("Add this as its own section of " + r.ref + "?\n\n" + (service ? service + "\n" : "") + what + "\n\nIt is priced on its own. Everything already in this estimate stays exactly as it is.")) return false;
+    if (alreadyConfirmed !== true && !confirm("Add this as its own section of " + r.ref + "?\n\n" + (service ? service + "\n" : "") + what + "\n\nIt is priced on its own. Everything already in this estimate stays exactly as it is.")) return false;
   } else {
     what = prompt("What is the additional service? Say what and where, in one or two lines (for example: paint walls, ceiling, baseboard and doors in the bathroom; colors from her email). It is priced on its own and added as its own section. Everything already in this estimate stays exactly as it is.", "");
     if (what === null) return false;

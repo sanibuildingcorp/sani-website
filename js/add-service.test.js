@@ -194,7 +194,7 @@ const FRESH = {
     const hctx = { esc: (s) => String(s), fmt: (n) => '$' + n, Array, String, estimates: [] };
     vm.createContext(hctx);
     vm.runInContext(ext(DASH, 'addonLink') + '\n' + ext(DASH, 'addonHeaderHtml'), hctx);
-    ok('the record header names the added section and the untouched earlier ones', /➕ Added as own sections: Painting \$1830 \(2026-09-20\) <a [^>]*>✕ remove<\/a> · the earlier services untouched/.test(vm.runInContext('addonHeaderHtml({ ref: "R", estimate: { addedServices: [{ titles: ["Painting"], subtotal: 1830, at: "2026-09-20T15:00:00Z" }] } })', hctx)));
+    ok('the record header names the added section and the untouched earlier ones', /➕ Added as own sections: Painting \$1830 \(2026-09-20\) <a [^>]*>↻ redo<\/a> <a [^>]*>✕ remove<\/a> · the earlier services untouched/.test(vm.runInContext('addonHeaderHtml({ ref: "R", estimate: { addedServices: [{ titles: ["Painting"], subtotal: 1830, at: "2026-09-20T15:00:00Z" }] } })', hctx)));
     const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
     ok('THE ASSISTANT points him to ➕ Add a service, never to regenerate, for work added after agreement', /never tell him to regenerate - regenerating rebuilds every service/.test(A) && /➕ ADD A SERVICE TO THIS ESTIMATE/.test(A));
     const blocks = DASH.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];
@@ -304,7 +304,43 @@ const FRESH = {
     await vm.runInContext('addonRemove(0)', rctx);
     ok('✕ remove ASKS ONCE, posts ref and index with the key, then reloads the record and the list', /Remove "Painting \(additional\)" from SBC-260901-ARWQ\?/.test(toasts[0]) && /This saves straight away/.test(toasts[0]) && posted.length === 1 && /remove-added-service/.test(posted[0].url) && posted[0].body.index === 0 && posted[0].body.ref === 'SBC-260901-ARWQ' && opened.join(',') === 'SBC-260901-ARWQ,list' && toasts.some((m) => /removed · total now \$23582\.94/.test(m)), JSON.stringify({ posted, opened, toasts }));
     const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
-    ok('THE ASSISTANT adds a service only when asked, never offers it, never adds one already there', /ONLY WHEN HE ASKS to add it, and only once per request: never offer to fire it yourself, never add a service that is already on the estimate/.test(A));
+    ok('THE ASSISTANT adds a service only when asked, never offers it, never adds one already there', /ONLY WHEN HE ASKS to add it, and only once per request: never offer to fire it yourself, and never add a service that is already on the estimate/.test(A));
+  }
+  console.log('\n9. Redo one added section from a new brief - by the assistant, or by hand\n');
+  {
+    const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
+    ok('THE ACTION CARRIES "replace" and the assistant is told: the exact title, the COMPLETE new brief, never regenerate', /addservice: \["ref", "text"\]/.test(A) && /\\"replace\\" set to that section/.test(A) && /REDOING AN ADDED SECTION: when he asks to regenerate, redo, re-price or change an added section/.test(A) && /text holding the COMPLETE new brief/.test(A) && /Never use regenerate for this\./.test(A));
+    const posted = []; const toasts = []; let confirmed = '';
+    const ctx = {
+      String, JSON, Math, Date, Object, Array, Error, Promise, setTimeout, console: { error() {} }, fmt: (n) => '$' + n,
+      currentRecord: { ref: 'SBC-260901-ARWQ', estimate: { labor: [{ item: 'x', qty: 1, rate: 1 }], addedServices: [{ titles: ['Painting'], subtotal: 11269.98, text: 'paint the bathroom' }, { titles: ['Painting (additional)'], subtotal: 8033.12, text: 'whole apartment' }] } }, estimates: [{ ref: 'SBC-260901-ARWQ' }],
+      prompt: () => { posted.push({ prompted: true }); return 'never'; }, confirm: (m) => { confirmed = m; return true; }, toast: (m, bad) => toasts.push((bad ? '!' : '') + m), SBC_HOUSE_RULES: '',
+      document: { getElementById: () => ({ disabled: false, innerHTML: '', textContent: '', value: '' }) },
+      sbcFetch: async (url, o) => { posted.push({ url, body: JSON.parse(o.body) }); return { ok: true, status: 200, json: async () => ({ success: true, removed: { titles: ['Painting (additional)'], subtotal: 8033.12 }, estimate: { labor: [{ item: 'x', qty: 1, rate: 1 }], addedServices: [{ titles: ['Painting'], subtotal: 11269.98, text: 'paint the bathroom' }] }, customerFinalTotal: 23582.94 }) }; },
+      fetch: async (url, o) => { posted.push({ url, body: JSON.parse(o.body) }); return { ok: true, status: 202 }; },
+      aiJobStart() {}, watchGeneration: async () => ({ estimate: { labor: [], addedServices: [{ titles: ['Painting'] }, { titles: ['Painting (additional)'], subtotal: 5000 }] }, status: 'accepted' }),
+      normalizeDisplayFlags() {}, renderEdit() {}, CONTRACTOR_OWNED_ESTIMATE_FIELDS: [],
+    };
+    vm.createContext(ctx);
+    vm.runInContext([ext(DASH, 'addonIndexOf'), ext(DASH, 'addonRedo'), ext(DASH, 'addServiceAI'), ext(DASH, 'applyGeneratedEstimate'), ext(DASH, 'aiExec')].join('\n'), ctx);
+    const said = await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", replace: "painting (additional)", service: "Painting", text: "Paint the living room and both bedrooms only, two coats, Honey Badger 920." })', ctx);
+    const rm = posted.find((p) => p.url && /remove-added-service/.test(p.url)), kick = posted.find((p) => p.url && /generate-estimate-background/.test(p.url));
+    ok('FROM THE ASSISTANT: "replace" finds the section by title (any case), asks ONCE with the whole story, takes the old one out, then prices the new brief - no retyping, no second confirm', /Redo "Painting \(additional\)" on SBC-260901-ARWQ from this brief\?/.test(confirmed) && /The old section \(its lines, card and price, \$8033\.12\) comes out first/.test(confirmed) && rm && rm.body.index === 1 && kick && kick.body.addService.text === 'Paint the living room and both bedrooms only, two coats, Honey Badger 920.' && kick.body.addService.service === 'Painting' && posted.indexOf(rm) < posted.indexOf(kick) && !posted.some((p) => p.prompted), confirmed.slice(0, 120) + ' | ' + JSON.stringify(posted.map((p) => p.url)));
+    ok('...the record on screen already lost the old section before the new one started', ctx.currentRecord.customerFinalTotal === 23582.94);
+    ok('...and the chat says what happened', /Redoing "painting \(additional\)" on SBC-260901-ARWQ: the old section is out and the new brief is being priced as its own section; the earlier services stay as they are\./.test(said), said);
+    posted.length = 0;
+    const miss = await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", replace: "Flooring", text: "x" })', ctx);
+    ok('a title that is not an added section -> nothing happens, the sections are named', /I don't see an added section called "Flooring"/.test(miss) && /Painting/.test(miss) && posted.length === 0, miss);
+    /* by hand: ↻ redo offers the old brief for editing */
+    ok('EACH ADDED SECTION HAS "↻ redo" beside "✕ remove"', /onclick="addonRedo\(' \+ i \+ '\);return false"[^>]*>↻ redo<\/a>/.test(DASH));
+    let offered = '';
+    ctx.currentRecord.estimate.addedServices[0].text = 'paint the bathroom';
+    ctx.prompt = (msg, dflt) => { offered = dflt; return 'paint the bathroom, ceiling too'; };
+    posted.length = 0;
+    const byHand = await vm.runInContext('addonRedo(0)', ctx);
+    ok('BY HAND: the old brief is offered for editing, then out with the old, in with the new', offered === 'paint the bathroom' && byHand === true && posted.some((p) => p.url && /remove-added-service/.test(p.url) && p.body.index === 0) && posted.some((p) => p.url && /generate-estimate-background/.test(p.url) && p.body.addService.text === 'paint the bathroom, ceiling too'), JSON.stringify({ offered, posted: posted.map((p) => p.url) }));
+    ctx.prompt = () => '   '; posted.length = 0;
+    ok('an empty new brief changes nothing', (await vm.runInContext('addonRedo(0)', ctx)) === false && posted.length === 0);
   }
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);
