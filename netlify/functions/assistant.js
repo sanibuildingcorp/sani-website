@@ -229,7 +229,7 @@ async function answer(body, clocks) {
   const lastUser = turns.filter(function (t) { return t.role === "user"; }).slice(-1)[0];
   if (images.length && lastUser) lastUser.images = images;
   const reads = await Promise.all([
-    str(body.ref) ? withTimeout(recordContext(str(body.ref)), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
+    str(body.ref) ? withTimeout(recordContext(str(body.ref), c.estimateChars), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
     withTimeout(loadMemory(), c.memoryMs || MEMORY_MS).catch(function () { return []; }),
     withTimeout(loadInsights(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }),
     withTimeout(inboxContext(str(body.ref), lastUser ? lastUser.text : ""), c.recordMs || RECORD_MS).catch(function () { return ""; }),
@@ -304,7 +304,7 @@ function withTimeout(promise, ms) {
    contractor's cost lines are not sent: this is for working out what to ask a
    customer, and a model that has been handed the internal price band tends to
    start reasoning about it in answers meant to be read aloud to that customer. */
-async function recordContext(ref) {
+async function recordContext(ref, estimateChars) {
   const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
   const rec = await store.get(ref, { type: "json" });
   if (!rec) return "";
@@ -340,7 +340,7 @@ async function recordContext(ref) {
     thread.length ? "\nMESSAGES SO FAR:\n" + thread.join("\n") : "",
     await emailContext(rec),
     str(est.scopeOfWork) ? "\nSCOPE DRAFTED SO FAR:\n" + str(est.scopeOfWork).slice(0, 1200) : "",
-    estimateContext(rec),
+    estimateContext(rec, estimateChars),
   ].filter(Boolean).join("\n");
 }
 
@@ -423,9 +423,15 @@ async function inboxContext(ref, question) {
    with its confidence and open questions, the assumptions, the invoices and
    the contract. Still NOT the internal notes and NOT the markup: an answer
    here is one tap from the customer's reply box. Capped, because the clock. */
+/* The synchronous answer has nine seconds and keeps the estimate short; the
+   background answer has ninety and is handed the WHOLE estimate (clocks.
+   estimateChars). "I can only read what's shown to me on screen ... the
+   painting section isn't in the data I have": the section he added sat past
+   the cut, and the model, seeing a cut estimate, described the part it had
+   as the whole. */
 const ESTIMATE_CHARS = 9000;
 function money(n) { const v = Number(n) || 0; return "$" + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
-function estimateContext(rec) {
+function estimateContext(rec, chars) {
   const est = (rec && rec.estimate) || {};
   const labor = arr(est.labor), materials = arr(est.materials);
   if (!labor.length && !materials.length && !arr(est.serviceBreakdown).length) return "";
@@ -500,10 +506,21 @@ function estimateContext(rec) {
   if (rec.contract) lines.push("CONTRACT: " + (rec.contract.signedAt ? "signed " + str(rec.contract.signedAt).slice(0, 10) : "drafted, not signed"));
   if (str(rec.sentAt)) lines.push("SENT TO CUSTOMER: " + str(rec.sentAt).slice(0, 10));
   if (str(rec.acceptedAt)) lines.push("ACCEPTED: " + str(rec.acceptedAt).slice(0, 10));
+  /* Work added after the customer agreed (➕ Add a service): its lines and
+     card carry its title; the earlier sections are as she accepted them. */
+  const adds = arr(est.addedServices);
+  if (adds.length) lines.push("ADDED AFTER THE CUSTOMER AGREED, as own sections (the earlier sections untouched): " + adds.map(function (x) { return arr(x && x.titles).join(", ") + (x && x.subtotal ? " " + money(x.subtotal) : "") + (x && x.at ? " on " + str(x.at).slice(0, 10) : ""); }).join("; ") + ". Their lines and cards are the ones tagged with those titles.");
+  const sv = rec.sentVersion && typeof rec.sentVersion === "object" ? rec.sentVersion : null;
+  if (sv && sv.at) {
+    let svTotal = null;
+    try { svTotal = customerTotals(sv.estimate || {}, { customerFinalTotal: rec.customerFinalTotal }).customerTotal; } catch (e) { svTotal = null; }
+    lines.push("WHAT THE CUSTOMER SEES RIGHT NOW: version " + (Number(sv.n) || 1) + ", sent " + str(sv.at).slice(0, 10) + (svTotal != null ? ", total " + money(svTotal) : "") + (str(rec.updatedAt) > str(sv.at) ? " - the estimate above has changed since; she sees the new version only when he sends again" : " - unchanged since"));
+  }
   if (str(est.completedOn) || str(est.completedAt)) lines.push("COMPLETED: " + (str(est.completedOn) || str(est.completedAt).slice(0, 10)));
 
   const text = lines.join("\n");
-  return text.length > ESTIMATE_CHARS ? text.slice(0, ESTIMATE_CHARS) + "\n  ... (estimate cut here)" : text;
+  const cap = Number(chars) > 0 ? Number(chars) : ESTIMATE_CHARS;
+  return text.length > cap ? text.slice(0, cap) + "\n  ... (estimate cut here: " + (text.length - cap) + " more characters not shown. Say the estimate is too long to read whole; never describe as complete what you cannot see.)" : text;
 }
 
 /* ── MEMORY ──────────────────────────────────────────────────────────────
@@ -717,6 +734,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "A PHOTO OR SCREENSHOT may come with his question: a screenshot of a customer's text message or email, a product page, a plan, a photo of the site or of the work. A tall screenshot comes as several pieces, top to bottom, with a little overlap: read them as one page. Read it like any other fact - say what it shows or what it says, quote the words in it - and use it for describe or reword when he asks. If it is unreadable or does not show what he says, say so.",
     "ADDITIONAL WORK on an estimate the customer already agreed to (a new service, painting, an extra room, anything not in it): never change, reword or reprice the agreed services, and never tell him to regenerate - regenerating rebuilds every service. Do it for him with the addservice action when you know what the work is (write the brief from the chat, the emails, the photos); otherwise tell him to press ➕ ADD A SERVICE TO THIS ESTIMATE (in the Regenerate box). Either way the new work is priced on its own and added to the same estimate as its own section with its own scope and price, the agreed sections untouched; then he sends the estimate again. If he wants it as a separate estimate instead, ➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE) makes a linked one. On an estimate that IS additional work (the job says so), price and describe only the additional work.",
+    "CHECK THE ESTIMATE ('have a look', 'analyze', 'is it correct', 'anything unmatched'): the estimate block below (headed 'the generated estimate, as he sees it') is the whole estimate as stored, read fresh on every question - never say you cannot see it or ask him to refresh. Read every line and every card and compare them with each other and with the customer's words: a card bullet with no line behind it, a line filed under the wrong service, a duplicate line, a $0 card, a quantity that does not match a size he gave, a customer-supplied item priced as material, a section added after agreement that repeats agreed work. Report each mismatch concretely (line name, card, number) and say what to change. Wording -> offer a reword action. A quantity, a rate or a line -> name the exact line and the number; he edits lines himself, you never change money. If it says 'estimate cut here', say that and ask for a narrower question.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "EMAILS WITH THIS CUSTOMER (below, when a job is open) are read from his inbox log, matched by the customer's email address. When he asks about an email from this customer, answer from that list. When the list says there are none, say exactly that - none in the inbox from that address - and never say you cannot see emails.",
     "THE INBOX (below) is his whole info@ mailbox as of the last 15 minutes: every inbound email, one line each, newest first, with the estimate it is about when one could be matched (by ref, by address, or by the sender's name). The FULL TEXT of the emails about the open job and of the ones that match his question is given under it. Answer 'what did X write', 'did anyone email about Y', 'what does the manager need' from there, naming who wrote, when, and what. An email marked 'not a customer we know' may be a new lead, a building manager, a supplier - say so. If what he wants is not in the lines or the full texts shown, say which email you would need opened rather than guessing. Use the emails to pull requirements into an estimate with the describe action when he asks.",
