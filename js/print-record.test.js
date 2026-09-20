@@ -29,7 +29,7 @@ console.log('\nthe button sits in the message box, next to Add photos or files\n
    attach button, a solid border so it reads as a button. */
 ok('THE PRINT BUTTON IS IN THE ATTACH ROW, right after Add photos or files',
   /<label class="attach-btn">[^<]*Add photos or files<input[^>]*><\/label><button type="button" class="attach-btn printbtn" onclick="printQuote\(this\)">[^<]*Print \/ save as PDF<\/button>/.test(Q));
-ok('...and no longer in the Messages header', !/eyrow/.test(Q.replace(/\.eyrow\{[^}]*\}/, '')) && /id="thread-card"><div class="ey">Messages<\/div>/.test(Q));
+ok('...and no longer in the Messages header', !/eyrow/.test(Q.replace(/\.eyrow\{[^}]*\}/, '')) && /id="thread-card"\$\{hide\?' style="display:none"':''\}><div class="ey">Messages<\/div>/.test(Q));
 ok('...styled like the attach button, solid border', /\.printbtn\{font:inherit;color:var\(--n-deep\);border-style:solid/.test(Q));
 ok('a printed footer names the estimate, the customer, the print time and the live link', /class="printnote">Printed record of estimate \$\{E\(ref\)\} for/.test(Q) && /live copy: \$\{E\(location\.origin\+'\/quote\.html\?ref='/.test(Q));
 ok('...and that footer is hidden on screen, shown on paper', /\.printnote\{display:none\}/.test(Q) && /\.printnote\{display:block/.test(PRINT));

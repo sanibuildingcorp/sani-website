@@ -90,7 +90,8 @@ exports.handler = async function (event) {
          is asked for permission before the customer has anything to approve.
          Sent -> the sent scope; never sent -> the scope as it stands. */
       if (!isDraftPreview && !everSent(data)) hideUnsentEstimate(view);
-      view.thread = thread.normalizeThread(data);
+      /* Only what was said after the send - see lib/thread.js customerThread. */
+      view.thread = thread.customerThread(data);
       /* Rate-limiter bookkeeping is ours, not theirs. */
       delete view.threadRate;
       /* The raw frozen version is already applied above; sending it as well

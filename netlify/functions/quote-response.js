@@ -120,7 +120,9 @@ exports.handler = async function (event) {
       return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "Not found" }) };
     }
 
-    let threadOut = thread.normalizeThread(record);
+    /* What goes back to the page is what the page may show: on a sent
+       estimate, only the messages after the send (lib/thread.js). */
+    let threadOut = thread.customerThread(record);
     let newMessage = null;
     let previousMessage = null;
 
@@ -200,7 +202,7 @@ exports.handler = async function (event) {
         record.lastCustomerMessageAt = appended.message.at;
         newMessage = appended.message;
       }
-      threadOut = appended.thread;
+      threadOut = thread.customerThread(record);
 
       /* The quote stays OPEN when a customer asks something - a question is not a
          rejection - so the status only moves if nothing more final has happened. */
