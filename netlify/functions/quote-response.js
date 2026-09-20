@@ -265,7 +265,7 @@ exports.handler = async function (event) {
           subject: receipt.subject,
           html: receipt.html,
           text: receipt.text,
-          headers: { "X-Entity-Ref-ID": ref },
+          headers: buildMessageEmail.threadHeaders(ref),
         });
         customerNotified = true;
       } catch (e) {

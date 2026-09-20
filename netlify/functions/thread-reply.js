@@ -86,7 +86,8 @@ exports.handler = async function (event) {
         subject: mail.subject,
         html: mail.html,
         text: mail.text,
-        headers: { "X-Entity-Ref-ID": ref },
+        /* One Gmail conversation per estimate on the customer's side. */
+        headers: buildMessageEmail.threadHeaders(ref),
       });
       notified = true;
       record.lastCustomerNotifiedAt = new Date().toISOString();
