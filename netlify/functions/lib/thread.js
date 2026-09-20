@@ -260,9 +260,29 @@ function pickEstimateForEmail(list) {
   return pool[0].ref;
 }
 
+/* ══ THE CONVERSATION THE CUSTOMER SEES ON A SENT ESTIMATE ══════════════════
+     "can we remove the conversation from estimate if i send estimate to the
+      customer, not when i send messages but when i send final estimate there
+      no need to be conversation"
+   The questions and answers that led to the estimate are the work of making
+   it; the estimate itself goes out clean. So on the customer's page, once an
+   estimate has been sent, only what was said AFTER that send is shown - a
+   new question, and its answer, still land in one place. Before any send
+   (the questions phase) everything shows, as it must. The dashboard always
+   has the whole thread. Pure. */
+function customerThread(record) {
+  const rec = record || {};
+  const all = normalizeThread(rec);
+  const v = rec.sentVersion;
+  const since = v && typeof v === "object" && v.estimate && isoOr(v.at, "") ? isoOr(v.at, "") : "";
+  if (!since) return all;
+  return all.filter(function (m) { return m.at >= since; });
+}
+
 module.exports = {
   pickEstimateForEmail: pickEstimateForEmail,
   normalizeThread: normalizeThread,
+  customerThread: customerThread,
   appendMessage: appendMessage,
   checkRate: checkRate,
   refFromText: refFromText,

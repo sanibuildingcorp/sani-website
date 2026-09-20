@@ -686,8 +686,15 @@ function attHtml(list){
  return `<div class="att">${f.map(a=>a&&a.kind==='image'
   ?`<a href="${E(a.url)}" target="_blank" rel="noopener"><img src="${E(a.url)}" alt="${E(a.name||'photo')}"></a>`
   :`<a class="file" href="${E(a&&a.url)}" target="_blank" rel="noopener">\uD83D\uDCC4 ${E((a&&a.name)||'file')}</a>`).join('')}</div>`}
+/* On a sent estimate the server sends only the messages written after the
+   send (the questions that led to the estimate stay in the dashboard). With
+   none, the card is not shown - the estimate goes out clean. It is kept in
+   the page, hidden, so a message the customer sends now has a place to land;
+   S() shows it again. In the questions phase, before any send, the card is
+   always there: his questions are what the page is for. */
 function threadHtml(r){
- return `<section class="card" id="thread-card"><div class="ey">Messages</div><div id="thread-wrap">${threadInner(r)}</div><div class="printnote">Printed record of estimate ${E(ref)} for ${E((r.customer&&r.customer.name)||'')} \u00b7 printed ${E(fmtWhen(new Date().toISOString()))} \u00b7 every message above is shown in full with its date and time \u00b7 live copy: ${E(location.origin+'/quote.html?ref='+encodeURIComponent(ref))}</div></section>`}
+ const hide=!A(r.thread).length&&priced(r);
+ return `<section class="card" id="thread-card"${hide?' style="display:none"':''}><div class="ey">Messages</div><div id="thread-wrap">${threadInner(r)}</div><div class="printnote">Printed record of estimate ${E(ref)} for ${E((r.customer&&r.customer.name)||'')} \u00b7 printed ${E(fmtWhen(new Date().toISOString()))} \u00b7 every message above is shown in full with its date and time \u00b7 live copy: ${E(location.origin+'/quote.html?ref='+encodeURIComponent(ref))}</div></section>`}
 /* PRINT / SAVE. The browser's print dialog also saves a PDF (on an iPhone,
    the share sheet from the print preview). Before printing, every collapsed
    breakdown is opened so nothing on paper is hidden behind a click; after,
@@ -969,6 +976,8 @@ window.S=async a=>{
  if(wrap)wrap.innerHTML=threadInner(rec);
  threadScrollBottom();
  const card=document.getElementById('thread-card');
+ /* Hidden on a clean sent estimate until the customer writes something. */
+ if(card)card.style.display='';
  if(box)box.value='';
  msgFiles=[];msgPreview();
  if(st){
