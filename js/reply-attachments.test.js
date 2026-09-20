@@ -168,7 +168,7 @@ const call = async (body) => { const r = await fn.handler({ httpMethod: 'POST', 
        blocks[2] and the suite crashed instead of reporting the second failure. */
     ok('...labelled as sent later in a message, with its name', !!blocks[2] && /Photo 2 .*sent later in a message \(tile\.jpg\)/.test(blocks[2].text), blocks[2] && blocks[2].text);
     ok('...the PDF is not sent as an image', !blocks.some(b => b.type === 'image' && /plan\.pdf/.test(b.source.url)));
-    ok('the reader is called with the record, so it can see the thread', /photoBlocksForClaude\(record\.request, record\)/.test(G));
+    ok('the reader is called with the record, so it can see the thread', /photoBlocksForClaude\(sourceRecord\.request, sourceRecord\)/.test(G));
   }
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

@@ -210,10 +210,13 @@ t("the generator imports the pin", () => {
   assert.ok(/require\(["']\.\/lib\/scope-pin["']\)/.test(GEN));
 });
 t("it asks before running the analysis", () => {
-  assert.ok(/resolveScopePin\(record, input, body\)/.test(GEN));
+  /* The record the pin sees is the one the estimator sees: the real record on
+     a generation, the new-work request on an added service (which is always
+     read fresh, never reused). */
+  assert.ok(/resolveScopePin\(sourceRecord, input, addSvc \? Object\.assign\(\{\}, body, \{ reanalyze: true \}\) : body\)/.test(GEN));
 });
 t("the analysis call is INSIDE the else branch, not before it", () => {
-  const pinAt = GEN.indexOf("resolveScopePin(record, input, body)");
+  const pinAt = GEN.indexOf("resolveScopePin(sourceRecord, input, addSvc ? Object.assign({}, body, { reanalyze: true }) : body)");
   const callAt = GEN.indexOf("buildProjectAnalysisPrompt(input)");
   assert.ok(pinAt > 0 && callAt > pinAt, "the API call must not run before the decision");
 });

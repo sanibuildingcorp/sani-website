@@ -30,6 +30,9 @@ const { resolveScopePin } = require("./lib/scope-pin");
    of record.estimate below. This used to happen only in the browser, so locking
    the phone mid-generation deleted them. See lib/contractor-owned-fields.js. */
 const { preserveContractorFields, preservedFieldNames } = require("./lib/contractor-owned-fields");
+/* A service added to an agreed estimate: generated alone, appended as its
+   own section, nothing already there touched. See lib/add-service.js. */
+const { addServiceRequest, mergeAddedService } = require("./lib/add-service");
 
 /* Claude Opus 5. Thinking is ON BY DEFAULT on this model and shares the max_tokens
    budget with the response text, which is why every call site below was raised.
@@ -74,13 +77,28 @@ exports.handler = async function handler(event) {
        have to survive that whether or not a browser is still awake to help. */
     const previousEstimate = record.estimate && typeof record.estimate === "object" ? record.estimate : null;
 
+    /* ══ AN ADDED SERVICE ═══════════════════════════════════════════════════
+         "i need freeze current previous generated estimate for bathroom but i
+          want generate additional painting service price and scope of work
+          which will add in same estimate with own scope of work and price"
+       body.addService = { text, service? }: the estimator is handed a request
+       holding only the new work (lib/add-service.js addServiceRequest), runs
+       exactly as it would on a new job, and its result is APPENDED to the
+       estimate as its own card(s), lines and scope by mergeAddedService. The
+       existing lines, cards, scope, markup, analysis and scope pin are not
+       touched; the merge throws if they would be, and nothing is saved. */
+    const addSvc = body.addService && typeof body.addService === "object" ? { text: cleanText(body.addService.text), service: cleanText(body.addService.service) } : null;
+    if (addSvc && !addSvc.text) return jsonResponse(400, { error: "Say what the additional service is" });
+    if (addSvc && !(previousEstimate && (previousEstimate.labor || []).length)) return jsonResponse(400, { error: "Generate and price the estimate first, then add a service to it" });
+    const sourceRecord = addSvc ? addServiceRequest(record, addSvc.text, addSvc.service) : record;
+
     record.aiStatus = "running";
     record.aiJobId = String(body.jobId || "").trim();
     record.aiError = "";
     record.aiStartedAt = new Date().toISOString();
     if (store) { try { await store.setJSON(ref, record); } catch (_) {} }
 
-    const input = buildEstimatorInput(record, body);
+    const input = buildEstimatorInput(sourceRecord, body);
     const timing = { startedAt: Date.now(), analysisMs: 0, estimateMs: 0, repairMs: 0, deterministicMs: 0, repairUsed: false };
 
     /* ══ THE JOB IS DECIDED ONCE. ══════════════════════════════════════════════
@@ -98,7 +116,7 @@ exports.handler = async function handler(event) {
        request is a deliberate act with its own button. */
     const analysisStarted = Date.now();
     let analysisEngine = anthropicKey ? `Anthropic ${CLAUDE_MODEL}` : `OpenAI ${OPENAI_ANALYSIS_MODEL}`;
-    const pin = resolveScopePin(record, input, body);
+    const pin = resolveScopePin(sourceRecord, input, addSvc ? Object.assign({}, body, { reanalyze: true }) : body);
     let projectAnalysis;
     if (pin.reuse) {
       projectAnalysis = pin.analysis;
@@ -113,7 +131,7 @@ exports.handler = async function handler(event) {
          fallback for a deployment with no Anthropic key. The photographs go in
          as labelled image blocks: "like i showing many times screen shots for
          explanation". */
-      const photoBlocks = anthropicKey ? photoBlocksForClaude(record.request, record) : [];
+      const photoBlocks = anthropicKey ? photoBlocksForClaude(sourceRecord.request, sourceRecord) : [];
       let rawAnalysis;
       if (anthropicKey) {
         rawAnalysis = await callClaude(anthropicKey, analysisPrompt, 16000, null, photoBlocks);
@@ -283,6 +301,15 @@ exports.handler = async function handler(event) {
     estimate.pricingReadiness = projectAnalysis.pricing_readiness;
     estimate.clarificationQuestions = projectAnalysis.clarification_questions;
 
+    let addedReport = null;
+    if (addSvc) {
+      /* Folded in as new sections. The record's own analysis, scope pin,
+         status and every existing line, card and bullet stay as they were. */
+      addedReport = mergeAddedService(record, estimate, { text: addSvc.text, service: addSvc.service });
+      const last = record.estimate.addedServices[record.estimate.addedServices.length - 1];
+      last.timing = { ...timing };
+      last.readiness = projectAnalysis.pricing_readiness;
+    } else {
     record.projectAnalysis = projectAnalysis;
     /* The pin travels with the analysis: this exact scope, for this exact
        request. A later generation compares its own inputs against it. */
@@ -296,6 +323,7 @@ exports.handler = async function handler(event) {
     preserveContractorFields(previousEstimate, estimate);
     record.estimate = estimate;
     record.status = record.status === "new" ? "drafted" : record.status;
+    }
     record.updatedAt = new Date().toISOString();
     record.aiStatus = "done";
     record.aiJobId = String(body.jobId || record.aiJobId || "").trim();
@@ -318,6 +346,7 @@ exports.handler = async function handler(event) {
       estimate: record.estimate,
       projectAnalysis: record.projectAnalysis,
       status: record.status,
+      added: addedReport,
       warning: persistenceWarning,
       aiProviders: {
         understanding: analysisEngine,
