@@ -52,6 +52,19 @@ function when(iso) {
  * @param {string} [o.siteUrl]
  * @returns {{subject:string, html:string, text:string, quoteUrl:string, total:number}}
  */
+/* ── ONE CONVERSATION PER ESTIMATE, IN THE CUSTOMER'S GMAIL ───────────────
+     "every new send messages goes separate in customer email ... to be in
+      one place as a normal email we sent and received"
+   Gmail groups messages that share a References id (and a subject). Every
+   email about an estimate - the quote, each message, the receipt - carries
+   the same synthetic root id, so they land in one conversation on the
+   customer's side, exactly like a normal back-and-forth. The id is made
+   from the ref and our domain; it does not have to exist as a message. */
+function threadHeaders(ref) {
+  const id = "<" + String(ref || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "") + "@sanibuildingcorp.com>";
+  return { "X-Entity-Ref-ID": String(ref || ""), "In-Reply-To": id, "References": id };
+}
+
 function buildMessageEmail(o) {
   const ref = String((o && o.ref) || "").trim();
   const record = (o && o.record) || {};
@@ -113,13 +126,20 @@ function buildMessageEmail(o) {
     : '<p style="margin:22px 0 2px;font-size:15px;color:#0a1628">Best,<br><strong>Zurabi</strong><br>' +
       '<span style="font-size:13px;color:#777">Sani Building Corp · Brooklyn, NY · Fully insured</span></p>';
 
-  const prevBlock = previous && previous.text
-    ? '<div style="border-left:3px solid #e6e0d6;padding:2px 0 2px 14px;margin:0 0 18px;color:#7a7a7a;font-size:13.5px;line-height:1.6">' +
-        '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">' +
+  /* THE EARLIER MESSAGE. It used to sit ABOVE the new one, in light grey,
+     up to 600 characters: on a phone a long earlier message filled the
+     screen and "inside the text message is light color and looks
+     unimportant". The new message now comes first, in the dark box; the
+     earlier one follows, shorter, labelled, in a grey that is still easy
+     to read. */
+  const prevText = previous && previous.text ? String(previous.text) : "";
+  const prevBlock = prevText
+    ? '<div style="border-left:3px solid #d9cfbd;padding:2px 0 2px 14px;margin:18px 0 0;color:#444444;font-size:14px;line-height:1.6">' +
+        '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin-bottom:5px">Earlier &middot; ' +
           (previous.from === "contractor" ? "Sani Building Corp" : esc(customer.name || "Customer")) +
           (when(previous.at) ? " · " + esc(when(previous.at)) : "") +
         "</div>" +
-        '<div style="white-space:pre-wrap">' + esc(String(previous.text).slice(0, 600)) + "</div>" +
+        '<div style="white-space:pre-wrap">' + esc(prevText.slice(0, 320)) + (prevText.length > 320 ? "…" : "") + "</div>" +
       "</div>"
     : "";
 
@@ -150,11 +170,11 @@ function buildMessageEmail(o) {
         '<p style="font-size:16px;margin:0 0 18px;color:#0a1628"><strong>' + heading + "</strong>" +
           (when(message.at) ? '<span style="font-weight:normal;font-size:13px;color:#888"> · ' + esc(when(message.at)) + "</span>" : "") +
         "</p>" +
-        prevBlock +
-        '<div style="background:#faf8f4;border:1px solid #e8e2d9;border-radius:10px;padding:16px 18px;white-space:pre-wrap;font-size:15px;line-height:1.65">' +
+        '<div style="background:#faf8f4;border:1px solid #e8e2d9;border-radius:10px;padding:16px 18px;white-space:pre-wrap;font-size:15px;line-height:1.65;color:#0a1628">' +
           esc(String(message.text || "")) +
         "</div>" +
         attachmentsHtml(message.attachments) +
+        prevBlock +
         /* THE REPLY CARD. A customer reading this on a phone sees a message and,
            at the bottom of the screen, Gmail's own Reply button. Pressing that
            sends their answer as a fresh email to the contractor's inbox, outside
@@ -241,3 +261,4 @@ function attachmentsText(list) {
 
 module.exports = buildMessageEmail;
 module.exports.buildMessageEmail = buildMessageEmail;
+module.exports.threadHeaders = threadHeaders;

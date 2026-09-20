@@ -146,9 +146,9 @@ exports.handler = async function (event) {
       subject: `Your estimate for ${escapePlain(projectTitle)} — ${fmt(total)} (#${ref})`,
       html,
       text: textBody,
-      headers: {
-        "X-Entity-Ref-ID": ref,
-      },
+      /* The same thread id every message about this estimate carries, so
+         the quote and the messages after it are one conversation in Gmail. */
+      headers: require("./lib/message-email").threadHeaders(ref),
     };
 
     let deliveryProvider = "resend";
