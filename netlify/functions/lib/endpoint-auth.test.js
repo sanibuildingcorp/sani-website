@@ -83,6 +83,8 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["update-customer", "POST", { ref: "SBC-260805-XQNQ", customer: { name: "Mallory" } }],
     /* Reads the whole inbox and emails him; every run costs money. */
     ["inbox-digest-background", "POST", { mode: "daily" }],
+    /* Rewrites the wording of any estimate. */
+    ["reword-estimate", "POST", { ref: "SBC-260805-XQNQ", edits: [{ where: "title", to: "Hacked" }] }],
   ];
 
   for (const [name, method, body] of GATED) {

@@ -525,7 +525,7 @@ function screenContext(sc) {
    A closed list. The model writes  ACTION: {"type":...}  on its own line at
    the end; anything else on the line, or a type not here, is dropped. A
    truncated answer drops them all: half an action is worse than none. */
-const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"], search: ["query"], describe: ["ref", "text"] };
+const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"], search: ["query"], describe: ["ref", "text"], reword: ["ref"] };
 const TABS = ["all", "new", "drafted", "sent", "accepted", "invoiced", "paid", "completed", "declined", "handyman", "visits", "customers"];
 const STATUSES = ["new", "drafted", "sent", "accepted", "declined", "completed"];
 /* ══ "THE ASSISTANT RETURNED NOTHING. TRY AGAIN." ═════════════════════════
@@ -573,7 +573,22 @@ function extractActions(text, truncated) {
     if (type === "tab" && TABS.indexOf(str(a.tab)) === -1) continue;
     if (type === "status" && STATUSES.indexOf(str(a.status)) === -1) continue;
     const clean = { type: type };
-    Object.keys(a).forEach(function (k) { if (k !== "type") clean[k] = str(a[k]).slice(0, 2000); });
+    Object.keys(a).forEach(function (k) {
+      if (k === "type") return;
+      /* reword carries a list of edits; everything else is a string. */
+      if (k === "edits" && Array.isArray(a[k])) {
+        clean.edits = a[k].slice(0, 20).filter(function (e) { return e && typeof e === "object"; })
+          .map(function (e) { return { where: str(e.where).slice(0, 20), service: str(e.service).slice(0, 120), from: str(e.from).slice(0, 1000), to: str(e.to).slice(0, 1000) }; });
+        return;
+      }
+      clean[k] = str(a[k]).slice(0, 2000);
+    });
+    /* A reword with one edit written flat (where/from/to) becomes a list. */
+    if (type === "reword") {
+      if (!Array.isArray(clean.edits) && (clean.where || clean.from || clean.to)) clean.edits = [{ where: str(clean.where), service: str(clean.service), from: str(clean.from), to: str(clean.to) }];
+      ["where", "service", "from", "to"].forEach(function (k) { delete clean[k]; });
+      if (!Array.isArray(clean.edits) || !clean.edits.length) continue;
+    }
     actions.push(clean);
   }
   let out = kept.join("\n").trim();
@@ -625,8 +640,9 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "- draft a message to the customer of the OPEN estimate: ACTION: {\"type\":\"draft\",\"text\":\"...\"}   - it goes into the reply box only; HE presses Send after reading it",
     "- remember something for later: ACTION: {\"type\":\"remember\",\"text\":\"...\"}",
     "- ADD A FACT FROM AN EMAIL TO AN ESTIMATE: ACTION: {\"type\":\"describe\",\"ref\":\"SBC-...\",\"text\":\"...\"}   - when a customer's email carries something the estimate needs (a measurement, a change of scope, a material, a date, a correction) and he asks you to put it in / update the estimate, write the fact in one or two plain sentences; the dashboard asks him to confirm, adds it to that estimate's customer description, and he presses Re-read the job to price it. Say in one line what you are adding. Never invent a fact; quote the email.",
+    "- FIX THE WORDS OF AN ESTIMATE WITHOUT TOUCHING A PRICE: ACTION: {\"type\":\"reword\",\"ref\":\"SBC-...\",\"edits\":[{\"where\":\"included\",\"service\":\"Bathroom\",\"from\":\"old line as it reads now\",\"to\":\"new line\"}]}   - when he asks you to correct, update or align wording (a finish, a size, a spec, a contradiction between the lines and the included text, a typo) with no price change. where is one of: included, excluded, supplies (a line of a service card - name the service), labor or material (the NAME of a price line: from = its name as shown, to = the new name), summary, scope, title, timeline (from = the phrase to replace, or empty to replace the whole field). from must be copied EXACTLY as the estimate shows it. to empty removes a card line; from empty adds one. Put every edit for one estimate in ONE action's edits list. The server keeps every price, quantity and total exactly as they are and refuses anything else; the dashboard shows him each before/after and asks first. Use reword for wording; use describe for new work that must be priced.",
     "- SEARCH THE INTERNET:          ACTION: {\"type\":\"search\",\"query\":\"...\"}   - use it whenever the answer needs current information from outside this dashboard: today's price of a product or material, a supplier or store, a building code, permit or co-op rule, a company, an address, the weather, anything that changes over time or that you are not sure of. Also whenever he says 'search online', 'check online', 'google it' or 'look it up'. Write the query the way a good search is written (specific, with New York or the borough when it matters). Say in ONE short line that you are checking online - the answer with its sources arrives in this chat in under a minute - and do not guess the answer yourself in the same reply.",
-    "An ACTION line is ONE line of valid JSON: no line breaks inside it, and inside a text value use single quotes, never double quotes. Always write at least one line of words before any ACTION line.",
+    "An ACTION line is ONE line of valid JSON: no line breaks inside it, and inside a text value use single quotes, never double quotes (for a reword, copy the quotes the estimate uses - 24\" - as \\\"). Always write at least one line of words before any ACTION line.",
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "EMAILS WITH THIS CUSTOMER (below, when a job is open) are read from his inbox log, matched by the customer's email address. When he asks about an email from this customer, answer from that list. When the list says there are none, say exactly that - none in the inbox from that address - and never say you cannot see emails.",
