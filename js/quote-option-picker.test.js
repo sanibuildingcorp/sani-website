@@ -35,6 +35,8 @@ const ctx = {
   E: s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'),
   M: n => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
   document: { body: { getAttribute: () => null }, getElementById: () => null },
+  /* the page's scope-only switch (?sow=1); off here, this is the priced page */
+  SOW: false,
 };
 ctx.window = ctx; ctx.globalThis = ctx;
 vm.createContext(ctx);
@@ -235,7 +237,7 @@ console.log('\napproving must not fire an "opened quote" notification\n');
   };
   tctx.window = tctx; tctx.globalThis = tctx;
   vm.createContext(tctx);
-  vm.runInContext('var ref = "SBC-260828-394Z";', tctx);
+  vm.runInContext('var ref = "SBC-260828-394Z"; var SOW = false;', tctx);
   vm.runInContext(ext('track'), tctx);
 
   vm.runInContext('track()', tctx);
@@ -264,7 +266,7 @@ console.log('\napproving must not fire an "opened quote" notification\n');
   };
   tctx.window = tctx; tctx.globalThis = tctx;
   vm.createContext(tctx);
-  vm.runInContext('var ref = "SBC-1";', tctx);
+  vm.runInContext('var ref = "SBC-1"; var SOW = false;', tctx);
   vm.runInContext(ext('track'), tctx);
   let threw = false;
   try { vm.runInContext('track()', tctx); } catch (e) { threw = true; }

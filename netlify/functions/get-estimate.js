@@ -14,6 +14,7 @@ const { getStore } = require("@netlify/blobs");
 const thread = require("./lib/thread");
 const { applySentVersion } = require("./lib/sent-version");
 const { stripUnoffered } = require("./lib/offered-options");
+const { scopeOnlyView } = require("./lib/scope-only");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -34,8 +35,17 @@ exports.handler = async function (event) {
     }
 
     const referer = String(event.headers?.referer || event.headers?.referrer || "");
-    const isQuoteRequest = /\/quote(?:\.html)?(?:[?#]|$)/i.test(referer);
-    const isDraftPreview = isQuoteRequest && /[?&]previewScope=1(?:&|$)/i.test(referer);
+    /* ══ THE SCOPE OF WORK LINK: quote.html?ref=…&sow=1 ═══════════════════════
+         "building management need to see scope of work before they approve
+          permission ... just scope of work absolutely same everything just
+          without prices"
+       The same customer page, every price and every private matter removed
+       on the server (lib/scope-only.js). The flag rides on the fetch as well
+       as the referer, and either is enough to make this a customer request:
+       a browser that strips the referer must never get the dashboard's copy. */
+    const isScopeOnly = event.queryStringParameters?.sow === "1" || /[?&]sow=1(?:&|$)/i.test(referer);
+    const isQuoteRequest = isScopeOnly || /\/quote(?:\.html)?(?:[?#]|$)/i.test(referer);
+    const isDraftPreview = isQuoteRequest && !isScopeOnly && /[?&]previewScope=1(?:&|$)/i.test(referer);
 
     /* The thread is served already normalized - migrated, deduped, oldest first -
        so quote.html and dashboard.html never have to agree on how to do that.
@@ -60,7 +70,7 @@ exports.handler = async function (event) {
          what was sent. A draft preview of an undecided estimate shows none.
          Whatever the customer already added to their bill stays visible. */
       stripUnoffered(view.estimate, {
-        legacyAllowsAll: !isDraftPreview,
+        legacyAllowsAll: !isDraftPreview && everSent(data),
         keep: (Array.isArray(data.customerOptionSelections) ? data.customerOptionSelections : []).map(function (o) { return o && o.label; }),
       });
       /* ══ NOTHING HE HAS NOT SENT ═══════════════════════════════════════════
@@ -75,13 +85,17 @@ exports.handler = async function (event) {
          page says "Waiting on your answers" and no total. Records from before
          frozen versions existed but that WERE sent (sentAt, or a status past
          "drafted") are left whole, or every old quote link would go blank. */
-      if (!isDraftPreview && !everSent(data)) hideUnsentEstimate(view);
+      /* The scope link is his to hand out, sent or not: a building manager
+         is asked for permission before the customer has anything to approve.
+         Sent -> the sent scope; never sent -> the scope as it stands. */
+      if (!isDraftPreview && !isScopeOnly && !everSent(data)) hideUnsentEstimate(view);
       view.thread = thread.normalizeThread(data);
       /* Rate-limiter bookkeeping is ours, not theirs. */
       delete view.threadRate;
       /* The raw frozen version is already applied above; sending it as well
          would hand the customer every alternative the gate just removed. */
       delete view.sentVersion;
+      if (isScopeOnly) return { statusCode: 200, headers: cors(), body: JSON.stringify(scopeOnlyView(view)) };
       return { statusCode: 200, headers: cors(), body: JSON.stringify(view) };
     }
 

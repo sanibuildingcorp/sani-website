@@ -49,7 +49,8 @@ function ext(name) {
   throw new Error('unbalanced ' + name);
 }
 
-const ctx = { console, String, Number, Array, Object, JSON, RegExp };
+/* SOW is the page's scope-only switch (?sow=1); off here, this is the priced page. */
+const ctx = { console, String, Number, Array, Object, JSON, RegExp, SOW: false };
 ctx.window = ctx; vm.createContext(ctx);
 const helpers = QUOTE.split('\n').find(l => l.startsWith('const A=v=>Array.isArray'));
 if (!helpers) throw new Error('quote.html no longer declares A/E/M/C/N/LT on one line');
