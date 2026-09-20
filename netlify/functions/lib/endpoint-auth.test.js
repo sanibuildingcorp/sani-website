@@ -75,6 +75,9 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
        there. Listed AND deleted from a bare request until it joined the gate. */
     ["visits", "GET", null],
     ["visits", "POST", { action: "delete", id: "V-ANY" }],
+    /* Emails the no-price scope link to any address he types. Contractor only:
+       an open version would let anyone mail the scope of any job anywhere. */
+    ["send-scope-link", "POST", { ref: "SBC-260805-XQNQ", to: "anyone@example.com" }],
   ];
 
   for (const [name, method, body] of GATED) {
