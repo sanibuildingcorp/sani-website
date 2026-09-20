@@ -29,7 +29,7 @@ function ext(name) {
 const STORES = {};
 const origResolve = Module._resolveFilename;
 Module._resolveFilename = function (request, ...rest) { if (request === '@netlify/blobs') return '@netlify/blobs'; return origResolve.call(this, request, ...rest); };
-require.cache['@netlify/blobs'] = { id: '@netlify/blobs', filename: '@netlify/blobs', loaded: true, exports: { getStore: (o) => { const m = STORES[o.name] || (STORES[o.name] = new Map()); return { get: async (k) => (m.has(k) ? JSON.parse(m.get(k)) : null), set: async (k, v) => { m.set(k, v); } }; } } };
+require.cache['@netlify/blobs'] = { id: '@netlify/blobs', filename: '@netlify/blobs', loaded: true, exports: { getStore: (o) => { const m = STORES[o.name] || (STORES[o.name] = new Map()); return { get: async (k) => (m.has(k) ? JSON.parse(m.get(k)) : null), set: async (k, v) => { m.set(k, v); }, delete: async (k) => { m.delete(k); } }; } } };
 const https = require('https');
 let sent = null;
 const sse = (o) => 'event: ' + o.type + '\ndata: ' + JSON.stringify(o) + '\n\n';
@@ -68,6 +68,18 @@ const post = async (body) => { const r = await fn.handler({ httpMethod: 'POST', 
     sent = null;
     await post({ chat: 'SBC-2', messages: [{ role: 'user', text: 'read this page' }], images: many(5, (i) => (i < 4 ? 1 : 2)) });
     ok('FIVE PIECES OF TWO PHOTOS: five image blocks on the turn, "[📷 2 photos attached]" in the saved chat', sent.messages[0].content.length === 6 && JSON.parse(STORES['assistant-chats'].get('SBC-2'))[0].text === 'read this page [📷 2 photos attached]', JSON.parse(STORES['assistant-chats'].get('SBC-2'))[0].text);
+    console.log('\nparked first: the pictures go to the synchronous function, the job collects them\n');
+    const parked = await post({ action: 'photos', job: 'A-park0001', images: many(5, (i) => (i < 4 ? 1 : 2)) });
+    ok('{action:"photos", job, images} PARKS THE PICTURES UNDER THE JOB ID and says how many', parked.code === 200 && parked.body.ok === true && parked.body.images === 5 && parked.body.photos === 2 && STORES['assistant-jobs'].has('A-park0001:photos'), JSON.stringify(parked.body));
+    ok('a parcel with no readable picture is refused', (await post({ action: 'photos', job: 'A-park0002', images: [{ data: 'not base64 !!', mediaType: 'image/png' }] })).code === 400 && !STORES['assistant-jobs'].has('A-park0002:photos'));
+    ok('...and one with no job id', (await post({ action: 'photos', images: many(1) })).code === 400);
+    sent = null;
+    await post({ chat: 'SBC-3', messages: [{ role: 'user', text: 'is this updated right?' }], photos: 'A-park0001' });
+    ok('A QUESTION WITH photos: <job id> AND NO IMAGES gets the parked pieces on its last turn, and the mark counts the photos', sent.messages[0].content.length === 6 && sent.messages[0].content[0].type === 'image' && JSON.parse(STORES['assistant-chats'].get('SBC-3'))[0].text === 'is this updated right? [📷 2 photos attached]', JSON.stringify(sent.messages[0].content.length));
+    ok('...the parcel is dropped once read', !STORES['assistant-jobs'].has('A-park0001:photos'));
+    sent = null;
+    await post({ chat: 'SBC-4', messages: [{ role: 'user', text: 'again' }], photos: 'A-park0001' });
+    ok('a job id with nothing parked -> a plain question', typeof sent.messages[0].content === 'string');
     ok('it is told a tall screenshot comes in pieces to read as one page', /A tall screenshot comes as several pieces, top to bottom, with a little overlap: read them as one page/.test(sent.system));
   }
 
@@ -98,23 +110,32 @@ const post = async (body) => { const r = await fn.handler({ httpMethod: 'POST', 
     const ims = vm.runInContext('aiImagesOf([{ data: "top", pieces: ["top", "mid", "end"] }, { data: "one" }])', ictx);
     ok('WHAT TRAVELS: every piece, numbered by photo, in order', JSON.stringify(ims) === '[{"data":"top","photo":1},{"data":"mid","photo":1},{"data":"end","photo":1},{"data":"one","photo":2}]', JSON.stringify(ims));
     ok('a picked photo keeps its pieces and shows its top piece as the thumbnail', /list\.push\(\{ name: files\[i\]\.name \|\| "photo", data: pieces\[0\], pieces: pieces \}\)/.test(ext('aiPickPhotos')));
-    const log = {}; let posted = null;
+    const log = {}; let posted = null; const calls = []; const askText = { value: '' };
     const ctx = {
       String, JSON, Error, RegExp, Object, Math, Date, Array, Promise, setTimeout: (f) => f(), console: { error() {} },
       currentRecord: { ref: 'R1' }, ASK_LOG: log, sbcKey: () => 'k', askRender() {}, aiScreen: () => null, toast() {},
       AI_PHOTOS: { ask: [{ name: 'shot.png', data: 'data:image/png;base64,' + PNG, pieces: ['data:image/png;base64,' + PNG, 'data:image/png;base64,' + PNG + 'B'] }], ai: [] },
-      document: { getElementById: (id) => id === 'ask-text' ? { value: '' } : { textContent: '', disabled: false, innerHTML: '' } },
-      fetch: async (url, o) => { posted = JSON.parse(o.body); return { ok: true, status: 200, text: async () => JSON.stringify({ reply: 'ok', truncated: false, actions: [] }) }; },
+      document: { getElementById: (id) => id === 'ask-text' ? askText : { textContent: '', disabled: false, innerHTML: '' } },
+      fetch: async (url, o) => { posted = JSON.parse(o.body); calls.push({ url: url, body: posted }); return { ok: true, status: 200, text: async () => JSON.stringify(/assistant-background/.test(url) ? { reply: 'ok', truncated: false, actions: [] } : { ok: true, job: posted.job, images: posted.images.length, photos: 1 }) }; },
     };
     vm.createContext(ctx);
     vm.runInContext([ext('askSend'), ext('aiAsk'), ext('aiTurn'), ext('aiTakePhotos'), ext('aiImagesOf'), ext('aiPhotoPreview'), ext('aiPhotoThumbs'), 'function aiAnswerJobId(){return "A-t"}'].join('\n'), ctx);
     await vm.runInContext('askSend()', ctx);
     ok('A PHOTO WITH NO WORDS STILL SENDS, with a default question', log.R1 && log.R1[0].text === 'Look at this photo.' && posted && posted.messages[0].text === 'Look at this photo.', JSON.stringify(log.R1 && log.R1[0] && log.R1[0].text));
-    ok('...the picture travels in images as its two pieces, both marked photo 1, and the turns carry no bytes', posted.images.length === 2 && posted.images[0].data === 'data:image/png;base64,' + PNG && posted.images[1].data === 'data:image/png;base64,' + PNG + 'B' && posted.images[0].photo === 1 && posted.images[1].photo === 1 && JSON.stringify(posted.messages).indexOf(PNG) === -1, JSON.stringify(posted.images).slice(0, 120));
-    ok('...the bubble keeps the thumbnail; the pending list is emptied', log.R1[0].photos.length === 1 && ctx.AI_PHOTOS.ask.length === 0);
-    posted = null;
+    const park = calls[0], go = calls[1];
+    ok('THE PICTURES GO FIRST TO THE SYNCHRONOUS FUNCTION, {action:"photos"} under the job id, as two pieces both marked photo 1', calls.length === 2 && /\/assistant$/.test(park.url) && park.body.action === 'photos' && park.body.job === 'A-t' && park.body.images.length === 2 && park.body.images[0].data === 'data:image/png;base64,' + PNG && park.body.images[1].data === 'data:image/png;base64,' + PNG + 'B' && park.body.images[0].photo === 1 && park.body.images[1].photo === 1, JSON.stringify(calls.map((c) => c.url)));
+    ok('...then the background job starts WITHOUT the bytes (that was the HTTP 413), pointing at the parked photos by job id', /assistant-background/.test(go.url) && go.body.job === 'A-t' && go.body.photos === 'A-t' && go.body.images === undefined && JSON.stringify(go.body).indexOf(PNG) === -1, JSON.stringify(go.body).slice(0, 200));
+    calls.length = 0;
+    ctx.AI_PHOTOS.ask = [{ name: 'x.png', data: 'data:image/png;base64,' + PNG }];
+    ctx.fetch = async (url, o) => { calls.push({ url: url }); return { ok: false, status: 413, text: async () => '<html>too big</html>' }; };
     await vm.runInContext('askSend()', ctx);
-    ok('the next question with no photo sends none', posted === null || (Array.isArray(posted.images) && posted.images.length === 0));
+    ok('when the upload itself is refused, he is told, and the job never starts', calls.length === 1 && /HTTP 413/.test(log.R1[log.R1.length - 1].text) && /smaller/.test(log.R1[log.R1.length - 1].text), log.R1[log.R1.length - 1].text);
+    ctx.fetch = async (url, o) => { posted = JSON.parse(o.body); calls.push({ url: url, body: posted }); return { ok: true, status: 200, text: async () => JSON.stringify({ reply: 'ok', truncated: false, actions: [] }) }; };
+    calls.length = 0;
+    ok('...the bubble keeps the thumbnail; the pending list is emptied', log.R1[0].photos.length === 1 && ctx.AI_PHOTOS.ask.length === 0);
+    posted = null; askText.value = 'a plain question';
+    await vm.runInContext('askSend()', ctx);
+    ok('the next question with no photo sends none, in one call straight to the background job', calls.length === 1 && /assistant-background/.test(calls[0].url) && (posted === null || (Array.isArray(posted.images) && posted.images.length === 0)));
     const sctx = { JSON, Array, Object, AI_LOG: [{ role: 'user', text: 'see this', photos: [{ data: 'data:image/png;base64,' + PNG }] }, { role: 'assistant', text: 'ok' }], sessionStorage: { setItem(k, v) { sctx.saved = v; } } };
     vm.createContext(sctx);
     vm.runInContext(ext('aiSave') + '\naiSave()', sctx);

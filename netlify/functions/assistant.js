@@ -107,6 +107,7 @@ const CHAT_WRITE_MS = 700;
    polls {action:"job"} here, and the answer with its sources lands in the
    same chat when it is ready. The model is told when a question needs it. */
 const JOB_MS = 1500;
+const PHOTOS_MS = 6000, PHOTOS_SUFFIX = ":photos";
 /* Netlify's synchronous limit is 10,000ms. Everything - reading the record,
    the round trip to Claude, building the response - has to fit under this. */
 const BUDGET_MS = 8800;
@@ -166,6 +167,22 @@ exports.handler = async function (event) {
     return json(200, job && typeof job === "object" ? job : { status: "running" });
   }
 
+  /* ── THE PHOTOS, PARKED FIRST ────────────────────────────────────────────
+       "No answer came back (HTTP 413)". A background function takes only a
+       small request body; a tall screenshot in five readable pieces is a
+       megabyte or more. So the page sends the pictures HERE first (a
+       synchronous function takes 6 MB), they are parked in the job store
+       under the job id, and the background job collects them by id. */
+  if (str(body.action) === "photos") {
+    const id = jobIdOf(body.job);
+    if (!id) return json(400, { error: "Which job?" });
+    const images = imagesOf(body.images);
+    if (!images.length) return json(400, { error: "No readable picture in that upload" });
+    try { await withTimeout(jobStore().set(id + PHOTOS_SUFFIX, JSON.stringify(images)), PHOTOS_MS); }
+    catch (e) { return json(502, { error: "Could not keep the photo for the assistant. Try again." }); }
+    return json(200, { ok: true, job: id, images: images.length, photos: photoCount(images) });
+  }
+
   if (!turns.length) return json(400, { error: "Nothing to answer" });
 
   try {
@@ -207,7 +224,8 @@ async function answer(body, clocks) {
      piece belongs to), so the blocks can outnumber the photos. They are
      not kept: the saved chat gets a "[📷 photo attached]" mark counting
      photos, the job store gets the answer only. */
-  const images = imagesOf(body.images);
+  let images = imagesOf(body.images);
+  if (!images.length && jobIdOf(body.photos)) images = imagesOf(await withTimeout(takePhotos(jobIdOf(body.photos)), PHOTOS_MS).catch(function () { return []; }));
   const lastUser = turns.filter(function (t) { return t.role === "user"; }).slice(-1)[0];
   if (images.length && lastUser) lastUser.images = images;
   const reads = await Promise.all([
@@ -515,6 +533,14 @@ const chatKeyOf = chat.chatKeyOf, loadChat = chat.loadChat, appendChat = chat.ap
 /* ── SEARCH JOBS, written by assistant-search-background ────────────────── */
 function jobStore() {
   return getStore({ name: "assistant-jobs", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
+}
+/* The parked pictures for a job, read once and dropped: the answer keeps
+   nothing of them but the "[📷 photo attached]" mark. */
+async function takePhotos(id) {
+  const store = jobStore();
+  const list = await store.get(id + PHOTOS_SUFFIX, { type: "json" });
+  if (list) { try { await store.delete(id + PHOTOS_SUFFIX); } catch (e) { /* a stale parcel is harmless */ } }
+  return arr(list);
 }
 function jobIdOf(v) {
   const k = str(v);
