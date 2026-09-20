@@ -528,29 +528,80 @@ function screenContext(sc) {
 const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"], search: ["query"], describe: ["ref", "text"] };
 const TABS = ["all", "new", "drafted", "sent", "accepted", "invoiced", "paid", "completed", "declined", "handyman", "visits", "customers"];
 const STATUSES = ["new", "drafted", "sent", "accepted", "declined", "completed"];
+/* ══ "THE ASSISTANT RETURNED NOTHING. TRY AGAIN." ═════════════════════════
+   Twice, on "analyze his requirements and current scope of work and find
+   where need updates". The model answered - with a describe action holding
+   the whole analysis - pretty-printed over several lines, or with a quote
+   inside the text, so JSON.parse failed, the ACTION line was dropped as
+   "broken", the lines after it were half a JSON object, and nothing usable
+   was left. A reply that had words must never become "nothing":
+     - an ACTION whose JSON runs over several lines is joined back up;
+     - an ACTION whose JSON will not parse is read loosely (type, ref, text
+       pulled out by pattern) before it is given up on;
+     - if every line was an action and none survived, the words are shown
+       as text rather than thrown away. */
 function extractActions(text, truncated) {
   const actions = [];
   const kept = [];
-  String(text || "").split("\n").forEach(function (line) {
-    /* Any line that starts with ACTION: is taken off the text, well-formed or
-       not - a broken action shown to him as prose is just confusing. */
+  const lines = String(text || "").split("\n");
+  let rawActions = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const m = /^\s*ACTION:\s*(.*)$/.exec(line);
-    if (!m) { kept.push(line); return; }
-    if (truncated) return;
-    let a = null;
-    try { a = JSON.parse(m[1]); } catch (e) { a = null; }
-    if (!a || typeof a !== "object") return;
+    if (!m) { kept.push(line); continue; }
+    rawActions++;
+    /* JSON that runs on: keep adding lines until it parses, or until the
+       next ACTION, a blank line, or thirty lines. */
+    let raw = m[1];
+    let a = parseAction(raw);
+    let j = i;
+    while (!a && j + 1 < lines.length && j - i < 30) {
+      const next = lines[j + 1];
+      if (/^\s*ACTION:/.test(next) || !next.trim()) break;
+      j++;
+      raw += "\n" + next;
+      a = parseAction(raw);
+    }
+    if (a) i = j; /* the continuation lines were the action, not prose */
+    if (truncated) continue;
+    if (!a) a = looseAction(raw);
+    if (!a || typeof a !== "object") continue;
     const type = str(a.type);
     const need = ACTION_TYPES[type];
-    if (!need) return;
-    if (!need.every(function (k) { return str(a[k]); })) return;
-    if (type === "tab" && TABS.indexOf(str(a.tab)) === -1) return;
-    if (type === "status" && STATUSES.indexOf(str(a.status)) === -1) return;
+    if (!need) continue;
+    if (!need.every(function (k) { return str(a[k]); })) continue;
+    if (type === "tab" && TABS.indexOf(str(a.tab)) === -1) continue;
+    if (type === "status" && STATUSES.indexOf(str(a.status)) === -1) continue;
     const clean = { type: type };
     Object.keys(a).forEach(function (k) { if (k !== "type") clean[k] = str(a[k]).slice(0, 2000); });
     actions.push(clean);
+  }
+  let out = kept.join("\n").trim();
+  if (!out && !actions.length && rawActions) {
+    /* Everything was an action and none survived: show the words. */
+    out = lines.map(function (l) { return l.replace(/^\s*ACTION:\s*/, ""); }).join("\n").trim();
+  }
+  return { text: out, actions: actions };
+}
+function parseAction(raw) {
+  try { const a = JSON.parse(raw); return a && typeof a === "object" ? a : null; } catch (e) { return null; }
+}
+/* The fields, by pattern, from JSON that is not quite JSON: an unescaped
+   quote in the text, a trailing comma, a missing brace. */
+function looseAction(raw) {
+  const s = String(raw || "");
+  const type = (/"type"\s*:\s*"([a-z_]+)"/i.exec(s) || [])[1];
+  if (!type) return null;
+  const a = { type: type };
+  ["ref", "tab", "status", "customer", "address", "datetime", "reason", "query"].forEach(function (k) {
+    const v = (new RegExp('"' + k + '"\\s*:\\s*"([^"\\n]*)"')).exec(s);
+    if (v) a[k] = v[1];
   });
-  return { text: kept.join("\n").trim(), actions: actions };
+  /* text: from the opening quote after "text": to the last quote before the
+     closing brace (or the end), so quotes inside it are kept as they were. */
+  const t = /"text"\s*:\s*"([\s\S]*)$/.exec(s);
+  if (t) a.text = t[1].replace(/"\s*\}?\s*$/, "").replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
+  return a;
 }
 
 function systemPrompt(context, screen, memory, insights, inboxText) {
@@ -575,6 +626,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "- remember something for later: ACTION: {\"type\":\"remember\",\"text\":\"...\"}",
     "- ADD A FACT FROM AN EMAIL TO AN ESTIMATE: ACTION: {\"type\":\"describe\",\"ref\":\"SBC-...\",\"text\":\"...\"}   - when a customer's email carries something the estimate needs (a measurement, a change of scope, a material, a date, a correction) and he asks you to put it in / update the estimate, write the fact in one or two plain sentences; the dashboard asks him to confirm, adds it to that estimate's customer description, and he presses Re-read the job to price it. Say in one line what you are adding. Never invent a fact; quote the email.",
     "- SEARCH THE INTERNET:          ACTION: {\"type\":\"search\",\"query\":\"...\"}   - use it whenever the answer needs current information from outside this dashboard: today's price of a product or material, a supplier or store, a building code, permit or co-op rule, a company, an address, the weather, anything that changes over time or that you are not sure of. Also whenever he says 'search online', 'check online', 'google it' or 'look it up'. Write the query the way a good search is written (specific, with New York or the borough when it matters). Say in ONE short line that you are checking online - the answer with its sources arrives in this chat in under a minute - and do not guess the answer yourself in the same reply.",
+    "An ACTION line is ONE line of valid JSON: no line breaks inside it, and inside a text value use single quotes, never double quotes. Always write at least one line of words before any ACTION line.",
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "EMAILS WITH THIS CUSTOMER (below, when a job is open) are read from his inbox log, matched by the customer's email address. When he asks about an email from this customer, answer from that list. When the list says there are none, say exactly that - none in the inbox from that address - and never say you cannot see emails.",
