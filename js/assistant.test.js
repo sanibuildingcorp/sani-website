@@ -311,27 +311,35 @@ const THIN = {
       if (DASH[j] === '{') d++;
       else if (DASH[j] === '}') { d--; if (!d) { body = DASH.slice(s, j + 1); break; } }
     }
-    /* Comments stripped first: the code explains the bug in a comment that
-       names res.json(), and a search over the raw body found that and failed. */
-    const code = body.replace(/\/\*[\s\S]*?\*\//g, '');
-    ok('askSend NO LONGER CALLS res.json() — that is what produced "did not match the expected pattern"',
-      code.indexOf('res.json()') === -1 && code.indexOf('await res.text()') !== -1);
+    /* The fetching moved into aiAsk, which both panels share; askSend keeps
+       the truncated note. Comments stripped first: the code explains the bug
+       in a comment that names res.json(), and a search over the raw body
+       found that and failed. */
+    const a = DASH.search(/async function aiAsk\s*\(/);
+    let d2 = 0, ask = '';
+    for (let j = DASH.indexOf('{', a); j < DASH.length; j++) {
+      if (DASH[j] === '{') d2++;
+      else if (DASH[j] === '}') { d2--; if (!d2) { ask = DASH.slice(a, j + 1); break; } }
+    }
+    const code = (body + ask).replace(/\/\*[\s\S]*?\*\//g, '');
+    ok('THE ASSISTANT CALL NO LONGER USES res.json() — that is what produced "did not match the expected pattern"',
+      code.indexOf('res.json()') === -1 && code.indexOf('await res.text()') !== -1 && /await aiAsk\(/.test(body));
     ok('a non-JSON body becomes a sentence with the status code in it',
-      /No answer came back \(HTTP " \+ res\.status/.test(body));
+      /No answer came back \(HTTP " \+ res\.status/.test(ask));
     ok('a truncated reply is shown as truncated, with a way to get the rest',
       /data\.truncated/.test(body) && /continue/.test(body));
 
     /* Run it against a fetch that returns Netlify's dead-function page. */
     const log = {};
     const ctx = {
-      console: { error() {} }, String, JSON, Error, RegExp,
+      console: { error() {} }, String, JSON, Error, RegExp, Object, Math, Date, Array, Promise, setTimeout: (f) => f(),
       currentRecord: { ref: 'R1' }, ASK_LOG: log, sbcKey: () => 'k',
       askRender() {},
       document: { getElementById: (id) => id === 'ask-text' ? { value: 'What should I ask?' } : { textContent: '', disabled: false } },
       fetch: async () => ({ ok: false, status: 502, text: async () => '<html><body>Task timed out</body></html>' }),
     };
     vm.createContext(ctx);
-    vm.runInContext(body, ctx);
+    vm.runInContext(body + '\n' + ask + '\nfunction aiAnswerJobId(){return "A-test01"}', ctx);
     await vm.runInContext('askSend()', ctx);
     const last = (log.R1 || []).slice(-1)[0] || {};
     ok('THE PANEL SHOWS WHAT HAPPENED, NOT SAFARI\'S PATTERN ERROR',

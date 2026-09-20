@@ -3613,30 +3613,12 @@ async function askSend() {
   askRender();
 
   if (btn) { btn.disabled = true; btn.textContent = "Thinking…"; }
-  if (note) note.textContent = "Thinking…";
+  if (note) note.textContent = "Thinking… a long answer can take up to a minute.";
   try {
-    var key = (typeof sbcKey === "function" ? sbcKey() : "");
-    var res = await fetch("/.netlify/functions/assistant", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-sbc-key": key },
-      /* The same snapshot the drawer sends, so the in-record panel sees the
-         rest of the dashboard too and can act on it. */
-      body: JSON.stringify({ ref: ref, chat: ref, messages: ASK_LOG[ref].slice(-30), screen: (typeof aiScreen === "function" ? aiScreen() : null) }),
-    });
-    /* READ AS TEXT FIRST. When Netlify kills the function at 10s (or anything
-       upstream answers with an error page) the body is not JSON, and Safari's
-       res.json() rejects with "The string did not match the expected pattern" -
-       which is what he saw, twice, and could do nothing with. Parse it here and
-       say what actually happened. */
-    var raw = await res.text();
-    var data = null;
-    try { data = JSON.parse(raw); } catch (parseErr) { data = null; }
-    if (!data) {
-      console.error("assistant: non-JSON response", res.status, raw.slice(0, 300));
-      throw new Error("No answer came back (HTTP " + res.status + (/<html/i.test(raw) ? ", a web page instead of a reply" : "") +
-        "). It probably ran out of time. Ask again, or ask something shorter.");
-    }
-    if (!res.ok || !data.reply) throw new Error(data.error || ("Assistant returned " + res.status));
+    /* The same snapshot the drawer sends, so the in-record panel sees the
+       rest of the dashboard too and can act on it. aiAsk runs the answer in
+       the background, so there is no ten-second clock on it. */
+    var data = await aiAsk({ ref: ref, chat: ref, messages: ASK_LOG[ref].slice(-30), screen: (typeof aiScreen === "function" ? aiScreen() : null) });
     ASK_LOG[ref].push({
       role: "assistant",
       text: data.reply + (data.truncated ? "\n\n… (cut short by the time limit — ask \"continue\" for the rest)" : ""),
@@ -3803,17 +3785,7 @@ async function aiSend() {
   aiRender();
   if (btn) { btn.disabled = true; btn.textContent = "Thinking…"; }
   try {
-    var res = await fetch("/.netlify/functions/assistant", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-sbc-key": (typeof sbcKey === "function" ? sbcKey() : "") },
-      body: JSON.stringify({ ref: currentRecord ? String(currentRecord.ref || "") : "", chat: "global", screen: aiScreen(), messages: AI_LOG.slice(-30) }),
-    });
-    /* Text first: a killed function answers with a page, not JSON. */
-    var raw = await res.text();
-    var data = null;
-    try { data = JSON.parse(raw); } catch (parseErr) { data = null; }
-    if (!data) throw new Error("No answer came back (HTTP " + res.status + (/<html/i.test(raw) ? ", a web page instead of a reply" : "") + "). It probably ran out of time. Ask again, or ask something shorter.");
-    if (!res.ok || !data.reply) throw new Error(data.error || ("Assistant returned " + res.status));
+    var data = await aiAsk({ ref: currentRecord ? String(currentRecord.ref || "") : "", chat: "global", screen: aiScreen(), messages: AI_LOG.slice(-30) });
     AI_LOG.push({ role: "assistant", text: data.reply + (data.truncated ? "\n\n… (cut short by the time limit — ask \"continue\" for the rest)" : "") });
     if (Array.isArray(data.actions) && data.actions.length) await aiRunActions(data.actions, AI_LOG, aiRender);
   } catch (e) {
@@ -3822,6 +3794,55 @@ async function aiSend() {
     if (btn) { btn.disabled = false; btn.textContent = "Ask"; }
     aiSave(); aiRender();
   }
+}
+
+/* ── AN ANSWER, WITHOUT THE TEN-SECOND CLOCK ────────────────────────────────
+     "I can only see what's already loaded on this estimate — I
+      ... (cut short by the time limit — ask "continue" for the rest)"
+   The answer used to be a synchronous function cut at 8.8 seconds; a slow
+   round trip to Claude left a sentence and a half. It now runs in
+   assistant-background with a job id (a 202 comes back at once) and this
+   polls the job until the whole answer is written - the way a web search
+   already works. Both panels ask through here.
+
+   READ AS TEXT FIRST. A killed function or an error page is not JSON, and
+   Safari's res.json() reports that as "The string did not match the expected
+   pattern" - which he saw twice and could do nothing with. A reply in the
+   body is a reply (the synchronous function answers that way); anything
+   else that is not an error means "started, collect it". */
+var AI_ANSWER_POLL_MS = 1200, AI_ANSWER_POLLS = 75;
+function aiAnswerJobId() { return "A-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8); }
+async function aiAsk(payload) {
+  var id = aiAnswerJobId();
+  var key = (typeof sbcKey === "function" ? sbcKey() : "");
+  var res = await fetch("/.netlify/functions/assistant-background", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-sbc-key": key },
+    body: JSON.stringify(Object.assign({ job: id }, payload)),
+  });
+  var raw = await res.text();
+  var data = null;
+  try { data = JSON.parse(raw); } catch (parseErr) { data = null; }
+  if (data && data.reply) return data;
+  if (!res.ok && res.status !== 202) {
+    if (!data) {
+      console.error("assistant: non-JSON response", res.status, raw.slice(0, 300));
+      throw new Error("No answer came back (HTTP " + res.status + (/<html/i.test(raw) ? ", a web page instead of a reply" : "") +
+        "). It probably ran out of time. Ask again, or ask something shorter.");
+    }
+    throw new Error(data.error || ("Assistant returned " + res.status));
+  }
+  for (var n = 0; n < AI_ANSWER_POLLS; n++) {
+    await new Promise(function (r) { setTimeout(r, AI_ANSWER_POLL_MS); });
+    var job = null;
+    try {
+      var pr = await fetch("/.netlify/functions/assistant", { method: "POST", headers: { "Content-Type": "application/json", "x-sbc-key": key }, body: JSON.stringify({ action: "job", id: id }) });
+      job = JSON.parse(await pr.text());
+    } catch (e2) { job = null; }
+    if (job && job.status === "done") return { reply: String(job.reply || ""), truncated: job.truncated === true, actions: Array.isArray(job.actions) ? job.actions : [] };
+    if (job && job.status === "error") throw new Error(String(job.error || "the assistant failed"));
+  }
+  throw new Error("The assistant is taking too long. It may still finish: reopen this chat in a minute.");
 }
 
 /* ── THE INTERNET, IN THE BACKGROUND ────────────────────────────────────────

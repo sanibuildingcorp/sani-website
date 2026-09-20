@@ -112,7 +112,10 @@ const call = (body) => fn.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 
 
   fetched = []; sent = null; emailRows = [];
   await call({ ref: 'SBC-1', messages: [{ role: 'user', text: 'hi' }] });
-  ok('no emails -> no section', sent.system.indexOf('EMAILS WITH THIS CUSTOMER') === -1);
+  /* It used to leave the section out. Then he asked "can you find emails he
+     sent me?" and the model answered "I can only see what's loaded on this
+     estimate". Now the section says plainly that the log has none. */
+  ok('no emails -> the section SAYS there are none from that address', /EMAILS WITH THIS CUSTOMER: none in the inbox log from may@example\.com/.test(sent.system), (sent.system.match(/EMAILS WITH THIS CUSTOMER[^\n]*/) || [''])[0]);
 
   slow = true; sent = null;
   const t0 = Date.now();
