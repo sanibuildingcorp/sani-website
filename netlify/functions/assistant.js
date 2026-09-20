@@ -197,7 +197,17 @@ async function answer(body, clocks) {
     .slice(-TURNS_SENT);
   if (!turns.length) throw new Error("Nothing to answer");
 
+  /* ── A PHOTO OR SCREENSHOT WITH THE QUESTION ────────────────────────────
+       "sometimes for updates i can upload screenshots for my AI for
+        understanding what we need to update in estimate after customer
+        requests"
+     Up to three images ride with the question and are shown to the model
+     on its LAST user turn, as image blocks before the text. They are not
+     kept: the saved chat gets a "[📷 photo attached]" mark, the job store
+     gets the answer only. */
+  const images = imagesOf(body.images);
   const lastUser = turns.filter(function (t) { return t.role === "user"; }).slice(-1)[0];
+  if (images.length && lastUser) lastUser.images = images;
   const reads = await Promise.all([
     str(body.ref) ? withTimeout(recordContext(str(body.ref)), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
     withTimeout(loadMemory(), c.memoryMs || MEMORY_MS).catch(function () { return []; }),
@@ -226,11 +236,34 @@ async function answer(body, clocks) {
   const chatKey = chatKeyOf(body.chat);
   if (chatKey) {
     const last = turns[turns.length - 1];
-    await withTimeout(appendChat(chatKey, last.role === "user" ? last.text : "", replyText), c.chatWriteMs || CHAT_WRITE_MS).catch(function () { /* one turn lost, answer kept */ });
+    const mark = last.images ? " [📷 " + last.images.length + " photo" + (last.images.length > 1 ? "s" : "") + " attached]" : "";
+    await withTimeout(appendChat(chatKey, last.role === "user" ? last.text + mark : "", replyText), c.chatWriteMs || CHAT_WRITE_MS).catch(function () { /* one turn lost, answer kept */ });
   }
   return { reply: replyText, truncated: out.truncated === true, actions: toClient };
 }
 exports.answer = answer;
+
+const IMAGE_MAX = 3;
+const IMAGE_CHARS = 2600000; /* ~1.9 MB of image per picture, base64 */
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+/* { data, mediaType } - data as bare base64 or as a data: URL. Anything that
+   is not a picture of a known type, or is too big, is left out. */
+function imagesOf(list) {
+  const out = [];
+  arr(list).slice(0, 10).forEach(function (im) {
+    if (out.length >= IMAGE_MAX || !im || typeof im !== "object") return;
+    let data = str(im.data), type = str(im.mediaType || im.media_type).toLowerCase();
+    const m = /^data:(image\/[a-z]+);base64,(.*)$/is.exec(data);
+    if (m) { type = type || m[1].toLowerCase(); data = m[2]; }
+    if (type === "image/jpg") type = "image/jpeg";
+    if (IMAGE_TYPES.indexOf(type) === -1) return;
+    data = data.replace(/\s+/g, "");
+    if (!data || data.length > IMAGE_CHARS || !/^[A-Za-z0-9+/]+=*$/.test(data)) return;
+    out.push({ data: data, mediaType: type });
+  });
+  return out;
+}
+exports._imagesOf = imagesOf;
 
 function withTimeout(promise, ms) {
   return new Promise(function (resolve, reject) {
@@ -644,6 +677,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "- SEARCH THE INTERNET:          ACTION: {\"type\":\"search\",\"query\":\"...\"}   - use it whenever the answer needs current information from outside this dashboard: today's price of a product or material, a supplier or store, a building code, permit or co-op rule, a company, an address, the weather, anything that changes over time or that you are not sure of. Also whenever he says 'search online', 'check online', 'google it' or 'look it up'. Write the query the way a good search is written (specific, with New York or the borough when it matters). Say in ONE short line that you are checking online - the answer with its sources arrives in this chat in under a minute - and do not guess the answer yourself in the same reply.",
     "An ACTION line is ONE line of valid JSON: no line breaks inside it, and inside a text value use single quotes, never double quotes (for a reword, copy the quotes the estimate uses - 24\" - as \\\"). Always write at least one line of words before any ACTION line.",
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
+    "A PHOTO OR SCREENSHOT may come with his question: a screenshot of a customer's text message or email, a product page, a plan, a photo of the site or of the work. Read it like any other fact - say what it shows or what it says, quote the words in it - and use it for describe or reword when he asks. If it is unreadable or does not show what he says, say so.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "EMAILS WITH THIS CUSTOMER (below, when a job is open) are read from his inbox log, matched by the customer's email address. When he asks about an email from this customer, answer from that list. When the list says there are none, say exactly that - none in the inbox from that address - and never say you cannot see emails.",
     "THE INBOX (below) is his whole info@ mailbox as of the last 15 minutes: every inbound email, one line each, newest first, with the estimate it is about when one could be matched (by ref, by address, or by the sender's name). The FULL TEXT of the emails about the open job and of the ones that match his question is given under it. Answer 'what did X write', 'did anyone email about Y', 'what does the manager need' from there, naming who wrote, when, and what. An email marked 'not a customer we know' may be a new lead, a building manager, a supplier - say so. If what he wants is not in the lines or the full texts shown, say which email you would need opened rather than guessing. Use the emails to pull requirements into an estimate with the describe action when he asks.",
@@ -690,7 +724,10 @@ function callClaude(apiKey, system, turns, deadline, maxTokens) {
        what is in front of it; the budget is for the answer. */
     thinking: { type: "disabled" },
     system: system,
-    messages: turns.map(function (t) { return { role: t.role, content: t.text }; }),
+    messages: turns.map(function (t) {
+      if (!Array.isArray(t.images) || !t.images.length) return { role: t.role, content: t.text };
+      return { role: t.role, content: t.images.map(function (im) { return { type: "image", source: { type: "base64", media_type: im.mediaType, data: im.data } }; }).concat([{ type: "text", text: t.text }]) };
+    }),
   });
 
   return new Promise(function (resolve, reject) {

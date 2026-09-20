@@ -1338,6 +1338,17 @@ body {
 .ask-send .btn-primary{flex:0 0 auto;padding:9px 16px;font-size:13px}
 .ask-note{font-size:11px;color:var(--ink-muted);padding:8px 13px 12px;line-height:1.45}
 @media(max-width:600px){.ask-send{flex-direction:column;align-items:stretch}.ask-send .btn-primary{width:100%}}
+/* A photo or screenshot with the question */
+.ask-attach{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:40px;height:38px;border:1px solid var(--line);border-radius:9px;background:#fff;cursor:pointer;font-size:18px}
+.ask-attach input{display:none}
+.ask-photos{display:flex;flex-wrap:wrap;gap:6px;padding:8px 13px 0}
+.ask-photos:empty{display:none}
+.ask-photos .ph{position:relative;width:58px;height:58px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#f4f6f9}
+.ask-photos .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ask-photos .ph b{position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:#0b1828;color:#fff;font-size:12px;line-height:20px;text-align:center;cursor:pointer}
+.ask-pics{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.ask-pics img{width:72px;height:72px;object-fit:cover;border-radius:7px;border:1px solid rgba(0,0,0,.12)}
+.ask-pics .n{font-size:11px;color:var(--ink-muted)}
 /* ── The assistant drawer, on every page ──────────────────────────────── */
 .ai-overlay{display:none;position:fixed;inset:0;background:rgba(3,9,18,.45);z-index:99980}
 .ai-overlay.show{display:block}
@@ -2772,7 +2783,9 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
     <button type="button" class="ask-chip" onclick="aiQuick('What does my history say? Which kinds of jobs get accepted, at what prices, how many days to accept and to finish. Short, with refs.')">My history</button>
   </div>
   <div class="ask-log" id="ai-log"></div>
+  <div class="ask-photos" id="ai-photos"></div>
   <div class="ask-send">
+    <label class="ask-attach" title="Attach a photo or screenshot">📷<input type="file" accept="image/*" multiple onchange="aiPickPhotos('ai', event)"></label>
     <textarea id="ai-text" rows="2" maxlength="2000" placeholder="Ask, or tell me what to do…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiSend();}"></textarea>
     <button type="button" class="btn-primary" id="ai-btn-send" onclick="aiSend()">Ask</button>
   </div>
@@ -3555,7 +3568,9 @@ function askPanelHtml(r) {
         '<button type="button" class="ask-chip" onclick="askQuick(\'What could go wrong on this job that I should look for at the site visit?\')">What could go wrong?</button>' +
       '</div>' +
       '<div class="ask-log" id="ask-log">' + (log.length ? log.map(askBubble).join("") : '<div class="ask-empty">Nothing asked yet.</div>') + '</div>' +
+      '<div class="ask-photos" id="ask-photos">' + aiPhotoThumbs("ask") + '</div>' +
       '<div class="ask-send">' +
+        '<label class="ask-attach" title="Attach a photo or screenshot">\u{1F4F7}<input type="file" accept="image/*" multiple onchange="aiPickPhotos(\'ask\', event)"></label>' +
         '<textarea id="ask-text" rows="2" maxlength="2000" placeholder="Ask anything…"></textarea>' +
         '<button type="button" class="btn-primary" id="ask-btn" onclick="askSend()">Ask</button>' +
       '</div>' +
@@ -3575,9 +3590,71 @@ function aiLinkify(text) {
     return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>' + tail;
   });
 }
+/* ── A PHOTO OR SCREENSHOT WITH THE QUESTION ────────────────────────────
+     "sometimes for updates i can upload screenshots for my AI for
+      understanding what we need to update in estimate after customer
+      requests"
+   Picked pictures are shrunk on the phone (a 6 MB camera shot becomes a
+   few hundred KB), shown as thumbnails under the box, and travel with the
+   next question only. Both panels share this; each has its own list. */
+var AI_PHOTOS = { ask: [], ai: [] };
+var AI_PHOTO_MAX = 3;
+function aiShrink(file) {
+  return new Promise(function (resolve, reject) {
+    var reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = function (ev) {
+      var img = new Image();
+      img.onerror = reject;
+      img.onload = function () {
+        var w = img.width, h = img.height, MAX = 1400;
+        if (w > MAX) { h = Math.round(h * (MAX / w)); w = MAX; }
+        if (h > MAX) { w = Math.round(w * (MAX / h)); h = MAX; }
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+async function aiPickPhotos(which, ev) {
+  var list = AI_PHOTOS[which] || (AI_PHOTOS[which] = []);
+  var files = Array.from((ev && ev.target && ev.target.files) || []).slice(0, AI_PHOTO_MAX - list.length);
+  for (var i = 0; i < files.length; i++) {
+    try { list.push({ name: files[i].name || "photo", data: await aiShrink(files[i]) }); }
+    catch (e) { toast("Could not read " + (files[i].name || "that file"), true); }
+  }
+  try { ev.target.value = ""; } catch (e) {}
+  aiPhotoPreview(which);
+}
+function aiRemovePhoto(which, i) { (AI_PHOTOS[which] || []).splice(i, 1); aiPhotoPreview(which); }
+function aiPhotoThumbs(which) {
+  return (AI_PHOTOS[which] || []).map(function (p, i) {
+    return '<div class="ph"><img src="' + p.data + '" alt=""><b onclick="aiRemovePhoto(\'' + which + '\',' + i + ')">×</b></div>';
+  }).join("");
+}
+function aiPhotoPreview(which) {
+  var el = document.getElementById(which === "ai" ? "ai-photos" : "ask-photos");
+  if (el) el.innerHTML = aiPhotoThumbs(which);
+}
+/* What travels with the question, and what the bubble keeps. */
+function aiTakePhotos(which) {
+  var list = (AI_PHOTOS[which] || []).slice();
+  AI_PHOTOS[which] = [];
+  aiPhotoPreview(which);
+  return list;
+}
+function aiPicsHtml(m) {
+  if (Array.isArray(m.photos) && m.photos.length) return '<div class="ask-pics">' + m.photos.map(function (p) { return '<img src="' + p.data + '" alt="">'; }).join("") + '</div>';
+  if (m.photoCount) return '<div class="ask-pics"><span class="n">\u{1F4F7} ' + m.photoCount + ' photo' + (m.photoCount > 1 ? 's' : '') + ' attached</span></div>';
+  return "";
+}
 function askBubble(m, i) {
   var mine = m.role !== "assistant";
   return '<div class="ask-msg ' + (mine ? "ask-me" : "ask-ai") + '">' +
+      (mine ? aiPicsHtml(m) : "") +
       '<div class="ask-body">' + (mine ? esc(m.text) : aiLinkify(m.text)) + '</div>' +
       (mine ? "" :
         '<button type="button" class="ask-copy" onclick="askCopyToCustomer(' + i + ')">→ Copy to customer message</button>') +
@@ -3605,10 +3682,12 @@ async function askSend() {
   var btn = document.getElementById("ask-btn");
   var note = document.getElementById("ask-note");
   var text = box ? String(box.value || "").trim() : "";
-  if (!text) return;
+  var photos = (AI_PHOTOS.ask || []).length ? aiTakePhotos("ask") : [];
+  if (!text && !photos.length) return;
+  if (!text) text = photos.length > 1 ? "Look at these photos." : "Look at this photo.";
 
   if (!ASK_LOG[ref]) ASK_LOG[ref] = [];
-  ASK_LOG[ref].push({ role: "user", text: text });
+  ASK_LOG[ref].push({ role: "user", text: text, photos: photos.length ? photos : undefined });
   if (box) box.value = "";
   askRender();
 
@@ -3617,8 +3696,10 @@ async function askSend() {
   try {
     /* The same snapshot the drawer sends, so the in-record panel sees the
        rest of the dashboard too and can act on it. aiAsk runs the answer in
-       the background, so there is no ten-second clock on it. */
-    var data = await aiAsk({ ref: ref, chat: ref, messages: ASK_LOG[ref].slice(-30), screen: (typeof aiScreen === "function" ? aiScreen() : null) });
+       the background, so there is no ten-second clock on it. The photos go
+       with THIS question only; the log keeps the thumbnails, not the bytes
+       sent again. */
+    var data = await aiAsk({ ref: ref, chat: ref, messages: ASK_LOG[ref].slice(-30).map(aiTurn), images: photos.map(function (p) { return { data: p.data }; }), screen: (typeof aiScreen === "function" ? aiScreen() : null) });
     ASK_LOG[ref].push({
       role: "assistant",
       text: data.reply + (data.truncated ? "\n\n… (cut short by the time limit — ask \"continue\" for the rest)" : ""),
@@ -3667,7 +3748,18 @@ function askCopyToCustomer(i) {
    customer: a draft lands in the reply box and he presses Send. */
 var AI_LOG = (function () { try { return JSON.parse(sessionStorage.getItem("sbc-ai-log") || "[]"); } catch (e) { return []; } })();
 var AI_LOADED = false;
-function aiSave() { try { sessionStorage.setItem("sbc-ai-log", JSON.stringify(AI_LOG.slice(-200))); } catch (e) {} }
+/* Saved without the picture bytes - sessionStorage is small - only how many
+   there were, so the bubble can still say a photo was there. */
+function aiSave() {
+  try {
+    sessionStorage.setItem("sbc-ai-log", JSON.stringify(AI_LOG.slice(-200).map(function (m) {
+      if (!m || !Array.isArray(m.photos) || !m.photos.length) return m;
+      var c = {}; for (var k in m) { if (k !== "photos") c[k] = m[k]; }
+      c.photoCount = m.photos.length;
+      return c;
+    })));
+  } catch (e) {}
+}
 
 /* ── SAVED ON THE SERVER ──────────────────────────────────────────────────
      "let's each estimate has own AI assistant with own history, and use main
@@ -3708,6 +3800,7 @@ function aiClose() {
 function aiBubble(m, i) {
   var mine = m.role !== "assistant";
   return '<div class="ask-msg ' + (mine ? "ask-me" : "ask-ai") + '">' +
+      (mine ? aiPicsHtml(m) : "") +
       '<div class="ask-body">' + (mine ? esc(m.text) : aiLinkify(m.text)) + '</div>' +
       (!mine && currentRecord ? '<button type="button" class="ask-copy" onclick="aiCopyToCustomer(' + i + ')">→ Copy to customer message</button>' : '') +
     '</div>';
@@ -3776,16 +3869,21 @@ function aiScreen() {
   return s;
 }
 
+/* A turn as the server wants it: role and text only - never the photo bytes
+   of an earlier question. */
+function aiTurn(m) { return { role: m.role, text: m.text }; }
 async function aiSend() {
   var box = document.getElementById("ai-text"), btn = document.getElementById("ai-btn-send");
   var text = box ? String(box.value || "").trim() : "";
-  if (!text) return;
-  AI_LOG.push({ role: "user", text: text });
+  var photos = (AI_PHOTOS.ai || []).length ? aiTakePhotos("ai") : [];
+  if (!text && !photos.length) return;
+  if (!text) text = photos.length > 1 ? "Look at these photos." : "Look at this photo.";
+  AI_LOG.push({ role: "user", text: text, photos: photos.length ? photos : undefined });
   if (box) box.value = "";
   aiRender();
   if (btn) { btn.disabled = true; btn.textContent = "Thinking…"; }
   try {
-    var data = await aiAsk({ ref: currentRecord ? String(currentRecord.ref || "") : "", chat: "global", screen: aiScreen(), messages: AI_LOG.slice(-30) });
+    var data = await aiAsk({ ref: currentRecord ? String(currentRecord.ref || "") : "", chat: "global", screen: aiScreen(), messages: AI_LOG.slice(-30).map(aiTurn), images: photos.map(function (p) { return { data: p.data }; }) });
     AI_LOG.push({ role: "assistant", text: data.reply + (data.truncated ? "\n\n… (cut short by the time limit — ask \"continue\" for the rest)" : "") });
     if (Array.isArray(data.actions) && data.actions.length) await aiRunActions(data.actions, AI_LOG, aiRender);
   } catch (e) {
