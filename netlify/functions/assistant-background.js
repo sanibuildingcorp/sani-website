@@ -23,6 +23,9 @@ const assistant = require("./assistant");
 /* Generous, not infinite: a hung socket must still end. */
 const ANSWER_MS = 90000;
 const RECORD_MS = 6000, MEMORY_MS = 5000, CHAT_WRITE_MS = 4000;
+/* No clock here, so the answer may be longer than the sync function's 800
+   tokens: a reword action copying six lines exactly is not short. */
+const MAX_TOKENS = 1600;
 
 function str(v) { return String(v == null ? "" : v).trim(); }
 function jobStore() {
@@ -43,7 +46,7 @@ exports.handler = async function (event) {
   const jobs = jobStore();
   await jobs.set(id, JSON.stringify({ status: "running", kind: "answer", at: new Date().toISOString() }));
   try {
-    const out = await assistant.answer(body, { deadline: Date.now() + ANSWER_MS, recordMs: RECORD_MS, memoryMs: MEMORY_MS, chatWriteMs: CHAT_WRITE_MS });
+    const out = await assistant.answer(body, { deadline: Date.now() + ANSWER_MS, recordMs: RECORD_MS, memoryMs: MEMORY_MS, chatWriteMs: CHAT_WRITE_MS, maxTokens: MAX_TOKENS });
     await jobs.set(id, JSON.stringify({ status: "done", kind: "answer", reply: out.reply, truncated: out.truncated === true, actions: out.actions, at: new Date().toISOString() }));
     return { statusCode: 200, headers: cors(), body: JSON.stringify({ ok: true, job: id }) };
   } catch (e) {

@@ -211,9 +211,9 @@ async function answer(body, clocks) {
   const screen = screenContext(body.screen);
 
   const deadline = c.deadline || (Date.now() + budgetMs);
-  const out = await callClaude(apiKey, systemPrompt(context, screen, memory, insights, inboxText), turns, deadline);
+  const out = await callClaude(apiKey, systemPrompt(context, screen, memory, insights, inboxText), turns, deadline, c.maxTokens);
   const parsed = extractActions(out.text, out.truncated === true);
-  if (!parsed.text && !parsed.actions.length) throw new Error("The assistant returned nothing. Try again.");
+  if (!parsed.text && !parsed.actions.length) throw new Error("The assistant's answer had no words in it (" + out.text.length + " chars, stop: " + (out.stopReason || "none") + "). Try again.");
 
   /* "remember" is the one action that lives here. Everything else is the
      dashboard's to do, with its own functions and its own confirm. */
@@ -677,10 +677,10 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
    - At the deadline the socket is dropped and whatever has arrived is returned
      with truncated:true. If nothing has arrived yet, that is a real timeout.
    - A non-2xx status means the body is a JSON error, not a stream. */
-function callClaude(apiKey, system, turns, deadline) {
+function callClaude(apiKey, system, turns, deadline, maxTokens) {
   const payload = JSON.stringify({
     model: MODEL,
-    max_tokens: MAX_TOKENS,
+    max_tokens: maxTokens || MAX_TOKENS,
     stream: true,
     system: system,
     messages: turns.map(function (t) { return { role: t.role, content: t.text }; }),
@@ -688,6 +688,13 @@ function callClaude(apiKey, system, turns, deadline) {
 
   return new Promise(function (resolve, reject) {
     let text = "", done = false, timer = null, pending = "";
+    /* ══ WHEN NOTHING COMES BACK, SAY WHAT DID ═══════════════════════════
+       "The assistant returned nothing. Try again." tells nobody anything.
+       The stream is watched: which events came, what the stop reason was,
+       and the first bytes of it - and an empty answer says so, so the next
+       screenshot names the cause instead of the symptom. */
+    const seen = {};
+    let stopReason = "", rawHead = "";
     const finish = function (truncated) {
       if (done) return;
       done = true;
@@ -695,7 +702,14 @@ function callClaude(apiKey, system, turns, deadline) {
       if (!text.trim() && truncated) {
         return reject(new Error("The assistant took too long. Ask again, or ask something shorter."));
       }
-      resolve({ text: text.trim(), truncated: truncated === true });
+      if (!text.trim()) {
+        const events = Object.keys(seen).map(function (k) { return k + (seen[k] > 1 ? "×" + seen[k] : ""); }).join(", ");
+        console.error("assistant: empty stream", { stopReason: stopReason, events: events, head: rawHead.slice(0, 400) });
+        if (stopReason === "refusal") return reject(new Error("The assistant declined to answer that one. Say it another way."));
+        if (stopReason === "max_tokens") return reject(new Error("The assistant ran out of room before writing anything. Ask for less at once."));
+        return reject(new Error("The assistant returned nothing (stop: " + (stopReason || "none") + "; stream: " + (events || "no events") + "). Try again."));
+      }
+      resolve({ text: text.trim(), truncated: truncated === true, stopReason: stopReason });
     };
     const fail = function (err) {
       if (done) return;
@@ -724,13 +738,17 @@ function callClaude(apiKey, system, turns, deadline) {
         res.on("data", function (c) {
           if (errorStatus) { chunks.push(c); return; }
           pending += c.toString("utf8");
+          if (rawHead.length < 400) rawHead += c.toString("utf8").slice(0, 400 - rawHead.length);
           /* SSE: frames are separated by a blank line; each has "data: {json}". */
           let cut;
           while ((cut = pending.indexOf("\n\n")) !== -1) {
             const frame = pending.slice(0, cut);
             pending = pending.slice(cut + 2);
             const ev = parseFrame(frame);
-            if (!ev) continue;
+            if (!ev) { seen["unparsed"] = (seen["unparsed"] || 0) + 1; continue; }
+            const kind = String(ev.type || "?") + (ev.content_block && ev.content_block.type ? "[" + ev.content_block.type + "]" : "") + (ev.delta && ev.delta.type ? "[" + ev.delta.type + "]" : "");
+            seen[kind] = (seen[kind] || 0) + 1;
+            if (ev.type === "message_delta" && ev.delta && ev.delta.stop_reason) stopReason = String(ev.delta.stop_reason);
             if (ev.type === "content_block_delta" && ev.delta && ev.delta.type === "text_delta") {
               /* Appended raw. A delta is often a single space or newline, and a
                  trim here glues words together. */
