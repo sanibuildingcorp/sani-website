@@ -8037,6 +8037,10 @@ async function toggleInvoicePaid(invoiceNumber, makePaid) {
 function scopeLinkUrl() {
   return "https://www.sanibuildingcorp.com/quote.html?ref=" + encodeURIComponent(currentRecord.ref) + "&sow=1";
 }
+/* The same scope as a PDF file, made on the server (scope-pdf.js). */
+function scopePdfUrl() {
+  return "https://www.sanibuildingcorp.com/.netlify/functions/scope-pdf?ref=" + encodeURIComponent(currentRecord.ref);
+}
 function copyScopeLink() {
   if (!currentRecord || !currentRecord.ref) { toast("Open an estimate first", true); return; }
   var url = scopeLinkUrl();
@@ -8053,6 +8057,7 @@ function copyScopeLink() {
       '<input type="text" readonly value="' + esc(url) + '" onclick="this.select()" style="width:100%;padding:10px 12px;font-size:13px;border:1.5px solid var(--line,#d9dee6);border-radius:10px;box-sizing:border-box;color:#0d1b2a;background:#f7f8fa">' +
       '<div style="display:flex;gap:10px;margin-top:12px">' +
         '<button type="button" class="btn-secondary" style="flex:1" onclick="window.open(scopeLinkUrl(), \'_blank\')">👁 Open</button>' +
+        '<button type="button" class="btn-secondary" style="flex:1" onclick="window.open(scopePdfUrl(), \'_blank\')">⬇ PDF</button>' +
         '<button type="button" class="btn-secondary" style="flex:1" onclick="scopeLinkCopy()">📋 Copy link</button>' +
       '</div>' +
       '<div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#5a6577;margin:18px 0 6px">Send by email</div>' +

@@ -66,6 +66,7 @@ exports.handler = async function (event) {
 
     const siteUrl = process.env.SITE_URL || "https://www.sanibuildingcorp.com";
     const url = siteUrl + "/quote.html?ref=" + encodeURIComponent(ref) + "&sow=1";
+    const pdfUrl = siteUrl + "/.netlify/functions/scope-pdf?ref=" + encodeURIComponent(ref);
     const projectTitle = String(est.projectTitle || reqData.service || "the project").trim();
     const address = String(record.projectAddress || customer.address || "").trim();
     /* The title usually carries the address already ("Apartment Renovation —
@@ -78,7 +79,8 @@ exports.handler = async function (event) {
       "Here is the scope of work for " + projectTitle + where + ", prepared by Sani Building Corp.\n\n" +
       "It lists the work to be performed, what is and is not included, and the timeline. It contains no pricing.\n\n" +
       "View the scope of work:\n" + url + "\n\n" +
-      "The page can be printed or saved as a PDF. If you have any questions about the work, reply to this email or call/text me at (332) 277-0990.\n\n" +
+      "Download it as a PDF:\n" + pdfUrl + "\n\n" +
+      "If you have any questions about the work, reply to this email or call/text me at (332) 277-0990.\n\n" +
       "Best,\nZurabi\nSani Building Corp\nBrooklyn, NY · Fully insured\nwww.sanibuildingcorp.com";
 
     const html = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
@@ -92,8 +94,9 @@ exports.handler = async function (event) {
       "<p style=\"font-size:15px;margin:0 0 18px;color:#333\">Here is the scope of work for <strong>" + esc(projectTitle) + "</strong>" + esc(where) + ", prepared by Sani Building Corp.</p>" +
       "<p style=\"font-size:14.5px;margin:0 0 22px;color:#333\">It lists the work to be performed, what is and is not included, and the timeline. <strong>It contains no pricing.</strong></p>" +
       "<div style=\"text-align:center;margin:0 0 22px\"><a href=\"" + esc(url) + "\" style=\"display:inline-block;background:#1f7a52;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 34px;border-radius:9px\">View the scope of work &rarr;</a></div>" +
-      "<p style=\"font-size:13px;color:#777;text-align:center;margin:0 0 22px;word-break:break-all\">" + esc(url) + "</p>" +
-      "<p style=\"font-size:14.5px;margin:0 0 18px;color:#333\">The page can be printed or saved as a PDF. If you have any questions about the work, reply to this email or call/text me at <a href=\"tel:+13322770990\" style=\"color:#0a1628;font-weight:bold\">(332) 277-0990</a>.</p>" +
+      "<p style=\"font-size:13px;color:#777;text-align:center;margin:0 0 18px;word-break:break-all\">" + esc(url) + "</p>" +
+      "<div style=\"text-align:center;margin:0 0 22px\"><a href=\"" + esc(pdfUrl) + "\" style=\"display:inline-block;background:#ffffff;color:#0a1628;border:1.5px solid #0a1628;text-decoration:none;font-size:14px;font-weight:bold;padding:12px 28px;border-radius:9px\">&#11015; Download as PDF</a></div>" +
+      "<p style=\"font-size:14.5px;margin:0 0 18px;color:#333\">If you have any questions about the work, reply to this email or call/text me at <a href=\"tel:+13322770990\" style=\"color:#0a1628;font-weight:bold\">(332) 277-0990</a>.</p>" +
       "<p style=\"font-size:15px;margin:22px 0 2px;color:#0a1628\">Best,<br><strong>Zurabi</strong></p></div>" +
       "<div style=\"text-align:center;padding:20px 16px;font-size:12px;color:#8a8a8a;line-height:1.7\"><strong style=\"color:#555\">Sani Building Corp</strong> &middot; Brooklyn, NY<br>Fully insured<br><a href=\"https://www.sanibuildingcorp.com\" style=\"color:#8a8a8a\">www.sanibuildingcorp.com</a></div>" +
       "</div></body></html>";

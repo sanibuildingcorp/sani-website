@@ -604,7 +604,10 @@ function statusCell(hasPrice,approved,e){
  if(hasPrice)return`<div><small>Status</small>${E(approved?'Approved':(e.estimateStatus||'Ready'))}</div>`;
  return`<div><small>Status</small>Waiting on your answers</div>`}
 function sowFoot(){
- return`<section class="card"><div class="ey">About this document</div><p style="margin:0 0 14px">This page shows the scope of work for the project above. No pricing is included. Prepared by Sani Building Corp, fully insured · (332) 277-0990 · contact@sanibuildingcorp.com</p><button type="button" class="attach-btn printbtn" onclick="printQuote(this)">🖨 Print / save as PDF</button></section>`}
+ /* The PDF is made on the server from the same scope-only record, so it can
+    be saved from inside any app - the Gmail app's browser cannot print, but
+    it can open and share a file. */
+ return`<section class="card"><div class="ey">About this document</div><p style="margin:0 0 14px">This page shows the scope of work for the project above. No pricing is included. Prepared by Sani Building Corp, fully insured · (332) 277-0990 · contact@sanibuildingcorp.com</p><div class="attach-row" style="margin:0"><a class="attach-btn printbtn" style="text-decoration:none;background:#1f7a52;color:#fff;border-color:#1f7a52;font-weight:600" href="/.netlify/functions/scope-pdf?ref=${encodeURIComponent(ref)}" download="Scope-of-Work-${E(ref)}.pdf">⬇ Download PDF</a><button type="button" class="attach-btn printbtn" onclick="printQuote(this)">🖨 Print</button></div></section>`}
 function sowBanner(){
  if(!SOW||document.getElementById('sowbar'))return;
  const b=document.createElement('div');b.id='sowbar';
