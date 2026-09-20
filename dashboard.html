@@ -3971,6 +3971,33 @@ async function aiExec(a, log, render) {
     toast("Added to the customer description of " + dref);
     return "Added to " + dref + "'s customer description. Open it and press Re-read the job from scratch to price it.";
   }
+  if (t === "reword") {
+    /* ── THE WORDS OF AN ESTIMATE, NEVER THE NUMBERS ────────────────────
+         "Can you upgrade them in estimate without touching prices?"
+       Each edit is shown as before / after and he confirms once. The server
+       (reword-estimate, lib/reword.js) keeps every price, quantity and
+       total exactly as they are and refuses anything that would move one. */
+    var wref = String(a.ref || "");
+    var edits = Array.isArray(a.edits) ? a.edits : [];
+    if (!edits.length) return "";
+    var wrow = estimates.find(function (e) { return e.ref === wref; });
+    var wrec = currentRecord && currentRecord.ref === wref ? currentRecord : null;
+    if (!wrow && !wrec) return "I don't see " + wref + " in the list.";
+    var shown = edits.map(function (e) {
+      return "• " + String(e.where || "") + (e.service ? " (" + e.service + ")" : "") + ":\n   " + (e.from ? e.from : "(add)") + "\n   → " + (e.to ? e.to : "(remove)");
+    });
+    if (!confirm("Change the wording of " + wref + "?\nPrices, quantities and totals stay exactly as they are.\n\n" + shown.join("\n\n"))) return "OK, nothing changed.";
+    var rw = await sbcFetch("/.netlify/functions/reword-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: wref, edits: edits }) });
+    var dw = await rw.json().catch(function () { return {}; });
+    if (!rw.ok) throw new Error(dw.error || "Failed");
+    if (!dw.success) return "Nothing changed - " + (dw.error || "no line matched the wording I had.");
+    if (wrec && dw.estimate) { wrec.estimate = dw.estimate; if (typeof renderEdit === "function") renderEdit(); }
+    toast("Wording updated on " + wref + " — prices untouched");
+    var wasSent = !!((wrec && (wrec.sentVersion || wrec.sentAt)) || (wrow && wrow.sentAt));
+    return "Changed " + dw.applied.length + " line" + (dw.applied.length === 1 ? "" : "s") + " on " + wref + "; every price and total is as it was." +
+      (dw.skipped && dw.skipped.length ? " Not found: " + dw.skipped.map(function (s) { return s.from || s.to; }).join("; ") + "." : "") +
+      (wasSent ? " The customer still sees the sent version until you send an update." : "");
+  }
   if (t === "draft") {
     var box = document.getElementById("cnv-text");
     if (!box) return "Open the estimate first, then ask me for the draft again.";
