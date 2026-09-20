@@ -3943,6 +3943,34 @@ async function aiExec(a, log, render) {
     renderTabs(); if (activeTab === "visits") renderList();
     return "Visit added for " + v.customer + (dv.gcal && dv.gcal.status === "ok" ? ", and it is in your Google Calendar." : ".");
   }
+  if (t === "describe") {
+    /* ── A FACT FROM AN EMAIL, INTO THE ESTIMATE ─────────────────────────
+         "AI can pull out any necessary information need for better estimate
+          or update in estimate after customer request by email"
+       Appended to the customer description - the text the generator reads -
+       through update-customer, after he confirms. Nothing is priced here:
+       he presses Re-read the job / Regenerate for that. */
+    var dref = String(a.ref || "");
+    var fact = String(a.text || "").trim();
+    if (!fact) return "";
+    var row = estimates.find(function (e) { return e.ref === dref; });
+    var rec = currentRecord && currentRecord.ref === dref ? currentRecord : null;
+    if (!row && !rec) return "I don't see " + dref + " in the list.";
+    var cust = (rec && rec.customer) || (row && row.customer) || {};
+    var oldDesc = String((rec && rec.request && rec.request.description) || "");
+    if (!rec) {
+      try { var rr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(dref)); var rj = await rr.json(); if (rr.ok && rj) { cust = rj.customer || cust; oldDesc = String((rj.request && rj.request.description) || ""); } } catch (e0) { /* the fact still goes on */ }
+    }
+    if (!confirm("Add this to the customer description of " + dref + " (" + (cust.name || "") + ")?\n\n" + fact + "\n\nThen press Re-read the job to price it.")) return "OK, not added.";
+    var stamp = "[From email, " + new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }) + "] ";
+    var newDesc = (oldDesc ? oldDesc.replace(/\s*$/, "") + "\n\n" : "") + stamp + fact;
+    var ru = await sbcFetch("/.netlify/functions/update-customer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: dref, customer: { name: cust.name || "", email: cust.email || "", phone: cust.phone || "", address: cust.address || "" }, description: newDesc }) });
+    var du = await ru.json().catch(function () { return {}; });
+    if (!ru.ok) throw new Error(du.error || "Save failed");
+    if (rec) { rec.request = rec.request || {}; rec.request.description = du.description !== undefined ? du.description : newDesc; if (typeof renderEdit === "function") renderEdit(); }
+    toast("Added to the customer description of " + dref);
+    return "Added to " + dref + "'s customer description. Open it and press Re-read the job from scratch to price it.";
+  }
   if (t === "draft") {
     var box = document.getElementById("cnv-text");
     if (!box) return "Open the estimate first, then ask me for the draft again.";
@@ -9338,6 +9366,20 @@ window.addEventListener('load', function() {
     }
   }
 });
+/* ?ref=SBC-… opens that estimate once the list is in - the alert emails
+   from the assistant link here. Polled, because the list loads after login. */
+(function () {
+  var m = /[?&]ref=(SBC-[A-Za-z0-9-]+)/.exec(location.search || "");
+  if (!m) return;
+  var want = m[1].toUpperCase(), tries = 0;
+  var t = setInterval(function () {
+    tries++;
+    if (typeof estimates !== "undefined" && Array.isArray(estimates) && estimates.some(function (e) { return e && e.ref === want; })) {
+      clearInterval(t);
+      if (typeof openEdit === "function" && !(currentRecord && currentRecord.ref === want)) openEdit(want);
+    } else if (tries > 60) clearInterval(t);
+  }, 500);
+})();
 </script>
 
 <!-- An orphaned fragment of an older mobile drawer used to sit here: a
@@ -10531,7 +10573,8 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     }
     var btn = document.getElementById('sbc-ec-save');
     btn.disabled = true; btn.textContent = 'Saving…';
-    fetch('/.netlify/functions/update-customer', {
+    /* sbcFetch: update-customer is gated on the dashboard key now. */
+    sbcFetch('/.netlify/functions/update-customer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ref: r.ref, customer: customer, description: description, serviceAnswers: serviceAnswers })

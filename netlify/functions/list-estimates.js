@@ -15,6 +15,7 @@
 const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
+const thread = require("./lib/thread");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -70,6 +71,9 @@ exports.handler = async function (event) {
       /* When the job was finished - the list badge and the assistant read it. */
       completedAt: e.estimate?.completedAt || null,
       completedOn: e.estimate?.completedOn || null,
+      /* Who spoke last - the morning action list and the alerts read it. */
+      needsReply: thread.needsReply(e),
+      lastCustomerMessageAt: e.lastCustomerMessageAt || null,
       unpaidTotal: (e.invoices || [])
         .filter((inv) => inv.status !== "paid")
         .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0),

@@ -2,9 +2,15 @@
 // Updates customer contact info (name / email / phone / address) on an estimate record.
 // Also accepts an optional `description` to correct/expand the customer's job
 // description (saved to record.request.description).
-// Used by the dashboard's "Edit Customer Info" panel.
+// Used by the dashboard's "Edit Customer Info" panel, and by the assistant's
+// "describe" action (a fact from an email added to the description).
+//
+// CONTRACTOR ONLY. POST with header  x-sbc-key: <DASHBOARD_KEY>.
+// It rewrites a customer's name, address, phone and email on any estimate;
+// it had no gate.
 
 const { getStore } = require("@netlify/blobs");
+const { requireDashboardKey } = require("./lib/require-dashboard-key");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -13,6 +19,8 @@ exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
   }
+  const denied = requireDashboardKey(event, cors());
+  if (denied) return denied;
 
   try {
     const { ref, customer, description, serviceAnswers } = JSON.parse(event.body || "{}");
@@ -63,7 +71,7 @@ exports.handler = async function (event) {
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
   };
