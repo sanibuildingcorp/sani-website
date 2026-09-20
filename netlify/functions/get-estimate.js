@@ -13,6 +13,7 @@
 const { getStore } = require("@netlify/blobs");
 const thread = require("./lib/thread");
 const { applySentVersion } = require("./lib/sent-version");
+const { stripUnoffered } = require("./lib/offered-options");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -52,6 +53,16 @@ exports.handler = async function (event) {
          an unpublished draft: freezing that would show him the old one and make
          the preview useless. */
       if (!isDraftPreview) applySentVersion(data, view);
+      /* ══ ONLY THE ALTERNATIVES HE CHECKED ═════════════════════════════════
+           "always keeps uncheck and if i decide then i will check by my self"
+         An alternative reaches the customer only when its checkbox is on. A
+         version frozen before the checkbox existed keeps all of them - that is
+         what was sent. A draft preview of an undecided estimate shows none.
+         Whatever the customer already added to their bill stays visible. */
+      stripUnoffered(view.estimate, {
+        legacyAllowsAll: !isDraftPreview,
+        keep: (Array.isArray(data.customerOptionSelections) ? data.customerOptionSelections : []).map(function (o) { return o && o.label; }),
+      });
       /* ══ NOTHING HE HAS NOT SENT ═══════════════════════════════════════════
            "if i did generate estimate first only for my self in my dashboard
             and then i have questions to the customer it's shows with price
@@ -68,6 +79,9 @@ exports.handler = async function (event) {
       view.thread = thread.normalizeThread(data);
       /* Rate-limiter bookkeeping is ours, not theirs. */
       delete view.threadRate;
+      /* The raw frozen version is already applied above; sending it as well
+         would hand the customer every alternative the gate just removed. */
+      delete view.sentVersion;
       return { statusCode: 200, headers: cors(), body: JSON.stringify(view) };
     }
 
