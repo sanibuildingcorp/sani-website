@@ -10839,6 +10839,8 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     <div class="sbc-ec-field"><label>Email</label><input id="sbc-ec-email" type="email" placeholder="john@email.com"></div>
     <div class="sbc-ec-field"><label>Phone</label><input id="sbc-ec-phone" type="tel" placeholder="(347) 555-0199"></div>
     <div class="sbc-ec-field"><label>Address</label><input id="sbc-ec-address" type="text" placeholder="Street, Borough, NY"></div>
+    <div class="sbc-ec-field"><label>Services the AI prices (comma-separated — remove one the customer ticked by mistake)</label><input id="sbc-ec-service" type="text" placeholder="Bathroom, Painting"></div>
+    <div class="sbc-ec-field" style="display:flex;gap:10px"><div style="flex:1"><label>Property</label><input id="sbc-ec-property" type="text" placeholder="Apartment"></div><div style="flex:1"><label>Timeline</label><input id="sbc-ec-timeline" type="text" placeholder="2-4 weeks"></div></div>
     <div class="sbc-ec-field"><label>Description (what the customer wrote — you can correct/expand it)</label><textarea id="sbc-ec-desc" placeholder="Describe the job…"></textarea></div>
     <div id="sbc-ec-answers"></div>
     <div class="sbc-ec-err" id="sbc-ec-err"></div>
@@ -10861,6 +10863,9 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     document.getElementById('sbc-ec-phone').value = c.phone || '';
     document.getElementById('sbc-ec-address').value = c.address || '';
     document.getElementById('sbc-ec-desc').value = (r.request && r.request.description) || '';
+    document.getElementById('sbc-ec-service').value = (r.request && r.request.service) || '';
+    document.getElementById('sbc-ec-property').value = (r.request && r.request.propertyType) || '';
+    document.getElementById('sbc-ec-timeline').value = (r.request && r.request.timeline) || '';
     var ans = (r.request && r.request.serviceAnswers) || {};
     var ansKeys = Object.keys(ans);
     var ansHtml = '';
@@ -10892,6 +10897,14 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       address: document.getElementById('sbc-ec-address').value.trim()
     };
     var description = document.getElementById('sbc-ec-desc').value.trim();
+    var service = document.getElementById('sbc-ec-service').value.trim();
+    var propertyType = document.getElementById('sbc-ec-property').value.trim();
+    var timeline = document.getElementById('sbc-ec-timeline').value.trim();
+    if(!service){
+      err.textContent = 'Name at least one service - the AI prices what is listed here.';
+      err.style.display = 'block';
+      return;
+    }
     var serviceAnswers = {};
     document.querySelectorAll('#sbc-ec-answers .sbc-ec-ans').forEach(function(inp){
       serviceAnswers[inp.getAttribute('data-key')] = inp.value.trim();
@@ -10907,7 +10920,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     sbcFetch('/.netlify/functions/update-customer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ref: r.ref, customer: customer, description: description, serviceAnswers: serviceAnswers })
+      body: JSON.stringify({ ref: r.ref, customer: customer, description: description, serviceAnswers: serviceAnswers, service: service, propertyType: propertyType, timeline: timeline })
     })
     .then(function(res){ return res.json().then(function(d){ return { ok: res.ok, d: d }; }); })
     .then(function(out){
@@ -10916,6 +10929,11 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       currentRecord.customer = out.d.customer || customer;
       currentRecord.request = currentRecord.request || {};
       currentRecord.request.description = (out.d.description !== undefined) ? out.d.description : description;
+      currentRecord.request.service = (out.d.service !== undefined) ? out.d.service : service;
+      currentRecord.request.services = String(currentRecord.request.service).split(/[,/&]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+      currentRecord.request.selectedServices = currentRecord.request.services.slice();
+      currentRecord.request.propertyType = (out.d.propertyType !== undefined) ? out.d.propertyType : propertyType;
+      currentRecord.request.timeline = (out.d.timeline !== undefined) ? out.d.timeline : timeline;
       if (Object.keys(serviceAnswers).length) {
         currentRecord.request.serviceAnswers = out.d.serviceAnswers || Object.assign({}, currentRecord.request.serviceAnswers || {}, serviceAnswers);
       }

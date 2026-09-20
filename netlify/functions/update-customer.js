@@ -23,7 +23,7 @@ exports.handler = async function (event) {
   if (denied) return denied;
 
   try {
-    const { ref, customer, description, serviceAnswers } = JSON.parse(event.body || "{}");
+    const { ref, customer, description, serviceAnswers, service, propertyType, timeline } = JSON.parse(event.body || "{}");
     if (!ref || !customer || typeof customer !== "object") {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref or customer" }) };
     }
@@ -45,6 +45,25 @@ exports.handler = async function (event) {
       record.request = record.request || {};
       record.request.description = String(description == null ? "" : description).trim().slice(0, 3000);
     }
+    /* ── THE SERVICES THE GENERATOR PRICES ────────────────────────────────
+         "in the form May maybe accidentally add water damage too but in her
+          description and request no water damage work required, generator
+          also use this words and then it's generating with its services"
+       request.service ("Bathroom, Water Damage") and the selected-services
+       lists are what the estimator reads as the trades to price. Every copy
+       is rewritten together, or the one he did not see keeps the old trade
+       alive. Comma-separated; an empty string is refused (a job with no
+       service cannot be priced), so the field is only ever corrected. */
+    if (service !== undefined) {
+      const names = String(service == null ? "" : service).split(/[,/&]+/).map(function (s) { return s.trim().slice(0, 60); }).filter(Boolean).slice(0, 8);
+      if (!names.length) return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Name at least one service" }) };
+      record.request = record.request || {};
+      record.request.service = names.join(", ");
+      record.request.services = names.slice();
+      record.request.selectedServices = names.slice();
+    }
+    if (propertyType !== undefined) { record.request = record.request || {}; record.request.propertyType = clean(propertyType).slice(0, 80); }
+    if (timeline !== undefined) { record.request = record.request || {}; record.request.timeline = clean(timeline).slice(0, 120); }
     if (serviceAnswers && typeof serviceAnswers === "object" && !Array.isArray(serviceAnswers)) {
       record.request = record.request || {};
       const merged = Object.assign({}, record.request.serviceAnswers || {});
@@ -60,7 +79,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: cors(),
-      body: JSON.stringify({ success: true, customer: record.customer, description: (record.request || {}).description, serviceAnswers: (record.request || {}).serviceAnswers }),
+      body: JSON.stringify({ success: true, customer: record.customer, description: (record.request || {}).description, serviceAnswers: (record.request || {}).serviceAnswers, service: (record.request || {}).service, propertyType: (record.request || {}).propertyType, timeline: (record.request || {}).timeline }),
     };
   } catch (err) {
     console.error("update-customer error:", err.message);
