@@ -103,7 +103,10 @@ const SCREEN = {
     sent = null;
     const big = Object.assign({}, SCREEN, { estimates: Array.from({ length: 400 }, (_, i) => ({ ref: 'SBC-' + i, name: 'Customer number ' + i + ' with a long name', service: 'A long service description for row ' + i, status: 'sent', total: 1000 + i, submitted: '2026-09-01', sent: '2026-09-02' })) });
     await call({ messages: [{ role: 'user', text: 'hi' }], screen: big });
-    ok('A HUGE LIST IS CUT, NOT SENT WHOLE - the clock is the reason', sent.system.length < 20000 && /list cut here/.test(sent.system), sent.system.length + ' chars');
+    /* The list itself is capped at SCREEN_CHARS (14k); the rest is the rules,
+       which grow a line at a time. 21k leaves room for that without ever
+       letting a 400-row list through whole (that would be ~50k). */
+    ok('A HUGE LIST IS CUT, NOT SENT WHOLE - the clock is the reason', sent.system.length < 21000 && /list cut here/.test(sent.system), sent.system.length + ' chars');
     sent = null;
     await call({ messages: [{ role: 'user', text: 'hi' }], screen: 'garbage' });
     ok('a screen that is not an object is ignored, not a crash', sent && /No job is open\. Answer whatever he asks\./.test(sent.system));
@@ -325,7 +328,7 @@ const SCREEN = {
     ok('the drawer says in writing that nothing is sent to a customer', /Nothing here is sent to a customer: a draft goes into the reply box and you press Send/.test(DASH));
     ok('the in-record panel sends the same screen snapshot', /screen: \(typeof aiScreen === "function" \? aiScreen\(\) : null\)/.test(ext('askSend')));
     ok('...and runs actions that come back, into its own log', /aiRunActions\(data\.actions, ASK_LOG\[ref\], askRender\)/.test(ext('askSend')));
-    ok('aiSend reads the reply as text first, like askSend', /await res\.text\(\)/.test(ext('aiSend')) && ext('aiSend').indexOf('res.json()') === -1);
+    ok('both panels ask through aiAsk, which reads the reply as text first', /await aiAsk\(/.test(ext('aiSend')) && /await aiAsk\(/.test(ext('askSend')) && /await res\.text\(\)/.test(ext('aiAsk')) && ext('aiAsk').indexOf('res.json()') === -1);
     ok('the chat survives a reload of the page but not a new day - sessionStorage', /sessionStorage\.setItem\("sbc-ai-log"/.test(DASH));
     const blocks = DASH.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];
     let broken = null;

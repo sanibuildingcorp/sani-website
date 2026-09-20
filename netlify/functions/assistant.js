@@ -167,44 +167,66 @@ exports.handler = async function (event) {
 
   if (!turns.length) return json(400, { error: "Nothing to answer" });
 
-  /* The record, the memory and the history insights are read side by side,
-     each on its own short clock; any of them missing still leaves a working
-     assistant. */
+  try {
+    const out = await answer(body, { deadline: started + budgetMs, recordMs: RECORD_MS, memoryMs: MEMORY_MS, chatWriteMs: CHAT_WRITE_MS });
+    return json(200, out);
+  } catch (err) {
+    console.error("assistant error:", err && err.message);
+    return json(502, { error: str(err && err.message) || "The assistant could not be reached" });
+  }
+};
+
+/* ── ONE ANSWER, ON WHATEVER CLOCK THE CALLER HAS ────────────────────────
+   The synchronous handler above runs this on the 8.8s budget and returns
+   whatever arrived, marked truncated when the clock cut it. assistant-
+   background.js runs the SAME function on a ninety-second clock and stores
+   the whole answer in the job store for the dashboard to collect - so an
+   answer is never cut short by the platform, only by MAX_TOKENS.
+
+   The record, the memory and the history insights are read side by side,
+   each on its own short clock; any of them missing still leaves a working
+   assistant. Throws with a message meant for him. */
+async function answer(body, clocks) {
+  const c = clocks || {};
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set in Netlify.");
+  const turns = arr(body.messages)
+    .map(function (m) { return { role: m && m.role === "assistant" ? "assistant" : "user", text: str(m && m.text) }; })
+    .filter(function (m) { return m.text; })
+    .slice(-TURNS_SENT);
+  if (!turns.length) throw new Error("Nothing to answer");
+
   const reads = await Promise.all([
-    str(body.ref) ? withTimeout(recordContext(str(body.ref)), RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
-    withTimeout(loadMemory(), MEMORY_MS).catch(function () { return []; }),
-    withTimeout(loadInsights(), MEMORY_MS).catch(function () { return ""; }),
+    str(body.ref) ? withTimeout(recordContext(str(body.ref)), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
+    withTimeout(loadMemory(), c.memoryMs || MEMORY_MS).catch(function () { return []; }),
+    withTimeout(loadInsights(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }),
   ]);
   const context = reads[0];
   const memory = reads[1];
   const insights = reads[2];
   const screen = screenContext(body.screen);
 
-  try {
-    const deadline = started + budgetMs;
-    const out = await callClaude(apiKey, systemPrompt(context, screen, memory, insights), turns, deadline);
-    const parsed = extractActions(out.text, out.truncated === true);
-    if (!parsed.text && !parsed.actions.length) return json(502, { error: "The assistant returned nothing. Try again." });
+  const deadline = c.deadline || (Date.now() + budgetMs);
+  const out = await callClaude(apiKey, systemPrompt(context, screen, memory, insights), turns, deadline);
+  const parsed = extractActions(out.text, out.truncated === true);
+  if (!parsed.text && !parsed.actions.length) throw new Error("The assistant returned nothing. Try again.");
 
-    /* "remember" is the one action that lives here. Everything else is the
-       dashboard's to do, with its own functions and its own confirm. */
-    const toClient = [];
-    for (const a of parsed.actions) {
-      if (a.type === "remember") { try { await remember(memory, a.text); } catch (e) { /* memory is best effort */ } }
-      else toClient.push(a);
-    }
-    const replyText = parsed.text || "Done.";
-    const chatKey = chatKeyOf(body.chat);
-    if (chatKey) {
-      const last = turns[turns.length - 1];
-      await withTimeout(appendChat(chatKey, last.role === "user" ? last.text : "", replyText), CHAT_WRITE_MS).catch(function () { /* one turn lost, answer kept */ });
-    }
-    return json(200, { reply: replyText, truncated: out.truncated === true, actions: toClient });
-  } catch (err) {
-    console.error("assistant error:", err && err.message);
-    return json(502, { error: str(err && err.message) || "The assistant could not be reached" });
+  /* "remember" is the one action that lives here. Everything else is the
+     dashboard's to do, with its own functions and its own confirm. */
+  const toClient = [];
+  for (const a of parsed.actions) {
+    if (a.type === "remember") { try { await remember(memory, a.text); } catch (e) { /* memory is best effort */ } }
+    else toClient.push(a);
   }
-};
+  const replyText = parsed.text || "Done.";
+  const chatKey = chatKeyOf(body.chat);
+  if (chatKey) {
+    const last = turns[turns.length - 1];
+    await withTimeout(appendChat(chatKey, last.role === "user" ? last.text : "", replyText), c.chatWriteMs || CHAT_WRITE_MS).catch(function () { /* one turn lost, answer kept */ });
+  }
+  return { reply: replyText, truncated: out.truncated === true, actions: toClient };
+}
+exports.answer = answer;
 
 function withTimeout(promise, ms) {
   return new Promise(function (resolve, reject) {
@@ -280,7 +302,15 @@ async function emailContext(rec) {
   const lines = arr(rows).filter(function (r) { return r && !(r.message_id && onThread[str(r.message_id)]); }).reverse().map(function (r) {
     return "  " + str(r.created_at).slice(0, 10) + " " + (r.direction === "out" ? "Sani" : "Customer") + (str(r.subject) ? " [" + str(r.subject).slice(0, 80) + "]" : "") + ": " + str(r.body).replace(/\s+/g, " ").slice(0, 400);
   });
-  return lines.length ? "\nEMAILS WITH THIS CUSTOMER (from the inbox, oldest first):\n" + lines.join("\n") : "";
+  /* "Can you found emails he send me?" answered "I can only see what's
+     loaded on this estimate". Say what is actually the case: the inbox log
+     holds nothing from this address (yet), or the log could not be read. */
+  if (!lines.length) {
+    return "\nEMAILS WITH THIS CUSTOMER: " + (Array.isArray(rows) && rows.length
+      ? "the only ones in the inbox log are already in MESSAGES SO FAR above."
+      : "none in the inbox log from " + email + " (the inbox is synced every 15 minutes; a mail from a different address than the one on this request would not be matched).");
+  }
+  return "\nEMAILS WITH THIS CUSTOMER (from the inbox, oldest first):\n" + lines.join("\n");
 }
 
 /* ── THE GENERATED ESTIMATE, LINE BY LINE ────────────────────────────────
@@ -510,6 +540,7 @@ function systemPrompt(context, screen, memory, insights) {
     "- SEARCH THE INTERNET:          ACTION: {\"type\":\"search\",\"query\":\"...\"}   - use it whenever the answer needs current information from outside this dashboard: today's price of a product or material, a supplier or store, a building code, permit or co-op rule, a company, an address, the weather, anything that changes over time or that you are not sure of. Also whenever he says 'search online', 'check online', 'google it' or 'look it up'. Write the query the way a good search is written (specific, with New York or the borough when it matters). Say in ONE short line that you are checking online - the answer with its sources arrives in this chat in under a minute - and do not guess the answer yourself in the same reply.",
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
+    "EMAILS WITH THIS CUSTOMER (below, when a job is open) are read from his inbox log, matched by the customer's email address. When he asks about an email from this customer, answer from that list. When the list says there are none, say exactly that - none in the inbox from that address - and never say you cannot see emails.",
     "HIS HISTORY (below, when present) is real data from his own jobs, computed from every estimate. You may quote it - what was accepted at what price, how long jobs took to accept and to finish, who never answered - and use it to judge whether a new estimate is in his usual range, to plan follow-ups and to answer 'what do I usually charge for X'. It also says where his customers are by borough and how each borough answers, so 'is a $20k bathroom likely to be accepted in Queens' has an answer from his own jobs. Say the numbers with their refs. History is not a price for a new job; it is what happened before.",
     "",
     "HOW TO ANSWER HIM:",
