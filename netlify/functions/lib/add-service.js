@@ -150,9 +150,29 @@ function mergeAddedService(record, fresh, meta) {
   const own = {};
   cards.forEach(function (c) { own[c.title] = 0; });
   labor.concat(materials).forEach(function (l) { own[l.section] += num(l.qty) * num(l.rate); });
-  const cardSum = cards.reduce(function (s, c) { return s + c.subtotal; }, 0);
-  const lineSum = round2(Object.keys(own).reduce(function (s, t) { return s + own[t]; }, 0) * baseMM);
-  if (Math.abs(cardSum - lineSum) >= 1) cards.forEach(function (c) { c.subtotal = round2(own[c.title] * baseMM); });
+  /* A CARD WITH NO PRICED LINE IS NOT A CARD. The estimator wrote a "Doors"
+     card with eight bullets and no line: as a $0.00 card the customer's page
+     folds its bullets into the LARGEST priced card - the agreed bathroom.
+     Its wording goes onto the first new card that owns lines instead. */
+  const priced = cards.filter(function (c) { return own[c.title] > 0; });
+  if (priced.length) {
+    const home = priced[0];
+    cards.forEach(function (c) {
+      if (own[c.title] > 0) return;
+      home.included = home.included.concat(c.included);
+      home.customerSupplies = home.customerSupplies.concat(c.customerSupplies);
+      home.notIncluded = home.notIncluded.concat(c.notIncluded);
+      home.options = home.options.concat(c.options);
+    });
+    cards = priced;
+  }
+  cards.forEach(function (c) {
+    c.included = c.included.filter(function (x, i, l) { return l.indexOf(x) === i; });
+    c.notIncluded = c.notIncluded.filter(function (x, i, l) { return l.indexOf(x) === i; });
+    /* what its own lines cost, at this estimate's markup - always, so the
+       card can never disagree with the lines under it */
+    c.subtotal = round2(own[c.title] * baseMM);
+  });
   const added = round2(cards.reduce(function (s, c) { return s + c.subtotal; }, 0));
 
   const est = base;

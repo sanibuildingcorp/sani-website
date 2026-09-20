@@ -108,6 +108,13 @@ const FRESH = {
     const fresh = clone(FRESH); fresh.serviceBreakdown[0].title = 'Bathroom'; fresh.labor.forEach((l) => { l.section = 'Bathroom'; }); fresh.materials.forEach((l) => { l.section = 'Bathroom'; });
     lib.mergeAddedService(rec, fresh, { text: 'more bathroom', service: 'Bathroom' });
     ok('A TITLE THAT ALREADY EXISTS BECOMES "… (additional)": the agreed card is never merged into', rec.estimate.serviceBreakdown.length === 2 && rec.estimate.serviceBreakdown[1].title === 'Bathroom (additional)' && rec.estimate.labor.slice(2).every((l) => l.section === 'Bathroom (additional)') && rec.estimate.serviceBreakdown[0].subtotal === 3884, JSON.stringify(rec.estimate.serviceBreakdown.map((c) => c.title)));
+    const recD = clone(BASE);
+    const freshD = clone(FRESH); freshD.serviceBreakdown.push({ title: 'Doors', included: ['Door leaves in Louisburg Green HC-113', 'Remove and reinstall hardware'], customerSupplies: [], notIncluded: ['Door replacement'], subtotal: 0, options: [{ label: 'Option A — frames too', description: '', price: 300 }] });
+    const outD = lib.mergeAddedService(recD, freshD, { text: 'paint', service: 'Painting' });
+    const pc = recD.estimate.serviceBreakdown;
+    ok('A CARD WITH NO PRICED LINE ("Doors $0.00") IS FOLDED INTO THE NEW PRICED CARD, never left for the customer page to fold into the bathroom', pc.length === 2 && pc[1].title === 'Painting' && pc[1].included.indexOf('Door leaves in Louisburg Green HC-113') !== -1 && pc[1].notIncluded.indexOf('Door replacement') !== -1 && pc[1].options.some((o) => o.label === 'Option A — frames too') && JSON.stringify(outD.titles) === '["Painting"]' && recD.estimate.publishedCustomerScope.services.length === 2 && !pc.some((c) => c.subtotal === 0), JSON.stringify(pc.map((c) => [c.title, c.subtotal])));
+    ok('...and the card price is exactly its own lines at the estimate\'s markup', pc[1].subtotal === Math.round(((3 + 12 + 1) * 55 + 4 * 85) * 1.25 * 100) / 100);
+    ok('the button says what is happening: "Adding the service…", not "Generating…"', /watchGeneration\(ref, jobId, startedAt, "Adding the service… \(the rest stays as it is\)"\)/.test(DASH) && /btn\.innerHTML = '<span class="ai-spin"><\/span> ' \+ \(label \|\| "Generating…"\)/.test(DASH));
     const rec2 = clone(BASE);
     const fresh2 = clone(FRESH); fresh2.serviceBreakdown = [];
     lib.mergeAddedService(rec2, fresh2, { text: 'paint', service: 'Painting' });
@@ -178,7 +185,7 @@ const FRESH = {
     await vm.runInContext('addServiceAI()', ctx);
     ok('nothing priced yet -> told to generate first; no words -> told to say what', toasts.some((t) => /^!Generate and price the estimate first/.test(t)));
     ok('watchGeneration hands back the stamped total too', /return \{ estimate: rec\.estimate, status: rec\.status, customerFinalTotal: rec\.customerFinalTotal \};/.test(DASH));
-    ok('the reconnect path applies an added service the merged way', /applyGeneratedEstimate\(await watchGeneration\(ref, job\.jobId, job\.startedAt\), job\.addService === true\);/.test(DASH) && /map\[ref\] = Object\.assign\(\{ jobId: jobId, startedAt: t \}, extra/.test(DASH));
+    ok('the reconnect path applies an added service the merged way', /applyGeneratedEstimate\(await watchGeneration\(ref, job\.jobId, job\.startedAt, job\.addService === true \? "Adding the service… \(the rest stays as it is\)" : ""\), job\.addService === true\);/.test(DASH) && /map\[ref\] = Object\.assign\(\{ jobId: jobId, startedAt: t \}, extra/.test(DASH));
     const wctx = { String, Number, Array, JSON, CUSTOMER_HAS_SEEN: ['sent', 'accepted'], calcCustomerView: () => ({ customerTotal: 100 }) };
     vm.createContext(wctx);
     vm.runInContext('var CUSTOMER_HAS_SEEN = ["sent","accepted"];\n' + ext(DASH, 'regenerateWarning'), wctx);
