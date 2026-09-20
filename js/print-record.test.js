@@ -28,7 +28,7 @@ console.log('\nthe button sits in the message box, next to Add photos or files\n
    next to the add photos or file." So: same row, same size and shape as the
    attach button, a solid border so it reads as a button. */
 ok('THE PRINT BUTTON IS IN THE ATTACH ROW, right after Add photos or files',
-  /<label class="attach-btn">[^<]*Add photos or files<input[^>]*><\/label><button type="button" class="attach-btn printbtn" onclick="printQuote\(\)">[^<]*Print \/ save as PDF<\/button>/.test(Q));
+  /<label class="attach-btn">[^<]*Add photos or files<input[^>]*><\/label><button type="button" class="attach-btn printbtn" onclick="printQuote\(this\)">[^<]*Print \/ save as PDF<\/button>/.test(Q));
 ok('...and no longer in the Messages header', !/eyrow/.test(Q.replace(/\.eyrow\{[^}]*\}/, '')) && /id="thread-card"><div class="ey">Messages<\/div>/.test(Q));
 ok('...styled like the attach button, solid border', /\.printbtn\{font:inherit;color:var\(--n-deep\);border-style:solid/.test(Q));
 ok('a printed footer names the estimate, the customer, the print time and the live link', /class="printnote">Printed record of estimate \$\{E\(ref\)\} for/.test(Q) && /live copy: \$\{E\(location\.origin\+'\/quote\.html\?ref='/.test(Q));
@@ -50,26 +50,49 @@ ok('collapsed breakdowns are forced open', /details\{display:block\}/.test(PRINT
 console.log('\nprintQuote() opens every breakdown, prints, and puts them back\n');
 {
   const ds = [{ open: false }, { open: true }, { open: false }];
-  let printed = 0, listener = null;
+  let printed = 0, listener = null, listeners = {}, timer = null, inserted = null;
   const ctx = {
-    Array, document: { querySelectorAll: () => ds },
-    window: { print() { printed++; ds.forEach(d => { if (!d.open) throw new Error('a closed breakdown reached print'); }); }, addEventListener(ev, fn) { if (ev === 'afterprint') listener = fn; }, removeEventListener() { listener = null; } },
+    Array, document: { querySelectorAll: () => ds, getElementById: () => null, createElement: () => ({ setAttribute() {}, set innerHTML(v) { inserted = v; } }) },
+    setTimeout: (fn) => { timer = fn; return 1; },
+    window: { print() { printed++; ds.forEach(d => { if (!d.open) throw new Error('a closed breakdown reached print'); }); (listeners.beforeprint || []).forEach(f => f()); }, addEventListener(ev, fn) { if (ev === 'afterprint' && !listener) listener = fn; (listeners[ev] = listeners[ev] || []).push(fn); }, removeEventListener(ev, fn) { if (fn === listener) listener = null; } },
   };
-  vm.createContext(ctx); vm.runInContext(ext('printQuote'), ctx);
+  vm.createContext(ctx); vm.runInContext('let printSeen=false;' + ext('printQuote') + ext('printHelp'), ctx);
   const r = vm.runInContext('printQuote()', ctx);
   ok('EVERY <details> IS OPEN WHEN print() RUNS', printed === 1 && r === true);
   ok('...and an afterprint listener was armed', typeof listener === 'function');
   listener();
   ok('after printing, each breakdown is back the way it was (closed, open, closed)', ds.map(d => d.open).join(',') === 'false,true,false');
+  timer();
+  ok('A REAL BROWSER FIRED beforeprint, so no help note appears', inserted === null);
 }
 {
   const ds = [{ open: false }];
-  const ctx = { Array, document: { querySelectorAll: () => ds }, window: { print() { throw new Error('blocked'); }, addEventListener() {}, removeEventListener() {} } };
-  vm.createContext(ctx); vm.runInContext(ext('printQuote'), ctx);
+  const ctx = { Array, document: { querySelectorAll: () => ds, getElementById: () => null }, setTimeout: () => 0, window: { print() { throw new Error('blocked'); }, addEventListener() {}, removeEventListener() {} } };
+  vm.createContext(ctx); vm.runInContext('let printSeen=false;' + ext('printQuote') + ext('printHelp'), ctx);
   let threw = false; try { vm.runInContext('printQuote()', ctx); } catch (e) { threw = true; }
   ok('a browser that refuses print() does not leave the page thrown or the breakdowns open', !threw && ds[0].open === false);
 }
-ok('the function is reachable from the onclick', /window\.printQuote=printQuote;/.test(Q));
+console.log('\nan in-app browser (the Gmail app) ignores print() silently - the page says what to do\n');
+{
+  /* "print / save as pdf button doesn't open / working" - from the email link,
+     opened inside the Gmail app. print() returns, nothing happens, no event. */
+  let timer = null, inserted = null, where = null;
+  const btn = { parentNode: { insertBefore: (el, ref) => { where = ref === btn.nextSibling ? 'after the button' : 'elsewhere'; } }, nextSibling: { id: 'next' } };
+  const ctx = {
+    Array, document: { querySelectorAll: () => [], getElementById: () => null, createElement: () => ({ setAttribute() {}, set innerHTML(v) { inserted = v; } }) },
+    setTimeout: (fn, ms) => { timer = { fn, ms }; return 1; },
+    window: { print() { /* silently ignored */ }, addEventListener() {}, removeEventListener() {} }, btn,
+  };
+  vm.createContext(ctx); vm.runInContext('let printSeen=false;' + ext('printQuote') + ext('printHelp'), ctx);
+  vm.runInContext('printQuote(btn)', ctx);
+  ok('nothing is said straight away - a real print dialog may still be opening', inserted === null && timer && timer.ms <= 1500);
+  timer.fn();
+  ok('WHEN NO PRINT EVENT ARRIVED, A NOTE APPEARS UNDER THE BUTTON', where === 'after the button' && /Printing is not available inside this app/.test(inserted));
+  ok('...saying to open the page in Safari or Chrome and use Share → Print / Save as PDF', /Open in browser/.test(inserted) && /Share → Print/.test(inserted) && /Save as PDF/.test(inserted));
+  ok('...with a button to copy the page link to paste there', /onclick="copyPageLink\(this\)"/.test(inserted) && /Copy page link/.test(inserted));
+  ok('both print buttons hand themselves over, so the note lands next to the one pressed', (Q.match(/onclick="printQuote\(this\)"/g) || []).length === 2);
+}
+ok('the functions are reachable from the onclick', /window\.printQuote=printQuote;window\.copyPageLink=copyPageLink;/.test(Q));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

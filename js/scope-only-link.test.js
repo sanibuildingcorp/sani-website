@@ -114,7 +114,7 @@ console.log('\nthe server sends the scope link nothing it could print as a price
   ok('the detailed line list shows what, not what it costs', /Install crown molding/.test(h) && h.indexOf('class="amt"') === -1);
   ok('it says what it is: Scope of Work in the bar and the hero, a "Document" cell, the title changed', /Scope of Work SBC-SOW1/.test(h) && /<small>Document<\/small>Scope of work/.test(h) && p.title === 'Scope of Work | Sani Building Corp' && p.inserted[0] === 'SCOPE OF WORK — no pricing is shown on this page.');
   ok('NOTHING TO APPROVE OR SEND: no approve button, no message box, no contract, no messages, no "Waiting on your answers", no "Price by service"', h.indexOf('Approve estimate') === -1 && h.indexOf('Send us a message') === -1 && h.indexOf('id="msg"') === -1 && h.indexOf('Contract') === -1 && h.indexOf('id="thread-card"') === -1 && h.indexOf('Waiting on your answers') === -1 && h.indexOf('Price by service') === -1 && h.indexOf('Your estimate') === -1);
-  ok('...but it can be printed, and says who prepared it', /printQuote\(\)/.test(h) && /No pricing is included/.test(h) && /fully insured/.test(h));
+  ok('...but it can be printed, and says who prepared it', /printQuote\(this\)/.test(h) && /No pricing is included/.test(h) && /fully insured/.test(h));
   ok('READING IT IS NOT "THE CUSTOMER OPENED THE QUOTE" - no tracking ping', p.tracked === 0);
   const cv = await call('SBC-SOW1', REF_HDR('SBC-SOW1'));
   const n = await renderPage(cv, '?ref=SBC-SOW1');
