@@ -3952,10 +3952,21 @@ function aiAnswerJobId() { return "A-" + Date.now().toString(36) + "-" + Math.ra
 async function aiAsk(payload) {
   var id = aiAnswerJobId();
   var key = (typeof sbcKey === "function" ? sbcKey() : "");
+  /* The pictures go first, to the synchronous function (6 MB allowed),
+     parked under the job id; the background job (small body only - that
+     was the HTTP 413) then fetches them by id. */
+  var start = Object.assign({ job: id }, payload);
+  if (Array.isArray(payload.images) && payload.images.length) {
+    delete start.images;
+    var pres = await fetch("/.netlify/functions/assistant", { method: "POST", headers: { "Content-Type": "application/json", "x-sbc-key": key }, body: JSON.stringify({ action: "photos", job: id, images: payload.images }) });
+    var pdata = null; try { pdata = JSON.parse(await pres.text()); } catch (e0) { pdata = null; }
+    if (!pres.ok || !pdata || !pdata.ok) throw new Error((pdata && pdata.error) || ("The photo could not be uploaded (HTTP " + pres.status + "). Try a smaller one."));
+    start.photos = id;
+  }
   var res = await fetch("/.netlify/functions/assistant-background", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-sbc-key": key },
-    body: JSON.stringify(Object.assign({ job: id }, payload)),
+    body: JSON.stringify(start),
   });
   var raw = await res.text();
   var data = null;
