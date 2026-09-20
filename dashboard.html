@@ -3450,7 +3450,8 @@ function addonHeaderHtml(r) {
   var h = '';
   if (r && r.parentRef) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work to ' + addonLink(r.parentRef) + ' · that estimate stays as agreed</div>';
   var adds = Array.isArray(r && r.estimate && r.estimate.addedServices) ? r.estimate.addedServices : [];
-  if (adds.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Added as own sections: ' + adds.map(function (x, i) { return esc((x.titles || []).join(', ')) + (x.subtotal ? ' ' + fmt(x.subtotal) : '') + (x.at ? ' (' + esc(String(x.at).slice(0, 10)) + ')' : '') + ' <a href="#" onclick="addonRedo(' + i + ');return false" style="color:var(--gold);font-weight:700" title="Price this section again from a new brief; the rest stays as it is">↻ redo</a> <a href="#" onclick="addonRemove(' + i + ');return false" style="color:#b42318;font-weight:700" title="Remove this added section, its lines and its price">✕ remove</a>'; }).join(' · ') + ' · the earlier services untouched</div>';
+  var cardTitles = ((r && r.estimate && r.estimate.serviceBreakdown) || []).map(function (c) { return String((c && (c.title || c.name)) || '').trim().toLowerCase(); });
+  if (adds.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Added as own sections: ' + adds.map(function (x, i) { var orphan = cardTitles.length > 0 && (x.titles || []).some(function (t) { return cardTitles.indexOf(String(t || '').trim().toLowerCase()) === -1; }); return esc((x.titles || []).join(', ')) + (x.subtotal ? ' ' + fmt(x.subtotal) : '') + (orphan ? ' <b style="color:#b42318">⚠ card removed, its lines and price are still in the estimate - press ✕ remove</b>' : '') + (x.at ? ' (' + esc(String(x.at).slice(0, 10)) + ')' : '') + ' <a href="#" onclick="addonRedo(' + i + ');return false" style="color:var(--gold);font-weight:700" title="Price this section again from a new brief; the rest stays as it is">↻ redo</a> <a href="#" onclick="addonRemove(' + i + ');return false" style="color:#b42318;font-weight:700" title="Remove this added section, its lines and its price">✕ remove</a>'; }).join(' · ') + ' · the earlier services untouched</div>';
   var kids = Array.isArray(r && r.addonRefs) ? r.addonRefs : [];
   if (kids.length) h += '<div class="ref-sub" style="margin-top:4px">➕ Additional work: ' + kids.map(function (k) {
     var e = (typeof estimates !== 'undefined' && Array.isArray(estimates)) ? estimates.find(function (x) { return x && x.ref === k; }) : null;
@@ -7529,6 +7530,17 @@ function scopeForgetMerges(pred) {
 function scopeDeleteService(si) {
   var d = scopeDraft(), svc = d.services[si];
   var nm = String((svc && svc.name) || "").trim();
+  /* ══ AN ADDED SECTION COMES OUT WITH ITS PRICE. ═══════════════════════════
+       "When i will remove the additional service then it's need to remove
+        with them price too! ... i delated one additional painting service
+        but the price was spread with other services where then bathroom
+        price rises."
+     Removing only the card leaves its lines behind: their cost is spread
+     over the other cards and the stamped total never shrinks. A card that
+     is an added section is removed whole - lines, card, scope, price -
+     through the same path as ✕ remove in the header, saved at once. */
+  var ai = (typeof addonIndexOf === "function") ? addonIndexOf(nm) : -1;
+  if (ai >= 0) { addonRemove(ai); return; }
   /* Any money parked by this service's exclusions would vanish with the card - no
      line in the estimate, no wording on screen, nothing to explain the shortfall.
      Give it back first, and say so honestly in the prompt. */

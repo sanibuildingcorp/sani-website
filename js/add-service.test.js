@@ -342,6 +342,26 @@ const FRESH = {
     ctx.prompt = () => '   '; posted.length = 0;
     ok('an empty new brief changes nothing', (await vm.runInContext('addonRedo(0)', ctx)) === false && posted.length === 0);
   }
+  console.log('\n10. Scope Control "Remove" on an added card takes the price with it\n');
+  {
+    const calls = [];
+    const ctx = { String, Array, Object, JSON, currentRecord: { ref: 'R', estimate: { addedServices: [{ titles: ['Painting (additional)'], subtotal: 8033.12 }], parkedLines: [] } },
+      scopeDraft: () => ({ services: [{ name: 'Bathroom' }, { name: 'Painting (additional)' }] }), addonRemove: (i) => { calls.push('remove:' + i); }, confirm: () => { calls.push('confirm'); return true; }, scopeNorm: (s) => String(s || '').toLowerCase(), scopeForgetMerges() {}, scopeLinesRefresh() { calls.push('refresh'); }, scopeUnparkService() {} };
+    vm.createContext(ctx);
+    vm.runInContext(ext(DASH, 'addonIndexOf') + '\n' + ext(DASH, 'scopeDeleteService'), ctx);
+    vm.runInContext('scopeDeleteService(1)', ctx);
+    ok('REMOVE ON AN ADDED CARD GOES THROUGH THE WHOLE REMOVAL (lines, card, price, saved) - not the card-only path', calls.join(',') === 'remove:0', calls.join(','));
+    calls.length = 0;
+    vm.runInContext('scopeDeleteService(0)', ctx);
+    ok('Remove on an ordinary card is the card-only path it always was', calls.join(',') === 'confirm,refresh', calls.join(','));
+    const hctx = { esc: (s) => String(s), fmt: (n) => '$' + n, Array, String, estimates: [] };
+    vm.createContext(hctx);
+    vm.runInContext(ext(DASH, 'addonLink') + '\n' + ext(DASH, 'addonHeaderHtml'), hctx);
+    const warn = vm.runInContext('addonHeaderHtml({ ref: "R", estimate: { serviceBreakdown: [{ title: "Bathroom" }], addedServices: [{ titles: ["Painting (additional)"], subtotal: 8033.12 }] } })', hctx);
+    ok('A SECTION WHOSE CARD IS ALREADY GONE (removed the old way) IS FLAGGED: its lines and price are still counted, press ✕ remove', /⚠ card removed, its lines and price are still in the estimate - press ✕ remove/.test(warn), warn);
+    const fine = vm.runInContext('addonHeaderHtml({ ref: "R", estimate: { serviceBreakdown: [{ title: "Bathroom" }, { title: "Painting" }], addedServices: [{ titles: ["Painting"], subtotal: 1 }] } })', hctx);
+    ok('...and not when the card is there', !/⚠ card removed/.test(fine));
+  }
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL  the suite crashed instead of reporting\n        ' + (e && e.stack || e)); process.exit(1); });
