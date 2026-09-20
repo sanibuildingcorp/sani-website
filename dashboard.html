@@ -3399,7 +3399,7 @@ function renderList() {
             ((e.request && e.request.photoCount) ? '<span>•</span><span>📷 ' + e.request.photoCount + '</span>' : "") +
           '</div>' +
           '<div class="est-badges">' +
-            '<span class="badge ' + e.status + '">' + e.status + '</span>' +
+            '<span class="badge ' + e.status + '">' + e.status + (e.status === 'completed' && fmtDay(e.completedOn || e.completedAt) ? ' · ' + esc(fmtDay(e.completedOn || e.completedAt)) : '') + '</span>' +
             /* He works from a phone between jobs and will not be watching this
                screen. The badge is the one place a waiting customer message is
                visible without opening anything. */
@@ -3772,7 +3772,7 @@ function aiScreen() {
       var est = e.estimate || {}, req = e.request || {};
       return { ref: e.ref, name: (e.customer && e.customer.name) || "", service: est.projectTitle || req.service || "", status: e.status,
         total: est.customerTotal != null ? est.customerTotal : est.grandTotal, submitted: d(e.submittedAt), sent: d(e.sentAt),
-        unpaid: e.unpaidTotal || 0, invoices: e.invoiceCount || 0,
+        unpaid: e.unpaidTotal || 0, invoices: e.invoiceCount || 0, completed: d(e.completedOn || e.completedAt),
         needsReply: (typeof threadNeedsReply === "function") ? !!threadNeedsReply(e) : false };
     }),
     visits: visits.filter(function (v) { return !v.done; }).slice(0, 25).map(function (v) {
@@ -4477,6 +4477,12 @@ function renderEdit() {
       '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
     '</div>' +
     stepBar(5, 'Send it', 'Preview first if you want. Nothing leaves here until you press send.') +
+    (currentRecord && currentRecord.status === 'completed'
+      ? '<div id="completed-on" style="margin:0 0 10px;padding:10px 12px;border-radius:9px;background:rgba(13,148,136,0.10);color:#0f766e;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+          '<span>🏁 Completed on <strong>' + esc(fmtDay(completedDayOf(currentRecord)) || 'date not set') + '</strong></span>' +
+          '<button type="button" class="topbar-btn" style="font-size:11px;padding:5px 10px" onclick="openCompletedModal()">✎ Change date</button>' +
+        '</div>'
+      : '') +
     '<div class="modal-actions">' +
       '<button class="btn-danger" onclick="deleteEstimate()">🗑 Delete</button>' +
       (currentRecord && currentRecord.status === 'completed'
@@ -7854,25 +7860,89 @@ async function deleteInvoice(invoiceNumber, amount) {
   }
 }
 
-/* Mark the whole project completed / reopen it. Uses save-estimate's status field. */
-async function markCompleted(done) {
+/* ── WHEN WAS IT FINISHED ──────────────────────────────────────────────────
+     "i need add date for completed jobs for let's my AI read and know when
+      job was completed and it's good for remaining for me too"
+   Mark Completed used to stamp "now" - and he often marks a job days after
+   the last day on site. It asks for the date now, defaulting to today, and
+   the same little window changes the date on an already-completed job. The
+   date is stored twice: completedOn ("2026-09-18", what he picked) and
+   completedAt (that day at noon, as an instant, which everything that
+   already reads completedAt - the history, the assistant - keeps using). */
+function todayLocal() {
+  var d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function fmtDay(iso) {
+  var s = String(iso || "").slice(0, 10);
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return "";
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function completedDayOf(rec) {
+  var est = (rec && rec.estimate) || {};
+  return String(est.completedOn || rec.completedOn || est.completedAt || rec.completedAt || "").slice(0, 10);
+}
+function openCompletedModal() {
   if (!currentRecord) return;
   var name = (currentRecord.customer && currentRecord.customer.name) || currentRecord.ref;
-  if (done && !confirm("Mark this project as COMPLETED?\n\n" + name + " will move to the Completed tab.")) return;
-  if (!done && !confirm("Reopen this project? It will go back to Accepted status.")) return;
-  var newStatus = done ? "completed" : "accepted";
+  var cur = completedDayOf(currentRecord) || todayLocal();
+  var old = document.getElementById("cmp-overlay"); if (old) old.remove();
+  var ov = document.createElement("div");
+  ov.id = "cmp-overlay";
+  ov.style.cssText = "position:fixed;inset:0;z-index:99990;background:rgba(5,13,26,.72);display:flex;align-items:center;justify-content:center;padding:18px";
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:22px 20px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+      '<div style="font-size:17px;font-weight:700;color:#0d1b2a">🏁 When was this job completed?</div>' +
+      '<div style="font-size:13px;color:#5a6577;margin:6px 0 14px">' + esc(name) + ' — the date goes on the record, into your history, and the assistant reads it.</div>' +
+      '<input type="date" id="cmp-date" value="' + esc(cur) + '" max="' + todayLocal() + '" style="width:100%;padding:12px;font-size:16px;border:1.5px solid var(--gold-2,#c8a84c);border-radius:10px;box-sizing:border-box">' +
+      '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">' +
+        '<button type="button" class="btn-secondary" onclick="document.getElementById(\'cmp-overlay\').remove()">Cancel</button>' +
+        '<button type="button" class="btn-primary" id="cmp-ok" onclick="finishCompleted(document.getElementById(\'cmp-date\').value)">Mark completed</button>' +
+      '</div></div>';
+  document.body.appendChild(ov);
+}
+async function finishCompleted(day) {
+  if (!currentRecord) return;
+  var d = String(day || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { toast("Pick a date", true); return; }
+  var at = new Date(d + "T12:00:00").toISOString();
   try {
     var r = await sbcFetch("/.netlify/functions/save-estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref, status: newStatus,
-        estimate: { completedAt: done ? new Date().toISOString() : null } }),
+      body: JSON.stringify({ ref: currentRecord.ref, status: "completed", estimate: { completedAt: at, completedOn: d } }),
     });
     if (!r.ok) { var e = await r.json().catch(function(){return {};}); throw new Error(e.error || "Update failed"); }
-    currentRecord.status = newStatus;
-    if (currentRecord.estimate) currentRecord.estimate.completedAt = done ? new Date().toISOString() : null;
-    estimates.forEach(function(x){ if (x.ref === currentRecord.ref) x.status = newStatus; });
-    toast(done ? "🏁 Project marked completed" : "↩ Project reopened");
+    var ov = document.getElementById("cmp-overlay"); if (ov) ov.remove();
+    currentRecord.status = "completed";
+    if (!currentRecord.estimate) currentRecord.estimate = {};
+    currentRecord.estimate.completedAt = at; currentRecord.estimate.completedOn = d;
+    estimates.forEach(function(x){ if (x.ref === currentRecord.ref) { x.status = "completed"; x.completedAt = at; x.completedOn = d; } });
+    toast("🏁 Completed on " + fmtDay(d));
+    closeEdit();
+    renderTabs();
+    renderList();
+  } catch (e) {
+    console.error(e);
+    toast("Update failed: " + e.message, true);
+  }
+}
+/* Mark the whole project completed (asks for the date) / reopen it. */
+async function markCompleted(done) {
+  if (!currentRecord) return;
+  if (done) { openCompletedModal(); return; }
+  if (!confirm("Reopen this project? It will go back to Accepted status.")) return;
+  try {
+    var r = await sbcFetch("/.netlify/functions/save-estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: currentRecord.ref, status: "accepted", estimate: { completedAt: null, completedOn: null } }),
+    });
+    if (!r.ok) { var e = await r.json().catch(function(){return {};}); throw new Error(e.error || "Update failed"); }
+    currentRecord.status = "accepted";
+    if (currentRecord.estimate) { currentRecord.estimate.completedAt = null; currentRecord.estimate.completedOn = null; }
+    estimates.forEach(function(x){ if (x.ref === currentRecord.ref) { x.status = "accepted"; x.completedAt = null; x.completedOn = null; } });
+    toast("↩ Project reopened");
     closeEdit();
     renderTabs();
     renderList();
