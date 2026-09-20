@@ -85,6 +85,13 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["inbox-digest-background", "POST", { mode: "daily" }],
     /* Rewrites the wording of any estimate. */
     ["reword-estimate", "POST", { ref: "SBC-260805-XQNQ", edits: [{ where: "title", to: "Hacked" }] }],
+    /* A Gmail he connects with a button. Starting a connection, listing or
+       removing a mailbox, and reading them all into the assistant's inbox
+       are his alone: open, a stranger could attach their mailbox to his
+       dashboard or make it read the connected ones on demand. */
+    ["gmail-connect", "POST", {}],
+    ["gmail-accounts", "POST", { action: "remove", email: "someone@example.com" }],
+    ["gmail-sync", "POST", {}],
   ];
 
   for (const [name, method, body] of GATED) {

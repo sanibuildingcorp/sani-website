@@ -29,6 +29,13 @@
 [functions."inbox-digest-scheduled"]
   schedule = "30 11 * * *"
 
+# Every Gmail he connected from the dashboard (Customers > Connected
+# mailboxes), read into the assistant's inbox every 15 minutes, offset
+# from inbox-sync. gmail-sync itself is contractor-only; this caller
+# passes the key from env.
+[functions."gmail-sync-scheduled"]
+  schedule = "7,22,37,52 * * * *"
+
 # Serve /dashboard through a top-level shell that writes the real dashboard HTML
 # into the same document, then loads Customer Scope Control. This keeps Safari
 # full-page screenshots working (no iframe) and avoids editing the huge dashboard.html.
