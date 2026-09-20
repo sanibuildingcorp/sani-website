@@ -195,6 +195,50 @@ const FRESH = {
     blocks.forEach(function (bl, i) { try { new vm.Script(bl.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')); } catch (e) { if (!broken) broken = 'block ' + (i + 1) + ': ' + e.message; } });
     ok('all ' + blocks.length + ' dashboard script blocks parse', broken === null, broken || '');
   }
+  console.log('\n6. The brief from the assistant: "can i put description from my AI?"\n');
+  {
+    /* the server: an addservice action comes back as data with ref, service and the brief */
+    const STORES2 = {};
+    const realLoad2 = Module._load;
+    Module._load = function (r, p, m) { if (r === '@netlify/blobs') return { getStore: (o) => { const mm = STORES2[o.name] || (STORES2[o.name] = new Map()); return { get: async (k) => (mm.has(k) ? JSON.parse(mm.get(k)) : null), set: async (k, v) => { mm.set(k, v); }, delete: async (k) => { mm.delete(k); } }; } }; return realLoad2(r, p, m); };
+    const https = require('https');
+    const realRequest = https.request;
+    let sentSys = '';
+    const sse = (o) => 'event: ' + o.type + '\ndata: ' + JSON.stringify(o) + '\n\n';
+    https.request = function (opts, cb) {
+      const res = { statusCode: 200, _data: null, _end: null, on(ev, fn) { if (ev === 'data') this._data = fn; if (ev === 'end') this._end = fn; return this; } };
+      return { on() { return this; }, write(b) { sentSys = JSON.parse(b).system; }, destroy() {}, end() { setImmediate(() => { cb(res); res._data(Buffer.from(sse({ type: 'message_start' }) + sse({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'Adding the painting May asked for by email.\nACTION: {"type":"addservice","ref":"SBC-260901-ARWQ","service":"Painting","text":"Paint the bathroom walls, ceiling, baseboard and trim in Benjamin Moore Regal Select Honey Badger 920 eggshell; doors in Louisburg Green HC-113 satin. About 8 gallons."}' } }) + sse({ type: 'message_stop' }))); if (res._end) res._end(); }); } };
+    };
+    process.env.DASHBOARD_KEY = 'k'; process.env.ANTHROPIC_API_KEY = 'sk';
+    const fn = require(path.join(ROOT, 'netlify/functions/assistant.js'));
+    const r = await fn.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k' }, body: JSON.stringify({ chat: 'SBC-260901-ARWQ', ref: '', messages: [{ role: 'user', text: 'add the painting she asked for to this estimate' }] }) });
+    const b = JSON.parse(r.body);
+    ok('THE ASSISTANT CAN HAND OVER THE BRIEF: an addservice action with the ref, the trade and the text, the words kept as words', r.statusCode === 200 && b.actions.length === 1 && b.actions[0].type === 'addservice' && b.actions[0].ref === 'SBC-260901-ARWQ' && b.actions[0].service === 'Painting' && /Honey Badger 920 eggshell/.test(b.actions[0].text) && /Adding the painting/.test(b.reply) && !/ACTION:/.test(b.reply), JSON.stringify(b).slice(0, 300));
+    ok('it is told when and how: the brief from the chat, emails and photos; the agreed sections not touched; nothing invented', /ADD A SERVICE TO AN ESTIMATE THE CUSTOMER ALREADY AGREED TO: ACTION: \{"type":"addservice"/.test(sentSys) && /the estimator prices ONLY that work and adds it as its own section; the agreed sections are not touched/.test(sentSys) && /nothing invented/.test(sentSys) && /Do it for him with the addservice action when you know what the work is/.test(sentSys));
+    https.request = realRequest; Module._load = realLoad2;
+
+    /* the page: the action confirms the brief and runs the same add-a-service path */
+    ok('aiExec has the branch', /if \(t === "addservice"\) \{/.test(DASH));
+    const calls = []; const toasts = []; let confirmed = '';
+    const ctx = {
+      String, JSON, Math, Date, Object, Array, Error, Promise, setTimeout, console: { error() {} }, fmt: (n) => '$' + n,
+      currentRecord: { ref: 'SBC-260901-ARWQ', estimate: { labor: [{ item: 'x', qty: 1, rate: 1 }] } }, estimates: [{ ref: 'SBC-260901-ARWQ' }],
+      prompt: () => { calls.push({ prompted: true }); return 'never'; }, confirm: (m) => { confirmed = m; return true; }, toast: (m, bad) => toasts.push((bad ? '!' : '') + m), SBC_HOUSE_RULES: '',
+      document: { getElementById: () => ({ disabled: false, innerHTML: '', textContent: '', value: '' }) },
+      fetch: async (url, o) => { calls.push({ url, body: JSON.parse(o.body) }); return { ok: true, status: 202 }; },
+      aiJobStart() {}, watchGeneration: async () => ({ estimate: { labor: [], addedServices: [{ titles: ['Painting'], subtotal: 1830 }] }, status: 'accepted' }),
+      normalizeDisplayFlags() {}, renderEdit() {}, CONTRACTOR_OWNED_ESTIMATE_FIELDS: [],
+    };
+    vm.createContext(ctx);
+    vm.runInContext([ext(DASH, 'addServiceAI'), ext(DASH, 'applyGeneratedEstimate'), ext(DASH, 'aiExec')].join('\n'), ctx);
+    const said = await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", service: "Painting", text: "Paint the bathroom in Honey Badger 920." })', ctx);
+    const kick = calls.find((c) => c.url);
+    ok('THE BRIEF IS SHOWN WHOLE AND CONFIRMED ONCE - no typing - then the estimator runs on it with the trade name', /Add this as its own section of SBC-260901-ARWQ\?/.test(confirmed) && /Painting\nPaint the bathroom in Honey Badger 920\./.test(confirmed) && /Everything already in this estimate stays exactly as it is/.test(confirmed) && !calls.some((c) => c.prompted) && kick && kick.body.addService.text === 'Paint the bathroom in Honey Badger 920.' && kick.body.addService.service === 'Painting', confirmed + ' | ' + JSON.stringify(kick && kick.body));
+    ok('...and the chat says so', /Adding it to SBC-260901-ARWQ as its own section; the earlier services stay as they are\./.test(said), said);
+    ctx.confirm = () => false; calls.length = 0;
+    ok('a declined brief adds nothing', (await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", text: "x" })', ctx)) === 'OK, not added.' && !calls.some((c) => c.url));
+    ok('an unknown ref is refused', /I don't see SBC-000000-NOPE/.test(await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-000000-NOPE", text: "x" })', ctx)));
+  }
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL  the suite crashed instead of reporting\n        ' + (e && e.stack || e)); process.exit(1); });

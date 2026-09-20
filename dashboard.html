@@ -4162,6 +4162,25 @@ async function aiExec(a, log, render) {
     toast("Added to the customer description of " + dref);
     return "Added to " + dref + "'s customer description. Open it and press Re-read the job from scratch to price it.";
   }
+  if (t === "addservice") {
+    /* ── THE BRIEF COMES FROM THE ASSISTANT ──────────────────────────────
+         "I talked already to the my ask AI and he knows what i want ... can
+          i put description from my AI?"
+       The assistant writes the brief (from the chat, the emails, the
+       photos); he confirms it; ➕ Add a service runs with it. Same path,
+       same guard: the agreed sections are not touched. */
+    var sref = String(a.ref || "").toUpperCase();
+    var brief = String(a.text || "").trim();
+    if (!brief) return "";
+    if (!(currentRecord && currentRecord.ref === sref)) {
+      if (!estimates.some(function (e) { return e.ref === sref; })) return "I don't see " + sref + " in the list.";
+      if (typeof openEdit === "function") openEdit(sref);
+      for (var w = 0; w < 40 && !(currentRecord && currentRecord.ref === sref && currentRecord.estimate); w++) { await new Promise(function (r) { setTimeout(r, 250); }); }
+      if (!(currentRecord && currentRecord.ref === sref)) return "Could not open " + sref + ". Open it and press ➕ Add a service to this estimate.";
+    }
+    var started = await addServiceAI(brief, String(a.service || "").trim());
+    return started === true ? "Adding it to " + sref + " as its own section; the earlier services stay as they are." : "OK, not added.";
+  }
   if (t === "reword") {
     /* ── THE WORDS OF AN ESTIMATE, NEVER THE NUMBERS ────────────────────
          "Can you upgrade them in estimate without touching prices?"
@@ -5742,14 +5761,21 @@ async function resumeGenerationIfRunning(ref) {
    appends the result as its own section(s) - lib/add-service.js. The agreed
    services are not regenerated: not a line, not a bullet, not a price. The
    customer keeps seeing the frozen sent version until he sends again. */
-async function addServiceAI() {
+async function addServiceAI(prefill, service) {
   var r = currentRecord;
-  if (!r || !r.ref) return;
-  if (!(r.estimate && (r.estimate.labor || []).length)) { toast("Generate and price the estimate first, then add a service to it", true); return; }
-  var what = prompt("What is the additional service? Say what and where, in one or two lines (for example: paint walls, ceiling, baseboard and doors in the bathroom; colors from her email). It is priced on its own and added as its own section. Everything already in this estimate stays exactly as it is.", "");
-  if (what === null) return;
-  what = String(what).trim();
-  if (!what) { toast("Say what the additional service is first", true); return; }
+  if (!r || !r.ref) return false;
+  if (!(r.estimate && (r.estimate.labor || []).length)) { toast("Generate and price the estimate first, then add a service to it", true); return false; }
+  var what;
+  if (typeof prefill === "string" && prefill.trim()) {
+    /* the assistant wrote the brief: show it whole, ask once */
+    what = prefill.trim();
+    if (!confirm("Add this as its own section of " + r.ref + "?\n\n" + (service ? service + "\n" : "") + what + "\n\nIt is priced on its own. Everything already in this estimate stays exactly as it is.")) return false;
+  } else {
+    what = prompt("What is the additional service? Say what and where, in one or two lines (for example: paint walls, ceiling, baseboard and doors in the bathroom; colors from her email). It is priced on its own and added as its own section. Everything already in this estimate stays exactly as it is.", "");
+    if (what === null) return false;
+    what = String(what).trim();
+    if (!what) { toast("Say what the additional service is first", true); return false; }
+  }
   var btn = document.getElementById("gen-btn");
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="ai-spin"></span> Adding the service…'; }
   try {
@@ -5758,7 +5784,7 @@ async function addServiceAI() {
     var startedAt = Date.now();
     var kick = await fetch("/.netlify/functions/generate-estimate-background", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: ref, jobId: jobId, addService: { text: what }, houseRules: (function () { var b = document.getElementById("house-rules-text"); return b && b.value.trim() ? b.value : SBC_HOUSE_RULES; })() }),
+      body: JSON.stringify({ ref: ref, jobId: jobId, addService: { text: what, service: String(service || "") }, houseRules: (function () { var b = document.getElementById("house-rules-text"); return b && b.value.trim() ? b.value : SBC_HOUSE_RULES; })() }),
     });
     if (kick.status !== 202 && !kick.ok) throw new Error("Could not start the estimator (" + kick.status + ")");
     aiJobStart(ref, jobId, startedAt, { addService: true });
@@ -5767,10 +5793,12 @@ async function addServiceAI() {
     var adds = (currentRecord.estimate && currentRecord.estimate.addedServices) || [];
     var last = adds[adds.length - 1];
     toast("✓ " + (last && last.titles ? last.titles.join(", ") : "The service") + " added as its own section" + (last && last.subtotal ? " · " + fmt(last.subtotal) : "") + ". The earlier services are untouched. Review it, then Send to Customer.");
+    return true;
   } catch (e) {
     console.error(e);
     if (btn) { btn.disabled = false; btn.textContent = "Re-price this job"; }
     toast("Could not add the service: " + e.message, true);
+    return false;
   }
 }
 
