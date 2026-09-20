@@ -89,6 +89,9 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
        removing a mailbox, and reading them all into the assistant's inbox
        are his alone: open, a stranger could attach their mailbox to his
        dashboard or make it read the connected ones on demand. */
+    /* Creates estimate records, and links additional work to any customer's
+       agreed job. Had no gate. */
+    ["create-estimate", "POST", { customer: { name: "Mallory", email: "m@example.com" }, projectTitle: "Junk" }],
     ["gmail-connect", "POST", {}],
     ["gmail-accounts", "POST", { action: "remove", email: "someone@example.com" }],
     ["gmail-sync", "POST", {}],

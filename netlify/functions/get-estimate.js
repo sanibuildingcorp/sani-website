@@ -52,6 +52,9 @@ exports.handler = async function (event) {
        It is per-record and get-estimate is gated by ref, so a customer can only
        ever receive their own conversation. */
     if (isQuoteRequest) {
+      /* Additional work, linked both ways (create-estimate parentRef): the
+         customer's page names it and links to it, never prices it here. */
+      await attachAddons(store, data);
       if (isScopeOnly) return { statusCode: 200, headers: cors(), body: JSON.stringify(scopeView(data)) };
       const view = buildCustomerView(data, isDraftPreview);
       /* ══ THE CUSTOMER SEES WHAT WAS SENT ══════════════════════════════════════
@@ -128,6 +131,33 @@ function scopeView(data) {
   return scopeOnlyView(view);
 }
 exports.scopeView = scopeView;
+
+/* ══ ADDITIONAL WORK, ON THE CUSTOMER'S PAGE ═══════════════════════════════
+     "she already agreed with this current service estimate but then she add
+      additional service for painting, i need keep current estimate untouched"
+   An agreed estimate lists the add-ons made for it - ref and title only,
+   and only the ones he has SENT: a draft add-on is his business. An add-on
+   names the estimate it belongs to. Prices never travel here; each page
+   prices itself. Anything failing leaves the page as it was. */
+const ADDON_LINKS_MAX = 8;
+async function attachAddons(store, data) {
+  try {
+    const refs = Array.isArray(data.addonRefs) ? data.addonRefs.slice(0, ADDON_LINKS_MAX) : [];
+    if (refs.length) {
+      const recs = await Promise.all(refs.map(function (r) { return store.get(String(r), { type: "json" }).catch(function () { return null; }); }));
+      data.addons = recs.filter(function (a) { return a && a.ref && everSent(a); }).map(function (a) { return { ref: a.ref, title: titleOf(a) }; });
+    }
+    if (data.parentRef) {
+      const p = await store.get(String(data.parentRef), { type: "json" }).catch(function () { return null; });
+      if (p && p.ref) data.addonOf = { ref: p.ref, title: titleOf(p) };
+    }
+  } catch (e) { /* the links are a courtesy; the page must not fail for them */ }
+  delete data.addonRefs;
+}
+function titleOf(rec) {
+  const r = rec || {};
+  return String((r.estimate && r.estimate.projectTitle) || (r.request && r.request.service) || "").trim();
+}
 
 const SENT_STATUSES = ["sent", "opened", "question", "accepted", "invoiced", "paid", "completed", "declined"];
 function everSent(rec) {
