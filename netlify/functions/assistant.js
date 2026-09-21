@@ -343,7 +343,10 @@ async function recordContext(ref, estimateChars) {
     thread.length ? "\nMESSAGES SO FAR:\n" + thread.join("\n") : "",
     historyBlock(rec),
     await emailContext(rec),
-    str(est.scopeOfWork) ? "\nSCOPE DRAFTED SO FAR:\n" + str(est.scopeOfWork).slice(0, 1200) : "",
+    /* The scope is the customer-facing text he asks to have reworded: the
+       background answer gets it whole (it is rarely past 8,000 characters),
+       the nine-second answer keeps the short cut. */
+    str(est.scopeOfWork) ? "\nSCOPE OF WORK (the customer reads this text; quote it exactly in a reword):\n" + cutText(str(est.scopeOfWork), Number(estimateChars) > ESTIMATE_CHARS ? 8000 : 1200) : "",
     estimateContext(rec, estimateChars),
   ].filter(Boolean).join("\n");
   return { text: text, glance: estimateGlance(rec) };
@@ -493,13 +496,38 @@ async function inboxContext(ref, question) {
    as the whole. */
 const ESTIMATE_CHARS = 9000;
 function money(n) { const v = Number(n) || 0; return "$" + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+/* A text cut that says it was cut, so the model never quotes a half phrase
+   as the whole. */
+function cutText(t, n) { const s = str(t); return s.length > n ? s.slice(0, n) + " ... (" + (s.length - n) + " more characters not shown)" : s; }
+/* Published cards whose wording is not the same as the estimator's card of
+   the same name (or that have no such card). Lines toggled off are hidden
+   from the customer and are left out. */
+function publishedDifferences(est) {
+  const pub = est && est.customerScopePublished === true && est.publishedCustomerScope ? arr(est.publishedCustomerScope.services) : [];
+  if (!pub.length) return [];
+  const norm = function (v) { return str(v).toLowerCase().replace(/\s+/g, " "); };
+  const texts = function (items) { return arr(items).map(function (x) { return norm(typeof x === "string" ? x : (x && (x.text || x.item || x.label || x.name))); }).filter(Boolean).join(" | "); };
+  const cards = {};
+  arr(est.serviceBreakdown).forEach(function (s) { if (s) cards[norm(s.title)] = s; });
+  return pub.filter(function (p) {
+    if (!p) return false;
+    const c = cards[norm(p.name || p.title)];
+    if (!c) return true;
+    return texts(p.included) !== texts(c.included) || texts(p.supplied || p.customerSupplies) !== texts(c.customerSupplies) || texts(p.excluded || p.notIncluded) !== texts(c.notIncluded);
+  }).map(function (p) { return { name: p.name || p.title, subtotal: p.subtotal, included: p.included, supplied: p.supplied || p.customerSupplies, excluded: p.excluded || p.notIncluded }; });
+}
 function estimateContext(rec, chars) {
   const est = (rec && rec.estimate) || {};
   const labor = arr(est.labor), materials = arr(est.materials);
   if (!labor.length && !materials.length && !arr(est.serviceBreakdown).length) return "";
   const lines = ["", "THE GENERATED ESTIMATE, AS HE SEES IT IN THE DASHBOARD:"];
+  /* The free-text fields the customer reads, word for word: a reword names
+     the phrase to replace, so the model must have the text as stored. "I only
+     have card names and lines, not the free-text summary field." */
   if (str(est.projectTitle)) lines.push("Title: " + str(est.projectTitle));
-  if (str(est.timelineText)) lines.push("Timeline: " + str(est.timelineText).slice(0, 300));
+  if (str(est.summary)) lines.push("Summary (the customer sees this text; quote it exactly in a reword): " + cutText(str(est.summary), 1500));
+  if (str(est.timelineText)) lines.push("Timeline (the customer sees this text): " + cutText(str(est.timelineText), 600));
+  if (str(est.customerTimeline) && str(est.customerTimeline) !== str(est.timelineText)) lines.push("Customer timeline note: " + cutText(str(est.customerTimeline), 400));
 
   const row = function (l) {
     const qty = Number(l && l.qty) || 0, rate = Number(l && l.rate) || 0;
@@ -531,6 +559,18 @@ function estimateContext(rec, chars) {
       if (!s) return;
       lines.push("  " + str(s.title) + (s.subtotal != null ? " - " + money(s.subtotal) : ""));
       [list("included", s.included), list("customer supplies", s.customerSupplies), list("NOT included", s.notIncluded)].filter(Boolean).forEach(function (l) { lines.push(l); });
+    });
+  }
+  /* The published wording is what her page prints. Usually it is the cards
+     above word for word; when he edited a card in the customer-scope editor
+     it differs, and a reword's "from" must match THESE words. Only the cards
+     that differ are printed, so the block does not double in size. */
+  const pubDiff = publishedDifferences(est);
+  if (pubDiff.length) {
+    lines.push("", "PUBLISHED WORDING ON THE CUSTOMER'S PAGE, where it differs from the cards above (a reword's from must match these words):");
+    pubDiff.forEach(function (s) {
+      lines.push("  " + str(s.name) + (s.subtotal != null ? " - " + money(s.subtotal) : ""));
+      [list("included", s.included), list("customer supplies", s.supplied), list("NOT included", s.excluded)].filter(Boolean).forEach(function (l) { lines.push(l); });
     });
   }
 
@@ -786,7 +826,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "- remember something for later: ACTION: {\"type\":\"remember\",\"text\":\"...\"}",
     "- ADD A FACT FROM AN EMAIL TO AN ESTIMATE: ACTION: {\"type\":\"describe\",\"ref\":\"SBC-...\",\"text\":\"...\"}   - when a customer's email carries something the estimate needs (a measurement, a change of scope, a material, a date, a correction) and he asks you to put it in / update the estimate, write the fact in one or two plain sentences; the dashboard asks him to confirm, adds it to that estimate's customer description, and he presses Re-read the job to price it. Say in one line what you are adding. Never invent a fact; quote the email.",
     "- ADD A SERVICE TO AN ESTIMATE THE CUSTOMER ALREADY AGREED TO: ACTION: {\"type\":\"addservice\",\"ref\":\"SBC-...\",\"service\":\"Painting\",\"text\":\"...\"}   - when he asks to add new work (painting, a closet, an extra room, anything not in the estimate) to a job that is already priced or sent, and you know what the work is from this chat, his emails, a photo or the thread. text is the brief the estimator prices: what and where, quantities, colors, products, sheen, what the customer supplies - everything you know, in plain sentences, nothing invented. service is the trade name for the new section. The dashboard shows him the brief, he confirms, and the estimator prices ONLY that work and adds it as its own section; the agreed sections are not touched. Say in one line what you are adding. ONLY WHEN HE ASKS to add it, and only once per request: never offer to fire it yourself, and never add a service that is already on the estimate (the job lists the added sections). REDOING AN ADDED SECTION: when he asks to regenerate, redo, re-price or change an added section (the job lists them under ADDED AFTER THE CUSTOMER AGREED), send addservice with \"replace\" set to that section's exact title and text holding the COMPLETE new brief - everything from the first brief that still applies plus his corrections, never only the change. The dashboard takes the old section out (lines, card, price) and prices the new brief as its own section; the agreed sections stay untouched. Never use regenerate for this. Use addservice for new priced work on an agreed estimate; describe for a fact on an estimate not priced yet.",
-    "- FIX THE WORDS OF AN ESTIMATE WITHOUT TOUCHING A PRICE: ACTION: {\"type\":\"reword\",\"ref\":\"SBC-...\",\"edits\":[{\"where\":\"included\",\"service\":\"Bathroom\",\"from\":\"old line as it reads now\",\"to\":\"new line\"}]}   - when he asks you to correct, update or align wording (a finish, a size, a spec, a contradiction between the lines and the included text, a typo) with no price change. where is one of: included, excluded, supplies (a line of a service card - name the service), labor or material (the NAME of a price line: from = its name as shown, to = the new name), summary, scope, title, timeline (from = the phrase to replace, or empty to replace the whole field). from must be copied EXACTLY as the estimate shows it. to empty removes a card line; from empty adds one. Put every edit for one estimate in ONE action's edits list. The server keeps every price, quantity and total exactly as they are and refuses anything else; the dashboard shows him each before/after and asks first. Use reword for wording; use describe for new work that must be priced.",
+    "- FIX THE WORDS OF AN ESTIMATE WITHOUT TOUCHING A PRICE: ACTION: {\"type\":\"reword\",\"ref\":\"SBC-...\",\"edits\":[{\"where\":\"included\",\"service\":\"Bathroom\",\"from\":\"old line as it reads now\",\"to\":\"new line\"}]}   - when he asks you to correct, update or align wording (a finish, a size, a spec, a contradiction between the lines and the included text, a typo) with no price change. where is one of: included, excluded, supplies (a line of a service card - name the service), labor or material (the NAME of a price line: from = its name as shown, to = the new name), summary, scope, title, timeline (from = the phrase to replace, or empty to replace the whole field). from must be copied EXACTLY as the estimate shows it: the title, summary, timeline, scope of work and every card line are printed word for word in the job below - quote from there, never say you do not have the text. to empty removes a card line; from empty adds one. Put every edit for one estimate in ONE action's edits list. The server keeps every price, quantity and total exactly as they are and refuses anything else; the dashboard shows him each before/after and asks first. Use reword for wording; use describe for new work that must be priced.",
     "- SEARCH THE INTERNET:          ACTION: {\"type\":\"search\",\"query\":\"...\"}   - use it whenever the answer needs current information from outside this dashboard: today's price of a product or material, a supplier or store, a building code, permit or co-op rule, a company, an address, the weather, anything that changes over time or that you are not sure of. Also whenever he says 'search online', 'check online', 'google it' or 'look it up'. Write the query the way a good search is written (specific, with New York or the borough when it matters). Say in ONE short line that you are checking online - the answer with its sources arrives in this chat in under a minute - and do not guess the answer yourself in the same reply.",
     "An ACTION line is ONE line of valid JSON: no line breaks inside it, and inside a text value use single quotes, never double quotes (for a reword, copy the quotes the estimate uses - 24\" - as \\\"). Always write at least one line of words before any ACTION line.",
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
