@@ -1403,6 +1403,11 @@ body {
 .sc-tab.on{color:var(--ink);border-bottom-color:var(--gold);background:#fff}
 .sc-tab .n{display:block;font-size:10px;color:#93a1b5;font-weight:400;margin-top:1px}
 .sc-pane{padding:12px 14px 4px}
+.sc-lines-fold{border-top:1px solid var(--line)}
+.sc-lines-fold>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:10px 14px;font-size:12.5px;color:var(--ink-muted)}
+.sc-lines-fold>summary::-webkit-details-marker{display:none}
+.sc-lines-fold>summary .sc-fold-cue{margin-left:auto;color:var(--gold);font-weight:700;white-space:nowrap}
+.sc-lines-fold[open]>summary{border-bottom:1px dashed var(--line)}
 .sc-kind{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#93a1b5;margin:12px 0 6px}
 .sc-pane .sc-kind:first-child{margin-top:0}
 .sc-empty{font-size:12.5px;color:#93a1b5;padding:4px 0 8px}
@@ -6016,6 +6021,15 @@ function scopeAlreadyShared() {
    which knows what the customer actually bought. The dashboard's job is to display it,
    not to guess it again. Keyword fallback now only runs on a line with no section at
    all, and it can never invent a service the estimate does not already contain. */
+/* Which cards have their price lines open. In memory only: a re-render (every
+   edit) must not fold a card he is working in; a reload folds them all. */
+var SCOPE_LINES_OPEN = {};
+function scopeLinesToggle(nm, open) {
+  if (!nm) return;
+  SCOPE_LINES_OPEN[nm] = !!open;
+  var cues = document.querySelectorAll('.sc-lines-fold');
+  cues.forEach(function (el) { var cue = el.querySelector('.sc-fold-cue'); if (cue && el.querySelector('summary') && el.getAttribute('data-nm') === nm) cue.textContent = open ? '▾ hide lines' : '▸ show lines'; });
+}
 /* The titles of the sections added after the customer agreed (lib/add-service.js). */
 function scopeAddedTitles() {
   var est = (currentRecord && currentRecord.estimate) || {};
@@ -6454,7 +6468,19 @@ function renderScopeControl() {
       }).join('') +
     '</div>';
 
-    /* price lines */
+    /* ══ THE PRICE LINES, FOLDED. ═══════════════════════════════════════════
+         "in the card that material lists and labors lists makes very long
+          cards and as i know its not shows to the customer side"
+       The customer sees included / supplies / not included; the lines are
+       his. One row per card says how many and how much; it opens when he
+       needs to edit or move a line, and stays open across re-renders until
+       he closes it. The two big Labor and Materials tables above are
+       untouched. */
+    var kL = scopeMarkupK() || 1;
+    var labTot = scopeRowsRaw(scopeRowsFor(nm, "labor")) * kL, matTot = scopeRowsRaw(scopeRowsFor(nm, "materials")) * kL;
+    var linesOpen = (typeof SCOPE_LINES_OPEN !== 'undefined') && SCOPE_LINES_OPEN[nm] === true;
+    html += '<details class="sc-lines-fold" data-nm="' + esc(nm) + '"' + (linesOpen ? ' open' : '') + ' ontoggle="scopeLinesToggle(this.getAttribute(\'data-nm\'), this.open)">' +
+      '<summary><span>Labor ' + lab.length + ' line' + (lab.length === 1 ? '' : 's') + ' · ' + fmt(labTot) + '</span><span>Materials ' + mat.length + ' line' + (mat.length === 1 ? '' : 's') + ' · ' + fmt(matTot) + '</span><b class="sc-fold-cue">' + (linesOpen ? '▾ hide lines' : '▸ show lines') + '</b></summary>';
     html += '<div class="sc-pane">';
     [{ kind: "labor", label: "Labor", rows: lab }, { kind: "materials", label: "Materials", rows: mat }].forEach(function (blk) {
       html += '<div class="sc-kind">' + blk.label + '</div>';
@@ -6505,7 +6531,7 @@ function renderScopeControl() {
           'onchange="scopeSetKindTotal(' + si + ',\'' + blk.kind + '\', this.value)">' +
         '</div>';
     });
-    html += '</div>';
+    html += '</div></details>';
 
     /* the three wording groups, all open, directly under the prices */
     groups.forEach(function (g) {
