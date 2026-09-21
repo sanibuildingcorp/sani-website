@@ -243,7 +243,7 @@ const FRESH = {
     ok('THE BRIEF IS SHOWN WHOLE AND CONFIRMED ONCE - no typing - then the estimator runs on it with the trade name', /Add this as its own section of SBC-260901-ARWQ\?/.test(confirmed) && /Painting\nPaint the bathroom in Honey Badger 920\./.test(confirmed) && /Everything already in this estimate stays exactly as it is/.test(confirmed) && !calls.some((c) => c.prompted) && kick && kick.body.addService.text === 'Paint the bathroom in Honey Badger 920.' && kick.body.addService.service === 'Painting', confirmed + ' | ' + JSON.stringify(kick && kick.body));
     ok('...and the chat says so', /Adding it to SBC-260901-ARWQ as its own section; the earlier services stay as they are\./.test(said), said);
     ctx.confirm = () => false; calls.length = 0;
-    ok('a declined brief adds nothing', (await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", text: "x" })', ctx)) === 'OK, not added.' && !calls.some((c) => c.url));
+    ok('a declined brief adds nothing', (await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", text: "x" })', ctx)) === 'Cancelled - the section was not added.' && !calls.some((c) => c.url));
     ok('an unknown ref is refused', /I don't see SBC-000000-NOPE/.test(await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-000000-NOPE", text: "x" })', ctx)));
   }
   console.log('\n7. Taking an added section out again, whole\n');
