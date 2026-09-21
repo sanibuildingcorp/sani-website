@@ -17,8 +17,31 @@ html,body{margin:0;min-height:100%;background:#fff}
   function fail(msg){
     document.body.innerHTML='<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:32px;color:#8b1e1e"><strong>Dashboard could not load.</strong><br><br>'+String(msg||'Please refresh the page.')+'</div>';
   }
-  fetch('/dashboard.html?core=4',{cache:'no-store'})
-    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+  /* ── THE PAGE HE IS LOOKING AT MUST BE THE PAGE THAT WAS DEPLOYED ──────
+       "Now in google browser it was shows me and was did his job. In safari
+        still was not doing"
+     Safari keeps a tab alive for days: the JavaScript in it is from whenever
+     the page was last fully loaded, so a fix goes live and his phone keeps
+     running the version from before it. The shell remembers the ETag of the
+     dashboard it loaded and, every time the tab comes back to the front,
+     asks the server (no cache) whether that ETag still stands. When it does
+     not, the page reloads itself before he types anything. At most one
+     check a minute. */
+  var loadedTag='';
+  function tagOf(r){ return String(r.headers.get('etag')||r.headers.get('last-modified')||''); }
+  var lastCheck=0;
+  function freshCheck(){
+    if(document.hidden) return Promise.resolve(false);
+    var now=Date.now();
+    if(now-lastCheck<60000) return Promise.resolve(false);
+    lastCheck=now;
+    return fetch('/dashboard.html?core=5',{method:'HEAD',cache:'no-store'})
+      .then(function(r){ var t=tagOf(r); if(r.ok&&loadedTag&&t&&t!==loadedTag){ location.reload(); return true; } return false; })
+      .catch(function(){ return false; });
+  }
+  window.sbcFreshCheck=freshCheck;
+  fetch('/dashboard.html?core=5',{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); loadedTag=tagOf(r); return r.text(); })
     .then(function(html){
       /* Scope Control remains on its proven V2 loader. The market-audit module is
          a separate read-only internal UI: it never changes price and never loads
@@ -31,6 +54,12 @@ html,body{margin:0;min-height:100%;background:#fff}
       document.open();
       document.write(html);
       document.close();
+      /* after close(): document.open() drops every listener on the window,
+         so these are added once the real page is in */
+      lastCheck=Date.now();
+      document.addEventListener('visibilitychange',function(){ if(!document.hidden) freshCheck(); });
+      window.addEventListener('pageshow',function(){ freshCheck(); });
+      window.addEventListener('focus',function(){ freshCheck(); });
     })
     .catch(function(e){ console.error('SBC dashboard shell load failed',e); fail(e.message); });
 })();

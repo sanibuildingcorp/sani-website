@@ -47,7 +47,7 @@ exports.handler = async function (event) {
     record.updatedAt = new Date().toISOString();
     record.rewordedAt = record.updatedAt;
     await store.setJSON(ref, record);
-    return json(200, { success: true, applied: result.applied, skipped: result.skipped, estimate: record.estimate });
+    return json(200, { success: true, applied: result.applied, skipped: result.skipped, estimate: record.estimate, contract: record.contract || null });
   } catch (err) {
     console.error("reword-estimate error:", err.message);
     return json(500, { error: err.message });
