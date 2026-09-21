@@ -8,6 +8,7 @@
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
+const voice = require("./lib/customer-voice");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -95,7 +96,7 @@ PROJECT DATA:
 - Project address: ${projectAddress || "(same as customer address)"}
 - Project type/title: ${est.projectTitle || reqData.service || "Renovation project"}
 - Contract total: $${total.toFixed(2)}
-- Timeline: ${est.timelineText || "To be scheduled"}
+- Timeline: ${voice.softenTimeline(est.timelineText) || "To be scheduled"}
 - Summary: ${est.summary || "(none)"}
 - Scope of work (from estimate):
 ${String(est.scopeOfWork || "(see labor items)").slice(0, 1200)}
@@ -105,12 +106,14 @@ ${String(est.scopeOfWork || "(see labor items)").slice(0, 1200)}
 - OPTIONAL WORK THE CUSTOMER ADDED (already included in the contract total — every one of these MUST appear in scopeOfWork): ${addedOptions.join("; ") || "(none)"}
 - Special customer notes: ${String(reqData.description || "(none)").slice(0, 400)}
 
+${voice.VOICE}
+
 OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact shape:
 {
   "projectType": "Short project type label (e.g. 'Full Composite Deck Replacement')",
   "scopeOfWork": ["Specific work item 1", "Specific work item 2", "..."],
   "materialsList": ["Material/finish 1 with spec", "..."],
-  "timeline": "Project duration in plain words, including material-delivery conditions if relevant",
+  "timeline": "One or two short, calm sentences: how long the work takes once it starts; building approval, if any, under a week",
   "paymentSchedule": [
     {"label": "Deposit — due upon signing", "amount": 0.00},
     {"label": "Final payment — due upon completion", "amount": 0.00}
@@ -170,7 +173,7 @@ RULES:
         projectType: parsed.projectType || est.projectTitle || "Renovation Project",
         scopeOfWork: withAddedOptions(Array.isArray(parsed.scopeOfWork) ? parsed.scopeOfWork : [], addedOptions),
         materialsList: Array.isArray(parsed.materialsList) ? parsed.materialsList : materialNames,
-        timeline: parsed.timeline || est.timelineText || "To be scheduled",
+        timeline: voice.softenTimeline(parsed.timeline || est.timelineText) || "To be scheduled",
         paymentSchedule: schedule,
         clauses: parsed.clauses || {},
       },
