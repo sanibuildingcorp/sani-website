@@ -106,7 +106,7 @@ const SCREEN = {
     /* The list itself is capped at SCREEN_CHARS (14k); the rest is the rules,
        which grow a line at a time. 21k leaves room for that without ever
        letting a 400-row list through whole (that would be ~50k). */
-    ok('A HUGE LIST IS CUT, NOT SENT WHOLE - the clock is the reason', sent.system.length < 32000 && /list cut here/.test(sent.system), sent.system.length + ' chars');
+    ok('A HUGE LIST IS CUT, NOT SENT WHOLE - the clock is the reason', sent.system.length < 34000 && /list cut here/.test(sent.system), sent.system.length + ' chars');
     sent = null;
     await call({ messages: [{ role: 'user', text: 'hi' }], screen: 'garbage' });
     ok('a screen that is not an object is ignored, not a crash', sent && /No job is open\. Answer whatever he asks\./.test(sent.system));

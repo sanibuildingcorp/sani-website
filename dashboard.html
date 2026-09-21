@@ -4352,6 +4352,35 @@ async function aiExec(a, log, render) {
       (dw.skipped && dw.skipped.length ? " Not found: " + dw.skipped.map(function (s) { return s.from || s.to; }).join("; ") + "." : "") +
       (wasSent ? " The customer still sees the sent version until you send an update." : "");
   }
+  if (t === "dedupe") {
+    /* ── REPEATED LINES OUT OF THE SCOPE, IN ONE PASS ───────────────────
+         "check if there is duplicate services, or texts and remove all
+          duplicated but he don't do it"
+       A dry run first, so the confirm shows exactly which lines go; then
+       the apply. The server keeps each line once where it first appears
+       and never touches a price. */
+    var dref = String(a.ref || "");
+    var drow = estimates.find(function (e) { return e.ref === dref; });
+    var drec = currentRecord && currentRecord.ref === dref ? currentRecord : null;
+    if (!drow && !drec) return "I don't see " + dref + " in the list.";
+    var similarNote = function (d) {
+      var s = Array.isArray(d && d.similar) ? d.similar : [];
+      return s.length ? " Same work in different words (merge with a reword): " + s.slice(0, 5).map(function (p) { return "\"" + p.a + "\" (" + p.aIn + ") ≈ \"" + p.b + "\" (" + p.bIn + ")"; }).join("; ") + "." : "";
+    };
+    var dry = await sbcFetch("/.netlify/functions/dedupe-scope", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: dref, apply: false }) });
+    var dd = await dry.json().catch(function () { return {}; });
+    if (!dry.ok) throw new Error(dd.error || "Failed");
+    if (!dd.changed) return "No repeated lines on " + dref + "." + similarNote(dd);
+    var dshown = (dd.lines || []).map(function (l) { return "• " + l.text + (l.count > 1 ? "  (×" + l.count + ")" : ""); }).join("\n");
+    if (!confirm("Remove " + dd.count + " repeated line" + (dd.count === 1 ? "" : "s") + " from " + dref + "?\nEach stays once, where it first appears. Prices, quantities and totals stay exactly as they are.\n\n" + dshown)) return "OK, nothing changed.";
+    var ap = await sbcFetch("/.netlify/functions/dedupe-scope", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: dref, apply: true }) });
+    var da = await ap.json().catch(function () { return {}; });
+    if (!ap.ok) throw new Error(da.error || "Failed");
+    if (drec && da.estimate) { drec.estimate = da.estimate; if (typeof renderEdit === "function") renderEdit(); }
+    toast("Repeated lines removed on " + dref + " — prices untouched");
+    var dSent = !!((drec && (drec.sentVersion || drec.sentAt)) || (drow && drow.sentAt));
+    return "Removed " + da.count + " repeated line" + (da.count === 1 ? "" : "s") + " on " + dref + "; each kept once where it first appears, every price as it was." + similarNote(da) + (dSent ? " The customer still sees the sent version until you send an update." : "");
+  }
   if (t === "draft") {
     var box = document.getElementById("cnv-text");
     if (!box) return "Open the estimate first, then ask me for the draft again.";
