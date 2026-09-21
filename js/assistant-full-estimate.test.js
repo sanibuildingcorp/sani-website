@@ -39,12 +39,24 @@ for (let i = 1; i <= 12; i++) labor.push({ item: 'Painting task number ' + i + '
 const materials = [];
 for (let i = 1; i <= 24; i++) materials.push({ item: 'Bathroom material number ' + i + ' supplied and installed by Sani', qty: 1 + (i % 3), unit: 'ea', rate: 40 + i, section: 'Bathroom' });
 materials.push({ item: 'Benjamin Moore Regal Select Honey Badger 920, eggshell', qty: 4, unit: 'gal', rate: 85, section: 'Painting' });
+/* A scope past the old 1,200-character cut: the last paragraph is the one he asks about. */
+let SCOPE = '';
+for (let i = 1; i <= 14; i++) SCOPE += 'Paragraph ' + i + ' of the scope of work describes one part of the bathroom in plain words for the customer, with the products, the sizes and the order of the work.\n\n';
+SCOPE += 'FINAL PARAGRAPH: Painting of the bathroom walls and ceiling in Honey Badger 920, two coats, after the tile is set.';
 const REC = {
   ref: 'SBC-260901-WOWP', status: 'question', sentAt: '2026-09-10T21:01:00Z', updatedAt: '2026-09-20T17:45:00Z', customerFinalTotal: 23582.94,
   customer: { name: 'May Chen', email: 'rmchen882@gmail.com', address: '100 Riverside Blvd' },
   request: { service: 'Bathroom', description: 'Water damage bathroom.' },
   estimate: {
     projectTitle: 'Riverside Blvd Bathroom Upgrade', markupPct: 25, labor: labor, materials: materials,
+    summary: 'Full bathroom renovation after water damage at 100 Riverside Blvd: remove the tub, repair the subfloor, set new tile and fixtures. Water Damage remediation is included.',
+    timelineText: 'About three weeks of work: demolition in week one, tile and plumbing in week two, fixtures, paint and punch list in week three.',
+    scopeOfWork: SCOPE,
+    customerScopePublished: true,
+    publishedCustomerScope: { updatedAt: '2026-09-19T10:00:00Z', services: [
+      { name: 'Bathroom', subtotal: 12697.7, included: ['Remove the tub', 'Set new porcelain tile on the floor and walls'], supplied: [], excluded: [], includedOff: ['Old hidden line'] },
+      { name: 'Painting', subtotal: 10885.24, included: ['Two coats on walls, ceiling and trim in Honey Badger 920', 'Doors in Louisburg Green HC-113'], supplied: [], excluded: ['Wallpaper removal'] },
+    ] },
     serviceBreakdown: [{ title: 'Bathroom', included: ['Remove the tub', 'Set new tile'], customerSupplies: [], notIncluded: [], subtotal: 12697.7, options: [] }, { title: 'Painting', included: ['Two coats on walls, ceiling and trim in Honey Badger 920', 'Doors in Louisburg Green HC-113'], customerSupplies: [], notIncluded: ['Wallpaper removal'], subtotal: 10885.24, options: [] }],
     addedServices: [{ at: '2026-09-20T17:41:00Z', titles: ['Painting'], subtotal: 10885.24, text: 'Paint the bathroom' }],
   },
@@ -64,6 +76,16 @@ STORES.estimates = new Map(); STORES.estimates.set(REC.ref, JSON.stringify(REC))
     ok('IT IS TOLD WHAT WAS ADDED AFTER AGREEMENT, and that those lines are the ones tagged with that title', /ADDED AFTER THE CUSTOMER AGREED, as own sections \(the earlier sections untouched\): Painting \$10,885\.24 on 2026-09-20\. Their lines and cards are the ones tagged with those titles\./.test(est), est.match(/ADDED AFTER[^\n]*/) && est.match(/ADDED AFTER[^\n]*/)[0]);
     ok('...and what the customer sees right now: version 1 from Sep 10, changed since', /WHAT THE CUSTOMER SEES RIGHT NOW: version 1, sent 2026-09-10, total \$[\d,]+\.\d\d - the estimate above has changed since; she sees the new version only when he sends again/.test(est), est.match(/WHAT THE CUSTOMER SEES[^\n]*/) && est.match(/WHAT THE CUSTOMER SEES[^\n]*/)[0]);
     ok('IT IS TOLD HOW TO CHECK: read every line and card, name each mismatch, reword for wording, the exact line and number for money - which he edits', /CHECK THE ESTIMATE \('have a look', 'analyze', 'is it correct', 'anything unmatched'\)/.test(sys) && /never say you cannot see it or ask him to refresh/.test(sys) && /a card bullet with no line behind it, a line filed under the wrong service, a duplicate line, a \$0 card/.test(sys) && /he edits lines himself, you never change money/.test(sys));
+
+    /* "I don't have the exact current summary text to quote from - I only
+       have card names and lines, not the free-text summary field." */
+    ok('THE SUMMARY IS IN THE PROMPT WORD FOR WORD, marked as the customer\'s text to quote in a reword', /Summary \(the customer sees this text; quote it exactly in a reword\): Full bathroom renovation after water damage at 100 Riverside Blvd: remove the tub, repair the subfloor, set new tile and fixtures\. Water Damage remediation is included\./.test(est), (est.match(/Summary[^\n]*/) || [''])[0]);
+    ok('...the timeline whole, not cut at 300', /Timeline \(the customer sees this text\): About three weeks of work: demolition in week one, tile and plumbing in week two, fixtures, paint and punch list in week three\./.test(est));
+    ok('THE SCOPE OF WORK IS WHOLE on the background path: the final paragraph, past the old 1,200-character cut, is there', /SCOPE OF WORK \(the customer reads this text; quote it exactly in a reword\):\nParagraph 1 of the scope/.test(sys) && /FINAL PARAGRAPH: Painting of the bathroom walls and ceiling in Honey Badger 920, two coats, after the tile is set\./.test(sys) && !/more characters not shown\)\n/.test(sys.slice(sys.indexOf('SCOPE OF WORK ('), sys.indexOf('THE GENERATED ESTIMATE, AS HE SEES IT'))));
+    ok('THE PUBLISHED WORDING IS SHOWN WHERE IT DIFFERS from the estimator\'s card: the Bathroom card she reads says porcelain tile', /PUBLISHED WORDING ON THE CUSTOMER'S PAGE, where it differs from the cards above \(a reword's from must match these words\):\n  Bathroom - \$12,697\.70\n    included: Remove the tub; Set new porcelain tile on the floor and walls/.test(est), (est.match(/PUBLISHED WORDING[\s\S]{0,300}/) || [''])[0]);
+    ok('...the Painting card, published word for word as the estimator wrote it, is not repeated', !/PUBLISHED WORDING[\s\S]*\n  Painting - /.test(est));
+    ok('...a line toggled off (hidden from the customer) is not shown', !/Old hidden line/.test(est));
+    ok('THE REWORD RULE SAYS the title, summary, timeline, scope and card lines are printed word for word - quote from there, never say you do not have the text', /the title, summary, timeline, scope of work and every card line are printed word for word in the job below - quote from there, never say you do not have the text/.test(sys));
   }
 
   console.log('\n2. The synchronous answer keeps its short cut, and says so honestly\n');
@@ -75,6 +97,8 @@ STORES.estimates = new Map(); STORES.estimates.set(REC.ref, JSON.stringify(REC))
     const cutAt = est.indexOf('... (estimate cut here');
     ok('on the nine-second path the estimate is cut near 9,000 characters (the clock is the reason)', r.statusCode === 200 && cutAt > 8000 && cutAt < 9200, cutAt + '');
     ok('...THE CUT SAYS HOW MUCH IS MISSING and tells the model not to describe as complete what it cannot see', /estimate cut here: \d+ more characters not shown\. Say the estimate is too long to read whole; never describe as complete what you cannot see\./.test(est));
+    ok('...the scope keeps its short cut on this path, and the cut says so', /SCOPE OF WORK \(the customer reads this text; quote it exactly in a reword\):\nParagraph 1 of the scope/.test(sys) && /Paragraph [5-9] of the scope[^\n]*\.\.\. \(\d+ more characters not shown\)/.test(sys) && !/FINAL PARAGRAPH/.test(sys), (sys.match(/\.\.\. \(\d+ more characters not shown\)/) || [''])[0]);
+    ok('...but the summary is always whole: it is short and it is what he asks to reword', /Summary \(the customer sees this text; quote it exactly in a reword\): Full bathroom renovation[^\n]*Water Damage remediation is included\./.test(est));
     ok('the background caller passes the wider cap, forty thousand', /const ESTIMATE_CHARS = 40000;/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')) && /estimateChars: ESTIMATE_CHARS \}\);/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')));
   }
   console.log('\n3. The current state rides on his latest message, above a stale chat\n');
