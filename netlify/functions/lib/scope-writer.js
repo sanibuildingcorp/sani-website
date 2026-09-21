@@ -117,6 +117,7 @@ function dedupe(list) {
 }
 
 const voice = require('./customer-voice');
+const jobSize = require('./job-size');
 function tidyBullet(t) {
   if (bannedOutright(t)) return '';
   let s = voice.softenText(stripBanned(t));
@@ -207,7 +208,7 @@ ${JSON.stringify((analysis && analysis.site_conditions) || {}, null, 2)}
 
 WRITE, FOR EACH SERVICE LISTED ABOVE:
 
-"included" — ${MIN_BULLETS} to ${MAX_BULLETS} bullets describing what Sani will actually do, in order of how the work happens.
+"included" — ${jobSize.isRepair(analysis) ? 1 : MIN_BULLETS} to ${jobSize.isRepair(analysis) ? 4 : MAX_BULLETS} bullets describing what Sani will actually do, in order of how the work happens.${jobSize.isRepair(analysis) ? ' THIS IS A REPAIR: say only what is fixed and how, in one to four short lines; no diagnostics, no protection paragraphs, nothing the customer did not ask for.' : ''}
   - Use the REAL numbers wherever the data gives them: square footage, linear feet, dimensions, room names, fixture counts, floor level, tile size and finish, paint coats, product names the customer named.
   - Name locations. "Three shower walls: valve wall 29 x 96, back wall 50.5 x 96, storage wall 28 x 96" beats "tile the shower".
   - Say who supplies what. If the customer is supplying a material, write "owner-supplied" and name it.
@@ -241,7 +242,7 @@ Return JSON only. No preamble, no markdown fence:
 /* ---------------------------------------------------------------------------
    Enforcement. The prompt above asks for all of this; none of it is trusted.
 --------------------------------------------------------------------------- */
-function applyScopeToEstimate(estimate, written, fallbackFor) {
+function applyScopeToEstimate(estimate, written, fallbackFor, minBullets) {
   const cards = estimate.serviceBreakdown || [];
   const byName = {};
   (written && written.services ? written.services : []).forEach(s => {
@@ -261,7 +262,7 @@ function applyScopeToEstimate(estimate, written, fallbackFor) {
     /* A card with too little to say falls back to whatever the old phrase
        library produced for it. Never leave a priced service with an empty or
        one-line scope — that is worse than the canned wording it replaced. */
-    if (included.length < MIN_BULLETS) {
+    if (included.length < (minBullets || MIN_BULLETS)) {
       const prior = Array.isArray(card.included) ? card.included.filter(Boolean) : [];
       if (prior.length >= included.length) {
         included = dedupe(prior.map(tidyBullet)).slice(0, MAX_BULLETS);
@@ -306,13 +307,13 @@ async function writeCustomerScope(estimate, analysis, input, call, parseJson) {
   try {
     const raw = await call(buildScopePrompt(estimate, analysis, input), 8000);
     const written = typeof parseJson === 'function' ? parseJson(raw, 'customer scope') : JSON.parse(raw);
-    return applyScopeToEstimate(estimate, written, null);
+    return applyScopeToEstimate(estimate, written, null, jobSize.isRepair(analysis) ? 1 : MIN_BULLETS);
   } catch (err) {
     /* The estimate is already complete and correctly priced by the time we get
        here. A scope-writing failure must never cost the contractor that work —
        keep the phrase-library wording and record why. */
     console.error('scope writer failed, keeping phrase-library scope:', err && err.stack ? err.stack : err);
-    return applyScopeToEstimate(estimate, null, String((err && err.message) || err).slice(0, 200));
+    return applyScopeToEstimate(estimate, null, String((err && err.message) || err).slice(0, 200), jobSize.isRepair(analysis) ? 1 : MIN_BULLETS);
   }
 }
 
