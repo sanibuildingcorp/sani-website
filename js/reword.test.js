@@ -125,8 +125,10 @@ function record() {
       sbcFetch: async (url, o) => { calls.fetched.push({ url, body: JSON.parse(o.body) }); return { ok: true, json: async () => ({ success: true, applied: [{ changed: 3 }, { changed: 1 }], skipped: [{ from: 'no such line' }], estimate: { projectTitle: 'UPDATED', labor: [] } }) }; },
       fetch: async () => ({ ok: true, json: async () => ({}) }), document: { getElementById: () => null },
     };
+    ctx.AI_LOG = []; ctx.aiSave = () => {}; ctx.aiTurn = (m) => ({ role: m.role, text: m.text }); ctx.aiScreen = () => null;
+    ctx.aiAsk = async () => ({ reply: 'resent', actions: [] });
     vm.createContext(ctx);
-    vm.runInContext(ext('aiExec'), ctx);
+    ['aiExec', 'aiResendSkipped', 'aiRunActions'].forEach((n) => vm.runInContext(ext(n), ctx));
     const edits = [{ where: 'included', service: 'Bathroom', from: 'Vanity light: matte-black 3-light fixture', to: 'Vanity light: brushed-gold 4-light fixture' }, { where: 'labor', from: 'Mirror install', to: 'Mirror install, brushed-gold' }, { where: 'included', service: 'Bathroom', from: 'no such line', to: 'x' }];
     const said = await vm.runInContext('aiExec(' + JSON.stringify({ type: 'reword', ref: 'SBC-260901-ARWQ', edits }) + ')', ctx);
     ok('ONE CONFIRM SHOWS EVERY EDIT AS BEFORE / AFTER and says prices stay', calls.confirms.length === 1 && /Prices, quantities and totals stay exactly as they are/.test(calls.confirms[0]) && /Vanity light: matte-black 3-light fixture\n   → Vanity light: brushed-gold 4-light fixture/.test(calls.confirms[0]) && /labor:/.test(calls.confirms[0]), calls.confirms[0]);
@@ -179,6 +181,58 @@ function record() {
     await post({ ref: 'SBC-260901-ARWQ', edits: edits.slice(0, 1) });
     const r2 = await post({ ref: 'SBC-260901-ARWQ', edits: edits.slice(0, 1) });
     ok('over the function: the retried request comes back success, not "Nothing matched"', r2.code === 200 && r2.body.success === true && r2.body.applied[0].already === 1, JSON.stringify(r2.body).slice(0, 160));
+  }
+
+  console.log('\nforgiving matching: the words, not the letters\n');
+  {
+    const rec = record();
+    rec.estimate.scopeOfWork = 'BATHROOM: PVC wall panels, matte-black fixtures. A half-wall glass shower panel (not a full floor-to-ceiling enclosure) with an open niche.\n\nA wall-mounted framed mirror — 24” wide — and a separate recessed medicine cabinet as two distinct pieces.';
+    rec.estimate.serviceBreakdown[0].included.push('Shower: half–wall glass panel — no door.');
+    const out = R.applyEdits(rec, [
+      { where: 'included', service: 'Bathroom', from: 'shower: half-wall glass panel - no door', to: 'Shower: 28" frameless glass door with a 26" half wall' },
+      { where: 'included', service: 'Bathroom', from: 'Mirror 24x30 matte black', to: 'Mirror 32"x36" backlit LED, framed' },
+      { where: 'scope', from: 'a wall-mounted framed mirror - 24" wide - and a separate recessed medicine cabinet', to: 'a wall-mounted backlit/LED framed mirror and a separate recessed medicine cabinet' },
+      { where: 'scope', from: 'A half wall glass shower panel, not a full floor to ceiling enclosure, with an open niche', to: 'A 28" frameless glass shower door beside a 26" half wall, with an open niche.' },
+      { where: 'labor', from: 'vanity light 24 in 4-light gold fixture', to: 'Vanity light — 24-in.; 4-light brushed-gold fixture' },
+      { where: 'included', service: 'Bathroom', from: 'Heated towel rail and bidet seat', to: 'x' },
+    ]);
+    const inc = rec.estimate.serviceBreakdown[0].included;
+    ok('A CARD LINE WITH A PLAIN DASH, LOWER CASE AND NO PERIOD matches the stored en dash, em dash and period', inc.indexOf('Shower: 28" frameless glass door with a 26" half wall') !== -1 && !inc.some((x) => /no door/.test(x)), JSON.stringify(inc));
+    ok('THE GIST OF A CARD LINE ("Mirror 24x30 matte black") finds \'Mirror 24"x30" matte-black\' and replaces that one line only', inc.indexOf('Mirror 32"x36" backlit LED, framed') !== -1 && !inc.some((x) => /24"x30"/.test(x)) && inc.length === 4, JSON.stringify(inc));
+    ok('A SCOPE PHRASE with plain dashes and straight quotes matches the curly ones', /a wall-mounted backlit\/LED framed mirror and a separate recessed medicine cabinet as two distinct pieces\./.test(rec.estimate.scopeOfWork), rec.estimate.scopeOfWork);
+    ok('A SCOPE SENTENCE given by its gist replaces that sentence, the rest of the text untouched', /BATHROOM: PVC wall panels, matte-black fixtures\. A 28" frameless glass shower door beside a 26" half wall, with an open niche\.\n\na wall-mounted backlit/.test(rec.estimate.scopeOfWork), JSON.stringify(rec.estimate.scopeOfWork));
+    ok('a price line by its gist (seven in ten words shared) is renamed', rec.estimate.labor[0].item === 'Vanity light — 24-in.; 4-light brushed-gold fixture' && rec.estimate.labor[0].rate === 120);
+    ok('a line that shares too few words is still NOT FOUND - nothing is guessed', out.skipped.length === 1 && out.skipped[0].from === 'Heated towel rail and bidet seat' && out.applied.length === 5, JSON.stringify(out.skipped));
+    ok('the money fingerprint did not move through any of it', R.moneyFingerprint(rec) === R.moneyFingerprint(record()));
+    ok('overlap(): same words in another order score 1, half the words about a half, nothing in common 0', R.overlap('frameless glass shower door', 'glass shower door, frameless') === 1 && R.overlap('backlit mirror and cabinet', 'backlit mirror and towel bar') > 0.3 && R.overlap('backlit mirror', 'heated floor') === 0);
+  }
+
+  console.log('\nthe dashboard: an edit that was not found is resent by itself\n');
+  {
+    const calls = { fetched: [], asked: [] };
+    const posts = [
+      { success: true, applied: [{ changed: 1 }], skipped: [{ where: 'scope', from: 'a half-wall glass shower panel', to: 'a glass door' }, { where: 'included', service: 'Bathroom', from: 'framed mirror', to: 'backlit mirror' }], estimate: { labor: [] } },
+      { success: true, applied: [{ changed: 2 }], skipped: [], estimate: { labor: [] } },
+    ];
+    const ctx = {
+      String, JSON, Array, Object, Number, Error, RegExp, Math, Date, console, encodeURIComponent, setTimeout: (f) => f(), Promise,
+      estimates: [{ ref: 'SBC-260901-ARWQ', status: 'sent' }], currentRecord: null, AI_LOG: [], aiSave() {}, aiTurn: (m) => ({ role: m.role, text: m.text }), aiScreen: () => null,
+      visits: [], activeTab: 'all', renderTabs() {}, renderList() {}, openEdit() {}, closeEdit() {}, aiClose() {}, aiStartSearch() {}, aiRender() {},
+      renderEdit() {}, toast() {}, confirm: () => true, document: { getElementById: () => null },
+      sbcFetch: async (url, o) => { calls.fetched.push(JSON.parse(o.body)); return { ok: true, json: async () => posts.shift() }; },
+      aiAsk: async (p) => { calls.asked.push(p); return { reply: 'Resent both.', actions: [{ type: 'reword', ref: 'SBC-260901-ARWQ', edits: [{ where: 'scope', from: '', to: 'whole new scope' }, { where: 'included', service: 'Bathroom', from: '', to: 'backlit mirror' }] }] }; },
+    };
+    vm.createContext(ctx);
+    ['aiExec', 'aiResendSkipped', 'aiRunActions'].forEach((n) => vm.runInContext(ext(n), ctx));
+    ctx.LOG = [{ role: 'user', text: 'fix them' }];
+    const said = await vm.runInContext('aiExec({ type: "reword", ref: "SBC-260901-ARWQ", edits: [{ where: "title", from: "", to: "T" }, { where: "scope", from: "a half-wall glass shower panel", to: "a glass door" }] }, LOG, function () {})', ctx);
+    await new Promise((r) => setTimeout(r, 20));
+    ok('the first reply still says what was not found', /Not found: a half-wall glass shower panel; framed mirror\./.test(said), said);
+    ok('THE MISSING EDITS GO BACK TO THE ASSISTANT AS AN (auto) MESSAGE in the same chat, naming them and asking for a resend with no questions', calls.asked.length === 1 && calls.asked[0].chat === 'SBC-260901-ARWQ' && ctx.LOG[1].role === 'user' && /^\(auto\) These edits were NOT applied on SBC-260901-ARWQ - not found: scope: a half-wall glass shower panel; included \(Bathroom\): framed mirror\. Send them again now in one reword action, with from copied exactly from the estimate block or the whole scope\/summary replaced\. No questions\.$/.test(ctx.LOG[1].text), JSON.stringify(ctx.LOG.slice(1)));
+    ok('...its reply is logged and its reword posted (through the same confirm), so two posts in all', ctx.LOG[2].text === 'Resent both.' && calls.fetched.length === 2 && calls.fetched[1].edits.length === 2 && calls.fetched[1].edits[0].to === 'whole new scope');
+    ok('...and the resent action is not resent again: one retry per action, the second post reported as usual', calls.asked.length === 1 && /^Changed 1 line on SBC-260901-ARWQ; every price and total is as it was\.$/.test(ctx.LOG[3].text), JSON.stringify(ctx.LOG.slice(3)));
+    const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
+    ok('THE ANSWER SHAPE RULE: first line the answer, five facts at most, the action in the same answer, never "want me to", never a question, "Matches. Nothing to change."', /HOW TO ANSWER, EVERY TIME: the first line is the answer itself/.test(A) && /checking and fixing are one job\. Never 'want me to', never 'shall I', never 'I can', never end on a question, never describe a fix you did not send/.test(A) && /If everything matches: 'Matches\. Nothing to change\.' and stop/.test(A));
   }
 
   console.log('\nthe whole scope can be replaced: the cap follows the field\n');
