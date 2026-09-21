@@ -64,6 +64,15 @@ function lineText(x) { return typeof x === "string" ? x : str(x && (x.text || x.
 function withText(x, t) { return typeof x === "string" ? t : Object.assign({}, x, { text: t }); }
 
 function cardName(s) { return norm(s && (s.title || s.service || s.section || s.name)); }
+/* "Bathroom" names the "Bathroom Renovation" card too: the same name
+   forgiven, one containing the other, or most words shared. */
+function sameCard(name, want) {
+  if (!want) return true;
+  const a = loose(name), b = loose(want);
+  if (!a) return false;
+  if (a === b || a.indexOf(b) !== -1 || b.indexOf(a) !== -1) return true;
+  return overlap(a, b) >= FUZZY;
+}
 
 /* ── FORGIVING MATCHING ───────────────────────────────────────────────────
      "Here are the wording fixes" - and only one of four landed. The model
@@ -143,12 +152,12 @@ function applyCardEdit(record, e) {
   const wantService = norm(e.service);
   let n = 0;
   const cards = [];
-  arr(est.serviceBreakdown).forEach(function (s) { if (s && (!wantService || cardName(s) === wantService)) cards.push({ row: s, keys: keys }); });
+  arr(est.serviceBreakdown).forEach(function (s) { if (s && sameCard(cardName(s), wantService)) cards.push({ row: s, keys: keys }); });
   const pubKeys = { included: ["included"], excluded: ["excluded", "notIncluded"], supplies: ["supplied", "customerSupplies"] }[e.where];
   [est.publishedCustomerScope, est.manualCustomerScopeDraft].forEach(function (scope) {
-    arr(scope && scope.services).forEach(function (s) { if (s && (!wantService || cardName(s) === wantService)) cards.push({ row: s, keys: pubKeys }); });
+    arr(scope && scope.services).forEach(function (s) { if (s && sameCard(cardName(s), wantService)) cards.push({ row: s, keys: pubKeys }); });
   });
-  arr(est.scopeSections).forEach(function (s) { if (e.where === "included" && s && (!wantService || norm(s.title) === wantService)) cards.push({ row: s, keys: ["items"] }); });
+  arr(est.scopeSections).forEach(function (s) { if (e.where === "included" && s && sameCard(norm(s.title), wantService)) cards.push({ row: s, keys: ["items"] }); });
   let already = 0;
   cards.forEach(function (c) {
     let touched = false;
