@@ -42,6 +42,7 @@ const OWN_PATTERNS = [
 
 const { getStore } = require("@netlify/blobs");
 const thread = require("./lib/thread");
+const history = require("./lib/history");
 const inbox = require("./lib/inbox-store");
 
 /* ── THE ASSISTANT'S COPY OF THE INBOX ──────────────────────────────────
@@ -128,6 +129,10 @@ async function bridgeToEstimateThread(row, fromAddr, byEmail, rawText) {
     record.threadUpdatedAt = appended.message.at;
     if (from === "customer") record.lastCustomerMessageAt = appended.message.at;
     else record.lastContractorMessageAt = appended.message.at;
+    /* the assistant tracks every update on the estimate: an email that
+       reached the thread is one */
+    const gist = String(row.body || "").replace(/\s+/g, " ").trim();
+    history.note(record, "email", (from === "customer" ? "Email from the customer" : "Email from Sani") + (String(row.subject || "").trim() ? " - " + String(row.subject).trim().slice(0, 80) : "") + ": " + gist.slice(0, 200) + (gist.length > 200 ? "..." : ""));
     await store.setJSON(ref, record);
     return { bridged: true, ref: ref, from: from, matchedBy: matchedBy };
   } catch (e) {

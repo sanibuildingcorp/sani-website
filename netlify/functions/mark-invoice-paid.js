@@ -10,6 +10,7 @@
 //   paidDate     (optional) "YYYY-MM-DD" or ISO string. Defaults to now.
 
 const { getStore } = require("@netlify/blobs");
+const history = require("./lib/history");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -68,6 +69,7 @@ exports.handler = async function (event) {
     const anyUnpaid = invoices.some(function (i) { return i.status !== "paid"; });
     record.status = anyUnpaid ? "invoiced" : "paid";
     record.updatedAt = nowIso;
+    history.note(record, "invoice", "Invoice " + String(target.number || "").trim() + (paid ? " marked paid" : " marked unpaid") + (history.money(target.amount) ? " (" + history.money(target.amount) + ")" : ""));
 
     await store.setJSON(ref, record);
 

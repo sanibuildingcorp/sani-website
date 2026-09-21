@@ -231,15 +231,25 @@ async function answer(body, clocks) {
   if (!images.length && jobIdOf(body.photos)) images = imagesOf(await withTimeout(takePhotos(jobIdOf(body.photos)), PHOTOS_MS).catch(function () { return []; }));
   const lastUser = turns.filter(function (t) { return t.role === "user"; }).slice(-1)[0];
   if (images.length && lastUser) lastUser.images = images;
+  /* WHEN DID THIS CHAT LAST ANSWER? The saved chat carries a time on every
+     turn. Everything recorded on the estimate after the last answer is
+     listed on his message as SINCE YOUR LAST ANSWER, so the model starts
+     from what changed instead of from what it said before. */
+  const chatKeyEarly = chatKeyOf(body.chat);
+  const lastAnswerAt = chatKeyEarly ? await withTimeout(loadChat(chatKeyEarly), c.memoryMs || MEMORY_MS).then(function (turns) {
+    const a = turns.filter(function (t) { return t.role === "assistant" && t.at; }).slice(-1)[0];
+    return a ? a.at : "";
+  }).catch(function () { return ""; }) : "";
   const reads = await Promise.all([
-    str(body.ref) ? withTimeout(recordContext(str(body.ref), c.estimateChars, c.jobPhotos), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
+    str(body.ref) ? withTimeout(recordContext(str(body.ref), c.estimateChars, c.jobPhotos, lastAnswerAt), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
     withTimeout(loadMemory(), c.memoryMs || MEMORY_MS).catch(function () { return []; }),
     withTimeout(loadInsights(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }),
     withTimeout(inboxContext(str(body.ref), lastUser ? lastUser.text : ""), c.recordMs || RECORD_MS).catch(function () { return ""; }),
   ]);
   const context = reads[0] && typeof reads[0] === "object" ? reads[0].text : reads[0];
   const glance = reads[0] && typeof reads[0] === "object" ? str(reads[0].glance) : "";
-  if (glance && lastUser) lastUser.note = "[" + glance + "]";
+  const since = reads[0] && typeof reads[0] === "object" ? str(reads[0].since) : "";
+  if (glance && lastUser) lastUser.note = "[" + glance + "]" + (since ? "\n[" + since + "]" : "");
   /* the job's own photos ride on his latest message too, before any picture
      he uploaded with the question; never written to the chat */
   const jobImages = reads[0] && typeof reads[0] === "object" ? arr(reads[0].photos) : [];
@@ -313,7 +323,7 @@ function withTimeout(promise, ms) {
    contractor's cost lines are not sent: this is for working out what to ask a
    customer, and a model that has been handed the internal price band tends to
    start reasoning about it in answers meant to be read aloud to that customer. */
-async function recordContext(ref, estimateChars, jobPhotos) {
+async function recordContext(ref, estimateChars, jobPhotos, sinceAt) {
   const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
   const rec = await store.get(ref, { type: "json" });
   if (!rec) return "";
@@ -356,7 +366,29 @@ async function recordContext(ref, estimateChars, jobPhotos) {
     str(est.scopeOfWork) ? "\nSCOPE OF WORK (the customer reads this text; quote it exactly in a reword):\n" + cutText(str(est.scopeOfWork), Number(estimateChars) > ESTIMATE_CHARS ? 8000 : 1200) : "",
     estimateContext(rec, estimateChars),
   ].filter(Boolean).join("\n");
-  return { text: text, glance: estimateGlance(rec), photos: pics.shown };
+  return { text: text, glance: estimateGlance(rec), photos: pics.shown, since: sinceLastAnswer(rec, sinceAt) };
+}
+
+/* ── WHAT CHANGED SINCE THIS CHAT LAST ANSWERED ──────────────────────────
+     "He needs to see all new fresh and old informations!! He needs to
+      track all updates specially in each estimate!!!"
+   Every write to the record leaves a history line with a time. The lines
+   after the chat's last answer are the tracker: a save, a reword, a card
+   change, a message, an email, a signature, an invoice. Nothing recorded
+   but a newer updatedAt means something was saved without a note - the
+   block is fresh anyway, and the model is told to read it as such. */
+function sinceLastAnswer(rec, sinceAt) {
+  const at = str(sinceAt);
+  if (!at) return "";
+  const when = at.slice(0, 16).replace("T", " ");
+  const lines = arr(rec && rec.history).filter(function (x) { return x && x.text && str(x.at) > at; });
+  if (lines.length) {
+    return "SINCE YOUR LAST ANSWER (" + when + "): " + lines.length + " change" + (lines.length === 1 ? "" : "s") + " on this estimate - " +
+      lines.slice(-12).map(function (x) { return str(x.at).slice(11, 16) + " " + str(x.kind) + ": " + str(x.text); }).join(" | ") +
+      ". Start from these; the estimate block is the state after them.";
+  }
+  if (str(rec && rec.updatedAt) > at) return "SINCE YOUR LAST ANSWER (" + when + "): the estimate was saved at " + str(rec.updatedAt).slice(0, 16).replace("T", " ") + " with no history line; read the estimate block below as the current state, not your earlier answer.";
+  return "SINCE YOUR LAST ANSWER (" + when + "): nothing changed on this estimate.";
 }
 
 /* ── THE JOB'S OWN PHOTOS ─────────────────────────────────────────────────
@@ -913,7 +945,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "THE JOB'S OWN PHOTOS (the customer's request photos, the photos attached to the quote, pictures in messages) come on his latest message, each after a label 'Job photo N of M - ...'; the job block says how many there are. When he asks about the photos, what you see, or whether the estimate matches the pictures, read them and say plainly what is in each - the room, the damage, the materials, sizes if something gives scale. Never say the job has no photos when the job block counts some; if it says they are not shown on this path, say so and that Ask AI shows them.",
     "ADDITIONAL WORK on an estimate the customer already agreed to (a new service, painting, an extra room, anything not in it): never change, reword or reprice the agreed services, and never tell him to regenerate - regenerating rebuilds every service. Do it for him with the addservice action when you know what the work is (write the brief from the chat, the emails, the photos); otherwise tell him to press ➕ ADD A SERVICE TO THIS ESTIMATE (in the Regenerate box). Either way the new work is priced on its own and added to the same estimate as its own section with its own scope and price, the agreed sections untouched; then he sends the estimate again. If he wants it as a separate estimate instead, ➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE) makes a linked one. On an estimate that IS additional work (the job says so), price and describe only the additional work.",
     "YOU ARE HIS SENIOR ESTIMATOR, not a clerk. On every question about an open estimate you read the whole thing: the customer's words and answers, the messages, the emails, the history, what was sent and when, every line and every card. You think like the person who has to build it and the person who has to pay for it: is every promised bullet backed by a line, is every line a promise the customer can read, does the title say what the job is, does the summary match the scope, does the timeline fit the hours, is anything priced twice, is anything the customer asked for missing, is anything there the customer never asked for. Say what you found in his order of importance, with the exact words and numbers, and then DO the wording fixes yourself with ONE reword action holding every edit (title, summary, scope, timeline, included/excluded/supplies lines) - he confirms once. Money stays his: name the line and the number. When he asks what changed, answer from HISTORY and SINCE THE LAST SEND, with dates and totals, never from memory of this chat. When you are not sure, say what you would check and where, not a guess.",
-    "THE CHAT MAY BE STALE. Earlier answers in this conversation describe the estimate as it was when they were written - lines, totals, cards that have since been added, removed or redone. The ESTIMATE RIGHT NOW note on his latest message and the estimate block below are the current truth and outrank anything said earlier, by you or by him. When they disagree with the chat, say plainly that the estimate has changed and use the current figures; never repeat an old count, total or card from the chat, and never invent a section that is not in the current estimate.",
+    "THE CHAT MAY BE STALE. Earlier answers in this conversation describe the estimate as it was when they were written - lines, totals, cards that have since been added, removed or redone. The ESTIMATE RIGHT NOW note on his latest message and the estimate block below are the current truth and outrank anything said earlier, by you or by him. When they disagree with the chat, say plainly that the estimate has changed and use the current figures; never repeat an old count, total or card from the chat, and never invent a section that is not in the current estimate. A SINCE YOUR LAST ANSWER note on his latest message lists every change recorded on this estimate since you last spoke (saves, rewords, card changes, messages, emails, signatures, invoices): start from it, say what changed when it matters, and never carry a number or a finding from an earlier answer across a change.",
     "CHECK THE ESTIMATE ('have a look', 'analyze', 'is it correct', 'anything unmatched'): the estimate block below (headed 'the generated estimate, as he sees it') is the whole estimate as stored, read fresh on every question - never say you cannot see it or ask him to refresh. Read every line and every card and compare them with each other and with the customer's words: a card bullet with no line behind it, a line filed under the wrong service, a duplicate line, a $0 card, a quantity that does not match a size he gave, a customer-supplied item priced as material, a section added after agreement that repeats agreed work. Report each mismatch concretely (line name, card, number) and say what to change. The card prices in the block are the ones the customer reads and they add up to the customer total by construction; a total he set by hand scales every card with it - that is never a mismatch, never 'a gap', never something to fix. Wording -> offer a reword action. A quantity, a rate or a line -> name the exact line and the number; he edits lines himself, you never change money. If it says 'estimate cut here', say that and ask for a narrower question.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "EMAILS WITH THIS CUSTOMER (below, when a job is open) are read from his inbox log, matched by the customer's email address. When he asks about an email from this customer, answer from that list. When the list says there are none, say exactly that - none in the inbox from that address - and never say you cannot see emails.",

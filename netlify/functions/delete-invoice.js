@@ -6,6 +6,7 @@
 // POST body: { ref, invoiceNumber }  — both required (destructive action).
 
 const { getStore } = require("@netlify/blobs");
+const history = require("./lib/history");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -45,6 +46,7 @@ exports.handler = async function (event) {
       record.status = "accepted";
     }
     record.updatedAt = new Date().toISOString();
+    history.note(record, "invoice", "Invoice " + String(invoiceNumber || "").trim() + " deleted" + (removed && history.money(removed.amount) ? " (" + history.money(removed.amount) + ")" : ""));
 
     await store.setJSON(ref, record);
 

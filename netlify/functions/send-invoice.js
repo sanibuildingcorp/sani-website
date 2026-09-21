@@ -7,6 +7,7 @@
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const ADDR = require("./lib/addresses");
+const history = require("./lib/history");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -328,6 +329,7 @@ exports.handler = async function (event) {
     }
     record.lastInvoiceAt = nowIso;
     record.updatedAt = invoice.sentAt;
+    history.note(record, "invoice", (resendTarget ? "Invoice " + invoiceNumber + " sent again" : "Invoice " + invoiceNumber + " sent (" + String(invoiceType || "").trim() + ") " + history.money(amount)) + " to " + String(recipientEmail || "").trim());
     await store.setJSON(ref, record);
 
     return {

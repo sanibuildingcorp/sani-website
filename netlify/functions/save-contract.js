@@ -8,6 +8,7 @@
 
 const { getStore } = require("@netlify/blobs");
 const { contractDrift, rescaleSchedule } = require("./lib/contract-total");
+const history = require("./lib/history");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -109,6 +110,7 @@ exports.handler = async function (event) {
       },
     };
     record.updatedAt = new Date().toISOString();
+    history.note(record, "contract", "Contract " + (body.retotal === true ? "re-totalled" : "drafted") + (history.money(nextTotal) ? ": total " + history.money(nextTotal) : ""));
     await store.setJSON(ref, record);
 
     return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true, contract: record.contract }) };

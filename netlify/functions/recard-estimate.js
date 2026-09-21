@@ -24,6 +24,7 @@
 
 const { getStore } = require("@netlify/blobs");
 const { recardEstimate } = require("./lib/recard");
+const history = require("./lib/history");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
@@ -70,6 +71,7 @@ exports.handler = async function (event) {
   record.estimate = result.estimate;
   record.updatedAt = new Date().toISOString();
   record.cardsRepairedAt = record.updatedAt;
+  history.note(record, "cards", "Cards rebuilt from the lines" + (Array.isArray(result.cardsAfter) && result.cardsAfter.length ? ": " + result.cardsAfter.map(function (c) { return String((c && (c.title || c.name)) || "").trim(); }).filter(Boolean).join(", ") : "") + (history.totalMove(result.before, result.after) ? "; " + history.totalMove(result.before, result.after) : ""));
   await store.setJSON(ref, record);
 
   payload.applied = true;
