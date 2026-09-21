@@ -90,13 +90,18 @@ function applyCardEdit(record, e) {
     arr(scope && scope.services).forEach(function (s) { if (s && (!wantService || cardName(s) === wantService)) cards.push({ row: s, keys: pubKeys }); });
   });
   arr(est.scopeSections).forEach(function (s) { if (e.where === "included" && s && (!wantService || norm(s.title) === wantService)) cards.push({ row: s, keys: ["items"] }); });
+  let already = 0;
   cards.forEach(function (c) {
     let touched = false;
     c.keys.forEach(function (k) { if (Array.isArray(c.row[k])) { const m = editList(c.row[k], e.from, e.to); if (m) { n += m; touched = true; } } });
     /* Adding to a card that has no such list yet: make the first key. */
     if (!e.from && e.to && !touched) { c.row[c.keys[0]] = c.row[c.keys[0]] || []; if (Array.isArray(c.row[c.keys[0]])) n += editList(c.row[c.keys[0]], "", e.to); }
+    /* ALREADY DONE: the old line is gone and the new one is there - this
+       edit landed on an earlier try whose reply was lost. Counted as
+       applied, so a retry never reports a change that happened as missing. */
+    if (!touched && e.to && c.keys.some(function (k) { return Array.isArray(c.row[k]) && c.row[k].some(function (x) { return norm(lineText(x)) === norm(e.to); }); })) already++;
   });
-  return n;
+  return n || (already ? { already: already } : 0);
 }
 
 function applyLineEdit(record, e) {
@@ -104,15 +109,16 @@ function applyLineEdit(record, e) {
   const list = arr(est[LINE_KEYS[e.where]]);
   let n = 0;
   if (!e.from || !e.to) return 0;
+  let already = 0;
   list.forEach(function (l) {
     if (!l || typeof l !== "object") return;
     const cur = str(l.item);
     if (norm(cur) === norm(e.from) || (norm(cur).indexOf(norm(e.from)) !== -1 && norm(e.from).length >= 8)) {
       l.item = norm(cur) === norm(e.from) ? e.to : cur.replace(new RegExp(escapeRe(e.from), "i"), e.to);
       n++;
-    }
+    } else if (norm(cur) === norm(e.to)) already++;
   });
-  return n;
+  return n || (already ? { already: already } : 0);
 }
 
 function applyFieldEdit(record, e) {
@@ -122,20 +128,24 @@ function applyFieldEdit(record, e) {
   if (!e.to && !e.from) return 0;
   if (e.from && cur) {
     const re = new RegExp(escapeRe(e.from), "i");
-    if (!re.test(cur)) return 0;
+    if (!re.test(cur)) return e.to && norm(cur).indexOf(norm(e.to)) !== -1 ? { already: 1 } : 0;
     est[key] = cur.replace(re, e.to);
     return 1;
   }
-  if (!e.from && e.to) { est[key] = e.to; return 1; }
+  if (!e.from && e.to) { if (norm(cur) === norm(e.to)) return { already: 1 }; est[key] = e.to; return 1; }
   return 0;
 }
 
 function escapeRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
+/* A whole scope of work is long; a card line is not. The cap follows the
+   field, so "replace the scope" can carry the complete new text. */
+const TEXT_CAP = { scope: 8000, summary: 2000 };
+function textCap(where) { return TEXT_CAP[where] || 1000; }
 function cleanEdit(e) {
   const o = e && typeof e === "object" ? e : {};
-  return { where: norm(o.where).replace(/s$/, "").replace(/^supplie$/, "supplies").replace(/^materials?$/, "material").replace(/^not.?included$|^exclusion$/, "excluded"),
-    service: str(o.service).slice(0, 120), from: str(o.from).slice(0, 1000), to: str(o.to).slice(0, 1000) };
+  const where = norm(o.where).replace(/s$/, "").replace(/^supplie$/, "supplies").replace(/^materials?$/, "material").replace(/^not.?included$|^exclusion$/, "excluded");
+  return { where: where, service: str(o.service).slice(0, 120), from: str(o.from).slice(0, textCap(where)), to: str(o.to).slice(0, textCap(where)) };
 }
 const WHERE = ["included", "excluded", "supplies", "labor", "material", "summary", "scope", "title", "timeline"];
 
@@ -154,10 +164,12 @@ function applyEdits(record, edits) {
     if (CARD_KEYS[e.where]) n = applyCardEdit(record, e);
     else if (LINE_KEYS[e.where]) n = applyLineEdit(record, e);
     else n = applyFieldEdit(record, e);
-    if (n) applied.push(Object.assign({ changed: n }, e)); else skipped.push(Object.assign({ reason: "not found" }, e));
+    if (n && typeof n === "object") applied.push(Object.assign({ changed: 0, already: n.already }, e));
+    else if (n) applied.push(Object.assign({ changed: n }, e));
+    else skipped.push(Object.assign({ reason: "not found" }, e));
   });
   if (moneyFingerprint(record) !== before) throw new Error("An edit would have changed a price or a quantity. Nothing was saved.");
   return { applied: applied, skipped: skipped };
 }
 
-module.exports = { applyEdits, moneyFingerprint, cleanEdit, WHERE };
+module.exports = { applyEdits, moneyFingerprint, cleanEdit, textCap, WHERE };

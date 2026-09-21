@@ -4274,7 +4274,18 @@ async function aiExec(a, log, render) {
       return "• " + String(e.where || "") + (e.service ? " (" + e.service + ")" : "") + ":\n   " + (e.from ? e.from : "(add)") + "\n   → " + (e.to ? e.to : "(remove)");
     });
     if (!confirm("Change the wording of " + wref + "?\nPrices, quantities and totals stay exactly as they are.\n\n" + shown.join("\n\n"))) return "OK, nothing changed.";
-    var rw = await sbcFetch("/.netlify/functions/reword-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: wref, edits: edits }) });
+    /* "⚠ Could not do that: Load failed" - the phone's connection dropped
+       between OK and the server. Tried again, up to three times; the server
+       treats an edit that already landed as done, so a retry after a reply
+       that was lost on the way back cannot report a change that did happen
+       as "nothing matched". */
+    var rw = null, netErr = null;
+    for (var attempt = 0; attempt < 3 && !rw; attempt++) {
+      if (attempt) await new Promise(function (res) { setTimeout(res, 1500 * attempt); });
+      try { rw = await sbcFetch("/.netlify/functions/reword-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: wref, edits: edits }) }); }
+      catch (e) { netErr = e; rw = null; }
+    }
+    if (!rw) throw new Error("the connection dropped three times (" + ((netErr && netErr.message) || "network") + "). Check the signal and ask me again - the edits are ready to send.");
     var dw = await rw.json().catch(function () { return {}; });
     if (!rw.ok) throw new Error(dw.error || "Failed");
     if (!dw.success) return "Nothing changed - " + (dw.error || "no line matched the wording I had.");
@@ -5738,6 +5749,10 @@ function sleepUntilVisibleOr(ms) {
    reconnect that finds one already going. Looks the button up every tick instead
    of holding a reference, because a re-render replaces the element. */
 async function watchGeneration(ref, jobId, startedAt, label) {
+  /* "Generating… 655s" - "It's still loading". The server writes the stage
+     it is in on the record (aiStage); the button says it after the seconds,
+     so a long run reads as progress, not as a hang. */
+  var stage = "";
   while (true) {
     var elapsed = Date.now() - startedAt;
     var btn = document.getElementById("gen-btn");
@@ -5746,13 +5761,14 @@ async function watchGeneration(ref, jobId, startedAt, label) {
       /* "Adding the service…" on an added service: the same word as a full
          regeneration read as one, and one look at "Generating…" was enough
          to make him think the agreed estimate was being rebuilt. */
-      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + Math.round(elapsed / 1000) + 's';
+      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + Math.round(elapsed / 1000) + 's' + (stage ? ' · ' + esc(stage) : '');
     }
     var rec = null;
     try {
       var pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       if (pr.ok) rec = await pr.json();
     } catch (_) { rec = null; }
+    if (rec && rec.aiJobId === jobId && rec.aiStatus === "running") stage = String(rec.aiStage || "");
 
     var v = aiPollVerdict(rec, jobId, Date.now() - startedAt);
     if (v.state === "done") { aiJobClear(ref); return { estimate: rec.estimate, status: rec.status, customerFinalTotal: rec.customerFinalTotal }; }
