@@ -4172,6 +4172,32 @@ async function aiStartSearch(query, log, render) {
   bubble.text = "⚠ The search is taking too long. It may still finish: reopen this chat in a minute."; bubble.pending = false; if (render) render();
 }
 
+/* "Here are the wording fixes" - and one of four landed; the rest were
+   "not found" and he had to notice, ask again, and read another answer.
+   The missing edits go straight back to the assistant as a message in the
+   same chat, marked (auto) so he can see it was not him, and the resent
+   edits run through the same confirm. */
+async function aiResendSkipped(wref, skipped, log, render) {
+  if (!log || !Array.isArray(skipped) || !skipped.length) return;
+  var list = skipped.map(function (s) { return String(s.where || "") + (s.service ? " (" + s.service + ")" : "") + ": " + String(s.from || s.to || ""); }).join("; ");
+  log.push({ role: "user", text: "(auto) These edits were NOT applied on " + wref + " - not found: " + list + ". Send them again now in one reword action, with from copied exactly from the estimate block or the whole scope/summary replaced. No questions." });
+  if (typeof render === "function") render();
+  try {
+    var screen = (typeof aiScreen === "function") ? aiScreen() : null;
+    var data = await aiAsk(log === AI_LOG
+      ? { ref: wref, chat: "global", screen: screen, messages: log.slice(-30).map(aiTurn) }
+      : { ref: wref, chat: wref, messages: log.slice(-30).map(aiTurn), screen: screen });
+    log.push({ role: "assistant", text: String(data.reply || "") });
+    if (log === AI_LOG) aiSave();
+    if (typeof render === "function") render();
+    var acts = (Array.isArray(data.actions) ? data.actions : []).map(function (x) { if (x && typeof x === "object") x._retried = true; return x; });
+    if (acts.length) await aiRunActions(acts, log, render);
+  } catch (e) {
+    log.push({ role: "assistant", text: "⚠ Could not resend the missing edits: " + e.message });
+    if (typeof render === "function") render();
+  }
+}
+
 /* Runs the actions an answer came with, one after another, and writes what
    happened into the log it was asked from (the drawer's or a record panel's). */
 async function aiRunActions(actions, log, render) {
@@ -4311,6 +4337,11 @@ async function aiExec(a, log, render) {
     if (!dw.success) return "Nothing changed - " + (dw.error || "no line matched the wording I had.");
     if (wrec && dw.estimate) { wrec.estimate = dw.estimate; if (typeof renderEdit === "function") renderEdit(); }
     toast("Wording updated on " + wref + " — prices untouched");
+    /* NOT FOUND IS NOT DONE. An edit the server could not place is sent
+       back to the assistant at once, in this same chat, to be resent with
+       the words copied from the estimate or the whole field replaced. One
+       retry per action; he confirms the resent edits as usual. */
+    if (dw.skipped && dw.skipped.length && a._retried !== true) aiResendSkipped(wref, dw.skipped, log, render);
     var wasSent = !!((wrec && (wrec.sentVersion || wrec.sentAt)) || (wrow && wrow.sentAt));
     return "Changed " + dw.applied.length + " line" + (dw.applied.length === 1 ? "" : "s") + " on " + wref + "; every price and total is as it was." +
       (dw.skipped && dw.skipped.length ? " Not found: " + dw.skipped.map(function (s) { return s.from || s.to; }).join("; ") + "." : "") +

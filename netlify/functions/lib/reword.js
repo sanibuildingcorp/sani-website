@@ -65,16 +65,75 @@ function withText(x, t) { return typeof x === "string" ? t : Object.assign({}, x
 
 function cardName(s) { return norm(s && (s.title || s.service || s.section || s.name)); }
 
+/* ── FORGIVING MATCHING ───────────────────────────────────────────────────
+     "Here are the wording fixes" - and only one of four landed. The model
+     quotes a line with a plain dash where the estimate has an en dash, a
+     straight quote for a curly one, drops the trailing period, or gives
+     the gist of a line rather than its letters. "from must be copied
+     EXACTLY" was a rule the model could not always keep, and every miss
+     was a silent "not found". So: exact first; then the same words with
+     dashes, quotes, spacing, case and end punctuation forgiven; then, for
+     a card line or a whole sentence, the line that shares most of its
+     words (six in ten or more). One line at most is changed by a fuzzy
+     match, and never a line that shares less than that. */
+const STOP = { the: 1, and: 1, for: 1, with: 1, that: 1, this: 1, are: 1, not: 1, from: 1, into: 1, onto: 1, all: 1, any: 1, one: 1, per: 1, its: 1, our: 1, your: 1, his: 1, her: 1, will: 1, was: 1, were: 1, has: 1, have: 1, had: 1, than: 1, then: 1 };
+const FUZZY = 0.6;
+function loose(s) {
+  return str(s).toLowerCase()
+    .replace(/[‐-―−]/g, "-").replace(/[‘’‚′]/g, "'").replace(/[“”„″]/g, "\"").replace(/…/g, "...")
+    .replace(/^[\s•*\-–—·]+/, "").replace(/[\s.;:,]+$/, "").replace(/\s+/g, " ").trim();
+}
+/* the words of a line for comparison: quotes and periods dropped (24"x30"
+   is 24x30), every other mark a space (half-wall is half wall), short and
+   filler words out */
+function words(s) {
+  return loose(s).replace(/["'.]/g, "").replace(/[^a-z0-9$%]+/g, " ").split(/\s+/).filter(function (w) { return w.length > 2 && !STOP[w]; });
+}
+function overlap(a, b) {
+  const A = {}, B = {};
+  words(a).forEach(function (w) { A[w] = 1; }); words(b).forEach(function (w) { B[w] = 1; });
+  const ka = Object.keys(A), kb = Object.keys(B);
+  if (!ka.length || !kb.length) return 0;
+  let both = 0; ka.forEach(function (w) { if (B[w]) both++; });
+  return both / (ka.length + kb.length - both);
+}
+/* a regex for `from` inside a text: dashes, quotes, spacing and case forgiven */
+function looseRe(from) {
+  const parts = loose(from).split(" ").filter(Boolean).map(function (w) {
+    return escapeRe(w).replace(/-/g, "[-\\u2010-\\u2015\\u2212]").replace(/'/g, "['\\u2018\\u2019]").replace(/"/g, "[\"\\u201c\\u201d]");
+  });
+  return new RegExp(parts.join("\\s+"), "i");
+}
+function bestLine(list, from, min) {
+  let best = -1, score = 0;
+  list.forEach(function (x, i) { const s = overlap(lineText(x), from); if (s > score) { score = s; best = i; } });
+  return score >= (min || FUZZY) ? best : -1;
+}
+
 /* Apply one card edit to one list; returns how many lines changed. */
 function editList(list, from, to) {
   if (!Array.isArray(list)) return 0;
   let n = 0;
-  if (!from) { if (to && !list.some(function (x) { return norm(lineText(x)) === norm(to); })) { list.push(to); n++; } return n; }
+  if (!from) { if (to && !list.some(function (x) { return loose(lineText(x)) === loose(to); })) { list.push(to); n++; } return n; }
+  /* 1. the same line, forgiven */
   for (let i = list.length - 1; i >= 0; i--) {
-    if (norm(lineText(list[i])) !== norm(from)) continue;
+    if (loose(lineText(list[i])) !== loose(from)) continue;
     if (to) list[i] = withText(list[i], to); else list.splice(i, 1);
     n++;
   }
+  if (n) return n;
+  /* 2. a phrase inside a line: replace the phrase, keep the rest */
+  if (to && loose(from).length >= 12) {
+    const re = looseRe(from);
+    for (let i = 0; i < list.length; i++) {
+      const t = lineText(list[i]);
+      if (re.test(t)) { list[i] = withText(list[i], t.replace(re, to)); n++; }
+    }
+    if (n) return n;
+  }
+  /* 3. the line that shares most of its words */
+  const b = bestLine(list, from);
+  if (b >= 0) { if (to) list[b] = withText(list[b], to); else list.splice(b, 1); n = 1; }
   return n;
 }
 
@@ -99,7 +158,7 @@ function applyCardEdit(record, e) {
     /* ALREADY DONE: the old line is gone and the new one is there - this
        edit landed on an earlier try whose reply was lost. Counted as
        applied, so a retry never reports a change that happened as missing. */
-    if (!touched && e.to && c.keys.some(function (k) { return Array.isArray(c.row[k]) && c.row[k].some(function (x) { return norm(lineText(x)) === norm(e.to); }); })) already++;
+    if (!touched && e.to && c.keys.some(function (k) { return Array.isArray(c.row[k]) && c.row[k].some(function (x) { return loose(lineText(x)) === loose(e.to); }); })) already++;
   });
   return n || (already ? { already: already } : 0);
 }
@@ -110,14 +169,21 @@ function applyLineEdit(record, e) {
   let n = 0;
   if (!e.from || !e.to) return 0;
   let already = 0;
+  const re = looseRe(e.from);
   list.forEach(function (l) {
     if (!l || typeof l !== "object") return;
     const cur = str(l.item);
-    if (norm(cur) === norm(e.from) || (norm(cur).indexOf(norm(e.from)) !== -1 && norm(e.from).length >= 8)) {
-      l.item = norm(cur) === norm(e.from) ? e.to : cur.replace(new RegExp(escapeRe(e.from), "i"), e.to);
-      n++;
-    } else if (norm(cur) === norm(e.to)) already++;
+    if (loose(cur) === loose(e.from)) { l.item = e.to; n++; }
+    else if (loose(e.from).length >= 8 && re.test(cur)) { l.item = cur.replace(re, e.to); n++; }
+    else if (loose(cur) === loose(e.to)) already++;
   });
+  if (!n && !already) {
+    /* the price line that shares most of its words - a higher bar than a
+       card line, because a wrong rename here lands on a priced row */
+    const rows = list.filter(function (l) { return l && typeof l === "object"; });
+    const b = bestLine(rows.map(function (l) { return str(l.item); }), e.from, 0.7);
+    if (b >= 0) { rows[b].item = e.to; n = 1; }
+  }
   return n || (already ? { already: already } : 0);
 }
 
@@ -127,10 +193,27 @@ function applyFieldEdit(record, e) {
   const cur = str(est[key]);
   if (!e.to && !e.from) return 0;
   if (e.from && cur) {
-    const re = new RegExp(escapeRe(e.from), "i");
-    if (!re.test(cur)) return e.to && norm(cur).indexOf(norm(e.to)) !== -1 ? { already: 1 } : 0;
-    est[key] = cur.replace(re, e.to);
-    return 1;
+    let re = new RegExp(escapeRe(e.from), "i");
+    if (!re.test(cur)) re = looseRe(e.from);
+    if (re.test(cur)) { est[key] = cur.replace(re, e.to); return 1; }
+    if (e.to && loose(cur).indexOf(loose(e.to)) !== -1) return { already: 1 };
+    /* a whole sentence given by its gist: the sentence that shares most of
+       its words, replaced whole (or removed when to is empty) */
+    if (words(e.from).length >= 4) {
+      const parts = cur.split(/(\n+|(?<=[.!?;:])\s+)/);
+      let best = -1, score = 0;
+      for (let i = 0; i < parts.length; i += 2) {
+        const s = overlap(parts[i], e.from);
+        const ratio = words(parts[i]).length / Math.max(1, words(e.from).length);
+        if (s > score && ratio >= 0.4 && ratio <= 2.5) { score = s; best = i; }
+      }
+      if (best >= 0 && score >= FUZZY) {
+        parts[best] = e.to;
+        est[key] = parts.join("").replace(/[ \t]{2,}/g, " ").replace(/\s+([.!?;:,])/g, "$1").trim();
+        return 1;
+      }
+    }
+    return 0;
   }
   if (!e.from && e.to) { if (norm(cur) === norm(e.to)) return { already: 1 }; est[key] = e.to; return 1; }
   return 0;
@@ -172,4 +255,4 @@ function applyEdits(record, edits) {
   return { applied: applied, skipped: skipped };
 }
 
-module.exports = { applyEdits, moneyFingerprint, cleanEdit, textCap, WHERE };
+module.exports = { applyEdits, moneyFingerprint, cleanEdit, textCap, WHERE, loose, overlap, looseRe };
