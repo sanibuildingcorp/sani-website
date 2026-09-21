@@ -204,6 +204,18 @@ function record() {
     ok('a price line by its gist (seven in ten words shared) is renamed', rec.estimate.labor[0].item === 'Vanity light — 24-in.; 4-light brushed-gold fixture' && rec.estimate.labor[0].rate === 120);
     ok('a line that shares too few words is still NOT FOUND - nothing is guessed', out.skipped.length === 1 && out.skipped[0].from === 'Heated towel rail and bidet seat' && out.applied.length === 5, JSON.stringify(out.skipped));
     ok('the money fingerprint did not move through any of it', R.moneyFingerprint(rec) === R.moneyFingerprint(record()));
+    /* the screen: "REMOVE DELATE!!!" - duplicate plumbing bullets under
+       Bathroom, quoted with em dashes, three times "not found" */
+    const dup = record();
+    dup.estimate.serviceBreakdown[0].title = 'Bathroom Renovation';
+    dup.estimate.serviceBreakdown[0].included.push('Plumbing — new main shutoff valves and hot/cold tie-ins at the building riser, including riser shutdown coordination with the superintendent.', 'Plumbing — run new hot and cold branch supply lines from the riser to the shower, lavatory and toilet positions, including hangers, sleeving and insulation.');
+    dup.estimate.publishedCustomerScope.services[0].name = 'Bathroom Renovation';
+    const o3 = R.applyEdits(dup, [
+      { where: 'included', service: 'Bathroom', from: 'Plumbing - new main shutoff valves and hot/cold tie-ins at the building riser, including riser shutdown coordination with the superintendent', to: '' },
+      { where: 'included', service: 'Bathroom', from: 'Plumbing: run new hot & cold branch supply lines from the riser to shower, lavatory and toilet positions incl. hangers, sleeving, insulation', to: '' },
+    ]);
+    ok('REMOVING DUPLICATE BULLETS: a plain dash for an em dash and no period finds the bullet, and the gist of the second finds it too; both removed, the other lines kept', o3.applied.length === 2 && dup.estimate.serviceBreakdown[0].included.length === 3 && !dup.estimate.serviceBreakdown[0].included.some((x) => /Plumbing/.test(x)), JSON.stringify(dup.estimate.serviceBreakdown[0].included) + ' ' + JSON.stringify(o3.skipped));
+    ok('..."Bathroom" names the "Bathroom Renovation" card', R.applyEdits(record(), [{ where: 'included', service: 'Bath', from: 'Mirror 24"x30" matte-black', to: 'M' }]).applied.length === 1 && R.applyEdits(record(), [{ where: 'included', service: 'Kitchen', from: 'Mirror 24"x30" matte-black', to: 'M' }]).skipped.length === 1);
     ok('overlap(): same words in another order score 1, half the words about a half, nothing in common 0', R.overlap('frameless glass shower door', 'glass shower door, frameless') === 1 && R.overlap('backlit mirror and cabinet', 'backlit mirror and towel bar') > 0.3 && R.overlap('backlit mirror', 'heated floor') === 0);
   }
 
@@ -231,6 +243,12 @@ function record() {
     ok('THE MISSING EDITS GO BACK TO THE ASSISTANT AS AN (auto) MESSAGE in the same chat, naming them and asking for a resend with no questions', calls.asked.length === 1 && calls.asked[0].chat === 'SBC-260901-ARWQ' && ctx.LOG[1].role === 'user' && /^\(auto\) These edits were NOT applied on SBC-260901-ARWQ - not found: scope: a half-wall glass shower panel; included \(Bathroom\): framed mirror\. Send them again now in one reword action, with from copied exactly from the estimate block or the whole scope\/summary replaced\. No questions\.$/.test(ctx.LOG[1].text), JSON.stringify(ctx.LOG.slice(1)));
     ok('...its reply is logged and its reword posted (through the same confirm), so two posts in all', ctx.LOG[2].text === 'Resent both.' && calls.fetched.length === 2 && calls.fetched[1].edits.length === 2 && calls.fetched[1].edits[0].to === 'whole new scope');
     ok('...and the resent action is not resent again: one retry per action, the second post reported as usual', calls.asked.length === 1 && /^Changed 1 line on SBC-260901-ARWQ; every price and total is as it was\.$/.test(ctx.LOG[3].text), JSON.stringify(ctx.LOG.slice(3)));
+    /* nothing matched at all (the screen): resent the same way */
+    posts.push({ success: false, applied: [], skipped: [{ where: 'included', service: 'Bathroom', from: 'Plumbing — new main shutoff valves', to: '' }], error: 'Nothing matched: not found (Plumbing — new main shutoff valves)' }, { success: true, applied: [{ changed: 1 }], skipped: [], estimate: { labor: [] } });
+    calls.asked.length = 0; calls.fetched.length = 0; ctx.LOG = [{ role: 'user', text: 'remove them' }];
+    const none = await vm.runInContext('aiExec({ type: "reword", ref: "SBC-260901-ARWQ", edits: [{ where: "included", service: "Bathroom", from: "Plumbing — new main shutoff valves", to: "" }] }, LOG, function () {})', ctx);
+    await new Promise((r) => setTimeout(r, 20));
+    ok('NOTHING MATCHED AT ALL: it says so, says it is sending them again, and the (auto) resend goes out once', /^Nothing changed - Nothing matched: not found \(Plumbing — new main shutoff valves\) Sending them again now\.$/.test(none) && calls.asked.length === 1 && /^\(auto\) These edits were NOT applied/.test(ctx.LOG[1].text) && calls.fetched.length === 2, none + ' | asked ' + calls.asked.length + ' fetched ' + calls.fetched.length);
     const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
     ok('THE ANSWER SHAPE RULE: first line the answer, five facts at most, the action in the same answer, never "want me to", never a question, "Matches. Nothing to change."', /HOW TO ANSWER, EVERY TIME: the first line is the answer itself/.test(A) && /checking and fixing are one job\. Never 'want me to', never 'shall I', never 'I can', never end on a question, never describe a fix you did not send/.test(A) && /If everything matches: 'Matches\. Nothing to change\.' and stop/.test(A));
   }

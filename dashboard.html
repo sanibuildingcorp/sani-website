@@ -4334,7 +4334,12 @@ async function aiExec(a, log, render) {
     if (!rw) throw new Error("the connection dropped three times (" + ((netErr && netErr.message) || "network") + "). Check the signal and ask me again - the edits are ready to send.");
     var dw = await rw.json().catch(function () { return {}; });
     if (!rw.ok) throw new Error(dw.error || "Failed");
-    if (!dw.success) return "Nothing changed - " + (dw.error || "no line matched the wording I had.");
+    if (!dw.success) {
+      /* nothing matched at all: the same resend as for a partial miss - the
+         assistant gets the list back and sends the edits again */
+      if (dw.skipped && dw.skipped.length && a._retried !== true) aiResendSkipped(wref, dw.skipped, log, render);
+      return "Nothing changed - " + (dw.error || "no line matched the wording I had.") + (dw.skipped && dw.skipped.length && a._retried !== true ? " Sending them again now." : "");
+    }
     if (wrec && dw.estimate) { wrec.estimate = dw.estimate; if (typeof renderEdit === "function") renderEdit(); }
     toast("Wording updated on " + wref + " — prices untouched");
     /* NOT FOUND IS NOT DONE. An edit the server could not place is sent
