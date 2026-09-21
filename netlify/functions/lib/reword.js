@@ -42,6 +42,20 @@ const CARD_KEYS = {
   supplies: ["customerSupplies", "customerSupplied", "supplied"],
 };
 const FIELD_KEYS = { summary: "summary", scope: "scopeOfWork", title: "projectTitle", timeline: "timelineText" };
+/* ── THE CONTRACT'S WORDS ──────────────────────────────────────────────────
+     "can you read contract too?" - "I can't open or read the contract."
+   record.contract.sections holds the agreement the customer signs: scope
+   lines, materials lines, the timeline, the project type and five clauses.
+   Its words can be fixed here like the estimate's; its total and payment
+   amounts are in the money fingerprint and never move; a SIGNED contract
+   is never changed. */
+const CONTRACT_LISTS = { contractscope: "scopeOfWork", contractmaterials: "materialsList" };
+const CONTRACT_FIELDS = { contracttimeline: "timeline", contracttype: "projectType" };
+const CLAUSES = { hiddenConditions: /hidden|conceal/, changeOrder: /change/, warranty: /warrant/, cancellation: /cancel/, permitsAndInsurance: /permit|insur/ };
+function clauseKey(service) {
+  const s = norm(service);
+  return Object.keys(CLAUSES).filter(function (k) { return CLAUSES[k].test(s); })[0] || "";
+}
 const LINE_KEYS = { labor: "labor", material: "materials" };
 
 /* Everything that is money, in a stable string. Anything else may change. */
@@ -56,6 +70,9 @@ function moneyFingerprint(record) {
     cardOptions: arr(est.serviceBreakdown).map(function (s) { return arr(s && s.options).map(function (o) { return [o && o.label, o && o.price].join("|"); }); }),
     parked: arr(est.parkedLines).length, materialsTotal: est.materialsTotalEstimate,
     pubSubtotals: arr(est.publishedCustomerScope && est.publishedCustomerScope.services).map(function (s) { return [s && (s.name || s.title), s && s.subtotal].join("|"); }),
+    contract: record && record.contract && typeof record.contract === "object"
+      ? [record.contract.total, record.contract.signed ? 1 : 0].concat(arr(record.contract.sections && record.contract.sections.paymentSchedule).map(function (p) { return [p && p.label, p && p.amount].join("|"); })).join("|")
+      : "",
   });
 }
 
@@ -197,8 +214,11 @@ function applyLineEdit(record, e) {
 }
 
 function applyFieldEdit(record, e) {
-  const est = record.estimate || (record.estimate = {});
-  const key = FIELD_KEYS[e.where];
+  return applyTextEdit(record.estimate || (record.estimate = {}), FIELD_KEYS[e.where], e);
+}
+/* One text field on any object: a phrase replaced, a sentence by its gist,
+   or the whole field when from is empty. */
+function applyTextEdit(est, key, e) {
   const cur = str(est[key]);
   if (!e.to && !e.from) return 0;
   if (e.from && cur) {
@@ -232,14 +252,49 @@ function escapeRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); 
 
 /* A whole scope of work is long; a card line is not. The cap follows the
    field, so "replace the scope" can carry the complete new text. */
-const TEXT_CAP = { scope: 8000, summary: 2000 };
+const TEXT_CAP = { scope: 8000, summary: 2000, contractclause: 2000, contracttimeline: 1000 };
 function textCap(where) { return TEXT_CAP[where] || 1000; }
+function cleanWhere(v) {
+  const w = norm(v).replace(/[\s_-]+/g, "");
+  if (/^contract/.test(w)) {
+    if (/scope/.test(w)) return "contractscope";
+    if (/material/.test(w)) return "contractmaterials";
+    if (/timeline|schedule/.test(w)) return "contracttimeline";
+    if (/type|title/.test(w)) return "contracttype";
+    if (/clause|term|condition|warrant|cancel|permit|change/.test(w)) return "contractclause";
+    return w;
+  }
+  return w.replace(/s$/, "").replace(/^supplie$/, "supplies").replace(/^materials?$/, "material").replace(/^not.?included$|^exclusion$/, "excluded");
+}
 function cleanEdit(e) {
   const o = e && typeof e === "object" ? e : {};
-  const where = norm(o.where).replace(/s$/, "").replace(/^supplie$/, "supplies").replace(/^materials?$/, "material").replace(/^not.?included$|^exclusion$/, "excluded");
+  const where = cleanWhere(o.where);
   return { where: where, service: str(o.service).slice(0, 120), from: str(o.from).slice(0, textCap(where)), to: str(o.to).slice(0, textCap(where)) };
 }
-const WHERE = ["included", "excluded", "supplies", "labor", "material", "summary", "scope", "title", "timeline"];
+const WHERE = ["included", "excluded", "supplies", "labor", "material", "summary", "scope", "title", "timeline", "contractscope", "contractmaterials", "contracttimeline", "contracttype", "contractclause"];
+
+/* The contract's lines and fields. A signed contract is refused whole. */
+function applyContractEdit(record, e) {
+  const ct = record.contract;
+  if (!ct || typeof ct !== "object" || !ct.sections) throw new Error("There is no contract on this estimate yet - generate it first.");
+  if (ct.signed) throw new Error("The contract is signed; a signed contract is never changed. Nothing was saved.");
+  const s = ct.sections;
+  if (CONTRACT_LISTS[e.where]) {
+    const k = CONTRACT_LISTS[e.where];
+    if (!Array.isArray(s[k])) s[k] = [];
+    const n = editList(s[k], e.from, e.to);
+    if (n) return n;
+    return e.to && s[k].some(function (x) { return loose(lineText(x)) === loose(e.to); }) ? { already: 1 } : 0;
+  }
+  if (CONTRACT_FIELDS[e.where]) return applyTextEdit(s, CONTRACT_FIELDS[e.where], e);
+  if (e.where === "contractclause") {
+    const key = clauseKey(e.service);
+    if (!key) throw new Error("Which clause? Name it in service: hidden conditions, change orders, warranty, cancellation, or permits and insurance.");
+    s.clauses = s.clauses && typeof s.clauses === "object" ? s.clauses : {};
+    return applyTextEdit(s.clauses, key, e);
+  }
+  return 0;
+}
 
 /**
  * Apply text edits to a record, in place. Throws if the money changed.
@@ -255,6 +310,7 @@ function applyEdits(record, edits) {
     let n = 0;
     if (CARD_KEYS[e.where]) n = applyCardEdit(record, e);
     else if (LINE_KEYS[e.where]) n = applyLineEdit(record, e);
+    else if (/^contract/.test(e.where)) n = applyContractEdit(record, e);
     else n = applyFieldEdit(record, e);
     if (n && typeof n === "object") applied.push(Object.assign({ changed: 0, already: n.already }, e));
     else if (n) applied.push(Object.assign({ changed: n }, e));

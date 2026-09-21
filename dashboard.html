@@ -4392,6 +4392,8 @@ async function aiExec(a, log, render) {
       return "Nothing changed - " + (dw.error || "no line matched the wording I had.") + (dw.skipped && dw.skipped.length && a._retried !== true ? " Sending them again now." : "");
     }
     if (wrec && dw.estimate) { wrec.estimate = dw.estimate; if (typeof renderEdit === "function") renderEdit(); }
+    /* a contract edit: the panel is drawn from record.contract */
+    if (wrec && dw.contract && edits.some(function (e) { return /^contract/i.test(String(e.where || "").replace(/[\s_-]+/g, "")); })) { wrec.contract = dw.contract; if (typeof window !== "undefined" && typeof window.renderContractPanel === "function") window.renderContractPanel(); }
     toast("Wording updated on " + wref + " — prices untouched");
     /* NOT FOUND IS NOT DONE. An edit the server could not place is sent
        back to the assistant at once, in this same chat, to be resent with
