@@ -3547,6 +3547,26 @@ async function addonCreate() {
 }
 
 /* ===== EDIT MODAL ===== */
+/* "LOADING…" that never ends: on a weak signal a fetch can sit with no
+   answer for minutes, and the card gave it forever. Twenty seconds, then one
+   more try; then the card with Retry, saying what happened. A 5xx on the
+   first try (a function killed at ten seconds) is tried once more too. */
+var OPEN_TIMEOUT_MS = 20000;
+async function fetchRecordWithPatience(ref) {
+  var lastErr = null;
+  for (var attempt = 0; attempt < 2; attempt++) {
+    var ctl = typeof AbortController === "function" ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, OPEN_TIMEOUT_MS) : null;
+    try {
+      var r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + (attempt ? "&t=" + Date.now() : ""), ctl ? { signal: ctl.signal } : undefined);
+      if (r.status >= 500 && attempt === 0) { lastErr = new Error("Load failed (" + r.status + ")"); continue; }
+      return r;
+    } catch (e) {
+      lastErr = e && e.name === "AbortError" ? new Error("No answer in " + Math.round(OPEN_TIMEOUT_MS / 1000) + " seconds - weak signal?") : e;
+    } finally { if (timer) clearTimeout(timer); }
+  }
+  throw lastErr || new Error("Load failed");
+}
 async function openEdit(ref) {
   const card = document.getElementById("edit-card");
   card.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Loading…</h3></div>';
@@ -3554,7 +3574,7 @@ async function openEdit(ref) {
   document.body.style.overflow = "hidden";
 
   try {
-    const r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref));
+    const r = await fetchRecordWithPatience(ref);
     if (!r.ok) throw new Error("Load failed (" + r.status + ")");
     currentRecord = await r.json();
     if (!currentRecord.estimate) currentRecord.estimate = {};
