@@ -4319,7 +4319,7 @@ async function aiExec(a, log, render) {
     var shown = edits.map(function (e) {
       return "• " + String(e.where || "") + (e.service ? " (" + e.service + ")" : "") + ":\n   " + (e.from ? e.from : "(add)") + "\n   → " + (e.to ? e.to : "(remove)");
     });
-    if (!confirm("Change the wording of " + wref + "?\nPrices, quantities and totals stay exactly as they are.\n\n" + shown.join("\n\n"))) return "OK, nothing changed.";
+    if (!confirm("Change the wording of " + wref + "?\nPrices, quantities and totals stay exactly as they are.\n\n" + shown.join("\n\n"))) return "Cancelled - you pressed Cancel on the dialog, so no wording changed. Ask me again and press OK to apply the edits.";
     /* "⚠ Could not do that: Load failed" - the phone's connection dropped
        between OK and the server. Tried again, up to three times; the server
        treats an edit that already landed as done, so a retry after a reply
@@ -4371,8 +4371,11 @@ async function aiExec(a, log, render) {
     var dd = await dry.json().catch(function () { return {}; });
     if (!dry.ok) throw new Error(dd.error || "Failed");
     if (!dd.changed) return "No repeated lines on " + dref + "." + similarNote(dd);
-    var dshown = (dd.lines || []).map(function (l) { return "• " + l.text + (l.count > 1 ? "  (×" + l.count + ")" : ""); }).join("\n");
-    if (!confirm("Remove " + dd.count + " repeated line" + (dd.count === 1 ? "" : "s") + " from " + dref + "?\nEach stays once, where it first appears. Prices, quantities and totals stay exactly as they are.\n\n" + dshown)) return "OK, nothing changed.";
+    /* A phone dialog, not a report: the count, the rule, a few examples.
+       Forty lines in a confirm read as an error and got a Cancel. */
+    var dlines = dd.lines || [];
+    var dshown = dlines.slice(0, 6).map(function (l) { return "• " + String(l.text).slice(0, 70) + (String(l.text).length > 70 ? "…" : "") + (l.count > 1 ? "  (×" + l.count + ")" : ""); }).join("\n") + (dlines.length > 6 ? "\n…and " + (dlines.length - 6) + " more" : "");
+    if (!confirm("Remove " + dd.count + " repeated line" + (dd.count === 1 ? "" : "s") + " from the scope of " + dref + "?\nEach line stays once, where it first appears. Prices untouched.\n\n" + dshown)) return "Cancelled - you pressed Cancel on the dialog, so nothing was removed. Ask me again and press OK to remove them.";
     var ap = await sbcFetch("/.netlify/functions/dedupe-scope", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: dref, apply: true }) });
     var da = await ap.json().catch(function () { return {}; });
     if (!ap.ok) throw new Error(da.error || "Failed");

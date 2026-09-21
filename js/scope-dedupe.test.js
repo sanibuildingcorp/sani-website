@@ -134,11 +134,17 @@ function record() {
     vm.createContext(ctx);
     ['aiExec', 'aiResendSkipped', 'aiRunActions'].forEach((n) => vm.runInContext(ext(n), ctx));
     const said = await vm.runInContext('aiExec({ type: "dedupe", ref: "SBC-260813-WPPF" })', ctx);
-    ok('A DRY RUN FIRST, then ONE CONFIRM listing each repeated line with how many places it repeats in, then the apply', calls.fetched.length === 2 && calls.fetched[0].body.apply === false && calls.fetched[1].body.apply === true && calls.confirms.length === 1 && /^Remove 2 repeated lines from SBC-260813-WPPF\?\nEach stays once, where it first appears\. Prices, quantities and totals stay exactly as they are\.\n\n\u2022 Site setup[^\n]*\(×8\)\n\u2022 Provide and use ram Board[^\n]*\(×3\)$/.test(calls.confirms[0]), calls.confirms[0]);
+    ok('A DRY RUN FIRST, then ONE CONFIRM listing each repeated line with how many places it repeats in, then the apply', calls.fetched.length === 2 && calls.fetched[0].body.apply === false && calls.fetched[1].body.apply === true && calls.confirms.length === 1 && /^Remove 2 repeated lines from the scope of SBC-260813-WPPF\?\nEach line stays once, where it first appears\. Prices untouched\.\n\n\u2022 Site setup[^\n]{0,70}…  \(×8\)\n\u2022 Provide and use ram Board[^\n]*\(×3\)$/.test(calls.confirms[0]), calls.confirms[0]);
     ok('...the returned estimate goes onto the open record and it redraws', ctx.currentRecord.estimate.projectTitle === 'DEDUPED' && calls.rendered === 1);
     ok('...and the answer says what was removed, names the similar pair for a reword, and that the customer still sees the sent version', /^Removed 2 repeated lines on SBC-260813-WPPF; each kept once where it first appears, every price as it was\. Same work in different words \(merge with a reword\): "Plumbing \u2014 full replacement[^"]*" \(Bathroom\) ≈ "Full replacement of the bathroom waste line back to the riser" \(Plumbing\)\. The customer still sees the sent version until you send an update\.$/.test(said), said);
+    /* the screen: "OK, nothing changed." after a Cancel read as the AI failing */
+    posts.push({ success: true, applied: false, changed: true, count: 9, lines: Array.from({ length: 9 }, (_, i) => ({ text: 'Repeated line number ' + (i + 1), count: 2 })), similar: [] });
+    ctx.confirm = (t) => { calls.confirms.push(t); return false; };
+    const cancelled = await vm.runInContext('aiExec({ type: "dedupe", ref: "SBC-260813-WPPF" })', ctx);
+    ok('A CANCEL SAYS SO: "you pressed Cancel ... nothing was removed", no apply; and the dialog shows six examples then "…and 3 more"', /^Cancelled - you pressed Cancel on the dialog, so nothing was removed\. Ask me again and press OK to remove them\.$/.test(cancelled) && calls.fetched.length === 3 && /• Repeated line number 6  \(×2\)\n…and 3 more$/.test(calls.confirms[1]), cancelled + ' | ' + calls.confirms[1]);
+    ctx.confirm = (t) => { calls.confirms.push(t); return true; };
     posts.push({ success: true, applied: false, changed: false, count: 0, lines: [], similar: [] });
-    ok('nothing repeated: says so, no confirm, no apply', /^No repeated lines on SBC-260813-WPPF\.$/.test(await vm.runInContext('aiExec({ type: "dedupe", ref: "SBC-260813-WPPF" })', ctx)) && calls.confirms.length === 1 && calls.fetched.length === 3);
+    ok('nothing repeated: says so, no confirm, no apply', /^No repeated lines on SBC-260813-WPPF\.$/.test(await vm.runInContext('aiExec({ type: "dedupe", ref: "SBC-260813-WPPF" })', ctx)) && calls.confirms.length === 2 && calls.fetched.length === 4);
   }
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);
