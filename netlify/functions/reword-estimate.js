@@ -17,6 +17,7 @@
 
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
+const history = require("./lib/history");
 const { applyEdits } = require("./lib/reword");
 
 exports.handler = async function (event) {
@@ -42,6 +43,7 @@ exports.handler = async function (event) {
     catch (e) { return json(422, { error: String(e && e.message) }); }
     if (!result.applied.length) return json(200, { success: false, applied: [], skipped: result.skipped, error: "Nothing matched: " + result.skipped.map(function (s) { return s.reason + " (" + (s.from || s.to) + ")"; }).join("; ") });
 
+    history.note(record, "reworded", "Reworded (" + result.applied.length + " edit" + (result.applied.length === 1 ? "" : "s") + "): " + result.applied.map(function (e) { return String(e.where || "") + (e.service ? " on " + e.service : "") + (e.to ? ": \"" + String(e.to).slice(0, 60) + "\"" : " removed"); }).join("; ").slice(0, 300));
     record.updatedAt = new Date().toISOString();
     record.rewordedAt = record.updatedAt;
     await store.setJSON(ref, record);

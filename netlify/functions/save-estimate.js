@@ -12,6 +12,7 @@
 
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
+const history = require("./lib/history");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -48,6 +49,12 @@ exports.handler = async function (event) {
       return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: "Not found" }) };
     }
 
+    /* the story of this estimate (lib/history.js): a save that moved the
+       money or the line count leaves a line; a save that changed neither is
+       silent, or every keystroke would be a chapter */
+    const wasTotal = history.customerTotal(existing);
+    const wasLines = ((existing.estimate || {}).labor || []).length + ((existing.estimate || {}).materials || []).length;
+    const wasStamped = existing.customerFinalTotal;
     if (estimate) {
       existing.estimate = { ...existing.estimate, ...estimate };
     }
@@ -85,6 +92,13 @@ exports.handler = async function (event) {
       }
     }
 
+    const nowTotal = history.customerTotal(existing);
+    const nowLines = ((existing.estimate || {}).labor || []).length + ((existing.estimate || {}).materials || []).length;
+    if (customerFinalTotal !== undefined && String(wasStamped) !== String(existing.customerFinalTotal)) {
+      history.note(existing, "total", existing.customerFinalTotal != null ? "Total set to " + history.money(existing.customerFinalTotal) + " (was " + (wasStamped != null ? history.money(wasStamped) : "the lines, " + history.money(wasTotal)) + ")" : "Set total cleared; the price is the lines again, " + history.money(nowTotal), { total: nowTotal });
+    } else if (Math.abs((Number(nowTotal) || 0) - (Number(wasTotal) || 0)) >= 0.005 || nowLines !== wasLines) {
+      history.note(existing, "saved", "Edited: " + (nowLines !== wasLines ? nowLines + " lines (was " + wasLines + "), " : "") + history.totalMove(wasTotal, nowTotal), { total: nowTotal });
+    }
     existing.updatedAt = new Date().toISOString();
     await store.setJSON(ref, existing);
 

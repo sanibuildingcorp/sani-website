@@ -93,6 +93,7 @@ const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
 const { resolveSelection, selectionSnapshot, finishUpgradeTotal } = require("./lib/quote-options");
 const thread = require("./lib/thread");
+const history = require("./lib/history");
 const ADDR = require("./lib/addresses");
 const buildMessageEmail = require("./lib/message-email");
 const buildApprovedEmail = require("./lib/approved-email");
@@ -214,6 +215,11 @@ exports.handler = async function (event) {
       record.declinedAt = new Date().toISOString();
       record.declineReason = declineReason || "";
     }
+    /* the story of this estimate: lib/history.js */
+    if (action === "accept") history.note(record, "accepted", "Customer accepted, " + history.totalMove(null, history.customerTotal(record)) + (record.signature ? ", signed" : ""), { total: history.customerTotal(record) });
+    else if (action === "review") history.note(record, "review", "Customer asked for a review before accepting");
+    else if (action === "question") history.note(record, "question", "Customer wrote: " + String(record.customerQuestion || "").slice(0, 160));
+    else history.note(record, "declined", "Customer declined" + (record.declineReason ? ": " + String(record.declineReason).slice(0, 160) : ""));
     record.updatedAt = new Date().toISOString();
     await store.setJSON(ref, record);
 

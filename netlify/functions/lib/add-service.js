@@ -26,6 +26,8 @@
 "use strict";
 
 const ADDED_MAX = 10;
+const history = require("./history");
+function money(n) { return history.money(n); }
 
 function str(v) { return String(v == null ? "" : v).trim(); }
 function arr(v) { return Array.isArray(v) ? v : []; }
@@ -204,6 +206,7 @@ function mergeAddedService(record, fresh, meta) {
     rec.customerFinalTotal = stampedTo;
   }
 
+  history.note(rec, "added", "Added section " + entry.titles.join(", ") + " (" + money(added) + ") from the brief: " + str(meta && meta.text).slice(0, 120) + (stampedTo != null ? "; " + history.totalMove(stampedFrom, stampedTo) : ""), { total: history.customerTotal(rec) });
   /* the guard: what was there reads back exactly */
   if (prefixFingerprint(est, snap) !== before) throw new Error("The merge would have changed the existing estimate; nothing was saved");
   return { titles: entry.titles, subtotal: added, stampedFrom: stampedFrom, stampedTo: stampedTo, laborLines: labor.length, materialLines: materials.length };
@@ -271,6 +274,7 @@ function removeAddedService(record, index) {
   }
   est.addedServices = adds.filter(function (x, k) { return k !== i; });
   if (!est.addedServices.length) delete est.addedServices;
+  history.note(rec, "removed", "Removed section " + arr(entry.titles).join(", ") + (sub ? " (" + money(sub) + ")" : "") + (stampedTo != null ? "; " + history.totalMove(stampedFrom, stampedTo) : ""), { total: history.customerTotal(rec) });
   return { titles: arr(entry.titles), subtotal: sub, laborLines: before.labor - est.labor.length, materialLines: before.materials - est.materials.length, cards: before.cards - est.serviceBreakdown.length, stampedFrom: stampedFrom, stampedTo: stampedTo };
 }
 

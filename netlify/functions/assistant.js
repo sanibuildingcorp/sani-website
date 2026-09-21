@@ -53,6 +53,7 @@ const customerTotals = require("./lib/customer-total");
 const { insightsText } = require("./lib/insights");
 const chat = require("./lib/assistant-chat");
 const inbox = require("./lib/inbox-store");
+const history = require("./lib/history");
 
 /* ── EVERYWHERE, NOT ONLY BESIDE ONE REQUEST ─────────────────────────────
    "i need personal AI assistant which can do everything, read everything in
@@ -340,11 +341,46 @@ async function recordContext(ref, estimateChars) {
     str(req.description) || "(nothing)",
     answerLines.length ? "\nANSWERS THEY ALREADY GAVE:\n" + answerLines.join("\n") : "",
     thread.length ? "\nMESSAGES SO FAR:\n" + thread.join("\n") : "",
+    historyBlock(rec),
     await emailContext(rec),
     str(est.scopeOfWork) ? "\nSCOPE DRAFTED SO FAR:\n" + str(est.scopeOfWork).slice(0, 1200) : "",
     estimateContext(rec, estimateChars),
   ].filter(Boolean).join("\n");
   return { text: text, glance: estimateGlance(rec) };
+}
+
+/* ── THE STORY OF THE ESTIMATE, AND WHAT MOVED SINCE THE LAST SEND ────────
+     "let him check old history too for analyze situation and knows what's
+      was change and whats need to change"
+   Every write to a record leaves a line in record.history (lib/history.js):
+   sent, accepted, regenerated, reworded, added, removed, edited. The last
+   twenty-five go in, oldest first. And the frozen sent version is compared
+   with the estimate now - lines added, lines gone, cards added, the total
+   then and now - so "what changed since I sent it" is answered from data,
+   not from memory. */
+function historyBlock(rec) {
+  const out = [];
+  const h = history.lines(rec, 25);
+  if (h.length) out.push("\nHISTORY OF THIS ESTIMATE (oldest first, what happened and when):\n" + h.join("\n"));
+  const sv = rec && rec.sentVersion && typeof rec.sentVersion === "object" ? rec.sentVersion : null;
+  if (sv && sv.estimate) {
+    const est = rec.estimate || {}, was = sv.estimate || {};
+    const names = function (list) { return arr(list).map(function (l) { return str(l && l.item); }).filter(Boolean); };
+    const nowL = names(est.labor).concat(names(est.materials)), wasL = names(was.labor).concat(names(was.materials));
+    const added = nowL.filter(function (x) { return wasL.indexOf(x) === -1; }), gone = wasL.filter(function (x) { return nowL.indexOf(x) === -1; });
+    const cardsNow = arr(est.serviceBreakdown).map(function (c) { return str(c && c.title); }), cardsWas = arr(was.serviceBreakdown).map(function (c) { return str(c && c.title); });
+    const newCards = cardsNow.filter(function (c) { return cardsWas.indexOf(c) === -1; }), goneCards = cardsWas.filter(function (c) { return cardsNow.indexOf(c) === -1; });
+    let tNow = null, tWas = null;
+    try { tNow = customerTotals(est, rec).customerTotal; tWas = customerTotals(was, { customerFinalTotal: sv.customerFinalTotal }).customerTotal; } catch (e) { tNow = tWas = null; }
+    const parts = [];
+    if (newCards.length) parts.push("cards added: " + newCards.join(", "));
+    if (goneCards.length) parts.push("cards removed: " + goneCards.join(", "));
+    parts.push(added.length + " lines added" + (added.length ? " (" + added.slice(0, 6).join("; ").slice(0, 300) + (added.length > 6 ? "; ..." : "") + ")" : ""));
+    parts.push(gone.length + " lines removed" + (gone.length ? " (" + gone.slice(0, 6).join("; ").slice(0, 300) + (gone.length > 6 ? "; ..." : "") + ")" : ""));
+    if (tWas != null && tNow != null) parts.push("customer total then " + money(tWas) + ", now " + money(tNow));
+    out.push("\nSINCE THE LAST SEND (version " + (Number(sv.n) || 1) + ", " + str(sv.at).slice(0, 10) + "): " + parts.join("; ") + (!added.length && !gone.length && !newCards.length && !goneCards.length ? " - nothing on the estimate has changed since" : ""));
+  }
+  return out.join("\n");
 }
 
 /* ── THE ESTIMATE RIGHT NOW, IN ONE LINE, ON HIS LATEST MESSAGE ───────────
@@ -756,6 +792,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "A PHOTO OR SCREENSHOT may come with his question: a screenshot of a customer's text message or email, a product page, a plan, a photo of the site or of the work. A tall screenshot comes as several pieces, top to bottom, with a little overlap: read them as one page. Read it like any other fact - say what it shows or what it says, quote the words in it - and use it for describe or reword when he asks. If it is unreadable or does not show what he says, say so.",
     "ADDITIONAL WORK on an estimate the customer already agreed to (a new service, painting, an extra room, anything not in it): never change, reword or reprice the agreed services, and never tell him to regenerate - regenerating rebuilds every service. Do it for him with the addservice action when you know what the work is (write the brief from the chat, the emails, the photos); otherwise tell him to press ➕ ADD A SERVICE TO THIS ESTIMATE (in the Regenerate box). Either way the new work is priced on its own and added to the same estimate as its own section with its own scope and price, the agreed sections untouched; then he sends the estimate again. If he wants it as a separate estimate instead, ➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE) makes a linked one. On an estimate that IS additional work (the job says so), price and describe only the additional work.",
+    "YOU ARE HIS SENIOR ESTIMATOR, not a clerk. On every question about an open estimate you read the whole thing: the customer's words and answers, the messages, the emails, the history, what was sent and when, every line and every card. You think like the person who has to build it and the person who has to pay for it: is every promised bullet backed by a line, is every line a promise the customer can read, does the title say what the job is, does the summary match the scope, does the timeline fit the hours, is anything priced twice, is anything the customer asked for missing, is anything there the customer never asked for. Say what you found in his order of importance, with the exact words and numbers, and then DO the wording fixes yourself with ONE reword action holding every edit (title, summary, scope, timeline, included/excluded/supplies lines) - he confirms once. Money stays his: name the line and the number. When he asks what changed, answer from HISTORY and SINCE THE LAST SEND, with dates and totals, never from memory of this chat. When you are not sure, say what you would check and where, not a guess.",
     "THE CHAT MAY BE STALE. Earlier answers in this conversation describe the estimate as it was when they were written - lines, totals, cards that have since been added, removed or redone. The ESTIMATE RIGHT NOW note on his latest message and the estimate block below are the current truth and outrank anything said earlier, by you or by him. When they disagree with the chat, say plainly that the estimate has changed and use the current figures; never repeat an old count, total or card from the chat, and never invent a section that is not in the current estimate.",
     "CHECK THE ESTIMATE ('have a look', 'analyze', 'is it correct', 'anything unmatched'): the estimate block below (headed 'the generated estimate, as he sees it') is the whole estimate as stored, read fresh on every question - never say you cannot see it or ask him to refresh. Read every line and every card and compare them with each other and with the customer's words: a card bullet with no line behind it, a line filed under the wrong service, a duplicate line, a $0 card, a quantity that does not match a size he gave, a customer-supplied item priced as material, a section added after agreement that repeats agreed work. Report each mismatch concretely (line name, card, number) and say what to change. Wording -> offer a reword action. A quantity, a rate or a line -> name the exact line and the number; he edits lines himself, you never change money. If it says 'estimate cut here', say that and ask for a narrower question.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",

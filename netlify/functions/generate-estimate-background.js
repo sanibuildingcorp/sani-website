@@ -33,6 +33,7 @@ const { preserveContractorFields, preservedFieldNames } = require("./lib/contrac
 /* A service added to an agreed estimate: generated alone, appended as its
    own section, nothing already there touched. See lib/add-service.js. */
 const { addServiceRequest, mergeAddedService } = require("./lib/add-service");
+const history = require("./lib/history");
 
 /* Claude Opus 5. Thinking is ON BY DEFAULT on this model and shares the max_tokens
    budget with the response text, which is why every call site below was raised.
@@ -321,8 +322,10 @@ exports.handler = async function handler(event) {
        one of them. */
     estimate.preservedContractorFields = preservedFieldNames(previousEstimate);
     preserveContractorFields(previousEstimate, estimate);
+    const wasTotal = history.customerTotal({ estimate: previousEstimate, customerFinalTotal: record.customerFinalTotal });
     record.estimate = estimate;
     record.status = record.status === "new" ? "drafted" : record.status;
+    history.note(record, "regenerated", (previousEstimate && (previousEstimate.labor || []).length ? (body.reanalyze === true ? "Re-read and re-priced by the AI" : "Re-priced by the AI") : "Priced by the AI") + ": " + (estimate.labor || []).length + " labor and " + (estimate.materials || []).length + " material lines, " + history.totalMove(previousEstimate && (previousEstimate.labor || []).length ? wasTotal : null, history.customerTotal(record)), { total: history.customerTotal(record) });
     }
     record.updatedAt = new Date().toISOString();
     record.aiStatus = "done";

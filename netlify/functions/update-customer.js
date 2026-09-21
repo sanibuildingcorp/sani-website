@@ -11,6 +11,7 @@
 
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
+const history = require("./lib/history");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -35,6 +36,7 @@ exports.handler = async function (event) {
     }
 
     const clean = function (v) { return String(v == null ? "" : v).trim().slice(0, 300); };
+    const wasCustomer = JSON.parse(JSON.stringify(record.customer || {})), wasDescription = String((record.request || {}).description || "").trim(), wasService = String((record.request || {}).service || "");
     record.customer = Object.assign({}, record.customer || {}, {
       name: clean(customer.name),
       email: clean(customer.email),
@@ -73,6 +75,12 @@ exports.handler = async function (event) {
       });
       record.request.serviceAnswers = merged;
     }
+    const changed = [];
+    if (JSON.stringify(record.customer) !== JSON.stringify(wasCustomer)) changed.push("customer details");
+    if (description !== undefined && String(description == null ? "" : description).trim() !== wasDescription) changed.push("description");
+    if (service !== undefined && record.request.service !== wasService) changed.push("services set to " + record.request.service + (wasService ? " (was " + wasService + ")" : ""));
+    if (serviceAnswers && typeof serviceAnswers === "object" && !Array.isArray(serviceAnswers) && Object.keys(serviceAnswers).length) changed.push("answers");
+    if (changed.length) history.note(record, "customer", "Edited: " + changed.join(", "));
     record.updatedAt = new Date().toISOString();
     await store.setJSON(ref, record);
 

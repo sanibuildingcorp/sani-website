@@ -9,6 +9,7 @@ const https = require("https");
 const nodemailer = require("nodemailer");
 const { getStore } = require("@netlify/blobs");
 const { buildSentVersion } = require("./lib/sent-version");
+const history = require("./lib/history");
 const customerTotals = require("./lib/customer-total");
 const ADDR = require("./lib/addresses");
 
@@ -177,6 +178,8 @@ exports.handler = async function (event) {
        See lib/sent-version.js for which fields freeze and which stay live. */
     record.sentVersionN = (Number(record.sentVersionN) || 0) + 1;
     record.sentVersion = buildSentVersion(record, record.sentVersionN);
+    /* the story of this estimate: lib/history.js */
+    history.note(record, "sent", "Sent version " + record.sentVersionN + " to the customer, " + history.totalMove(null, history.customerTotal(record)) + (includeContract === true ? ", with the contract" : ""), { total: history.customerTotal(record), version: record.sentVersionN });
     record.updatedAt = record.sentAt;
     record.openedAt = null;
     await store.setJSON(ref, record);
