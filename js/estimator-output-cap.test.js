@@ -27,7 +27,7 @@ function ext(name) {
 let sentCaps = [], script = [];
 const ctx = {
   console: { log() {} }, String, Number, Array, Object, JSON, RegExp, Buffer, Promise, Error, Math, setImmediate,
-  CLAUDE_MODEL: 'claude-opus-5', CLAUDE_EFFORT: 'high',
+  CLAUDE_MODEL: 'claude-opus-5', CLAUDE_EFFORT: 'high', RUN_DEADLINE: 0,
   https: { request: function (opts, cb) {
     let payload = null;
     return { on() { return this; }, setTimeout() {}, destroy() {}, write(b) { payload = JSON.parse(b); }, end() {
@@ -71,6 +71,20 @@ const call = (cap) => vm.runInContext("callClaude('k', 'THE PROMPT', " + cap + "
     err = null;
     try { await call(64000); } catch (e) { err = e; }
     ok('already at the ceiling, one cut is the end: no retry', sentCaps.join(',') === '64000' && !!err);
+  }
+
+  console.log('\n4. No retry that would not fit before the run\'s deadline\n');
+  {
+    ctx.RUN_DEADLINE = Date.now() - 1;
+    sentCaps = []; script = ['max_tokens', 'end_turn'];
+    let err = null;
+    try { await call(16000); } catch (e) { err = e; }
+    ok('THE DEADLINE IS PAST: one request, no doubled retry, and the message says there was no time left', sentCaps.join(',') === '16000' && !!err && /cut off and there was no time left to retry\. Press Generate again/.test(err.message), (err && err.message) || sentCaps.join(','));
+    ctx.RUN_DEADLINE = Date.now() + 60 * 60 * 1000;
+    sentCaps = []; script = ['max_tokens', 'end_turn'];
+    const text = await call(16000);
+    ok('an hour left: the retry runs as before', sentCaps.join(',') === '16000,32000' && text === '{"whole":true}');
+    ctx.RUN_DEADLINE = 0;
   }
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);

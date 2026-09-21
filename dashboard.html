@@ -5738,6 +5738,10 @@ function sleepUntilVisibleOr(ms) {
    reconnect that finds one already going. Looks the button up every tick instead
    of holding a reference, because a re-render replaces the element. */
 async function watchGeneration(ref, jobId, startedAt, label) {
+  /* "Generating… 655s" - "It's still loading". The server writes the stage
+     it is in on the record (aiStage); the button says it after the seconds,
+     so a long run reads as progress, not as a hang. */
+  var stage = "";
   while (true) {
     var elapsed = Date.now() - startedAt;
     var btn = document.getElementById("gen-btn");
@@ -5746,13 +5750,14 @@ async function watchGeneration(ref, jobId, startedAt, label) {
       /* "Adding the service…" on an added service: the same word as a full
          regeneration read as one, and one look at "Generating…" was enough
          to make him think the agreed estimate was being rebuilt. */
-      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + Math.round(elapsed / 1000) + 's';
+      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + Math.round(elapsed / 1000) + 's' + (stage ? ' · ' + esc(stage) : '');
     }
     var rec = null;
     try {
       var pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       if (pr.ok) rec = await pr.json();
     } catch (_) { rec = null; }
+    if (rec && rec.aiJobId === jobId && rec.aiStatus === "running") stage = String(rec.aiStage || "");
 
     var v = aiPollVerdict(rec, jobId, Date.now() - startedAt);
     if (v.state === "done") { aiJobClear(ref); return { estimate: rec.estimate, status: rec.status, customerFinalTotal: rec.customerFinalTotal }; }

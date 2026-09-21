@@ -49,6 +49,24 @@ const MARKET_SEARCH_MAX_USES = Number(process.env.ESTIMATOR_SEARCH_MAX_USES || 6
 const OPENAI_ANALYSIS_MODEL = process.env.ESTIMATOR_ANALYSIS_MODEL || "gpt-5-mini";
 const DEFAULT_MARKUP = 25;
 
+/* ══ THE RUN HAS A CLOCK. ═══════════════════════════════════════════════════
+     "Generating… 655s" - "It's still loading"
+   A background function is killed at fifteen minutes, silently: the record
+   stays "running" and the dashboard gives up with nothing to show. Thinking
+   made every stage slower and a cut response is now retried with more room,
+   so a long job can reach that wall. Two things follow. The stage the run is
+   in is written to the record (record.aiStage) so the button can say
+   "Pricing the work" instead of only counting seconds. And the optional
+   stages give way when time is short: no market research with under seven
+   minutes left, no repair pass with under four, no written scope with under
+   two, no doubled retry that would not fit. A priced estimate on time beats
+   a perfect one that never arrives. */
+const RUN_MS = 13 * 60 * 1000;
+const RESEARCH_MIN_MS = 7 * 60 * 1000, REPAIR_MIN_MS = 4 * 60 * 1000, SCOPE_MIN_MS = 2 * 60 * 1000;
+let RUN_DEADLINE = 0;
+function timeLeft() { return RUN_DEADLINE ? RUN_DEADLINE - Date.now() : Infinity; }
+function secondsUsed(timing) { return Math.round((Date.now() - timing.startedAt) / 1000) + "s"; }
+
 exports.handler = async function handler(event) {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers: cors(), body: "" };
@@ -101,6 +119,14 @@ exports.handler = async function handler(event) {
 
     const input = buildEstimatorInput(sourceRecord, body);
     const timing = { startedAt: Date.now(), analysisMs: 0, estimateMs: 0, repairMs: 0, deterministicMs: 0, repairUsed: false };
+    RUN_DEADLINE = timing.startedAt + RUN_MS;
+    /* The stage, on the record, for the button. Best effort: a failed write
+       changes nothing about the run. */
+    const markStage = async function (name) {
+      record.aiStage = name;
+      record.aiStageAt = new Date().toISOString();
+      if (store) { try { await store.setJSON(ref, record); } catch (_) {} }
+    };
 
     /* ══ THE JOB IS DECIDED ONCE. ══════════════════════════════════════════════
        This stage answers "what job is this?", and it used to answer it again on
@@ -122,6 +148,7 @@ exports.handler = async function handler(event) {
     if (pin.reuse) {
       projectAnalysis = pin.analysis;
     } else {
+      await markStage("Reading the job");
       const analysisPrompt = buildProjectAnalysisPrompt(input);
       /* ONE READER, WITH OR WITHOUT PHOTOS. For a day this ran on Claude when
          photos were attached and on gpt-5-mini when they were not - so the same
@@ -159,7 +186,10 @@ exports.handler = async function handler(event) {
        A null result is a normal outcome and changes nothing. */
     const researchStarted = Date.now();
     let marketResearch = null;
-    if (MARKET_RESEARCH_ON && anthropicKey) {
+    if (MARKET_RESEARCH_ON && anthropicKey && timeLeft() < RESEARCH_MIN_MS) {
+      timing.researchSkipped = "out of time: " + secondsUsed(timing) + " already used reading the job";
+    } else if (MARKET_RESEARCH_ON && anthropicKey) {
+      await markStage("Checking current prices");
       marketResearch = await researchMarketPricing(
         projectAnalysis,
         input,
@@ -170,6 +200,7 @@ exports.handler = async function handler(event) {
     timing.researchMs = Date.now() - researchStarted;
 
     const estimateStarted = Date.now();
+    await markStage("Pricing the work");
     const estimatePrompt = buildEstimatePrompt(input, projectAnalysis, marketResearch);
     const rawEstimate = anthropicKey
       ? await callClaude(anthropicKey, estimatePrompt, 32000)
@@ -203,6 +234,9 @@ exports.handler = async function handler(event) {
       const preRepairEstimate = estimate;
       const preRepairValidation = validation;
       try {
+        /* Out of time: the first draft stands, and the report below says why. */
+        if (timeLeft() < REPAIR_MIN_MS) throw new Error("out of time: " + secondsUsed(timing) + " already used; the first draft stands unrepaired");
+        await markStage("Checking the draft");
         /* THE MODEL MUST NEVER SEE CALIBRATED RATES.
            This used to hand it the post-pricing estimate, whose hourly rates have already
            been converted from the payroll basis to Sani's subcontract basis (tile
@@ -267,6 +301,7 @@ exports.handler = async function handler(event) {
        research pass above. No key or no result means the estimate is untouched. */
     const matPriceStarted = Date.now();
     if (process.env.SERPER_API_KEY) {
+      await markStage("Looking up material prices");
       try {
         estimate = await priceMaterialsLive(estimate, (q) => serperShopping(process.env.SERPER_API_KEY, q));
       } catch (matErr) {
@@ -285,7 +320,10 @@ exports.handler = async function handler(event) {
        its own errors and leaves the phrase-library wording in place, because a
        correctly priced estimate with plain wording beats no estimate at all. */
     const scopeStarted = Date.now();
-    if (anthropicKey) {
+    if (anthropicKey && timeLeft() < SCOPE_MIN_MS) {
+      timing.scopeSkipped = "out of time: " + secondsUsed(timing) + " already used; the template wording stands";
+    } else if (anthropicKey) {
+      await markStage("Writing the scope of work");
       estimate = await writeCustomerScope(
         estimate,
         projectAnalysis,
@@ -333,6 +371,7 @@ exports.handler = async function handler(event) {
     }
     record.updatedAt = new Date().toISOString();
     record.aiStatus = "done";
+    record.aiStage = "";
     record.aiJobId = String(body.jobId || record.aiJobId || "").trim();
     record.aiError = "";
     record.aiFinishedAt = new Date().toISOString();
@@ -373,6 +412,7 @@ exports.handler = async function handler(event) {
         const s2 = await loadEstimateRecord(failRef, event, safeJsonParse(event.body, {}));
         if (s2 && s2.store && s2.record) {
           s2.record.aiStatus = "error";
+          s2.record.aiStage = "";
           s2.record.aiJobId = String(safeJsonParse(event.body, {}).jobId || s2.record.aiJobId || "").trim();
           s2.record.aiError = String((err && err.message) || err).slice(0, 300);
           await s2.store.setJSON(failRef, s2.record);
@@ -1176,6 +1216,7 @@ function callClaude(apiKey, prompt, maxTokens, tools, imageBlocks) {
   const MAX_OUTPUT = 64000;
   return attempt(maxTokens);
   function attempt(cap) {
+  const attemptStarted = Date.now();
   const payload = JSON.stringify({
     model: CLAUDE_MODEL,
     max_tokens: cap,
@@ -1213,13 +1254,17 @@ function callClaude(apiKey, prompt, maxTokens, tools, imageBlocks) {
                  message is identical to genuinely malformed output, so the one fix that
                  would help (a larger cap, or a smaller prompt) is invisible. */
               if (json.stop_reason === "max_tokens") {
-                if (cap < MAX_OUTPUT) {
+                /* A doubled retry takes about as long again; only when it fits
+                   before the run's deadline (RUN_DEADLINE, 0 = no clock). */
+                const took = Date.now() - attemptStarted;
+                const fits = !RUN_DEADLINE || Date.now() + took * 1.5 < RUN_DEADLINE;
+                if (cap < MAX_OUTPUT && fits) {
                   const bigger = Math.min(cap * 2, MAX_OUTPUT);
                   console.log(`Claude response cut off at ${cap} tokens; trying once more at ${bigger}`);
                   return resolve(attempt(bigger));
                 }
                 return reject(new Error(
-                  `Claude response hit the ${cap}-token limit and was cut off, even after a retry with more room. ` +
+                  `Claude response hit the ${cap}-token limit and was cut off` + (cap < MAX_OUTPUT ? " and there was no time left to retry" : ", even after a retry with more room") + `. ` +
                   `Press Generate again; if it happens again, shorten the description or split the job.`));
               }
               resolve(text);
