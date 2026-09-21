@@ -29,6 +29,9 @@ const MAX_TOKENS = 2500;
 /* The whole estimate: forty thousand characters holds a hundred lines and
    every card. The sync answer keeps its short cut; this one has the time. */
 const ESTIMATE_CHARS = 40000;
+/* The job's own photos (request, quote, messages), shown to the model on
+   his latest message. Six is a job; the sync answer shows none. */
+const JOB_PHOTOS = 6;
 
 function str(v) { return String(v == null ? "" : v).trim(); }
 function jobStore() {
@@ -49,7 +52,7 @@ exports.handler = async function (event) {
   const jobs = jobStore();
   await jobs.set(id, JSON.stringify({ status: "running", kind: "answer", at: new Date().toISOString() }));
   try {
-    const out = await assistant.answer(body, { deadline: Date.now() + ANSWER_MS, recordMs: RECORD_MS, memoryMs: MEMORY_MS, chatWriteMs: CHAT_WRITE_MS, maxTokens: MAX_TOKENS, estimateChars: ESTIMATE_CHARS });
+    const out = await assistant.answer(body, { deadline: Date.now() + ANSWER_MS, recordMs: RECORD_MS, memoryMs: MEMORY_MS, chatWriteMs: CHAT_WRITE_MS, maxTokens: MAX_TOKENS, jobPhotos: JOB_PHOTOS, estimateChars: ESTIMATE_CHARS });
     await jobs.set(id, JSON.stringify({ status: "done", kind: "answer", reply: out.reply, truncated: out.truncated === true, actions: out.actions, at: new Date().toISOString() }));
     return { statusCode: 200, headers: cors(), body: JSON.stringify({ ok: true, job: id }) };
   } catch (e) {

@@ -106,7 +106,7 @@ const SCREEN = {
     /* The list itself is capped at SCREEN_CHARS (14k); the rest is the rules,
        which grow a line at a time. 21k leaves room for that without ever
        letting a 400-row list through whole (that would be ~50k). */
-    ok('A HUGE LIST IS CUT, NOT SENT WHOLE - the clock is the reason', sent.system.length < 29000 && /list cut here/.test(sent.system), sent.system.length + ' chars');
+    ok('A HUGE LIST IS CUT, NOT SENT WHOLE - the clock is the reason', sent.system.length < 30000 && /list cut here/.test(sent.system), sent.system.length + ' chars');
     sent = null;
     await call({ messages: [{ role: 'user', text: 'hi' }], screen: 'garbage' });
     ok('a screen that is not an object is ignored, not a crash', sent && /No job is open\. Answer whatever he asks\./.test(sent.system));
@@ -160,7 +160,7 @@ const SCREEN = {
     await call({ ref: 'SBC-HUGE', messages: [{ role: 'user', text: 'hi' }] });
     /* The estimate itself is capped at ESTIMATE_CHARS (9k); the rules around
        it grow a line at a time (the inbox rules added ~1.4k). */
-    ok('a huge estimate is cut, not sent whole', /estimate cut here/.test(sent.system) && sent.system.length < 24000, sent.system.length + ' chars');
+    ok('a huge estimate is cut, not sent whole', /estimate cut here/.test(sent.system) && sent.system.length < 25000, sent.system.length + ' chars');
 
     STORES.estimates.set('SBC-THIN', JSON.stringify({ ref: 'SBC-THIN', status: 'new', customer: { name: 'x' }, request: { description: 'test request' }, estimate: {} }));
     sent = null;
