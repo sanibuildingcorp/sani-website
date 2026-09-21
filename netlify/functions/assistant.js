@@ -230,7 +230,7 @@ async function answer(body, clocks) {
   const lastUser = turns.filter(function (t) { return t.role === "user"; }).slice(-1)[0];
   if (images.length && lastUser) lastUser.images = images;
   const reads = await Promise.all([
-    str(body.ref) ? withTimeout(recordContext(str(body.ref), c.estimateChars), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
+    str(body.ref) ? withTimeout(recordContext(str(body.ref), c.estimateChars, c.jobPhotos), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
     withTimeout(loadMemory(), c.memoryMs || MEMORY_MS).catch(function () { return []; }),
     withTimeout(loadInsights(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }),
     withTimeout(inboxContext(str(body.ref), lastUser ? lastUser.text : ""), c.recordMs || RECORD_MS).catch(function () { return ""; }),
@@ -238,6 +238,10 @@ async function answer(body, clocks) {
   const context = reads[0] && typeof reads[0] === "object" ? reads[0].text : reads[0];
   const glance = reads[0] && typeof reads[0] === "object" ? str(reads[0].glance) : "";
   if (glance && lastUser) lastUser.note = "[" + glance + "]";
+  /* the job's own photos ride on his latest message too, before any picture
+     he uploaded with the question; never written to the chat */
+  const jobImages = reads[0] && typeof reads[0] === "object" ? arr(reads[0].photos) : [];
+  if (jobImages.length && lastUser) lastUser.jobImages = jobImages;
   const memory = reads[1];
   const insights = reads[2];
   const inboxText = reads[3];
@@ -307,12 +311,13 @@ function withTimeout(promise, ms) {
    contractor's cost lines are not sent: this is for working out what to ask a
    customer, and a model that has been handed the internal price band tends to
    start reasoning about it in answers meant to be read aloud to that customer. */
-async function recordContext(ref, estimateChars) {
+async function recordContext(ref, estimateChars, jobPhotos) {
   const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
   const rec = await store.get(ref, { type: "json" });
   if (!rec) return "";
 
   const req = rec.request || {}, cust = rec.customer || {}, est = rec.estimate || {};
+  const pics = jobPictures(rec, Number(jobPhotos) > 0 ? Number(jobPhotos) : 0);
   const answers = req.serviceAnswers || {};
   const answerLines = Object.keys(answers)
     .filter(function (k) { return str(answers[k]); })
@@ -335,7 +340,7 @@ async function recordContext(ref, estimateChars) {
     "Customer: " + str(cust.name),
     "Address: " + (str(cust.address) || "not given"),
     "Service asked for: " + (str(req.service) || "not given"),
-    "Photos attached: " + (arr(req.photos).length || 0),
+    "Photos on this job: " + pics.total + (pics.total ? " (" + pics.parts.join(", ") + ")" + (pics.shown.length ? " - " + (pics.shown.length < pics.total ? "the first " + pics.shown.length + " are" : "they are") + " shown to you on his latest message, each labelled 'Job photo'" : " - not shown on this quick path; they are shown when he asks with Ask AI") : ""),
     "",
     "WHAT THE CUSTOMER WROTE:",
     str(req.description) || "(nothing)",
@@ -349,8 +354,63 @@ async function recordContext(ref, estimateChars) {
     str(est.scopeOfWork) ? "\nSCOPE OF WORK (the customer reads this text; quote it exactly in a reword):\n" + cutText(str(est.scopeOfWork), Number(estimateChars) > ESTIMATE_CHARS ? 8000 : 1200) : "",
     estimateContext(rec, estimateChars),
   ].filter(Boolean).join("\n");
-  return { text: text, glance: estimateGlance(rec) };
+  return { text: text, glance: estimateGlance(rec), photos: pics.shown };
 }
+
+/* ── THE JOB'S OWN PHOTOS ─────────────────────────────────────────────────
+     "Can you read quote photos in this estimate?" - "No, this estimate has
+      0 photos attached." It had photos on the quote; only the request's
+      photos were counted, and none of them was ever shown to the model.
+   Pictures live in three places: request.photos (the customer's form, with
+   a shot label), estimate.quotePhotos (attached to the quote by Sani) and
+   the images on thread messages. All are counted; the first max of them go
+   on his latest message as image blocks, each after a one-line label, so
+   "Job photo 2 - a close-up" and the picture are read together. Same
+   accepted forms as the estimator: a data: URL of a known type, or an
+   https URL that is not a PDF or HEIC. */
+const JOB_PHOTO_SHOTS = { wide: "the whole room from the doorway", area: "the whole wall / floor / section to be worked on", close: "a close-up of the damage or detail", scale: "a shot with a tape measure for scale" };
+function imageSourceOf(data) {
+  const d = str(data);
+  const m = /^data:(image\/(?:jpeg|jpg|png|gif|webp));base64,([A-Za-z0-9+/=\s]+)$/i.exec(d);
+  if (m) {
+    const b64 = m[2].replace(/\s+/g, "");
+    if (!b64 || b64.length > IMAGE_CHARS) return null;
+    return { type: "base64", media_type: m[1].toLowerCase() === "image/jpg" ? "image/jpeg" : m[1].toLowerCase(), data: b64 };
+  }
+  if (/^https?:\/\//i.test(d) && !/\.(pdf|heic|heif)(?:[?#]|$)/i.test(d)) return { type: "url", url: d };
+  return null;
+}
+function jobPictures(rec, max) {
+  const req = (rec && rec.request) || {}, est = (rec && rec.estimate) || {};
+  const list = [], counts = { request: 0, quote: 0, messages: 0 };
+  arr(req.photos).forEach(function (p) {
+    if (!p || p.kind === "file") return;
+    const src = imageSourceOf(p.data); if (!src) return;
+    counts.request++;
+    list.push({ source: src, label: "sent by the customer with the request" + (JOB_PHOTO_SHOTS[str(p.slot)] ? ": " + JOB_PHOTO_SHOTS[str(p.slot)] : "") + (str(p.name) ? " (" + str(p.name).slice(0, 60) + ")" : "") });
+  });
+  arr(est.quotePhotos).forEach(function (p) {
+    const q = typeof p === "string" ? { data: p } : p;
+    const src = q && imageSourceOf(q.data); if (!src) return;
+    counts.quote++;
+    list.push({ source: src, label: "attached to the quote by Sani" + (str(q.name) ? " (" + str(q.name).slice(0, 60) + ")" : "") });
+  });
+  arr(rec && rec.thread).forEach(function (m) {
+    arr(m && m.attachments).forEach(function (a) {
+      if (!a || a.kind !== "image") return;
+      const src = imageSourceOf(a.url || a.data); if (!src) return;
+      counts.messages++;
+      list.push({ source: src, label: "sent " + (m.from === "contractor" ? "by Sani" : "by the customer") + " in a message" + (str(a.name) ? " (" + str(a.name).slice(0, 60) + ")" : "") });
+    });
+  });
+  const parts = [];
+  if (counts.request) parts.push(counts.request + " sent by the customer with the request");
+  if (counts.quote) parts.push(counts.quote + " attached to the quote by Sani");
+  if (counts.messages) parts.push(counts.messages + " in messages");
+  const shown = list.slice(0, Math.max(0, Number(max) || 0)).map(function (x, i) { return { source: x.source, label: "Job photo " + (i + 1) + " of " + list.length + " - " + x.label }; });
+  return { total: list.length, parts: parts, shown: shown };
+}
+exports._jobPictures = jobPictures;
 
 /* ── THE STORY OF THE ESTIMATE, AND WHAT MOVED SINCE THE LAST SEND ────────
      "let him check old history too for analyze situation and knows what's
@@ -831,6 +891,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "An ACTION line is ONE line of valid JSON: no line breaks inside it, and inside a text value use single quotes, never double quotes (for a reword, copy the quotes the estimate uses - 24\" - as \\\"). Always write at least one line of words before any ACTION line.",
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "A PHOTO OR SCREENSHOT may come with his question: a screenshot of a customer's text message or email, a product page, a plan, a photo of the site or of the work. A tall screenshot comes as several pieces, top to bottom, with a little overlap: read them as one page. Read it like any other fact - say what it shows or what it says, quote the words in it - and use it for describe or reword when he asks. If it is unreadable or does not show what he says, say so.",
+    "THE JOB'S OWN PHOTOS (the customer's request photos, the photos attached to the quote, pictures in messages) come on his latest message, each after a label 'Job photo N of M - ...'; the job block says how many there are. When he asks about the photos, what you see, or whether the estimate matches the pictures, read them and say plainly what is in each - the room, the damage, the materials, sizes if something gives scale. Never say the job has no photos when the job block counts some; if it says they are not shown on this path, say so and that Ask AI shows them.",
     "ADDITIONAL WORK on an estimate the customer already agreed to (a new service, painting, an extra room, anything not in it): never change, reword or reprice the agreed services, and never tell him to regenerate - regenerating rebuilds every service. Do it for him with the addservice action when you know what the work is (write the brief from the chat, the emails, the photos); otherwise tell him to press ➕ ADD A SERVICE TO THIS ESTIMATE (in the Regenerate box). Either way the new work is priced on its own and added to the same estimate as its own section with its own scope and price, the agreed sections untouched; then he sends the estimate again. If he wants it as a separate estimate instead, ➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE) makes a linked one. On an estimate that IS additional work (the job says so), price and describe only the additional work.",
     "YOU ARE HIS SENIOR ESTIMATOR, not a clerk. On every question about an open estimate you read the whole thing: the customer's words and answers, the messages, the emails, the history, what was sent and when, every line and every card. You think like the person who has to build it and the person who has to pay for it: is every promised bullet backed by a line, is every line a promise the customer can read, does the title say what the job is, does the summary match the scope, does the timeline fit the hours, is anything priced twice, is anything the customer asked for missing, is anything there the customer never asked for. Say what you found in his order of importance, with the exact words and numbers, and then DO the wording fixes yourself with ONE reword action holding every edit (title, summary, scope, timeline, included/excluded/supplies lines) - he confirms once. Money stays his: name the line and the number. When he asks what changed, answer from HISTORY and SINCE THE LAST SEND, with dates and totals, never from memory of this chat. When you are not sure, say what you would check and where, not a guess.",
     "THE CHAT MAY BE STALE. Earlier answers in this conversation describe the estimate as it was when they were written - lines, totals, cards that have since been added, removed or redone. The ESTIMATE RIGHT NOW note on his latest message and the estimate block below are the current truth and outrank anything said earlier, by you or by him. When they disagree with the chat, say plainly that the estimate has changed and use the current figures; never repeat an old count, total or card from the chat, and never invent a section that is not in the current estimate.",
@@ -884,8 +945,13 @@ function callClaude(apiKey, system, turns, deadline, maxTokens) {
     messages: turns.map(function (t) {
       /* the glance rides with his latest message and is never written to the chat */
       const text = t.note ? t.text + "\n\n" + t.note : t.text;
-      if (!Array.isArray(t.images) || !t.images.length) return { role: t.role, content: text };
-      return { role: t.role, content: t.images.map(function (im) { return { type: "image", source: { type: "base64", media_type: im.mediaType, data: im.data } }; }).concat([{ type: "text", text: text }]) };
+      const job = Array.isArray(t.jobImages) ? t.jobImages : [], mine = Array.isArray(t.images) ? t.images : [];
+      if (!job.length && !mine.length) return { role: t.role, content: text };
+      const blocks = [];
+      job.forEach(function (im) { blocks.push({ type: "text", text: im.label }); blocks.push({ type: "image", source: im.source }); });
+      if (mine.length) { if (job.length) blocks.push({ type: "text", text: "Pictures he uploaded with this question:" }); mine.forEach(function (im) { blocks.push({ type: "image", source: { type: "base64", media_type: im.mediaType, data: im.data } }); }); }
+      blocks.push({ type: "text", text: text });
+      return { role: t.role, content: blocks };
     }),
   });
 
