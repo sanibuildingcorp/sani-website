@@ -134,7 +134,7 @@ console.log('\nthe understanding stage actually uses it\n');
      attached and by gpt-5-mini when they were not. The scope is decided in
      this stage, so the reader must not change with the customer's camera. */
   ok('THE JOB IS READ BY CLAUDE WHETHER OR NOT THERE ARE PHOTOS',
-    /if \(anthropicKey\) \{\s*rawAnalysis = await callClaude\(anthropicKey, analysisPrompt, 16000, null, photoBlocks\);/.test(SRC));
+    /if \(anthropicKey\) \{\s*(?:\/\*[\s\S]*?\*\/\s*)?rawAnalysis = await callClaude\(anthropicKey, analysisPrompt, 32000, null, photoBlocks\);/.test(SRC));
   ok('the photo blocks are built whenever there is an Anthropic key',
     /const photoBlocks = anthropicKey \? photoBlocksForClaude\(sourceRecord\.request, sourceRecord\) : \[\];/.test(SRC));
   ok('OpenAI is only the fallback for a deployment with no Anthropic key',
