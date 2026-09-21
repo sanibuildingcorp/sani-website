@@ -116,9 +116,10 @@ function dedupe(list) {
   return out;
 }
 
+const voice = require('./customer-voice');
 function tidyBullet(t) {
   if (bannedOutright(t)) return '';
-  let s = stripBanned(t);
+  let s = voice.softenText(stripBanned(t));
   if (!s) return '';
   s = s.replace(/^[-•*\d.)\s]+/, '');           // model sometimes re-adds its own bullet glyph
   s = s.charAt(0).toUpperCase() + s.slice(1);
@@ -220,6 +221,7 @@ WRITE, FOR EACH SERVICE LISTED ABOVE:
   - Leave the array empty rather than inventing a limit.
 
 HARD RULES
+${voice.VOICE}
 - Never write a dollar amount, a rate, an hourly figure or a percentage anywhere.
 - Never write "licensed", "licence", or any licensing claim. Sani is insured; say insured if it is relevant at all.
 - Never mention TV mounting.
@@ -279,7 +281,7 @@ function applyScopeToEstimate(estimate, written, fallbackFor) {
     card.notIncluded = dedupe(existing.concat(notIncluded)).slice(0, 6);
   });
 
-  const tl = stripBanned(written && written.timeline);
+  const tl = voice.softenTimeline(stripBanned(written && written.timeline));
   if (tl && tl.length > 8) estimate.customerTimeline = tl;
 
   estimate.scopeWriter = {
