@@ -135,7 +135,11 @@ exports.handler = async function handler(event) {
       const photoBlocks = anthropicKey ? photoBlocksForClaude(sourceRecord.request, sourceRecord) : [];
       let rawAnalysis;
       if (anthropicKey) {
-        rawAnalysis = await callClaude(anthropicKey, analysisPrompt, 16000, null, photoBlocks);
+        /* "Claude response hit the 16000-token limit and was cut off": thinking
+           shares this budget with the answer, and a job with photos and a long
+           thread thought past 16,000 before it finished the JSON. Same cap as
+           the pricing pass; and callClaude tries once more, doubled, when cut. */
+        rawAnalysis = await callClaude(anthropicKey, analysisPrompt, 32000, null, photoBlocks);
         analysisEngine = `Anthropic ${CLAUDE_MODEL}` + (photoBlocks.length ? ` (with ${photoBlocks.length / 2} photos)` : "");
       } else {
         rawAnalysis = await callOpenAI(openaiKey, analysisPrompt);
@@ -1162,9 +1166,19 @@ function callClaude(apiKey, prompt, maxTokens, tools, imageBlocks) {
   const content = (imageBlocks && imageBlocks.length)
     ? imageBlocks.concat([{ type: "text", text: prompt }])
     : prompt;
+  /* CUT OFF AT max_tokens: TRY ONCE MORE WITH DOUBLE THE ROOM.
+     Thinking and the answer share the cap. On most jobs the model finishes
+     well inside it; on a long one (photos, a long thread, many services) it
+     can think past the cap and the JSON never arrives. One failed run cost
+     the whole estimate and a "raise max_tokens" message he cannot act on. So
+     a cut response is retried once at twice the cap, up to the model's
+     output ceiling; only a second cut fails the run. */
+  const MAX_OUTPUT = 64000;
+  return attempt(maxTokens);
+  function attempt(cap) {
   const payload = JSON.stringify({
     model: CLAUDE_MODEL,
-    max_tokens: maxTokens,
+    max_tokens: cap,
     output_config: { effort: CLAUDE_EFFORT },
     ...(tools && tools.length ? { tools: tools } : {}),
     messages: [{ role: "user", content: content }],
@@ -1199,9 +1213,14 @@ function callClaude(apiKey, prompt, maxTokens, tools, imageBlocks) {
                  message is identical to genuinely malformed output, so the one fix that
                  would help (a larger cap, or a smaller prompt) is invisible. */
               if (json.stop_reason === "max_tokens") {
+                if (cap < MAX_OUTPUT) {
+                  const bigger = Math.min(cap * 2, MAX_OUTPUT);
+                  console.log(`Claude response cut off at ${cap} tokens; trying once more at ${bigger}`);
+                  return resolve(attempt(bigger));
+                }
                 return reject(new Error(
-                  `Claude response hit the ${maxTokens}-token limit and was cut off. ` +
-                  `Raise max_tokens for this call or shorten the prompt.`));
+                  `Claude response hit the ${cap}-token limit and was cut off, even after a retry with more room. ` +
+                  `Press Generate again; if it happens again, shorten the description or split the job.`));
               }
               resolve(text);
             }
@@ -1218,6 +1237,7 @@ function callClaude(apiKey, prompt, maxTokens, tools, imageBlocks) {
     req.write(payload);
     req.end();
   });
+  }
 }
 
 function parseAiJson(text, label) {

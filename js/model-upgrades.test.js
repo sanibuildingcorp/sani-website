@@ -88,7 +88,7 @@ console.log('\nthe estimate is read and priced by the same model\n');
 {
   const src = read('generate-estimate-background.js');
   ok('stage 1 (understanding) runs on Claude whenever an Anthropic key exists',
-    /if \(anthropicKey\) \{\s*rawAnalysis = await callClaude\(anthropicKey, analysisPrompt, 16000, null, photoBlocks\);/.test(src));
+    /if \(anthropicKey\) \{\s*(?:\/\*[\s\S]*?\*\/\s*)?rawAnalysis = await callClaude\(anthropicKey, analysisPrompt, 32000, null, photoBlocks\);/.test(src));
   ok('stage 3 (pricing) is the same CLAUDE_MODEL', /const CLAUDE_MODEL = process\.env\.ESTIMATOR_MODEL \|\| "claude-opus-5"/.test(src));
 }
 
