@@ -94,6 +94,8 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["create-estimate", "POST", { customer: { name: "Mallory", email: "m@example.com" }, projectTitle: "Junk" }],
     /* Takes an added section - lines, card, price - off any estimate. */
     ["remove-added-service", "POST", { ref: "SBC-260805-XQNQ", index: 0 }],
+    /* Drops repeated lines from a scope of work - a write, contractor only. */
+    ["dedupe-scope", "POST", { ref: "SBC-260805-XQNQ", apply: true }],
     ["gmail-connect", "POST", {}],
     ["gmail-accounts", "POST", { action: "remove", email: "someone@example.com" }],
     ["gmail-sync", "POST", {}],
