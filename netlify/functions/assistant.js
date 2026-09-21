@@ -234,7 +234,9 @@ async function answer(body, clocks) {
     withTimeout(loadInsights(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }),
     withTimeout(inboxContext(str(body.ref), lastUser ? lastUser.text : ""), c.recordMs || RECORD_MS).catch(function () { return ""; }),
   ]);
-  const context = reads[0];
+  const context = reads[0] && typeof reads[0] === "object" ? reads[0].text : reads[0];
+  const glance = reads[0] && typeof reads[0] === "object" ? str(reads[0].glance) : "";
+  if (glance && lastUser) lastUser.note = "[" + glance + "]";
   const memory = reads[1];
   const insights = reads[2];
   const inboxText = reads[3];
@@ -322,7 +324,7 @@ async function recordContext(ref, estimateChars) {
     return "  " + (m && m.from === "contractor" ? "Sani" : "Customer") + ": " + str(m && m.text) + (files.length ? " [attached: " + files.join(", ") + "]" : "");
   });
 
-  return [
+  const text = [
     "THE JOB ON SCREEN",
     "Reference: " + str(rec.ref),
     "Status: " + str(rec.status),
@@ -342,6 +344,30 @@ async function recordContext(ref, estimateChars) {
     str(est.scopeOfWork) ? "\nSCOPE DRAFTED SO FAR:\n" + str(est.scopeOfWork).slice(0, 1200) : "",
     estimateContext(rec, estimateChars),
   ].filter(Boolean).join("\n");
+  return { text: text, glance: estimateGlance(rec) };
+}
+
+/* ── THE ESTIMATE RIGHT NOW, IN ONE LINE, ON HIS LATEST MESSAGE ───────────
+     "This my ai is crazy, doesn't read on opened estimate real estimate"
+   It read it. It also re-read thirty earlier turns of this chat, every one
+   describing the estimate as it was an hour ago - "34 lines, $23,582.94,
+   three cards" - and a model trusts the conversation over a block in its
+   system prompt. So the current figures ride on his LATEST message, the
+   most recent thing it reads: line counts, the customer total, every card
+   with its price, what was added after agreement, when the record was
+   last saved. Not stored in the chat; built fresh on every question. */
+function estimateGlance(rec) {
+  const r = rec || {}, est = r.estimate || {};
+  const labor = arr(est.labor), materials = arr(est.materials), cards = arr(est.serviceBreakdown);
+  if (!labor.length && !materials.length && !cards.length) return "";
+  let total = null;
+  try { total = customerTotals(est, r).customerTotal; } catch (e) { total = null; }
+  const adds = arr(est.addedServices).map(function (x) { return arr(x && x.titles).join(", "); }).filter(Boolean);
+  return "ESTIMATE RIGHT NOW (" + str(r.ref) + ", as stored" + (str(r.updatedAt) ? ", last saved " + str(r.updatedAt).slice(0, 16).replace("T", " ") : "") + "): " +
+    labor.length + " labor lines, " + materials.length + " material lines" + (total != null ? ", customer total " + money(total) : "") +
+    "; " + cards.length + " card" + (cards.length === 1 ? "" : "s") + ": " + (cards.map(function (c) { return str(c && c.title) + (c && c.subtotal != null ? " " + money(c.subtotal) : ""); }).join("; ") || "none") +
+    (adds.length ? "; added after the customer agreed: " + adds.join("; ") : "; nothing added after the customer agreed") +
+    ". This is the current truth; earlier turns of this chat may describe an older state.";
 }
 
 /* ── EMAILS WITH THIS CUSTOMER, FROM THE INBOX ───────────────────────────
@@ -730,6 +756,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "Use the refs, names and ids from the screen below; never invent one. If what he asks is not on this list, say plainly that you cannot do that from here and what he can press instead.",
     "A PHOTO OR SCREENSHOT may come with his question: a screenshot of a customer's text message or email, a product page, a plan, a photo of the site or of the work. A tall screenshot comes as several pieces, top to bottom, with a little overlap: read them as one page. Read it like any other fact - say what it shows or what it says, quote the words in it - and use it for describe or reword when he asks. If it is unreadable or does not show what he says, say so.",
     "ADDITIONAL WORK on an estimate the customer already agreed to (a new service, painting, an extra room, anything not in it): never change, reword or reprice the agreed services, and never tell him to regenerate - regenerating rebuilds every service. Do it for him with the addservice action when you know what the work is (write the brief from the chat, the emails, the photos); otherwise tell him to press ➕ ADD A SERVICE TO THIS ESTIMATE (in the Regenerate box). Either way the new work is priced on its own and added to the same estimate as its own section with its own scope and price, the agreed sections untouched; then he sends the estimate again. If he wants it as a separate estimate instead, ➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE) makes a linked one. On an estimate that IS additional work (the job says so), price and describe only the additional work.",
+    "THE CHAT MAY BE STALE. Earlier answers in this conversation describe the estimate as it was when they were written - lines, totals, cards that have since been added, removed or redone. The ESTIMATE RIGHT NOW note on his latest message and the estimate block below are the current truth and outrank anything said earlier, by you or by him. When they disagree with the chat, say plainly that the estimate has changed and use the current figures; never repeat an old count, total or card from the chat, and never invent a section that is not in the current estimate.",
     "CHECK THE ESTIMATE ('have a look', 'analyze', 'is it correct', 'anything unmatched'): the estimate block below (headed 'the generated estimate, as he sees it') is the whole estimate as stored, read fresh on every question - never say you cannot see it or ask him to refresh. Read every line and every card and compare them with each other and with the customer's words: a card bullet with no line behind it, a line filed under the wrong service, a duplicate line, a $0 card, a quantity that does not match a size he gave, a customer-supplied item priced as material, a section added after agreement that repeats agreed work. Report each mismatch concretely (line name, card, number) and say what to change. Wording -> offer a reword action. A quantity, a rate or a line -> name the exact line and the number; he edits lines himself, you never change money. If it says 'estimate cut here', say that and ask for a narrower question.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "EMAILS WITH THIS CUSTOMER (below, when a job is open) are read from his inbox log, matched by the customer's email address. When he asks about an email from this customer, answer from that list. When the list says there are none, say exactly that - none in the inbox from that address - and never say you cannot see emails.",
@@ -778,8 +805,10 @@ function callClaude(apiKey, system, turns, deadline, maxTokens) {
     thinking: { type: "disabled" },
     system: system,
     messages: turns.map(function (t) {
-      if (!Array.isArray(t.images) || !t.images.length) return { role: t.role, content: t.text };
-      return { role: t.role, content: t.images.map(function (im) { return { type: "image", source: { type: "base64", media_type: im.mediaType, data: im.data } }; }).concat([{ type: "text", text: t.text }]) };
+      /* the glance rides with his latest message and is never written to the chat */
+      const text = t.note ? t.text + "\n\n" + t.note : t.text;
+      if (!Array.isArray(t.images) || !t.images.length) return { role: t.role, content: text };
+      return { role: t.role, content: t.images.map(function (im) { return { type: "image", source: { type: "base64", media_type: im.mediaType, data: im.data } }; }).concat([{ type: "text", text: text }]) };
     }),
   });
 
