@@ -141,7 +141,7 @@ function record() {
     posts.push({ success: true, applied: false, changed: true, count: 9, lines: Array.from({ length: 9 }, (_, i) => ({ text: 'Repeated line number ' + (i + 1), count: 2 })), similar: [] });
     ctx.confirm = (t) => { calls.confirms.push(t); return false; };
     const cancelled = await vm.runInContext('aiExec({ type: "dedupe", ref: "SBC-260813-WPPF" })', ctx);
-    ok('A CANCEL SAYS SO: "you pressed Cancel ... nothing was removed", no apply; and the dialog shows six examples then "…and 3 more"', /^Cancelled - you pressed Cancel on the dialog, so nothing was removed\. Ask me again and press OK to remove them\.$/.test(cancelled) && calls.fetched.length === 3 && /• Repeated line number 6  \(×2\)\n…and 3 more$/.test(calls.confirms[1]), cancelled + ' | ' + calls.confirms[1]);
+    ok('A CANCEL SAYS SO: "you pressed Cancel ... nothing was removed", no apply; and the dialog shows six examples then "…and 3 more"', /^Cancelled - nothing was removed\. Ask me again when you want them removed\.$/.test(cancelled) && calls.fetched.length === 3 && /• Repeated line number 6  \(×2\)\n…and 3 more$/.test(calls.confirms[1]), cancelled + ' | ' + calls.confirms[1]);
     ctx.confirm = (t) => { calls.confirms.push(t); return true; };
     posts.push({ success: true, applied: false, changed: false, count: 0, lines: [], similar: [] });
     ok('nothing repeated: says so, no confirm, no apply', /^No repeated lines on SBC-260813-WPPF\.$/.test(await vm.runInContext('aiExec({ type: "dedupe", ref: "SBC-260813-WPPF" })', ctx)) && calls.confirms.length === 2 && calls.fetched.length === 4);

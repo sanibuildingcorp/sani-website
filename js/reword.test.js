@@ -137,7 +137,7 @@ function record() {
     ok('...and says what changed, what was not found, and that the customer still sees the sent version', /Changed 2 lines on SBC-260901-ARWQ; every price and total is as it was\./.test(said) && /Not found: no such line\./.test(said) && /customer still sees the sent version/.test(said), said);
     ctx.say = false;
     const no = await vm.runInContext('aiExec(' + JSON.stringify({ type: 'reword', ref: 'SBC-260901-ARWQ', edits }) + ')', ctx);
-    ok('IF HE SAYS NO, NOTHING IS SENT - and the answer says he pressed Cancel, not "nothing changed"', calls.fetched.length === 1 && /^Cancelled - you pressed Cancel on the dialog, so no wording changed\. Ask me again and press OK to apply the edits\.$/.test(no), no);
+    ok('IF HE SAYS NO, NOTHING IS SENT - and the answer says he pressed Cancel, not "nothing changed"', calls.fetched.length === 1 && /^Cancelled - no wording changed\. Ask me again when you want the edits applied\.$/.test(no), no);
     ctx.say = true;
     ok('a ref not in the list is refused', /don't see SBC-NOPE/.test(await vm.runInContext('aiExec({ type: "reword", ref: "SBC-NOPE", edits: [{ where: "title", to: "x" }] })', ctx)));
     const blocks = DASH.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];

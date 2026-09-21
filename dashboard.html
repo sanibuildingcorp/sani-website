@@ -1332,6 +1332,11 @@ body {
 .ask-body{border-radius:9px;padding:9px 11px;font-size:13px;line-height:1.62;white-space:pre-wrap;word-break:break-word}
 .ask-body a{color:var(--gold);text-decoration:underline;word-break:break-all}
 .ask-copy{margin-top:5px;font-size:11px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 9px;cursor:pointer;color:var(--ink-muted)}
+.ask-confirm{border-color:#b8930a;background:#fffdf5}
+.ask-confirm-btns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.ask-confirm-ok{font-size:13px;font-weight:700;border:0;background:#b8930a;color:#111;border-radius:8px;padding:9px 14px;cursor:pointer}
+.ask-confirm-no{font-size:13px;border:1px solid var(--line);background:#fff;color:var(--ink-muted);border-radius:8px;padding:9px 14px;cursor:pointer}
+.ask-confirm-done{margin-top:6px;font-size:12px;color:var(--ink-muted)}
 .ask-copy:hover{border-color:var(--gold);color:var(--gold)}
 .ask-send{display:flex;gap:7px;align-items:flex-end;padding:11px 13px 0}
 .ask-send textarea{flex:1;min-width:0;font-size:13px;line-height:1.5;border:1px solid var(--line);border-radius:9px;padding:8px 10px;resize:vertical;font-family:inherit}
@@ -3504,7 +3509,7 @@ function addonIndexOf(title) {
   for (var i = 0; i < adds.length; i++) { if ((adds[i].titles || []).some(function (t) { return String(t || "").trim().toLowerCase() === k; })) return i; }
   return -1;
 }
-async function addonRedo(i, brief, service) {
+async function addonRedo(i, brief, service, alreadyConfirmed) {
   var r = currentRecord;
   if (!r || !r.ref) return false;
   var adds = (r.estimate && r.estimate.addedServices) || [];
@@ -3517,7 +3522,7 @@ async function addonRedo(i, brief, service) {
     if (text === null) return false;
     text = String(text).trim();
     if (!text) { toast("Say what the section should be first", true); return false; }
-  } else if (!confirm("Redo \"" + what + "\" on " + r.ref + " from this brief?\n\n" + (service ? service + "\n" : "") + text + "\n\nThe old section (its lines, card and price" + (x.subtotal ? ", " + fmt(x.subtotal) : "") + ") comes out first. Everything else in the estimate stays exactly as it is.")) return false;
+  } else if (alreadyConfirmed !== true && !confirm("Redo \"" + what + "\" on " + r.ref + " from this brief?\n\n" + (service ? service + "\n" : "") + text + "\n\nThe old section (its lines, card and price" + (x.subtotal ? ", " + fmt(x.subtotal) : "") + ") comes out first. Everything else in the estimate stays exactly as it is.")) return false;
   toast('Taking out ' + what + '…');
   try {
     var res = await sbcFetch('/.netlify/functions/remove-added-service', { method: 'POST', body: JSON.stringify({ ref: r.ref, index: i }) });
@@ -3824,6 +3829,7 @@ function aiPicsHtml(m) {
   return "";
 }
 function askBubble(m, i) {
+  if (m && m.confirm) return '<div class="ask-msg ask-ai ask-confirm">' + aiConfirmHtml(m) + '</div>';
   var mine = m.role !== "assistant";
   return '<div class="ask-msg ' + (mine ? "ask-me" : "ask-ai") + '">' +
       (mine ? aiPicsHtml(m) : "") +
@@ -3970,6 +3976,7 @@ function aiClose() {
   if (d) d.classList.remove("show"); if (o) o.classList.remove("show");
 }
 function aiBubble(m, i) {
+  if (m && m.confirm) return '<div class="ask-msg ask-ai ask-confirm">' + aiConfirmHtml(m) + '</div>';
   var mine = m.role !== "assistant";
   return '<div class="ask-msg ' + (mine ? "ask-me" : "ask-ai") + '">' +
       (mine ? aiPicsHtml(m) : "") +
@@ -4172,6 +4179,42 @@ async function aiStartSearch(query, log, render) {
   bubble.text = "⚠ The search is taking too long. It may still finish: reopen this chat in a minute."; bubble.pending = false; if (render) render();
 }
 
+/* ── A QUESTION THAT WAITS FOR HIM, INSIDE THE CHAT ───────────────────────
+     "I didn't not pressed anything!!! ... No asking anything! No shows me
+      anything! He just ignore!"
+   window.confirm() on iPhone Safari returns false at once, with no box,
+   when the page is not on screen - and an answer arrives thirty seconds
+   after he asked, often with the phone locked or another app in front.
+   The dashboard read that as Cancel and said "nothing changed". So a
+   confirm is now a bubble in the chat with two buttons, and it waits there
+   until he taps one - however long that takes. Only a caller with no chat
+   to put it in falls back to the browser box. */
+var AI_CONFIRMS = {};
+function aiConfirm(log, render, text, okLabel, cancelLabel) {
+  if (!log || typeof log.push !== "function") return Promise.resolve(!!confirm(text));
+  var id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  var entry = { role: "assistant", text: text, confirm: id, okLabel: okLabel || "Yes, do it", cancelLabel: cancelLabel || "Not now" };
+  log.push(entry);
+  if (log === AI_LOG) aiSave();
+  if (typeof render === "function") render();
+  return new Promise(function (resolve) { AI_CONFIRMS[id] = { resolve: resolve, entry: entry, log: log, render: render }; });
+}
+function aiConfirmAnswer(id, yes) {
+  var c = AI_CONFIRMS[id];
+  if (!c) { toast("That question has expired - ask me again.", true); return; }
+  delete AI_CONFIRMS[id];
+  c.entry.answered = yes ? "ok" : "no";
+  if (c.log === AI_LOG) aiSave();
+  if (typeof c.render === "function") c.render();
+  c.resolve(!!yes);
+}
+function aiConfirmHtml(m) {
+  var body = '<div class="ask-body">' + aiLinkify(m.text) + '</div>';
+  if (m.answered === "ok") return body + '<div class="ask-confirm-done">✓ ' + esc(m.okLabel || "Confirmed") + '</div>';
+  if (m.answered === "no") return body + '<div class="ask-confirm-done">✕ ' + esc(m.cancelLabel || "Not now") + '</div>';
+  return body + '<div class="ask-confirm-btns"><button type="button" class="ask-confirm-ok" onclick="aiConfirmAnswer(\'' + esc(m.confirm) + '\', true)">' + esc(m.okLabel || "Yes, do it") + '</button><button type="button" class="ask-confirm-no" onclick="aiConfirmAnswer(\'' + esc(m.confirm) + '\', false)">' + esc(m.cancelLabel || "Not now") + '</button></div>';
+}
+
 /* "Here are the wording fixes" - and one of four landed; the rest were
    "not found" and he had to notice, ask again, and read another answer.
    The missing edits go straight back to the assistant as a message in the
@@ -4210,6 +4253,9 @@ async function aiRunActions(actions, log, render) {
 }
 async function aiExec(a, log, render) {
   var t = String((a && a.type) || "");
+  /* every yes/no below goes through the in-chat confirm (see aiConfirm);
+     an older harness without it gets the browser box */
+  var ask = (typeof aiConfirm === "function") ? aiConfirm : function (l, r, text) { return Promise.resolve(!!confirm(text)); };
   if (t === "search") {
     aiStartSearch(String(a.query || ""), log || AI_LOG, render || aiRender);
     return "";
@@ -4232,7 +4278,7 @@ async function aiExec(a, log, render) {
     var ref = String(a.ref || ""), st = String(a.status || "");
     var row = estimates.filter(function (e) { return e.ref === ref; })[0];
     if (!row) return "I don't see " + ref + " in the list.";
-    if (!confirm("Change " + ref + " (" + ((row.customer && row.customer.name) || "") + ") from " + row.status + " to " + st + "?")) return "OK, not changed.";
+    if (!(await ask(log, render, "Change " + ref + " (" + ((row.customer && row.customer.name) || "") + ") from " + row.status + " to " + st + "?", "Change it", "Leave it"))) return "Cancelled - the status was not changed.";
     var r = await sbcFetch("/.netlify/functions/save-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, status: st }) });
     if (!r.ok) { var err = await r.json().catch(function () { return {}; }); throw new Error(err.error || "Update failed"); }
     row.status = st;
@@ -4242,7 +4288,7 @@ async function aiExec(a, log, render) {
   }
   if (t === "visit") {
     var v = { customer: String(a.customer || ""), address: String(a.address || ""), datetime: String(a.datetime || ""), reason: String(a.reason || ""), ref: String(a.ref || "") };
-    if (!confirm("Add this site visit?\n\n" + v.customer + "\n" + v.address + "\n" + v.datetime.replace("T", " ") + (v.reason ? "\n" + v.reason : ""))) return "OK, not added.";
+    if (!(await ask(log, render, "Add this site visit?\n\n" + v.customer + "\n" + v.address + "\n" + v.datetime.replace("T", " ") + (v.reason ? "\n" + v.reason : ""), "Add the visit", "Not now"))) return "Cancelled - the visit was not added.";
     var rv = await sbcFetch("/.netlify/functions/visits", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", visit: v }) });
     var dv = await rv.json().catch(function () { return {}; });
     if (!rv.ok) throw new Error(dv.error || "Failed");
@@ -4268,7 +4314,7 @@ async function aiExec(a, log, render) {
     if (!rec) {
       try { var rr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(dref)); var rj = await rr.json(); if (rr.ok && rj) { cust = rj.customer || cust; oldDesc = String((rj.request && rj.request.description) || ""); } } catch (e0) { /* the fact still goes on */ }
     }
-    if (!confirm("Add this to the customer description of " + dref + " (" + (cust.name || "") + ")?\n\n" + fact + "\n\nThen press Re-read the job to price it.")) return "OK, not added.";
+    if (!(await ask(log, render, "Add this to the customer description of " + dref + " (" + (cust.name || "") + ")?\n\n" + fact + "\n\nThen press Re-read the job to price it.", "Add it", "Not now"))) return "Cancelled - not added to the description. Ask me again when you want it in.";
     var stamp = "[From email, " + new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }) + "] ";
     var newDesc = (oldDesc ? oldDesc.replace(/\s*$/, "") + "\n\n" : "") + stamp + fact;
     var ru = await sbcFetch("/.netlify/functions/update-customer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: dref, customer: { name: cust.name || "", email: cust.email || "", phone: cust.phone || "", address: cust.address || "" }, description: newDesc }) });
@@ -4298,10 +4344,15 @@ async function aiExec(a, log, render) {
     if (replace) {
       var ai = addonIndexOf(replace);
       if (ai < 0) return "I don't see an added section called \"" + replace + "\" on " + sref + ". The added sections are: " + (((currentRecord.estimate || {}).addedServices || []).map(function (x) { return (x.titles || []).join(', '); }).join('; ') || 'none') + ".";
-      var redone = await addonRedo(ai, brief, String(a.service || "").trim());
+      var xs = (((currentRecord.estimate || {}).addedServices || [])[ai]) || {};
+      var what = (xs.titles || []).join(', ') || replace;
+      if (!(await ask(log, render, "Redo \"" + what + "\" on " + sref + " from this brief?\n\n" + (String(a.service || "").trim() ? String(a.service).trim() + "\n" : "") + brief + "\n\nThe old section (its lines, card and price" + (xs.subtotal ? ", $" + Number(xs.subtotal).toFixed(2) : "") + ") comes out first, and the new brief is priced as its own section. Everything else in the estimate stays exactly as it is.", "Redo it", "Not now"))) return "Cancelled - \"" + what + "\" was left as it was.";
+      var redone = await addonRedo(ai, brief, String(a.service || "").trim(), true);
       return redone === true ? "Redoing \"" + replace + "\" on " + sref + ": the old section is out and the new brief is being priced as its own section; the earlier services stay as they are." : "OK, left as it was.";
     }
-    var started = await addServiceAI(brief, String(a.service || "").trim());
+    var svc = String(a.service || "").trim();
+    if (!(await ask(log, render, "Add this as its own section of " + sref + "?\n\n" + (svc ? svc + "\n" : "") + brief + "\n\nIt is priced on its own. Everything already in this estimate stays exactly as it is.", "Add the section", "Not now"))) return "Cancelled - the section was not added.";
+    var started = await addServiceAI(brief, svc, true);
     return started === true ? "Adding it to " + sref + " as its own section; the earlier services stay as they are." : "OK, not added.";
   }
   if (t === "reword") {
@@ -4319,7 +4370,7 @@ async function aiExec(a, log, render) {
     var shown = edits.map(function (e) {
       return "• " + String(e.where || "") + (e.service ? " (" + e.service + ")" : "") + ":\n   " + (e.from ? e.from : "(add)") + "\n   → " + (e.to ? e.to : "(remove)");
     });
-    if (!confirm("Change the wording of " + wref + "?\nPrices, quantities and totals stay exactly as they are.\n\n" + shown.join("\n\n"))) return "Cancelled - you pressed Cancel on the dialog, so no wording changed. Ask me again and press OK to apply the edits.";
+    if (!(await ask(log, render, "Change the wording of " + wref + "?\nPrices, quantities and totals stay exactly as they are.\n\n" + shown.join("\n\n"), "Apply the edits", "Not now"))) return "Cancelled - no wording changed. Ask me again when you want the edits applied.";
     /* "⚠ Could not do that: Load failed" - the phone's connection dropped
        between OK and the server. Tried again, up to three times; the server
        treats an edit that already landed as done, so a retry after a reply
@@ -4375,7 +4426,7 @@ async function aiExec(a, log, render) {
        Forty lines in a confirm read as an error and got a Cancel. */
     var dlines = dd.lines || [];
     var dshown = dlines.slice(0, 6).map(function (l) { return "• " + String(l.text).slice(0, 70) + (String(l.text).length > 70 ? "…" : "") + (l.count > 1 ? "  (×" + l.count + ")" : ""); }).join("\n") + (dlines.length > 6 ? "\n…and " + (dlines.length - 6) + " more" : "");
-    if (!confirm("Remove " + dd.count + " repeated line" + (dd.count === 1 ? "" : "s") + " from the scope of " + dref + "?\nEach line stays once, where it first appears. Prices untouched.\n\n" + dshown)) return "Cancelled - you pressed Cancel on the dialog, so nothing was removed. Ask me again and press OK to remove them.";
+    if (!(await ask(log, render, "Remove " + dd.count + " repeated line" + (dd.count === 1 ? "" : "s") + " from the scope of " + dref + "?\nEach line stays once, where it first appears. Prices untouched.\n\n" + dshown, "Remove them", "Not now"))) return "Cancelled - nothing was removed. Ask me again when you want them removed.";
     var ap = await sbcFetch("/.netlify/functions/dedupe-scope", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: dref, apply: true }) });
     var da = await ap.json().catch(function () { return {}; });
     if (!ap.ok) throw new Error(da.error || "Failed");
