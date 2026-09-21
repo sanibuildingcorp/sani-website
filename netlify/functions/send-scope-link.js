@@ -21,6 +21,7 @@ const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
 const ADDR = require("./lib/addresses");
+const history = require("./lib/history");
 
 const MAX_TO = 5;
 
@@ -126,6 +127,7 @@ exports.handler = async function (event) {
     const at = new Date().toISOString();
     record.scopeLinkSends = (Array.isArray(record.scopeLinkSends) ? record.scopeLinkSends : []).concat([{ to: recipients, at: at }]).slice(-20);
     record.scopeLinkSentAt = at;
+    history.note(record, "sent", "Scope-of-work link (no prices) sent to " + [].concat(recipients).join(", "));
     await store.setJSON(ref, record);
 
     return json(200, { success: true, sentTo: recipients, url: url, provider: provider, at: at });

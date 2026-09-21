@@ -21,6 +21,7 @@
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const thread = require("./lib/thread");
+const history = require("./lib/history");
 const buildMessageEmail = require("./lib/message-email");
 const ADDR = require("./lib/addresses");
 
@@ -59,6 +60,7 @@ exports.handler = async function (event) {
   record.threadUpdatedAt = result.message.at;
   record.lastContractorMessageAt = result.message.at;
   record.updatedAt = result.message.at;
+  history.note(record, "message", "Sani wrote to the customer: \"" + text.slice(0, 160) + (text.length > 160 ? "..." : "") + "\"");
   await store.setJSON(ref, record);
 
   // ---- 2. TELL THE CUSTOMER ----

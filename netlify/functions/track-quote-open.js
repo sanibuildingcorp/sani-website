@@ -10,6 +10,7 @@
 
 const { getStore } = require("@netlify/blobs");
 const customerTotals = require("./lib/customer-total");
+const history = require("./lib/history");
 const ADDR = require("./lib/addresses");
 
 const PIXEL = Buffer.from(
@@ -48,6 +49,9 @@ exports.handler = async (event) => {
     const nowIso = new Date().toISOString();
     record.openCount = (record.openCount || 0) + 1;
     record.lastOpenedAt = nowIso;
+    /* the first open is a fact worth a history line; every later open would
+       only crowd the story out */
+    if (!record.openedAt) history.note(record, "customer", "The customer opened the quote page");
     if (!record.openedAt) record.openedAt = nowIso; // first open
     if (record.status === "sent") record.status = "opened";
     await store.setJSON(ref, record);

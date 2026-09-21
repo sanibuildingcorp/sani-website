@@ -6,6 +6,7 @@
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const ADDR = require("./lib/addresses");
+const history = require("./lib/history");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -63,6 +64,7 @@ exports.handler = async function (event) {
     record.status = "accepted";
     record.acceptedAt = nowIso;
     record.updatedAt = nowIso;
+    history.note(record, "accepted", "Contract signed by " + String(name).trim().slice(0, 80) + (finalTotal != null && Number(finalTotal) > 0 ? ", total " + history.money(finalTotal) : ""));
     await store.setJSON(ref, record);
 
     // ---- Emails ----

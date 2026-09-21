@@ -24,6 +24,7 @@
 
 const { getStore } = require("@netlify/blobs");
 const { adoptOption } = require("./lib/adopt-option");
+const history = require("./lib/history");
 const customerTotals = require("./lib/customer-total");
 
 exports.handler = async function (event) {
@@ -54,6 +55,7 @@ exports.handler = async function (event) {
 
   record.updatedAt = new Date().toISOString();
   record.optionAdoptedAt = record.updatedAt;
+  history.note(record, "total", "Option adopted into the estimate: " + String(result.option.label || "").trim() + (history.totalMove(result.before, result.after) ? "; " + history.totalMove(result.before, result.after) : ""));
   await store.setJSON(ref, record);
 
   return json(200, {
