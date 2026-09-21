@@ -15,6 +15,7 @@
 const fs = require('fs'), path = require('path'), Module = require('module');
 const ROOT = path.join(__dirname, '..');
 let pass = 0, fail = 0;
+const clone = (o) => JSON.parse(JSON.stringify(o));
 const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true ? 'PASS  ' : 'FAIL  ') + n + (d ? '\n        ' + d : '')); };
 const STORES = {};
 const origResolve = Module._resolveFilename;
@@ -75,6 +76,33 @@ STORES.estimates = new Map(); STORES.estimates.set(REC.ref, JSON.stringify(REC))
     ok('on the nine-second path the estimate is cut near 9,000 characters (the clock is the reason)', r.statusCode === 200 && cutAt > 8000 && cutAt < 9200, cutAt + '');
     ok('...THE CUT SAYS HOW MUCH IS MISSING and tells the model not to describe as complete what it cannot see', /estimate cut here: \d+ more characters not shown\. Say the estimate is too long to read whole; never describe as complete what you cannot see\./.test(est));
     ok('the background caller passes the wider cap, forty thousand', /const ESTIMATE_CHARS = 40000;/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')) && /estimateChars: ESTIMATE_CHARS \}\);/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')));
+  }
+  console.log('\n3. The current state rides on his latest message, above a stale chat\n');
+  {
+    /* the record has moved on: one added section removed, one left */
+    const now = clone(REC);
+    now.updatedAt = '2026-09-21T00:20:00Z';
+    now.estimate.labor = now.estimate.labor.filter((l) => l.section !== 'Painting').concat([{ item: 'Paint living room', qty: 20, unit: 'hrs', rate: 55, section: 'Painting (additional)' }]);
+    now.estimate.materials = now.estimate.materials.filter((l) => l.section !== 'Painting');
+    now.estimate.serviceBreakdown = [now.estimate.serviceBreakdown[0], { title: 'Painting (additional)', included: ['Living room, two coats'], customerSupplies: [], notIncluded: [], subtotal: 7818.85, options: [] }];
+    now.estimate.addedServices = [{ at: '2026-09-20T18:30:00Z', titles: ['Painting (additional)'], subtotal: 7818.85, text: 'whole apartment' }];
+    now.customerFinalTotal = 20516.55;
+    STORES.estimates.set(now.ref, JSON.stringify(now));
+    sent = null;
+    const stale = [
+      { role: 'user', text: 'have a look' }, { role: 'assistant', text: 'Same 34 labor lines / 61 material lines, same $23,582.94 total, three cards: Bathroom ($12,697.70), Doors, Painting ($10,885.24, the acoustic-window job).' },
+      { role: 'user', text: 'How looks everything is good?' },
+    ];
+    await bg.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k' }, body: JSON.stringify({ job: 'A-glance01', ref: now.ref, chat: now.ref, messages: stale }) });
+    const last = sent.messages[sent.messages.length - 1];
+    const text = typeof last.content === 'string' ? last.content : last.content.map((c) => c.text || '').join('');
+    ok('HIS LATEST MESSAGE CARRIES THE ESTIMATE RIGHT NOW: counts, the customer total, every card with its price, what was added, when it was saved', /How looks everything is good\?\n\n\[ESTIMATE RIGHT NOW \(SBC-260901-WOWP, as stored, last saved 2026-09-21 00:20\): 35 labor lines, 24 material lines, customer total \$20,516\.55; 2 cards: Bathroom \$12,697\.70; Painting \(additional\) \$7,818\.85; added after the customer agreed: Painting \(additional\)\. This is the current truth; earlier turns of this chat may describe an older state\.\]$/.test(text), text.slice(-400));
+    ok('...earlier turns are untouched', sent.messages[0].content === 'have a look' && /34 labor lines/.test(sent.messages[1].content));
+    ok('IT IS TOLD THE CHAT MAY BE STALE and that the note and the block outrank it', /THE CHAT MAY BE STALE\. Earlier answers in this conversation describe the estimate as it was when they were written/.test(sent.system) && /never repeat an old count, total or card from the chat, and never invent a section that is not in the current estimate/.test(sent.system));
+    const savedChat = JSON.parse(STORES['assistant-chats'].get(now.ref));
+    ok('the note is never written into the saved chat', !JSON.stringify(savedChat).includes('ESTIMATE RIGHT NOW'));
+    ok('the same note comes on the nine-second path', (await (async () => { sent = null; await fn.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k' }, body: JSON.stringify({ ref: now.ref, chat: now.ref, messages: [{ role: 'user', text: 'quick look' }] }) }); return /\[ESTIMATE RIGHT NOW \(SBC-260901-WOWP/.test(sent.messages[0].content); })()));
+    STORES.estimates.set(REC.ref, JSON.stringify(REC));
   }
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);
