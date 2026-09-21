@@ -143,6 +143,57 @@ function record() {
     blocks.forEach(function (bl, i) { try { new vm.Script(bl.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')); } catch (e) { if (!broken) broken = 'block ' + (i + 1) + ': ' + e.message; } });
     ok('all ' + blocks.length + ' script blocks parse', broken === null, broken || '');
     ok('every function file has a legal Netlify name', fs.readdirSync(path.join(ROOT, 'netlify/functions')).every((f) => /^[A-Za-z0-9_-]+(\.m?js)?$/.test(f) || f === 'lib'));
+
+    /* "⚠ Could not do that: Load failed" - the phone dropped the connection
+       between OK and the server. */
+    console.log('\nthe dashboard: a dropped connection is retried\n');
+    ctx.setTimeout = (f) => f();
+    let drops = 2;
+    calls.fetched.length = 0;
+    ctx.sbcFetch = async (url, o) => { if (drops-- > 0) throw new TypeError('Load failed'); calls.fetched.push({ url, body: JSON.parse(o.body) }); return { ok: true, json: async () => ({ success: true, applied: [{ changed: 1 }], skipped: [], estimate: { projectTitle: 'RETRIED', labor: [] } }) }; };
+    const again = await vm.runInContext('aiExec(' + JSON.stringify({ type: 'reword', ref: 'SBC-260901-ARWQ', edits: edits.slice(0, 1) }) + ')', ctx);
+    ok('TWO DROPS, THEN THROUGH: the third try lands and the answer is the normal one', calls.fetched.length === 1 && /Changed 1 line on SBC-260901-ARWQ/.test(again) && ctx.currentRecord.estimate.projectTitle === 'RETRIED', again);
+    drops = 9;
+    let failed = null;
+    try { await vm.runInContext('aiExec(' + JSON.stringify({ type: 'reword', ref: 'SBC-260901-ARWQ', edits: edits.slice(0, 1) }) + ')', ctx); } catch (e) { failed = e; }
+    ok('three drops: it gives up with a message that says what happened and that the edits are ready to send again', !!failed && /the connection dropped three times \(Load failed\)\. Check the signal and ask me again - the edits are ready to send\./.test(failed.message), failed && failed.message);
+  }
+
+  console.log('\nthe server: an edit that already landed is done, not "not found" - so a retry is safe\n');
+  {
+    const rec = record();
+    const edits = [
+      { where: 'included', service: 'Bathroom', from: 'Mirror 24"x30" matte-black', to: 'Mirror 32"x36" brushed-gold' },
+      { where: 'excluded', service: 'Bathroom', from: '', to: 'Shower glass door' },
+      { where: 'labor', from: 'Vanity light — 24-in.; 4-light gold fixture', to: 'Vanity light — 24-in.; 4-light brushed-gold fixture' },
+      { where: 'summary', from: 'matte-black', to: 'brushed-gold' },
+      { where: 'scope', from: '', to: 'BATHROOM: PVC wall panels, brushed-gold fixtures, a frameless glass shower door.' },
+    ];
+    const first = R.applyEdits(rec, edits);
+    const second = R.applyEdits(rec, edits);
+    ok('the first pass changes five things', first.applied.length === 5 && first.applied.every((a) => a.changed >= 1) && first.skipped.length === 0);
+    ok('THE SECOND PASS OF THE SAME EDITS IS "ALREADY DONE" ON ALL FIVE - a card line, an added line, a price-line name, a summary phrase, the whole scope - none skipped, nothing changed twice', second.applied.length === 5 && second.applied.every((a) => a.changed === 0 && a.already >= 1) && second.skipped.length === 0 && rec.estimate.serviceBreakdown[0].notIncluded.filter((x) => x === 'Shower glass door').length === 1, JSON.stringify(second));
+    ok('...a genuinely missing line is still "not found"', R.applyEdits(rec, [{ where: 'included', service: 'Bathroom', from: 'never there', to: 'nor this' }]).skipped.length === 1);
+    STORES.estimates.set('SBC-260901-ARWQ', JSON.stringify(record()));
+    const post = async (body) => { const r = await fn.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k' }, body: JSON.stringify(body) }); return { code: r.statusCode, body: JSON.parse(r.body) }; };
+    await post({ ref: 'SBC-260901-ARWQ', edits: edits.slice(0, 1) });
+    const r2 = await post({ ref: 'SBC-260901-ARWQ', edits: edits.slice(0, 1) });
+    ok('over the function: the retried request comes back success, not "Nothing matched"', r2.code === 200 && r2.body.success === true && r2.body.applied[0].already === 1, JSON.stringify(r2.body).slice(0, 160));
+  }
+
+  console.log('\nthe whole scope can be replaced: the cap follows the field\n');
+  {
+    ok('caps: scope 8,000, summary 2,000, a card line 1,000', R.textCap('scope') === 8000 && R.textCap('summary') === 2000 && R.textCap('included') === 1000 && R.textCap('') === 1000);
+    const long = 'BATHROOM. ' + 'The scope of work in full, paragraph after paragraph, as the customer will read it. '.repeat(40);
+    ok('cleanEdit keeps a 3,400-character scope whole', R.cleanEdit({ where: 'scope', to: long }).to === long.trim() && long.length > 3000);
+    const rec = record();
+    R.applyEdits(rec, [{ where: 'scope', from: '', to: long }]);
+    ok('...and it lands whole', rec.estimate.scopeOfWork === long.trim());
+    const ask = async (text) => { reply = text; const r = await assistant.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k' }, body: JSON.stringify({ messages: [{ role: 'user', text: 'rewrite the scope to match his emails' }] }) }); return JSON.parse(r.body); };
+    const b = await ask('Rewriting the scope to his latest requests.\nACTION: ' + JSON.stringify({ type: 'reword', ref: 'SBC-260901-ARWQ', edits: [{ where: 'scope', from: '', to: long }, { where: 'included', service: 'Bathroom', from: '', to: 'x'.repeat(1500) }] }));
+    ok('THE ASSISTANT PASSES A WHOLE SCOPE THROUGH UNCUT, while a card line keeps its 1,000 cap', b.actions.length === 1 && b.actions[0].edits[0].to === long.trim() && b.actions[0].edits[1].to.length === 1000, JSON.stringify(b.actions[0].edits.map((e) => e.to.length)));
+    const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
+    ok('IT IS TOLD TO UPDATE THE SCOPE TO THE CUSTOMER\'S LATEST REQUESTS itself, in one action, replacing the scope whole when much changed, and never to only describe the fixes', /UPDATE THE SCOPE TO THE CUSTOMER'S LATEST REQUESTS \('review again', 'update the scope', 'match his requests', 'rewrite the scope of work'\): this is your main job and you DO it, in one turn, without asking/.test(A) && /replace the scope whole: where scope, from empty, to = the complete new scope of work/.test(A) && /Never only describe the fixes, never say you cannot see the text/.test(A));
   }
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);
