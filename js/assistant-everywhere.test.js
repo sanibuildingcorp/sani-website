@@ -145,7 +145,9 @@ const SCREEN = {
     ok('and every material line', /MATERIAL LINES \(1\)/.test(sys) && /16-gauge finish nails \| 1 box \| @ \$16\.99/.test(sys));
     /* labor 240 + 1430 = 1670, x1.25 = 2087.50; materials hidden, so that is the customer total */
     ok('the totals as the customer sees them - labor shown, materials hidden', /labor \$2,087\.50/.test(sys) && /materials \(hidden from customer\)/.test(sys) && /customer total \$2,087\.50/.test(sys), sys.slice(sys.indexOf('TOTALS THE CUSTOMER SEES'), sys.indexOf('TOTALS THE CUSTOMER SEES') + 200));
-    ok('the service card: included, customer supplies, not included - and NO priced options (alternatives are gone)', /Carpentry - \$9,181\.16/.test(sys) && /included: Before any cutting begins/.test(sys) && /customer supplies: Lumber and wood material/.test(sys) && /NOT included: Option D/.test(sys) && !/priced options:/.test(sys));
+    /* the card carries the price the customer reads - the labor-only total on a
+       one-card job - not the stored publish-time subtotal ($9,181.16) */
+    ok('the service card: included, customer supplies, not included - and NO priced options (alternatives are gone)', /Carpentry - \$2,087\.50/.test(sys) && !/9,181\.16/.test(sys) && /included: Before any cutting begins/.test(sys) && /customer supplies: Lumber and wood material/.test(sys) && /NOT included: Option D/.test(sys) && !/priced options:/.test(sys));
     ok('the finish choices, and no ALTERNATIVES OFFERED line any more', !/ALTERNATIVES OFFERED/.test(sys) && /Paint sheen: Eggshell \(default\) \$0\.00; Satin \$120\.00/.test(sys));
     ok('what the customer chose', /WHAT THE CUSTOMER CHOSE: Paint sheen = Satin \(\+\$120\.00\)/.test(sys));
     ok('how sure: status, confidence, reason, open questions, scope held', /PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS, confidence 62% - Room sizes not given\./.test(sys) && /open questions: How many closets\?/.test(sys) && /scope held from the previous run/.test(sys));

@@ -55,6 +55,7 @@ const chat = require("./lib/assistant-chat");
 const inbox = require("./lib/inbox-store");
 const history = require("./lib/history");
 const reword = require("./lib/reword");
+const { customerCards } = require("./lib/customer-cards");
 
 /* ── EVERYWHERE, NOT ONLY BESIDE ONE REQUEST ─────────────────────────────
    "i need personal AI assistant which can do everything, read everything in
@@ -458,14 +459,17 @@ function historyBlock(rec) {
    last saved. Not stored in the chat; built fresh on every question. */
 function estimateGlance(rec) {
   const r = rec || {}, est = r.estimate || {};
-  const labor = arr(est.labor), materials = arr(est.materials), cards = arr(est.serviceBreakdown);
-  if (!labor.length && !materials.length && !cards.length) return "";
+  const labor = arr(est.labor), materials = arr(est.materials);
+  if (!labor.length && !materials.length && !arr(est.serviceBreakdown).length) return "";
   let total = null;
   try { total = customerTotals(est, r).customerTotal; } catch (e) { total = null; }
+  /* the same card prices the customer reads (lib/customer-cards.js) */
+  let cards = [];
+  try { cards = customerCards(r).cards.filter(function (c) { return !c.folded; }); } catch (e) { cards = []; }
   const adds = arr(est.addedServices).map(function (x) { return arr(x && x.titles).join(", "); }).filter(Boolean);
   return "ESTIMATE RIGHT NOW (" + str(r.ref) + ", as stored" + (str(r.updatedAt) ? ", last saved " + str(r.updatedAt).slice(0, 16).replace("T", " ") : "") + "): " +
     labor.length + " labor lines, " + materials.length + " material lines" + (total != null ? ", customer total " + money(total) : "") +
-    "; " + cards.length + " card" + (cards.length === 1 ? "" : "s") + ": " + (cards.map(function (c) { return str(c && c.title) + (c && c.subtotal != null ? " " + money(c.subtotal) : ""); }).join("; ") || "none") +
+    "; " + cards.length + " card" + (cards.length === 1 ? "" : "s") + " as the customer sees them: " + (cards.map(function (c) { return str(c.title) + " " + money(c.subtotal); }).join("; ") || "none") +
     (adds.length ? "; added after the customer agreed: " + adds.join("; ") : "; nothing added after the customer agreed") +
     ". This is the current truth; earlier turns of this chat may describe an older state.";
 }
@@ -563,19 +567,23 @@ function cutText(t, n) { const s = str(t); return s.length > n ? s.slice(0, n) +
 /* Published cards whose wording is not the same as the estimator's card of
    the same name (or that have no such card). Lines toggled off are hidden
    from the customer and are left out. */
-function publishedDifferences(est) {
+function publishedDifferences(est, publishedIsBase) {
   const pub = est && est.customerScopePublished === true && est.publishedCustomerScope ? arr(est.publishedCustomerScope.services) : [];
   if (!pub.length) return [];
   const norm = function (v) { return str(v).toLowerCase().replace(/\s+/g, " "); };
   const texts = function (items) { return arr(items).map(function (x) { return norm(typeof x === "string" ? x : (x && (x.text || x.item || x.label || x.name))); }).filter(Boolean).join(" | "); };
-  const cards = {};
-  arr(est.serviceBreakdown).forEach(function (s) { if (s) cards[norm(s.title)] = s; });
-  return pub.filter(function (p) {
-    if (!p) return false;
-    const c = cards[norm(p.name || p.title)];
-    if (!c) return true;
-    return texts(p.included) !== texts(c.included) || texts(p.supplied || p.customerSupplies) !== texts(c.customerSupplies) || texts(p.excluded || p.notIncluded) !== texts(c.notIncluded);
-  }).map(function (p) { return { name: p.name || p.title, subtotal: p.subtotal, included: p.included, supplied: p.supplied || p.customerSupplies, excluded: p.excluded || p.notIncluded }; });
+  const row = function (s) { return { name: s.name || s.title, included: s.included || s.items, supplied: s.supplied || s.customerSupplies, excluded: s.excluded || s.notIncluded }; };
+  /* the two copies, normalised to one shape; the "other" side is printed
+     where it differs from the side the cards above were printed from */
+  const pubRows = pub.filter(Boolean).map(row), sbRows = arr(est.serviceBreakdown).filter(Boolean).map(row);
+  const base = publishedIsBase ? pubRows : sbRows, other = publishedIsBase ? sbRows : pubRows;
+  const byName = {};
+  base.forEach(function (s) { byName[norm(s.name)] = s; });
+  return other.filter(function (o) {
+    const b = byName[norm(o.name)];
+    if (!b) return true;
+    return texts(o.included) !== texts(b.included) || texts(o.supplied) !== texts(b.supplied) || texts(o.excluded) !== texts(b.excluded);
+  });
 }
 function estimateContext(rec, chars) {
   const est = (rec && rec.estimate) || {};
@@ -613,24 +621,33 @@ function estimateContext(rec, chars) {
   const opts = function (o) {
     return arr(o).map(function (x) { return str(x && (x.label || x.title || x.name)) + " " + money(x && x.price) + (str(x && x.description) ? " (" + str(x.description).slice(0, 120) + ")" : ""); }).filter(function (t) { return t.trim() !== money(0); });
   };
-  const sb = arr(est.serviceBreakdown);
-  if (sb.length) {
-    lines.push("", "SERVICE CARDS THE CUSTOMER SEES:");
-    sb.forEach(function (s) {
-      if (!s) return;
-      lines.push("  " + str(s.title) + (s.subtotal != null ? " - " + money(s.subtotal) : ""));
-      [list("included", s.included), list("customer supplies", s.customerSupplies), list("NOT included", s.notIncluded)].filter(Boolean).forEach(function (l) { lines.push(l); });
+  /* THE CARD PRICES ARE THE ONES THE CUSTOMER READS. serviceBreakdown[].subtotal
+     is written at publish time and never read back; the customer's page scales
+     every card to the headline total (a hand-set total moves them all). The
+     assistant once called that scaling "a $20k mismatch to fix before you
+     send". lib/customer-cards.js does the page's arithmetic here. */
+  let cc = null;
+  try { cc = customerCards(rec); } catch (e) { cc = null; }
+  const cards = cc ? cc.cards : [];
+  if (cards.length) {
+    lines.push("", "SERVICE CARDS THE CUSTOMER SEES (prices exactly as her page shows them: the cards always add up to the customer total" + (totals && totals.stampedTotal != null ? ", which he set by hand, so every card is scaled to it" : "") + " - this is by construction, never a mismatch to report):");
+    cards.forEach(function (s) {
+      if (s.folded) { lines.push("  " + str(s.title) + " - no priced lines; on her page its wording is folded into " + str(s.folded)); return; }
+      lines.push("  " + str(s.title) + " - " + money(s.subtotal));
+      [list("included", s.included), list("customer supplies", s.supplied), list("NOT included", s.excluded)].filter(Boolean).forEach(function (l) { lines.push(l); });
     });
   }
   /* The published wording is what her page prints. Usually it is the cards
      above word for word; when he edited a card in the customer-scope editor
      it differs, and a reword's "from" must match THESE words. Only the cards
      that differ are printed, so the block does not double in size. */
-  const pubDiff = publishedDifferences(est);
+  const pubDiff = publishedDifferences(est, cc && cc.published);
   if (pubDiff.length) {
-    lines.push("", "PUBLISHED WORDING ON THE CUSTOMER'S PAGE, where it differs from the cards above (a reword's from must match these words):");
+    lines.push("", cc && cc.published
+      ? "THE ESTIMATOR'S OWN CARD WORDING (the dashboard's Review step), where it differs from the customer's cards above (a reword changes whichever copy its from matches):"
+      : "PUBLISHED WORDING ON THE CUSTOMER'S PAGE, where it differs from the cards above (a reword's from must match these words):");
     pubDiff.forEach(function (s) {
-      lines.push("  " + str(s.name) + (s.subtotal != null ? " - " + money(s.subtotal) : ""));
+      lines.push("  " + str(s.name));
       [list("included", s.included), list("customer supplies", s.supplied), list("NOT included", s.excluded)].filter(Boolean).forEach(function (l) { lines.push(l); });
     });
   }
@@ -897,7 +914,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "ADDITIONAL WORK on an estimate the customer already agreed to (a new service, painting, an extra room, anything not in it): never change, reword or reprice the agreed services, and never tell him to regenerate - regenerating rebuilds every service. Do it for him with the addservice action when you know what the work is (write the brief from the chat, the emails, the photos); otherwise tell him to press ➕ ADD A SERVICE TO THIS ESTIMATE (in the Regenerate box). Either way the new work is priced on its own and added to the same estimate as its own section with its own scope and price, the agreed sections untouched; then he sends the estimate again. If he wants it as a separate estimate instead, ➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE) makes a linked one. On an estimate that IS additional work (the job says so), price and describe only the additional work.",
     "YOU ARE HIS SENIOR ESTIMATOR, not a clerk. On every question about an open estimate you read the whole thing: the customer's words and answers, the messages, the emails, the history, what was sent and when, every line and every card. You think like the person who has to build it and the person who has to pay for it: is every promised bullet backed by a line, is every line a promise the customer can read, does the title say what the job is, does the summary match the scope, does the timeline fit the hours, is anything priced twice, is anything the customer asked for missing, is anything there the customer never asked for. Say what you found in his order of importance, with the exact words and numbers, and then DO the wording fixes yourself with ONE reword action holding every edit (title, summary, scope, timeline, included/excluded/supplies lines) - he confirms once. Money stays his: name the line and the number. When he asks what changed, answer from HISTORY and SINCE THE LAST SEND, with dates and totals, never from memory of this chat. When you are not sure, say what you would check and where, not a guess.",
     "THE CHAT MAY BE STALE. Earlier answers in this conversation describe the estimate as it was when they were written - lines, totals, cards that have since been added, removed or redone. The ESTIMATE RIGHT NOW note on his latest message and the estimate block below are the current truth and outrank anything said earlier, by you or by him. When they disagree with the chat, say plainly that the estimate has changed and use the current figures; never repeat an old count, total or card from the chat, and never invent a section that is not in the current estimate.",
-    "CHECK THE ESTIMATE ('have a look', 'analyze', 'is it correct', 'anything unmatched'): the estimate block below (headed 'the generated estimate, as he sees it') is the whole estimate as stored, read fresh on every question - never say you cannot see it or ask him to refresh. Read every line and every card and compare them with each other and with the customer's words: a card bullet with no line behind it, a line filed under the wrong service, a duplicate line, a $0 card, a quantity that does not match a size he gave, a customer-supplied item priced as material, a section added after agreement that repeats agreed work. Report each mismatch concretely (line name, card, number) and say what to change. Wording -> offer a reword action. A quantity, a rate or a line -> name the exact line and the number; he edits lines himself, you never change money. If it says 'estimate cut here', say that and ask for a narrower question.",
+    "CHECK THE ESTIMATE ('have a look', 'analyze', 'is it correct', 'anything unmatched'): the estimate block below (headed 'the generated estimate, as he sees it') is the whole estimate as stored, read fresh on every question - never say you cannot see it or ask him to refresh. Read every line and every card and compare them with each other and with the customer's words: a card bullet with no line behind it, a line filed under the wrong service, a duplicate line, a $0 card, a quantity that does not match a size he gave, a customer-supplied item priced as material, a section added after agreement that repeats agreed work. Report each mismatch concretely (line name, card, number) and say what to change. The card prices in the block are the ones the customer reads and they add up to the customer total by construction; a total he set by hand scales every card with it - that is never a mismatch, never 'a gap', never something to fix. Wording -> offer a reword action. A quantity, a rate or a line -> name the exact line and the number; he edits lines himself, you never change money. If it says 'estimate cut here', say that and ask for a narrower question.",
     "If he asks for a plan, a strategy or an analysis, use the whole list on the screen: who is waiting, what is unpaid, what was sent and never answered, what is due today. Be specific: names and refs.",
     "EMAILS WITH THIS CUSTOMER (below, when a job is open) are read from his inbox log, matched by the customer's email address. When he asks about an email from this customer, answer from that list. When the list says there are none, say exactly that - none in the inbox from that address - and never say you cannot see emails.",
     "THE INBOX (below) is his whole info@ mailbox as of the last 15 minutes: every inbound email, one line each, newest first, with the estimate it is about when one could be matched (by ref, by address, or by the sender's name). The FULL TEXT of the emails about the open job and of the ones that match his question is given under it. Answer 'what did X write', 'did anyone email about Y', 'what does the manager need' from there, naming who wrote, when, and what. An email marked 'not a customer we know' may be a new lead, a building manager, a supplier - say so. If what he wants is not in the lines or the full texts shown, say which email you would need opened rather than guessing. Use the emails to pull requirements into an estimate with the describe action when he asks.",
