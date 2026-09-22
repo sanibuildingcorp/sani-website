@@ -145,7 +145,7 @@ async function dispatch(m) {
       return { result: { protocolVersion: PROTOCOLS.indexOf(asked) !== -1 ? asked : PROTOCOLS[0], capabilities: { tools: { listChanged: false } }, serverInfo: SERVER_INFO, instructions: INSTRUCTIONS } };
     }
     case "ping": return { result: {} };
-    case "tools/list": return { result: { tools: TOOLS.map(function (t) { return { name: t.name, description: t.description, inputSchema: t.inputSchema }; }) } };
+    case "tools/list": return { result: { tools: TOOLS.map(function (t) { return { name: t.name, description: t.description, inputSchema: t.inputSchema, annotations: t.annotations }; }) } };
     case "tools/call": {
       const tool = TOOLS.find(function (t) { return t.name === String(p.name || ""); });
       if (!tool) return { error: { code: -32602, message: "Unknown tool: " + String(p.name || "") } };
@@ -267,6 +267,7 @@ const obj = function (props, required) { return { type: "object", properties: pr
 const TOOLS = [
   {
     name: "search",
+    annotations: { title: "Find estimates", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Find estimates by customer name, address, service, status or ref. Returns up to 40 matches, newest first, with the ref to use in the other tools.",
     inputSchema: obj({ query: S("Words to look for: a name, a street, a service, a status like sent or accepted, or a ref. Empty returns the newest estimates.") }, []),
     run: async function (a) {
@@ -278,6 +279,7 @@ const TOOLS = [
   },
   {
     name: "fetch",
+    annotations: { title: "Read an estimate", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Read one estimate whole by its ref: the customer's request and emails, summary, timeline, the scope of work as the customer reads it, every service card with its price, the contract, and the history of changes.",
     inputSchema: obj({ id: S("The estimate ref, e.g. SBC-260921-WNGN") }, ["id"]),
     run: async function (a) {
@@ -289,6 +291,7 @@ const TOOLS = [
   },
   {
     name: "list_estimates",
+    annotations: { title: "List estimates", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "The estimates as a table, newest first: ref, status, customer, title, customer price, last change. Filter by status (new, drafted, sent, accepted, declined, completed).",
     inputSchema: obj({ status: S("Only this status, or empty for all"), limit: { type: "integer", description: "How many, up to 40", minimum: 1, maximum: 40 } }, []),
     run: async function (a) {
@@ -300,12 +303,14 @@ const TOOLS = [
   },
   {
     name: "get_estimate",
+    annotations: { title: "Read an estimate", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Read one estimate whole by its ref. Same as fetch, as plain text.",
     inputSchema: obj({ ref: S("The estimate ref") }, ["ref"]),
     run: async function (a) { return await estimateText(a.ref); },
   },
   {
     name: "add_scope_line",
+    annotations: { title: "Add a scope line", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     description: "Add one line of work to a service card of an estimate, as the customer will read it. The scope of work text follows the card. Prices do not change.",
     inputSchema: obj({ ref: S("The estimate ref"), service: S("The service card, e.g. Bathroom, Painting. Empty means the first card."), text: S("The line, one plain sentence") }, ["ref", "text"]),
     run: async function (a) {
@@ -320,6 +325,7 @@ const TOOLS = [
   },
   {
     name: "reword",
+    annotations: { title: "Reword an estimate", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Change the words of an estimate without touching a price: a card line (where=included, excluded or supplies, with the service name), a price line's name (labor, material), or a field (summary, scope, title, timeline, contractscope, contracttimeline, contractclause). Each edit: from = the current text or its gist (empty to add), to = the new text (empty to remove).",
     inputSchema: obj({
       ref: S("The estimate ref"),
@@ -338,6 +344,7 @@ const TOOLS = [
   },
   {
     name: "set_text",
+    annotations: { title: "Set a field", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Replace a whole field of an estimate: summary, scope, title or timeline. Prices do not change.",
     inputSchema: obj({ ref: S("The estimate ref"), field: S("summary, scope, title or timeline", { enum: ["summary", "scope", "title", "timeline"] }), text: S("The new text") }, ["ref", "field", "text"]),
     run: async function (a) {
@@ -351,6 +358,7 @@ const TOOLS = [
   },
   {
     name: "remove_duplicates",
+    annotations: { title: "Remove repeated lines", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Remove repeated lines from the scope of work and every service card of an estimate. Prices do not change.",
     inputSchema: obj({ ref: S("The estimate ref") }, ["ref"]),
     run: async function (a) {
@@ -365,6 +373,7 @@ const TOOLS = [
   },
   {
     name: "add_note",
+    annotations: { title: "Add a note", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     description: "Keep a fact on one estimate, e.g. what the customer asked for on the phone. The estimate's own Ask AI reads it on its next answer.",
     inputSchema: obj({ ref: S("The estimate ref"), text: S("The note, one or two sentences") }, ["ref", "text"]),
     run: async function (a) {
@@ -377,6 +386,7 @@ const TOOLS = [
   },
   {
     name: "remember",
+    annotations: { title: "Remember a rule", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     description: "Keep a standing rule or fact for EVERY estimate, e.g. how Zura wants scopes written or what a kind of job always includes. Both this connector and the dashboard's Ask AI read it.",
     inputSchema: obj({ text: S("The rule, one sentence") }, ["text"]),
     run: async function (a) {
@@ -389,6 +399,7 @@ const TOOLS = [
   },
   {
     name: "memory",
+    annotations: { title: "What is remembered", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "What has been remembered so far: the standing rules, and what the history shows (acceptance rates, prices accepted by kind of job and borough, who never answered).",
     inputSchema: obj({}, []),
     run: async function () {
@@ -402,6 +413,7 @@ const TOOLS = [
   },
   {
     name: "regenerate",
+    annotations: { title: "Re-price a job", readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
     description: "Have the estimator price the job again from the customer's request and answers, in the background (a few minutes). reanalyze=true lets it decide again what the job is; false re-prices the pinned scope. Optional extra request text is read with the job.",
     inputSchema: obj({ ref: S("The estimate ref"), reanalyze: { type: "boolean", description: "Re-read the job from scratch" }, extraRequest: S("Extra instructions for this run, optional") }, ["ref"]),
     run: async function (a) {
@@ -414,6 +426,7 @@ const TOOLS = [
   },
   {
     name: "add_service",
+    annotations: { title: "Add a service", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     description: "Price an extra piece of work and add it to an estimate as its own service card, in the background (a few minutes). Describe the work in plain words.",
     inputSchema: obj({ ref: S("The estimate ref"), text: S("The extra work, e.g. 'paint the hallway ceiling, two coats'"), service: S("The service name for the new card, optional") }, ["ref", "text"]),
     run: async function (a) {
@@ -426,6 +439,7 @@ const TOOLS = [
   },
   {
     name: "ask_estimate_ai",
+    annotations: { title: "Ask the estimate AI", readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     description: "Ask the estimate's own in-dashboard assistant a question about one estimate. It answers from the record, its emails and photos. Its reply is text; it does not change the estimate from here.",
     inputSchema: obj({ ref: S("The estimate ref"), question: S("The question") }, ["ref", "question"]),
     run: async function (a) {
