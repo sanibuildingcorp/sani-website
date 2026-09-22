@@ -19,6 +19,7 @@ const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const { applyDeterministicPricing, consolidateCustomerPresentation } = require("./lib/deterministic-pricing");
 const { writeCustomerScope } = require("./lib/scope-writer");
+const { syncScopeText } = require("./lib/scope-text");
 const { researchMarketPricing, buildResearchBlock } = require("./lib/market-research");
 const { priceMaterialsLive, serperShopping } = require("./lib/material-prices");
 /* The customer's own answers to the questions he was asked. See
@@ -314,6 +315,12 @@ exports.handler = async function handler(event) {
 
     estimate = finalizeCustomerPresentation(estimate, projectAnalysis, input);
     estimate = consolidateCustomerPresentation(estimate, projectAnalysis, input);
+    /* ONE SCOPE OF WORK. finalizeCustomerPresentation wrote the analyst's raw
+       scope blocks and the price lines into scopeOfWork - the same work twice,
+       in the analyst's words - and the customer never saw that text: he sees
+       the cards. The box now holds the cards, here from the phrase library and
+       again below once the scope writer has written them. See lib/scope-text.js. */
+    syncScopeText(estimate);
 
     /* SCOPE OF WORK — written last, on purpose.
        Runs only after pricing and card consolidation are final, so it describes

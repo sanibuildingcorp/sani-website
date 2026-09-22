@@ -41,6 +41,7 @@ const CARD_KEYS = {
   excluded: ["notIncluded", "exclusions", "excluded"],
   supplies: ["customerSupplies", "customerSupplied", "supplied"],
 };
+const scopeText = require("./scope-text");
 const FIELD_KEYS = { summary: "summary", scope: "scopeOfWork", title: "projectTitle", timeline: "timelineText" };
 /* ── THE CONTRACT'S WORDS ──────────────────────────────────────────────────
      "can you read contract too?" - "I can't open or read the contract."
@@ -165,6 +166,16 @@ function editList(list, from, to) {
 
 function applyCardEdit(record, e) {
   const est = record.estimate || (record.estimate = {});
+  /* ONE SCOPE OF WORK: when the box still mirrors the cards, a card line
+     reworded here is reworded there too. A scope the contractor typed by
+     hand is his and is left alone. See lib/scope-text.js. */
+  const mirror = e.where === "included" && scopeText.mirrorsCards(est);
+  const r = applyCardEditInner(est, e);
+  if (mirror && r && (typeof r === "number" || r.already)) scopeText.syncScopeText(est);
+  return r;
+}
+
+function applyCardEditInner(est, e) {
   const keys = CARD_KEYS[e.where];
   const wantService = norm(e.service);
   let n = 0;
