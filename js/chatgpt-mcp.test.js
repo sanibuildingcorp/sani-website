@@ -114,6 +114,10 @@ const saved = () => JSON.parse(STORES.estimates.get('SBC-260921-WNGN'));
     const names = r.body.result.tools.map((t) => t.name);
     ok('TOOLS: search and fetch for ChatGPT, then the hands', ['search', 'fetch', 'list_estimates', 'get_estimate', 'add_scope_line', 'reword', 'set_text', 'remove_duplicates', 'add_note', 'remember', 'memory', 'regenerate', 'add_service', 'ask_estimate_ai'].every((n) => names.indexOf(n) !== -1), names.join(','));
     ok('every tool has a description and an object input schema', r.body.result.tools.every((t) => t.description.length > 20 && t.inputSchema.type === 'object'));
+    /* ChatGPT marks an unlabelled tool "public write, destructive" and asks
+       before every call, reading included. The labels say which is which. */
+    const byName = {}; r.body.result.tools.forEach((t) => { byName[t.name] = t.annotations || {}; });
+    ok('LABELS: reading tools are read-only, writing tools are not; only regenerate is destructive; none reaches the open world', ['search', 'fetch', 'list_estimates', 'get_estimate', 'memory', 'ask_estimate_ai'].every((n) => byName[n].readOnlyHint === true) && ['add_scope_line', 'reword', 'set_text', 'remove_duplicates', 'add_note', 'remember', 'regenerate', 'add_service'].every((n) => byName[n].readOnlyHint === false) && byName.regenerate.destructiveHint === true && ['reword', 'add_scope_line', 'set_text', 'remove_duplicates'].every((n) => byName[n].destructiveHint === false) && names.every((n) => byName[n].openWorldHint === false && typeof byName[n].title === 'string'), JSON.stringify(byName));
   }
 
   console.log('\n3. Reading\n');
