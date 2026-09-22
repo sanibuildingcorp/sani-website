@@ -103,6 +103,8 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
        them, kicks the estimator. Its own token lives in the URL; a bare call,
        a wrong key, and a missing DASHBOARD_KEY are all refused. */
     ["chatgpt-mcp", "POST", { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "set_text", arguments: { ref: "SBC-260805-XQNQ", field: "title", text: "Hacked" } } }],
+    /* Marks any estimate as waiting for the customer, or clears it. A write. */
+    ["mark-waiting", "POST", { ref: "SBC-260805-XQNQ", waiting: true }],
   ];
 
   for (const [name, method, body] of GATED) {

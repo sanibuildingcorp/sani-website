@@ -77,6 +77,8 @@ exports.handler = async function (event) {
       completedOn: e.estimate?.completedOn || null,
       /* Who spoke last - the morning action list and the alerts read it. */
       needsReply: thread.needsReply(e),
+      /* He asked and the customer has not answered - the card says so. */
+      waitingOnCustomer: thread.waitingOnCustomer(e),
       lastCustomerMessageAt: e.lastCustomerMessageAt || null,
       unpaidTotal: (e.invoices || [])
         .filter((inv) => inv.status !== "paid")
