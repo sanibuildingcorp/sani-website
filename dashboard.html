@@ -2691,6 +2691,7 @@ body {
 .cnv-note.bad{color:#c0392b;font-weight:700}
 .cnv-note.good{color:#1c6547;font-weight:700}
 .badge.needs-reply{background:#c0392b;color:#fff}
+.badge.waiting-customer{background:#6b5b95;color:#fff}
 @media(max-width:600px){.cnv-msg{max-width:93%}.cnv-body{max-height:300px}}
 
 </style>
@@ -3429,6 +3430,7 @@ function renderList() {
             (e.parentRef ? '<span class="badge" style="background:rgba(184,147,10,0.14);color:#96770a">➕ ADD-ON TO ' + esc(e.parentRef) + '</span>' : '') +
             (Array.isArray(e.addonRefs) && e.addonRefs.length ? '<span class="badge" style="background:rgba(184,147,10,0.14);color:#96770a">➕ ' + e.addonRefs.length + ' ADD-ON' + (e.addonRefs.length > 1 ? 'S' : '') + '</span>' : '') +
             (threadNeedsReply(e) ? '<span class="badge needs-reply">💬 REPLY NEEDED</span>' : '') +
+            (!threadNeedsReply(e) && threadWaiting(e) ? '<span class="badge waiting-customer">⏳ WAITING FOR CUSTOMER</span>' : '') +
             (Number(e.unpaidTotal) > 0 ? '<span class="badge unpaid-warn">⚠ UNPAID ' + fmt(e.unpaidTotal) + '</span>' : '') +
             '<span style="font-size:11px;color:var(--ink-muted);letter-spacing:1px">' + esc(e.ref) + '</span>' +
           '</div>' +
@@ -3629,6 +3631,42 @@ function threadOf(r) {
 function threadNeedsReply(r) {
   const t = threadOf(r);
   return t.length > 0 && t[t.length - 1].from !== "contractor";
+}
+/* ── WAITING FOR THE CUSTOMER ──────────────────────────────────────────────
+   "when i sent questions to the customer can we add mark as waiting answer"
+   The mirror of REPLY NEEDED: he spoke last, or he marked it by hand (or the
+   assistant did), and the customer has not written back. The list row
+   carries the server's verdict (list-estimates); an open record is judged
+   here from its own thread. Same rule as lib/thread.js. */
+function threadWaiting(r) {
+  if (!r) return false;
+  if (/^(declined|completed)$/i.test(String(r.status || ""))) return false;
+  if (typeof r.waitingOnCustomer === "boolean" && !Array.isArray(r.thread)) return r.waitingOnCustomer;
+  const t = threadOf(r);
+  const last = t.length ? t[t.length - 1] : null;
+  if (r.waitingOnCustomer === true) {
+    const since = new Date(r.waitingSince || 0).getTime();
+    return !t.some(function (m) { return m.from !== "contractor" && new Date(m.at).getTime() > since; });
+  }
+  if (!last || last.from !== "contractor") return false;
+  if (r.waitingOnCustomer === false && r.waitingCleared) return new Date(last.at).getTime() > new Date(r.waitingCleared).getTime();
+  return true;
+}
+async function markWaiting(ref, waiting) {
+  const r = await sbcFetch("/.netlify/functions/mark-waiting", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, waiting: waiting !== false, by: "dashboard" }) });
+  const d = await r.json().catch(function () { return {}; });
+  if (!r.ok) throw new Error(d.error || "Could not change the mark");
+  estimates.forEach(function (e) { if (e.ref === ref) { e.waitingOnCustomer = d.waitingOnCustomer === true; } });
+  if (currentRecord && currentRecord.ref === ref) { currentRecord.waitingOnCustomer = waiting !== false; currentRecord.waitingSince = d.waitingSince || currentRecord.waitingSince; }
+  renderList();
+  const tag = document.getElementById("cnv-waiting");
+  if (tag) tag.outerHTML = cnvWaitingHtml(currentRecord);
+  return d;
+}
+function cnvWaitingHtml(r) {
+  const on = threadWaiting(r);
+  return '<span id="cnv-waiting">' + (on ? ' <span class="badge waiting-customer">⏳ WAITING FOR CUSTOMER</span>' : '')
+    + ' <button type="button" class="topbar-btn" style="font-size:11px;padding:4px 8px;margin-left:6px" onclick="markWaiting(\'' + esc(String((r && r.ref) || "")) + '\', ' + (on ? 'false' : 'true') + ').catch(function (e) { alert(e.message); })">' + (on ? 'Clear waiting' : 'Mark waiting for customer') + '</button></span>';
 }
 function cnvWhen(iso) {
   const dt = new Date(iso);
@@ -4027,7 +4065,8 @@ function aiScreen() {
       return { ref: e.ref, name: (e.customer && e.customer.name) || "", service: est.projectTitle || req.service || "", status: e.status,
         total: est.customerTotal != null ? est.customerTotal : est.grandTotal, submitted: d(e.submittedAt), sent: d(e.sentAt),
         unpaid: e.unpaidTotal || 0, invoices: e.invoiceCount || 0, completed: d(e.completedOn || e.completedAt),
-        needsReply: (typeof threadNeedsReply === "function") ? !!threadNeedsReply(e) : false };
+        needsReply: (typeof threadNeedsReply === "function") ? !!threadNeedsReply(e) : false,
+        waiting: (typeof threadWaiting === "function") ? !!threadWaiting(e) : false };
     }),
     visits: visits.filter(function (v) { return !v.done; }).slice(0, 25).map(function (v) {
       return { id: v.id, customer: v.customer, address: v.address, datetime: v.datetime, reason: v.reason, ref: v.ref, inCalendar: !!v.gcalEventId };
@@ -4285,6 +4324,17 @@ async function aiExec(a, log, render) {
     if (currentRecord && currentRecord.ref === ref) currentRecord.status = st;
     renderTabs(); renderList();
     return ref + " is now " + st + ".";
+  }
+  if (t === "waiting") {
+    /* "Mark it as waiting answer from customer." Not a status: a mark on the
+       record that clears itself when the customer writes back. */
+    var wref = String(a.ref || "").toUpperCase(), won = String(a.waiting || "").toLowerCase() !== "false" && String(a.waiting || "").toLowerCase() !== "clear" && String(a.waiting || "").toLowerCase() !== "no";
+    var wrow = estimates.filter(function (e) { return e.ref === wref; })[0];
+    if (!wrow && !(currentRecord && currentRecord.ref === wref)) return "I don't see " + wref + " in the list.";
+    var wname = (wrow && wrow.customer && wrow.customer.name) || (currentRecord && currentRecord.customer && currentRecord.customer.name) || "";
+    if (!(await ask(log, render, (won ? "Mark " : "Clear the waiting mark on ") + wref + (wname ? " (" + wname + ")" : "") + (won ? " as waiting for the customer's answer?" : "?"), won ? "Mark it" : "Clear it", "Leave it"))) return "Cancelled - the mark was not changed.";
+    await markWaiting(wref, won);
+    return wref + (won ? " is marked waiting for the customer. The mark clears itself when they write back." : " is no longer marked waiting.");
   }
   if (t === "visit") {
     var v = { customer: String(a.customer || ""), address: String(a.address || ""), datetime: String(a.datetime || ""), reason: String(a.reason || ""), ref: String(a.ref || "") };
@@ -4757,7 +4807,7 @@ function renderEdit() {
          request, not a footnote to it. */
       askPanelHtml(r) +
       '<div class="section cnv-inline" id="cnv-section">' +
-        '<div class="section-title cnv-inline-title">💬 Conversation' + (threadNeedsReply(r) ? ' <span class="badge needs-reply">REPLY NEEDED</span>' : '') + '</div>' +
+        '<div class="section-title cnv-inline-title">💬 Conversation' + (threadNeedsReply(r) ? ' <span class="badge needs-reply">REPLY NEEDED</span>' : '') + cnvWaitingHtml(r) + '</div>' +
         cnvPanelHtml(r) +
       '</div>' +
     '</div>' +

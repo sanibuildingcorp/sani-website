@@ -236,6 +236,35 @@ function needsReply(record) {
   return thread[thread.length - 1].from === "customer";
 }
 
+/* ── WAITING FOR THE CUSTOMER ────────────────────────────────────────────
+     "In the request when i sent questions to the customer can we add mark
+      as waiting answer or something like this mark?"
+
+   The mirror of needsReply. He spoke last - he asked the customer
+   something and the answer has not come - so the job is waiting on THEM.
+   Two ways in: automatically, when the last message of the thread is his;
+   or by hand / by the assistant (record.waitingOnCustomer, with
+   waitingSince). Either way it clears itself the moment the customer
+   writes back: a customer message after waitingSince ends the wait, and a
+   thread whose last word is the customer's is never waiting. A job that is
+   declined or completed waits on nobody. */
+const WAIT_OVER = /^(declined|completed)$/i;
+function waitingOnCustomer(record) {
+  const rec = record || {};
+  if (WAIT_OVER.test(text(rec.status))) return false;
+  const thread = normalizeThread(rec);
+  const last = thread.length ? thread[thread.length - 1] : null;
+  if (rec.waitingOnCustomer === true) {
+    const since = new Date(rec.waitingSince || 0).getTime();
+    const answered = thread.some(function (m) { return m.from === "customer" && new Date(m.at).getTime() > since; });
+    return !answered;
+  }
+  if (!last || last.from !== "contractor") return false;
+  /* Cleared by hand: stays clear until he writes to the customer again. */
+  if (rec.waitingOnCustomer === false && rec.waitingCleared) return new Date(last.at).getTime() > new Date(rec.waitingCleared).getTime();
+  return true;
+}
+
 /* ── WHICH ESTIMATE IS THIS EMAIL ABOUT, WHEN IT NAMES NONE ──────────────
      "in my email inbox it's coming as a new email separate from the previous
       conversation emails or separate from estimate conversation portal ...
@@ -287,6 +316,7 @@ module.exports = {
   checkRate: checkRate,
   refFromText: refFromText,
   needsReply: needsReply,
+  waitingOnCustomer: waitingOnCustomer,
   cleanAttachments: cleanAttachments,
   MAX_ATTACHMENTS: MAX_ATTACHMENTS,
   MAX_MESSAGE_CHARS: MAX_MESSAGE_CHARS,
