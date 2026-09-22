@@ -3425,7 +3425,7 @@ function renderList() {
             ((e.request && e.request.photoCount) ? '<span>•</span><span>📷 ' + e.request.photoCount + '</span>' : "") +
           '</div>' +
           '<div class="est-badges">' +
-            '<span class="badge ' + e.status + '">' + e.status + (e.status === 'completed' && fmtDay(e.completedOn || e.completedAt) ? ' · ' + esc(fmtDay(e.completedOn || e.completedAt)) : '') + '</span>' +
+            '<span class="badge ' + e.status + '">' + e.status + (e.status === 'completed' && fmtDay(e.completedOn || e.completedAt) ? ' · ' + esc(fmtDay(e.completedOn || e.completedAt)) : '') + (/^(sent|opened)$/.test(String(e.status)) && sentStamp(e) ? ' · ' + esc(sentStamp(e)) : '') + '</span>' +
             /* He works from a phone between jobs and will not be watching this
                screen. The badge is the one place a waiting customer message is
                visible without opening anything. */
@@ -3633,6 +3633,19 @@ function threadOf(r) {
 function threadNeedsReply(r) {
   const t = threadOf(r);
   return t.length > 0 && t[t.length - 1].from !== "contractor";
+}
+/* ── "SENT · Aug 24, 2:10 PM · 28 days waiting" ─────────────────────────────
+   "In sent status i need ... date and time, so with it i can see which day
+    i sent and how long i waiting for." The badge carries when it went out
+   (New York time) and how long since. */
+function sentStamp(e, now) {
+  const t = Date.parse((e && e.sentAt) || "");
+  if (!t) return "";
+  const d = new Date(t);
+  const when = d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+  const days = Math.floor(((now || Date.now()) - t) / 86400000);
+  const ago = days <= 0 ? "today" : days === 1 ? "1 day waiting" : days + " days waiting";
+  return when + " · " + ago;
 }
 /* ── WAITING FOR THE CUSTOMER ──────────────────────────────────────────────
    "when i sent questions to the customer can we add mark as waiting answer"
