@@ -248,7 +248,7 @@ function needsReply(record) {
    writes back: a customer message after waitingSince ends the wait, and a
    thread whose last word is the customer's is never waiting. A job that is
    declined or completed waits on nobody. */
-const WAIT_OVER = /^(declined|completed)$/i;
+const WAIT_OVER = /^(declined|completed|cancelled)$/i;
 function waitingOnCustomer(record) {
   const rec = record || {};
   if (WAIT_OVER.test(text(rec.status))) return false;
@@ -283,7 +283,7 @@ function pickEstimateForEmail(list) {
   const rows = (Array.isArray(list) ? list : []).filter(function (e) { return e && e.ref; });
   if (!rows.length) return null;
   const when = function (e) { return Date.parse(e.updatedAt || e.sentAt || e.submittedAt || 0) || 0; };
-  const open = rows.filter(function (e) { return ["completed", "declined"].indexOf(String(e.status || "")) === -1; });
+  const open = rows.filter(function (e) { return ["completed", "declined", "cancelled"].indexOf(String(e.status || "")) === -1; });
   const pool = open.length ? open : rows;
   pool.sort(function (a, b) { return when(b) - when(a); });
   return pool[0].ref;

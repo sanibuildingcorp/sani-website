@@ -162,7 +162,7 @@ const SCREEN = {
     await call({ ref: 'SBC-HUGE', messages: [{ role: 'user', text: 'hi' }] });
     /* The estimate itself is capped at ESTIMATE_CHARS (9k); the rules around
        it grow a line at a time (the inbox rules added ~1.4k). */
-    ok('a huge estimate is cut, not sent whole', /estimate cut here/.test(sent.system) && sent.system.length < 30000, sent.system.length + ' chars');
+    ok('a huge estimate is cut, not sent whole', /estimate cut here/.test(sent.system) && sent.system.length < 31000, sent.system.length + ' chars');
 
     STORES.estimates.set('SBC-THIN', JSON.stringify({ ref: 'SBC-THIN', status: 'new', customer: { name: 'x' }, request: { description: 'test request' }, estimate: {} }));
     sent = null;

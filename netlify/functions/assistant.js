@@ -889,8 +889,8 @@ function screenContext(sc) {
    the end; anything else on the line, or a type not here, is dropped. A
    truncated answer drops them all: half an action is worse than none. */
 const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"], search: ["query"], describe: ["ref", "text"], reword: ["ref"], addservice: ["ref", "text"], dedupe: ["ref"], waiting: ["ref"] };
-const TABS = ["all", "new", "drafted", "sent", "accepted", "invoiced", "paid", "completed", "declined", "handyman", "visits", "customers"];
-const STATUSES = ["new", "drafted", "sent", "accepted", "declined", "completed"];
+const TABS = ["all", "new", "drafted", "sent", "accepted", "invoiced", "paid", "completed", "declined", "cancelled", "handyman", "visits", "customers"];
+const STATUSES = ["new", "drafted", "sent", "accepted", "declined", "completed", "cancelled"];
 /* ══ "THE ASSISTANT RETURNED NOTHING. TRY AGAIN." ═════════════════════════
    Twice, on "analyze his requirements and current scope of work and find
    where need updates". The model answered - with a describe action holding
@@ -1020,8 +1020,8 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "",
     "WHAT YOU CAN DO (actions). When he asks you to do one of these, do it: answer in one short line, then on its own last line write  ACTION: {json}  - one line per action, nothing after it.",
     "- open an estimate:            ACTION: {\"type\":\"open\",\"ref\":\"SBC-...\"}",
-    "- switch tab:                  ACTION: {\"type\":\"tab\",\"tab\":\"sent\"}   (all, new, drafted, sent, accepted, invoiced, paid, completed, declined, handyman, visits, customers)",
-    "- change an estimate's status: ACTION: {\"type\":\"status\",\"ref\":\"SBC-...\",\"status\":\"completed\"}   (new, drafted, sent, accepted, declined, completed) - the dashboard asks him to confirm",
+    "- switch tab:                  ACTION: {\"type\":\"tab\",\"tab\":\"sent\"}   (all, new, drafted, sent, accepted, invoiced, paid, completed, declined, cancelled, handyman, visits, customers)",
+    "- change an estimate's status: ACTION: {\"type\":\"status\",\"ref\":\"SBC-...\",\"status\":\"completed\"}   (new, drafted, sent, accepted, declined, completed, cancelled) - the dashboard asks him to confirm. declined = THE CUSTOMER declined it; cancelled = ZURA cancelled it himself ('cancel it', 'I'm cancelling this job', 'we are not doing this one'). When he says cancel or cancelled, send cancelled, never declined; when he says the customer said no, send declined.",
     "- schedule a site visit:       ACTION: {\"type\":\"visit\",\"customer\":\"...\",\"address\":\"...\",\"datetime\":\"2026-09-20T10:00\",\"reason\":\"...\",\"ref\":\"SBC-...\"}   (New York time; the dashboard asks him to confirm)",
     "- draft a message to the customer of the OPEN estimate: ACTION: {\"type\":\"draft\",\"text\":\"...\"}   - it goes into the reply box only; HE presses Send after reading it",
     "- remember something for later: ACTION: {\"type\":\"remember\",\"text\":\"...\"}",
