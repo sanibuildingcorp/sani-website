@@ -292,7 +292,7 @@ const TOOLS = [
   {
     name: "list_estimates",
     annotations: { title: "List estimates", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    description: "The estimates as a table, newest first: ref, status, customer, title, customer price, last change. Filter by status (new, drafted, sent, accepted, declined, completed).",
+    description: "The estimates as a table, newest first: ref, status, customer, title, customer price, last change. Filter by status (new, drafted, sent, accepted, declined, completed, cancelled).",
     inputSchema: obj({ status: S("Only this status, or empty for all"), limit: { type: "integer", description: "How many, up to 40", minimum: 1, maximum: 40 } }, []),
     run: async function (a) {
       const want = str(a.status).toLowerCase();

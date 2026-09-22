@@ -278,6 +278,7 @@ body {
 .badge.sent { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
 .badge.accepted { background: var(--good-bg); color: var(--good); }
 .badge.declined { background: var(--bad-bg); color: var(--bad); }
+.badge.cancelled { background: #e5e7eb; color: #4b5563; }
 .badge.invoiced { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
 .badge.paid { background: var(--good-bg); color: var(--good); }
 .badge.completed { background: rgba(13, 148, 136, 0.15); color: #14b8a6; }
@@ -2930,6 +2931,7 @@ const TABS = [
   { id: "paid", label: "Paid" },
   { id: "completed", label: "Completed" },
   { id: "declined", label: "Declined" },
+  { id: "cancelled", label: "Cancelled" },
   { id: "handyman", label: "🔧 Handyman" },
   { id: "visits", label: "📅 Visits" },
   { id: "customers", label: "👤 Customers" },
@@ -3640,7 +3642,7 @@ function threadNeedsReply(r) {
    here from its own thread. Same rule as lib/thread.js. */
 function threadWaiting(r) {
   if (!r) return false;
-  if (/^(declined|completed)$/i.test(String(r.status || ""))) return false;
+  if (/^(declined|completed|cancelled)$/i.test(String(r.status || ""))) return false;
   if (typeof r.waitingOnCustomer === "boolean" && !Array.isArray(r.thread)) return r.waitingOnCustomer;
   const t = threadOf(r);
   const last = t.length ? t[t.length - 1] : null;
@@ -5045,6 +5047,11 @@ function renderEdit() {
       (currentRecord && currentRecord.status === 'completed'
         ? '<button class="btn-secondary" onclick="markCompleted(false)">↩ Reopen</button>'
         : '<button class="btn-secondary" onclick="markCompleted(true)">🏁 Mark Completed</button>') +
+      /* "I need to mark cancelled too." A job that stopped - after it was
+         agreed, or before - without the customer saying no to the price. */
+      (currentRecord && currentRecord.status === 'cancelled'
+        ? '<button class="btn-secondary" onclick="markCancelled(false)">↩ Reopen</button>'
+        : (currentRecord && currentRecord.status !== 'completed' ? '<button class="btn-secondary" onclick="markCancelled(true)">🚫 Mark Cancelled</button>' : '')) +
       '<div class="modal-actions-right">' +
         '<button class="btn-secondary" onclick="openInvoiceModal()">💳 Send Invoice</button>' +
         '<button class="btn-secondary" onclick="saveDraft()">💾 Save Draft</button>' +
@@ -8553,6 +8560,38 @@ async function markCompleted(done) {
   }
 }
 
+/* ── CANCELLED ──────────────────────────────────────────────────────────────
+   "I need to mark cancelled too." Declined is the customer saying no to the
+   price. Cancelled is a job that stopped for any other reason - before or
+   after it was agreed. The status it had is kept, so Reopen puts it back. */
+async function markCancelled(on) {
+  if (!currentRecord) return;
+  var was = String(currentRecord.status || "");
+  var back = (currentRecord.estimate && currentRecord.estimate.statusBeforeCancel) || "drafted";
+  if (on && !confirm("Mark this job cancelled? It moves to the Cancelled tab; Reopen brings it back.")) return;
+  if (!on && !confirm("Reopen this job? It goes back to " + back + ".")) return;
+  try {
+    var next = on ? "cancelled" : back;
+    var fields = on ? { cancelledAt: new Date().toISOString(), statusBeforeCancel: was } : { cancelledAt: null, statusBeforeCancel: null };
+    var r = await sbcFetch("/.netlify/functions/save-estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: currentRecord.ref, status: next, estimate: fields }),
+    });
+    if (!r.ok) { var e = await r.json().catch(function(){return {};}); throw new Error(e.error || "Update failed"); }
+    currentRecord.status = next;
+    currentRecord.estimate = Object.assign(currentRecord.estimate || {}, fields);
+    estimates.forEach(function(x){ if (x.ref === currentRecord.ref) x.status = next; });
+    toast(on ? "🚫 Marked cancelled" : "↩ Job reopened");
+    closeEdit();
+    renderTabs();
+    renderList();
+  } catch (e) {
+    console.error(e);
+    toast("Update failed: " + e.message, true);
+  }
+}
+
 /* Mark a sent invoice paid / unpaid (calls mark-invoice-paid.js) */
 async function toggleInvoicePaid(invoiceNumber, makePaid) {
   if (!currentRecord) return;
@@ -9887,7 +9926,7 @@ window.addEventListener('appinstalled', function() {
 window.addEventListener('load', function() {
   if (location.hash) {
     var tabId = location.hash.replace('#', '');
-    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','completed','declined','handyman'];
+    var validTabs = ['all','new','drafted','sent','accepted','invoiced','paid','completed','declined','cancelled','handyman'];
     if (validTabs.includes(tabId)) {
       activeTab = tabId;
     }
@@ -9974,6 +10013,7 @@ var SBC_TABS = [
   {id:'paid',     icon:'💰', label:'Paid'},
   {id:'completed',icon:'🏁', label:'Completed'},
   {id:'declined', icon:'❌', label:'Declined'},
+  {id:'cancelled', icon:'🚫', label:'Cancelled'},
   null,
   {id:'handyman', icon:'🔧', label:'Handyman'},
   {id:'visits',   icon:'📅', label:'Visits'},
@@ -9988,7 +10028,7 @@ function sbcOpenDrawer() {
 
   // Build nav
   // Calculate counts from live data
-  var counts = {all:0,new:0,drafted:0,sent:0,accepted:0,invoiced:0,paid:0,completed:0,declined:0,handyman:0,seo:0,content:0,visitors:0,visits:0};
+  var counts = {all:0,new:0,drafted:0,sent:0,accepted:0,invoiced:0,paid:0,completed:0,declined:0,cancelled:0,handyman:0,seo:0,content:0,visitors:0,visits:0};
   try {
     if (typeof estimates !== 'undefined' && estimates) {
       counts.all = estimates.filter(function(e){ return e.status !== 'completed'; }).length;
