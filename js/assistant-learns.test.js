@@ -125,7 +125,11 @@ const post = async (mod, body, headers) => { const r = await mod.handler({ httpM
     r = await post(learn, { next_run: '2026-09-20T09:30:00Z' }, {});
     ok('THE SCHEDULER RUNS IT AND THE INSIGHTS ARE STORED', r.code === 200 && r.body.ok === true && r.body.records === 6 && STORES['assistant-memory'].has('insights'), JSON.stringify(r.body));
     const stored = JSON.parse(STORES['assistant-memory'].get('insights'));
-    ok('...the same numbers as the library gives', stored.accepted === 2 && stored.acceptRate === 40 && stored.followUp.length === 1);
+    /* The nightly job runs on the real clock, so the follow-up count moves as
+       the fixture's sent dates age (Sam, sent Sept 17, crossed the five-day
+       line on Sept 22). Compare against the library on the same clock. */
+    const live = I.buildInsights(REC, new Date());
+    ok('...the same numbers as the library gives', stored.accepted === 2 && stored.acceptRate === 40 && stored.followUp.length === live.followUp.length && live.followUp.length >= 1, stored.followUp.length + ' vs ' + live.followUp.length);
     r = await post(learn, {});
     ok('the dashboard key runs it by hand too', r.code === 200 && r.body.records === 6);
     ok('it is on the nightly schedule in netlify.toml', /\[functions\."assistant-learn"\]\s*\n\s*schedule = "30 9 \* \* \*"/.test(fs.readFileSync(path.join(ROOT, 'netlify.toml'), 'utf8')));

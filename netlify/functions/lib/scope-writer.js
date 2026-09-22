@@ -49,7 +49,13 @@
 
 const MIN_BULLETS = 3;
 const MAX_BULLETS = 8;
+/* The prompt asks for MAX_BULLETS. A shower floor rebuild the writer laid out
+   in twelve steps was cut at eight - after the waterproofing, before "set the
+   new tile", "grout" and "clean up" - so the customer's card ended with the
+   floor still bare. A job with more steps keeps them, up to this ceiling. */
+const HARD_MAX_BULLETS = 12;
 const MAX_BULLET_CHARS = 260;
+const { syncScopeText } = require('./scope-text');
 
 /* Licensing claims are banned sitewide until Zura says otherwise. A prompt rule
    is not enough — this is the backstop. */
@@ -114,6 +120,33 @@ function dedupe(list) {
     out.push(t);
   });
   return out;
+}
+
+/* "Not included" collects from two places - the pipeline's exclusions and the
+   writer's - and the customer read "Asbestos or mold testing and removal" and,
+   four lines later, "Asbestos or mold testing, abatement or remediation".
+   Same limit, twice. An exclusion that shares half its content words with an
+   earlier one is the same exclusion; the first stays. Exclusions only: two
+   work lines can share most of their words and still be two steps ("remove
+   the shower floor tile" / "set the new shower floor tile"). */
+function nearDedupe(list) {
+  const kept = [];
+  const sets = [];
+  (list || []).forEach(x => {
+    const t = clean(x);
+    if (!t) return;
+    const w = new Set(contentKey(t).split(' ').filter(Boolean));
+    const dupe = sets.some(s => {
+      let both = 0;
+      w.forEach(k => { if (s.has(k)) both++; });
+      const union = s.size + w.size - both;
+      return union > 0 && w.size >= 3 && s.size >= 3 && both / union >= 0.5;
+    });
+    if (dupe) return;
+    sets.push(w);
+    kept.push(t);
+  });
+  return kept;
 }
 
 const voice = require('./customer-voice');
@@ -256,7 +289,7 @@ function applyScopeToEstimate(estimate, written, fallbackFor, minBullets) {
     const name = clean(card.title || card.name || card.section);
     const got = byName[norm(name)];
 
-    let included = dedupe((got && Array.isArray(got.included) ? got.included : []).map(tidyBullet)).slice(0, MAX_BULLETS);
+    let included = dedupe((got && Array.isArray(got.included) ? got.included : []).map(tidyBullet)).slice(0, HARD_MAX_BULLETS);
     const notIncluded = dedupe((got && Array.isArray(got.notIncluded) ? got.notIncluded : []).map(tidyBullet)).slice(0, 4);
 
     /* A card with too little to say falls back to whatever the old phrase
@@ -265,7 +298,7 @@ function applyScopeToEstimate(estimate, written, fallbackFor, minBullets) {
     if (included.length < (minBullets || MIN_BULLETS)) {
       const prior = Array.isArray(card.included) ? card.included.filter(Boolean) : [];
       if (prior.length >= included.length) {
-        included = dedupe(prior.map(tidyBullet)).slice(0, MAX_BULLETS);
+        included = dedupe(prior.map(tidyBullet)).slice(0, HARD_MAX_BULLETS);
         usedFallback++;
       } else {
         usedAi++;
@@ -279,8 +312,12 @@ function applyScopeToEstimate(estimate, written, fallbackFor, minBullets) {
     /* The writer's exclusions ADD to what the pipeline already parked there —
        customer_exclusions extracted upstream must not be thrown away. */
     const existing = Array.isArray(card.notIncluded) ? card.notIncluded.map(tidyBullet) : [];
-    card.notIncluded = dedupe(existing.concat(notIncluded)).slice(0, 6);
+    card.notIncluded = nearDedupe(dedupe(existing.concat(notIncluded))).slice(0, 6);
   });
+
+  /* ONE SCOPE OF WORK: the box the contractor reads is the cards the
+     customer reads. See lib/scope-text.js. */
+  syncScopeText(estimate);
 
   const tl = voice.softenTimeline(stripBanned(written && written.timeline));
   if (tl && tl.length > 8) estimate.customerTimeline = tl;
@@ -325,6 +362,8 @@ module.exports = {
   tidyBullet,
   dedupe,
   stripBanned,
+  nearDedupe,
   MIN_BULLETS,
-  MAX_BULLETS
+  MAX_BULLETS,
+  HARD_MAX_BULLETS
 };
