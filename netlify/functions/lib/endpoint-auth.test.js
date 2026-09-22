@@ -99,6 +99,10 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["gmail-connect", "POST", {}],
     ["gmail-accounts", "POST", { action: "remove", email: "someone@example.com" }],
     ["gmail-sync", "POST", {}],
+    /* ChatGPT's hands on the dashboard: reads every estimate, rewords any of
+       them, kicks the estimator. Its own token lives in the URL; a bare call,
+       a wrong key, and a missing DASHBOARD_KEY are all refused. */
+    ["chatgpt-mcp", "POST", { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "set_text", arguments: { ref: "SBC-260805-XQNQ", field: "title", text: "Hacked" } } }],
   ];
 
   for (const [name, method, body] of GATED) {

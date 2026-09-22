@@ -11607,6 +11607,47 @@ function gmailPanelHtml(){
   return h + '</div>';
 }
 function gmailPaint(){ var el = document.getElementById('gmail-panel'); if (el) el.innerHTML = gmailPanelHtml(); }
+/* ── CHATGPT ON HIS PHONE ─────────────────────────────────────────────────
+   "i want talk to my dashboard from my phone in ChatGPT". One link, pasted
+   once into the ChatGPT app as a connector. The link carries a token made
+   from the dashboard key (never the key itself) and only shows here after
+   login. See netlify/functions/chatgpt-mcp.js. */
+var CHATGPT_URL = "", chatgptNote = "";
+function chatgptPanelHtml(){
+  var h = '<div style="background:#fff;border:1px solid rgba(13,27,42,0.1);border-radius:12px;padding:12px 14px">'
+    + '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">'
+    + '<div><strong style="font-size:13px">\u{1F4AC} ChatGPT connection</strong><div style="font-size:11px;color:#7a879b">Talk to your estimates from the ChatGPT app: read them, add lines, reword, re-price, add work, keep notes.</div></div>'
+    + '<button type="button" class="topbar-btn" style="font-size:11px;padding:6px 10px;white-space:nowrap" id="chatgpt-link-btn" onclick="chatgptShowLink()">Show connector link</button></div>';
+  if (CHATGPT_URL) {
+    h += '<div style="margin-top:8px;font-size:12px"><input id="chatgpt-url" readonly value="' + esc(CHATGPT_URL) + '" style="width:100%;font-size:11px;padding:6px 8px;border:1px solid rgba(13,27,42,0.15);border-radius:8px" onclick="this.select()">'
+      + '<button type="button" class="topbar-btn" style="font-size:11px;padding:5px 9px;margin-top:6px" onclick="chatgptCopyLink()">Copy link</button></div>'
+      + '<ol style="font-size:11px;color:#4a5568;margin:8px 0 0 16px;padding:0;line-height:1.5">'
+      + '<li>ChatGPT app → Settings → Connectors → Create.</li>'
+      + '<li>Name: Sani Dashboard. Paste the link. Authentication: No authentication. Create.</li>'
+      + '<li>Writing tools (add lines, reword, re-price) need Developer mode on: Settings → Connectors → Advanced.</li>'
+      + '<li>In a chat, turn the Sani Dashboard connector on and ask: "show me the estimate for Bruce".</li></ol>'
+      + '<div style="font-size:11px;color:#b42318;margin-top:6px">The link is a key to your estimates. Paste it only into ChatGPT. Changing the dashboard password makes a new link.</div>';
+  }
+  if (chatgptNote) h += '<div style="font-size:11px;color:#7a879b;margin-top:8px">' + esc(chatgptNote) + '</div>';
+  return h + '</div>';
+}
+function chatgptPaint(){ var el = document.getElementById('chatgpt-panel'); if (el) el.innerHTML = chatgptPanelHtml(); }
+async function chatgptShowLink(){
+  var btn = document.getElementById('chatgpt-link-btn'); if (btn) btn.disabled = true;
+  chatgptNote = 'Loading…'; chatgptPaint();
+  try{
+    var r = await sbcFetch('/.netlify/functions/chatgpt-mcp', { method: 'GET' });
+    var dta = await r.json();
+    if (r.ok && dta.url) { CHATGPT_URL = dta.url; chatgptNote = ''; }
+    else chatgptNote = '⚠️ ' + String(dta.error || ('HTTP ' + r.status)).slice(0, 140);
+  }catch(e){ chatgptNote = '⚠️ Could not load the link: ' + e.message; }
+  chatgptPaint();
+}
+async function chatgptCopyLink(){
+  try { await navigator.clipboard.writeText(CHATGPT_URL); chatgptNote = 'Copied.'; }
+  catch(e){ var i = document.getElementById('chatgpt-url'); if (i) { i.select(); try { document.execCommand('copy'); chatgptNote = 'Copied.'; } catch(x){ chatgptNote = 'Select the link and copy it.'; } } }
+  chatgptPaint();
+}
 async function gmailLoadAccounts(){
   try{
     var r = await sbcFetch('/.netlify/functions/gmail-accounts', { method: 'POST', body: JSON.stringify({ action: 'list' }) });
@@ -11678,6 +11719,7 @@ async function renderCustomersTab(){
     +'<span style="font-size:12px;color:#7a879b;white-space:nowrap">'+custView.length+' of '+custCache.length+'</span><button class="topbar-btn" style="font-size:11px;padding:6px 10px;white-space:nowrap" onclick="custSyncInbox(false)">📥 Sync inbox</button></div>'
     +'<div id="cust-sync-note" style="font-size:11px;color:#7a879b;min-height:14px">'+esc(custSyncState||'')+'</div>'
     +'<div id="gmail-panel">'+gmailPanelHtml()+'</div>'
+    +'<div id="chatgpt-panel" style="margin-top:10px">'+chatgptPanelHtml()+'</div>'
     +(custView.length?'':'<div class="empty" style="padding:30px 0"><div class="empty-icon">🔍</div><h3>No match</h3><p>Try part of a name, email, or phone number.</p></div>');
   custView.forEach(function(c,idx){
     var last=c.timeline&&c.timeline[0];
