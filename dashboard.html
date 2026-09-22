@@ -5047,8 +5047,8 @@ function renderEdit() {
       (currentRecord && currentRecord.status === 'completed'
         ? '<button class="btn-secondary" onclick="markCompleted(false)">↩ Reopen</button>'
         : '<button class="btn-secondary" onclick="markCompleted(true)">🏁 Mark Completed</button>') +
-      /* "I need to mark cancelled too." A job that stopped - after it was
-         agreed, or before - without the customer saying no to the price. */
+      /* "I need to mark cancelled too. Declined means the customer declines;
+         cancelled means I cancel." His call, not theirs. */
       (currentRecord && currentRecord.status === 'cancelled'
         ? '<button class="btn-secondary" onclick="markCancelled(false)">↩ Reopen</button>'
         : (currentRecord && currentRecord.status !== 'completed' ? '<button class="btn-secondary" onclick="markCancelled(true)">🚫 Mark Cancelled</button>' : '')) +
@@ -8561,14 +8561,15 @@ async function markCompleted(done) {
 }
 
 /* ── CANCELLED ──────────────────────────────────────────────────────────────
-   "I need to mark cancelled too." Declined is the customer saying no to the
-   price. Cancelled is a job that stopped for any other reason - before or
-   after it was agreed. The status it had is kept, so Reopen puts it back. */
+   "I need to mark cancelled too. Declined means when the customer declines;
+   cancelled means when I cancel." Declined is the customer's no. Cancelled
+   is Zura's: he is not doing this job. The status it had is kept, so Reopen
+   puts it back. */
 async function markCancelled(on) {
   if (!currentRecord) return;
   var was = String(currentRecord.status || "");
   var back = (currentRecord.estimate && currentRecord.estimate.statusBeforeCancel) || "drafted";
-  if (on && !confirm("Mark this job cancelled? It moves to the Cancelled tab; Reopen brings it back.")) return;
+  if (on && !confirm("Cancel this job yourself? (Declined is for when the customer says no.) It moves to the Cancelled tab; Reopen brings it back.")) return;
   if (!on && !confirm("Reopen this job? It goes back to " + back + ".")) return;
   try {
     var next = on ? "cancelled" : back;

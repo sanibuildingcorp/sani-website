@@ -33,7 +33,7 @@ console.log('\n2. The server\n');
   const rows = [{ ref: 'A', status: 'cancelled', updatedAt: '2026-09-21T10:00:00Z', customer: { email: 'x@example.com' } }, { ref: 'B', status: 'sent', updatedAt: '2026-09-01T10:00:00Z', customer: { email: 'x@example.com' } }];
   const pick = T.pickEstimateForEmail(rows);
   ok('an email from the customer goes to the open job, not the cancelled one', pick === 'B', JSON.stringify(pick));
-  ok('THE ASSISTANT may set cancelled, switch to the tab, and is told declined is no to the price and cancelled is the job stopping', /const STATUSES = \["new", "drafted", "sent", "accepted", "declined", "completed", "cancelled"\];/.test(ASSIST) && /"declined", "cancelled", "handyman"/.test(ASSIST) && /declined = the customer said no to the price; cancelled = the job stopped for any other reason/.test(ASSIST) && /When he says cancelled, send cancelled, never declined\./.test(ASSIST));
+  ok('THE ASSISTANT may set cancelled, switch to the tab, and is told declined is no to the price and cancelled is the job stopping', /const STATUSES = \["new", "drafted", "sent", "accepted", "declined", "completed", "cancelled"\];/.test(ASSIST) && /"declined", "cancelled", "handyman"/.test(ASSIST) && /declined = THE CUSTOMER declined it; cancelled = ZURA cancelled it himself/.test(ASSIST) && /When he says cancel or cancelled, send cancelled, never declined; when he says the customer said no, send declined\./.test(ASSIST));
   ok('ChatGPT\'s list tool knows the status', /declined, completed, cancelled\)/.test(MCP));
 }
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
