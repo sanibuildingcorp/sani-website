@@ -282,6 +282,12 @@ async function answer(body, clocks) {
   return { reply: replyText, truncated: out.truncated === true, actions: toClient };
 }
 exports.answer = answer;
+/* The ChatGPT connector (chatgpt-mcp.js) reads an estimate through the same
+   eyes as Ask AI, and writes to the same standing memory. */
+exports.recordContext = function (ref, estimateChars, jobPhotos, sinceAt) { return recordContext(ref, estimateChars, jobPhotos, sinceAt); };
+exports.loadMemory = function () { return loadMemory(); };
+exports.remember = function (memory, text) { return remember(memory, text); };
+exports.loadInsights = function () { return loadInsights(); };
 
 const IMAGE_MAX = 15; /* three photos, each in up to five pieces */
 const IMAGE_CHARS = 2600000; /* ~1.9 MB of image per picture, base64 */
