@@ -254,15 +254,38 @@ async function answer(body, clocks) {
   /* the job's own photos ride on his latest message too, before any picture
      he uploaded with the question; never written to the chat */
   const jobImages = reads[0] && typeof reads[0] === "object" ? arr(reads[0].photos) : [];
-  if (jobImages.length && lastUser) lastUser.jobImages = jobImages;
+  /* ── "OKAY GO AND FIX IT" ────────────────────────────────────────────────
+       He said yes to the assistant's own last answer, and the assistant
+       re-read the floor-plan photos riding on that message and answered
+       about them instead: "Now I see the actual layout clearly..." A short
+       yes is about the last answer, nothing else: the job's photos stay off
+       this turn (they were shown on the turn before) and the message
+       carries a note saying what the yes means. */
+  const confirm = !!lastUser && isConfirmation(lastUser.text) && turns.some(function (t, i) { return t.role === "assistant" && i < turns.length - 1; });
+  if (jobImages.length && lastUser && !confirm) lastUser.jobImages = jobImages;
+  if (confirm && lastUser) lastUser.note = (lastUser.note ? lastUser.note + "\n" : "") + "[" + CONFIRM_NOTE + "]";
   const memory = reads[1];
   const insights = reads[2];
   const inboxText = reads[3];
   const screen = screenContext(body.screen);
 
   const deadline = c.deadline || (Date.now() + budgetMs);
-  const out = await callClaude(apiKey, systemPrompt(context, screen, memory, insights, inboxText), turns, deadline, c.maxTokens);
-  const parsed = extractActions(out.text, out.truncated === true);
+  const system = systemPrompt(context, screen, memory, insights, inboxText);
+  const out = await callClaude(apiKey, system, turns, deadline, c.maxTokens);
+  let parsed = extractActions(out.text, out.truncated === true);
+  /* ── "FIXING THE SUMMARY LINE NOW" - AND NOTHING WAS SENT ────────────────
+       The answer said it was fixing; it carried no ACTION line, so nothing
+       changed and no confirm bubble appeared. The rule is in the prompt and
+       the model broke it anyway. When an answer claims to act and sends
+       nothing, it is asked once more, in the same conversation, for the
+       ACTION lines only; those actions ride with the first answer's words. */
+  if (!parsed.actions.length && out.truncated !== true && claimsToAct(parsed.text) && deadline - Date.now() > NUDGE_MIN_MS) {
+    try {
+      const again = await callClaude(apiKey, system, turns.concat([{ role: "assistant", text: out.text }, { role: "user", text: NUDGE }]), deadline, c.maxTokens);
+      const p2 = extractActions(again.text, again.truncated === true);
+      if (p2.actions.length) parsed = { text: parsed.text, actions: p2.actions, nudged: true };
+    } catch (e) { /* the first answer stands */ }
+  }
   if (!parsed.text && !parsed.actions.length) throw new Error("The assistant's answer had no words in it (" + out.text.length + " chars, stop: " + (out.stopReason || "none") + "). Try again.");
 
   /* "remember" is the one action that lives here. Everything else is the
@@ -288,6 +311,8 @@ exports.recordContext = function (ref, estimateChars, jobPhotos, sinceAt) { retu
 exports.loadMemory = function () { return loadMemory(); };
 exports.remember = function (memory, text) { return remember(memory, text); };
 exports.loadInsights = function () { return loadInsights(); };
+exports._isConfirmation = function (t) { return isConfirmation(t); };
+exports._claimsToAct = function (t) { return claimsToAct(t); };
 
 const IMAGE_MAX = 15; /* three photos, each in up to five pieces */
 const IMAGE_CHARS = 2600000; /* ~1.9 MB of image per picture, base64 */
@@ -878,6 +903,29 @@ const STATUSES = ["new", "drafted", "sent", "accepted", "declined", "completed"]
        pulled out by pattern) before it is given up on;
      - if every line was an action and none survived, the words are shown
        as text rather than thrown away. */
+/* A short yes: "ok", "yes", "go", "do it", "fix it", "go and fix it",
+   "okay go ahead", "please do". Eight words at most, nothing that reads as a
+   new question. */
+const CONFIRM_RE = /^(?:ok(?:ay)?|yes|yeah|yep|sure|fine|go|do it|fix it|go ahead|go on|proceed|please|please do|do that|do this|apply|apply it|go and fix it|fix|yes please|ok go|okay go|ok do it|okay do it|yes do it|yes fix it|go fix it|do it now|fix it now|now|correct|right|agreed|confirm|confirmed)[\s.!,]*$|^(?:ok(?:ay)?|yes|sure|fine|please)[\s,]+(?:go|do|fix|apply|proceed)\b/i;
+function isConfirmation(text) {
+  const t = str(text).replace(/[’']/g, "").trim();
+  if (!t || t.split(/\s+/).length > 8 || /\?/.test(t)) return false;
+  return CONFIRM_RE.test(t) || /^(?:ok(?:ay)?|yes|sure|fine|please|now)?[\s,]*(?:go(?: ahead)?(?: and)?\s+)?(?:do|fix|apply|change|update|remove)\s+(?:it|that|this|them|these|those)(?:\s+now)?(?:\s+please)?[\s.!]*$/i.test(t);
+}
+const CONFIRM_NOTE = "HE IS SAYING YES TO YOUR LAST ANSWER. Do exactly what you said there, now, as ACTION lines - the reword with every edit, from copied word for word from the job below - after one line of words. Do not describe the photos, do not re-check, do not ask what he meant.";
+
+/* An answer that says it is doing something: "Fixing the summary line now",
+   "Removing the leftover", "I'll drop 'Painting'". Not "nothing to fix",
+   not "you should fix", not a question. */
+const CLAIMS_RE = /(^|\n)\s*(?:\*\*)?(?:fixing|updating|removing|dropping|changing|rewording|replacing|adding|applying|correcting|editing|sending)\b|\b(?:i(?:'ll| will| am|'m)|let me)\s+(?:now\s+)?(?:fix|update|remove|drop|change|reword|replace|add|apply|correct|edit|send)\b|\b(?:fixing|updating|removing|dropping|changing|rewording|replacing|correcting|editing)\b[^.\n]{0,80}\bnow\b/i;
+function claimsToAct(text) {
+  const t = str(text);
+  if (!t) return false;
+  return CLAIMS_RE.test(t);
+}
+const NUDGE = "You wrote that you are fixing it, but there is no ACTION line, so nothing changed. Send now the ACTION line(s) that do exactly what you said - one reword holding every edit, from copied word for word from the job - after one short line of words. Nothing else.";
+const NUDGE_MIN_MS = 3500;
+
 function extractActions(text, truncated) {
   const actions = [];
   const kept = [];
@@ -987,6 +1035,7 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "A PHOTO OR SCREENSHOT may come with his question: a screenshot of a customer's text message or email, a product page, a plan, a photo of the site or of the work. A tall screenshot comes as several pieces, top to bottom, with a little overlap: read them as one page. Read it like any other fact - say what it shows or what it says, quote the words in it - and use it for describe or reword when he asks. If it is unreadable or does not show what he says, say so.",
     "UPDATE THE SCOPE TO THE CUSTOMER'S LATEST REQUESTS ('review again', 'update the scope', 'match his requests', 'rewrite the scope of work'): this is your main job and you DO it, in one turn, without asking. Read what the customer asked for most recently - the newest emails, the newest messages, the photos, the answers - and compare it with the scope text, the summary and every card's included / not included / customer supplies lines. Every place the words still describe the old request, change them to the new one. Send ONE reword action holding every edit: the card lines (from = the line as it reads now, to = the corrected line; from empty to add a missing line; to empty to drop one that no longer applies), the scope phrases, the summary. When more than a few sentences of the scope must change, replace the scope whole: where scope, from empty, to = the complete new scope of work in the same style and order - everything that still applies, with the customer's changes written in, nothing invented; the summary the same way. Prices, quantities and card subtotals are not yours: leave the numbers and say in one line which price lines he should look at if the new request costs more or less. Then say in a few lines what you changed and what you left alone. Never only describe the fixes, never say you cannot see the text (it is all printed below), never stop at a question - the edits go in the action and he confirms them once.",
     "HOW TO ANSWER, EVERY TIME: the first line is the answer itself - Yes / No / Done / the number / what changed - one sentence. Then at most five short lines, one fact each, with the exact words or numbers. When he asked you to check, fix, update, match or review, the ACTION with the fixes is in the SAME answer, right after those lines: checking and fixing are one job. Never 'want me to', never 'shall I', never 'I can', never end on a question, never describe a fix you did not send. No reasoning out loud, no 'looks like', no history lesson, no restating what he asked. If everything matches: 'Matches. Nothing to change.' and stop. An edit the dashboard reported as 'not found' is not done: send it again at once, with from copied from the block or the whole field replaced.",
+    "WORDS ALONE CHANGE NOTHING. 'Fixing the summary now', 'removing that line', 'I'll drop it' do nothing unless the ACTION line is in the same answer: the dashboard changes an estimate only from an ACTION. Never write that you are fixing, removing or updating something without the ACTION under it. When he answers 'yes', 'ok', 'go', 'do it', 'go and fix it' to your last answer, he means exactly what you proposed there: send those ACTION lines now, do not describe the photos again, do not re-check, do not ask what he meant.",
     "THE CONTRACT is in the job below when one exists (headed 'the contract'): its scope lines, materials, timeline, payment schedule, clauses, total and whether it is signed. You read it like the estimate - never say you cannot open it. When he asks whether the contract matches the estimate or the customer's requests, compare them line by line and fix the contract's wording with a reword (contractscope, contractmaterials, contracttimeline, contracttype, contractclause). Its amounts and total are not yours: if the estimate moved away from the contract, say so and point him to Update contract total; a signed contract is never changed - say that and stop.",
     "THE JOB'S OWN PHOTOS (the customer's request photos, the photos attached to the quote, pictures in messages) come on his latest message, each after a label 'Job photo N of M - ...'; the job block says how many there are. When he asks about the photos, what you see, or whether the estimate matches the pictures, read them and say plainly what is in each - the room, the damage, the materials, sizes if something gives scale. Never say the job has no photos when the job block counts some; if it says they are not shown on this path, say so and that Ask AI shows them.",
     "ADDITIONAL WORK on an estimate the customer already agreed to (a new service, painting, an extra room, anything not in it): never change, reword or reprice the agreed services, and never tell him to regenerate - regenerating rebuilds every service. Do it for him with the addservice action when you know what the work is (write the brief from the chat, the emails, the photos); otherwise tell him to press ➕ ADD A SERVICE TO THIS ESTIMATE (in the Regenerate box). Either way the new work is priced on its own and added to the same estimate as its own section with its own scope and price, the agreed sections untouched; then he sends the estimate again. If he wants it as a separate estimate instead, ➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE) makes a linked one. On an estimate that IS additional work (the job says so), price and describe only the additional work.",
