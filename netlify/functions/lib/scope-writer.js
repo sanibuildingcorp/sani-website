@@ -249,7 +249,7 @@ WRITE, FOR EACH SERVICE LISTED ABOVE:
   - Write to a smart adult who is not a builder. No trade jargon without a plain-language anchor. No marketing adjectives. No "high-quality", "top-notch", "state-of-the-art".
   - One idea per bullet. Full sentences.
 
-"notIncluded" — 0 to 4 bullets, ONLY where there is a real limit worth stating.
+${services.length > 1 ? 'ONE PROJECT: these services are one job at one address. Work done once for the whole job - protecting floors and hallways, daily and final cleanup, debris removal, coordinating and supervising the trades - is written ONCE in "project", never inside a service\'s "included". Each service\'s "included" says only what is done for that service.\n\n' : ''}"notIncluded" — 0 to 4 bullets, ONLY where there is a real limit worth stating.
   - Anything the customer themselves said to leave out belongs here, in wording close to theirs and as a COMPLETE thought. Never a fragment: "except the tiled shower walls" alone reads as excluding the whole bathroom.
   - Real boundaries of this service. Do not repeat project-wide items like permits or concealed conditions — those are stated once at the foot of the quote.
   - Leave the array empty rather than inventing a limit.
@@ -267,7 +267,7 @@ Return JSON only. No preamble, no markdown fence:
 {
   "services": [
     { "service": "<exact name from above>", "included": ["..."], "notIncluded": ["..."] }
-  ],
+  ],${services.length > 1 ? '\n  "project": ["<1 to 4 bullets: the work done once for the whole job>"],' : ''}
   "timeline": "<one short sentence the customer reads about duration and scheduling, or empty string>"
 }`;
 }
@@ -278,16 +278,49 @@ Return JSON only. No preamble, no markdown fence:
 function applyScopeToEstimate(estimate, written, fallbackFor, minBullets) {
   const cards = estimate.serviceBreakdown || [];
   const byName = {};
-  (written && written.services ? written.services : []).forEach(s => {
+  const list = (written && Array.isArray(written.services) ? written.services : []);
+  list.forEach(s => {
     const k = norm(s && s.service);
     if (k) byName[k] = s;
   });
+  /* ══ WHY THE WRITER'S WORDS WERE THROWN AWAY. ════════════════════════════
+       "Fix why the scope writer falls back." The model wrote "Window
+     Replacement" for the "Windows" card, or "Bathroom Renovation" for
+     "Bathroom", and an exact-name lookup found nothing: the card kept the
+     stock phrases. A card now finds its service by the same name forgiven,
+     one name inside the other, most words shared, and finally by position
+     when the writer returned exactly one service per card in order. */
+  const stem = (w) => w.replace(/(ies)$/, 'y').replace(/s$/, '');
+  const words = (t) => norm(t).replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(w => w.length > 2 && w !== 'and').map(stem);
+  const score = (cardName, s) => {
+    const a = norm(cardName), b = norm(s && s.service);
+    if (!b) return 0;
+    if (a === b) return 3;
+    const w = words(cardName), v = words(s.service);
+    if (w.length && w.every(x => v.indexOf(x) !== -1)) return 2;       /* "Windows" in "Window Replacement" */
+    if (v.length && v.every(x => w.indexOf(x) !== -1)) return 2;
+    const both = v.filter(x => w.indexOf(x) !== -1).length;
+    const r = both / Math.max(1, new Set(w.concat(v)).size);
+    return r >= 0.5 ? 1 + r : 0;
+  };
+  /* One answer per card, best matches first; then, if every card and
+     every answer is left over one-for-one, the leftovers pair in order. */
+  const assigned = new Array(cards.length).fill(null);
+  const taken = new Set();
+  const pairs = [];
+  cards.forEach((c, ci) => list.forEach((sv, si) => { const sc = score(clean(c.title || c.name || c.section), sv); if (sc > 0) pairs.push({ ci, si, sc }); }));
+  pairs.sort((x, y) => y.sc - x.sc).forEach(p => { if (assigned[p.ci] === null && !taken.has(p.si)) { assigned[p.ci] = list[p.si]; taken.add(p.si); } });
+  const leftCards = assigned.map((x, i) => x === null ? i : -1).filter(i => i >= 0);
+  const leftAns = list.map((x, i) => taken.has(i) ? -1 : i).filter(i => i >= 0);
+  if (leftCards.length && leftCards.length === leftAns.length) leftCards.forEach((ci, k) => { assigned[ci] = list[leftAns[k]]; });
+  const findFor = (name, i) => assigned[i];
 
   let usedAi = 0, usedFallback = 0;
+  const why = [];
 
-  cards.forEach(card => {
+  cards.forEach((card, ci) => {
     const name = clean(card.title || card.name || card.section);
-    const got = byName[norm(name)];
+    const got = findFor(name, ci);
 
     let included = dedupe((got && Array.isArray(got.included) ? got.included : []).map(tidyBullet)).slice(0, HARD_MAX_BULLETS);
     const notIncluded = dedupe((got && Array.isArray(got.notIncluded) ? got.notIncluded : []).map(tidyBullet)).slice(0, 4);
@@ -295,14 +328,14 @@ function applyScopeToEstimate(estimate, written, fallbackFor, minBullets) {
     /* A card with too little to say falls back to whatever the old phrase
        library produced for it. Never leave a priced service with an empty or
        one-line scope — that is worse than the canned wording it replaced. */
-    if (included.length < (minBullets || MIN_BULLETS)) {
+    /* The writer's own sentences win whenever it wrote any: two real lines
+       about this job beat six stock phrases. The phrase library is kept only
+       for a card the writer said nothing about. */
+    if (!included.length) {
       const prior = Array.isArray(card.included) ? card.included.filter(Boolean) : [];
-      if (prior.length >= included.length) {
-        included = dedupe(prior.map(tidyBullet)).slice(0, HARD_MAX_BULLETS);
-        usedFallback++;
-      } else {
-        usedAi++;
-      }
+      included = dedupe(prior.map(tidyBullet)).slice(0, HARD_MAX_BULLETS);
+      usedFallback++;
+      why.push(name + ': ' + (got ? 'no lines written' : 'service not found in the answer'));
     } else {
       usedAi++;
     }
@@ -314,6 +347,29 @@ function applyScopeToEstimate(estimate, written, fallbackFor, minBullets) {
     const existing = Array.isArray(card.notIncluded) ? card.notIncluded.map(tidyBullet) : [];
     card.notIncluded = nearDedupe(dedupe(existing.concat(notIncluded))).slice(0, 6);
   });
+
+  /* ══ SHARED WORK ONCE. ════════════════════════════════════════════════
+       The writer's "project" list replaces the phrase library's. Backstop:
+     a line that says the same thing on two or more cards is shared work
+     written per service - it leaves the cards and is said once, there. */
+  if (cards.length > 1) {
+    const proj = dedupe((written && Array.isArray(written.project) ? written.project : []).map(tidyBullet)).filter(Boolean).slice(0, 6);
+    const pool = proj.length ? proj : (Array.isArray(estimate.projectIncluded) ? estimate.projectIncluded.map(tidyBullet).filter(Boolean) : []);
+    const keyOf = (t) => new Set(contentKey(t).split(' ').filter(Boolean));
+    const alike = (a, b) => { let both = 0; a.forEach(k => { if (b.has(k)) both++; }); const u = a.size + b.size - both; return a.size >= 3 && b.size >= 3 && u > 0 && both / u >= 0.5; };
+    const all = [];
+    cards.forEach((c, ci) => (c.included || []).forEach(t => all.push({ ci, t, k: keyOf(t) })));
+    const repeated = all.filter(x => all.some(y => y.ci !== x.ci && alike(x.k, y.k)));
+    const inPool = (t) => pool.some(p => alike(keyOf(p), keyOf(t)));
+    repeated.forEach(x => { if (!inPool(x.t)) pool.push(x.t); });
+    cards.forEach(c => { c.included = (c.included || []).filter(t => !repeated.some(x => x.t === t) && !inPool(t)); });
+    estimate.projectIncluded = nearDedupe(pool).slice(0, 6);
+  } else if (Array.isArray(estimate.projectIncluded) && estimate.projectIncluded.length) {
+    /* one service: nothing is shared - the card says it all */
+    const c = cards[0];
+    if (c) c.included = dedupe((c.included || []).concat(estimate.projectIncluded.map(tidyBullet))).slice(0, HARD_MAX_BULLETS);
+    estimate.projectIncluded = [];
+  }
 
   /* ONE SCOPE OF WORK: the box the contractor reads is the cards the
      customer reads. See lib/scope-text.js. */
@@ -329,6 +385,7 @@ function applyScopeToEstimate(estimate, written, fallbackFor, minBullets) {
     at: new Date().toISOString()
   };
   if (fallbackFor) estimate.scopeWriter.note = fallbackFor;
+  else if (why.length) estimate.scopeWriter.note = 'stock phrases kept for ' + why.join('; ');
   return estimate;
 }
 
@@ -341,9 +398,22 @@ async function writeCustomerScope(estimate, analysis, input, call, parseJson) {
   if (!estimate || !Array.isArray(estimate.serviceBreakdown) || !estimate.serviceBreakdown.length) return estimate;
   if (typeof call !== 'function') return estimate;
 
+  const prompt = buildScopePrompt(estimate, analysis, input);
+  const once = async () => {
+    const raw = await call(prompt, 8000);
+    return typeof parseJson === 'function' ? parseJson(raw, 'customer scope') : JSON.parse(raw);
+  };
   try {
-    const raw = await call(buildScopePrompt(estimate, analysis, input), 8000);
-    const written = typeof parseJson === 'function' ? parseJson(raw, 'customer scope') : JSON.parse(raw);
+    let written;
+    /* One more try when the answer did not arrive or could not be read: a
+       dropped stream or a stray character must not cost the whole job its
+       own words. A second failure keeps the phrase library, as before. */
+    try { written = await once(); }
+    catch (first) {
+      if (/out of time|deadline/i.test(String(first && first.message))) throw first;
+      console.error('scope writer first try failed, trying once more:', first && first.message);
+      written = await once();
+    }
     return applyScopeToEstimate(estimate, written, null, jobSize.isRepair(analysis) ? 1 : MIN_BULLETS);
   } catch (err) {
     /* The estimate is already complete and correctly priced by the time we get

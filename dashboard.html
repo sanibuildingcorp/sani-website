@@ -4696,6 +4696,9 @@ function renderEdit() {
         remove it? Keep only timing shows." The status and the confidence
        stay as one line; the questions live in Ask AI ("What should I ask
        them?"); the timing stays. The data is still on the record. */
+    /* One line when the customer's wording fell back to stock phrases, and why. */
+    var swn = est.scopeWriter && est.scopeWriter.note;
+    if (swn) html += '<div style="font-size:12px;color:#b45309;margin-bottom:8px">\u26A0 Customer wording: ' + esc(String(swn).slice(0, 160)) + '</div>';
     var gw = est.generatedWith;
     if (gw && gw.testRules) {
       html += '<div style="font-size:12px;color:#6b5b95;margin-bottom:8px">\u{1F9EA} Made in test mode' + (Number(gw.lessons) ? ' · ' + Number(gw.lessons) + ' lesson' + (Number(gw.lessons) === 1 ? '' : 's') : '') + '. To go back: switch Test mode off and Regenerate.</div>';
@@ -6739,6 +6742,15 @@ function renderScopeControl() {
     (published ? '<span class="sc-pill sc-pill-live">Saved &mdash; this is exactly what the customer sees</span>'
                : '<span class="sc-pill sc-pill-draft">Not saved yet &mdash; press Save below and the customer sees this</span>') +
     '</div>';
+
+  /* The shared work, said once - what the customer reads above the
+     services. Ask AI edits it ("reword the whole-project line ..."). */
+  var shared = (est.projectIncluded || []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }).filter(Boolean);
+  if (shared.length) {
+    html += '<div class="sc-service" style="padding:12px 14px"><div style="font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Included for the whole project</div>' +
+      '<ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.55">' + shared.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+      '<div style="font-size:11px;color:var(--ink-muted);margin-top:6px">Said once for all services. To change a line, ask Ask AI.</div></div>';
+  }
 
   d.services.forEach(function (svc, si) {
     var nm = String(svc.name || "").trim();
