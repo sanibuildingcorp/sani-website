@@ -105,6 +105,9 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["chatgpt-mcp", "POST", { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "set_text", arguments: { ref: "SBC-260805-XQNQ", field: "title", text: "Hacked" } } }],
     /* Marks any estimate as waiting for the customer, or clears it. A write. */
     ["mark-waiting", "POST", { ref: "SBC-260805-XQNQ", waiting: true }],
+    /* Switches the generator's test mode and edits its lessons. */
+    ["generator-lab", "POST", { action: "mode", on: true }],
+    ["generator-lab", "GET", null],
   ];
 
   for (const [name, method, body] of GATED) {

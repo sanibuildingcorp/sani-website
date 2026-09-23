@@ -45,7 +45,7 @@ console.log('\n2. The generator: both prompts carry the rule, the normalizer tri
 {
   const ctx = { JSON, String, Array, Number, Math, Set, Object, jobSize: J };
   vm.createContext(ctx);
-  ['cleanText', 'titleCase', 'toStringArray', 'unique', 'clamp', 'normalizeProjectAnalysis', 'buildProjectAnalysisPrompt'].forEach((n) => vm.runInContext(ext(n), ctx));
+  ['cleanText', 'titleCase', 'toStringArray', 'unique', 'clamp', 'normalizeProjectAnalysis', 'labOf', 'buildProjectAnalysisPrompt'].forEach((n) => vm.runInContext(ext(n), ctx));
   ctx.RAW = { project_type: 'repair', selected_trades: ['Bathroom'], confirmed_scope: [{ trade: 'Bathroom', scope_items: ['Re-set the loose tiles'] }], pricing_readiness: { status: 'READY_TO_ESTIMATE', confidence_score: 85 } };
   ctx.INPUT = { request: { description: 'cracked tile please fix', service: 'Bathroom', selectedServices: ['Bathroom', 'Water Damage', 'Flooring'], customerSupplies: [] } };
   const norm = vm.runInContext('normalizeProjectAnalysis(RAW, INPUT)', ctx);

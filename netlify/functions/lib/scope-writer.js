@@ -255,7 +255,7 @@ WRITE, FOR EACH SERVICE LISTED ABOVE:
   - Leave the array empty rather than inventing a limit.
 
 HARD RULES
-${voice.VOICE}
+${voice.VOICE}${input && typeof input.__lab === "string" ? input.__lab : ""}
 - Never write a dollar amount, a rate, an hourly figure or a percentage anywhere.
 - Never write "licensed", "licence", or any licensing claim. Sani is insured; say insured if it is relevant at all.
 - Never mention TV mounting.
