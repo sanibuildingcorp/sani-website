@@ -26,12 +26,15 @@ function lineText(x) { return str(typeof x === "string" ? x : (x && (x.item || x
    dashboard box always used, and the one add-service already writes. */
 function scopeTextFromCards(estimate) {
   const cards = Array.isArray(estimate && estimate.serviceBreakdown) ? estimate.serviceBreakdown : [];
-  return cards.map(function (c) {
+  /* Shared work, said once, heads the box as it heads the customer's page. */
+  const shared = (Array.isArray(estimate && estimate.projectIncluded) ? estimate.projectIncluded : []).map(lineText).filter(Boolean);
+  const head = shared.length ? ["WHOLE PROJECT:\n" + shared.map(function (l) { return "\u2022 " + l; }).join("\n")] : [];
+  return head.concat(cards.map(function (c) {
     const title = str(c && (c.title || c.name || c.section)) || "Service";
     const lines = (Array.isArray(c && c.included) ? c.included : []).map(lineText).filter(Boolean);
     if (!lines.length) return "";
     return title.toUpperCase() + ":\n" + lines.map(function (l) { return "• " + l; }).join("\n");
-  }).filter(Boolean).join("\n\n");
+  })).filter(Boolean).join("\n\n");
 }
 
 /* Is the box still a mirror of the cards, or did the contractor write his own

@@ -238,6 +238,18 @@ function applyServiceRename(record, e) {
   return 1;
 }
 
+/* A line of "Included for the whole project" - the shared work said once. */
+function applyProjectEdit(record, e) {
+  const est = record.estimate || (record.estimate = {});
+  const mirror = scopeText.mirrorsCards(est);
+  if (!Array.isArray(est.projectIncluded)) { if (e.from || !e.to) return 0; est.projectIncluded = []; }
+  const before = JSON.stringify(est.projectIncluded);
+  const n = editList(est.projectIncluded, e.from, e.to);
+  if (!n && e.to && est.projectIncluded.some(function (x) { return loose(lineText(x)) === loose(e.to); })) return { already: 1 };
+  if (n && mirror && JSON.stringify(est.projectIncluded) !== before) scopeText.syncScopeText(est);
+  return n;
+}
+
 function applyLineEdit(record, e) {
   const est = record.estimate || {};
   const list = arr(est[LINE_KEYS[e.where]]);
@@ -314,6 +326,7 @@ function cleanWhere(v) {
     return w;
   }
   if (/^(servicetitle|servicename|cardtitle|cardname|card|rename|renameservice|renamecard)$/.test(w)) return "service";
+  if (/^(project|wholeproject|shared|sharedwork|projectincluded|allservices)$/.test(w)) return "project";
   return w.replace(/s$/, "").replace(/^supplie$/, "supplies").replace(/^materials?$/, "material").replace(/^not.?included$|^exclusion$/, "excluded");
 }
 function cleanEdit(e) {
@@ -321,7 +334,7 @@ function cleanEdit(e) {
   const where = cleanWhere(o.where);
   return { where: where, service: str(o.service).slice(0, 120), from: str(o.from).slice(0, textCap(where)), to: str(o.to).slice(0, textCap(where)) };
 }
-const WHERE = ["included", "excluded", "supplies", "labor", "material", "summary", "scope", "title", "timeline", "service", "contractscope", "contractmaterials", "contracttimeline", "contracttype", "contractclause"];
+const WHERE = ["included", "excluded", "supplies", "labor", "material", "summary", "scope", "title", "timeline", "service", "project", "contractscope", "contractmaterials", "contracttimeline", "contracttype", "contractclause"];
 
 /* The contract's lines and fields. A signed contract is refused whole. */
 function applyContractEdit(record, e) {
@@ -360,6 +373,7 @@ function applyEdits(record, edits) {
     if (!e.from && !e.to) { skipped.push(Object.assign({ reason: "nothing to change" }, e)); return; }
     let n = 0;
     if (e.where === "service") n = applyServiceRename(record, e);
+    else if (e.where === "project") n = applyProjectEdit(record, e);
     else if (CARD_KEYS[e.where]) n = applyCardEdit(record, e);
     else if (LINE_KEYS[e.where]) n = applyLineEdit(record, e);
     else if (/^contract/.test(e.where)) n = applyContractEdit(record, e);

@@ -76,6 +76,8 @@ function scopeCards(estimate) {
       cards.push({ title: "Scope of work", text: text, included: [], supplies: uniq(A(e.customerSupplied)), excluded: cleanExclusions(A(e.exclusions)), options: A(e.options).filter((o) => o && C(o.label)).map((o) => ({ label: C(o.label), description: C(o.description) })) });
     }
   }
+  const shared = A(e.projectIncluded).map((x) => C(typeof x === "string" ? x : (x && (x.text || x.item)))).filter(Boolean);
+  if (shared.length && cards.length > 1) cards.unshift({ title: "Whole project", included: shared, supplies: [], excluded: [], options: [] });
   return cards.filter((c) => c.text || c.included.length || c.supplies.length || c.excluded.length || c.options.length);
 }
 

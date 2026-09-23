@@ -1262,6 +1262,9 @@ function dedupeCustomerSupplied(estimate, adjustments) {
 /* Each phase carries the bathroom voice and a generic one. A Flooring card that said
    "Remove the existing bathroom down to the substrate" would be worse than the raw task
    name it replaced, so the wording follows the service. */
+/* The phases that serve the whole project, not one service. */
+const SHARED_PHASE_KEYS = ['protect', 'disposal', 'cleanup', 'management'];
+const SHARED_WORK = /coordinat|supervis|project manage|protect|clean|debris|disposal|haul|dump|punch ?list|mobiliz/i;
 const SCOPE_PHASES = [
   { key: 'protect',    re: /protect|setup|floor covering|dust barrier|masking/i,
     say: 'Protect your floors, hallways and adjacent finishes before any work starts' },
@@ -1653,14 +1656,30 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
   /* Outcomes, in the voice of the service. Falls back to the line items only if a
      service prices work that matches no phase at all, so a card is never left empty. */
   const fromPhases = {};
+  /* ══ ONE PROJECT: SHARED WORK IS SAID ONCE. ══════════════════════════════
+       "This is one project with multiple services renovation and protection,
+        supervision or other general preparation going for one time for all
+        services and not for separate for each services."
+     Protection, debris, cleanup and coordination were written on every card
+     - the same four sentences four times. With more than one service they
+     leave the cards and are said once, in out.projectIncluded, which the
+     customer reads above the services. One service: they stay on its card. */
+  const multi = !singleBath && services.length > 1;
+  const sharedSays = new Set(SCOPE_PHASES.filter(p => SHARED_PHASE_KEYS.indexOf(p.key) !== -1).reduce((a, p) => a.concat([p.say, p.generic].filter(Boolean)), []));
+  const projectSaid = [];
   services.forEach(s => {
-    const said = phasesPresent(out, singleBath ? '' : s, singleBath ? 'Bathroom' : s);
+    let said = phasesPresent(out, singleBath ? '' : s, singleBath ? 'Bathroom' : s);
+    if (multi) {
+      said.forEach(x => { if (sharedSays.has(x) && projectSaid.indexOf(x) === -1) projectSaid.push(x); });
+      said = said.filter(x => !sharedSays.has(x));
+    }
     if (said.length) { map[s].included = said; fromPhases[s] = true; return; }
     [...(out.labor || []), ...(out.materials || [])].forEach(l => {
       const owner = singleBath ? 'Bathroom' : (pinnedService(l, allowed) || canonicalService(l.section, l.item, allowed));
-      if (owner === s && !isAlt(l)) map[s].included.push(text(l.item));
+      if (owner === s && !isAlt(l) && !(multi && SHARED_WORK.test(text(l.item)))) map[s].included.push(text(l.item));
     });
   });
+  out.projectIncluded = multi ? SCOPE_PHASES.map(p => [p.say, p.generic]).reduce((a, b) => a.concat(b), []).filter((x, i, arr) => x && projectSaid.indexOf(x) !== -1 && arr.indexOf(x) === i) : [];
   /* ══ A SERVICE THAT OWNS NO PRICED LINE IS NOT A SERVICE. ══════════════════
      One rule, every trade, forever. Not a keyword, not a ban list, not a prompt.
 
