@@ -6706,7 +6706,40 @@ function scopeDraft() {
     scopeForgetMerges(function () { return true; });
     est.manualCustomerScopeDraft = buildScopeDraftFromAI();
   }
+  /* Shared work is said once, under "Included for the whole project", so it
+     comes off the cards here too - the panel, the Save and the customer page
+     then all agree. */
+  if (Array.isArray(est.manualCustomerScopeDraft.services)) sharedOnce(est.projectIncluded, est.manualCustomerScopeDraft.services);
   return est.manualCustomerScopeDraft;
+}
+
+/* SHARED WORK SAID ONCE. Same rule as netlify/functions/lib/shared-once.js and
+   quote.html (js/shared-once.test.js keeps the copies equal): with a
+   whole-project list and 2+ cards, a card line goes if it is one of the four
+   stock shared sentences, a line of the project list, or shared work written
+   word for word on 2+ cards. A card is never emptied. */
+var SHARED_STOCK = ["Protect your floors, hallways and adjacent finishes before any work starts", "Bag, carry out and legally dispose of all construction debris", "Clean the space daily and leave it finished, protected and ready to use", "Coordinate and supervise every trade, inspection and delivery"];
+var SHARED_RE = /coordinat|supervis|project manage|protect|clean|debris|disposal|haul|dump|punch ?list|mobiliz/i;
+function sharedKey(x) { return String(x == null ? "" : x).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
+function sharedLine(x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }
+function sharedOnce(projectIncluded, cards) {
+  var proj = (Array.isArray(projectIncluded) ? projectIncluded : []).map(sharedLine).filter(Boolean);
+  if (!proj.length || !Array.isArray(cards) || cards.length < 2) return cards;
+  var stock = SHARED_STOCK.map(sharedKey), pk = proj.map(sharedKey), seen = {};
+  cards.forEach(function (c) {
+    var mine = {};
+    (Array.isArray(c && c.included) ? c.included : []).forEach(function (x) { mine[sharedKey(sharedLine(x))] = true; });
+    Object.keys(mine).forEach(function (k) { seen[k] = (seen[k] || 0) + 1; });
+  });
+  cards.forEach(function (c) {
+    if (!c || !Array.isArray(c.included)) return;
+    var keep = c.included.filter(function (x) {
+      var t = sharedLine(x), k = sharedKey(t);
+      return !(stock.indexOf(k) !== -1 || pk.indexOf(k) !== -1 || (SHARED_RE.test(t) && seen[k] >= 2));
+    });
+    if (keep.length) c.included = keep;
+  });
+  return cards;
 }
 
 /* Which tab is open on each service card, kept across re-renders so editing a

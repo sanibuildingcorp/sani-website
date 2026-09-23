@@ -426,7 +426,7 @@ function reconcileCards(e,listIn){
  return list}
 function finalizeServices(e,active){
  const ps=pubList(e);
- if(!ps)return reconcileCards(e,foldZeroPriceServices(pubScope(e,active)));
+ if(!ps)return sharedOnce(e.projectIncluded,reconcileCards(e,foldZeroPriceServices(pubScope(e,active))));
  const byName=new Map(A(active).map(s=>[N(s.title),s]));
  const out=ps.map(s=>{const m=byName.get(N(s.name||s.title));return{
   title:String(s.name||s.title||'Service').trim()||'Service',
@@ -439,7 +439,7 @@ function finalizeServices(e,active){
     customer as a "$0.00" card - that reads as broken. Adding a service and typing
     wording into it before any price line exists is a normal move in the new card UI,
     so fold those into the largest priced card exactly as the legacy path does. */
- return reconcileCards(e,foldZeroPriceServices(out))}
+ return sharedOnce(e.projectIncluded,reconcileCards(e,foldZeroPriceServices(out)))}
 function build(e){/* Services are whatever this estimate ACTUALLY contains, not a fixed list of four.
  A hardcoded list sent General, Carpentry, Drywall and every other section into
  map.get('Bathroom'), so the customer saw Bathroom $25,628 while the dashboard
@@ -625,6 +625,23 @@ function validUntil(r){return new Date(issuedAt(r).getTime()+VALID_DAYS*86400000
 function dayText(d){return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'America/New_York'})}
 /* ONE PROJECT, SHARED WORK ONCE: protection, cleanup, debris, coordination -
    said once, above the services, instead of on every card. */
+/* ...and never again on the cards. A Services draft saved before that change
+   still carried the four stock sentences on every card. Same rule as
+   netlify/functions/lib/shared-once.js (js/shared-once.test.js keeps the
+   copies equal): with a whole-project list and 2+ cards, a card line goes if it
+   is a stock shared sentence, a line of the project list, or shared work
+   written on 2+ cards. A card is never emptied. */
+const SHARED_STOCK=['Protect your floors, hallways and adjacent finishes before any work starts','Bag, carry out and legally dispose of all construction debris','Clean the space daily and leave it finished, protected and ready to use','Coordinate and supervise every trade, inspection and delivery'];
+const SHARED_RE=/coordinat|supervis|project manage|protect|clean|debris|disposal|haul|dump|punch ?list|mobiliz/i;
+function sharedKey(x){return String(x==null?'':x).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
+function sharedLine(x){return String(typeof x==='string'?x:(x&&(x.text||x.item))||'').trim()}
+function sharedOnce(projectIncluded,cards){
+ const proj=A(projectIncluded).map(sharedLine).filter(Boolean);
+ if(!proj.length||!Array.isArray(cards)||cards.length<2)return cards;
+ const stock=SHARED_STOCK.map(sharedKey),pk=proj.map(sharedKey),seen={};
+ cards.forEach(c=>{const mine={};A(c&&c.included).forEach(x=>{mine[sharedKey(sharedLine(x))]=true});Object.keys(mine).forEach(k=>{seen[k]=(seen[k]||0)+1})});
+ cards.forEach(c=>{if(!c||!Array.isArray(c.included))return;const keep=c.included.filter(x=>{const t=sharedLine(x),k=sharedKey(t);return!(stock.indexOf(k)!==-1||pk.indexOf(k)!==-1||(SHARED_RE.test(t)&&seen[k]>=2))});if(keep.length)c.included=keep});
+ return cards}
 function projectCard(e){const l=A(e&&e.projectIncluded).map(x=>typeof x==='string'?x:(x&&(x.text||x.item))||'').filter(Boolean);if(!l.length)return'';return`<section class="card"><div class="ey">Included for the whole project</div>${list('','in',l)}</section>`}
 function termsHtml(r,approved){
  const until=validUntil(r),expired=!approved&&Date.now()>until.getTime();
