@@ -60,17 +60,19 @@ function clauseKey(service) {
 const LINE_KEYS = { labor: "labor", material: "materials" };
 
 /* Everything that is money, in a stable string. Anything else may change. */
-function moneyFingerprint(record) {
+function moneyFingerprint(record, renamed) {
   const est = (record && record.estimate) || {};
-  const line = function (l) { return [l && l.qty, l && l.unit, l && l.rate, l && l.total, l && l.section].map(function (v) { return v == null ? "" : String(v); }).join("|"); };
+  /* A service card renamed moves no money: compared under its new name. */
+  const nm = function (v) { const k = str(v).toLowerCase(); return renamed && Object.prototype.hasOwnProperty.call(renamed, k) ? renamed[k] : v; };
+  const line = function (l) { return [l && l.qty, l && l.unit, l && l.rate, l && l.total, nm(l && l.section)].map(function (v) { return v == null ? "" : String(v); }).join("|"); };
   return JSON.stringify({
     labor: arr(est.labor).map(line), materials: arr(est.materials).map(line),
     markup: est.markupPct, final: record && record.customerFinalTotal,
-    subtotals: arr(est.serviceBreakdown).map(function (s) { return [s && s.title, s && s.subtotal].join("|"); }),
+    subtotals: arr(est.serviceBreakdown).map(function (s) { return [nm(s && s.title), s && s.subtotal].join("|"); }),
     options: arr(est.options).map(function (o) { return [o && o.label, o && o.price].join("|"); }),
     cardOptions: arr(est.serviceBreakdown).map(function (s) { return arr(s && s.options).map(function (o) { return [o && o.label, o && o.price].join("|"); }); }),
     parked: arr(est.parkedLines).length, materialsTotal: est.materialsTotalEstimate,
-    pubSubtotals: arr(est.publishedCustomerScope && est.publishedCustomerScope.services).map(function (s) { return [s && (s.name || s.title), s && s.subtotal].join("|"); }),
+    pubSubtotals: arr(est.publishedCustomerScope && est.publishedCustomerScope.services).map(function (s) { return [nm(s && (s.name || s.title)), s && s.subtotal].join("|"); }),
     contract: record && record.contract && typeof record.contract === "object"
       ? [record.contract.total, record.contract.signed ? 1 : 0].concat(arr(record.contract.sections && record.contract.sections.paymentSchedule).map(function (p) { return [p && p.label, p && p.amount].join("|"); })).join("|")
       : "",
@@ -200,6 +202,42 @@ function applyCardEditInner(est, e) {
   return n || (already ? { already: already } : 0);
 }
 
+/* ── RENAME A SERVICE CARD ────────────────────────────────────────────────
+     "In estimate let's my Ask AI able to edit service cards title too."
+   Windows -> Trim & Hardware: the card in every copy (the estimator's
+   cards, the published scope, the draft, the sections), every price line
+   filed under it so its price follows it, customer supplies and options
+   filed under it, an added section's record, and the scope-of-work header.
+   Money does not move (checked under the new name). A name another card
+   already has is refused - two cards would become one. */
+function applyServiceRename(record, e) {
+  const est = record.estimate || (record.estimate = {});
+  const to = str(e.to).replace(/\s+/g, " ").slice(0, 80);
+  if (!to || !e.from) return 0;
+  const names = [];
+  arr(est.serviceBreakdown).forEach(function (s) { const t = str(s && (s.title || s.service || s.section || s.name)); if (t && names.indexOf(t) === -1) names.push(t); });
+  [est.publishedCustomerScope, est.manualCustomerScopeDraft].forEach(function (sc) { arr(sc && sc.services).forEach(function (s) { const t = str(s && (s.name || s.title)); if (t && !names.some(function (n) { return n.toLowerCase() === t.toLowerCase(); })) names.push(t); }); });
+  const exact = names.filter(function (n) { return loose(n) === loose(e.from); });
+  const hit = exact.length ? exact : names.filter(function (n) { return sameCard(norm(n), norm(e.from)); });
+  if (hit.length !== 1) return 0;
+  const old = hit[0], oldK = old.toLowerCase();
+  if (oldK === to.toLowerCase()) return old === to ? { already: 1 } : 0;
+  if (names.some(function (n) { return n.toLowerCase() === to.toLowerCase(); })) { const err = new Error("A card named \"" + to + "\" already exists - renaming " + old + " would merge two cards. Nothing was saved."); err.refuse = true; throw err; }
+  const mirror = scopeText.mirrorsCards(est);
+  const is = function (v) { return str(v).toLowerCase() === oldK; };
+  let n = 0;
+  arr(est.serviceBreakdown).forEach(function (s) { if (!s) return; ["title", "service", "section", "name"].forEach(function (k) { if (is(s[k])) { s[k] = to; n++; } }); });
+  [est.publishedCustomerScope, est.manualCustomerScopeDraft].forEach(function (sc) { arr(sc && sc.services).forEach(function (s) { if (!s) return; ["name", "title"].forEach(function (k) { if (is(s[k])) { s[k] = to; n++; } }); }); });
+  arr(est.scopeSections).forEach(function (s) { if (s && is(s.title)) { s.title = to; n++; } });
+  ["labor", "materials", "customerSupplied", "options", "parkedLines"].forEach(function (k) { arr(est[k]).forEach(function (l) { if (l && typeof l === "object" && is(l.section)) l.section = to; }); });
+  arr(est.addedServices).forEach(function (a) { if (a && Array.isArray(a.titles)) a.titles = a.titles.map(function (t) { return is(t) ? to : t; }); });
+  if (mirror) scopeText.syncScopeText(est);
+  else if (str(est.scopeOfWork)) est.scopeOfWork = str(est.scopeOfWork).replace(new RegExp("^" + escapeRe(old) + "(\\s*[:\u2014-][^\\n]*)?$", "gim"), function (m, rest) { return to.toUpperCase() + (rest || ":"); });
+  if (!n) return 0;
+  (record.__renamed || Object.defineProperty(record, "__renamed", { value: {}, enumerable: false, writable: true }).__renamed)[oldK] = to;
+  return 1;
+}
+
 function applyLineEdit(record, e) {
   const est = record.estimate || {};
   const list = arr(est[LINE_KEYS[e.where]]);
@@ -275,6 +313,7 @@ function cleanWhere(v) {
     if (/clause|term|condition|warrant|cancel|permit|change/.test(w)) return "contractclause";
     return w;
   }
+  if (/^(servicetitle|servicename|cardtitle|cardname|card|rename|renameservice|renamecard)$/.test(w)) return "service";
   return w.replace(/s$/, "").replace(/^supplie$/, "supplies").replace(/^materials?$/, "material").replace(/^not.?included$|^exclusion$/, "excluded");
 }
 function cleanEdit(e) {
@@ -282,7 +321,7 @@ function cleanEdit(e) {
   const where = cleanWhere(o.where);
   return { where: where, service: str(o.service).slice(0, 120), from: str(o.from).slice(0, textCap(where)), to: str(o.to).slice(0, textCap(where)) };
 }
-const WHERE = ["included", "excluded", "supplies", "labor", "material", "summary", "scope", "title", "timeline", "contractscope", "contractmaterials", "contracttimeline", "contracttype", "contractclause"];
+const WHERE = ["included", "excluded", "supplies", "labor", "material", "summary", "scope", "title", "timeline", "service", "contractscope", "contractmaterials", "contracttimeline", "contracttype", "contractclause"];
 
 /* The contract's lines and fields. A signed contract is refused whole. */
 function applyContractEdit(record, e) {
@@ -313,21 +352,29 @@ function applyContractEdit(record, e) {
  */
 function applyEdits(record, edits) {
   if (!record || typeof record !== "object") throw new Error("No record");
-  const before = moneyFingerprint(record);
+  const snapshot = JSON.parse(JSON.stringify({ estimate: record.estimate || {}, customerFinalTotal: record.customerFinalTotal, contract: record.contract }));
+  record.__renamed = undefined;
   const applied = [], skipped = [];
   arr(edits).slice(0, 20).map(cleanEdit).forEach(function (e) {
     if (WHERE.indexOf(e.where) === -1) { skipped.push(Object.assign({ reason: "unknown where" }, e)); return; }
     if (!e.from && !e.to) { skipped.push(Object.assign({ reason: "nothing to change" }, e)); return; }
     let n = 0;
-    if (CARD_KEYS[e.where]) n = applyCardEdit(record, e);
+    if (e.where === "service") n = applyServiceRename(record, e);
+    else if (CARD_KEYS[e.where]) n = applyCardEdit(record, e);
     else if (LINE_KEYS[e.where]) n = applyLineEdit(record, e);
     else if (/^contract/.test(e.where)) n = applyContractEdit(record, e);
     else n = applyFieldEdit(record, e);
+    /* "title (Windows): Windows -> Trim & Hardware" - the model meant the
+       card, not the estimate's title. A title edit that finds nothing, whose
+       from IS a card's name, renames that card. */
+    if (!n && e.where === "title" && e.from) { const r = applyServiceRename(record, Object.assign({}, e, { where: "service" })); if (r) { n = r; e = Object.assign({}, e, { where: "service" }); } }
     if (n && typeof n === "object") applied.push(Object.assign({ changed: 0, already: n.already }, e));
     else if (n) applied.push(Object.assign({ changed: n }, e));
     else skipped.push(Object.assign({ reason: "not found" }, e));
   });
-  if (moneyFingerprint(record) !== before) throw new Error("An edit would have changed a price or a quantity. Nothing was saved.");
+  const renamed = record.__renamed || null;
+  delete record.__renamed;
+  if (moneyFingerprint(record) !== moneyFingerprint(snapshot, renamed)) throw new Error("An edit would have changed a price or a quantity. Nothing was saved.");
   return { applied: applied, skipped: skipped };
 }
 

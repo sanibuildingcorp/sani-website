@@ -4433,6 +4433,8 @@ async function aiExec(a, log, render) {
     var wrec = currentRecord && currentRecord.ref === wref ? currentRecord : null;
     if (!wrow && !wrec) return "I don't see " + wref + " in the list.";
     var shown = edits.map(function (e) {
+      /* a card renamed reads as one: "Rename the card: Windows → Trim & Hardware" */
+      if (/^(service|servicetitle|servicename|cardtitle|cardname|card)$/i.test(String(e.where || "").replace(/[\s_-]+/g, ""))) return "• Rename the service card:\n   " + (e.from || "") + "\n   → " + (e.to || "");
       return "• " + String(e.where || "") + (e.service ? " (" + e.service + ")" : "") + ":\n   " + (e.from ? e.from : "(add)") + "\n   → " + (e.to ? e.to : "(remove)");
     });
     if (!(await ask(log, render, "Change the wording of " + wref + "?\nPrices, quantities and totals stay exactly as they are.\n\n" + shown.join("\n\n"), "Apply the edits", "Not now"))) return "Cancelled - no wording changed. Ask me again when you want the edits applied.";
