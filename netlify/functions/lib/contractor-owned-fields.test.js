@@ -165,13 +165,13 @@ t("it snapshots the previous estimate BEFORE the run starts", () => {
   assert.ok(snapAt < runAt, "the snapshot must be taken before anything downstream can touch record.estimate");
 });
 t("it preserves BEFORE the wholesale overwrite, not after", () => {
-  const preserveAt = GEN.indexOf("preserveContractorFields(previousEstimate, estimate)");
+  const preserveAt = GEN.indexOf("preserveContractorFields(carry.previous, estimate)");
   const writeAt = GEN.indexOf("record.estimate = estimate;");
   assert.ok(preserveAt > 0, "preserveContractorFields is never called");
   assert.ok(preserveAt < writeAt, "preserving after the write would be too late");
 });
 t("what it carried is recorded on the estimate", () => {
-  assert.ok(/estimate\.preservedContractorFields = preservedFieldNames\(previousEstimate\)/.test(GEN));
+  assert.ok(/estimate\.preservedContractorFields = preservedFieldNames\(carry\.previous\)/.test(GEN));
 });
 
 console.log("\n" + pass + " passed, " + fail + " failed\n");

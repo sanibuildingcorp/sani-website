@@ -88,8 +88,54 @@ function preservedFieldNames(previous) {
   });
 }
 
+/* ══ REGENERATE MEANS NEW WORDING. ══════════════════════════════════════════
+     A regenerated Astoria estimate came back with new prices, a new summary
+     and a new timeline - and the same stock lines on every card, because the
+     Services draft saved from the FIRST generation was carried over as a
+     contractor setting and the customer's page reads the draft.
+   A draft (and its published copy) that only mirrors the AI's own cards is
+   the AI's wording, not his: on a regenerate it is dropped and rebuilt from
+   the new cards. A draft he actually edited - a line changed, added or
+   removed, a service renamed, a price he typed on a card - is his, and it
+   is kept (the panel says so and offers Rebuild draft from AI). */
+const SCOPE_FIELDS = ["manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished"];
+function norm(v) { return String(v == null ? "" : v).replace(/\s+/g, " ").trim().toLowerCase(); }
+function texts(a) { return (Array.isArray(a) ? a : []).map(function (x) { return norm(typeof x === "string" ? x : (x && (x.text || x.item))); }).filter(Boolean); }
+function sameList(a, b) { const x = texts(a), y = texts(b); return x.length === y.length && x.every(function (t, i) { return t === y[i]; }); }
+function scopeMirrorsAi(est) {
+  const e = est || {};
+  const cards = Array.isArray(e.serviceBreakdown) ? e.serviceBreakdown : [];
+  const byName = {};
+  cards.forEach(function (c) { byName[norm(c && (c.title || c.name || c.section))] = c; });
+  const one = function (scope) {
+    const svcs = scope && Array.isArray(scope.services) ? scope.services : null;
+    if (!svcs) return true;
+    return svcs.every(function (s) {
+      if (!s || s.pinned === true) return false;
+      const c = byName[norm(s.name || s.title)];
+      if (!c) return !texts(s.included).length && !texts(s.supplied || s.customerSupplies).length && !texts(s.excluded || s.notIncluded).length;
+      return sameList(s.included, c.included) && sameList(s.supplied || s.customerSupplies, c.customerSupplies || c.customerSupplied) && sameList(s.excluded || s.notIncluded, c.notIncluded || c.exclusions);
+    });
+  };
+  return one(e.manualCustomerScopeDraft) && one(e.publishedCustomerScope);
+}
+/* The previous estimate as the generator should carry it: without the scope
+   fields when they only mirror the AI. { previous, reset, kept } */
+function forRegenerate(previous) {
+  if (!previous || typeof previous !== "object") return { previous: previous, reset: false, kept: false };
+  const has = SCOPE_FIELDS.some(function (k) { return previous[k] !== undefined && previous[k] !== null && previous[k] !== false; });
+  if (!has) return { previous: previous, reset: false, kept: false };
+  if (!scopeMirrorsAi(previous)) return { previous: previous, reset: false, kept: true };
+  const copy = Object.assign({}, previous);
+  SCOPE_FIELDS.forEach(function (k) { delete copy[k]; });
+  return { previous: copy, reset: true, kept: false };
+}
+
 module.exports = {
   CONTRACTOR_OWNED_ESTIMATE_FIELDS,
   preserveContractorFields,
   preservedFieldNames,
+  scopeMirrorsAi,
+  forRegenerate,
+  SCOPE_FIELDS,
 };
