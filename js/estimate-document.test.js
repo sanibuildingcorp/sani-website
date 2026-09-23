@@ -99,10 +99,25 @@ console.log('\n1. A priced estimate reads as a document\n');
   ok('ABOUT THIS ESTIMATE: prepared by Sani Building Corp for the work above at the address; what the price covers; outside scope only with your OK', /<div class="ey">About this estimate<\/div>/.test(html) && /This estimate is prepared by Sani Building Corp for the work described above at 1115 Prospect Ave Apt 102, Brooklyn 11218\. The price covers the work listed under each service\./.test(html) && /Anything outside this scope is quoted separately and done only with your OK\./.test(html));
   ok('...fully insured, the phone and email - and never "licensed"', /Sani Building Corp is fully insured\. Questions or changes: \(332\) 277-0990/.test(html) && !/licens/i.test(html));
   ok('THE REF, THE DATE ISSUED (the day it was sent) AND VALID UNTIL, thirty days later', /<small>Estimate<\/small>SBC-260920-ECB4/.test(html) && /<small>Date issued<\/small>September 23, 2026/.test(html) && /<small>Valid until<\/small>October 23, 2026/.test(html) && /This estimate is valid for 30 days from the date issued\. After that, prices may be updated\./.test(html), (html.match(/About this estimate[\s\S]{0,1200}/) || [''])[0].slice(0, 400));
-  const iTerms = html.indexOf('About this estimate'), iApprove = html.indexOf('Approve estimate'), iMsg = html.indexOf('id="thread-card"');
+  const iTerms = html.indexOf('About this estimate'), iApprove = html.indexOf("Yes, I'd like to go ahead"), iMsg = html.indexOf('id="thread-card"');
   ok('ORDER: the terms, then Approve, then the messages last', iTerms > 0 && iApprove > iTerms && iMsg > iApprove, [iTerms, iApprove, iMsg].join(' < '));
   ok('THE MESSAGES ARE FOLDED: one closed line "Messages with Sani Building Corp (2)", not an open conversation', /<details class="card msgfold" id="thread-card"><summary class="ey" style="cursor:pointer">Messages with Sani Building Corp \(2\)<\/summary>/.test(html) && !/<details[^>]* open/.test(html.slice(iMsg, iMsg + 200)));
   ok('...still on the page, so the customer\'s next message has a place to land and the fold opens for it', /id="thread-wrap"/.test(html) && /if\(card\)\{card\.style\.display='';if\(card\.tagName==='DETAILS'\)card\.open=true\}/.test(QUOTE));
+}
+
+console.log('\n1b. A yes, not a bill\n');
+{
+  Date.now = () => Date.parse('2026-09-25T12:00:00Z');
+  const html = paint(priced('2026-09-23T15:00:00Z'));
+  Date.now = realNow;
+  ok('THE BUTTON asks for a go-ahead, never "Approve estimate"', html.indexOf("Yes, I'd like to go ahead") !== -1 && html.indexOf('Approve estimate') === -1 && html.indexOf('Confirm approval') === -1);
+  ok('...with the line under it: no payment now, a person calls first', /No payment now\. This tells us you're happy with the estimate\. Our team will call you to confirm the details and schedule before anything is signed or paid\./.test(html));
+  ok('...the second step asks for their name and sends the go-ahead', /<div class="ey" style="margin-bottom:6px">Your name<\/div><input id="sig"/.test(html) && /onclick="S\('accept'\)">Send my go-ahead<\/button>/.test(html));
+  const acc = priced('2026-09-23T15:00:00Z'); acc.status = 'accepted'; acc.acceptedAt = '2026-09-24T10:00:00Z';
+  const done = paint(acc);
+  ok('AFTER: thank you, the team calls within one business day, nothing paid until we talk; status "Accepted - we will be in touch"', /Thank you, we have your go-ahead! The Sani Building Corp team will contact you within one business day to confirm the details, the schedule and the final signature\. Nothing is paid until we have talked\./.test(done) && /<small>Status<\/small>Accepted – we’ll be in touch/.test(done) && done.indexOf("Yes, I'd like to go ahead") === -1);
+  ok('the moment they press it, the page thanks them before it reloads', /if\(a==='accept'\)\{\s*if\(st\)\{st\.className='sendnote';st\.textContent='Thank you, we have your go-ahead! Our team will be in touch within one business day\.'\}/.test(QUOTE));
+  ok('nowhere on the page does the customer read "approve" as a thing to do', !/>[^<]*\bApprove\b[^<]*</.test(html));
 }
 
 console.log('\n2. Past thirty days, a preview, and the questions phase\n');
@@ -110,12 +125,12 @@ console.log('\n2. Past thirty days, a preview, and the questions phase\n');
   Date.now = () => Date.parse('2026-11-01T12:00:00Z');
   const old = paint(priced('2026-09-23T15:00:00Z'));
   Date.now = realNow;
-  ok('PAST 30 DAYS and not approved: "Expired on" and ask for an updated price', /<small>Expired on<\/small>October 23, 2026/.test(old) && /This estimate has passed its 30 days and can no longer be approved\./.test(old));
-  ok('...NO APPROVE BUTTON: "Request an updated estimate" instead, which opens the message box with the ask written', old.indexOf('Approve estimate') === -1 && old.indexOf("P('a')") === -1 && /<button class="approve" onclick="RU\(\)">Request an updated estimate<\/button>/.test(old) && /window\.RU=\(\)=>\{P\('q'\);const m=document\.getElementById\('msg'\);if\(m&&!m\.value\.trim\(\)\)m\.value='Hi, my estimate '\+ref\+' has expired\. Please send me an updated estimate\.'/.test(QUOTE));
+  ok('PAST 30 DAYS and not approved: "Expired on" and ask for an updated price', /<small>Expired on<\/small>October 23, 2026/.test(old) && /This estimate has passed its 30 days and can no longer be accepted\./.test(old));
+  ok('...NO APPROVE BUTTON: "Request an updated estimate" instead, which opens the message box with the ask written', old.indexOf("Yes, I'd like to go ahead") === -1 && old.indexOf("P('a')") === -1 && /<button class="approve" onclick="RU\(\)">Request an updated estimate<\/button>/.test(old) && /window\.RU=\(\)=>\{P\('q'\);const m=document\.getElementById\('msg'\);if\(m&&!m\.value\.trim\(\)\)m\.value='Hi, my estimate '\+ref\+' has expired\. Please send me an updated estimate\.'/.test(QUOTE));
   Date.now = () => Date.parse('2026-10-20T12:00:00Z');
   const fresh = paint(priced('2026-09-23T15:00:00Z'));
   Date.now = realNow;
-  ok('...inside the thirty days the Approve button is there as before', fresh.indexOf('Approve estimate') !== -1 && fresh.indexOf('Request an updated estimate') === -1);
+  ok('...inside the thirty days the Approve button is there as before', fresh.indexOf("Yes, I'd like to go ahead") !== -1 && fresh.indexOf('Request an updated estimate') === -1);
   const approved = priced('2026-09-23T15:00:00Z'); approved.status = 'accepted'; approved.acceptedAt = '2026-09-24T10:00:00Z';
   Date.now = () => Date.parse('2026-11-01T12:00:00Z');
   const acc = paint(approved);

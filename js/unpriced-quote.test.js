@@ -170,7 +170,7 @@ console.log('\nnothing priced: no money on the page, and nothing to approve\n');
 console.log('\na priced estimate is completely unchanged\n');
 {
   const html = paint(PRICED);
-  ok('THE APPROVE BUTTON IS BACK', html.indexOf('Approve estimate') !== -1);
+  ok('THE GO-AHEAD BUTTON IS BACK', html.indexOf("Yes, I'd like to go ahead") !== -1);
   ok('the total is shown', /Your estimate/.test(html) && /\$[\d,]+\.\d\d/.test(html),
     (html.match(/\$[\d,]+\.\d\d/g) || []).slice(0, 3).join(' '));
   ok('...and it is the real figure, not zero',
