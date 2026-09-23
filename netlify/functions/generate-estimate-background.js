@@ -31,7 +31,7 @@ const { resolveScopePin } = require("./lib/scope-pin");
 /* The contractor's hand-made settings, carried across the wholesale replacement
    of record.estimate below. This used to happen only in the browser, so locking
    the phone mid-generation deleted them. See lib/contractor-owned-fields.js. */
-const { preserveContractorFields, preservedFieldNames } = require("./lib/contractor-owned-fields");
+const { preserveContractorFields, preservedFieldNames, forRegenerate } = require("./lib/contractor-owned-fields");
 /* A service added to an agreed estimate: generated alone, appended as its
    own section, nothing already there touched. See lib/add-service.js. */
 const { addServiceRequest, mergeAddedService } = require("./lib/add-service");
@@ -388,8 +388,12 @@ exports.handler = async function handler(event) {
     /* Quote photos, customer view mode, contract, a manually set total, finish
        groups, parked lines. The AI does not know they exist and would drop every
        one of them. */
-    estimate.preservedContractorFields = preservedFieldNames(previousEstimate);
-    preserveContractorFields(previousEstimate, estimate);
+    /* The AI's old card wording is not a contractor setting: see forRegenerate. */
+    const carry = forRegenerate(previousEstimate);
+    if (carry.reset) estimate.scopeDraftReset = true;
+    if (carry.kept) estimate.scopeDraftKept = true;
+    estimate.preservedContractorFields = preservedFieldNames(carry.previous);
+    preserveContractorFields(carry.previous, estimate);
     const wasTotal = history.customerTotal({ estimate: previousEstimate, customerFinalTotal: record.customerFinalTotal });
     record.estimate = estimate;
     record.status = record.status === "new" ? "drafted" : record.status;

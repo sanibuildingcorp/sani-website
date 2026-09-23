@@ -6040,6 +6040,12 @@ function applyGeneratedEstimate(data, serverMerged) {
     });
   }
   currentRecord.estimate = data.estimate;
+  /* The server dropped a Services draft that only mirrored the old AI cards
+     (lib/contractor-owned-fields.js forRegenerate): do not put it back, or
+     Regenerate keeps the old wording. */
+  if (data.estimate && data.estimate.scopeDraftReset === true) {
+    ["manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished"].forEach(function (k) { delete keepFields[k]; });
+  }
   Object.keys(keepFields).forEach(function (k) {
     currentRecord.estimate[k] = keepFields[k];
   });
@@ -6737,6 +6743,9 @@ function renderScopeControl() {
   if (shared) {
     html += '<div class="sc-warn">This estimate has already been shared with the customer. ' +
       'Anything you save here changes what their existing quote link shows, straight away.</div>';
+  }
+  if (est.scopeDraftKept === true) {
+    html += '<div class="sc-warn" style="background:#fff7e6">Your edited wording was kept when the estimate was regenerated. For the new AI wording, press <b>Rebuild draft from AI</b> below.</div>';
   }
   html += '<div class="sc-status">' +
     (published ? '<span class="sc-pill sc-pill-live">Saved &mdash; this is exactly what the customer sees</span>'
@@ -7916,6 +7925,7 @@ function scopeRebuildFromAI() {
   currentRecord.estimate.lastMerge = null;
   scopeForgetMerges(function () { return true; });
   currentRecord.estimate.manualCustomerScopeDraft = buildScopeDraftFromAI();
+  delete currentRecord.estimate.scopeDraftKept;
   scopeLinesRefresh();
   toast("✓ Draft rebuilt from AI estimate");
 }
@@ -8069,7 +8079,10 @@ function gatherForm() {
     "serviceBreakdown", "scopeSections", "customerSupplied", "exclusions", "options",
     "assumptions", "validation", "pricingReadiness", "clarificationQuestions",
     "estimateStatus", "customerViewMode", "customerPresentationVersion",
-    "internalScopeChecklist", "projectAnalysis"
+    "internalScopeChecklist", "projectAnalysis",
+    // the shared work said once, and how the wording and test mode went
+    "projectIncluded", "projectExclusions", "customerTimeline", "scopeWriter", "generatedWith", "generationTiming",
+    "scopeDraftReset", "scopeDraftKept", "repairReport", "marketResearch"
   // plus every contractor-owned setting, from the same single list the AI
   // regeneration path uses, so the two can never drift apart
   ].concat(CONTRACTOR_OWNED_ESTIMATE_FIELDS);
