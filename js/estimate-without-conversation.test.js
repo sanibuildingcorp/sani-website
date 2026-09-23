@@ -93,10 +93,12 @@ console.log('\nthe customer\'s page gets that thread, the dashboard gets all of 
     const hidden = vm.runInContext('threadHtml(r)', ctx);
     ok('A PRICED ESTIMATE WITH NOTHING SAID SINCE THE SEND: the card is there but hidden', /id="thread-card" style="display:none"/.test(hidden));
     ctx.r = { status: 'sent', thread: AFTER, estimate: EST };
-    ok('...shown as soon as there is a message after the send', /id="thread-card"><div class="ey">Messages/.test(vm.runInContext('threadHtml(r)', ctx)) && /Can you start Monday/.test(vm.runInContext('threadHtml(r)', ctx)));
+    /* A priced estimate folds its messages into one closed line at the bottom
+       (estimate-document.test.js): there as soon as there is one, never open. */
+    ok('...shown as soon as there is a message after the send - in the closed fold', /id="thread-card"><summary class="ey"[^>]*>Messages with Sani Building Corp \(1\)/.test(vm.runInContext('threadHtml(r)', ctx)) && /Can you start Monday/.test(vm.runInContext('threadHtml(r)', ctx)));
     ctx.r = { status: 'question', thread: [], estimate: { projectTitle: 'x' } };
     ok('the questions phase (no price yet) keeps the card, with its "No messages yet" line', /id="thread-card"><div class="ey">Messages/.test(vm.runInContext('threadHtml(r)', ctx)) && /No messages yet/.test(vm.runInContext('threadHtml(r)', ctx)));
-    ok('sending a message from the page un-hides the card', /const card=document\.getElementById\('thread-card'\);\s*\/\*[^*]*\*\/\s*if\(card\)card\.style\.display='';/.test(QUOTE));
+    ok('sending a message from the page un-hides the card (and opens the fold)', /const card=document\.getElementById\('thread-card'\);\s*\/\*[^*]*\*\/\s*if\(card\)\{card\.style\.display='';if\(card\.tagName==='DETAILS'\)card\.open=true\}/.test(QUOTE));
   }
   const blocks = QUOTE.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];
   let broken = null;
