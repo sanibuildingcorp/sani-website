@@ -9,6 +9,10 @@
  * the bottom one said "Save failed" twice with no reason. Now the reason is
  * in the message, a dropped connection or a busy server is tried once more,
  * and neither button says "saved" when nothing was saved.
+ *
+ *   "If both save buttons are the same, keep only one."
+ *
+ * The bottom Save Draft is gone; the Services panel's Save stays.
  */
 const fs = require('fs'), path = require('path'), vm = require('vm'), Module = require('module');
 const ROOT = path.join(__dirname, '..');
@@ -99,7 +103,16 @@ const last = (ctx) => ctx.toasts[ctx.toasts.length - 1];
     ok('the private draft save does not say "saved" on a failure either', !c.toasts.some((t) => /Scope draft saved/.test(t)) && /^ERR Not saved: the server did not answer/.test(last(c)), c.toasts.join(' | '));
   }
 
-  console.log('\n3. The server takes a freshly generated, regenerated estimate\n');
+  console.log('\n3. One Save button ("if both are the same, keep only one")\n');
+  {
+    ok('THE BOTTOM "SAVE DRAFT" IS GONE from the Send-it row', DASH.indexOf('💾 Save Draft</button>') === -1 && !/modal-actions-right[\s\S]{0,400}onclick="saveDraft\(\)"/.test(DASH));
+    ok('...the Services panel keeps the one Save', (DASH.match(/onclick="scopePublish\(\)">💾 Save — the customer sees exactly this</g) || []).length === 1);
+    ok('...and it saves everything the old button did (title, summary, lines) - it calls the same save', /scopeStampBreakdown\(\);[\s\S]{0,120}await saveDraft\(\)/.test(ext('scopePublish')));
+    ok('if the panel ever fails to draw, a plain Save stands in for it', /scope control render failed:", scopeErr\);\s*var scWrap = document\.getElementById\("scope-control-wrap"\);\s*if \(scWrap\) scWrap\.innerHTML = '<button class="btn-primary" onclick="saveDraft\(\)">💾 Save<\/button>';/.test(DASH));
+    ok('no text still says "Save Draft" or "Publish" on screen', DASH.indexOf('Save Draft does <b>not</b>') === -1 && DASH.indexOf('Press <b>Publish</b>') === -1 && (DASH.match(/Press <b>Save<\/b>/g) || []).length === 2);
+  }
+
+  console.log('\n4. The server takes a freshly generated, regenerated estimate\n');
   {
     const STORE = new Map();
     const orig = Module._resolveFilename;

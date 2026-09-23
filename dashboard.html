@@ -5057,7 +5057,6 @@ function renderEdit() {
         : (currentRecord && currentRecord.status !== 'completed' ? '<button class="btn-secondary" onclick="markCancelled(true)">🚫 Mark Cancelled</button>' : '')) +
       '<div class="modal-actions-right">' +
         '<button class="btn-secondary" onclick="openInvoiceModal()">💳 Send Invoice</button>' +
-        '<button class="btn-secondary" onclick="saveDraft()">💾 Save Draft</button>' +
         '<button class="btn-primary" onclick="sendToCustomer()">📨 Send to Customer</button>' +
       '</div>' +
     '</div>';
@@ -5065,7 +5064,14 @@ function renderEdit() {
   renderLines("labor", est.labor || []);
   renderLines("materials", est.materials || []);
   attachLineListeners();
-  try { renderScopeControl(); } catch (scopeErr) { console.error("scope control render failed:", scopeErr); }
+  /* The one Save button lives in the Services panel ("two save buttons that
+     do the same thing confuse me"). If that panel ever fails to draw, a plain
+     Save stands in its place so the estimate can still be saved. */
+  try { renderScopeControl(); } catch (scopeErr) {
+    console.error("scope control render failed:", scopeErr);
+    var scWrap = document.getElementById("scope-control-wrap");
+    if (scWrap) scWrap.innerHTML = '<button class="btn-primary" onclick="saveDraft()">💾 Save</button>';
+  }
   /* Fill the House Rules box from the saved copy. Wrapped because a missing or slow
      rules endpoint must never stop the estimate editor from opening. */
   try { loadHouseRules(); } catch (hrErr) { console.error("house rules load failed:", hrErr); }
@@ -6933,14 +6939,13 @@ function renderScopeControl() {
         'This panel is showing your private draft: <b>' + esc(mine.join(", ") || "nothing") + '</b>.' +
         (extra.length
           ? '<br><br><b style="color:#b05c4c">On their quote, not in your draft: ' + esc(extra.join(", ")) + '</b>' +
-            '<br>Press <b>Publish</b> and ' + (extra.length === 1 ? 'that card is removed' : 'those cards are removed') +
+            '<br>Press <b>Save</b> and ' + (extra.length === 1 ? 'that card is removed' : 'those cards are removed') +
             ' from their quote. Your total does not change \u2014 the money folds back into the cards that keep it.'
           : '') +
         (missing.length
           ? '<br><br><b>In your draft, not on their quote: ' + esc(missing.join(", ")) + '</b>' +
-            '<br>Press <b>Publish</b> to add ' + (missing.length === 1 ? 'it' : 'them') + '.'
+            '<br>Press <b>Save</b> to add ' + (missing.length === 1 ? 'it' : 'them') + '.'
           : '') +
-        '<br><br>Save Draft does <b>not</b> change what the customer sees. Only Publish does.' +
       '</div>' +
       '<div class="sc-merge-row">' +
         '<button class="btn-secondary" onclick="scopeLoadPublished()">\u2b07 Load what the customer sees</button>' +
