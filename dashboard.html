@@ -7958,7 +7958,7 @@ function scopeCleanCopy() {
 
 async function scopeSaveDraft() {
   currentRecord.estimate.manualCustomerScopeDraft = scopeCleanCopy();
-  await saveDraft();
+  if (!(await saveDraft())) return;
   toast("✓ Scope draft saved (private)");
 }
 
@@ -8035,9 +8035,10 @@ async function scopePublish() {
      scopeCardTotals() here is what guarantees the dashboard and the customer's quote
      cannot disagree — they are the same number, computed once. */
   scopeStampBreakdown();
-  await saveDraft();
+  /* A failed save used to be covered a moment later by this "published" toast. */
+  if (!(await saveDraft())) { renderScopeControl(); return; }
   renderScopeControl();
-  toast("✓ Customer scope published");
+  toast("✓ Saved. The customer sees exactly this");
 }
 
 function gatherForm() {
@@ -8093,29 +8094,51 @@ function gatherForm() {
   return out;
 }
 
+/* "Save failed: Save failed" said nothing. The reason is now in the message,
+   a dropped phone connection or a busy server is tried once more, and the
+   answer is returned so the buttons that call this never say "saved" when it
+   was not. */
+function saveFailReason(status, text) {
+  var d = null; try { d = JSON.parse(text); } catch (e) {}
+  if (d && d.error) return d.error + " (" + status + ")";
+  if (status === 401) return "the dashboard sign-in expired. Reload the page, sign in, and save again (401)";
+  if (status === 413) return "the estimate is too big to save. Remove a quote photo and try again (413)";
+  if (status >= 500) return "the server did not answer. Try again in a minute (" + status + ")";
+  return "the server refused it (" + status + ")";
+}
 async function saveDraft() {
   const est = gatherForm();
-  try {
-    const r = await sbcFetch("/.netlify/functions/save-estimate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      /* customerFinalTotal travels with the save. It is the price the customer's
-         quote and the contract both read in preference to the lines, so a draft
-         that moved the price and left the stamp behind would save an estimate
-         nobody downstream can see. Only sent when one already exists — this must
-         never CREATE a stamp on a job that had none. */
-      body: JSON.stringify(Object.assign(
-        { ref: currentRecord.ref, estimate: est, status: currentRecord.status === "new" ? "drafted" : currentRecord.status },
-        currentRecord.customerFinalTotal != null ? { customerFinalTotal: currentRecord.customerFinalTotal } : {}
-      )),
-    });
-    if (!r.ok) throw new Error("Save failed");
-    toast("✓ Draft saved");
-    currentRecord.estimate = est;
-    await loadEstimates();
-  } catch (e) {
-    toast("Save failed: " + e.message, true);
+  /* customerFinalTotal travels with the save. It is the price the customer's
+     quote and the contract both read in preference to the lines, so a draft
+     that moved the price and left the stamp behind would save an estimate
+     nobody downstream can see. Only sent when one already exists — this must
+     never CREATE a stamp on a job that had none. */
+  const body = JSON.stringify(Object.assign(
+    { ref: currentRecord.ref, estimate: est, status: currentRecord.status === "new" ? "drafted" : currentRecord.status },
+    currentRecord.customerFinalTotal != null ? { customerFinalTotal: currentRecord.customerFinalTotal } : {}
+  ));
+  let reason = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let r = null;
+    try {
+      r = await sbcFetch("/.netlify/functions/save-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: body });
+    } catch (e) {
+      reason = "the connection dropped (" + ((e && e.message) || "network") + "). Check the signal and save again";
+      continue;
+    }
+    if (r.ok) {
+      toast("✓ Draft saved");
+      currentRecord.estimate = est;
+      try { await loadEstimates(); } catch (e) {}
+      return true;
+    }
+    let text = "";
+    try { text = await r.text(); } catch (e) {}
+    reason = saveFailReason(r.status, text);
+    if (r.status < 500) break;
   }
+  toast("Not saved: " + reason, true);
+  return false;
 }
 
 /* ══ THE PRE-SEND PREVIEW. ═══════════════════════════════════════════════════
