@@ -75,8 +75,13 @@ function pricedFromLines(est, names) {
   if (loose > 0 && names.length) {
     const added = [];
     arr(est.addedServices).forEach(function (a) { arr(a && a.titles).forEach(function (t) { added.push(key(t)); }); });
-    let share = names.filter(function (nm) { return own[nm] > 0 && added.indexOf(key(nm)) === -1; });
-    if (!share.length) share = names.filter(function (nm) { return own[nm] > 0; });
+    /* A card he priced by hand (pinned on the scope draft) takes no share:
+       it shows exactly his number - the dashboard's rule, scopeCardTotals. */
+    const pins = arr(est.manualCustomerScopeDraft && est.manualCustomerScopeDraft.services).filter(function (s) { return s && s.pinned === true; }).map(function (s) { return key(s.name || s.title); });
+    const free = function (nm) { return pins.indexOf(key(nm)) === -1; };
+    let share = names.filter(function (nm) { return own[nm] > 0 && free(nm) && added.indexOf(key(nm)) === -1; });
+    if (!share.length) share = names.filter(function (nm) { return own[nm] > 0 && free(nm); });
+    if (!share.length) share = names.filter(free);
     if (!share.length) share = names.slice();
     const withLabor = share.filter(function (nm) { return ownLabor[nm] > 0; });
     const laborTotal = withLabor.reduce(function (a, nm) { return a + ownLabor[nm]; }, 0);
