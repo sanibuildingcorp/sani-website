@@ -5708,27 +5708,50 @@ function applySetTotal(){
   est.labor = est.labor || [];
   est.materials = est.materials || [];
 
+  /* THE CARDS HE PRICED BY HAND KEEP THEIR PRICE. "if i need set my own
+     price each service cards or even in total then let's set it what i will
+     set." The new total is reached by moving every other line; a card he
+     typed a price on stays exactly that. */
+  var _pins = (typeof scopePinnedNames === "function") ? scopePinnedNames() : [];
+  var _isPinned = function (l) { return _pins.length && _pins.indexOf(String(scopeSectionOf(l) || "").trim().toLowerCase()) !== -1; };
+  var _pinLab = est.labor.filter(_isPinned), _pinMat = est.materials.filter(_isPinned);
+  var _sum = function (a) { return a.reduce(function (x, i) { return x + (Number(i.qty) || 0) * (Number(i.rate) || 0); }, 0); };
+  var _pinSub = (showLabor ? _sum(_pinLab) : 0) + (showMat ? _sum(_pinMat) : 0);
+  if (_pins.length) {
+    if (targetSub < _pinSub - 0.005) { warn.textContent = "Too low — the cards you priced yourself already add up to " + fmt(_pinSub * mk) + "."; warn.style.display = "block"; return; }
+    targetSub -= _pinSub;
+    t = { labor: t.labor - _sum(_pinLab), mat: t.mat - _sum(_pinMat) };
+  }
+  var _freeLab = est.labor.filter(function (l) { return !_isPinned(l); });
+  var _freeMat = est.materials.filter(function (l) { return !_isPinned(l); });
+  var _scale = function (kind, sub) {
+    var free = kind === "labor" ? _freeLab : _freeMat;
+    var cur = _sum(free);
+    if (cur <= 0 && _pins.length) { (kind === "labor" ? est.labor : est.materials).push({ item: "Adjustment", qty: 1, unit: kind === "labor" ? "job" : "ea", rate: Math.round(sub * 100) / 100 }); return; }
+    _stScaleBucket(_pins.length ? free : (kind === "labor" ? est.labor : est.materials), sub, kind);
+  };
+
   if(_stMode === "all"){
     var shownSub = (showLabor ? t.labor : 0) + (showMat ? t.mat : 0);
     if(shownSub <= 0){
       // nothing to scale — drop it all into whichever bucket is shown (prefer labor)
-      if(showLabor) _stScaleBucket(est.labor, targetSub, "labor");
-      else _stScaleBucket(est.materials, targetSub, "materials");
+      if(showLabor) _scale("labor", targetSub);
+      else _scale("materials", targetSub);
     } else {
       var f = targetSub / shownSub;
-      if(showLabor) _stScaleBucket(est.labor, t.labor * f, "labor");
-      if(showMat) _stScaleBucket(est.materials, t.mat * f, "materials");
+      if(showLabor) _scale("labor", t.labor * f);
+      if(showMat) _scale("materials", t.mat * f);
     }
   } else if(_stMode === "labor"){
     var matPart = showMat ? t.mat : 0;
     var newLaborSub = targetSub - matPart;
     if(newLaborSub < -0.005){ warn.textContent = "Too low — materials alone are " + fmt(matPart*mk) + "."; warn.style.display="block"; return; }
-    _stScaleBucket(est.labor, Math.max(0,newLaborSub), "labor");
+    _scale("labor", Math.max(0,newLaborSub));
   } else if(_stMode === "mat"){
     var laborPart = showLabor ? t.labor : 0;
     var newMatSub = targetSub - laborPart;
     if(newMatSub < -0.005){ warn.textContent = "Too low — labor alone is " + fmt(laborPart*mk) + "."; warn.style.display="block"; return; }
-    _stScaleBucket(est.materials, Math.max(0,newMatSub), "materials");
+    _scale("materials", Math.max(0,newMatSub));
   }
 
   /* ══ AND RE-STAMP THE AGREED PRICE. ════════════════════════════════════════
@@ -6391,8 +6414,17 @@ function scopeCardTotals() {
        its own plumbing to it. An added section owns exactly its own lines;
        the loose cost stays with the cards that were there before. */
     var addedTitles = scopeAddedTitles();
-    var share = names.filter(function (nm) { return own[nm] > 0 && addedTitles.indexOf(nm.toLowerCase()) === -1; });
-    if (!share.length) share = names.filter(function (nm) { return own[nm] > 0; });
+    /* ══ A PRICE HE TYPED IS THE PRICE. ═══════════════════════════════════
+         "in water damage trying decrease price to 700$ but it's increased,
+          always if i need set my own price each service cards or even in
+          total then let's set it what i will set"
+       A card he set by hand takes no share of the shared cost, so it shows
+       exactly the number he typed. See scopePinCard. */
+    var pins = (typeof scopePinnedNames === "function") ? scopePinnedNames() : [];
+    var free = function (nm) { return pins.indexOf(nm.toLowerCase()) === -1; };
+    var share = names.filter(function (nm) { return own[nm] > 0 && free(nm) && addedTitles.indexOf(nm.toLowerCase()) === -1; });
+    if (!share.length) share = names.filter(function (nm) { return own[nm] > 0 && free(nm); });
+    if (!share.length) share = names.filter(free);
     if (!share.length) share = names;
     var withLabor = share.filter(function (nm) { return ownLabor[nm] > 0; });
     var laborTotal = withLabor.reduce(function (a, nm) { return a + ownLabor[nm]; }, 0);
@@ -6415,17 +6447,72 @@ function scopeCardTotals() {
   var t = (typeof calcTotal === "function") ? calcTotal(est) : null;
   var grand = t ? Math.round(t.grand * 100) / 100 : Math.round(names.reduce(function (a, nm) { return a + own[nm]; }, 0) * k * 100) / 100;
 
-  var byCard = {}, sum = 0, biggest = names[0] || "";
+  var byCard = {}, sum = 0, biggest = "";
+  var pinsR = (typeof scopePinnedNames === "function") ? scopePinnedNames() : [];
   names.forEach(function (nm) {
     var v = Math.round(own[nm] * k * 100) / 100;
     byCard[nm] = v; sum += v;
-    if (v > (byCard[biggest] || 0)) biggest = nm;
+    /* the rounding penny never lands on a card he priced himself */
+    if (pinsR.indexOf(nm.toLowerCase()) === -1 && (!biggest || v > (byCard[biggest] || 0))) biggest = nm;
   });
+  if (!biggest) biggest = names[0] || "";
   sum = Math.round(sum * 100) / 100;
   var resid = Math.round((grand - sum) * 100) / 100;
   if (resid !== 0 && biggest) byCard[biggest] = Math.round((byCard[biggest] + resid) * 100) / 100;
 
   return { byCard: byCard, names: names, grand: grand, unattributed: Math.round(loose * k * 100) / 100 };
+}
+
+/* The cards he set a price on by hand (lowercase names). */
+function scopePinnedNames() {
+  var d = (currentRecord && currentRecord.estimate && currentRecord.estimate.manualCustomerScopeDraft) || null;
+  return (d && Array.isArray(d.services) ? d.services : [])
+    .filter(function (s) { return s && s.pinned === true; })
+    .map(function (s) { return String(s.name || "").trim().toLowerCase(); })
+    .filter(Boolean);
+}
+/* The lines no card owns: project-wide protection, coordination, cleanup. */
+function scopeLooseRows() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var names = scopeCardNames().map(function (n) { return n.toLowerCase(); });
+  var rows = [];
+  ["labor", "materials"].forEach(function (kind) {
+    (est[kind] || []).forEach(function (l) {
+      if ((Number(l.qty) || 0) * (Number(l.rate) || 0) <= 0) return;
+      if (names.indexOf(String(scopeSectionOf(l) || "").trim().toLowerCase()) === -1) rows.push(l);
+    });
+  });
+  return rows;
+}
+/* Make a card his: it stops taking a share of the shared cost, and that
+   share comes off the shared lines, so every OTHER card keeps exactly the
+   price it had. Returns the share moved (customer dollars). */
+function scopePinCard(svc) {
+  var nm = String((svc && svc.name) || "").trim();
+  if (!nm || svc.pinned === true) return 0;
+  var k = scopeMarkupK() || 1;
+  var share = scopeServiceSubtotal(nm) - scopeRowsRaw(scopeRowsFor(nm)) * k;
+  svc.pinned = true;
+  var loose = scopeLooseRows();
+  var looseRaw = scopeRowsRaw(loose);
+  if (share > 0.005 && looseRaw > 0) scopeScaleRows(loose, Math.max(0, looseRaw - share / k));
+  return share > 0.005 ? Math.round(share * 100) / 100 : 0;
+}
+/* Give the card back to the automatic split: it takes its share of the
+   shared cost again. Its own lines do not move. */
+function scopeUnpin(si) {
+  var d = scopeDraft(), svc = d.services[si];
+  if (!svc) return;
+  if (!confirm("Unlock " + svc.name + "? It takes its share of the shared costs (protection, cleanup) again, so its price goes up and the other cards come down.")) return;
+  svc.pinned = false;
+  scopeLinesRefresh();
+}
+/* The card's own lines, and its share of the shared cost, as he sees them. */
+function scopeCardParts(nm) {
+  var k = scopeMarkupK() || 1;
+  var ownK = Math.round(scopeRowsRaw(scopeRowsFor(nm)) * k * 100) / 100;
+  var now = scopeServiceSubtotal(nm);
+  return { now: now, own: ownK, share: Math.max(0, Math.round((now - ownK) * 100) / 100) };
 }
 
 function scopeServiceSubtotal(name) {
@@ -6678,7 +6765,8 @@ function renderScopeControl() {
         '<input class="sc-subtotal" value="' + esc(fmt(scopeServiceSubtotal(nm))) + '" ' +
           'title="Type a total and every price line in this card is scaled to match" ' +
           'onchange="scopeSetServiceTotal(' + si + ', this.value)">' +
-      '</div>';
+      '</div>' +
+      (svc.pinned === true ? '<div class="sc-pin" style="font-size:11px;color:var(--ink-muted);padding:4px 14px 0">🔒 Your price — stays exactly this. <a href="#" onclick="scopeUnpin(' + si + ');return false" style="color:var(--gold)">Unlock</a></div>' : '');
 
     /* NOTHING IS HIDDEN BEHIND A TAB.
        These four groups used to be tab panes with display:none on three of them,
@@ -6970,13 +7058,15 @@ function scopeSetServiceTotal(si, raw) {
     renderScopeControl();
     return;
   }
+  var parts = scopeCardParts(nm);
   if (!confirm("Set " + nm + " to " + fmt(want) + "?\n\n" +
-               "It is " + fmt(now) + " now. All " + rows.length +
-               " price lines in this card are scaled by the same factor. The estimate total changes with it.")) {
+               "It is " + fmt(now) + " now" + (svc.pinned !== true && parts.share > 0.005 ? " (" + fmt(parts.own) + " of its own lines + " + fmt(parts.share) + " share of the shared costs)" : "") + ".\n\n" +
+               nm + " will show exactly " + fmt(want) + ". The other cards stay as they are. The estimate total changes by " + fmt(want - now) + ".")) {
     renderScopeControl();
     return;
   }
 
+  scopePinCard(svc);
   scopeScaleRows(rows, want / (scopeMarkupK() || 1));
   scopeLinesRefresh();
   var got = scopeServiceSubtotal(nm);
@@ -7015,11 +7105,12 @@ function scopeSetKindTotal(si, kind, raw) {
   if (!confirm("Set " + nm + " " + label.toLowerCase() + " to " + fmt(want) + "?\n\n" +
                "It is " + fmt(now) + " now. Its " + rows.length + " " + label.toLowerCase() +
                " lines are scaled; the " + (kind === "labor" ? "materials" : "labor") + " stay at " +
-               fmt(otherTotal) + ".\n\n" + nm + " becomes " + fmt(want + otherTotal) + ".")) {
+               fmt(otherTotal) + ".\n\n" + nm + " becomes " + fmt(want + otherTotal) + ". The other cards stay as they are.")) {
     renderScopeControl();
     return;
   }
 
+  scopePinCard(svc);
   scopeScaleRows(rows, want / k);
   scopeLinesRefresh();
   var got = scopeRowsRaw(scopeRowsFor(nm, kind)) * k;
@@ -7847,7 +7938,9 @@ function scopeCleanCopy() {
       return { name: nm2,
                subtotal: Number(scopeServiceSubtotal(nm2)) || 0,
                included: clean(s2.included), supplied: clean(s2.supplied), excluded: clean(s2.excluded),
-               includedOff: clean(s2.includedOff), suppliedOff: clean(s2.suppliedOff), excludedOff: clean(s2.excludedOff) };
+               includedOff: clean(s2.includedOff), suppliedOff: clean(s2.suppliedOff), excludedOff: clean(s2.excludedOff),
+               /* a price he typed on this card: it keeps exactly that (scopeCardTotals) */
+               pinned: s2.pinned === true ? true : undefined };
     }).filter(function (s2) { return s2.included.length || s2.supplied.length || s2.excluded.length ||
                s2.includedOff.length || s2.suppliedOff.length || s2.excludedOff.length || s2.subtotal > 0; }),
     updatedAt: new Date().toISOString()
