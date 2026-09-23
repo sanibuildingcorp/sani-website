@@ -4679,55 +4679,17 @@ function renderEdit() {
           '</div>';
     }
 
-    /* ══ WHY THE SECOND DRAFT HAPPENED. ════════════════════════════════════
-       A repair pass costs a quarter of the wait — 69 seconds of 278 on one
-       live estimate — and until now the only trace of it was one truncated
-       sentence the AI wrote about itself. These are the checks the FIRST draft
-       actually failed, verbatim. Seeing the same one on every small bathroom
-       job is what shows whether the estimator keeps forgetting something or a
-       check is simply too eager for the size of the work. */
-    var rr = est.repairReport;
-    if (rr && (rr.failures || []).length) {
-      html += '<details style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line-soft)">' +
-        '<summary style="cursor:pointer;font-size:12px;color:#c8892f;font-weight:600">' +
-          '\u{1F527} The first draft failed ' + rr.failures.length + ' check' + (rr.failures.length > 1 ? 's' : '') +
-          ' — a second draft was written' + (Number(rr.ms) ? ' (' + Math.round(Number(rr.ms) / 1000) + 's)' : '') +
-        '</summary>' +
-        '<ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6;color:var(--ink-soft)">' +
-          rr.failures.map(function (f) { return '<li>' + esc(String(f)) + '</li>'; }).join('') +
-        '</ul>' +
-        ((rr.stillFailingAfter || []).length
-          ? '<div style="font-size:12px;color:#c83c3c;margin-top:8px">Still failing after the repair: ' +
-              rr.stillFailingAfter.map(function (f) { return esc(String(f)); }).join('; ') + '</div>'
-          : '<div style="font-size:12px;color:#2f7d4f;margin-top:8px">All cleared by the second draft.</div>') +
-        (rr.skippedBecause ? '<div style="font-size:12px;color:#c83c3c;margin-top:6px">The repair was not used: ' + esc(String(rr.skippedBecause)) + '</div>' : '') +
-      '</details>';
-    }
-
+    /* The repair report and the long reasons are gone from this panel:
+       "This explanation texts makes so long and i don't read it too, can you
+        remove it? Keep only timing shows." The status and the confidence
+       stay as one line; the questions live in Ask AI ("What should I ask
+       them?"); the timing stays. The data is still on the record. */
     if (st) {
       html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
           '<span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:' + st.c +
             ';border:1px solid ' + st.c + ';border-radius:20px;padding:2px 9px;white-space:nowrap">' + esc(st.t) + '</span>' +
           (Number.isFinite(conf) ? '<span style="font-size:13px;font-weight:700;color:' + st.c + '">' + conf + '% confident</span>' : '') +
-        '</div>' +
-        '<div style="font-size:13px;line-height:1.55;margin-top:7px;color:var(--ink-soft,#c3cede)">' + esc(st.s) + '</div>' +
-        (pr.reason ? '<div style="font-size:12.5px;line-height:1.55;margin-top:6px;color:var(--ink-muted,#8a9bb0)">' + esc(pr.reason) + '</div>' : '');
-    }
-
-    if (qs.length) {
-      html += '<div style="margin-top:12px;padding-top:11px;border-top:1px solid var(--line,rgba(255,255,255,.1))">' +
-        '<div style="font-size:12px;font-weight:700;margin-bottom:7px">What it could not work out from what the customer wrote</div>' +
-        '<div style="font-size:12px;color:var(--ink-muted,#8a9bb0);margin-bottom:8px">Each of these would change the price. Ask the customer in the Conversation box below, then Regenerate.</div>';
-      qs.forEach(function (q) {
-        var imp = String(q.pricing_importance || "").toLowerCase();
-        var ic = imp === "critical" ? "#e74c3c" : (imp === "high" ? "#e67e22" : "#8a9bb0");
-        html += '<div style="padding:8px 0;border-top:1px solid rgba(255,255,255,.05)">' +
-            '<div style="font-size:13.5px;line-height:1.5"><span style="color:' + ic + ';font-weight:700">•</span> ' + esc(q.question || "") + '</div>' +
-            (q.helper_text ? '<div style="font-size:12px;color:var(--ink-muted,#8a9bb0);margin-top:2px;padding-left:14px">' + esc(q.helper_text) + '</div>' : '') +
-            (q.affected_trade ? '<div style="font-size:11px;color:var(--ink-muted,#8a9bb0);margin-top:2px;padding-left:14px">affects ' + esc(q.affected_trade) + (imp ? ' · ' + esc(imp) : '') + '</div>' : '') +
-          '</div>';
-      });
-      html += '</div>';
+        '</div>';
     }
 
     if (tm.totalMs) {
