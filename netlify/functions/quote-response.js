@@ -94,6 +94,7 @@ const customerTotals = require("./lib/customer-total");
 const { resolveSelection, selectionSnapshot, finishUpgradeTotal } = require("./lib/quote-options");
 const thread = require("./lib/thread");
 const history = require("./lib/history");
+const validity = require("./lib/estimate-validity");
 const ADDR = require("./lib/addresses");
 const buildMessageEmail = require("./lib/message-email");
 const buildApprovedEmail = require("./lib/approved-email");
@@ -137,6 +138,15 @@ exports.handler = async function (event) {
        Signing the contract IS the approval: sign-contract.js sets status to
        accepted. So this refuses only the shortcut, and points at the real route
        rather than leaving the customer stuck. */
+    /* ══ THIRTY DAYS. ══════════════════════════════════════════════════════
+         "block approval after expiration and let them re-request updated
+          estimate." The page swaps Approve for "Request an updated estimate";
+         this is the rule behind it, because the endpoint is public. A question
+         (the re-request) always goes through. */
+    if ((action === "accept" || action === "review") && validity.isExpired(record)) {
+      return { statusCode: 410, headers: cors(), body: JSON.stringify({ error: validity.expiredMessage(record), expired: true }) };
+    }
+
     if (action === "accept" && record.includeContractForCustomer === true &&
         !(record.contract && record.contract.signed)) {
       return {

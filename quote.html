@@ -630,7 +630,7 @@ function termsHtml(r,approved){
 <p style="margin:6px 0 10px">This estimate is prepared by Sani Building Corp for the work described above${addr?' at '+addr:''}. The price covers the work listed under each service. Items marked as customer supplies are provided by you. Anything outside this scope is quoted separately and done only with your OK.</p>
 <p style="margin:0 0 10px">Sani Building Corp is fully insured. Questions or changes: (332) 277-0990 · contact@sanibuildingcorp.com</p>
 <div class="meta" style="margin-top:4px"><div><small>Estimate</small>${E(ref)}</div><div><small>Date issued</small>${E(dayText(issuedAt(r)))}</div><div><small>${expired?'Expired on':'Valid until'}</small>${E(dayText(until))}</div></div>
-<p class="muted" style="margin:10px 0 0">${expired?'This estimate has passed its 30 days. Ask us for an updated price before approving.':'This estimate is valid for 30 days from the date issued. After that, prices may be updated.'}</p></section>`}
+<p class="muted" style="margin:10px 0 0">${expired?'This estimate has passed its 30 days and can no longer be approved. Press Request an updated estimate below and we will send a new one.':'This estimate is valid for 30 days from the date issued. After that, prices may be updated.'}</p></section>`}
 function sowFoot(){
  /* The PDF is made on the server from the same scope-only record, so it can
     be saved from inside any app - the Gmail app's browser cannot print, but
@@ -914,6 +914,11 @@ function actionHtml(c,approved,needsContract,hasPrice){
     deliberately gone here. Passing false left the customer a page of questions
     and no way on earth to reply to them. */
  if(hasPrice===false)return`<div class="muted" style="padding:2px 4px 10px;font-size:13.5px">Reply below and we will price the job as soon as we have your answers.</div>${messageBox(true)}`;
+ /* ══ PAST THIRTY DAYS: NOTHING TO APPROVE, ONE THING TO ASK FOR. ══════════
+    "block approval after expiration and let them re-request updated
+     estimate." The server refuses too (lib/estimate-validity.js). */
+ const R=typeof rec!=='undefined'?rec:null;
+ if(!approved&&R&&(R.sentVersionInfo||R.sentAt)&&Date.now()>validUntil(R).getTime())return`<section class="actions"><button class="approve" onclick="RU()">Request an updated estimate</button></section><div class="muted" style="padding:0 4px 10px;font-size:13px">This estimate has passed its 30 days, so it can no longer be approved. Ask us and we will send you an updated one.</div>${messageBox(false)}`;
  if(approved)return`<div class="approved">✓ This estimate has been approved. The approved scope and price remain on record, and this link stays live for the whole job — message us here any time.</div>${messageBox(true)}`;
  if(needsContract){
   const url='/contract.html?ref='+encodeURIComponent(ref);
@@ -971,6 +976,9 @@ function track(){
   if(sessionStorage.getItem('sbcSkipTrack')===ref){sessionStorage.removeItem('sbcSkipTrack');return}
  }catch(e){}
  new Image().src='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now()}
+/* "Request an updated estimate": the message box, opened, with the ask
+   already written - they can add to it and press send. */
+window.RU=()=>{P('q');const m=document.getElementById('msg');if(m&&!m.value.trim())m.value='Hi, my estimate '+ref+' has expired. Please send me an updated estimate.';if(m)m.focus()};
 window.P=id=>{document.querySelectorAll('.panel').forEach(x=>x.classList.remove('open'));let el=document.getElementById(id);if(el)el.classList.add('open')};
 window.S=async a=>{
  const st=document.getElementById('st'),box=document.getElementById('msg'),btn=document.getElementById('sendbtn');

@@ -7,6 +7,7 @@ const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const ADDR = require("./lib/addresses");
 const history = require("./lib/history");
+const validity = require("./lib/estimate-validity");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -37,6 +38,10 @@ exports.handler = async function (event) {
     }
     if (record.contract.signed) {
       return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true, alreadySigned: true }) };
+    }
+    /* An expired estimate is not approved by signing either. */
+    if (validity.isExpired(record)) {
+      return { statusCode: 410, headers: cors(), body: JSON.stringify({ error: validity.expiredMessage(record), expired: true }) };
     }
 
     const nowIso = new Date().toISOString();
