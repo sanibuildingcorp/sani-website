@@ -97,7 +97,7 @@ const reset = () => { STORE = { 'SBC-260915-UYE6': REC() }; sent = []; failNth =
   if (toMike) {
     const p = toMike.payload;
     ok('THE CUSTOMER RECEIPT SAYS APPROVED IN THE SUBJECT, with the ref (inbox-sync reads it back)',
-      /Approved/.test(p.subject) && /SBC-260915-UYE6/.test(p.subject) && /Full Gut Renovation/.test(p.subject), p.subject);
+      /Thank you for your go-ahead/.test(p.subject) && /SBC-260915-UYE6/.test(p.subject) && /Full Gut Renovation/.test(p.subject), p.subject);
     ok('...from the verified domain, signed Zurabi', /estimates@sanibuildingcorp\.com/.test(p.from) && /Zurabi/.test(p.from));
     /* Used to be the CONTRACTOR_EMAIL (the alerts box). One job per address
        now: a customer's reply goes to contact@, the humans address. */
@@ -110,13 +110,13 @@ const reset = () => { STORE = { 'SBC-260915-UYE6': REC() }; sent = []; failNth =
     ok('...it carries the approved figure, as customer-total defines it (' + expect + ')',
       Number(expect.replace(/[$,]/g, '')) > 0 && p.html.indexOf(expect) !== -1 && p.text.indexOf(expect) !== -1, (p.html.match(/\$[\d,]+\.\d\d/) || [])[0]);
     ok('...uses the customer\'s first name', /Thank you, Mike\./.test(p.html));
-    ok('...says the step is done', /That step is done/.test(p.html) && /Your estimate is approved/.test(p.html));
-    ok('...says what happens next', /What happens next/.test(p.html) && /Zurabi will be in touch/.test(p.html));
+    ok('...says we have the go-ahead and that nothing is paid now', /We have your go-ahead/.test(p.html) && /Nothing is paid now\./.test(p.html) && !/is approved/.test(p.html));
+    ok('...says what happens next', /What happens next/.test(p.html) && /The Sani Building Corp team will contact you within one business day/.test(p.html) && /The final agreement, signature and payment come after that conversation/.test(p.html));
     ok('...links to the project page', p.html.indexOf('https://www.sanibuildingcorp.com/quote.html?ref=SBC-260915-UYE6') !== -1);
     ok('...never says "licensed"', !/licensed/i.test(p.html) && !/licensed/i.test(p.text));
     ok('...says fully insured', /Fully insured/.test(p.html));
     ok('...has the same project header as every other email about the job', /Estimate SBC-260915-UYE6/.test(p.html) && /3855 Shore Pkwy/.test(p.html));
-    ok('...and a plain-text version', p.text.indexOf('YOUR ESTIMATE IS APPROVED') !== -1);
+    ok('...and a plain-text version', p.text.indexOf('WE HAVE YOUR GO-AHEAD') !== -1);
   }
   ok('the response reports both deliveries', r.body.notified === true && r.body.customerNotified === true, JSON.stringify(r.body).slice(0, 120));
 

@@ -60,7 +60,7 @@ function buildApprovedEmail(o) {
 
   /* The ref stays in the subject: inbox-sync reads it back if they reply by
      email instead of on the page. */
-  const subject = "Approved ✓ " + ref + " — " + projectTitle;
+  const subject = "Thank you for your go-ahead ✓ " + ref + " — " + projectTitle;
 
   const html = '<!DOCTYPE html>\n<html lang="en">\n' +
     '<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>\n' +
@@ -80,28 +80,28 @@ function buildApprovedEmail(o) {
 
       '<div style="background:#ffffff;border-radius:0 0 14px 14px;padding:26px 28px">' +
         '<div style="background:#eef8f1;border:1px solid #bfe3cb;border-radius:10px;padding:16px 18px;margin:0 0 20px">' +
-          '<div style="font-size:18px;font-weight:bold;color:#1c6547">✓ Your estimate is approved</div>' +
+          '<div style="font-size:18px;font-weight:bold;color:#1c6547">✓ We have your go-ahead</div>' +
           '<div style="font-size:13.5px;color:#2f6b4a;margin-top:4px">' +
-            (approvedAt ? "Approved " + esc(approvedAt) + " · " : "") + "Estimate " + esc(ref) +
+            (approvedAt ? "Received " + esc(approvedAt) + " · " : "") + "Estimate " + esc(ref) +
           "</div>" +
         "</div>" +
 
         '<p style="font-size:16px;margin:0 0 14px;color:#0a1628">' +
           (first ? "Thank you, " + esc(first) + ". " : "Thank you. ") +
-          "That step is done — your approval of <strong>" + money(total) + "</strong> for <strong>" + esc(projectTitle) + "</strong> is on record." +
+          "You told us you're happy with the estimate of <strong>" + money(total) + "</strong> for <strong>" + esc(projectTitle) + "</strong>. Nothing is paid now." +
         "</p>" +
 
         '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin:18px 0 6px">What happens next</div>' +
         '<ol style="margin:0 0 18px;padding-left:20px;font-size:15px;color:#222">' +
-          "<li>Zurabi will be in touch shortly to confirm the schedule and the next steps.</li>" +
-          "<li>The approved scope and price stay on your project page — nothing changes without your say-so.</li>" +
+          "<li>The Sani Building Corp team will contact you within one business day to confirm the details and the schedule.</li>" +
+          "<li>The final agreement, signature and payment come after that conversation — nothing changes without your say-so.</li>" +
           "<li>Questions any time: write to Zurabi from that same page and it reaches him directly.</li>" +
         "</ol>" +
 
         '<div style="text-align:center;margin:22px 0 4px">' +
           '<a href="' + quoteUrl + '" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">Open my project &rarr;</a>' +
         "</div>" +
-        '<p style="font-size:13px;color:#888;text-align:center;margin:6px 0 0">Everything about this job — the approved estimate, the photos and every message — stays at that one link.</p>' +
+        '<p style="font-size:13px;color:#888;text-align:center;margin:6px 0 0">Everything about this job — the estimate, the photos and every message — stays at that one link.</p>' +
 
         '<p style="margin:22px 0 2px;font-size:15px;color:#0a1628">Best,<br><strong>Zurabi</strong><br>' +
           '<span style="font-size:13px;color:#777">Sani Building Corp · Brooklyn, NY · Fully insured</span></p>' +
@@ -117,16 +117,16 @@ function buildApprovedEmail(o) {
 
   const text =
     "SANI BUILDING CORP\n\n" +
-    "YOUR ESTIMATE IS APPROVED\n" +
+    "WE HAVE YOUR GO-AHEAD\n" +
     "Estimate " + ref + "\n" +
     projectTitle + "\n" +
     (address ? address + "\n" : "") +
     money(total) + "\n\n" +
     (first ? "Thank you, " + first + ". " : "Thank you. ") +
-    "That step is done - your approval of " + money(total) + " for " + projectTitle + " is on record.\n\n" +
+    "You told us you're happy with the estimate of " + money(total) + " for " + projectTitle + ". Nothing is paid now.\n\n" +
     "What happens next:\n" +
-    "1. Zurabi will be in touch shortly to confirm the schedule and the next steps.\n" +
-    "2. The approved scope and price stay on your project page - nothing changes without your say-so.\n" +
+    "1. The Sani Building Corp team will contact you within one business day to confirm the details and the schedule.\n" +
+    "2. The final agreement, signature and payment come after that conversation - nothing changes without your say-so.\n" +
     "3. Questions any time: write to Zurabi from that same page.\n\n" +
     "Your project: " + quoteUrl + "\n\n" +
     "Best,\nZurabi\nSani Building Corp · Brooklyn, NY · Fully insured\n(332) 277-0990\n";

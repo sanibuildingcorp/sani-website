@@ -57,7 +57,7 @@ console.log('\n2. What the customer is offered');
 
  const done=vm.runInContext('actionHtml',ctx)({name:'A'},true,true);
  t('already approved: shows the approved notice, no buttons',
-   /has been approved/.test(done) && !/P\('a'\)/.test(done));
+   /we have your go-ahead/.test(done) && !/P\('a'\)/.test(done));
 }
 
 console.log('\n2b. Exactly one way forward, never two');
@@ -102,7 +102,7 @@ console.log('\n2c. An APPROVED estimate still has a route to the contract');
  t('approved + signed: the contract is still readable',
    contractLinks(apprSigned)===1 && /View the contract/.test(apprSigned));
  t('approved: the green notice is shown and no approve button',
-   /has been approved/.test(apprSigned) && !/P\('a'\)/.test(apprSigned));
+   /we have your go-ahead/.test(apprSigned) && !/P\('a'\)/.test(apprSigned));
 }
 
 console.log('\n3. The server refuses the shortcut too');
