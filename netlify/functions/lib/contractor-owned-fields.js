@@ -29,6 +29,8 @@
 
 "use strict";
 
+const { SHARED_STOCK, sharedKey } = require("./shared-once");
+
 /* MUST STAY IDENTICAL to CONTRACTOR_OWNED_ESTIMATE_FIELDS in dashboard.html.
    contractor-owned-fields.test.js parses that array straight out of the HTML and
    fails if the two lists ever drift, because a field present in one list and
@@ -107,6 +109,10 @@ function scopeMirrorsAi(est) {
   const cards = Array.isArray(e.serviceBreakdown) ? e.serviceBreakdown : [];
   const byName = {};
   cards.forEach(function (c) { byName[norm(c && (c.title || c.name || c.section))] = c; });
+  /* Shared work said once (lib/shared-once.js) is taken off the cards when
+     they are shown, so a draft missing only those lines still mirrors. */
+  const sharedKeys = SHARED_STOCK.concat(Array.isArray(e.projectIncluded) ? e.projectIncluded : []).map(function (x) { return sharedKey(typeof x === "string" ? x : (x && (x.text || x.item))); });
+  const unshared = function (list) { return (Array.isArray(list) ? list : []).filter(function (x) { return sharedKeys.indexOf(sharedKey(typeof x === "string" ? x : (x && (x.text || x.item)))) === -1; }); };
   const one = function (scope) {
     const svcs = scope && Array.isArray(scope.services) ? scope.services : null;
     if (!svcs) return true;
@@ -114,7 +120,7 @@ function scopeMirrorsAi(est) {
       if (!s || s.pinned === true) return false;
       const c = byName[norm(s.name || s.title)];
       if (!c) return !texts(s.included).length && !texts(s.supplied || s.customerSupplies).length && !texts(s.excluded || s.notIncluded).length;
-      return sameList(s.included, c.included) && sameList(s.supplied || s.customerSupplies, c.customerSupplies || c.customerSupplied) && sameList(s.excluded || s.notIncluded, c.notIncluded || c.exclusions);
+      return sameList(unshared(s.included), unshared(c.included)) && sameList(s.supplied || s.customerSupplies, c.customerSupplies || c.customerSupplied) && sameList(s.excluded || s.notIncluded, c.notIncluded || c.exclusions);
     });
   };
   return one(e.manualCustomerScopeDraft) && one(e.publishedCustomerScope);
