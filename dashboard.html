@@ -4340,6 +4340,18 @@ async function aiExec(a, log, render) {
     renderTabs(); renderList();
     return ref + " is now " + st + ".";
   }
+  if (t === "lesson") {
+    /* A lesson for the generator, from a correction he just made. Used only
+       while Test mode is on. */
+    var ltext = String(a.text || "").trim();
+    if (!ltext) return "";
+    if (!(await ask(log, render, "Save this lesson for the generator?\n\n\u201C" + ltext + "\u201D\n\nIt is used only while Test mode is ON (Generate box, \u{1F9EA} TEST MODE). You can edit or delete it there.", "Keep it", "Not now"))) return "Cancelled - the lesson was not saved.";
+    var rl = await sbcFetch("/.netlify/functions/generator-lab", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", text: ltext }) });
+    var dl = await rl.json().catch(function () { return {}; });
+    if (!rl.ok) throw new Error(dl.error || "Could not save the lesson");
+    LAB = dl; labPaint();
+    return "Lesson saved. " + (dl.on ? "Test mode is ON - the next Generate uses it." : "Test mode is OFF - switch it on (Generate box, \u{1F9EA} TEST MODE) to try it.");
+  }
   if (t === "waiting") {
     /* "Mark it as waiting answer from customer." Not a status: a mark on the
        record that clears itself when the customer writes back. */
@@ -4684,6 +4696,10 @@ function renderEdit() {
         remove it? Keep only timing shows." The status and the confidence
        stay as one line; the questions live in Ask AI ("What should I ask
        them?"); the timing stays. The data is still on the record. */
+    var gw = est.generatedWith;
+    if (gw && gw.testRules) {
+      html += '<div style="font-size:12px;color:#6b5b95;margin-bottom:8px">\u{1F9EA} Made in test mode' + (Number(gw.lessons) ? ' · ' + Number(gw.lessons) + ' lesson' + (Number(gw.lessons) === 1 ? '' : 's') : '') + '. To go back: switch Test mode off and Regenerate.</div>';
+    }
     if (st) {
       html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
           '<span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:' + st.c +
@@ -4835,6 +4851,13 @@ function renderEdit() {
           '<span class="hr-status" id="house-rules-status"></span>' +
         '</div>' +
       '</div>' +
+    '</details>' +
+    /* TEST MODE FOR THE GENERATOR - see netlify/functions/lib/generator-lab.js.
+       "new rules can we do as a test mode? If it's not going true then remove
+        and return to the same mode?" */
+    '<details class="form-section hr-fold" id="lab-fold" ontoggle="if(this.open)labLoad()">' +
+      '<summary>\u{1F9EA} TEST MODE <span class="hr-hint">teach the generator - switch off any time</span></summary>' +
+      '<div class="hr-body" id="lab-body">' + labPanelHtml() + '</div>' +
     '</details>' +
     /* "HOW SURE IS THIS ESTIMATE?" IS AN ANSWER, SO IT SITS UNDER THE QUESTION.
        It used to be in the request card, above the Generate button - a verdict
@@ -11767,6 +11790,42 @@ function gmailPanelHtml(){
   if (gmailNote) h += '<div style="font-size:11px;color:#7a879b;margin-top:8px">' + esc(gmailNote) + '</div>';
   return h + '</div>';
 }
+/* ── TEST MODE PANEL ──────────────────────────────────────────────────────── */
+var LAB = null, labNote = "";
+function labPanelHtml(){
+  var l = LAB;
+  if (!l) return '<div class="hr-help">Loading…</div>';
+  var h = '<div class="hr-help">ON: the next Generate thinks and writes like a working foreman and follows your lessons. OFF: exactly as before. Switch off and press Regenerate to return any estimate to the old way. Nothing already made changes.</div>'
+    + '<div style="display:flex;align-items:center;gap:10px;margin:8px 0 10px">'
+    + '<button type="button" class="btn-secondary" id="lab-mode" onclick="labMode(' + (l.on ? 'false' : 'true') + ')" style="' + (l.on ? 'background:#6b5b95;color:#fff;border-color:#6b5b95' : '') + '">' + (l.on ? '\u{1F9EA} Test mode: ON — tap to switch off' : 'Test mode: OFF — tap to switch on') + '</button></div>'
+    + '<div style="font-size:12px;font-weight:700;margin:4px 0 6px">Lessons (' + (l.lessons || []).length + ')</div>';
+  (l.lessons || []).forEach(function (x) {
+    h += '<div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:13px">'
+      + '<input type="checkbox" ' + (x.on ? 'checked' : '') + ' onchange="labAct({action:\'toggle\',id:\'' + esc(x.id) + '\',on:this.checked})" style="margin-top:3px">'
+      + '<span style="flex:1' + (x.on ? '' : ';opacity:.5') + '">' + esc(x.text) + '</span>'
+      + '<a href="#" onclick="labAct({action:\'delete\',id:\'' + esc(x.id) + '\'});return false" style="color:#b42318;font-size:12px">delete</a></div>';
+  });
+  h += '<div style="display:flex;gap:8px;margin-top:8px"><input id="lab-new" maxlength="240" placeholder="e.g. Paint color never changes the price" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px">'
+    + '<button type="button" class="btn-secondary" onclick="labAdd()">Add</button></div>'
+    + '<div class="hr-help" style="margin-top:6px">Ask AI can add one for you: "save that as a lesson".</div>';
+  if (labNote) h += '<div class="hr-status" style="margin-top:6px">' + esc(labNote) + '</div>';
+  return h;
+}
+function labPaint(){ var el = document.getElementById('lab-body'); if (el) el.innerHTML = labPanelHtml(); }
+async function labLoad(){
+  try { var r = await sbcFetch('/.netlify/functions/generator-lab', { method: 'GET' }); var d = await r.json(); if (r.ok) { LAB = d; labNote = ''; } else labNote = d.error || ('HTTP ' + r.status); }
+  catch (e) { labNote = 'Could not load: ' + e.message; }
+  labPaint();
+}
+async function labAct(body){
+  try { var r = await sbcFetch('/.netlify/functions/generator-lab', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); var d = await r.json(); if (r.ok) { LAB = d; labNote = ''; } else labNote = d.error || ('HTTP ' + r.status); }
+  catch (e) { labNote = 'Could not save: ' + e.message; }
+  labPaint();
+}
+function labMode(on){
+  if (!on || confirm('Switch Test mode ON?\n\nThe next Generate or Regenerate uses the foreman voice and your lessons. Switch it off any time and Regenerate to go back.')) labAct({ action: 'mode', on: on });
+}
+function labAdd(){ var i = document.getElementById('lab-new'); var t = i ? i.value.trim() : ''; if (t) labAct({ action: 'add', text: t }); }
 function gmailPaint(){ var el = document.getElementById('gmail-panel'); if (el) el.innerHTML = gmailPanelHtml(); }
 /* ── CHATGPT ON HIS PHONE ─────────────────────────────────────────────────
    "i want talk to my dashboard from my phone in ChatGPT". One link, pasted
