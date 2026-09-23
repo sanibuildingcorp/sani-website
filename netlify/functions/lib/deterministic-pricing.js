@@ -1630,16 +1630,23 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
   services.forEach(s => map[s] = { title: s, included: [], customerSupplies: [], notIncluded: [], subtotal: 0, options: [] });
   let generalBase = 0;
   const projectExclusions = [];
+  /* Which card each line was priced into - remembered, so the line can be
+     told (see ONE NAME below). */
+  const ownerOf = new Map();
+  const ownerFor = l => singleBath ? 'Bathroom' : (pinnedService(l, allowed) || canonicalService(l.section, l.item, allowed));
+  const ownLabor = {};
   (out.labor || []).forEach(l => {
-    const s = singleBath ? 'Bathroom' : (pinnedService(l, allowed) || canonicalService(l.section, l.item, allowed));
+    const s = ownerFor(l);
+    ownerOf.set(l, s);
     const cost = num(l.qty) * num(l.rate);
     /* COST ONLY. The wording comes from phasesPresent below. Pushing text(l.item) here
        is what silently threw away buildCustomerScope's plain-language scope and put
        "Debris bagging, carrying and disposal" back in front of the customer. */
-    if (map[s]) { map[s].subtotal += cost; } else { generalBase += cost; }
+    if (map[s]) { map[s].subtotal += cost; ownLabor[s] = (ownLabor[s] || 0) + cost; } else { generalBase += cost; }
   });
   (out.materials || []).forEach(m => {
-    const s = singleBath ? 'Bathroom' : (pinnedService(m, allowed) || canonicalService(m.section, m.item, allowed));
+    const s = ownerFor(m);
+    ownerOf.set(m, s);
     const cost = num(m.qty) * num(m.rate);
     if (map[s]) { map[s].subtotal += cost; } else { generalBase += cost; }
   });
@@ -1679,12 +1686,46 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
     services = services.filter(s => ownsLines[s] > 0);
   }
 
-  const direct = services.reduce((a, s) => a + map[s].subtotal, 0);
+  /* ══ ONE NAME FOR A LINE'S SERVICE. ═══════════════════════════════════════
+       "the service cards prices different" - five cards on the dashboard at
+       $2,167.45 each, "0 price lines" on every one, while the customer's page
+       priced the same five cards by the work.
+
+     This function files every line under a card by its words (canonicalService)
+     and prices the cards from that. The line itself kept whatever section the
+     estimator wrote - "General", "Painting & Patching", a trade name spelled
+     its own way - so the dashboard, the scope writer and lib/customer-cards,
+     which all read line.section, found no line under any card: the whole job
+     was "loose", split evenly, and the writer described each service from
+     nothing. The line is now told which card it was priced into. The name it
+     came with is kept on sectionAsPriced. A line that belongs to no surviving
+     card (project-wide cost) keeps its own section. */
+  [...(out.labor || []), ...(out.materials || [])].forEach(l => {
+    const s = ownerOf.get(l);
+    if (!s || !map[s]) return;
+    if (text(l.section) !== s) { l.sectionAsPriced = text(l.section); l.section = s; }
+  });
+
+  /* THE LOOSE COST IS SPREAD THE WAY THE DASHBOARD SPREADS IT. This used to
+     share project-wide cost (coordination, protection, cleanup) in proportion
+     to each card's whole cost; the dashboard's scopeCardTotals and
+     lib/customer-cards spread it by LABOR weight over the cards that own
+     lines. Two rules, two sets of card prices for one job - the customer's
+     page and the Services panel disagreed by a few dollars per card even
+     when every line was filed right. One rule now. The total never moves. */
   if (generalBase > 0) {
-    services.forEach(s => {
-      const share = direct > 0 ? map[s].subtotal / direct : 1 / services.length;
-      map[s].subtotal += generalBase * share;
-    });
+    let share = services.filter(s => map[s].subtotal > 0);
+    if (!share.length) share = services.slice();
+    const withLabor = share.filter(s => (ownLabor[s] || 0) > 0);
+    const laborTotal = withLabor.reduce((a, s) => a + ownLabor[s], 0);
+    if (!withLabor.length || laborTotal <= 0) {
+      share.forEach(s => { map[s].subtotal += generalBase / share.length; });
+    } else {
+      const mean = 1 / withLabor.length, weights = {};
+      let wSum = 0;
+      share.forEach(s => { weights[s] = (ownLabor[s] || 0) > 0 ? ownLabor[s] / laborTotal : mean; wSum += weights[s]; });
+      share.forEach(s => { map[s].subtotal += generalBase * (weights[s] / wSum); });
+    }
   }
   (out.customerSupplied || []).forEach(x => {
     const t = supplyText(x);
