@@ -36,8 +36,9 @@ html body .hero-cred-card .label{color:var(--n-ink)!important}
   html body .page-hero-text{max-width:min(600px,52%)!important}
 }
 @media(max-width:899px){
-  html body .page-hero{display:block!important;padding:84px 0 8px!important}
-  html body .page-hero-bg-blur{position:relative!important;inset:auto!important;width:calc(100% - 28px)!important;margin:0 auto!important;aspect-ratio:4/3}
+  /* "Make hero photo full width": edge to edge, right under the menu */
+  html body .page-hero{display:block!important;padding:0 0 8px!important}
+  html body .page-hero-bg-blur{position:relative!important;inset:auto!important;width:100%!important;margin:0!important;aspect-ratio:4/3;border-radius:0!important;box-shadow:none!important}
   html body .page-hero-inner{padding:26px 18px 28px!important}
 }
 
