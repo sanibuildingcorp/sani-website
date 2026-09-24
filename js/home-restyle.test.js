@@ -33,7 +33,7 @@ ok('the stylesheet comes LAST, so it wins over the older blocks', IDX.lastIndexO
 }
 
 console.log('\n2. Fonts\n');
-const own = IDX.replace(BLOCKS, '');
+const own = IDX.replace(BLOCKS, '').replace(/<!-- SBC-READABLE:START -->[\s\S]*?<!-- SBC-READABLE:END -->/, ''); /* ops/site-readable.js's block, not the page's own CSS */
 const oldSel = [];
 (own.match(/<style[^>]*>[\s\S]*?<\/style>/g) || []).join('').replace(/\/\*[\s\S]*?\*\//g, '').replace(/([^{}]+)\{([^{}]*)\}/g, (m, sel, body) => { if (/Playfair|DM Sans/.test(body) && !/^\s*@/.test(sel)) sel.split(',').forEach((s) => { s = s.trim(); if (s && !oldSel.includes(s)) oldSel.push(s); }); return m; });
 const style = IDX.match(/<style id="home-restyle">([\s\S]*?)<\/style>/)[1];
