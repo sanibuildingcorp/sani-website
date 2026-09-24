@@ -6574,7 +6574,7 @@ function scopeDropEmptyServices(list) {
 /* Seeds the draft from whatever the AI produced. Handles every shape the
    estimator has emitted: serviceBreakdown, scopeSections, and plain
    labor/materials/customerSupplied/exclusions. */
-function buildScopeDraftFromAI() {
+function buildScopeDraftFromAI(aiOnly) {
   var est = (currentRecord && currentRecord.estimate) || {};
   var byName = {};
   function svc(name) {
@@ -6624,7 +6624,11 @@ function buildScopeDraftFromAI() {
      serviceBreakdown and could show a completely different set of services from the
      live customer page — or none. The published scope is now the first source, so
      the panel always opens on exactly what the customer can see. */
-  if (est.customerScopePublished === true &&
+  /* ...except for "Rebuild draft from AI". Reading the published copy first
+     there meant the button handed back the customer's current wording - the
+     old stock lines - instead of the AI's cards: the Astoria estimate came
+     back unchanged after Rebuild and Save. aiOnly skips it. */
+  if (aiOnly !== true && est.customerScopePublished === true &&
       est.publishedCustomerScope && Array.isArray(est.publishedCustomerScope.services) &&
       est.publishedCustomerScope.services.length) {
     return { services: est.publishedCustomerScope.services.map(function (sv) {
@@ -7962,7 +7966,7 @@ function scopeRebuildFromAI() {
      contractor just chose to discard. */
   currentRecord.estimate.lastMerge = null;
   scopeForgetMerges(function () { return true; });
-  currentRecord.estimate.manualCustomerScopeDraft = buildScopeDraftFromAI();
+  currentRecord.estimate.manualCustomerScopeDraft = buildScopeDraftFromAI(true);
   /* false, not delete: the server merges the save into the record, so a
      missing field would leave the stored note in place. */
   currentRecord.estimate.scopeDraftKept = false;
