@@ -78,6 +78,23 @@ console.log('\n2. What the customer picks still gets its own card\n');
   ok('no bathroom on the job: Electrical is its own card as before', names(nout) === 'Electrical,Painting', names(nout));
 }
 
+console.log('\n2b. The second Astoria regenerate: a Doors card of floor prep and dust doors\n');
+{
+  const j = job();
+  j.labor = j.labor.filter((l) => l.section !== 'Doors');
+  j.labor.push({ section: 'Doors', item: 'Undercut door casings and jambs', qty: 3, rate: 80 },
+               { section: 'Doors', item: 'Trim door bottoms and rehang interior doors', qty: 3, rate: 80 },
+               { section: 'Doors', item: 'Temporary zipper dust doors at work areas', qty: 2, rate: 60 });
+  const inp = { request: { service: 'Bathroom', selectedServices: PICKED, description: 'Gut the bathroom. New hardwood floors. Patch and paint walls, ceilings, doors and trim (if required). Replace six windows.' } };
+  const before = lineSum(j);
+  const out = DP.consolidateCustomerPresentation(j, ANALYSIS, inp);
+  ok('NO DOORS CARD: undercutting casings, trimming door bottoms and dust doors are not doors being bought', names(out).split(',').indexOf('Doors') === -1, names(out));
+  const secOf = (re) => out.labor.filter((l) => re.test(l.item)).map((l) => l.section);
+  ok('undercutting the casings and trimming the door bottoms for the new floor are Flooring work', secOf(/Undercut|door bottoms/).every((x) => x === 'Flooring') && secOf(/Undercut|door bottoms/).length === 2, JSON.stringify(secOf(/Undercut|door bottoms/)));
+  ok('the zipper dust doors are protection for the whole project, not a Doors line (so no Doors group on the dashboard either)', secOf(/zipper/).join() === 'Whole Project' && out.labor.find((l) => /zipper/.test(l.item)).sectionAsPriced === 'Doors', JSON.stringify(secOf(/zipper/)));
+  ok('...and the total does not move', Math.abs(lineSum(out) - before) < 0.01);
+}
+
 console.log('\n3. The generator records what the customer picked\n');
 {
   ok('customer_selected_services is the customer\'s own picks, apart from the analyst\'s selected_trades', /customer_selected_services: unique\(\[\.\.\.\(input\.request\.selectedServices \|\| \[\]\), input\.request\.service\]\.map\(titleCase\)\.filter\(Boolean\)\),/.test(GEN));
