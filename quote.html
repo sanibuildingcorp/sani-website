@@ -999,7 +999,7 @@ function whyHtml(){
   WARRANTY_YEARS+'-year workmanship warranty: if something we did isn\u2019t right, we come back and fix it',
   'Nothing extra without your OK: the price above covers the work listed',
   held?'Your price is held until '+held:'Your price is held for 30 days'];
- return`<section class="card why"><div class="ey">Why homeowners choose Sani</div><ul class="inlist">${li.map(x=>`<li>${E(x)}</li>`).join('')}</ul></section>`}
+ return`<section class="card why"><div class="ey">Why clients choose Sani</div><ul class="inlist">${li.map(x=>`<li>${E(x)}</li>`).join('')}</ul></section>`}
 function actionHtml(c,approved,needsContract,hasPrice){
  /* Nothing priced: the only thing to do here is answer, so the box is OPEN.
     messageBox(false) renders it behind `.panel{display:none}` - it is normally

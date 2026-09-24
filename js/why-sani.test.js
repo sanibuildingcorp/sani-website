@@ -3,7 +3,7 @@
  *   "I need add something soft text to the customer side estimate...
  *    trustworthy, promising... to let them easily decide positively."
  *
- * A short "Why homeowners choose Sani" box right above the go-ahead button.
+ * A short "Why clients choose Sani" box right above the go-ahead button.
  * Four promises, each one true: fully insured, a 3-year workmanship warranty
  * (he confirmed 3 years, and the contract now says 3 years too), nothing
  * extra without their OK, and the price held to the date the terms print.
@@ -23,7 +23,7 @@ vm.runInContext('const VALID_DAYS=30;const WARRANTY_YEARS=3;' + ['issuedAt', 'va
 console.log('\n1. The box, right where they decide\n');
 {
   const h = vm.runInContext('actionHtml({name:"Zurabi"},false,false,true)', ctx);
-  const w = h.indexOf('Why homeowners choose Sani'), b = h.indexOf("Yes, I'd like to go ahead");
+  const w = h.indexOf('Why clients choose Sani'), b = h.indexOf("Yes, I'd like to go ahead");
   ok('IT SITS RIGHT ABOVE "Yes, I\'d like to go ahead"', w !== -1 && b !== -1 && w < b && h.indexOf('<section class="actions">') > w);
   ok('four short promises, with check marks', (h.match(/<li>/g) || []).length === 4 && /<ul class="inlist">/.test(h));
   ok('fully insured', /Fully insured NYC renovation company/.test(h));
@@ -32,15 +32,15 @@ console.log('\n1. The box, right where they decide\n');
   ok('THE PRICE IS HELD UNTIL THE DATE THE TERMS PRINT (October 23 for a September 23 send)', /Your price is held until October 23, 2026/.test(h), (h.match(/held until [^<]*/) || [''])[0]);
   ok('never the forbidden word', !/licens/i.test(vm.runInContext('whyHtml()', ctx)));
   const c = vm.runInContext('actionHtml({name:"Zurabi"},false,true,true)', ctx);
-  ok('also above "Review & sign the contract"', c.indexOf('Why homeowners choose Sani') !== -1 && c.indexOf('Why homeowners choose Sani') < c.indexOf('Review &amp; sign the contract'));
+  ok('also above "Review & sign the contract"', c.indexOf('Why clients choose Sani') !== -1 && c.indexOf('Why clients choose Sani') < c.indexOf('Review &amp; sign the contract'));
 }
 
 console.log('\n2. Not where it does not belong\n');
 {
-  ok('not once they said yes', vm.runInContext('actionHtml({name:"Z"},true,false,true)', ctx).indexOf('Why homeowners') === -1);
-  ok('not on a job with no price yet', vm.runInContext('actionHtml({name:"Z"},false,false,false)', ctx).indexOf('Why homeowners') === -1);
+  ok('not once they said yes', vm.runInContext('actionHtml({name:"Z"},true,false,true)', ctx).indexOf('Why clients') === -1);
+  ok('not on a job with no price yet', vm.runInContext('actionHtml({name:"Z"},false,false,false)', ctx).indexOf('Why clients') === -1);
   ctx.rec = { sentAt: '2026-01-01T00:00:00Z' };
-  ok('not on an expired estimate (it only asks for an update)', vm.runInContext('actionHtml({name:"Z"},false,false,true)', ctx).indexOf('Why homeowners') === -1);
+  ok('not on an expired estimate (it only asks for an update)', vm.runInContext('actionHtml({name:"Z"},false,false,true)', ctx).indexOf('Why clients') === -1);
 }
 
 console.log('\n3. The contract says the same warranty\n');
