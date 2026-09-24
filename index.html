@@ -3447,6 +3447,20 @@ html body .hero .hstat-icon svg{stroke:#dcb46a!important;color:#dcb46a!important
   html body .hero .hero-btn,html body .hero .hero-btn-secondary{width:auto!important}
   html body .hero .hero-sub{max-width:560px!important}
 }
+
+/* The stat box sits ON the line between the dark photo and the light strip
+   below - half on each ("dropped down to be in the middle between black and
+   white"). Solid, so the half on the light side reads as a card. */
+html body .hero{overflow:visible!important}
+html body .hero .hero-content{padding-bottom:0!important}
+html body .hero .hero-stats{position:relative!important;z-index:6!important;background:#13233a!important;border:1px solid rgba(255,255,255,.10)!important;box-shadow:0 18px 40px -18px rgba(9,17,29,.55)!important;margin-bottom:-64px!important}
+html body .hero .borough-strip{position:relative!important;z-index:2!important;padding-top:96px!important}
+@media(min-width:900px){
+  html body .hero .hero-content{padding-bottom:0!important}
+  html body .hero .hero-stats{margin-bottom:-70px!important}
+  html body .hero .borough-strip{padding-top:100px!important}
+}
+html body .hero .hero-content{overflow:visible!important;position:relative!important;z-index:5!important;height:auto!important;max-height:none!important}
 </style><!-- RESTYLE-CSS:END -->
 </body>
 </html>

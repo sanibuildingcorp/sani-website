@@ -62,5 +62,7 @@ ok('the words sit on a dark overlay, white, with the accent in gold', /\.hero \.
 ok('the stat cards sit under the buttons, never on top of them', /\.hero \.hero-stats\{position:static!important;[^}]*transform:none!important/.test(style));
 ok('the words use the full width on a phone (the old narrow column is undone)', /\.hero \.hero-eyebrow,html body \.hero h1,html body \.hero \.hero-tagline,html body \.hero \.hero-sub,html body \.hero \.hero-btn-row\{width:auto!important;max-width:640px!important\}/.test(style));
 
+ok('THE STAT BOX SITS ON THE LINE between the dark photo and the light strip: half on each', /\.hero \.hero-stats\{position:relative!important;z-index:6!important;background:#13233a!important;[^}]*margin-bottom:-64px!important\}/.test(style) && /\.hero \.borough-strip\{position:relative!important;z-index:2!important;padding-top:96px!important\}/.test(style) && /\.hero \.hero-content\{overflow:visible!important/.test(style) && /html body \.hero\{overflow:visible!important\}/.test(style));
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
