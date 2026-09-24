@@ -45,7 +45,7 @@
     <meta name="twitter:image" content="https://www.sanibuildingcorp.com/images/hero/home-hero-og.jpg">
 <!-- Preload the hero image so it's discovered & painted faster (improves LCP) -->
 <link rel="preload" as="image" href="images/hero/home-hero-room.webp?v=1790000000" media="(min-width: 900px)" fetchpriority="high">
-<link rel="preload" as="image" href="images/home/sage-tile-bathroom.jpg?v=1783395361421" media="(max-width: 899px)" fetchpriority="high">
+<link rel="preload" as="image" href="images/hero/home-hero-bath.webp?v=1790000001" media="(max-width: 899px)" fetchpriority="high">
 <!-- Load Google Fonts without blocking the first paint -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1856,7 +1856,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 <!-- ══════════ HERO ══════════ -->
 <section class="hero">
     <div class="hero-image">
-      <picture><source media="(max-width: 899px)" srcset="images/home/sage-tile-bathroom.jpg?v=1783395361421" width="600" height="938"><img class="hero-img" src="images/hero/home-hero-room.webp?v=1790000000" data-sbc-ref="images/hero/home-hero-room.webp" alt="Sani Building Corp renovation project in Brooklyn, NYC" width="853" height="558" fetchpriority="high" decoding="async"></picture>
+      <picture><source media="(max-width: 899px)" srcset="images/hero/home-hero-bath.webp?v=1790000001" width="657" height="986"><img class="hero-img" src="images/hero/home-hero-room.webp?v=1790000000" data-sbc-ref="images/hero/home-hero-room.webp" alt="Sani Building Corp renovation project in Brooklyn, NYC" width="853" height="558" fetchpriority="high" decoding="async"></picture>
       <div class="hero-scrim"></div>
     </div>
   <div class="hero-content">
@@ -3416,7 +3416,7 @@ html body .why-section-title{font-size:clamp(28px,7.4vw,48px)!important;line-hei
    (images/hero/home-hero-room.webp, cut from our own collage). */
 html body .hero{background:#0f1c2d!important;min-height:0!important;padding-bottom:0!important}
 html body .hero .hero-image{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;min-height:0!important;filter:none!important;z-index:0!important}
-html body .hero .hero-img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;filter:none!important;opacity:1!important}
+html body .hero .hero-img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center 85%!important;filter:none!important;opacity:1!important}
 html body .hero .hero-scrim{display:block!important;position:absolute!important;inset:0!important;opacity:1!important;background:linear-gradient(180deg,rgba(9,17,29,.62) 0%,rgba(9,17,29,.38) 45%,rgba(9,17,29,.82) 100%)!important}
 /* phones: our sage-tile bathroom (portrait, sharp on a phone); computers keep the room */
 html body .hero picture{position:absolute;inset:0;display:block}
@@ -3465,6 +3465,14 @@ html body .hero .borough-strip{position:relative!important;z-index:2!important;p
   html body .hero .borough-strip{padding-top:100px!important}
 }
 html body .hero .hero-content{overflow:visible!important;position:relative!important;z-index:5!important;height:auto!important;max-height:none!important}
+
+/* Phones: the photo belongs to the words, not to the whole top block - the
+   hero also holds the light strips below, and they hid the lower half of the
+   bathroom (the tub). Same file the <picture> preloads for phones. */
+@media(max-width:899px){
+  html body .hero .hero-image{display:none!important}
+  html body .hero .hero-content{background:linear-gradient(180deg,rgba(9,17,29,.66) 0%,rgba(9,17,29,.40) 45%,rgba(9,17,29,.78) 100%),url('images/hero/home-hero-bath.webp?v=1790000001') center 78%/cover no-repeat!important}
+}
 </style><!-- RESTYLE-CSS:END -->
 </body>
 </html>
