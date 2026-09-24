@@ -798,6 +798,10 @@ function normalizeProjectAnalysis(raw, input) {
     project_summary: cleanText(raw.project_summary || input.request.description || input.request.service),
     project_type: cleanText(raw.project_type || "mixed"),
     selected_trades: selectedTrades.length ? selectedTrades : [titleCase(input.request.service || "General")],
+    /* What the CUSTOMER picked, apart from what the analyst added: a Bathroom
+       keeps its own plumbing and wiring unless the customer picked that trade
+       as a service of its own (lib/deterministic-pricing.js, BATHROOM_PARTS). */
+    customer_selected_services: unique([...(input.request.selectedServices || []), input.request.service].map(titleCase).filter(Boolean)),
     confirmed_scope: Array.isArray(raw.confirmed_scope) ? raw.confirmed_scope : [],
     inferred_scope: Array.isArray(raw.inferred_scope) ? raw.inferred_scope : [],
     customer_supplied_finish_materials: unique([...(Array.isArray(raw.customer_supplied_finish_materials) ? raw.customer_supplied_finish_materials : []), ...input.request.customerSupplies].map(cleanText).filter(Boolean)),
