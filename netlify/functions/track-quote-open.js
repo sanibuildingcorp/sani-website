@@ -29,7 +29,11 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers: cors, body: "" };
   }
 
-  const ref = (event.queryStringParameters || {}).ref;
+  /* The ref comes on the query (the old pixel) or in a small POST body
+     (quote-seen.js, the address the page uses now - see there). */
+  let ref = (event.queryStringParameters || {}).ref;
+  if (!ref && event.body) { try { ref = JSON.parse(event.isBase64Encoded ? Buffer.from(event.body, "base64").toString("utf8") : event.body).ref; } catch (_) {} }
+  ref = ref ? String(ref).trim() : "";
   if (!ref) return pixelResponse(cors);
 
   try {

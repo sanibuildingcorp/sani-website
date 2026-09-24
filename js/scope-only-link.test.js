@@ -98,7 +98,7 @@ console.log('\nthe server sends the scope link nothing it could print as a price
       sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
       Image: function () { const o = {}; Object.defineProperty(o, 'src', { set() { tracked++; } }); return o; },
       /* the open ping now goes by fetch (keepalive); count it here too */
-      fetch: async (u) => { if (/track-quote-open/.test(String(u))) { tracked++; return { ok: true }; } return { ok: true, json: async () => clone(record) }; },
+      fetch: async (u) => { if (/quote-seen|track-quote-open/.test(String(u))) { tracked++; return { ok: true }; } return { ok: true, json: async () => clone(record) }; },
       addEventListener() {}, parent: null,
     };
     win.window = win;

@@ -1061,9 +1061,13 @@ function track(){
  /* "it's not tracking open": inside the Gmail app's browser an Image nobody
     holds can be dropped before it is sent. fetch with keepalive is sent even
     as the page goes; the Image stays as the fallback, and is kept referenced. */
+ /* Opened inside the Gmail app, the ping to track-quote-open never arrived
+    while the page itself loaded: a request with "track" in its address is
+    what in-app browsers and content blockers drop. It now goes to
+    quote-seen (the same function) as a POST; the old pixel is the fallback. */
  const u='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now();
  const img=()=>{const i=new Image();window.__sbcPing=i;i.src=u};
- if(typeof fetch==='function'){try{fetch(u,{method:'GET',keepalive:true,cache:'no-store',credentials:'omit'}).catch(img);return}catch(e){}}
+ if(typeof fetch==='function'){try{fetch('/.netlify/functions/quote-seen',{method:'POST',keepalive:true,cache:'no-store',credentials:'omit',headers:{'Content-Type':'text/plain'},body:JSON.stringify({ref:ref})}).then(r=>{if(!r||!r.ok)img()}).catch(img);return}catch(e){}}
  img()}
 /* "Request an updated estimate": the message box, opened, with the ask
    already written - they can add to it and press send. */

@@ -54,7 +54,9 @@ console.log('\n2. The open is tracked from inside the Gmail app\n');
     vm.createContext(ctx); vm.runInContext(ext('track'), ctx); return ctx;
   };
   vm.runInContext('track()', mk(true, false));
-  ok('THE PING GOES BY fetch WITH keepalive, so it is sent even as the in-app browser moves on', hits.length === 1 && /\/\.netlify\/functions\/track-quote-open\?ref=SBC-260806-YX1G&_=\d+/.test(hits[0].u) && hits[0].o.keepalive === true && hits[0].o.cache === 'no-store' && imgs.length === 0, JSON.stringify(hits));
+  ok('THE PING GOES BY fetch WITH keepalive, so it is sent even as the in-app browser moves on', hits.length === 1 && hits[0].o.keepalive === true && hits[0].o.cache === 'no-store' && imgs.length === 0, JSON.stringify(hits));
+  /* "if estimate opens inside the email then i don't have a open notification" */
+  ok('...TO AN ADDRESS WITHOUT "track" IN IT (quote-seen), as a POST with the ref in the body', hits[0].u === '/.netlify/functions/quote-seen' && hits[0].o.method === 'POST' && JSON.parse(hits[0].o.body).ref === 'SBC-260806-YX1G' && !/track/i.test(hits[0].u), JSON.stringify(hits[0]));
   const c2 = mk(true, true);
   vm.runInContext('track()', c2);
   return new Promise((r) => setTimeout(r, 10)).then(() => {

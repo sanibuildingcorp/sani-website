@@ -44,6 +44,18 @@ const REC = () => ({ ref: 'SBC-260806-YX1G', status: 'sent', customer: { name: '
   await TQ.handler({ httpMethod: 'GET', queryStringParameters: { ref: 'SBC-260806-YX1G' } });
   ok('no Resend key: the open is still recorded, only the email is skipped', sent.length === 2 && STORE.get('SBC-260806-YX1G').openCount === 3);
 
+  console.log('\n1b. The page reports opens to quote-seen, by POST\n');
+  const QS = require(path.join(ROOT, 'netlify/functions/quote-seen.js'));
+  process.env.RESEND_API_KEY = 'r-test'; delete process.env.CONTRACTOR_EMAIL;
+  STORE.set('SBC-260806-YX1G', REC());
+  const before = sent.length;
+  r = await QS.handler({ httpMethod: 'POST', headers: {}, queryStringParameters: {}, body: JSON.stringify({ ref: 'SBC-260806-YX1G' }) });
+  ok('QUOTE-SEEN IS THE SAME FUNCTION: a POST with the ref in the body records the open and sends the alert', QS.handler === TQ.handler && r.statusCode === 200 && STORE.get('SBC-260806-YX1G').status === 'opened' && sent.length === before + 1 && sent[sent.length - 1].body.to[0] === 'info@sanibuildingcorp.com');
+  r = await QS.handler({ httpMethod: 'POST', headers: {}, queryStringParameters: {}, isBase64Encoded: true, body: Buffer.from(JSON.stringify({ ref: 'SBC-260806-YX1G' })).toString('base64') });
+  ok('...a base64 body is read too', STORE.get('SBC-260806-YX1G').openCount === 2);
+  r = await QS.handler({ httpMethod: 'POST', headers: {}, queryStringParameters: {}, body: 'not json' });
+  ok('...a body with no ref records nothing and still answers', r.statusCode === 200 && STORE.get('SBC-260806-YX1G').openCount === 2);
+
   console.log('\n2. A Save does not undo what the customer did\n');
   process.env.DASHBOARD_KEY = 'k';
   const SE = require(path.join(ROOT, 'netlify/functions/save-estimate.js'));
