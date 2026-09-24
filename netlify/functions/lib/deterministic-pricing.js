@@ -265,7 +265,14 @@ const SERVICE_VOCAB = [
   { name: 'Doors',             ev: /\bdoors?\b|doorway/,
                                strong: /\bdoor slabs?\b|door jamb|doorway|lockset|door hardware/,
                                item: /\bdoors?\b|doorway|jamb|lockset|hinge/,                      sec: /\bdoor/,
-                               trade: /\bdoor/ },
+                               trade: /\bdoor/,
+                               /* A shower door is bathroom glass, flooring cut in at a doorway is
+                                  flooring, and "paint the doors" is painting. None of them is a
+                                  door the customer is buying - the Astoria estimate grew a $1,258
+                                  "Doors" card holding the shower enclosure and the floor trim.
+                                  Tested against LINES only, never the customer's own words, so
+                                  "replace three doors and refinish the floors" still gets Doors. */
+                               lineNot: /shower|glass enclosure|\btub\b|floor|transition|threshold|saddle|paint|primer|stain/ },
   { name: 'Mirrors & Glass',   ev: /\bmirror/,
                                strong: /\bmirror\b|glass panel|glass wall|glazier/,
                                item: /mirror|glass panel|glass wall|glazier/,                      sec: /mirror|glass/,
@@ -403,6 +410,9 @@ function genericOperation(item) {
   return /project management|project coordination|coordination|supervision|general conditions|general labor|final project cleanup|final cleanup|walk[- ]?through|site protection|material haul|walk[- ]?up.*haul|debris removal|debris disposal|disposal haul|jobsite setup/.test(i);
 }
 
+/* Trades that are part of a bathroom renovation, not services beside it. */
+const BATHROOM_PARTS = ['Plumbing', 'Electrical', 'Waterproofing'];
+
 /* Map one trade name the customer or the analyst wrote onto a canonical service. */
 function tradeToService(trade) {
   const t = norm(trade);
@@ -436,6 +446,10 @@ function canonicalService(section, item, selected) {
      deliberately pass [] keep behaving exactly as they did. */
   const gated = allowed.length > 0;
   const permitted = n => !gated || allowed.includes(n) || CONTAINER_SERVICES.includes(n);
+  /* The card a trade's line lands on: its own when allowed; the Bathroom when
+     the trade is one of the bathroom's own parts and Bathroom is on the job
+     (see BATHROOM_PARTS). '' when neither. */
+  const target = n => permitted(n) ? n : (gated && BATHROOM_PARTS.includes(n) && allowed.includes('Bathroom') ? 'Bathroom' : '');
 
   if (genericOperation(i)) return 'General';
 
@@ -443,19 +457,22 @@ function canonicalService(section, item, selected) {
   for (const v of SERVICE_VOCAB) {
     if (!v.strong || !v.strong.test(i)) continue;
     if (v.not && v.not.test(i)) continue;
-    if (permitted(v.name)) return v.name;
+    if (v.lineNot && v.lineNot.test(i)) continue;
+    if (target(v.name)) return target(v.name);
   }
   /* Ordered walk on the item wording. */
   for (const v of SERVICE_VOCAB) {
     if (!v.item.test(i)) continue;
     if (v.not && v.not.test(i)) continue;
-    if (permitted(v.name)) return v.name;
+    if (v.lineNot && v.lineNot.test(i)) continue;
+    if (target(v.name)) return target(v.name);
   }
   /* Then the section wording. */
   for (const v of SERVICE_VOCAB) {
     if (!v.sec || !v.sec.test(sec)) continue;
     if (v.not && v.not.test(sec)) continue;
-    if (permitted(v.name)) return v.name;
+    if (v.lineNot && v.lineNot.test(i)) continue;
+    if (target(v.name)) return target(v.name);
   }
   if (/project management|supervision|coordination|general conditions|general labor|cleanup|site protection/.test(sec)) return 'General';
 
@@ -648,6 +665,7 @@ function resolveServiceSet(analysis, input, estimate) {
              a coordination or cleanup line. */
           if (!i || protectionConsumable(i) || genericOperation(i)) return false;
           if (v.not && v.not.test(i)) return false;
+          if (v.lineNot && v.lineNot.test(i)) return false;
           return pats.some(re => re.test(i));
         });
       };
@@ -658,6 +676,18 @@ function resolveServiceSet(analysis, input, estimate) {
     admitted.forEach(f => { if (!union.includes(f)) union.push(f); });
     if (union.length) allowed = union;
     else if (!allowed.length) allowed = found;
+    /* ══ A BATHROOM INCLUDES ITS OWN PLUMBING, WIRING AND WATERPROOFING. ═══════
+       The Astoria estimate came back with Electrical $226.51 and Plumbing
+       $225.26 beside a $16,817.79 Bathroom: the vanity light, the GFCI and the
+       fixture hook-ups, split off because the customer's words mentioned
+       lighting and plumbing. To the customer that is one bathroom. With a
+       Bathroom on the job these parts stay in it - unless the CUSTOMER picked
+       the trade as a service of its own. The analyst's selected_trades do not
+       count: it adds trades, and that is how these two cards were made. */
+    if (allowed.includes('Bathroom')) {
+      const picked = allowedServiceSet(analysis?.customer_selected_services || [...(input?.request?.selectedServices || []), input?.request?.service].filter(Boolean));
+      allowed = allowed.filter(x => !BATHROOM_PARTS.includes(x) || picked.includes(x));
+    }
   }
   const arr = allowed.slice();
   Object.defineProperty(arr, '__sbcResolved', { value: true, enumerable: false });
