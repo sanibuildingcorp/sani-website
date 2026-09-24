@@ -68,7 +68,7 @@ function mkCtx(fetchImpl) {
   `, ctx);
 
   ['planIntakeQuestions', 'showPlannedQuestion', 'renderAIQuestion', 'answerAIQuestion',
-   'loadNextAIQuestion', 'startStep2', 'selectAIOption'].forEach(n => vm.runInContext(ext(n), ctx));
+   'loadNextAIQuestion', 'startStep2', 'selectAIOption', 'followUpProgress'].forEach(n => vm.runInContext(ext(n), ctx));
   return ctx;
 }
 
@@ -107,10 +107,14 @@ const LEGACY = 'estimate-ai-question';
       f.calls.length === 1 && f.calls[0].url.indexOf(PLANNER) !== -1,
       f.calls.map(x => x.url).join(', '));
     ok('the first question is on screen', c._els['step2-title'].textContent === PLANNED[0].label);
-    ok('the reason and the position are shown under it',
+    /* the position moved up into the progress counter ("4 of 5 · Question 1
+       of 2") - the follow-ups all sit on step 4, and "4 of 5" alone looked stuck */
+    ok('the reason is shown under it, and the position in the progress counter',
       /Area sets every tile line/.test(c._els['step2-subtitle'].textContent) &&
-      /Question 1 of 2/.test(c._els['step2-subtitle'].textContent),
-      c._els['step2-subtitle'].textContent);
+      !/Question 1 of 2/.test(c._els['step2-subtitle'].textContent) &&
+      c._els['step-sub'].textContent === ' · Question 1 of 2' && c._els['step-num'].textContent == 4,
+      c._els['step2-subtitle'].textContent + ' | ' + c._els['step-sub'].textContent);
+    ok('...and the bar sits partway through step 4, moving with each question', /^6[0-9.]+%$/.test(c._els['progress-fill'].style.width), c._els['progress-fill'].style.width);
     ok('what the AI understood is kept', vm.runInContext('intakeReadAs', c).indexOf('Re-tile') === 0);
 
     /* answering moves on WITHOUT another network call - that is the whole point */
