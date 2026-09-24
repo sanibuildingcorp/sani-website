@@ -153,6 +153,7 @@ button{padding:15px;border:0;border-radius:6px;font-weight:700;font-family:var(-
 .sendnote{font-size:13px;color:var(--muted);margin-top:8px}
 .eyrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .printbtn{font:inherit;color:var(--n-deep);border-style:solid;white-space:nowrap}
+.printrow{padding:0 4px 12px}
 .printnote{display:none}
 /* PRINT: THE WHOLE RECORD, ON PAPER. "customer need to show proof from
    conversation ... save or print out full estimate with conversation." On
@@ -882,7 +883,7 @@ async function uploadMsgFiles(){
  }
  return out}
 function messageBox(open){
- return `<section class="card panel${open?' open':''}" id="q"><div class="ey" style="margin-bottom:6px">Send us a message</div><textarea id="msg" rows="3" maxlength="4000" placeholder="Ask a question, or tell us what you would like changed"></textarea><div class="attach-row"><label class="attach-btn">\uD83D\uDCCE Add photos or files<input type="file" id="msgfile" accept="image/*,application/pdf,.pdf,.heic,.heif,.dwg,.dxf,.doc,.docx" multiple onchange="msgPick(event)"></label><button type="button" class="attach-btn printbtn" onclick="printQuote(this)">\uD83D\uDDA8 Print / save as PDF</button><div class="attach-prev" id="attprev"></div></div><button class="approve" id="sendbtn" onclick="S('question')">Send message</button><div id="st" class="sendnote"></div></section>`}
+ return `<section class="card panel${open?' open':''}" id="q"><div class="ey" style="margin-bottom:6px">Send us a message</div><textarea id="msg" rows="3" maxlength="4000" placeholder="Ask a question, or tell us what you would like changed"></textarea><div class="attach-row"><label class="attach-btn">\uD83D\uDCCE Add photos or files<input type="file" id="msgfile" accept="image/*,application/pdf,.pdf,.heic,.heif,.dwg,.dxf,.doc,.docx" multiple onchange="msgPick(event)"></label><div class="attach-prev" id="attprev"></div></div><button class="approve" id="sendbtn" onclick="S('question')">Send message</button><div id="st" class="sendnote"></div></section>`}
 /* ══ THE CONTRACT HAD NO ROUTE TO THE CUSTOMER. ═══════════════════════════════
    The dashboard has a checkbox reading "Include contract with this estimate. When
    checked, the customer must review & sign the contract to approve." Ticking it set
@@ -979,22 +980,26 @@ function priced(r){
  if(A(e.labor).length||A(e.materials).length)return true;
  return calc(e).total>0}
 
+/* "there is no print/save pdf, if i click to request then there is": the
+   button sat inside the message box, hidden until "Request changes" was
+   pressed. It now has its own row under the buttons, always in view. */
+function printRow(){return'<div class="printrow"><button type="button" class="attach-btn printbtn" onclick="printQuote(this)">\uD83D\uDDA8 Print / save as PDF</button></div>'}
 function actionHtml(c,approved,needsContract,hasPrice){
  /* Nothing priced: the only thing to do here is answer, so the box is OPEN.
     messageBox(false) renders it behind `.panel{display:none}` - it is normally
     revealed by the "Request changes / ask a question" button, and that button is
     deliberately gone here. Passing false left the customer a page of questions
     and no way on earth to reply to them. */
- if(hasPrice===false)return`<div class="muted" style="padding:2px 4px 10px;font-size:13.5px">Reply below and we will price the job as soon as we have your answers.</div>${messageBox(true)}`;
+ if(hasPrice===false)return`<div class="muted" style="padding:2px 4px 10px;font-size:13.5px">Reply below and we will price the job as soon as we have your answers.</div>${printRow()}${messageBox(true)}`;
  /* ══ PAST THIRTY DAYS: NOTHING TO APPROVE, ONE THING TO ASK FOR. ══════════
     "block approval after expiration and let them re-request updated
      estimate." The server refuses too (lib/estimate-validity.js). */
  const R=typeof rec!=='undefined'?rec:null;
- if(!approved&&R&&(R.sentVersionInfo||R.sentAt)&&Date.now()>validUntil(R).getTime())return`<section class="actions"><button class="approve" onclick="RU()">Request an updated estimate</button></section><div class="muted" style="padding:0 4px 10px;font-size:13px">This estimate has passed its 30 days, so it can no longer be accepted. Ask us and we will send you an updated one.</div>${messageBox(false)}`;
- if(approved)return`<div class="approved">✓ Thank you, we have your go-ahead! The Sani Building Corp team will contact you within one business day to confirm the details, the schedule and the final signature. Nothing is paid until we have talked. This page stays live for the whole job — message us here any time.</div>${messageBox(true)}`;
+ if(!approved&&R&&(R.sentVersionInfo||R.sentAt)&&Date.now()>validUntil(R).getTime())return`<section class="actions"><button class="approve" onclick="RU()">Request an updated estimate</button></section><div class="muted" style="padding:0 4px 10px;font-size:13px">This estimate has passed its 30 days, so it can no longer be accepted. Ask us and we will send you an updated one.</div>${printRow()}${messageBox(false)}`;
+ if(approved)return`<div class="approved">✓ Thank you, we have your go-ahead! The Sani Building Corp team will contact you within one business day to confirm the details, the schedule and the final signature. Nothing is paid until we have talked. This page stays live for the whole job — message us here any time.</div>${printRow()}${messageBox(true)}`;
  if(needsContract){
   const url='/contract.html?ref='+encodeURIComponent(ref);
-  return`<section class="actions"><a class="approve" style="display:inline-block;text-align:center;text-decoration:none" href="${url}">Review &amp; sign the contract to approve &rarr;</a><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><div class="muted" style="padding:0 4px 10px;font-size:13px">This project is approved by signing the contract — scope, payment schedule and warranty are all set out there.</div>${messageBox(false)}`;
+  return`<section class="actions"><a class="approve" style="display:inline-block;text-align:center;text-decoration:none" href="${url}">Review &amp; sign the contract to approve &rarr;</a><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><div class="muted" style="padding:0 4px 10px;font-size:13px">This project is approved by signing the contract — scope, payment schedule and warranty are all set out there.</div>${printRow()}${messageBox(false)}`;
  }
  /* ══ A YES, NOT A BILL. ═══════════════════════════════════════════════════
     "the customers scarring when they sees approve they may thinking if they
@@ -1002,7 +1007,7 @@ function actionHtml(c,approved,needsContract,hasPrice){
      persons from the company." The button asks for a go-ahead, says under
      it that nothing is paid now and that a person calls first. What it does
      is unchanged: the estimate is accepted and he is told. */
- return`<section class="actions"><button class="approve" onclick="P('a')">Yes, I'd like to go ahead</button><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><div class="muted gonote" style="padding:0 4px 10px;font-size:13px">No payment now. This tells us you're happy with the estimate. Our team will call you to confirm the details and schedule before anything is signed or paid.</div><section class="card panel" id="a"><div class="ey" style="margin-bottom:6px">Your name</div><input id="sig" value="${E(c.name||'')}" placeholder="Your name"><button class="approve" onclick="S('accept')">Send my go-ahead</button></section>${messageBox(false)}`}
+ return`<section class="actions"><button class="approve" onclick="P('a')">Yes, I'd like to go ahead</button><button class="ask" onclick="P('q')">Request changes / ask a question</button></section><div class="muted gonote" style="padding:0 4px 10px;font-size:13px">No payment now. This tells us you're happy with the estimate. Our team will call you to confirm the details and schedule before anything is signed or paid.</div>${printRow()}<section class="card panel" id="a"><div class="ey" style="margin-bottom:6px">Your name</div><input id="sig" value="${E(c.name||'')}" placeholder="Your name"><button class="approve" onclick="S('accept')">Send my go-ahead</button></section>${messageBox(false)}`}
 function renderLegacy(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},ct=calc(e),approved=isApproved(r),hasPrice=priced(r);app.innerHTML=`${hasPrice?pinHtml(r,ct.total):pinHtml(r,null)}<section class="hero"><div class="ey">${SOW?'Scope of Work':'Estimate'} ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div>${statusCell(hasPrice,approved,e)}<div><small>Timeline</small>${E(timelineShort(e.timelineText)||'TBD')}</div>${hasPrice?`<div><small>Total</small>${M(ct.total)}</div>`:''}</div>${heroPhoto(r)}</section>${addonHtml(r)}${E(e.summary)?`<section class="card"><div class="ey">Project summary</div><p>${E(e.summary)}</p></section>`:''}${timelineCard(e)}${E(legacyScope(e))?`<section class="card"><div class="ey">Scope of work</div><div class="scope-text">${E(legacyScope(e))}</div></section>`:''}${hasPrice?`<section class="card prices">${costRows(e,ct)}<div class="pr total"><span>Your estimate</span><span>${M(ct.total)}</span></div></section>`:''}${SOW?sowFoot():contractHtml(r,contractRequired(r),approved)+(hasPrice?termsHtml(r,approved)+actionHtml(c,approved,contractRequired(r),hasPrice)+threadHtml(r):threadHtml(r)+actionHtml(c,approved,contractRequired(r),hasPrice))}`;track()}
 function renderV7(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),hasPrice=priced(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal+chosenFor(x.title).reduce((t,o)=>t+o.price,0))}</b></div>`).join(''),addedRows=chosenIds().map(k=>chosen[k]).map(o=>`<div class="pr added"><b>${E(o.label)}</b><b>+${M(o.price)}</b></div>`).join(''),shown=shownTotal(ct);app.innerHTML=`${hasPrice?pinHtml(r,shown):pinHtml(r,null)}<section class="hero"><div class="ey">${SOW?'Scope of Work':'Estimate'} ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div>${statusCell(hasPrice,approved,e)}<div><small>Timeline</small>${E(timelineShort(e.timelineText)||'TBD')}</div>${hasPrice?`<div><small>Total</small>${M(shown)}</div>`:''}</div>${heroPhoto(r)}</section>${addonHtml(r)}${E(e.summary)?`<section class="card"><div class="ey">Project summary</div><p>${E(e.summary)}</p></section>`:''}${timelineCard(e)}${hasPrice?`<section class="card prices"><div class="ey" style="padding:0 0 8px">Price by service</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}${addedRows}<div class="pr total"><span>Your estimate</span><span>${M(shown)}</span></div></section>`:''}${projectCard(e)}${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div><b>${M(s.subtotal+chosenFor(s.title).reduce((t,o)=>t+o.price,0))}</b></div><div class="body">${list('Included in this service','in',withChosen(s))}${list('Customer supplies','sup',s.customerSupplies)}${list('Not included','out',withoutChosen(s))}${optsHtml(s)}${details(e,s)}</div></section>`).join('')}${SOW?sowFoot():contractHtml(r,contractRequired(r),approved)+(hasPrice?termsHtml(r,approved)+actionHtml(c,approved,contractRequired(r),hasPrice)+threadHtml(r):threadHtml(r)+actionHtml(c,approved,contractRequired(r),hasPrice))}`;track()}
 /* Seed the picker from the record before the first paint. A customer who added
@@ -1053,7 +1058,13 @@ function track(){
  try{
   if(sessionStorage.getItem('sbcSkipTrack')===ref){sessionStorage.removeItem('sbcSkipTrack');return}
  }catch(e){}
- new Image().src='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now()}
+ /* "it's not tracking open": inside the Gmail app's browser an Image nobody
+    holds can be dropped before it is sent. fetch with keepalive is sent even
+    as the page goes; the Image stays as the fallback, and is kept referenced. */
+ const u='/.netlify/functions/track-quote-open?ref='+encodeURIComponent(ref)+'&_='+Date.now();
+ const img=()=>{const i=new Image();window.__sbcPing=i;i.src=u};
+ if(typeof fetch==='function'){try{fetch(u,{method:'GET',keepalive:true,cache:'no-store',credentials:'omit'}).catch(img);return}catch(e){}}
+ img()}
 /* "Request an updated estimate": the message box, opened, with the ask
    already written - they can add to it and press send. */
 window.RU=()=>{P('q');const m=document.getElementById('msg');if(m&&!m.value.trim())m.value='Hi, my estimate '+ref+' has expired. Please send me an updated estimate.';if(m)m.focus()};
