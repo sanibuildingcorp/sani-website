@@ -63,9 +63,17 @@ console.log('\n1. The repair itself');
     rec.estimate.serviceBreakdown.some(x => x.title === 'Painting') &&
     Math.abs(customerTotals(rec.estimate, rec).customerTotal - totalBefore) < 0.005,
     JSON.stringify(rec.estimate.serviceBreakdown.map(x => x.title)));
-  t('the priced lines are untouched',
-    JSON.stringify(r.estimate.labor) === JSON.stringify(rec.estimate.labor) &&
-    JSON.stringify(r.estimate.materials) === JSON.stringify(rec.estimate.materials));
+  /* Item, quantity and rate never move. A line whose section named the phantom
+     card is filed as "Whole Project" (remembering the old name), so the
+     dashboard does not show the phantom card again. */
+  const priced = (l) => JSON.stringify({ item: l.item, qty: l.qty, rate: l.rate, unit: l.unit });
+  const sameMoney = (a, b) => a.length === b.length && a.every((l, i) => priced(l) === priced(b[i]));
+  const moved = r.estimate.labor.concat(r.estimate.materials).filter((l) => l.sectionAsPriced === 'Painting');
+  t('the priced lines are untouched (item, quantity, rate)',
+    sameMoney(r.estimate.labor, rec.estimate.labor) && sameMoney(r.estimate.materials, rec.estimate.materials));
+  t('...and a line that named the phantom card is now "Whole Project"',
+    moved.every((l) => l.section === 'Whole Project') && !r.estimate.labor.concat(r.estimate.materials).some((l) => l.section === 'Painting'),
+    JSON.stringify(r.estimate.labor.concat(r.estimate.materials).map((l) => l.section)));
 }
 
 console.log('\n2. A record that is already correct');

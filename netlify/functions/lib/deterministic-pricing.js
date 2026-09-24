@@ -272,7 +272,7 @@ const SERVICE_VOCAB = [
                                   "Doors" card holding the shower enclosure and the floor trim.
                                   Tested against LINES only, never the customer's own words, so
                                   "replace three doors and refinish the floors" still gets Doors. */
-                               lineNot: /shower|glass enclosure|\btub\b|floor|transition|threshold|saddle|paint|primer|stain/ },
+                               lineNot: /shower|glass enclosure|\btub\b|floor|transition|threshold|saddle|paint|primer|stain|undercut|door bottoms?|dust|zip(?:per)?|temporary/ },
   { name: 'Mirrors & Glass',   ev: /\bmirror/,
                                strong: /\bmirror\b|glass panel|glass wall|glazier/,
                                item: /mirror|glass panel|glass wall|glazier/,                      sec: /mirror|glass/,
@@ -294,7 +294,7 @@ const SERVICE_VOCAB = [
                                trade: /kitchen|cabinet/,
                                ev: /kitchen/ },
   { name: 'Flooring',          ev: /\bfloor|hardwood|laminate|vinyl plank/,
-                               item: /engineered hardwood|hardwood floor|flooring|floor patch|patch floor|quarter.?round|subfloor|underlayment|transition strip|baseboard|vinyl plank|laminate floor/,
+                               item: /engineered hardwood|hardwood floor|flooring|floor patch|patch floor|quarter.?round|subfloor|underlayment|transition strip|baseboard|vinyl plank|laminate floor|undercut|door bottoms?/,
                                sec: /floor/,
                                trade: /floor/,
                                not: /bath|shower/ },
@@ -392,7 +392,9 @@ const VOCAB_BY_NAME = SERVICE_VOCAB.reduce((a, v) => { a[v.name] = v; return a; 
    `not` is also consulted against the customer's own description in the evidence
    loop - and a customer who writes "paint the hall, bring painters tape" must
    still get a Painting card. This tests one line's wording and nothing else. */
-const PROTECTION_CONSUMABLE = /drop\s*cloth|rosin\s*paper|poly\s*(?:sheet|film)|plastic\s*sheet|ram\s*board|masking\s*(?:tape|film|paper)|painters?'?\s*tape|floor\s*protection|surface\s*protection|protective\s*(?:covering|sheet|paper)/;
+/* Zipper dust doors and zip walls are protection for the whole job, not doors:
+   the second Astoria regenerate filed "temporary zipper dust doors" on a Doors card. */
+const PROTECTION_CONSUMABLE = /drop\s*cloth|rosin\s*paper|poly\s*(?:sheet|film)|plastic\s*sheet|ram\s*board|masking\s*(?:tape|film|paper)|painters?'?\s*tape|floor\s*protection|surface\s*protection|protective\s*(?:covering|sheet|paper)|zip(?:per)?[\s-]*(?:dust\s*)?doors?|dust\s*doors?|zip\s*-?\s*wall/;
 
 function protectionConsumable(item) {
   const i = norm(item);
@@ -1751,6 +1753,13 @@ function consolidateCustomerPresentation(estimate, analysis, input) {
      card (project-wide cost) keeps its own section. */
   [...(out.labor || []), ...(out.materials || [])].forEach(l => {
     const s = ownerOf.get(l);
+    /* Project-wide cost whose section still names a trade that has no card
+       (the zipper dust doors on "Doors") is filed as "Whole Project", the name
+       the estimator uses for shared work - or the dashboard, which groups
+       lines by section, would show the vanished card again. */
+    if ((!s || !map[s]) && !CONTAINER_SERVICES.includes(text(l.section)) && SERVICE_VOCAB.some(v => v.name === text(l.section)) && !map[text(l.section)]) {
+      l.sectionAsPriced = text(l.section); l.section = 'Whole Project'; return;
+    }
     if (!s || !map[s]) return;
     if (text(l.section) !== s) { l.sectionAsPriced = text(l.section); l.section = s; }
   });
