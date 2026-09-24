@@ -80,3 +80,32 @@ html body .cta-title em{color:#d9a54a!important}
 /* buttons on the dark bands stay readable */
 html body :is(.cta-section,.process-section,section[style*="background:var(--navy)"]) .btn-primary{background:#d9a54a!important;color:var(--n-ink)!important}
 html body :is(.cta-section,.process-section,section[style*="background:var(--navy)"]) .btn-outline{color:#fff!important;border-color:rgba(255,255,255,.7)!important}
+
+/* ── the quick estimate: one calm card, photo and a short form ── */
+.qe{background:var(--n-bg);padding:64px 18px}
+.qe-card{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr 1.15fr;background:#fff;border:1px solid var(--n-line);border-radius:22px;overflow:hidden;box-shadow:0 24px 50px -34px rgba(31,29,26,.45)}
+.qe-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.qe-body{padding:40px 40px 34px}
+.qe-body h2{font-size:clamp(28px,3.4vw,38px);line-height:1.1;color:var(--n-ink);margin:8px 0 10px}
+.qe-lead{color:var(--n-soft);font-size:17px;line-height:1.6;margin:0 0 22px}
+.qe-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.qe-f{display:block;margin-bottom:14px}
+.qe-f span{display:block;font-size:15px;font-weight:700;color:var(--n-ink);margin-bottom:6px}
+.qe-f :is(input,select,textarea){width:100%;box-sizing:border-box;font:inherit;font-size:17px;color:var(--n-ink);background:var(--n-bg);border:1.5px solid var(--n-line);border-radius:12px;padding:13px 14px;outline:none;appearance:none}
+.qe-f select{background-image:linear-gradient(45deg,transparent 50%,var(--n-soft) 50%),linear-gradient(135deg,var(--n-soft) 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat}
+.qe-f textarea{resize:vertical;min-height:92px}
+.qe-f :is(input,select,textarea):focus{border-color:var(--n-ink);background:#fff}
+.qe-hp{position:absolute;left:-9999px}
+.qe-btn{width:100%;border:0;border-radius:999px;background:var(--n-ink);color:#fff;font:inherit;font-weight:700;font-size:17px;padding:16px;cursor:pointer;margin-top:4px}
+.qe-btn:hover{background:#3a3631}
+.qe-btn:disabled{opacity:.7;cursor:wait}
+.qe-err{margin:0 0 12px;padding:10px 14px;border-radius:10px;background:#fbf1e3;color:#6b4a12;font-size:16px}
+.qe-note{margin:14px 0 0;text-align:center;color:var(--n-soft);font-size:17px;line-height:1.5}
+.qe-note a{color:var(--n-ink);font-weight:700}
+.qe-done h3{font-size:24px;color:var(--n-ink);margin:14px 0 8px}
+.qe-done p{color:var(--n-soft);font-size:17px;line-height:1.6}
+@media(max-width:860px){.qe{padding:44px 0}.qe-card{grid-template-columns:1fr;border-radius:0;border-left:0;border-right:0}.qe-photo{aspect-ratio:4/3}.qe-body{padding:26px 18px 28px}.qe-row{grid-template-columns:1fr;gap:0}}
+
+/* the badges under the hero said what the numbers bar says right below:
+   "the budge ... is double time in beginning" */
+html body .page-hero .hero-cred-cards{display:none!important}

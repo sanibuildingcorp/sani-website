@@ -9,7 +9,9 @@ Does three things to bathroom-renovation.html, and is safe to run again:
      compare, process, projects, faq) - the words are not touched;
   2. puts the tab bar right after the hero: Free Estimate, Areas, Services,
      Before & After, Process, Projects, FAQ;
-  3. appends partials/bath-natural.css last, so it wins over the older rules.
+  3. puts the quick estimate form (partials/quick-estimate.html) right after
+     the borough cards - the contact page's form, in short;
+  4. appends partials/bath-natural.css last, so it wins over the older rules.
 """
 import pathlib, re
 
@@ -28,7 +30,7 @@ for tag, i in IDS:
     assert ('id="' + i + '"') in page, i
 
 TABS = ('<nav class="n-tabs" aria-label="On this page"><div class="n-tabs-in">'
-        '<a class="n-go" href="/estimate">Free Estimate</a>'
+        '<a class="n-go" href="#quick-estimate">Free Estimate</a>'
         '<a href="#boroughs">Areas</a><a href="#services">Services</a><a href="#before-after">Before &amp; After</a>'
         '<a href="#process">Process</a><a href="#projects">Projects</a><a href="#faq">FAQ</a>'
         '</div></nav>')
@@ -40,6 +42,8 @@ def put(text, start, end, block, where):
     return text[:i] + start + block + end + "\n" + text[i:]
 
 page = put(page, "<!-- NATURAL-TABS:START -->", "<!-- NATURAL-TABS:END -->", TABS, "<!-- ============ STATS BAR ============ -->")
+QUICK = (ROOT / "partials/quick-estimate.html").read_text().strip()
+page = put(page, "<!-- QUICK-ESTIMATE:START -->", "<!-- QUICK-ESTIMATE:END -->", "\n" + QUICK + "\n", "<!-- ============ NO-DEMO PROMO BAND ============ -->")
 page = put(page, "<!-- NATURAL-CSS:START -->", "<!-- NATURAL-CSS:END -->", '<style id="bath-natural">\n' + css.strip() + "\n</style>", "</body>")
 P.write_text(page)
 print("bathroom page: natural look applied")

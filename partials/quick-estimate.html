@@ -1,0 +1,58 @@
+<section class="qe" id="quick-estimate" aria-labelledby="qe-title">
+  <div class="qe-card">
+    <div class="qe-photo"><img src="images/bathroom-areas/brooklyn-marble-tile.jpg" alt="Walk-in shower with a built-in niche, finished by Sani Building Corp" width="720" height="540" loading="lazy" decoding="async"></div>
+    <div class="qe-body">
+      <div class="eyebrow">Free estimate</div>
+      <h2 id="qe-title">Tell us about your bathroom</h2>
+      <p class="qe-lead">A few details and we&rsquo;ll get back to you within a few hours with a free, no-obligation estimate.</p>
+      <!-- posts to the "contact" form that contact.html registers with Netlify; it is not registered here, so Netlify keeps learning that form (with its address and photo fields) from contact.html only -->
+      <form name="contact" method="POST" id="qeForm" novalidate>
+        <input type="hidden" name="form-name" value="contact">
+        <input type="hidden" name="service" value="Bathroom Renovation">
+        <p class="qe-hp"><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
+        <div class="qe-row">
+          <label class="qe-f"><span>Your name</span><input type="text" name="name" required autocomplete="name"></label>
+          <label class="qe-f"><span>Phone</span><input type="tel" name="phone" required autocomplete="tel" inputmode="tel"></label>
+        </div>
+        <div class="qe-row">
+          <label class="qe-f"><span>Email</span><input type="email" name="email" required autocomplete="email"></label>
+          <label class="qe-f"><span>Area</span><select name="borough" required><option value="" disabled selected>Choose your area</option><option>Brooklyn</option><option>Manhattan</option><option>Queens</option><option>Bronx</option><option>Long Island</option><option>Staten Island</option><option>Other</option></select></label>
+        </div>
+        <label class="qe-f"><span>What would you like done?</span><textarea name="message" rows="3" required placeholder="For example: small bathroom, new walk-in shower and vanity"></textarea></label>
+        <p class="qe-err" id="qeErr" role="alert" hidden></p>
+        <button type="submit" class="qe-btn" id="qeBtn">Get my free estimate</button>
+        <p class="qe-note">Prefer to talk? Call <a href="tel:3322770990">(332) 277-0990</a>. Fully insured &middot; No obligation.</p>
+      </form>
+      <div class="qe-done" id="qeDone" hidden>
+        <h3>Thank you &mdash; we have your request.</h3>
+        <p>We&rsquo;ll call or email you within a few hours. A confirmation is on its way to your inbox.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+/* Quick estimate: the contact page's form ("contact"), in short. It goes where
+   that form goes - Netlify Forms, the customer's confirmation email, and the
+   dashboard as a new lead - and a failed extra never takes the "thank you" back. */
+(function(){
+  var f=document.getElementById('qeForm'); if(!f) return;
+  var err=document.getElementById('qeErr'), btn=document.getElementById('qeBtn');
+  f.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var d=new FormData(f), g=function(k){return String(d.get(k)||'').trim();};
+    var miss=[['name','your name'],['phone','a phone number'],['email','an email'],['borough','your area'],['message','a few words about the job']].filter(function(x){return !g(x[0]);}).map(function(x){return x[1];});
+    if(miss.length){ err.textContent='Please add '+miss.join(', ')+'.'; err.hidden=false; return; }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g('email'))){ err.textContent='Please check the email address.'; err.hidden=false; return; }
+    err.hidden=true; btn.disabled=true; btn.textContent='Sending…';
+    var p=function(n){return String(n).padStart(2,'0');}, t=new Date();
+    var ref='contact-'+String(t.getFullYear()).slice(2)+p(t.getMonth()+1)+p(t.getDate())+'-'+Math.random().toString(36).slice(2,6);
+    try{ await fetch('/',{method:'POST',body:d}); }catch(_){ f.submit(); return; }
+    if(!g('bot-field')){
+      var lead={name:g('name'),email:g('email'),phone:g('phone'),service:g('service'),area:g('borough'),address:'',details:g('message'),photos:[],photoSlots:[]};
+      fetch('/.netlify/functions/send-confirmation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({form:'contact',photoCount:0},lead))}).catch(function(){});
+      fetch('/.netlify/functions/contact-to-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({contactRef:ref},lead))}).catch(function(){});
+    }
+    f.hidden=true; var done=document.getElementById('qeDone'); done.hidden=false; done.scrollIntoView({behavior:'smooth',block:'center'});
+  });
+})();
+</script>
