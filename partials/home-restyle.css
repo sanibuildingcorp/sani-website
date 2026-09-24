@@ -77,8 +77,10 @@ html body .why-section-title{font-size:clamp(28px,7.4vw,48px)!important;line-hei
    (images/hero/home-hero-room.webp, cut from our own collage). */
 html body .hero{background:#0f1c2d!important;min-height:0!important;padding-bottom:0!important}
 html body .hero .hero-image{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;min-height:0!important;filter:none!important;z-index:0!important}
-html body .hero .hero-img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:28% center!important;filter:none!important;opacity:1!important}
-html body .hero .hero-scrim{display:block!important;position:absolute!important;inset:0!important;opacity:1!important;background:linear-gradient(180deg,rgba(9,17,29,.74) 0%,rgba(9,17,29,.60) 42%,rgba(9,17,29,.90) 100%)!important}
+html body .hero .hero-img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;filter:none!important;opacity:1!important}
+html body .hero .hero-scrim{display:block!important;position:absolute!important;inset:0!important;opacity:1!important;background:linear-gradient(180deg,rgba(9,17,29,.62) 0%,rgba(9,17,29,.38) 45%,rgba(9,17,29,.82) 100%)!important}
+/* phones: our sage-tile bathroom (portrait, sharp on a phone); computers keep the room */
+html body .hero picture{position:absolute;inset:0;display:block}
 html body .hero .hero-content{min-height:0!important;height:auto!important;padding:110px 22px 30px!important;justify-content:flex-start!important}
 /* the old hero kept its words in a narrow column beside the photo; on the
    dark photo they use the full width */
@@ -102,6 +104,7 @@ html body .hero .hstat{border-color:rgba(255,255,255,.12)!important;background:t
 html body .hero .hstat-label{color:#fff!important;text-shadow:none!important}
 html body .hero .hstat-icon svg{stroke:#dcb46a!important;color:#dcb46a!important}
 @media(min-width:900px){
+  html body .hero .hero-img{object-position:28% center!important}
   html body .hero .hero-scrim{background:linear-gradient(90deg,rgba(9,17,29,.90) 0%,rgba(9,17,29,.74) 48%,rgba(9,17,29,.30) 100%)!important}
   html body .hero{padding-bottom:0!important;overflow:hidden!important}
   html body .hero .hero-content{padding:150px 36px 48px!important}

@@ -57,6 +57,8 @@ ok('never "licensed", never TV mounting in what was added', !/licens|\btv\b|tele
 
 console.log('\n5. The hero: our own room, dark, white words\n');
 ok('THE HERO PHOTO IS OUR OWN FINISHED ROOM (cut from the own-work collage), light and preloaded', /<img class="hero-img" src="images\/hero\/home-hero-room\.webp\?v=\d+"[^>]*width="853" height="558"[^>]*fetchpriority="high"/.test(IDX) && fs.statSync(path.join(ROOT, 'images/hero/home-hero-room.webp')).size < 60 * 1024);
+ok('ON A PHONE THE HERO IS OUR SAGE-TILE BATHROOM (portrait, sharp on a phone), preloaded for phones only; computers keep the room, preloaded for computers only', /<picture><source media="\(max-width: 899px\)" srcset="images\/home\/sage-tile-bathroom\.jpg\?v=\d+" width="600" height="938"><img class="hero-img"/.test(IDX) && /<link rel="preload" as="image" href="images\/home\/sage-tile-bathroom\.jpg\?v=\d+" media="\(max-width: 899px\)" fetchpriority="high">/.test(IDX) && /<link rel="preload" as="image" href="images\/hero\/home-hero-room\.webp\?v=\d+" media="\(min-width: 900px\)" fetchpriority="high">/.test(IDX));
+ok('...and the phone overlay is light enough to see the photo', /\.hero \.hero-scrim\{[^}]*rgba\(9,17,29,\.38\) 45%/.test(style));
 ok('...never the old stock PNG (it showed TV mounting)', !/hero-img" src="images\/hero\/home-hero\.png/.test(IDX));
 ok('the words sit on a dark overlay, white, with the accent in gold', /\.hero \.hero-scrim\{display:block!important;[^}]*rgba\(9,17,29/.test(style) && /\.hero h1\{color:#fff!important/.test(style) && /\.hero h1 em,html body \.hero h1 \.amp\{color:#dcb46a!important/.test(style));
 ok('the stat cards sit under the buttons, never on top of them', /\.hero \.hero-stats\{position:static!important;[^}]*transform:none!important/.test(style));
