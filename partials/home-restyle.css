@@ -75,10 +75,10 @@ html body .why-section-title{font-size:clamp(28px,7.4vw,48px)!important;line-hei
      "I don't like the hero section" - the words sat on a washed-out
    collage. Same words, same buttons, same stat cards; now on one photo
    (images/hero/home-hero-room.webp, cut from our own collage). */
-html body .hero{background:#0f1c2d!important;min-height:0!important;padding-bottom:0!important}
+html body .hero{background:#1c1a18!important;min-height:0!important;padding-bottom:0!important}
 html body .hero .hero-image{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;min-height:0!important;filter:none!important;z-index:0!important}
 html body .hero .hero-img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center 85%!important;filter:none!important;opacity:1!important}
-html body .hero .hero-scrim{display:block!important;position:absolute!important;inset:0!important;opacity:1!important;background:linear-gradient(180deg,rgba(9,17,29,.62) 0%,rgba(9,17,29,.38) 45%,rgba(9,17,29,.82) 100%)!important}
+html body .hero .hero-scrim{display:block!important;position:absolute!important;inset:0!important;opacity:1!important;background:linear-gradient(180deg,rgba(24,22,20,.62) 0%,rgba(24,22,20,.38) 45%,rgba(24,22,20,.82) 100%)!important}
 /* phones: our sage-tile bathroom (portrait, sharp on a phone); computers keep the room */
 html body .hero picture{position:absolute;inset:0;display:block}
 html body .hero .hero-content{min-height:0!important;height:auto!important;padding:110px 22px 30px!important;justify-content:flex-start!important}
@@ -98,14 +98,14 @@ html body .hero .hero-btn{background:#c8912f!important;color:#0f1c2d!important;b
 html body .hero .hero-btn svg{stroke:#0f1c2d!important}
 html body .hero .hero-btn:hover{background:#d9a33f!important}
 html body .hero .hero-btn-secondary{background:transparent!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.7)!important}
-html body .hero .hero-stats{position:static!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;transform:none!important;width:100%!important;background:rgba(9,17,29,.72)!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:none!important;backdrop-filter:none!important;margin-top:28px!important}
+html body .hero .hero-stats{position:static!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;transform:none!important;width:100%!important;background:rgba(24,22,20,.72)!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:none!important;backdrop-filter:none!important;margin-top:28px!important}
 html body .hero .hero-stats::before,html body .hero .hero-stats::after{display:none!important}
 html body .hero .hstat{border-color:rgba(255,255,255,.12)!important;background:transparent!important}
 html body .hero .hstat-label{color:#fff!important;text-shadow:none!important}
 html body .hero .hstat-icon svg{stroke:#dcb46a!important;color:#dcb46a!important}
 @media(min-width:900px){
   html body .hero .hero-img{object-position:28% center!important}
-  html body .hero .hero-scrim{background:linear-gradient(90deg,rgba(9,17,29,.90) 0%,rgba(9,17,29,.74) 48%,rgba(9,17,29,.30) 100%)!important}
+  html body .hero .hero-scrim{background:linear-gradient(90deg,rgba(24,22,20,.90) 0%,rgba(24,22,20,.74) 48%,rgba(24,22,20,.30) 100%)!important}
   html body .hero{padding-bottom:0!important;overflow:hidden!important}
   html body .hero .hero-content{padding:150px 36px 48px!important}
   html body .hero .hero-btn-row{flex-direction:row!important;max-width:640px!important}
@@ -118,7 +118,7 @@ html body .hero .hstat-icon svg{stroke:#dcb46a!important;color:#dcb46a!important
    white"). Solid, so the half on the light side reads as a card. */
 html body .hero{overflow:visible!important}
 html body .hero .hero-content{padding-bottom:0!important}
-html body .hero .hero-stats{position:relative!important;z-index:6!important;background:#13233a!important;border:1px solid rgba(255,255,255,.10)!important;box-shadow:0 18px 40px -18px rgba(9,17,29,.55)!important;margin-bottom:-64px!important}
+html body .hero .hero-stats{position:relative!important;z-index:6!important;background:#2b2926!important;border:1px solid rgba(255,255,255,.10)!important;box-shadow:0 18px 40px -18px rgba(24,22,20,.55)!important;margin-bottom:-64px!important}
 html body .hero .borough-strip{position:relative!important;z-index:2!important;padding-top:96px!important}
 @media(min-width:900px){
   html body .hero .hero-content{padding-bottom:0!important}
@@ -132,5 +132,5 @@ html body .hero .hero-content{overflow:visible!important;position:relative!impor
    bathroom (the tub). Same file the <picture> preloads for phones. */
 @media(max-width:899px){
   html body .hero .hero-image{display:none!important}
-  html body .hero .hero-content{background:linear-gradient(180deg,rgba(9,17,29,.66) 0%,rgba(9,17,29,.40) 45%,rgba(9,17,29,.78) 100%),url('images/hero/home-hero-bath.webp?v=1790000001') center 78%/cover no-repeat!important}
+  html body .hero .hero-content{background:linear-gradient(180deg,rgba(24,22,20,.66) 0%,rgba(24,22,20,.40) 45%,rgba(24,22,20,.78) 100%),url('images/hero/home-hero-bath.webp?v=1790000001') center 78%/cover no-repeat!important}
 }
