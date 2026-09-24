@@ -6714,7 +6714,7 @@ function scopeDraft() {
   /* Shared work is said once, under "Included for the whole project", so it
      comes off the cards here too - the panel, the Save and the customer page
      then all agree. */
-  if (Array.isArray(est.manualCustomerScopeDraft.services)) tidyCards(est.projectIncluded, est.manualCustomerScopeDraft.services, { sup: "supplied", exc: "excluded" });
+  if (Array.isArray(est.manualCustomerScopeDraft.services)) tidyCards(est.projectIncluded, est.manualCustomerScopeDraft.services, { sup: "supplied", exc: "excluded" }, pricedNames(est));
   return est.manualCustomerScopeDraft;
 }
 
@@ -6751,9 +6751,10 @@ function onceEach(list) {
   });
   return kept;
 }
-function tidyCards(projectIncluded, cards, keys) {
+function tidyCards(projectIncluded, cards, keys, priced) {
   if (!Array.isArray(cards)) return cards;
   sharedOnce(projectIncluded, cards);
+  if (priced) showPricedShared(projectIncluded, cards, priced);
   var sup = keys.sup, exc = keys.exc;
   cards.forEach(function (c) {
     if (!c || typeof c !== "object") return;
@@ -6762,6 +6763,35 @@ function tidyCards(projectIncluded, cards, keys) {
     if (Array.isArray(c[exc]) && c[exc].length) {
       c[exc] = onceEach(c[exc].filter(function (x) { return !(hasSup && SUPPLY_SAY.test(sharedLine(x))); }));
     }
+  });
+  return cards;
+}
+/* PRICED SHARED WORK IS NEVER SILENT: protection, debris removal, cleanup or
+   coordination that is priced but said nowhere the customer reads gets its
+   stock sentence ("the customer question is about debris removal"). Same
+   rule as netlify/functions/lib/shared-once.js; js/shared-once.test.js
+   keeps the copies equal. */
+const PRICED_SHARED = [[/debris|dumpster|disposal|haul|carting|dump fee/i, /debris|dispos|haul|carted|carting|dumpster/i, 1], [/protect|dust barrier|floor covering|masking/i, /protect|dust barrier|cover/i, 0], [/clean ?up|cleanup|final clean|punch ?list/i, /clean/i, 2], [/coordinat|supervis|project manage/i, /coordinat|supervis|manag/i, 3]];
+function pricedNames(e) {
+  return [].concat(Array.isArray(e && e.labor) ? e.labor : [], Array.isArray(e && e.materials) ? e.materials : [])
+    .filter(function (l) { return l && ((Number(l.rate) || 0) * (l.qty == null ? 1 : Number(l.qty) || 0) > 0 || (Number(l.total) || 0) > 0); })
+    .map(function (l) { return String(l.item || l.name || l.description || ""); })
+    .filter(Boolean);
+}
+function showPricedShared(projectIncluded, cards, priced) {
+  if (!Array.isArray(cards) || !cards.length || !Array.isArray(priced) || !priced.length) return cards;
+  const proj = Array.isArray(projectIncluded) ? projectIncluded : null;
+  let said = (proj || []).map(sharedLine);
+  cards.forEach(function (c) { said = said.concat((Array.isArray(c && c.included) ? c.included : []).map(sharedLine)); });
+  const text = said.join(" \n ");
+  PRICED_SHARED.forEach(function (p) {
+    if (!priced.some(function (t) { return p[0].test(t); }) || p[1].test(text)) return;
+    const line = SHARED_STOCK[p[2]];
+    if (proj && cards.length > 1) { proj.push(line); return; }
+    const big = cards.reduce(function (a, b) { return (Number(b && b.subtotal) || 0) > (Number(a && a.subtotal) || 0) ? b : a; }, cards[0]);
+    if (!big || typeof big !== "object") return;
+    if (!Array.isArray(big.included)) big.included = [];
+    big.included.push(line);
   });
   return cards;
 }
