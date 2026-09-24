@@ -7963,7 +7963,9 @@ function scopeRebuildFromAI() {
   currentRecord.estimate.lastMerge = null;
   scopeForgetMerges(function () { return true; });
   currentRecord.estimate.manualCustomerScopeDraft = buildScopeDraftFromAI();
-  delete currentRecord.estimate.scopeDraftKept;
+  /* false, not delete: the server merges the save into the record, so a
+     missing field would leave the stored note in place. */
+  currentRecord.estimate.scopeDraftKept = false;
   scopeLinesRefresh();
   toast("✓ Draft rebuilt from AI estimate");
 }
@@ -8073,8 +8075,13 @@ async function scopePublish() {
      scopeCardTotals() here is what guarantees the dashboard and the customer's quote
      cannot disagree — they are the same number, computed once. */
   scopeStampBreakdown();
+  /* "Hide it after Save": the "your edited wording was kept" note has done its
+     job once this wording is saved. Sent as false so the stored note goes too;
+     put back if the save fails. */
+  var wasKept = currentRecord.estimate.scopeDraftKept;
+  if (wasKept === true) currentRecord.estimate.scopeDraftKept = false;
   /* A failed save used to be covered a moment later by this "published" toast. */
-  if (!(await saveDraft())) { renderScopeControl(); return; }
+  if (!(await saveDraft())) { if (wasKept === true) currentRecord.estimate.scopeDraftKept = true; renderScopeControl(); return; }
   renderScopeControl();
   toast("✓ Saved. The customer sees exactly this");
 }

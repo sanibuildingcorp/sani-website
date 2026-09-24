@@ -41,7 +41,9 @@ function page(answers) {
   ctx.scopeCleanCopy = () => ({ services: [] });
   ctx.scopeStampBreakdown = () => {};
   ctx.confirm = () => true;
-  ctx.sbcFetch = async () => {
+  ctx.bodies = [];
+  ctx.sbcFetch = async (url, o) => {
+    ctx.bodies.push(JSON.parse(o.body));
     const a = answers[Math.min(ctx.calls++, answers.length - 1)];
     if (a === 'drop') throw new TypeError('Load failed');
     return { ok: a.status >= 200 && a.status < 300, status: a.status, text: async () => a.body || '' };
@@ -98,6 +100,20 @@ const last = (ctx) => ctx.toasts[ctx.toasts.length - 1];
     await vm.runInContext('scopePublish()', c);
     ok('a good save says the customer sees exactly this', last(c) === '✓ Saved. The customer sees exactly this');
 
+    c = page([{ status: 200, body: '{"success":true}' }]);
+    c.currentRecord.estimate.scopeDraftKept = true;
+    await vm.runInContext('scopePublish()', c);
+    ok('"HIDE IT AFTER SAVE": the "your edited wording was kept" note is gone after a good save, and false is sent so the stored note goes too', c.currentRecord.estimate.scopeDraftKept === false && c.bodies[0].estimate.scopeDraftKept === false, JSON.stringify(c.bodies[0].estimate));
+
+    c = page([{ status: 500, body: '' }, { status: 500, body: '' }]);
+    c.currentRecord.estimate.scopeDraftKept = true;
+    await vm.runInContext('scopePublish()', c);
+    ok('...a failed save keeps the note, because nothing was saved', c.currentRecord.estimate.scopeDraftKept === true);
+
+    c = page([{ status: 200, body: '{"success":true}' }]);
+    await vm.runInContext('scopePublish()', c);
+    ok('...and a save with no note sends nothing extra', c.bodies[0].estimate.scopeDraftKept === undefined);
+
     c = page([{ status: 500, body: '' }, { status: 500, body: '' }]);
     await vm.runInContext('scopeSaveDraft()', c);
     ok('the private draft save does not say "saved" on a failure either', !c.toasts.some((t) => /Scope draft saved/.test(t)) && /^ERR Not saved: the server did not answer/.test(last(c)), c.toasts.join(' | '));
@@ -107,7 +123,7 @@ const last = (ctx) => ctx.toasts[ctx.toasts.length - 1];
   {
     ok('THE BOTTOM "SAVE DRAFT" IS GONE from the Send-it row', DASH.indexOf('💾 Save Draft</button>') === -1 && !/modal-actions-right[\s\S]{0,400}onclick="saveDraft\(\)"/.test(DASH));
     ok('...the Services panel keeps the one Save', (DASH.match(/onclick="scopePublish\(\)">💾 Save — the customer sees exactly this</g) || []).length === 1);
-    ok('...and it saves everything the old button did (title, summary, lines) - it calls the same save', /scopeStampBreakdown\(\);[\s\S]{0,120}await saveDraft\(\)/.test(ext('scopePublish')));
+    ok('...and it saves everything the old button did (title, summary, lines) - it calls the same save', /scopeStampBreakdown\(\);[\s\S]{0,700}await saveDraft\(\)/.test(ext('scopePublish')));
     ok('if the panel ever fails to draw, a plain Save stands in for it', /scope control render failed:", scopeErr\);\s*var scWrap = document\.getElementById\("scope-control-wrap"\);\s*if \(scWrap\) scWrap\.innerHTML = '<button class="btn-primary" onclick="saveDraft\(\)">💾 Save<\/button>';/.test(DASH));
     ok('no text still says "Save Draft" or "Publish" on screen', DASH.indexOf('Save Draft does <b>not</b>') === -1 && DASH.indexOf('Press <b>Publish</b>') === -1 && (DASH.match(/Press <b>Save<\/b>/g) || []).length === 2);
   }
