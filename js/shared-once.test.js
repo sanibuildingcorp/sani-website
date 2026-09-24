@@ -101,8 +101,8 @@ console.log('\n1b. Each point once, and the biggest card first\n');
 
 console.log('\n2. The customer page, the dashboard and the PDF all use it\n');
 {
-  const NAMES_C = ['SHARED_STOCK', 'SHARED_RE', 'SUPPLY_SAY', 'IDEA_STOP'];
-  const NAMES_F = ['sharedKey', 'sharedLine', 'sharedOnce', 'ideaWords', 'sameIdea', 'onceEach', 'tidyCards', 'bySize'];
+  const NAMES_C = ['SHARED_STOCK', 'SHARED_RE', 'SUPPLY_SAY', 'IDEA_STOP', 'PRICED_SHARED'];
+  const NAMES_F = ['sharedKey', 'sharedLine', 'sharedOnce', 'ideaWords', 'sameIdea', 'onceEach', 'tidyCards', 'bySize', 'pricedNames', 'showPricedShared'];
   const load = (src, ctx, extra) => { vm.createContext(ctx); vm.runInContext(NAMES_C.map((n) => constFrom(src, n)).concat(NAMES_F.map((n) => extFrom(src, n)), (extra || []).map((n) => extFrom(src, n))).join('\n'), ctx); return ctx; };
   const q = load(QUOTE, { A: (v) => (Array.isArray(v) ? v : []), JSON, Object, Array, String, Number, Set, Math });
   const d = load(DASH, { JSON, Object, Array, String, Number, Set, Math });
@@ -115,7 +115,7 @@ console.log('\n2. The customer page, the dashboard and the PDF all use it\n');
   ok('...and the same tidy and order (each point once, biggest first)', tl === vm.runInContext(tcall, q) && tl === vm.runInContext(tcall, d));
   ok('same sentences and the same patterns in all three', ['SHARED_RE', 'SUPPLY_SAY', 'IDEA_STOP'].every((n) => vm.runInContext(n + '.source', q) === vm.runInContext(n + '.source', d)) && vm.runInContext('SHARED_RE.source', d) === L.SHARED_RE.source && vm.runInContext('SUPPLY_SAY.source', d) === L.SUPPLY_SAY.source && JSON.stringify(vm.runInContext('SHARED_STOCK', q)) === JSON.stringify(L.SHARED_STOCK) && JSON.stringify(vm.runInContext('SHARED_STOCK', d)) === JSON.stringify(L.SHARED_STOCK));
 
-  ok('THE CUSTOMER PAGE: both ways the cards are built end in tidy + biggest first (published draft and AI cards)', /if\(!ps\)return bySize\(tidyCards\(e\.projectIncluded,reconcileCards\(e,foldZeroPriceServices\(pubScope\(e,active\)\)\),\{sup:'customerSupplies',exc:'notIncluded'\}\)\);/.test(QUOTE) && /return bySize\(tidyCards\(e\.projectIncluded,reconcileCards\(e,foldZeroPriceServices\(out\)\),\{sup:'customerSupplies',exc:'notIncluded'\}\)\)\}/.test(QUOTE));
+  ok('THE CUSTOMER PAGE: both ways the cards are built end in tidy + biggest first (published draft and AI cards)', /if\(!ps\)return bySize\(tidyCards\(e\.projectIncluded,reconcileCards\(e,foldZeroPriceServices\(pubScope\(e,active\)\)\),\{sup:'customerSupplies',exc:'notIncluded'\},pricedNames\(e\)\)\);/.test(QUOTE) && /return bySize\(tidyCards\(e\.projectIncluded,reconcileCards\(e,foldZeroPriceServices\(out\)\),\{sup:'customerSupplies',exc:'notIncluded'\},pricedNames\(e\)\)\)\}/.test(QUOTE));
 
   // the dashboard: the Services panel reads scopeDraft(), and Save publishes what it holds
   const dd = load(DASH, { JSON, Object, Array, String, Number, Set, Math }, ['scopeDraft']);
@@ -145,7 +145,7 @@ console.log('\n4. The draft the page tidied, the generator, the writer\n');
   const cards = ASTORIA_TIDY();
   const prev = { serviceBreakdown: clone(cards), projectIncluded: PROJECT, manualCustomerScopeDraft: { services: L.tidyCards(PROJECT, clone(cards), { sup: 'customerSupplies', exc: 'notIncluded' }).map((c) => ({ name: c.title, included: c.included, supplied: c.customerSupplies, excluded: c.notIncluded })) } };
   ok('a draft the dashboard tidied still mirrors the untidied AI cards (Regenerate still gives new wording)', C.scopeMirrorsAi(prev) === true);
-  ok('THE GENERATOR tidies and orders the cards after the writer, then rebuilds the scope box', /timing\.scopeMs = Date\.now\(\) - scopeStarted;[\s\S]{0,400}bySize\(tidyCards\(estimate\.projectIncluded, estimate\.serviceBreakdown, \{ sup: "customerSupplies", exc: "notIncluded" \}\)\);\s*syncScopeText\(estimate\);/.test(GEN));
+  ok('THE GENERATOR tidies and orders the cards after the writer, then rebuilds the scope box', /timing\.scopeMs = Date\.now\(\) - scopeStarted;[\s\S]{0,400}bySize\(tidyCards\(estimate\.projectIncluded, estimate\.serviceBreakdown, \{ sup: "customerSupplies", exc: "notIncluded" \}, pricedNames\(estimate\)\)\);\s*syncScopeText\(estimate\);/.test(GEN));
   ok('THE WRITER is told: never restate customer supplies, say each limit once', /Never restate what the customer supplies - that list is shown right beside this one\./.test(WRITER) && /Say each limit once\. Two bullets that mean the same thing in different words is one bullet\./.test(WRITER));
   ok('THE DASHBOARD orders biggest first when the draft is built, on Rebuild and on Save - not while typing', /est\.manualCustomerScopeDraft = buildScopeDraftFromAI\(\);\s*scopeSortBySize\(est\.manualCustomerScopeDraft\);/.test(DASH) && /buildScopeDraftFromAI\(true\);\s*scopeSortBySize\(currentRecord\.estimate\.manualCustomerScopeDraft\);/.test(DASH) && /scopeSortBySize\(scopeDraft\(\)\);\s*var clean = scopeCleanCopy\(\);/.test(DASH) && (DASH.match(/scopeSortBySize\(/g) || []).length === 4);
   const dd = { JSON, Object, Array, String, Number, Set, Math };
@@ -156,6 +156,56 @@ console.log('\n4. The draft the page tidied, the generator, the writer\n');
   ok('...by the card\'s own total', sorted.services.map((x) => x.name).join(',') === 'Bathroom,Flooring,Windows,Painting');
   const pdf = PDF.scopeCards({ serviceBreakdown: ASTORIA_TIDY(), projectIncluded: PROJECT });
   ok('THE PDF: whole project, then Bathroom, Flooring, Windows, Painting, tidied', pdf.map((c) => c.title).join(',') === 'Whole project,Bathroom,Flooring,Windows,Painting' && pdf[3].excluded.length === 1, pdf.map((c) => c.title).join(','));
+}
+
+console.log('\n5. Priced shared work is never silent ("the customer question is about debris removal")\n');
+{
+  /* May Chen, 100 Riverside Blvd: one Bathroom card written in sentences;
+     the estimate priced a debris haul-out, a tub haul-away and disposal,
+     and she asked for "Removal of construction debris" as a change. */
+  const may = () => ({
+    labor: [
+      { item: 'Site protection and setup — floor and hallway protection, door dust barrier', qty: 1, rate: 420 },
+      { item: 'Bathtub removal — cut out and extract tub', qty: 1, rate: 650 },
+      { item: 'Debris haul-out from unit to building loading area via freight elevator', qty: 1, rate: 380 },
+      { item: 'Bathtub haul-away and disposal fee', qty: 1, rate: 225 },
+      { item: 'Disposal of general bathroom demolition debris (vanity, toilet, mirror, packaging)', qty: 1, rate: 180 },
+      { item: 'Double vanity installation — set, level, anchor to wall', qty: 1, rate: 900 },
+      { item: 'Final cleanup, fixture polish and punch list', qty: 1, rate: 260 },
+      { item: 'Project coordination and supervision — building COI, alteration paperwork', qty: 1, rate: 500 },
+      { item: 'Note: customer supplies toilets', qty: 1, rate: 0 },
+    ],
+    materials: [{ item: 'Mold-resistant primer/sealer, 1 gal', qty: 1, rate: 48 }],
+  });
+  const cards = () => [{ title: 'Bathroom', subtotal: 12697.7, included: ['Protect the occupied apartment and the building\'s common areas before any work begins.', 'Shut off and drain down the bathroom water supply, disconnect the existing fixtures, and remove the bathtub, the existing single vanity, the toilet and the existing mirror.', 'Supply and install the new 60 in. double-sink vanity.'], customerSupplies: ['2 Toilets'], notIncluded: [] }];
+  const K = { sup: 'customerSupplies', exc: 'notIncluded' };
+  const one = L.tidyCards([], cards(), K, L.pricedNames(may()));
+  ok('HER ONE CARD NOW SAYS THE DEBRIS IS CARRIED OUT AND DISPOSED OF', one[0].included.indexOf(BAG) !== -1, JSON.stringify(one[0].included));
+  ok('...and the priced cleanup and supervision too; protection was already said, so not twice', one[0].included.indexOf(CLEAN) !== -1 && one[0].included.indexOf(COORD) !== -1 && one[0].included.indexOf(PROTECT) === -1);
+  ok('...her own lines stay, first and in order', one[0].included.slice(0, 3).join('|') === cards()[0].included.join('|'));
+  const again = L.tidyCards([], one, K, L.pricedNames(may()));
+  ok('...run again (every render does), nothing is added twice', again[0].included.length === one[0].included.length);
+  ok('a free line (rate 0) is not priced work', L.pricedNames(may()).every((t) => !/^Note:/.test(t)));
+  const said = cards(); said[0].included.push('We carry all demolition debris down by freight elevator and dispose of it.');
+  ok('when a card already says it in its own words, nothing is added', L.tidyCards([], said, K, L.pricedNames(may()))[0].included.filter((x) => x === BAG).length === 0);
+  const noDebris = may(); noDebris.labor = noDebris.labor.filter((l) => !/debris|haul|disposal/i.test(l.item));
+  ok('nothing priced for debris: no debris line is added', L.tidyCards([], cards(), K, L.pricedNames(noDebris))[0].included.indexOf(BAG) === -1);
+  const proj = ['We cover the hallway.'];
+  const two = [{ title: 'Bathroom', subtotal: 9000, included: ['Tile'] }, { title: 'Painting', subtotal: 2000, included: ['Paint'] }];
+  L.tidyCards(proj, two, K, L.pricedNames(may()));
+  ok('two or more cards: the line goes to "Included for the whole project", not on a card', proj.indexOf(BAG) !== -1 && two.every((c) => c.included.indexOf(BAG) === -1));
+  const noProj = [{ title: 'Bathroom', subtotal: 2000, included: ['Tile'] }, { title: 'Painting', subtotal: 9000, included: ['Paint'] }];
+  L.tidyCards(undefined, noProj, K, L.pricedNames(may()));
+  ok('...and with no whole-project list, on the biggest card', noProj[1].included.indexOf(BAG) !== -1 && noProj[0].included.indexOf(BAG) === -1);
+  ok('without the priced lines (older callers), tidyCards changes nothing new', L.tidyCards([], cards(), K)[0].included.length === 3);
+
+  const q = (function () { const ctx = { A: (v) => (Array.isArray(v) ? v : []), JSON, Object, Array, String, Number, Set, Math }; vm.createContext(ctx); vm.runInContext(['SHARED_STOCK', 'SHARED_RE', 'SUPPLY_SAY', 'IDEA_STOP', 'PRICED_SHARED'].map((n) => constFrom(QUOTE, n)).concat(['sharedKey', 'sharedLine', 'sharedOnce', 'ideaWords', 'sameIdea', 'onceEach', 'tidyCards', 'bySize', 'pricedNames', 'showPricedShared'].map((n) => extFrom(QUOTE, n))).join('\n'), ctx); return ctx; })();
+  const d = (function () { const ctx = { JSON, Object, Array, String, Number, Set, Math }; vm.createContext(ctx); vm.runInContext(['SHARED_STOCK', 'SHARED_RE', 'SUPPLY_SAY', 'IDEA_STOP', 'PRICED_SHARED'].map((n) => constFrom(DASH, n)).concat(['sharedKey', 'sharedLine', 'sharedOnce', 'ideaWords', 'sameIdea', 'onceEach', 'tidyCards', 'bySize', 'pricedNames', 'showPricedShared'].map((n) => extFrom(DASH, n))).join('\n'), ctx); return ctx; })();
+  const call = (ctx, p, c) => vm.runInContext('JSON.stringify([tidyCards(' + JSON.stringify(p) + ',' + JSON.stringify(c) + ',{sup:"customerSupplies",exc:"notIncluded"},pricedNames(' + JSON.stringify(may()) + '))])', ctx);
+  const lib = (p, c) => { const pp = p === undefined ? undefined : clone(p); const out = L.tidyCards(pp, clone(c), K, L.pricedNames(may())); return JSON.stringify([out]); };
+  const same = [[[], cards()], [['We cover the hallway.'], [{ title: 'A', subtotal: 1, included: ['x'] }, { title: 'B', subtotal: 2, included: ['y'] }]], [undefined, [{ title: 'A', subtotal: 5, included: ['x'] }, { title: 'B', subtotal: 2, included: ['y'] }]]].every(([p, c]) => { const a = lib(p, c); return a === call(q, p, c) && a === call(d, p, c); });
+  ok('THE THREE COPIES AGREE (lib, customer page, dashboard)', same);
+  ok('...the customer page, the dashboard draft, the scope PDF and the generator all pass the priced lines', /,pricedNames\(e\)\)\);/.test(QUOTE) && /tidyCards\(est\.projectIncluded, est\.manualCustomerScopeDraft\.services, \{ sup: "supplied", exc: "excluded" \}, pricedNames\(est\)\);/.test(DASH) && /pricedNames\(e\)\)\);/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/lib/scope-pdf.js'), 'utf8')) && /pricedNames\(estimate\)\)\);/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/generate-estimate-background.js'), 'utf8')));
 }
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

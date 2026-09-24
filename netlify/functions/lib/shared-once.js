@@ -103,9 +103,10 @@ function onceEach(list) {
   });
   return kept;
 }
-function tidyCards(projectIncluded, cards, keys) {
+function tidyCards(projectIncluded, cards, keys, priced) {
   if (!Array.isArray(cards)) return cards;
   sharedOnce(projectIncluded, cards);
+  if (priced) showPricedShared(projectIncluded, cards, priced);
   const sup = keys.sup, exc = keys.exc;
   cards.forEach(function (c) {
     if (!c || typeof c !== "object") return;
@@ -123,4 +124,40 @@ function bySize(cards, sizeOf) {
   return cards.sort(function (a, b) { return (Number(f(b)) || 0) - (Number(f(a)) || 0); });
 }
 
-module.exports = { sharedOnce, tidyCards, bySize, onceEach, ideaWords, sameIdea, SHARED_STOCK, SHARED_RE, SUPPLY_SAY, sharedKey };
+/* ══ PRICED SHARED WORK IS NEVER SILENT. ═══════════════════════════════════
+     "the customer question is about debris removal" - May Chen asked for
+   "Removal of construction debris, including the bathtub and old toilets"
+   on an estimate that already priced a debris haul-out, a tub haul-away and
+   disposal of the demolition debris. Her one Bathroom card, written in
+   sentences, never said so. When protection, debris removal, cleanup or
+   coordination is priced (a labor or material line with a price) and no line
+   the customer reads says it, its stock sentence is added: to the
+   whole-project list when there are two or more cards and the estimate has
+   one, otherwise to the biggest card. Nothing is added twice and nothing is
+   removed. quote.html and dashboard.html carry identical copies. */
+const PRICED_SHARED = [[/debris|dumpster|disposal|haul|carting|dump fee/i, /debris|dispos|haul|carted|carting|dumpster/i, 1], [/protect|dust barrier|floor covering|masking/i, /protect|dust barrier|cover/i, 0], [/clean ?up|cleanup|final clean|punch ?list/i, /clean/i, 2], [/coordinat|supervis|project manage/i, /coordinat|supervis|manag/i, 3]];
+function pricedNames(e) {
+  return [].concat(Array.isArray(e && e.labor) ? e.labor : [], Array.isArray(e && e.materials) ? e.materials : [])
+    .filter(function (l) { return l && ((Number(l.rate) || 0) * (l.qty == null ? 1 : Number(l.qty) || 0) > 0 || (Number(l.total) || 0) > 0); })
+    .map(function (l) { return String(l.item || l.name || l.description || ""); })
+    .filter(Boolean);
+}
+function showPricedShared(projectIncluded, cards, priced) {
+  if (!Array.isArray(cards) || !cards.length || !Array.isArray(priced) || !priced.length) return cards;
+  const proj = Array.isArray(projectIncluded) ? projectIncluded : null;
+  let said = (proj || []).map(lineText);
+  cards.forEach(function (c) { said = said.concat((Array.isArray(c && c.included) ? c.included : []).map(lineText)); });
+  const text = said.join(" \n ");
+  PRICED_SHARED.forEach(function (p) {
+    if (!priced.some(function (t) { return p[0].test(t); }) || p[1].test(text)) return;
+    const line = SHARED_STOCK[p[2]];
+    if (proj && cards.length > 1) { proj.push(line); return; }
+    const big = cards.reduce(function (a, b) { return (Number(b && b.subtotal) || 0) > (Number(a && a.subtotal) || 0) ? b : a; }, cards[0]);
+    if (!big || typeof big !== "object") return;
+    if (!Array.isArray(big.included)) big.included = [];
+    big.included.push(line);
+  });
+  return cards;
+}
+
+module.exports = { sharedOnce, tidyCards, bySize, onceEach, ideaWords, sameIdea, SHARED_STOCK, SHARED_RE, SUPPLY_SAY, sharedKey, pricedNames, showPricedShared, PRICED_SHARED };

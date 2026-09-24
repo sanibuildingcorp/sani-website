@@ -15,7 +15,7 @@
 "use strict";
 
 const { Doc } = require("./pdf-writer");
-const { tidyCards, bySize } = require("./shared-once");
+const { tidyCards, bySize, pricedNames } = require("./shared-once");
 
 const NAVY = [0.04, 0.09, 0.16], GOLD = [0.78, 0.53, 0.04], GREY = [0.36, 0.42, 0.5];
 const GREEN = [0.12, 0.48, 0.32], RED = [0.66, 0.27, 0.25], BROWN = [0.54, 0.36, 0.02];
@@ -82,7 +82,7 @@ function scopeCards(estimate) {
   const shared = A(e.projectIncluded).map((x) => C(typeof x === "string" ? x : (x && (x.text || x.item)))).filter(Boolean);
   /* Said once, above the services - and so not again on each card; each
      point once; the biggest card first, as the page shows them. */
-  bySize(tidyCards(shared, cards, { sup: "supplies", exc: "excluded" }));
+  bySize(tidyCards(shared, cards, { sup: "supplies", exc: "excluded" }, pricedNames(e)));
   if (shared.length && cards.length > 1) cards.unshift({ title: "Whole project", included: shared, supplies: [], excluded: [], options: [] });
   return cards.filter((c) => c.text || c.included.length || c.supplies.length || c.excluded.length || c.options.length);
 }
