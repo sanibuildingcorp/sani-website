@@ -20,6 +20,7 @@ const { getStore } = require("@netlify/blobs");
 const { applyDeterministicPricing, consolidateCustomerPresentation } = require("./lib/deterministic-pricing");
 const { writeCustomerScope } = require("./lib/scope-writer");
 const { syncScopeText } = require("./lib/scope-text");
+const { tidyCards, bySize } = require("./lib/shared-once");
 const genLab = require("./lib/generator-lab");
 const { researchMarketPricing, buildResearchBlock } = require("./lib/market-research");
 const { priceMaterialsLive, serperShopping } = require("./lib/material-prices");
@@ -356,6 +357,13 @@ exports.handler = async function handler(event) {
       );
     }
     timing.scopeMs = Date.now() - scopeStarted;
+    /* Each point once, biggest card first - the same rules the customer's
+       page applies (lib/shared-once.js), so the stored cards and the scope
+       box already read the way the customer will see them. */
+    if (Array.isArray(estimate.serviceBreakdown)) {
+      bySize(tidyCards(estimate.projectIncluded, estimate.serviceBreakdown, { sup: "customerSupplies", exc: "notIncluded" }));
+      syncScopeText(estimate);
+    }
 
     timing.totalMs = Date.now() - timing.startedAt;
     estimate.generationTiming = { ...timing };

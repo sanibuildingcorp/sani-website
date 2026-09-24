@@ -15,7 +15,7 @@
 "use strict";
 
 const { Doc } = require("./pdf-writer");
-const { sharedOnce } = require("./shared-once");
+const { tidyCards, bySize } = require("./shared-once");
 
 const NAVY = [0.04, 0.09, 0.16], GOLD = [0.78, 0.53, 0.04], GREY = [0.36, 0.42, 0.5];
 const GREEN = [0.12, 0.48, 0.32], RED = [0.66, 0.27, 0.25], BROWN = [0.54, 0.36, 0.02];
@@ -50,6 +50,7 @@ function scopeCards(estimate) {
       supplies: uniq(A(s && (s.customerSupplies || s.customerSupplied || s.supplied))),
       excluded: cleanExclusions(A(s && (s.notIncluded || s.exclusions || s.excluded))),
       options: [],
+      subtotal: Number(s && s.subtotal) || 0,
     };
   });
   if (e.customerScopePublished === true && A(e.publishedCustomerScope && e.publishedCustomerScope.services).length) {
@@ -57,6 +58,7 @@ function scopeCards(estimate) {
     e.publishedCustomerScope.services.forEach(function (ps) { const k = N(ps && (ps.name || ps.title)); if (k) idx.set(k, ps); });
     cards.forEach(function (c) {
       const ps = idx.get(N(c.title)); if (!ps) return;
+      if (Number.isFinite(Number(ps.subtotal))) c.subtotal = Number(ps.subtotal);
       c.included = uniq(A(ps.included));
       c.supplies = uniq(A(ps.supplied || ps.customerSupplies));
       c.excluded = cleanExclusions(A(ps.excluded || ps.notIncluded));
@@ -78,8 +80,9 @@ function scopeCards(estimate) {
     }
   }
   const shared = A(e.projectIncluded).map((x) => C(typeof x === "string" ? x : (x && (x.text || x.item)))).filter(Boolean);
-  /* Said once, above the services - and so not again on each card. */
-  sharedOnce(shared, cards);
+  /* Said once, above the services - and so not again on each card; each
+     point once; the biggest card first, as the page shows them. */
+  bySize(tidyCards(shared, cards, { sup: "supplies", exc: "excluded" }));
   if (shared.length && cards.length > 1) cards.unshift({ title: "Whole project", included: shared, supplies: [], excluded: [], options: [] });
   return cards.filter((c) => c.text || c.included.length || c.supplies.length || c.excluded.length || c.options.length);
 }

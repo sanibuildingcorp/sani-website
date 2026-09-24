@@ -29,7 +29,7 @@
 
 "use strict";
 
-const { SHARED_STOCK, sharedKey } = require("./shared-once");
+const { SHARED_STOCK, sharedKey, tidyCards } = require("./shared-once");
 
 /* MUST STAY IDENTICAL to CONTRACTOR_OWNED_ESTIMATE_FIELDS in dashboard.html.
    contractor-owned-fields.test.js parses that array straight out of the HTML and
@@ -106,7 +106,9 @@ function texts(a) { return (Array.isArray(a) ? a : []).map(function (x) { return
 function sameList(a, b) { const x = texts(a), y = texts(b); return x.length === y.length && x.every(function (t, i) { return t === y[i]; }); }
 function scopeMirrorsAi(est) {
   const e = est || {};
-  const cards = Array.isArray(e.serviceBreakdown) ? e.serviceBreakdown : [];
+  /* Compared the way both are shown - each point once (lib/shared-once.js) -
+     so a draft the page tidied still counts as the AI's wording. */
+  const cards = tidyCards(e.projectIncluded, JSON.parse(JSON.stringify(Array.isArray(e.serviceBreakdown) ? e.serviceBreakdown : [])), { sup: "customerSupplies", exc: "notIncluded" });
   const byName = {};
   cards.forEach(function (c) { byName[norm(c && (c.title || c.name || c.section))] = c; });
   /* Shared work said once (lib/shared-once.js) is taken off the cards when
@@ -114,8 +116,8 @@ function scopeMirrorsAi(est) {
   const sharedKeys = SHARED_STOCK.concat(Array.isArray(e.projectIncluded) ? e.projectIncluded : []).map(function (x) { return sharedKey(typeof x === "string" ? x : (x && (x.text || x.item))); });
   const unshared = function (list) { return (Array.isArray(list) ? list : []).filter(function (x) { return sharedKeys.indexOf(sharedKey(typeof x === "string" ? x : (x && (x.text || x.item)))) === -1; }); };
   const one = function (scope) {
-    const svcs = scope && Array.isArray(scope.services) ? scope.services : null;
-    if (!svcs) return true;
+    if (!scope || !Array.isArray(scope.services)) return true;
+    const svcs = tidyCards(e.projectIncluded, JSON.parse(JSON.stringify(scope.services)), { sup: "supplied", exc: "excluded" });
     return svcs.every(function (s) {
       if (!s || s.pinned === true) return false;
       const c = byName[norm(s.name || s.title)];
