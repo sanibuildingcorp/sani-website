@@ -70,3 +70,42 @@ html body [class*="eyebrow"],html body [class*="eyebrow"] span,html body .areas-
 /* long headings wrap instead of running off a phone screen */
 html body h1,html body h2,html body h3{overflow-wrap:break-word}
 html body .why-section-title{font-size:clamp(28px,7.4vw,48px)!important;line-height:1.08!important}
+
+/* ══ HERO: one of our own finished rooms, darkened, white words on top ══
+     "I don't like the hero section" - the words sat on a washed-out
+   collage. Same words, same buttons, same stat cards; now on one photo
+   (images/hero/home-hero-room.webp, cut from our own collage). */
+html body .hero{background:#0f1c2d!important;min-height:0!important;padding-bottom:0!important}
+html body .hero .hero-image{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;min-height:0!important;filter:none!important;z-index:0!important}
+html body .hero .hero-img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:28% center!important;filter:none!important;opacity:1!important}
+html body .hero .hero-scrim{display:block!important;position:absolute!important;inset:0!important;opacity:1!important;background:linear-gradient(180deg,rgba(9,17,29,.74) 0%,rgba(9,17,29,.60) 42%,rgba(9,17,29,.90) 100%)!important}
+html body .hero .hero-content{min-height:0!important;height:auto!important;padding:110px 22px 30px!important;justify-content:flex-start!important}
+/* the old hero kept its words in a narrow column beside the photo; on the
+   dark photo they use the full width */
+html body .hero .hero-eyebrow,html body .hero h1,html body .hero .hero-tagline,html body .hero .hero-sub,html body .hero .hero-btn-row{width:auto!important;max-width:640px!important}
+html body .hero .hero-eyebrow,html body .hero .hero-eyebrow span{color:#dcb46a!important;letter-spacing:.14em!important;font-size:12px!important;background:none!important;border:0!important}
+html body .hero h1{color:#fff!important;text-shadow:none!important;font-size:clamp(38px,9.4vw,74px)!important;line-height:1.02!important;margin-bottom:14px!important}
+html body .hero h1 em,html body .hero h1 .amp{color:#dcb46a!important;text-shadow:none!important}
+html body .hero .hero-tagline,html body .hero .hero-tagline span{color:#efe3cb!important;text-shadow:none!important;font-size:18px!important}
+html body .hero .hero-tagline .line{display:none!important}
+html body .hero .hero-rating{background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:10px!important;box-shadow:none!important;backdrop-filter:none!important}
+html body .hero .hero-rating .hr-text,html body .hero .hero-rating .hr-text strong{color:#fff!important;text-shadow:none!important}
+html body .hero .hr-stars{color:#dcb46a!important}
+html body .hero .hero-sub{color:#d6dde7!important;text-shadow:none!important;background:none!important}
+html body .hero .hero-btn{background:#c8912f!important;color:#0f1c2d!important;border:0!important}
+html body .hero .hero-btn svg{stroke:#0f1c2d!important}
+html body .hero .hero-btn:hover{background:#d9a33f!important}
+html body .hero .hero-btn-secondary{background:transparent!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.7)!important}
+html body .hero .hero-stats{position:static!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;transform:none!important;width:100%!important;background:rgba(9,17,29,.72)!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:none!important;backdrop-filter:none!important;margin-top:28px!important}
+html body .hero .hero-stats::before,html body .hero .hero-stats::after{display:none!important}
+html body .hero .hstat{border-color:rgba(255,255,255,.12)!important;background:transparent!important}
+html body .hero .hstat-label{color:#fff!important;text-shadow:none!important}
+html body .hero .hstat-icon svg{stroke:#dcb46a!important;color:#dcb46a!important}
+@media(min-width:900px){
+  html body .hero .hero-scrim{background:linear-gradient(90deg,rgba(9,17,29,.90) 0%,rgba(9,17,29,.74) 48%,rgba(9,17,29,.30) 100%)!important}
+  html body .hero{padding-bottom:0!important;overflow:hidden!important}
+  html body .hero .hero-content{padding:150px 36px 48px!important}
+  html body .hero .hero-btn-row{flex-direction:row!important;max-width:640px!important}
+  html body .hero .hero-btn,html body .hero .hero-btn-secondary{width:auto!important}
+  html body .hero .hero-sub{max-width:560px!important}
+}

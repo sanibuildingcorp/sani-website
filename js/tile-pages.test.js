@@ -335,7 +335,10 @@ console.log('\nno page anywhere serves stock photography or a broken image\n');
    waterproofed shower pan. Multi-service, and all of it his. */
 console.log('\nthe homepage hero is Sani\'s own work, and light enough to paint fast\n');
 {
-  const HERO = 'images/hero/home-hero.webp';
+  /* "I don't like the hero section": the words now sit on ONE of those own
+     photographs - the finished apartment, cut from the collage, with the TV
+     on the left cropped out - darkened, white text on top. Same rules. */
+  const HERO = 'images/hero/home-hero-room.webp';
   ok('the hero exists and is the WebP the page asks for', fs.existsSync(path.join(ROOT, HERO)));
   const kb = fs.statSync(path.join(ROOT, HERO)).size / 1024;
   ok('...and is under 200 KB, because it is the Largest Contentful Paint on mobile',
@@ -345,11 +348,11 @@ console.log('\nthe homepage hero is Sani\'s own work, and light enough to paint 
     kb < old, Math.round(kb) + ' KB vs ' + Math.round(old) + ' KB');
   const IDX = read('index.html');
   ok('the page, the preload hint and the CSS variable all point at the same hero',
-    (IDX.match(/images\/hero\/home-hero\.webp/g) || []).length >= 3);
+    (IDX.match(/images\/hero\/home-hero-room\.webp/g) || []).length >= 3);
   ok('...and none of them still points at the old PNG',
     !/src="images\/hero\/home-hero\.png/.test(IDX) && !/preload[^>]*home-hero\.png/.test(IDX));
   ok('the hero is still preloaded at high priority — that work was already right',
-    /rel="preload" as="image"[^>]*home-hero\.webp[^>]*fetchpriority="high"/.test(IDX));
+    /rel="preload" as="image"[^>]*home-hero-room\.webp[^>]*fetchpriority="high"/.test(IDX));
 }
 
 /* ══ THE CACHE STILL HELD THE 404 ═════════════════════════════════════════

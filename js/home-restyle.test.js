@@ -55,5 +55,12 @@ ok('cards share one corner radius', ['svc-card', 'review-card', 'faq-item', 'gal
 ok('the accent words and eyebrows stand upright (no gold italics)', /h2 em,html body h3 em,html body \.hero-tagline span\{font-style:normal!important\}/.test(style) && /\[class\*="eyebrow"\][^{]*\{font-style:normal!important\}/.test(style));
 ok('never "licensed", never TV mounting in what was added', !/licens|\btv\b|television/i.test(style + SPRITE));
 
+console.log('\n5. The hero: our own room, dark, white words\n');
+ok('THE HERO PHOTO IS OUR OWN FINISHED ROOM (cut from the own-work collage), light and preloaded', /<img class="hero-img" src="images\/hero\/home-hero-room\.webp\?v=\d+"[^>]*width="853" height="558"[^>]*fetchpriority="high"/.test(IDX) && fs.statSync(path.join(ROOT, 'images/hero/home-hero-room.webp')).size < 60 * 1024);
+ok('...never the old stock PNG (it showed TV mounting)', !/hero-img" src="images\/hero\/home-hero\.png/.test(IDX));
+ok('the words sit on a dark overlay, white, with the accent in gold', /\.hero \.hero-scrim\{display:block!important;[^}]*rgba\(9,17,29/.test(style) && /\.hero h1\{color:#fff!important/.test(style) && /\.hero h1 em,html body \.hero h1 \.amp\{color:#dcb46a!important/.test(style));
+ok('the stat cards sit under the buttons, never on top of them', /\.hero \.hero-stats\{position:static!important;[^}]*transform:none!important/.test(style));
+ok('the words use the full width on a phone (the old narrow column is undone)', /\.hero \.hero-eyebrow,html body \.hero h1,html body \.hero \.hero-tagline,html body \.hero \.hero-sub,html body \.hero \.hero-btn-row\{width:auto!important;max-width:640px!important\}/.test(style));
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
