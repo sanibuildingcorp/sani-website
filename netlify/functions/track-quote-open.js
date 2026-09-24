@@ -94,10 +94,15 @@ function computeTotal(est, record) {
 }
 
 async function sendEmail(record, ref) {
+  /* "I resent and opened in email but didn't receive email notification."
+     This was the one alert still reading CONTRACTOR_EMAIL itself and sending
+     NOTHING when it was unset, and the only one taking its sender from
+     RESEND_FROM. Every other alert goes to ADDR.alertsTo() (CONTRACTOR_EMAIL,
+     else info@) from the verified estimates@ sender; so does this one now. */
   const key = process.env.RESEND_API_KEY;
-  const to = process.env.CONTRACTOR_EMAIL;
-  if (!key || !to) {
-    console.log("Email skipped — RESEND_API_KEY or CONTRACTOR_EMAIL missing");
+  const to = ADDR.alertsTo();
+  if (!key) {
+    console.log("Email skipped — RESEND_API_KEY missing");
     return;
   }
 
@@ -154,8 +159,7 @@ async function sendEmail(record, ref) {
     </div>
   `;
 
-  const from =
-    process.env.RESEND_FROM || ADDR.FROM_SYSTEM;
+  const from = ADDR.FROM_SYSTEM;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

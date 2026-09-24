@@ -58,7 +58,14 @@ exports.handler = async function (event) {
     if (estimate) {
       existing.estimate = { ...existing.estimate, ...estimate };
     }
-    if (status) existing.status = status;
+    /* A save carries the status the page loaded with. Opened in the Gmail app
+       while the dashboard sat open on "sent", the next Save wrote "sent" back
+       over "opened" - and the same would happen to a question or a go-ahead.
+       What the CUSTOMER moved the job to is not undone by a save that only
+       re-sends "sent" or "drafted"; every deliberate change (completed,
+       cancelled, reopened, back from cancelled) still goes through. */
+    const CUSTOMER_MOVED = ["opened", "question", "accepted", "review_requested", "declined"];
+    if (status && !((status === "sent" || status === "drafted") && CUSTOMER_MOVED.indexOf(existing.status) !== -1)) existing.status = status;
     if (projectAnalysis !== undefined) existing.projectAnalysis = projectAnalysis;
     if (aiStatus !== undefined) existing.aiStatus = aiStatus;
     if (aiJobId !== undefined) existing.aiJobId = aiJobId;
