@@ -58,7 +58,12 @@ img{max-width:100%;display:block}
 .page-hero{position:relative;background:var(--navy);overflow:hidden;padding:88px 0 0 0;min-height:560px;display:flex;align-items:center}
 .page-hero-bg-blur{position:absolute;inset:0;z-index:0;overflow:hidden}
 .page-hero-bg-blur img{width:100%;height:100%;object-fit:cover;filter:none;transform:none;opacity:1}
-.page-hero-bg-blur::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--navy) 0%,rgba(10,22,40,0.92) 30%,rgba(10,22,40,0.6) 50%,rgba(10,22,40,0.2) 68%,transparent 82%)}
+/* The homepage's hero: warm charcoal, and the photo shown whole ("hero
+   background photos are not shows full"). Computers: the photo on the right
+   at its own size, the words on charcoal fading into it. */
+.page-hero{background:#1c1a18}
+.page-hero-bg-blur img{position:absolute;top:0;right:0;height:100%;width:auto;min-width:45%;max-width:none;object-fit:cover}
+.page-hero-bg-blur::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#1c1a18 0%,#1c1a18 50%,rgba(24,22,20,.45) 64%,rgba(24,22,20,.08) 100%)}
 .page-hero-inner{max-width:1280px;margin:0 auto;padding:48px 28px;position:relative;z-index:2;width:100%}
 .page-hero-text{max-width:600px}
 .page-hero-accent{position:absolute;left:0;top:88px;bottom:0;width:4px;background:linear-gradient(180deg,var(--gold),var(--gold-light) 50%,transparent);z-index:3}
@@ -241,7 +246,11 @@ img{max-width:100%;display:block}
 @media(max-width:600px){
   .page-hero{padding:60px 0 0 0;min-height:540px}
   .page-hero-inner{padding:36px 18px}
-  .page-hero-bg-blur::after{background:linear-gradient(180deg,rgba(10,22,40,0.4) 0%,rgba(10,22,40,0.78) 55%,rgba(10,22,40,0.92) 100%)}
+  /* phones: the whole photo, uncropped, at the top (full width, its own
+     height), fading into charcoal under the long words */
+  .page-hero-bg-blur img{width:100%;height:auto;min-width:0}
+  .page-hero-bg-blur::after{background:linear-gradient(180deg,rgba(24,22,20,.55) 0,rgba(24,22,20,.30) calc(60vw),rgba(24,22,20,.78) calc(133vw - 90px),#1c1a18 133vw)}
+  .page-hero-text h1,.page-hero-text p.tagline,.hero-rating-pill{text-shadow:0 1px 14px rgba(0,0,0,.6)}
   .hero-cred-cards{grid-template-columns:repeat(2,1fr);gap:8px}
   .stats-bar{padding:32px 18px}
   .stats-bar-inner{grid-template-columns:1fr 1fr;gap:24px 16px}
