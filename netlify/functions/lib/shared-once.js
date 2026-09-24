@@ -61,4 +61,66 @@ function sharedOnce(projectIncluded, cards) {
   return cards;
 }
 
-module.exports = { sharedOnce, SHARED_STOCK, SHARED_RE, sharedKey };
+/* ══ EACH POINT ONCE, AND THE BIGGEST CARD FIRST. ═══════════════════════════
+     "Not included repeats Customer supplies; the same thing twice; the card
+      order changed - fix all 3."
+   On top of sharedOnce, per card:
+     - "Not included" drops a line that only restates what the customer
+       supplies ("You supply the engineered hardwood...", "...are
+       owner-supplied") - but only when the card HAS a Customer supplies list,
+       so the fact is still on the page;
+     - within "Customer supplies" and within "Not included", two lines that
+       say the same thing (most of the shorter line's words are in the other)
+       become one, the fuller one kept. Included lines are left alone: "two
+       coats on the ceilings" and "two coats on the walls" are two jobs.
+   bySize puts the biggest price first. keys names the three lists, because
+   the customer page, the dashboard draft and the PDF call them differently. */
+const SUPPLY_SAY = /\b(you supply|you provide|you will supply|you'll supply|supplied by (you|the (owner|customer|homeowner))|provided by (you|the (owner|customer|homeowner))|(owner|customer|homeowner)[- ](supplied|provided))\b/i;
+const IDEA_STOP = /^(the|and|for|with|will|that|this|from|into|your|all|any|are|new|per|its|our|not|included|include|including|about|only|there|their|them|they|each|every|where|when|than|then|also|such|what|which|while|have|has|been|being|were|would|should|could|onto|over|under|other)$/;
+function ideaWords(t) {
+  const out = new Set();
+  String(t == null ? "" : t).toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).forEach(function (w) {
+    if (w.length < 4 || IDEA_STOP.test(w)) return;
+    if (w.length > 5) w = w.replace(/(ing|es|s)$/, ""); else if (w.length > 4) w = w.replace(/s$/, "");
+    out.add(w);
+  });
+  return out;
+}
+function sameIdea(a, b) {
+  if (a.size < 3 || b.size < 3) return false;
+  let both = 0;
+  a.forEach(function (k) { if (b.has(k)) both++; });
+  return both / Math.min(a.size, b.size) >= 0.7;
+}
+function onceEach(list) {
+  const kept = [], sets = [];
+  (Array.isArray(list) ? list : []).forEach(function (x) {
+    const w = ideaWords(lineText(x));
+    let i = -1;
+    for (let j = 0; j < sets.length; j++) if (sameIdea(sets[j], w)) { i = j; break; }
+    if (i === -1) { kept.push(x); sets.push(w); return; }
+    if (w.size > sets[i].size) { kept[i] = x; sets[i] = w; }
+  });
+  return kept;
+}
+function tidyCards(projectIncluded, cards, keys) {
+  if (!Array.isArray(cards)) return cards;
+  sharedOnce(projectIncluded, cards);
+  const sup = keys.sup, exc = keys.exc;
+  cards.forEach(function (c) {
+    if (!c || typeof c !== "object") return;
+    if (Array.isArray(c[sup]) && c[sup].length) c[sup] = onceEach(c[sup]);
+    const hasSup = Array.isArray(c[sup]) && c[sup].length > 0;
+    if (Array.isArray(c[exc]) && c[exc].length) {
+      c[exc] = onceEach(c[exc].filter(function (x) { return !(hasSup && SUPPLY_SAY.test(lineText(x))); }));
+    }
+  });
+  return cards;
+}
+function bySize(cards, sizeOf) {
+  if (!Array.isArray(cards)) return cards;
+  const f = typeof sizeOf === "function" ? sizeOf : function (c) { return c && c.subtotal; };
+  return cards.sort(function (a, b) { return (Number(f(b)) || 0) - (Number(f(a)) || 0); });
+}
+
+module.exports = { sharedOnce, tidyCards, bySize, onceEach, ideaWords, sameIdea, SHARED_STOCK, SHARED_RE, SUPPLY_SAY, sharedKey };

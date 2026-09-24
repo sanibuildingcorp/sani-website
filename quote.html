@@ -426,7 +426,7 @@ function reconcileCards(e,listIn){
  return list}
 function finalizeServices(e,active){
  const ps=pubList(e);
- if(!ps)return sharedOnce(e.projectIncluded,reconcileCards(e,foldZeroPriceServices(pubScope(e,active))));
+ if(!ps)return bySize(tidyCards(e.projectIncluded,reconcileCards(e,foldZeroPriceServices(pubScope(e,active))),{sup:'customerSupplies',exc:'notIncluded'}));
  const byName=new Map(A(active).map(s=>[N(s.title),s]));
  const out=ps.map(s=>{const m=byName.get(N(s.name||s.title));return{
   title:String(s.name||s.title||'Service').trim()||'Service',
@@ -439,7 +439,7 @@ function finalizeServices(e,active){
     customer as a "$0.00" card - that reads as broken. Adding a service and typing
     wording into it before any price line exists is a normal move in the new card UI,
     so fold those into the largest priced card exactly as the legacy path does. */
- return sharedOnce(e.projectIncluded,reconcileCards(e,foldZeroPriceServices(out)))}
+ return bySize(tidyCards(e.projectIncluded,reconcileCards(e,foldZeroPriceServices(out)),{sup:'customerSupplies',exc:'notIncluded'}))}
 function build(e){/* Services are whatever this estimate ACTUALLY contains, not a fixed list of four.
  A hardcoded list sent General, Carpentry, Drywall and every other section into
  map.get('Bathroom'), so the customer saw Bathroom $25,628 while the dashboard
@@ -642,6 +642,58 @@ function sharedOnce(projectIncluded,cards){
  cards.forEach(c=>{const mine={};A(c&&c.included).forEach(x=>{mine[sharedKey(sharedLine(x))]=true});Object.keys(mine).forEach(k=>{seen[k]=(seen[k]||0)+1})});
  cards.forEach(c=>{if(!c||!Array.isArray(c.included))return;const keep=c.included.filter(x=>{const t=sharedLine(x),k=sharedKey(t);return!(stock.indexOf(k)!==-1||pk.indexOf(k)!==-1||(SHARED_RE.test(t)&&seen[k]>=2))});if(keep.length)c.included=keep});
  return cards}
+/* EACH POINT ONCE, AND THE BIGGEST CARD FIRST. Same rules as
+   netlify/functions/lib/shared-once.js (js/shared-once.test.js keeps the
+   copies equal): Not included drops a line that restates Customer supplies,
+   Customer supplies and Not included each say a point once, and the cards go
+   biggest price first. */
+const SUPPLY_SAY = /\b(you supply|you provide|you will supply|you'll supply|supplied by (you|the (owner|customer|homeowner))|provided by (you|the (owner|customer|homeowner))|(owner|customer|homeowner)[- ](supplied|provided))\b/i;
+const IDEA_STOP = /^(the|and|for|with|will|that|this|from|into|your|all|any|are|new|per|its|our|not|included|include|including|about|only|there|their|them|they|each|every|where|when|than|then|also|such|what|which|while|have|has|been|being|were|would|should|could|onto|over|under|other)$/;
+function ideaWords(t) {
+  const out = new Set();
+  String(t == null ? "" : t).toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).forEach(function (w) {
+    if (w.length < 4 || IDEA_STOP.test(w)) return;
+    if (w.length > 5) w = w.replace(/(ing|es|s)$/, ""); else if (w.length > 4) w = w.replace(/s$/, "");
+    out.add(w);
+  });
+  return out;
+}
+function sameIdea(a, b) {
+  if (a.size < 3 || b.size < 3) return false;
+  let both = 0;
+  a.forEach(function (k) { if (b.has(k)) both++; });
+  return both / Math.min(a.size, b.size) >= 0.7;
+}
+function onceEach(list) {
+  const kept = [], sets = [];
+  (Array.isArray(list) ? list : []).forEach(function (x) {
+    const w = ideaWords(sharedLine(x));
+    let i = -1;
+    for (let j = 0; j < sets.length; j++) if (sameIdea(sets[j], w)) { i = j; break; }
+    if (i === -1) { kept.push(x); sets.push(w); return; }
+    if (w.size > sets[i].size) { kept[i] = x; sets[i] = w; }
+  });
+  return kept;
+}
+function tidyCards(projectIncluded, cards, keys) {
+  if (!Array.isArray(cards)) return cards;
+  sharedOnce(projectIncluded, cards);
+  const sup = keys.sup, exc = keys.exc;
+  cards.forEach(function (c) {
+    if (!c || typeof c !== "object") return;
+    if (Array.isArray(c[sup]) && c[sup].length) c[sup] = onceEach(c[sup]);
+    const hasSup = Array.isArray(c[sup]) && c[sup].length > 0;
+    if (Array.isArray(c[exc]) && c[exc].length) {
+      c[exc] = onceEach(c[exc].filter(function (x) { return !(hasSup && SUPPLY_SAY.test(sharedLine(x))); }));
+    }
+  });
+  return cards;
+}
+function bySize(cards, sizeOf) {
+  if (!Array.isArray(cards)) return cards;
+  const f = typeof sizeOf === "function" ? sizeOf : function (c) { return c && c.subtotal; };
+  return cards.sort(function (a, b) { return (Number(f(b)) || 0) - (Number(f(a)) || 0); });
+}
 function projectCard(e){const l=A(e&&e.projectIncluded).map(x=>typeof x==='string'?x:(x&&(x.text||x.item))||'').filter(Boolean);if(!l.length)return'';return`<section class="card"><div class="ey">Included for the whole project</div>${list('','in',l)}</section>`}
 function termsHtml(r,approved){
  const until=validUntil(r),expired=!approved&&Date.now()>until.getTime();

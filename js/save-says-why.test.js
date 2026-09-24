@@ -40,6 +40,8 @@ function page(answers) {
   ctx.scopeAlreadyShared = () => false;
   ctx.scopeCleanCopy = () => ({ services: [] });
   ctx.scopeStampBreakdown = () => {};
+  ctx.scopeDraft = () => ({ services: [] });
+  ctx.scopeSortBySize = (d) => d;
   ctx.confirm = () => true;
   ctx.bodies = [];
   ctx.sbcFetch = async (url, o) => {

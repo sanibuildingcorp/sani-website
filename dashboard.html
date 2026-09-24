@@ -6709,12 +6709,73 @@ function scopeDraft() {
     est.lastMerge = null;
     scopeForgetMerges(function () { return true; });
     est.manualCustomerScopeDraft = buildScopeDraftFromAI();
+    scopeSortBySize(est.manualCustomerScopeDraft);
   }
   /* Shared work is said once, under "Included for the whole project", so it
      comes off the cards here too - the panel, the Save and the customer page
      then all agree. */
-  if (Array.isArray(est.manualCustomerScopeDraft.services)) sharedOnce(est.projectIncluded, est.manualCustomerScopeDraft.services);
+  if (Array.isArray(est.manualCustomerScopeDraft.services)) tidyCards(est.projectIncluded, est.manualCustomerScopeDraft.services, { sup: "supplied", exc: "excluded" });
   return est.manualCustomerScopeDraft;
+}
+
+/* EACH POINT ONCE, AND THE BIGGEST CARD FIRST. Same rules as
+   netlify/functions/lib/shared-once.js (js/shared-once.test.js keeps the
+   copies equal): Not included drops a line that restates Customer supplies,
+   Customer supplies and Not included each say a point once, and the cards go
+   biggest price first. */
+var SUPPLY_SAY = /\b(you supply|you provide|you will supply|you'll supply|supplied by (you|the (owner|customer|homeowner))|provided by (you|the (owner|customer|homeowner))|(owner|customer|homeowner)[- ](supplied|provided))\b/i;
+var IDEA_STOP = /^(the|and|for|with|will|that|this|from|into|your|all|any|are|new|per|its|our|not|included|include|including|about|only|there|their|them|they|each|every|where|when|than|then|also|such|what|which|while|have|has|been|being|were|would|should|could|onto|over|under|other)$/;
+function ideaWords(t) {
+  var out = new Set();
+  String(t == null ? "" : t).toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).forEach(function (w) {
+    if (w.length < 4 || IDEA_STOP.test(w)) return;
+    if (w.length > 5) w = w.replace(/(ing|es|s)$/, ""); else if (w.length > 4) w = w.replace(/s$/, "");
+    out.add(w);
+  });
+  return out;
+}
+function sameIdea(a, b) {
+  if (a.size < 3 || b.size < 3) return false;
+  var both = 0;
+  a.forEach(function (k) { if (b.has(k)) both++; });
+  return both / Math.min(a.size, b.size) >= 0.7;
+}
+function onceEach(list) {
+  var kept = [], sets = [];
+  (Array.isArray(list) ? list : []).forEach(function (x) {
+    var w = ideaWords(sharedLine(x));
+    var i = -1;
+    for (var j = 0; j < sets.length; j++) if (sameIdea(sets[j], w)) { i = j; break; }
+    if (i === -1) { kept.push(x); sets.push(w); return; }
+    if (w.size > sets[i].size) { kept[i] = x; sets[i] = w; }
+  });
+  return kept;
+}
+function tidyCards(projectIncluded, cards, keys) {
+  if (!Array.isArray(cards)) return cards;
+  sharedOnce(projectIncluded, cards);
+  var sup = keys.sup, exc = keys.exc;
+  cards.forEach(function (c) {
+    if (!c || typeof c !== "object") return;
+    if (Array.isArray(c[sup]) && c[sup].length) c[sup] = onceEach(c[sup]);
+    var hasSup = Array.isArray(c[sup]) && c[sup].length > 0;
+    if (Array.isArray(c[exc]) && c[exc].length) {
+      c[exc] = onceEach(c[exc].filter(function (x) { return !(hasSup && SUPPLY_SAY.test(sharedLine(x))); }));
+    }
+  });
+  return cards;
+}
+function bySize(cards, sizeOf) {
+  if (!Array.isArray(cards)) return cards;
+  var f = typeof sizeOf === "function" ? sizeOf : function (c) { return c && c.subtotal; };
+  return cards.sort(function (a, b) { return (Number(f(b)) || 0) - (Number(f(a)) || 0); });
+}
+
+/* Biggest card first. Only when the draft is built and on Save - never while
+   a price is being typed, or the card would jump away under the finger. */
+function scopeSortBySize(d) {
+  if (d && Array.isArray(d.services)) bySize(d.services, function (sv) { return scopeServiceSubtotal(String(sv.name || "").trim() || "General"); });
+  return d;
 }
 
 /* SHARED WORK SAID ONCE. Same rule as netlify/functions/lib/shared-once.js and
@@ -7967,6 +8028,7 @@ function scopeRebuildFromAI() {
   currentRecord.estimate.lastMerge = null;
   scopeForgetMerges(function () { return true; });
   currentRecord.estimate.manualCustomerScopeDraft = buildScopeDraftFromAI(true);
+  scopeSortBySize(currentRecord.estimate.manualCustomerScopeDraft);
   /* false, not delete: the server merges the save into the record, so a
      missing field would leave the stored note in place. */
   currentRecord.estimate.scopeDraftKept = false;
@@ -8071,6 +8133,8 @@ async function scopePublish() {
   if (scopeAlreadyShared() && !confirm(
     "This estimate has already been sent. Saving will IMMEDIATELY change what the customer sees at their existing quote link.\n\nSave and update their quote?"
   )) return;
+  /* biggest card first, as the customer's page shows them */
+  scopeSortBySize(scopeDraft());
   var clean = scopeCleanCopy();
   currentRecord.estimate.manualCustomerScopeDraft = clean;
   currentRecord.estimate.publishedCustomerScope = clean;

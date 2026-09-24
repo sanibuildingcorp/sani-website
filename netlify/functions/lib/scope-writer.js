@@ -252,6 +252,8 @@ WRITE, FOR EACH SERVICE LISTED ABOVE:
 ${services.length > 1 ? 'ONE PROJECT: these services are one job at one address. Work done once for the whole job - protecting floors and hallways, daily and final cleanup, debris removal, coordinating and supervising the trades - is written ONCE in "project", never inside a service\'s "included". Each service\'s "included" says only what is done for that service.\n\n' : ''}"notIncluded" — 0 to 4 bullets, ONLY where there is a real limit worth stating.
   - Anything the customer themselves said to leave out belongs here, in wording close to theirs and as a COMPLETE thought. Never a fragment: "except the tiled shower walls" alone reads as excluding the whole bathroom.
   - Real boundaries of this service. Do not repeat project-wide items like permits or concealed conditions — those are stated once at the foot of the quote.
+  - Never restate what the customer supplies - that list is shown right beside this one.
+  - Say each limit once. Two bullets that mean the same thing in different words is one bullet.
   - Leave the array empty rather than inventing a limit.
 
 HARD RULES

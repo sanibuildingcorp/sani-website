@@ -43,6 +43,15 @@ function astoria() {
   ];
 }
 const shared = [PROTECT, BAG, CLEAN, COORD];
+/* The Astoria cards after Rebuild draft from AI, in the order the AI gave them. */
+function ASTORIA_TIDY() {
+  return [
+    { title: 'Windows', subtotal: 8748.63, included: ['We remove the six existing windows.'], customerSupplies: [], notIncluded: ['Sidewalk shed, scaffold or lift if the building wants the windows done from the outside.', 'Exterior scaffolding, sidewalk shed or lift rental if the building requires outside access for the windows.'] },
+    { title: 'Painting', subtotal: 6976.13, included: ['We apply two coats to all ceilings, about 760 square feet.', 'We apply two coats to all walls, about 2,200 square feet.'], customerSupplies: ['Finish paint for walls, ceilings, doors and trim', 'Paint for the entire apartment'], notIncluded: ['You supply the finish paint; we supply the primer, patching materials and sundries.'] },
+    { title: 'Bathroom', subtotal: 15877.83, included: ['We demolish the existing bathroom.'], customerSupplies: ['Wall & floor tile', 'Vanity & sink', 'Toilet'], notIncluded: ['The plumbing layout stays the same, so the shower, toilet and vanity remain in their current spots.', 'No plumbing lines are rerouted and no new lines are run.', 'Tile, vanity, sink, toilet, glass enclosure, mirror and light fixture are owner-supplied.'] },
+    { title: 'Flooring', subtotal: 8828.59, included: ['We remove the existing floor covering.'], customerSupplies: ['Engineered hardwood flooring, approx. 800 SF'], notIncluded: ['Hidden conditions found behind walls or under the floor once demolition starts.', 'No baseboards are included.', 'You supply the engineered hardwood; our price covers the labor and install materials.'] },
+  ];
+}
 
 console.log('\n1. The rule\n');
 {
@@ -74,25 +83,42 @@ console.log('\n1. The rule\n');
   ok('lines written as {text} objects are read the same way', objs[0].included.length === 1 && objs[0].included[0].text === 'Tile');
 }
 
+console.log('\n1b. Each point once, and the biggest card first\n');
+{
+  const cards = L.bySize(L.tidyCards(PROJECT, ASTORIA_TIDY(), { sup: 'customerSupplies', exc: 'notIncluded' }));
+  const by = {}; cards.forEach((c) => { by[c.title] = c; });
+  ok('BIGGEST CARD FIRST: Bathroom $15,877, Flooring $8,828, Windows $8,748, Painting $6,976', cards.map((c) => c.title).join(',') === 'Bathroom,Flooring,Windows,Painting');
+  ok('NOT INCLUDED NO LONGER REPEATS CUSTOMER SUPPLIES (Bathroom "owner-supplied", Flooring "You supply the hardwood", Painting "You supply the finish paint")', !by.Bathroom.notIncluded.some((x) => /owner-supplied/.test(x)) && !by.Flooring.notIncluded.some((x) => /You supply/.test(x)) && by.Painting.notIncluded.length === 0, JSON.stringify(cards.map((c) => c.notIncluded)));
+  ok('THE TWO SCAFFOLD LINES ON WINDOWS BECOME ONE - the fuller one', by.Windows.notIncluded.length === 1 && /^Exterior scaffolding/.test(by.Windows.notIncluded[0]));
+  ok('real limits stay: hidden conditions, no baseboards, the plumbing layout', by.Flooring.notIncluded.join('|') === 'Hidden conditions found behind walls or under the floor once demolition starts.|No baseboards are included.' && by.Bathroom.notIncluded.length === 2);
+  ok('INCLUDED IS NOT MERGED: "two coats on the ceilings" and "two coats on the walls" are two jobs', by.Painting.included.length === 2);
+  ok('customer supplies keep every item (tile, vanity, toilet)', by.Bathroom.customerSupplies.length === 3);
+  const lone = [{ customerSupplies: [], notIncluded: ['You supply the paint.'] }];
+  L.tidyCards([], lone, { sup: 'customerSupplies', exc: 'notIncluded' });
+  ok('a "you supply" line STAYS when the card has no Customer supplies list (it is the only place it is said)', lone[0].notIncluded.length === 1);
+  ok('ties keep their order (a stable sort)', L.bySize([{ t: 'a', subtotal: 1 }, { t: 'b', subtotal: 1 }, { t: 'c', subtotal: 2 }]).map((x) => x.t).join('') === 'cab');
+}
+
 console.log('\n2. The customer page, the dashboard and the PDF all use it\n');
 {
-  const q = { A: (v) => (Array.isArray(v) ? v : []), JSON, Object };
-  vm.createContext(q);
-  vm.runInContext([constFrom(QUOTE, 'SHARED_STOCK'), constFrom(QUOTE, 'SHARED_RE'), extFrom(QUOTE, 'sharedKey'), extFrom(QUOTE, 'sharedLine'), extFrom(QUOTE, 'sharedOnce')].join('\n'), q);
-  const d = { JSON, Object };
-  vm.createContext(d);
-  vm.runInContext([constFrom(DASH, 'SHARED_STOCK'), constFrom(DASH, 'SHARED_RE'), extFrom(DASH, 'sharedKey'), extFrom(DASH, 'sharedLine'), extFrom(DASH, 'sharedOnce')].join('\n'), d);
+  const NAMES_C = ['SHARED_STOCK', 'SHARED_RE', 'SUPPLY_SAY', 'IDEA_STOP'];
+  const NAMES_F = ['sharedKey', 'sharedLine', 'sharedOnce', 'ideaWords', 'sameIdea', 'onceEach', 'tidyCards', 'bySize'];
+  const load = (src, ctx, extra) => { vm.createContext(ctx); vm.runInContext(NAMES_C.map((n) => constFrom(src, n)).concat(NAMES_F.map((n) => extFrom(src, n)), (extra || []).map((n) => extFrom(src, n))).join('\n'), ctx); return ctx; };
+  const q = load(QUOTE, { A: (v) => (Array.isArray(v) ? v : []), JSON, Object, Array, String, Number, Set, Math });
+  const d = load(DASH, { JSON, Object, Array, String, Number, Set, Math });
   const cases = [[PROJECT, astoria()], [['We clean up daily.'], [{ included: ['Protect the tub with a hard cover', 'Tile'] }, { included: ['Protect the tub with a hard cover', 'Protect the new floor', 'Lay'] }]], [PROJECT, [{ included: [PROTECT, BAG] }, { included: ['Paint'] }]], [[], astoria()], [PROJECT, [astoria()[0]]]];
   const same = cases.every(([p, c]) => { const a = JSON.stringify(L.sharedOnce(p, clone(c))); return a === JSON.stringify(vm.runInContext('sharedOnce(' + JSON.stringify(p) + ',' + JSON.stringify(c) + ')', q)) && a === JSON.stringify(vm.runInContext('sharedOnce(' + JSON.stringify(p) + ',' + JSON.stringify(c) + ')', d)); });
   ok('THE THREE COPIES GIVE THE SAME ANSWER on every case (lib, quote.html, dashboard.html)', same);
-  ok('same four sentences and the same pattern in all three', vm.runInContext('SHARED_RE.source', q) === L.SHARED_RE.source && vm.runInContext('SHARED_RE.source', d) === L.SHARED_RE.source && JSON.stringify(vm.runInContext('SHARED_STOCK', q)) === JSON.stringify(L.SHARED_STOCK) && JSON.stringify(vm.runInContext('SHARED_STOCK', d)) === JSON.stringify(L.SHARED_STOCK));
+  const tcase = JSON.stringify(ASTORIA_TIDY());
+  const tl = JSON.stringify(L.bySize(L.tidyCards(PROJECT, ASTORIA_TIDY(), { sup: 'customerSupplies', exc: 'notIncluded' })));
+  const tcall = 'JSON.stringify(bySize(tidyCards(' + JSON.stringify(PROJECT) + ',' + tcase + ',{sup:"customerSupplies",exc:"notIncluded"})))';
+  ok('...and the same tidy and order (each point once, biggest first)', tl === vm.runInContext(tcall, q) && tl === vm.runInContext(tcall, d));
+  ok('same sentences and the same patterns in all three', ['SHARED_RE', 'SUPPLY_SAY', 'IDEA_STOP'].every((n) => vm.runInContext(n + '.source', q) === vm.runInContext(n + '.source', d)) && vm.runInContext('SHARED_RE.source', d) === L.SHARED_RE.source && vm.runInContext('SUPPLY_SAY.source', d) === L.SUPPLY_SAY.source && JSON.stringify(vm.runInContext('SHARED_STOCK', q)) === JSON.stringify(L.SHARED_STOCK) && JSON.stringify(vm.runInContext('SHARED_STOCK', d)) === JSON.stringify(L.SHARED_STOCK));
 
-  ok('THE CUSTOMER PAGE: both ways the cards are built end in sharedOnce (published draft and AI cards)', /if\(!ps\)return sharedOnce\(e\.projectIncluded,reconcileCards\(e,foldZeroPriceServices\(pubScope\(e,active\)\)\)\);/.test(QUOTE) && /return sharedOnce\(e\.projectIncluded,reconcileCards\(e,foldZeroPriceServices\(out\)\)\)\}/.test(QUOTE));
+  ok('THE CUSTOMER PAGE: both ways the cards are built end in tidy + biggest first (published draft and AI cards)', /if\(!ps\)return bySize\(tidyCards\(e\.projectIncluded,reconcileCards\(e,foldZeroPriceServices\(pubScope\(e,active\)\)\),\{sup:'customerSupplies',exc:'notIncluded'\}\)\);/.test(QUOTE) && /return bySize\(tidyCards\(e\.projectIncluded,reconcileCards\(e,foldZeroPriceServices\(out\)\),\{sup:'customerSupplies',exc:'notIncluded'\}\)\)\}/.test(QUOTE));
 
   // the dashboard: the Services panel reads scopeDraft(), and Save publishes what it holds
-  const dd = { JSON, Object, Array, String };
-  vm.createContext(dd);
-  vm.runInContext([constFrom(DASH, 'SHARED_STOCK'), constFrom(DASH, 'SHARED_RE'), extFrom(DASH, 'sharedKey'), extFrom(DASH, 'sharedLine'), extFrom(DASH, 'sharedOnce'), extFrom(DASH, 'scopeDraft')].join('\n'), dd);
+  const dd = load(DASH, { JSON, Object, Array, String, Number, Set, Math }, ['scopeDraft']);
   const draft = { services: astoria().map((c) => ({ name: c.title, included: c.included, supplied: [], excluded: [] })) };
   dd.currentRecord = { estimate: { labor: [{ item: 'x' }], projectIncluded: PROJECT, manualCustomerScopeDraft: draft } };
   const got = vm.runInContext('scopeDraft()', dd);
@@ -110,6 +136,26 @@ console.log('\n3. Regenerate still sees a cleaned draft as the AI\'s wording\n')
   ok('a draft that differs only by the shared lines still mirrors the AI, so Regenerate replaces it', C.scopeMirrorsAi(prev) === true && C.forRegenerate(prev).reset === true);
   prev.manualCustomerScopeDraft.services[0].included[0] = 'We keep the old tub.';
   ok('...a real edit is still kept', C.forRegenerate(prev).kept === true);
+}
+
+const GEN = fs.readFileSync(path.join(ROOT, 'netlify/functions/generate-estimate-background.js'), 'utf8');
+const WRITER = fs.readFileSync(path.join(ROOT, 'netlify/functions/lib/scope-writer.js'), 'utf8');
+console.log('\n4. The draft the page tidied, the generator, the writer\n');
+{
+  const cards = ASTORIA_TIDY();
+  const prev = { serviceBreakdown: clone(cards), projectIncluded: PROJECT, manualCustomerScopeDraft: { services: L.tidyCards(PROJECT, clone(cards), { sup: 'customerSupplies', exc: 'notIncluded' }).map((c) => ({ name: c.title, included: c.included, supplied: c.customerSupplies, excluded: c.notIncluded })) } };
+  ok('a draft the dashboard tidied still mirrors the untidied AI cards (Regenerate still gives new wording)', C.scopeMirrorsAi(prev) === true);
+  ok('THE GENERATOR tidies and orders the cards after the writer, then rebuilds the scope box', /timing\.scopeMs = Date\.now\(\) - scopeStarted;[\s\S]{0,400}bySize\(tidyCards\(estimate\.projectIncluded, estimate\.serviceBreakdown, \{ sup: "customerSupplies", exc: "notIncluded" \}\)\);\s*syncScopeText\(estimate\);/.test(GEN));
+  ok('THE WRITER is told: never restate customer supplies, say each limit once', /Never restate what the customer supplies - that list is shown right beside this one\./.test(WRITER) && /Say each limit once\. Two bullets that mean the same thing in different words is one bullet\./.test(WRITER));
+  ok('THE DASHBOARD orders biggest first when the draft is built, on Rebuild and on Save - not while typing', /est\.manualCustomerScopeDraft = buildScopeDraftFromAI\(\);\s*scopeSortBySize\(est\.manualCustomerScopeDraft\);/.test(DASH) && /buildScopeDraftFromAI\(true\);\s*scopeSortBySize\(currentRecord\.estimate\.manualCustomerScopeDraft\);/.test(DASH) && /scopeSortBySize\(scopeDraft\(\)\);\s*var clean = scopeCleanCopy\(\);/.test(DASH) && (DASH.match(/scopeSortBySize\(/g) || []).length === 4);
+  const dd = { JSON, Object, Array, String, Number, Set, Math };
+  vm.createContext(dd);
+  vm.runInContext(['SHARED_STOCK', 'SHARED_RE', 'SUPPLY_SAY', 'IDEA_STOP'].map((n) => constFrom(DASH, n)).concat(['bySize', 'scopeSortBySize'].map((n) => extFrom(DASH, n))).join('\n'), dd);
+  dd.scopeServiceSubtotal = (n) => ({ Windows: 8748.63, Painting: 6976.13, Bathroom: 15877.83, Flooring: 8828.59 })[n];
+  const sorted = vm.runInContext('scopeSortBySize({ services: [{ name: "Windows" }, { name: "Painting" }, { name: "Bathroom" }, { name: "Flooring" }] })', dd);
+  ok('...by the card\'s own total', sorted.services.map((x) => x.name).join(',') === 'Bathroom,Flooring,Windows,Painting');
+  const pdf = PDF.scopeCards({ serviceBreakdown: ASTORIA_TIDY(), projectIncluded: PROJECT });
+  ok('THE PDF: whole project, then Bathroom, Flooring, Windows, Painting, tidied', pdf.map((c) => c.title).join(',') === 'Whole project,Bathroom,Flooring,Windows,Painting' && pdf[3].excluded.length === 1, pdf.map((c) => c.title).join(','));
 }
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
