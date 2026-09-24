@@ -28,14 +28,16 @@ const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true 
 
 const strip = (s) => String(s || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 
-/* Every card in the scrolling service strip, label against destination. */
+/* Every service link on the homepage, label against destination. The
+   scrolling strip was replaced by one service list in the v2 homepage
+   (partials/home-v2.html); the same rules hold for it. */
 const cards = [];
-const RE = /<a href="([^"]+)" class="strip-item"[^>]*>[\s\S]*?<div class="strip-label">([\s\S]*?)<\/div>/g;
+const RE = /<li><a href="([^"]+)"><svg class="v2-ico">[\s\S]*?<b>([\s\S]*?)<\/b>/g;
 let m;
 while ((m = RE.exec(HTML)) !== null) cards.push({ href: m[1], label: strip(m[2]) });
 
 console.log('\nwhat the card says, and where it actually goes\n');
-ok('the service strip was found at all', cards.length >= 10, 'found ' + cards.length);
+ok('the service list was found at all', cards.length >= 10, 'found ' + cards.length);
 
 /* The words a destination must NOT contradict. A card is wrong when its label
    names a service and the href points at a DIFFERENT named service — /services
@@ -68,8 +70,8 @@ ok('INTERIOR RENOVATIONS NO LONGER LANDS ON THE PAINTING PAGE',
 ok('...it goes somewhere that actually covers interior work',
   interior.every(function (c) { return c.href === '/services'; }),
   interior.map(function (c) { return c.href; }).join(', '));
-ok('...in the duplicated half of the carousel too, or it is still wrong every other loop',
-  interior.length === 2, 'found ' + interior.length + ' interior cards');
+ok('...exactly once: the list is not a looping carousel any more',
+  interior.length === 1, 'found ' + interior.length + ' interior cards');
 
 /* Every destination has to exist as a page. */
 console.log('\nevery card points at a real page\n');

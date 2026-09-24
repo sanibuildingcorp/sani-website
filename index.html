@@ -1819,713 +1819,342 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
 /* Buttons: crisper edges */
 .hero-btn,.hero-btn-secondary{border-radius:3px !important;}
 </style>
+<!-- HOME-V2-CSS:START --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,600..800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet"><style id="home-v2-css">
+/* HOME v2 — see partials/home-v2.html. Everything is scoped to .v2 so the
+   menu, footer, mobile call bar and contact form keep their own styles. */
+.v2{
+  --ink:#15181e; --muted:#5d6470; --paper:#f6f3ee; --card:#ffffff; --line:#e3ddd2;
+  --navy:#0f1c2d; --brass:#a8762a; --brass-ink:#8a5f1e;
+  --r:10px;
+  font-family:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color:var(--ink); background:var(--paper); font-size:17px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.v2 *,.v2 *::before,.v2 *::after{box-sizing:border-box}
+.v2 h1,.v2 h2,.v2 h3{font-family:'Archivo',system-ui,sans-serif;font-stretch:88%;letter-spacing:-.015em;color:var(--ink);margin:0}
+.v2 h1{font-size:clamp(34px,7.6vw,60px);line-height:1.02;font-weight:800}
+.v2 h2{font-size:clamp(27px,5.2vw,40px);line-height:1.08;font-weight:800}
+.v2 h3{font-size:15px;font-weight:700;letter-spacing:.01em}
+.v2 p{margin:0}
+.v2 a{color:inherit}
+.v2-wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+.v2-narrow{max-width:820px}
+.v2-ico{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.v2-kicker{font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brass-ink);margin-bottom:12px}
+.v2-lead{font-size:19px;color:var(--muted);margin-top:18px;max-width:34ch}
+.v2-sub{color:var(--muted);margin-top:12px;max-width:52ch}
+
+/* buttons */
+.v2-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.v2-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 22px;border-radius:var(--r);font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;text-decoration:none;transition:transform .15s ease,background .15s ease}
+.v2-btn:active{transform:translateY(1px)}
+.v2 .v2-btn-main{background:var(--navy);color:#fff}
+.v2 .v2-btn-main:hover{background:#1b2d45}
+.v2 .v2-btn-line{border:1.5px solid var(--ink);color:var(--ink)}
+.v2 .v2-btn-light{background:#fff;color:var(--navy)}
+.v2-rating{margin-top:18px;color:var(--muted);font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.v2-rating b{color:var(--ink)}
+.v2-stars{display:inline-flex;gap:2px;color:var(--brass)}
+.v2-stars svg{width:16px;height:16px;fill:currentColor;stroke:none}
+
+/* hero */
+.v2-hero{padding:34px 0 40px}
+.v2-hero-grid{display:grid;gap:30px;align-items:center}
+.v2-hero-photo{margin:0;position:relative}
+.v2-hero-photo img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:top;border-radius:14px}
+.v2-hero-photo figcaption{position:absolute;left:12px;bottom:12px;background:rgba(15,28,45,.86);color:#fff;font-size:13px;font-weight:600;padding:7px 11px;border-radius:7px}
+@media(min-width:900px){
+  .v2-hero{padding:64px 0 70px}
+  .v2-hero-grid{grid-template-columns:1.05fr 1fr;gap:56px}
+}
+
+/* facts */
+.v2-facts{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--card)}
+.v2-facts-grid{display:grid;grid-template-columns:1fr 1fr}
+.v2-fact{display:flex;gap:12px;align-items:flex-start;padding:20px 14px 20px 0}
+.v2-fact:nth-child(odd){padding-right:14px;border-right:1px solid var(--line)}
+.v2-fact:nth-child(even){padding-left:14px}
+.v2-fact:nth-child(-n+2){border-bottom:1px solid var(--line)}
+.v2-fact .v2-ico{color:var(--brass);width:26px;height:26px;margin-top:1px}
+.v2-fact b{display:block;font-family:'Archivo',sans-serif;font-size:16px;line-height:1.2}
+.v2-fact span{display:block;color:var(--muted);font-size:14px;line-height:1.35;margin-top:3px}
+@media(min-width:900px){
+  .v2-facts-grid{grid-template-columns:repeat(4,1fr)}
+  .v2-fact,.v2-fact:nth-child(odd),.v2-fact:nth-child(even){padding:26px 22px;border-bottom:0;border-right:1px solid var(--line)}
+  .v2-fact:first-child{padding-left:0}
+  .v2-fact:last-child{border-right:0}
+}
+
+/* sections */
+.v2-section{padding:64px 0}
+.v2-alt{background:var(--card)}
+.v2-dark{background:var(--navy);color:#e9edf3}
+.v2-dark h2{color:#fff}
+.v2-dark .v2-kicker{color:#d5a65a}
+.v2-head{margin-bottom:30px}
+@media(min-width:900px){.v2-section{padding:96px 0}.v2-head{margin-bottom:44px}}
+
+/* before / after: swipe on a phone, a grid on a desktop */
+.v2-ba-row{display:grid;grid-auto-flow:column;grid-auto-columns:82%;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px;margin:0 -20px;padding-left:20px;padding-right:20px;scrollbar-width:thin}
+.v2-ba{scroll-snap-align:start;position:relative;display:block;text-decoration:none;border-radius:12px;overflow:hidden;background:#ddd}
+.v2-ba img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}
+.v2-ba-tag{position:absolute;top:10px;left:10px;background:#fff;color:var(--ink);font-family:'Archivo',sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 9px;border-radius:6px}
+.v2-ba-cap{display:block;background:var(--card);padding:13px 14px;font-weight:600;border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px}
+@media(min-width:900px){.v2-ba-row{grid-auto-flow:row;grid-template-columns:repeat(3,1fr);grid-auto-columns:auto;overflow:visible;margin:0;padding:0}}
+
+/* services */
+.v2-svc{list-style:none;margin:0;padding:0;display:grid;border-top:1px solid var(--line)}
+.v2-svc a{display:flex;align-items:center;gap:16px;padding:18px 2px;border-bottom:1px solid var(--line);text-decoration:none}
+.v2-svc a>.v2-ico:first-child{width:30px;height:30px;color:var(--navy)}
+.v2-svc span{flex:1;min-width:0}
+.v2-svc b{display:block;font-family:'Archivo',sans-serif;font-size:18px;line-height:1.2}
+.v2-svc em{display:block;font-style:normal;color:var(--muted);font-size:15px;margin-top:2px}
+.v2-go{color:var(--brass);transition:transform .15s ease}
+.v2-svc a:hover .v2-go{transform:translateX(3px)}
+@media(min-width:900px){.v2-svc{grid-template-columns:1fr 1fr;column-gap:48px}}
+.v2-more{margin-top:24px}
+.v2-more a{display:inline-flex;align-items:center;gap:8px;font-family:'Archivo',sans-serif;font-weight:700;text-decoration:none;border-bottom:2px solid var(--brass);padding-bottom:3px}
+
+/* steps */
+.v2-steps{list-style:none;margin:0;padding:0;display:grid;gap:0;counter-reset:s}
+.v2-steps li{counter-increment:s;padding:22px 0 22px 52px;position:relative;border-top:1px solid var(--line)}
+.v2-steps li::before{content:counter(s);position:absolute;left:0;top:20px;font-family:'Archivo',sans-serif;font-weight:800;font-size:30px;line-height:1;color:var(--brass)}
+.v2-steps b{font-family:'Archivo',sans-serif;font-size:20px}
+.v2-steps p{color:var(--muted);margin-top:6px}
+@media(min-width:900px){.v2-steps{grid-template-columns:repeat(3,1fr);gap:40px}.v2-steps li{padding:26px 0 0 0;border-top:2px solid var(--ink)}.v2-steps li::before{position:static;display:block;margin-bottom:14px}}
+
+/* team */
+.v2-team{display:grid;gap:32px;align-items:center}
+.v2-team-photo{margin:0}
+.v2-team-photo img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:14px}
+.v2-team p{color:#c9d2de;margin-top:16px;max-width:52ch}
+.v2-team h2+p{margin-top:18px}
+@media(min-width:900px){.v2-team{grid-template-columns:1fr 1fr;gap:64px}}
+
+/* reviews */
+.v2-reviews{display:grid;gap:16px}
+.v2-review{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px}
+.v2-review p{margin-top:12px;font-size:16.5px}
+.v2-who{display:block;margin-top:14px;font-style:normal;font-weight:700;font-size:14px;color:var(--muted)}
+@media(min-width:900px){.v2-reviews{grid-template-columns:1fr 1fr}}
+
+/* faq */
+.v2-faq details{border-bottom:1px solid var(--line)}
+.v2-faq details:first-child{border-top:1px solid var(--line)}
+.v2-faq summary{list-style:none;cursor:pointer;padding:20px 36px 20px 0;position:relative;font-family:'Archivo',sans-serif;font-weight:700;font-size:18px}
+.v2-faq summary::-webkit-details-marker{display:none}
+.v2-faq summary::after{content:'';position:absolute;right:6px;top:50%;width:10px;height:10px;border-right:2px solid var(--brass);border-bottom:2px solid var(--brass);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
+.v2-faq details[open] summary::after{transform:translateY(-30%) rotate(-135deg)}
+.v2-faq details p{padding:0 0 20px;color:var(--muted)}
+
+/* areas */
+.v2-areas{display:grid;gap:26px}
+.v2-areas h3{text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;font-size:13px}
+.v2-areas p{display:flex;flex-wrap:wrap;gap:8px}
+.v2-areas a,.v2-areas span{display:inline-block;padding:8px 13px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-size:15px;text-decoration:none}
+.v2-areas a{font-weight:600}
+.v2-areas a:hover{border-color:var(--navy)}
+@media(min-width:900px){.v2-areas{grid-template-columns:1fr 1fr 1.4fr}}
+
+/* the contact form below keeps its markup; its headings join the new type */
+.contact-section h3,.contact-section h3 em{font-family:'Archivo',system-ui,sans-serif;font-style:normal;font-stretch:88%}
+
+@media(prefers-reduced-motion:reduce){.v2 *{transition:none!important}}
+</style><!-- HOME-V2-CSS:END -->
 </head>
 <body>
 
 <!-- Menu loaded from partials/menu.html via partials/site.js -->
 <div id="site-menu"></div>
 
-<!-- ══════════ HERO ══════════ -->
-<section class="hero">
-    <div class="hero-image">
-      <img class="hero-img" src="images/hero/home-hero.webp?v=1788223660" data-sbc-ref="images/hero/home-hero.webp" alt="Sani Building Corp renovation project in Brooklyn, NYC" fetchpriority="high" decoding="async">
-      <div class="hero-scrim"></div>
-    </div>
-  <div class="hero-content">
-    <div class="hero-eyebrow">
-      <span>Brooklyn &middot; Manhattan &middot; All NYC Boroughs</span>
-    </div>
+<!-- HOME-V2:START -->
+<!-- ══════════ HOME v2 ══════════════════════════════════════════════════════
+     "they are looking too AI generic, i need better icons, better designs."
+     One type pair (Archivo headings, Source Sans 3 text), one accent used
+     sparingly, one hand-drawn icon set in a single stroke style, and the
+     company's own photos: the crew, and real before/after pairs. Content,
+     links, the H1 and the FAQ text (which the FAQ schema repeats) are kept.
+     Spliced into index.html by ops/build-home-v2.py; edit it here. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-bath" viewBox="0 0 24 24"><path d="M3 12h18v1.5a5.5 5.5 0 0 1-5.5 5.5h-7A5.5 5.5 0 0 1 3 13.5z"/><path d="M6.5 19 5.5 21M17.5 19l1 2"/><path d="M6 12V6.2a2.2 2.2 0 0 1 4.3-.6"/><path d="M9.5 8.2h2.6"/></symbol>
+    <symbol id="i-kitchen" viewBox="0 0 24 24"><path d="M3.5 3.5h17v7h-17zM3.5 10.5h17v10h-17z"/><path d="M12 3.5v7M12 10.5v10M9 7h1M14 7h1M9 14h1M14 14h1"/></symbol>
+    <symbol id="i-paint" viewBox="0 0 24 24"><path d="M4 3.5h12.5v5H4z"/><path d="M16.5 6h3v5.5H11v2.5"/><path d="M9.5 14h3v7h-3z"/></symbol>
+    <symbol id="i-floor" viewBox="0 0 24 24"><path d="M3 20.5 9 14.5l3 3 6-6 3 3M3 14.5l6-6 3 3 6-6 3 3M3 8.5l3-3"/></symbol>
+    <symbol id="i-tile" viewBox="0 0 24 24"><path d="M3.5 3.5h17v17h-17zM3.5 9.2h17M3.5 14.8h17M9 3.5v5.7M15 3.5v5.7M6.3 9.2v5.6M12 9.2v5.6M17.7 9.2v5.6M9 14.8v5.7M15 14.8v5.7"/></symbol>
+    <symbol id="i-carpentry" viewBox="0 0 24 24"><path d="M4 3.5h4.5v12h12v4.5H4z"/><path d="M8.5 7H6.8M8.5 10.5H6.8M8.5 14H6.8M12 15.5v1.7M15.5 15.5v1.7M19 15.5v1.7"/></symbol>
+    <symbol id="i-stairs" viewBox="0 0 24 24"><path d="M3 20.5h4.5v-4h4.5v-4h4.5v-4H21M3 20.5h18"/><path d="M16.5 4.5v4"/></symbol>
+    <symbol id="i-deck" viewBox="0 0 24 24"><path d="M2.5 10.5h19M4 13.5h16M4 16.5h16M5.5 10.5v10M18.5 10.5v10M2.5 10.5 6 4.5h12l3.5 6"/></symbol>
+    <symbol id="i-water" viewBox="0 0 24 24"><path d="M12 3.5s5.5 6 5.5 10a5.5 5.5 0 0 1-11 0c0-4 5.5-10 5.5-10z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.5 5a4.5 4.5 0 0 0 5.4 5.6l-8.7 8.7a2.3 2.3 0 0 1-3.2-3.2l8.7-8.7A4.5 4.5 0 0 1 14.5 5z"/><path d="m14 4.5 2 2-1.8 1.8 1.5 1.5L17.5 8l2 2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6z"/><path d="m8.8 12 2.3 2.3 4.2-4.3"/></symbol>
+    <symbol id="i-since" viewBox="0 0 24 24"><path d="M4 20.5V9l8-5.5L20 9v11.5z"/><path d="M9.5 20.5v-6h5v6M4 20.5h16"/></symbol>
+    <symbol id="i-seal" viewBox="0 0 24 24"><path d="M12 2.8l2.1 1.6 2.6-.2.9 2.5 2.3 1.2-.4 2.6 1.3 2.3-1.8 1.9.1 2.6-2.5.8-1.3 2.3-2.6-.5L12 21.2l-2.1-1.6-2.6.5L6 17.8l-2.5-.8.1-2.6-1.8-1.9 1.3-2.3-.4-2.6 2.3-1.2.9-2.5 2.6.2z"/><path d="m8.8 12.2 2.2 2.2 4.2-4.3"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 2.5h8.5l3.5 3.5v15.5H6z"/><path d="M14.5 2.5V6H18M9 11h6M9 14.5h6M9 18h3.5"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 3.5h3.5l1.8 4.3-2.3 1.5a11 11 0 0 0 6.7 6.7l1.5-2.3 4.3 1.8V19a1.5 1.5 0 0 1-1.6 1.5A16.5 16.5 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13.5 6.5 19 12l-5.5 5.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></symbol>
+  </defs>
+</svg>
 
-    <h1>General Contractor<br><em>in Brooklyn <span class="amp">&amp;</span> NYC</em></h1>
+<main class="v2">
 
-    <div class="hero-tagline">
-      <span>Renovation &amp; Repair Experts &mdash; Built Around You.</span>
-      <div class="line"></div>
-    </div>
-
-    <div class="hero-rating">
-      <span class="hr-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
-      <span class="hr-text"><strong>4.9</strong> &middot; 67 Google Reviews</span>
-    </div>
-
-    <p class="hero-sub">Bathroom &amp; kitchen remodels, full home renovations and same-day repairs &mdash; for homes, restaurants, retail stores &amp; offices across all five boroughs. Precision, transparency, and care.</p>
-
-    <div class="hero-btn-row">
-      <a href="/estimate" class="hero-btn">
-        Get a Free Estimate
-        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-      <a href="tel:+13322770990" class="hero-btn-secondary">&#128222;&nbsp;(332) 277-0990</a>
-    </div>
-
-    <!-- 5 STAT CARDS -->
-    <div class="hero-stats">
-      <div class="hstat">
-        <div class="hstat-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  <!-- HERO: the H1 the page has always ranked with, the crew that does the work -->
+  <section class="v2-hero">
+    <div class="v2-wrap v2-hero-grid">
+      <div class="v2-hero-text">
+        <p class="v2-kicker">Since 2015 &middot; Brighton Beach, Brooklyn</p>
+        <h1>General contractor in Brooklyn &amp; NYC</h1>
+        <p class="v2-lead">Bathrooms, kitchens, floors, paint and full apartments &mdash; for homes, landlords, restaurants, stores and offices in all five boroughs and Long Island.</p>
+        <div class="v2-actions">
+          <a href="/estimate" class="v2-btn v2-btn-main">Get a free estimate <svg class="v2-ico"><use href="#i-arrow"/></svg></a>
+          <a href="tel:+13322770990" class="v2-btn v2-btn-line"><svg class="v2-ico"><use href="#i-phone"/></svg> (332) 277-0990</a>
         </div>
-        <div class="hstat-label">Fully Insured</div>
+        <p class="v2-rating"><span class="v2-stars" aria-hidden="true"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></span> <b>4.9</b> on Google &middot; 67 reviews</p>
       </div>
-      <div class="hstat">
-        <div class="hstat-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <div class="hstat-label">10+ Years<br>In NYC</div>
-      </div>
-      <div class="hstat">
-        <div class="hstat-icon">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-        <div class="hstat-label">On-Time &<br>On-Budget</div>
-      </div>
-      <div class="hstat">
-        <div class="hstat-icon">
-          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        </div>
-        <div class="hstat-label">Dedicated Project<br>Management</div>
-      </div>
-      <div class="hstat">
-        <div class="hstat-icon">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/><polygon points="12 5 13 7.5 15.5 7.5 13.5 9 14.5 11.5 12 10 9.5 11.5 10.5 9 8.5 7.5 11 7.5 12 5" fill="currentColor" stroke="none"/></svg>
-        </div>
-        <div class="hstat-label">5-Star Rated<br>Service</div>
-      </div>
+      <figure class="v2-hero-photo">
+        <img src="images/hero/home-hero.webp?v=1788223660" data-sbc-ref="images/hero/home-hero.webp" width="1003" height="1568" alt="Sani Building Corp renovation work in Brooklyn and NYC: a finished apartment, tile, a marble shower, stairs and a roof deck" fetchpriority="high" decoding="async">
+        <figcaption>Our own jobs, not stock photos</figcaption>
+      </figure>
     </div>
-  </div>
+  </section>
 
-  <!-- BOROUGH STRIP -->
-  <div class="borough-strip">
-    <div class="borough-inner">
-      <div class="borough-label">Proudly Serving NYC &amp; Long Island</div>
-      <div class="borough-list">
-        <span>Manhattan</span>
-        <span>Brooklyn</span>
-        <span>Queens</span>
-        <span>Bronx</span>
-        <span>Staten Island</span>
-        <span>Long Island</span>
+  <!-- FACTS: four things that are true on every job -->
+  <section class="v2-facts" aria-label="What you get on every job">
+    <div class="v2-wrap v2-facts-grid">
+      <div class="v2-fact"><svg class="v2-ico"><use href="#i-shield"/></svg><div><b>Fully insured</b><span>Liability and workers&rsquo; comp, certificate before we start</span></div></div>
+      <div class="v2-fact"><svg class="v2-ico"><use href="#i-since"/></svg><div><b>In NYC since 2015</b><span>Co-ops, condos, brownstones and storefronts</span></div></div>
+      <div class="v2-fact"><svg class="v2-ico"><use href="#i-seal"/></svg><div><b>3-year warranty</b><span>On our workmanship, in writing</span></div></div>
+      <div class="v2-fact"><svg class="v2-ico"><use href="#i-doc"/></svg><div><b>Estimate in 24 hours</b><span>Written, itemized, free</span></div></div>
+    </div>
+  </section>
+
+  <!-- BEFORE / AFTER: real jobs, captioned by what the photo shows -->
+  <section class="v2-section" id="gallery">
+    <div class="v2-wrap">
+      <div class="v2-head">
+        <p class="v2-kicker">Our work</p>
+        <h2>Before and after</h2>
+        <p class="v2-sub">Photos from our own jobs. Left is how we found it, right is how we left it.</p>
+      </div>
+      <div class="v2-ba-row">
+        <a href="/painting" class="v2-ba"><img loading="lazy" decoding="async" src="images/v2/living-room-before-after.webp" width="900" height="900" alt="Living room before and after: patched walls, new paint and flooring"><span class="v2-ba-tag">Before / After</span><span class="v2-ba-cap">Living room &mdash; walls, paint, floor</span></a>
+        <a href="/stair-renovation" class="v2-ba"><img loading="lazy" decoding="async" src="images/v2/stairs-before-after.webp" width="900" height="900" alt="Staircase before and after: worn treads rebuilt and refinished"><span class="v2-ba-tag">Before / After</span><span class="v2-ba-cap">Staircase rebuilt and refinished</span></a>
+        <a href="/flooring" class="v2-ba"><img loading="lazy" decoding="async" src="images/v2/parquet-before-after.webp" width="900" height="900" alt="Bedroom floor before and after: broken parquet replaced"><span class="v2-ba-tag">Before / After</span><span class="v2-ba-cap">Broken parquet replaced</span></a>
+        <a href="/kitchen-cabinet-installation" class="v2-ba"><img loading="lazy" decoding="async" src="images/v2/kitchen-before-after.webp" width="900" height="689" alt="Galley kitchen before and after: new floor tile and finishes"><span class="v2-ba-tag">Before / After</span><span class="v2-ba-cap">Galley kitchen refresh</span></a>
+        <a href="/deck-renovation" class="v2-ba"><img loading="lazy" decoding="async" src="images/v2/roof-deck-before-after.webp" width="900" height="900" alt="Roof deck before and after: old boards replaced with new decking"><span class="v2-ba-tag">Before / After</span><span class="v2-ba-cap">Roof deck, new boards</span></a>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- SERVICES STRIP - AUTO-SCROLLING MARQUEE (right to left) -->
-  <div class="services-strip">
-    <div class="strip-inner">
-      <!-- SET 1 (10 services) -->
-      <a href="/kitchen-cabinet-installation" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/kitchen.jpg" alt="Kitchen renovation in NYC"></div>
-        <div class="strip-label">Kitchen Cabinet<br>Installation</div>
-      </a>
-      <a href="/bathroom-renovation" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/bathroom.jpg" alt="Bathroom renovation in Brooklyn NYC"></div>
-        <div class="strip-label">Bathroom<br>Renovations</div>
-      </a>
-      <a href="/services" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/interior.jpg" alt="Interior renovation in NYC apartment"></div>
-        <div class="strip-label">Interior<br>Renovations</div>
-      </a>
-      <a href="/services" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/exterior.jpg" alt="Exterior renovation and facade work in NYC"></div>
-        <div class="strip-label">Exterior<br>Renovations</div>
-      </a>
-      <a href="/painting" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/painting.jpg" alt="Professional painting services in NYC"></div>
-        <div class="strip-label">Painting<br>Services</div>
-      </a>
-      <a href="/flooring" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/flooring.jpg" alt="Flooring installation in NYC"></div>
-        <div class="strip-label">Flooring<br>Installation</div>
-      </a>
-      <a href="/carpentry" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/carpentry.jpg" alt="Carpentry and millwork in NYC"></div>
-        <div class="strip-label">Carpentry<br>&amp; Millwork</div>
-      </a>
-      <a href="/water-damage" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/water-damage.jpg" alt="Water damage restoration in NYC"></div>
-        <div class="strip-label">Water Damage<br>Repair</div>
-      </a>
-      <a href="/handyman" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/handyman.jpg" alt="Handyman services in Brooklyn NYC"></div>
-        <div class="strip-label">Handyman<br>Services</div>
-      </a>
-      <a href="/services" class="strip-item">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/repairs.jpg" alt="Same-day repairs in NYC"></div>
-        <div class="strip-label">Repairs &amp;<br>Maintenance</div>
-      </a>
-
-      <!-- SET 2 (duplicate for seamless infinite loop) -->
-      <a href="/kitchen-cabinet-installation" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/kitchen.jpg" alt="Kitchen renovation in NYC"></div>
-        <div class="strip-label">Kitchen Cabinet<br>Installation</div>
-      </a>
-      <a href="/bathroom-renovation" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/bathroom.jpg" alt="Bathroom renovation in Brooklyn NYC"></div>
-        <div class="strip-label">Bathroom<br>Renovations</div>
-      </a>
-      <a href="/services" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/interior.jpg" alt="Interior renovation in NYC apartment"></div>
-        <div class="strip-label">Interior<br>Renovations</div>
-      </a>
-      <a href="/services" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/exterior.jpg" alt="Exterior renovation and facade work in NYC"></div>
-        <div class="strip-label">Exterior<br>Renovations</div>
-      </a>
-      <a href="/painting" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/painting.jpg" alt="Professional painting services in NYC"></div>
-        <div class="strip-label">Painting<br>Services</div>
-      </a>
-      <a href="/flooring" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/flooring.jpg" alt="Flooring installation in NYC"></div>
-        <div class="strip-label">Flooring<br>Installation</div>
-      </a>
-      <a href="/carpentry" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/carpentry.jpg" alt="Carpentry and millwork in NYC"></div>
-        <div class="strip-label">Carpentry<br>&amp; Millwork</div>
-      </a>
-      <a href="/water-damage" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/water-damage.jpg" alt="Water damage restoration in NYC"></div>
-        <div class="strip-label">Water Damage<br>Repair</div>
-      </a>
-      <a href="/handyman" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/handyman.jpg" alt="Handyman services in Brooklyn NYC"></div>
-        <div class="strip-label">Handyman<br>Services</div>
-      </a>
-      <a href="/services" class="strip-item" aria-hidden="true">
-        <div class="strip-bg"><img class="strip-bg-img" loading="lazy" decoding="async" src="images/services-strip/repairs.jpg" alt="Same-day repairs in NYC"></div>
-        <div class="strip-label">Repairs &amp;<br>Maintenance</div>
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════ ABOUT / INTRO ══════════ -->
-<section class="about-section">
-  <div class="about-grid">
-    <div class="about-image">
-      <div class="about-image-tag">SINCE 2015 · <span>BROOKLYN, NY</span></div>
-    </div>
-    <div>
-      <div class="about-eyebrow">Crafting Timeless NYC Homes</div>
-      <h2>Your Trusted<br>NYC Renovation<br> <em>Partner.</em></h2>
-      <p>Sani Building Corp is a full-service NYC renovation contractor delivering white-glove craftsmanship for homeowners, property managers, hotels, and multi-unit buildings since 2015. From the first sketch to the final walkthrough, our in-house team handles every trade — design, permits, demolition, construction, and finishing.</p>
-      <p>We bridge the gap between a high-end design-build firm and a reliable local contractor. Honest pricing. Same-day response. Built to last.</p>
-      <div class="about-cta-row">
-        <a href="/estimate" class="btn-primary">Get a Free Estimate</a>
-        <a href="/about" class="btn-secondary">Meet Our Team</a>
+  <!-- SERVICES: one list, one icon style, every link the page had -->
+  <section class="v2-section v2-alt" id="services">
+    <div class="v2-wrap">
+      <div class="v2-head">
+        <p class="v2-kicker">What we do</p>
+        <h2>Renovation services across New York City</h2>
+        <p class="v2-sub">One crew for the whole job, from demolition to the last coat of paint.</p>
       </div>
+      <ul class="v2-svc">
+        <li><a href="/bathroom-renovation"><svg class="v2-ico"><use href="#i-bath"/></svg><span><b>Bathroom renovation</b><em>Gut to finish: waterproofing, tile, fixtures, glass</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/kitchen-cabinet-installation"><svg class="v2-ico"><use href="#i-kitchen"/></svg><span><b>Kitchen cabinet installation</b><em>Cabinets, counters, backsplash, hardware</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/services"><svg class="v2-ico"><use href="#i-since"/></svg><span><b>Interior &amp; full apartment renovation</b><em>Gut renovations, walls, doors, finishes</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/painting"><svg class="v2-ico"><use href="#i-paint"/></svg><span><b>Painting</b><em>Patching, prep, walls, ceilings, doors and trim</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/flooring"><svg class="v2-ico"><use href="#i-floor"/></svg><span><b>Flooring</b><em>Hardwood, engineered, vinyl plank, subfloor prep</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/commercial-tile-installation"><svg class="v2-ico"><use href="#i-tile"/></svg><span><b>Tile installation</b><em>Floors, walls, showers, commercial spaces</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/carpentry"><svg class="v2-ico"><use href="#i-carpentry"/></svg><span><b>Carpentry &amp; millwork</b><em>Built-ins, trim, doors, framing</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/stair-renovation"><svg class="v2-ico"><use href="#i-stairs"/></svg><span><b>Stairs</b><em>Rebuilds, new treads, refinishing</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/deck-building"><svg class="v2-ico"><use href="#i-deck"/></svg><span><b>Decks</b><em>New decks, board replacement, railings</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/water-damage"><svg class="v2-ico"><use href="#i-water"/></svg><span><b>Water damage repair</b><em>Ceilings, walls and floors put back</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+        <li><a href="/handyman"><svg class="v2-ico"><use href="#i-wrench"/></svg><span><b>Handyman, same day</b><em>Repairs and small jobs, fast</em></span><svg class="v2-ico v2-go"><use href="#i-arrow"/></svg></a></li>
+      </ul>
+      <p class="v2-more"><a href="/services">All services <svg class="v2-ico"><use href="#i-arrow"/></svg></a></p>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ══════════ MARQUEE ══════════ -->
-<section class="marquee-section">
-  <div class="marquee-track">
-    <span class="marquee-item"><span class="msvc"><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12v3a4 4 0 004 4h8a4 4 0 004-4v-3M6 12V5a2 2 0 012-2h1M8 21l-1 1.5M16 21l1 1.5M9 5h3"/></svg><span>Bathrooms</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="8" r="1.4"/><circle cx="16" cy="8" r="1.4"/><line x1="7" y1="16" x2="10" y2="16"/><line x1="14" y1="16" x2="17" y2="16"/></svg><span>Kitchens</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="14" height="5" rx="1"/><path d="M18 5h2a1 1 0 011 1v3a1 1 0 01-1 1h-8v3"/><rect x="10.5" y="13" width="3" height="8" rx="0.5"/></svg><span>Painting</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="7.5" y1="3" x2="7.5" y2="12"/><line x1="16.5" y1="12" x2="16.5" y2="21"/></svg><span>Tile Installation</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M3 8l9-5 9 5M5 7v13h14V7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="19" y2="16"/></svg><span>Flooring</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M3 17l7-7 4 4-7 7H3v-4z"/><path d="M13 7l4-4 4 4-4 4"/><line x1="14" y1="10" x2="17" y2="13"/></svg><span>Carpentry</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><line x1="3" y1="10" x2="21" y2="10"/><line x1="5" y1="10" x2="5" y2="20"/><line x1="9.5" y1="10" x2="9.5" y2="20"/><line x1="14.5" y1="10" x2="14.5" y2="20"/><line x1="19" y1="10" x2="19" y2="20"/><line x1="3" y1="20" x2="21" y2="20"/><path d="M3 10l4-5h10l4 5"/></svg><span>Decks</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/><path d="M3 21c1.5-1 3-1 4.5 0s3 1 4.5 0 3-1 4.5 0 3 1 4.5 0"/></svg><span>Water Damage</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 00-5.2 5.2L3 18v3h3l6.5-6.5a4 4 0 005.2-5.2L15 12l-3-3 2.7-2.7z"/></svg><span>Handyman</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="18"/><rect x="14" y="9" width="6" height="12"/><line x1="7" y1="7" x2="9" y2="7"/><line x1="7" y1="11" x2="9" y2="11"/><line x1="7" y1="15" x2="9" y2="15"/><line x1="16.5" y1="13" x2="17.5" y2="13"/><line x1="16.5" y1="17" x2="17.5" y2="17"/></svg><span>Commercial</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V21h14V9.5"/><rect x="10" y="14" width="4" height="7"/></svg><span>Residential</span></span><span class="marquee-dot"></span></span>
-    <span class="marquee-item"><span class="msvc"><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12v3a4 4 0 004 4h8a4 4 0 004-4v-3M6 12V5a2 2 0 012-2h1M8 21l-1 1.5M16 21l1 1.5M9 5h3"/></svg><span>Bathrooms</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="8" r="1.4"/><circle cx="16" cy="8" r="1.4"/><line x1="7" y1="16" x2="10" y2="16"/><line x1="14" y1="16" x2="17" y2="16"/></svg><span>Kitchens</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="14" height="5" rx="1"/><path d="M18 5h2a1 1 0 011 1v3a1 1 0 01-1 1h-8v3"/><rect x="10.5" y="13" width="3" height="8" rx="0.5"/></svg><span>Painting</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="7.5" y1="3" x2="7.5" y2="12"/><line x1="16.5" y1="12" x2="16.5" y2="21"/></svg><span>Tile Installation</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M3 8l9-5 9 5M5 7v13h14V7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="19" y2="16"/></svg><span>Flooring</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M3 17l7-7 4 4-7 7H3v-4z"/><path d="M13 7l4-4 4 4-4 4"/><line x1="14" y1="10" x2="17" y2="13"/></svg><span>Carpentry</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><line x1="3" y1="10" x2="21" y2="10"/><line x1="5" y1="10" x2="5" y2="20"/><line x1="9.5" y1="10" x2="9.5" y2="20"/><line x1="14.5" y1="10" x2="14.5" y2="20"/><line x1="19" y1="10" x2="19" y2="20"/><line x1="3" y1="20" x2="21" y2="20"/><path d="M3 10l4-5h10l4 5"/></svg><span>Decks</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/><path d="M3 21c1.5-1 3-1 4.5 0s3 1 4.5 0 3-1 4.5 0 3 1 4.5 0"/></svg><span>Water Damage</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 00-5.2 5.2L3 18v3h3l6.5-6.5a4 4 0 005.2-5.2L15 12l-3-3 2.7-2.7z"/></svg><span>Handyman</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="18"/><rect x="14" y="9" width="6" height="12"/><line x1="7" y1="7" x2="9" y2="7"/><line x1="7" y1="11" x2="9" y2="11"/><line x1="7" y1="15" x2="9" y2="15"/><line x1="16.5" y1="13" x2="17.5" y2="13"/><line x1="16.5" y1="17" x2="17.5" y2="17"/></svg><span>Commercial</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V21h14V9.5"/><rect x="10" y="14" width="4" height="7"/></svg><span>Residential</span></span><span class="marquee-dot"></span></span>
-    <span class="marquee-item"><span class="msvc"><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12v3a4 4 0 004 4h8a4 4 0 004-4v-3M6 12V5a2 2 0 012-2h1M8 21l-1 1.5M16 21l1 1.5M9 5h3"/></svg><span>Bathrooms</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="8" r="1.4"/><circle cx="16" cy="8" r="1.4"/><line x1="7" y1="16" x2="10" y2="16"/><line x1="14" y1="16" x2="17" y2="16"/></svg><span>Kitchens</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="14" height="5" rx="1"/><path d="M18 5h2a1 1 0 011 1v3a1 1 0 01-1 1h-8v3"/><rect x="10.5" y="13" width="3" height="8" rx="0.5"/></svg><span>Painting</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="7.5" y1="3" x2="7.5" y2="12"/><line x1="16.5" y1="12" x2="16.5" y2="21"/></svg><span>Tile Installation</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M3 8l9-5 9 5M5 7v13h14V7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="19" y2="16"/></svg><span>Flooring</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M3 17l7-7 4 4-7 7H3v-4z"/><path d="M13 7l4-4 4 4-4 4"/><line x1="14" y1="10" x2="17" y2="13"/></svg><span>Carpentry</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><line x1="3" y1="10" x2="21" y2="10"/><line x1="5" y1="10" x2="5" y2="20"/><line x1="9.5" y1="10" x2="9.5" y2="20"/><line x1="14.5" y1="10" x2="14.5" y2="20"/><line x1="19" y1="10" x2="19" y2="20"/><line x1="3" y1="20" x2="21" y2="20"/><path d="M3 10l4-5h10l4 5"/></svg><span>Decks</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/><path d="M3 21c1.5-1 3-1 4.5 0s3 1 4.5 0 3-1 4.5 0 3 1 4.5 0"/></svg><span>Water Damage</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 00-5.2 5.2L3 18v3h3l6.5-6.5a4 4 0 005.2-5.2L15 12l-3-3 2.7-2.7z"/></svg><span>Handyman</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="18"/><rect x="14" y="9" width="6" height="12"/><line x1="7" y1="7" x2="9" y2="7"/><line x1="7" y1="11" x2="9" y2="11"/><line x1="7" y1="15" x2="9" y2="15"/><line x1="16.5" y1="13" x2="17.5" y2="13"/><line x1="16.5" y1="17" x2="17.5" y2="17"/></svg><span>Commercial</span></span><span class="marquee-dot"></span><span class="msvc"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V21h14V9.5"/><rect x="10" y="14" width="4" height="7"/></svg><span>Residential</span></span><span class="marquee-dot"></span></span>
-  </div>
-</section>
-
-<!-- ══════════ SERVICES GRID ══════════ -->
-<section class="section services-section" id="services">
-  <div class="section-container">
-    <div class="section-header">
-      <div class="section-eyebrow"><div class="line"></div><span>What We Do</span></div>
-      <h2 class="section-title">Professional Renovation Services<br> <em>Across New York City</em></h2>
-      <p class="section-sub wide">From bathroom remodeling in Brooklyn to full apartment gut renovations in Manhattan — we handle every trade, every project, every borough.</p>
+  <!-- HOW IT GOES -->
+  <section class="v2-section">
+    <div class="v2-wrap">
+      <div class="v2-head">
+        <p class="v2-kicker">How a job goes</p>
+        <h2>Three steps, no surprises</h2>
+      </div>
+      <ol class="v2-steps">
+        <li><b>Free estimate</b><p>We look at the space and send a written, itemized estimate within 24 hours. Nothing extra is ever added without your OK.</p></li>
+        <li><b>One crew, one supervisor</b><p>The same team works your job start to finish, with one person you can call. We protect the building and clean up every day.</p></li>
+        <li><b>Walkthrough and warranty</b><p>We walk it with you, finish the punch list, and your 3-year workmanship warranty starts.</p></li>
+      </ol>
     </div>
-    <div class="svc-grid">
-      <a href="/bathroom-renovation" class="svc-card">
-        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/bathroom.jpg" alt="Bathroom renovation project in Brooklyn NYC by Sani Building Corp"></div>
-        <div class="svc-body">
-          <span class="svc-num">01 — BATHROOM</span>
-          <h3 class="svc-title">Bathroom<br>Renovation</h3>
-          <span class="svc-arrow">Learn More <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        </div>
-      </a>
-      <a href="/kitchen-cabinet-installation" class="svc-card">
-        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/services/kitchen.jpg" alt="Kitchen cabinet installation project in NYC"></div>
-        <div class="svc-body">
-          <span class="svc-num">02 — CABINETS</span>
-          <h3 class="svc-title">Kitchen Cabinet<br>Installation</h3>
-          <span class="svc-arrow">Learn More <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        </div>
-      </a>
-      <a href="/painting" class="svc-card">
-        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/services/painting.jpg" alt="Interior painting services in Brooklyn and Manhattan"></div>
-        <div class="svc-body">
-          <span class="svc-num">03 — PAINTING</span>
-          <h3 class="svc-title">Painting<br>Services</h3>
-          <span class="svc-arrow">Learn More <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        </div>
-      </a>
-      <a href="/flooring" class="svc-card">
-        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/services/flooring.jpg" alt="Hardwood flooring installation in NYC"></div>
-        <div class="svc-body">
-          <span class="svc-num">04 — FLOORING</span>
-          <h3 class="svc-title">Flooring<br>Installation</h3>
-          <span class="svc-arrow">Learn More <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        </div>
-      </a>
-      <a href="/carpentry" class="svc-card">
-        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/services/carpentry.jpg" alt="Custom carpentry and millwork in NYC"></div>
-        <div class="svc-body">
-          <span class="svc-num">05 — CARPENTRY</span>
-          <h3 class="svc-title">Carpentry<br>& Millwork</h3>
-          <span class="svc-arrow">Learn More <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        </div>
-      </a>
-      <a href="/water-damage" class="svc-card">
-        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/water-damage.jpg" alt="Water damage restoration in Brooklyn NYC"></div>
-        <div class="svc-body">
-          <span class="svc-num">06 — RESTORATION</span>
-          <h3 class="svc-title">Water Damage<br>Restoration</h3>
-          <span class="svc-arrow">Learn More <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        </div>
-      </a>
-      <a href="/handyman" class="svc-card">
-        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/handyman.jpg" alt="Same-day handyman service in Brooklyn NYC" onerror="this.onerror=null;this.src='images/handyman/same-day-handyman-services-in-nyc-fast-r-2.jpg'"></div>
-        <div class="svc-body">
-          <span class="svc-num">07 — HANDYMAN</span>
-          <h3 class="svc-title">Handyman<br>Same-Day Service</h3>
-          <span class="svc-arrow">Learn More <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        </div>
-      </a>
-      <a href="/commercial-tile-installation" class="svc-card">
-        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/tile.jpg" alt="Commercial and residential tile installation in NYC" onerror="this.onerror=null;this.src='images/home/marble-mosaic-shower-1.jpg'"></div>
-        <div class="svc-body">
-          <span class="svc-num">08 — TILE</span>
-          <h3 class="svc-title">Tile<br>Installation</h3>
-          <span class="svc-arrow">Learn More <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        </div>
-      </a>
-      <a href="/deck-building" class="svc-card">
-        <div class="svc-bg"><img class="svc-bg-img" loading="lazy" decoding="async" src="images/home/deck.jpg" alt="Deck building and renovation in NYC" onerror="this.onerror=null;this.src='images/home/project-7.jpg'"></div>
-        <div class="svc-body">
-          <span class="svc-num">09 — DECKS</span>
-          <h3 class="svc-title">Deck Building<br>& Renovation</h3>
-          <span class="svc-arrow">Learn More <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        </div>
-      </a>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ══════════ GALLERY ══════════ -->
-<section class="gallery-section" id="gallery">
-  <div class="gallery-container">
-    <div class="gallery-header">
-      <div class="gallery-eyebrow"><div class="line"></div><span>Recent Projects</span><div class="line"></div></div>
-      <h2 class="gallery-title">Our NYC Renovation <em>Gallery</em></h2>
-      <p class="gallery-sub">A selection of recent renovation projects across Brooklyn, Manhattan, Queens, and Long Island. From luxury bathrooms and custom cabinets to full home renovations — every project hand-built by the Sani Building Corp team.</p>
-    </div>
-
-    <div class="gallery-grid">
-      <a href="/kitchen-cabinet-installation" class="gallery-item big">
-        <img loading="lazy" decoding="async" src="images/home/project-1.jpg" alt="Kitchen cabinet installation in Brooklyn — custom shaker cabinets and hardware by Sani Building Corp">
-        <div class="gallery-caption">
-          <span class="gallery-cat">Kitchen Cabinet Installation</span>
-          <div class="gallery-name">Brooklyn Heights — Cabinet Install</div>
-        </div>
-      </a>
-      <a href="/bathroom-renovation" class="gallery-item">
-        <img loading="lazy" decoding="async" src="images/home/project-2.jpg" alt="Master bathroom remodel in Park Slope with marble tile, freestanding tub and matte black fixtures">
-        <div class="gallery-caption">
-          <span class="gallery-cat">Bathroom</span>
-          <div class="gallery-name">Park Slope Bathroom</div>
-        </div>
-      </a>
-      <a href="/painting" class="gallery-item">
-        <img loading="lazy" decoding="async" src="images/home/project-3.jpg" alt="Interior painting in Manhattan apartment — premium two-tone wall finish with crisp trim work">
-        <div class="gallery-caption">
-          <span class="gallery-cat">Painting</span>
-          <div class="gallery-name">Manhattan UWS Apartment</div>
-        </div>
-      </a>
-      <a href="/services" class="gallery-item tall">
-        <img loading="lazy" decoding="async" src="images/home/project-4.jpg" alt="Full apartment gut renovation in Manhattan — open-plan living space with white oak floors and custom built-ins">
-        <div class="gallery-caption">
-          <span class="gallery-cat">Full Renovation</span>
-          <div class="gallery-name">Tribeca Loft Transformation</div>
-        </div>
-      </a>
-      <a href="/carpentry" class="gallery-item">
-        <img loading="lazy" decoding="async" src="images/home/project-5.jpg" alt="Custom carpentry and millwork — handcrafted living room built-ins with floating shelves in a Queens brownstone">
-        <div class="gallery-caption">
-          <span class="gallery-cat">Carpentry</span>
-          <div class="gallery-name">Custom Living Room Built-Ins</div>
-        </div>
-      </a>
-      <a href="/flooring" class="gallery-item wide">
-        <img loading="lazy" decoding="async" src="images/home/project-6.jpg" alt="Wide-plank white oak hardwood flooring installation across an open Brooklyn loft">
-        <div class="gallery-caption">
-          <span class="gallery-cat">Flooring</span>
-          <div class="gallery-name">White Oak — Williamsburg Loft</div>
-        </div>
-      </a>
-      <a href="/services" class="gallery-item">
-        <img loading="lazy" decoding="async" src="images/home/project-7.jpg" alt="Exterior facade restoration on a Brooklyn brownstone — repointed brick, repaired cornice and new entry door">
-        <div class="gallery-caption">
-          <span class="gallery-cat">Exterior</span>
-          <div class="gallery-name">Brownstone Facade Restoration</div>
-        </div>
-      </a>
-      <a href="/services" class="gallery-item">
-        <img loading="lazy" decoding="async" src="images/home/project-8.jpg" alt="Water damage restoration and ceiling repair in a Manhattan co-op — drywall replacement, fresh paint and finish">
-        <div class="gallery-caption">
-          <span class="gallery-cat">Restoration</span>
-          <div class="gallery-name">Water Damage Repair</div>
-        </div>
-      </a>
-    </div>
-
-    <div class="gallery-cta">
-      <a href="/services">
-        Explore All Our Services
-        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════ PROCESS STEPS ══════════ -->
-<section class="process-section">
-  <div class="process-container">
-    <div class="process-header">
-      <div class="process-eyebrow"><div class="line"></div><span>Step-by-Step Process</span><div class="line"></div></div>
-      <h2 class="process-title">Our Renovation <em>Process</em></h2>
-      <p class="process-sub">A stress-free, transparent path from first sketch to final reveal. You're part of the journey at every phase.</p>
-    </div>
-    <div class="process-grid">
-      <div class="process-step">
-        <div class="process-num">01</div>
-        <h3>Consultation</h3>
-        <p>We visit your space, listen to your vision, and outline a realistic scope and timeline together.</p>
-      </div>
-      <div class="process-step">
-        <div class="process-num">02</div>
-        <h3>Design & Quote</h3>
-        <p>We finalize the design with you and deliver a transparent quote — no hidden fees, no surprises.</p>
-      </div>
-      <div class="process-step">
-        <div class="process-num">03</div>
-        <h3>Build</h3>
-        <p>Our skilled crew executes the work with precision — permits, plumbing, electric, finish carpentry.</p>
-      </div>
-      <div class="process-step">
-        <div class="process-num">04</div>
-        <h3>Final Reveal</h3>
-        <p>Walk-through, punch list, and a finished space built to last — backed by our workmanship warranty.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════ VALUES (icon row 3-col) ══════════ -->
-<section class="values-section">
-  <div class="values-container">
-    <div class="values-header">
-      <div class="values-eyebrow">Values That Drive Us</div>
-      <h2 class="values-title">Crafting Homes Filled<br>With <em>Joy & Satisfaction</em></h2>
-    </div>
-    <div class="values-grid">
-      <div class="value-card">
-        <div class="value-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-        </div>
-        <h3>Complete Project<br>Management</h3>
-        <p>We handle every permit, every trade, every detail. One team, one point of contact, zero stress — from demo day to final walkthrough.</p>
-      </div>
-      <div class="value-card">
-        <div class="value-icon">
-          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
-        </div>
-        <h3>Dedicated<br>Project Manager</h3>
-        <p>Every project gets a single dedicated lead who keeps you informed, on schedule, and on budget — from quote to keys in hand.</p>
-      </div>
-      <div class="value-card">
-        <div class="value-icon">
-          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        </div>
-        <h3>Premium<br>Materials Only</h3>
-        <p>Hand-picked finishes, tile, hardware, and lumber from trusted NYC suppliers. Built to look beautiful — and built to last decades.</p>
-      </div>
-      <div class="value-card">
-        <div class="value-icon">
-          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <h3>Workmanship<br>Warranty</h3>
-        <p>Every job is backed by our written warranty. If something isn't right, we make it right — that's the Sani Building Corp promise.</p>
-      </div>
-      <div class="value-card">
-        <div class="value-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-        </div>
-        <h3>Brooklyn<br>Showroom</h3>
-        <p>Visit our Brighton Beach showroom to touch tile, cabinet finishes, and countertop samples before you commit. Pick what you love in person.</p>
-      </div>
-      <div class="value-card">
-        <div class="value-icon">
-          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        </div>
-        <h3>10+ Years<br>in NYC</h3>
-        <p>Over a decade renovating co-ops, condos, brownstones, and multi-unit buildings across all five boroughs. We know NYC — inside and out.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════ WHY US ══════════ -->
-<section class="why-section" id="why-us">
-  <div class="why-hero">
-    <div class="why-hero-inner">
-      <div class="why-text-side">
-        <div class="why-section-eyebrow"><div class="line"></div><span>Why Choose Us</span></div>
-        <h2 class="why-section-title">Brooklyn's Most Trusted <em>Renovation Partner</em></h2>
-        <div class="reviews-carousel-wrap">
-          <button class="rc-arrow rc-prev" aria-label="Previous review">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button class="rc-arrow rc-next" aria-label="Next review">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-          <div class="reviews-carousel" id="reviewsCarousel">
-
-            <!-- Review 1: Maxwell Zetlin -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="review-avatar">M</div>
-                <div>
-                  <div class="review-meta-name">Maxwell Zetlin</div>
-                  <div class="review-meta-sub">2 reviews</div>
-                </div>
-              </div>
-              <div class="review-stars-row">
-                <div class="review-stars">
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                </div>
-                <div class="review-time">8 months ago</div>
-              </div>
-              <p class="review-text">Zura and the <strong>team</strong> are exceptional! They bring a rare combination of skill, dedication, and creativity to every aspect of home building and rectifications. Whether it's correcting mistakes left by other contractors or finding innovative solutions to complex challenges, they consistently go above and beyond with professionalism and passion. Truly a versatile and reliable <strong>team</strong>!</p>
-              <div class="review-quote-block">
-                <span class="review-quote-icon">"</span>
-                <span class="review-quote-line"></span>
-              </div>
-              <div class="why-badge-inside-card">
-                <div class="why-badge-new">
-                  <div class="wnum">10+</div>
-                  <div class="wlbl">Years in NYC</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Review 2: Roshni Patel -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="review-avatar" style="background:#e8a87c">R</div>
-                <div>
-                  <div class="review-meta-name">Roshni Patel</div>
-                  <div class="review-meta-sub">Local Guide · 9 reviews</div>
-                </div>
-              </div>
-              <div class="review-stars-row">
-                <div class="review-stars">
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                </div>
-                <div class="review-time">a year ago</div>
-              </div>
-              <p class="review-text">Zura and his <strong>team</strong> were INCREDIBLE. They did a phenomenal job with all of their work: rust removal and painting our gate and fire escape, sanding and refinishing the deck, and re-surfacing all of our bathroom vanities. He was great to work with! Gave costs and set expectations up front, gave a timeline and stuck to it even with some rain delays. We will definitely be using his services again in the future!</p>
-              <div class="review-quote-block">
-                <span class="review-quote-icon">"</span>
-                <span class="review-quote-line"></span>
-              </div>
-              <div class="why-badge-inside-card">
-                <div class="why-badge-new">
-                  <div class="wnum">10+</div>
-                  <div class="wlbl">Years in NYC</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Review 3: Екатерине Асанидзе -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="review-avatar" style="background:#8b6f47">E</div>
-                <div>
-                  <div class="review-meta-name">Екатерине Асанидзе</div>
-                  <div class="review-meta-sub">1 review</div>
-                </div>
-              </div>
-              <div class="review-stars-row">
-                <div class="review-stars">
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                </div>
-                <div class="review-time">2 months ago</div>
-              </div>
-              <p class="review-text">Great experience with <strong>Sani Building Corp</strong>. Very professional <strong>team</strong> and high-quality interior and exterior renovation work. They also helped us with water damage repair. Highly recommend them if you need a reliable NYC contractor.</p>
-              <div class="review-quote-block">
-                <span class="review-quote-icon">"</span>
-                <span class="review-quote-line"></span>
-              </div>
-              <div class="why-badge-inside-card">
-                <div class="why-badge-new">
-                  <div class="wnum">10+</div>
-                  <div class="wlbl">Years in NYC</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Review 4: John Greenough -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="review-avatar" style="background:#7c4dff">J</div>
-                <div>
-                  <div class="review-meta-name">John Greenough</div>
-                  <div class="review-meta-sub">5 reviews</div>
-                </div>
-              </div>
-              <div class="review-stars-row">
-                <div class="review-stars">
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                </div>
-                <div class="review-time">2 months ago</div>
-              </div>
-              <p class="review-text">Zura and the <strong>Sani Building Corp</strong> <strong>team</strong> were fantastic to work with during our apartment renovation in NYC. They completely redid our kitchen tiles which came out beautifully, refinished our hardwood floors throughout the apartment, and handled everything with great care and professionalism. Highly recommend!</p>
-              <div class="review-quote-block">
-                <span class="review-quote-icon">"</span>
-                <span class="review-quote-line"></span>
-              </div>
-              <div class="why-badge-inside-card">
-                <div class="why-badge-new">
-                  <div class="wnum">10+</div>
-                  <div class="wlbl">Years in NYC</div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-          <div class="rc-controls-below">
-            <div class="rc-dots" id="reviewsDots">
-              <button class="rc-dot active" data-idx="0" aria-label="Review 1"></button>
-              <button class="rc-dot" data-idx="1" aria-label="Review 2"></button>
-              <button class="rc-dot" data-idx="2" aria-label="Review 3"></button>
-              <button class="rc-dot" data-idx="3" aria-label="Review 4"></button>
-            </div>
-            <button class="rc-arrow-below" id="rcArrowBelow" aria-label="Next review">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="why-badge-side">
-        <div class="why-badge-new">
-          <div class="wnum">10+</div>
-          <div class="wlbl">Years in NYC</div>
+  <!-- THE TEAM -->
+  <section class="v2-section v2-dark">
+    <div class="v2-wrap v2-team">
+      <figure class="v2-team-photo"><img loading="lazy" decoding="async" src="images/home/owner.jpg" width="1398" height="1048" alt="The Sani Building Corp crew on a job site in Brooklyn"></figure>
+      <div>
+        <p class="v2-kicker">Who we are</p>
+        <h2>A Brooklyn crew, not a call center</h2>
+        <p>Sani Building Corp has renovated apartments, brownstones, co-ops, restaurants and offices across New York City since 2015. The people in our photos are the people who come to your job.</p>
+        <p>We speak English, Russian and Georgian. Come see tile, cabinet and countertop samples at our Brighton Beach showroom before you choose.</p>
+        <div class="v2-actions">
+          <a href="/about" class="v2-btn v2-btn-light">Meet the team <svg class="v2-ico"><use href="#i-arrow"/></svg></a>
         </div>
       </div>
     </div>
-  </div>
-  <div class="why-features-strip">
-    <div class="why-feat-col">
-      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="17" cy="7" r="3" opacity=".6"/><path d="M21 21v-2a3 3 0 00-2-2.83"/></svg></div>
-      <div class="why-feat-col-title">Experienced Team</div>
-      <div class="why-feat-col-desc">Skilled professionals with 10+ years of hands-on experience in NYC.</div>
-    </div>
-    <div class="why-feat-col">
-      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><polyline points="9 8 11 10 15 6"/><path d="M8.5 13l-2 8 5.5-3 5.5 3-2-8"/></svg></div>
-      <div class="why-feat-col-title">Quality Craftsmanship</div>
-      <div class="why-feat-col-desc">We use premium materials and deliver flawless results on every project.</div>
-    </div>
-    <div class="why-feat-col">
-      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="1"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
-      <div class="why-feat-col-title">Transparent Process</div>
-      <div class="why-feat-col-desc">Clear communication, detailed estimates, and no hidden costs.</div>
-    </div>
-    <div class="why-feat-col">
-      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <div class="why-feat-col-title">On-Time Delivery</div>
-      <div class="why-feat-col-desc">We respect your time and complete every project as promised.</div>
-    </div>
-    <div class="why-feat-col">
-      <div class="why-feat-col-icon"><svg viewBox="0 0 24 24"><rect x="4" y="8" width="6" height="13"/><rect x="14" y="3" width="6" height="18"/><line x1="6" y1="12" x2="8" y2="12"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="16" y1="7" x2="18" y2="7"/><line x1="16" y1="11" x2="18" y2="11"/><line x1="16" y1="15" x2="18" y2="15"/></svg></div>
-      <div class="why-feat-col-title">Built For NYC</div>
-      <div class="why-feat-col-desc">We understand NYC buildings, permits, and standards — and get the job done right.</div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ══════════ FAQ ══════════ -->
-<section class="faq-section">
-  <div class="section-container">
-    <div class="section-eyebrow"><div class="line"></div><span>Common Questions</span></div>
-    <h2 class="section-title">Frequently Asked <em>Questions</em></h2>
-    <div class="faq-grid">
-      <div class="faq-item"><div class="faq-q">Do you offer free estimates?</div><div class="faq-a">Yes — all estimates are completely free with no obligation. We visit your property, assess the space, and provide a clear written quote within 24 hours.</div></div>
-      <div class="faq-item"><div class="faq-q">How quickly can you start a project?</div><div class="faq-a">We offer same-day response for urgent repairs. For full renovations, we typically start within 1–2 weeks depending on project scope and material availability.</div></div>
-      <div class="faq-item"><div class="faq-q">Are you insured in NYC?</div><div class="faq-a">Yes. Sani Building Corp is fully insured to perform renovation work throughout New York City. We carry full liability insurance and workers' compensation.</div></div>
-      <div class="faq-item"><div class="faq-q">Do you work with property managers?</div><div class="faq-a">Absolutely — property managers are one of our primary clients. We offer fast turnaround for unit renovations, common area upgrades, and ongoing building maintenance.</div></div>
-      <div class="faq-item"><div class="faq-q">What areas do you serve?</div><div class="faq-a">We serve all 5 NYC boroughs — Brooklyn, Manhattan, Queens, Bronx, and Staten Island — plus Nassau County and Suffolk County on Long Island.</div></div>
-      <div class="faq-item"><div class="faq-q">Do you handle permits for renovation work?</div><div class="faq-a">Yes. We manage all required permits for plumbing, electrical, and structural work. All renovations meet NYC Department of Buildings requirements.</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════ AREAS ══════════ -->
-<section class="areas-section" id="areas">
-  <div class="areas-inner">
-    <div class="section-eyebrow center"><div class="line"></div><span>Where We Work</span><div class="line"></div></div>
-    <h2 class="section-title white" style="text-align:center;margin-top:10px">NYC Renovation Contractor — <em>All Boroughs &amp; Long Island</em></h2>
-
-    <div class="areas-group">
-      <h3 class="areas-group-title">NYC Boroughs</h3>
-      <div class="areas-grid">
-        <a href="/contact" class="area-pill featured">Brooklyn</a>
-        <a href="/contact" class="area-pill featured">Manhattan</a>
-        <a href="/contact" class="area-pill">Queens</a>
-        <a href="/contact" class="area-pill">Bronx</a>
-        <a href="/contact" class="area-pill">Staten Island</a>
+  <!-- REVIEWS: word for word, as posted on Google -->
+  <section class="v2-section" id="why-us">
+    <div class="v2-wrap">
+      <div class="v2-head">
+        <p class="v2-kicker">Reviews</p>
+        <h2>What clients say</h2>
+        <p class="v2-sub"><b>4.9</b> average from 67 Google reviews.</p>
+      </div>
+      <div class="v2-reviews">
+        <blockquote class="v2-review"><div class="v2-stars" aria-label="5 stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><p>Zura and his team were INCREDIBLE. They did a phenomenal job with all of their work: rust removal and painting our gate and fire escape, sanding and refinishing the deck, and re-surfacing all of our bathroom vanities. He was great to work with! Gave costs and set expectations up front, gave a timeline and stuck to it even with some rain delays. We will definitely be using his services again in the future!</p><cite class="v2-who">Roshni Patel &middot; Google</cite></blockquote>
+        <blockquote class="v2-review"><div class="v2-stars" aria-label="5 stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><p>Zura and the Sani Building Corp team were fantastic to work with during our apartment renovation in NYC. They completely redid our kitchen tiles which came out beautifully, refinished our hardwood floors throughout the apartment, and handled everything with great care and professionalism. Highly recommend!</p><cite class="v2-who">John Greenough &middot; Google</cite></blockquote>
+        <blockquote class="v2-review"><div class="v2-stars" aria-label="5 stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><p>Zura and the team are exceptional! They bring a rare combination of skill, dedication, and creativity to every aspect of home building and rectifications. Whether it's correcting mistakes left by other contractors or finding innovative solutions to complex challenges, they consistently go above and beyond with professionalism and passion. Truly a versatile and reliable team!</p><cite class="v2-who">Maxwell Zetlin &middot; Google</cite></blockquote>
+        <blockquote class="v2-review"><div class="v2-stars" aria-label="5 stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><p>Great experience with Sani Building Corp. Very professional team and high-quality interior and exterior renovation work. They also helped us with water damage repair. Highly recommend them if you need a reliable NYC contractor.</p><cite class="v2-who">Екатерине Асанидзе &middot; Google</cite></blockquote>
       </div>
     </div>
+  </section>
 
-    <div class="areas-group">
-      <h3 class="areas-group-title">Long Island</h3>
-      <div class="areas-grid">
-        <a href="/contact" class="area-pill">Nassau County</a>
-        <a href="/contact" class="area-pill">Suffolk County</a>
+  <!-- FAQ: the same questions and answers the FAQ schema in <head> repeats -->
+  <section class="v2-section v2-alt">
+    <div class="v2-wrap v2-narrow">
+      <div class="v2-head">
+        <p class="v2-kicker">Questions</p>
+        <h2>Frequently asked questions</h2>
+      </div>
+      <div class="v2-faq">
+        <details><summary>Do you offer free estimates?</summary><p>Yes — all estimates are completely free with no obligation. We visit your property, assess the space, and provide a clear written quote within 24 hours.</p></details>
+        <details><summary>How quickly can you start a project?</summary><p>We offer same-day response for urgent repairs. For full renovations, we typically start within 1–2 weeks depending on project scope and material availability.</p></details>
+        <details><summary>Are you insured in NYC?</summary><p>Yes. Sani Building Corp is fully insured to perform renovation work throughout New York City. We carry full liability insurance and workers' compensation.</p></details>
+        <details><summary>Do you work with property managers?</summary><p>Absolutely — property managers are one of our primary clients. We offer fast turnaround for unit renovations, common area upgrades, and ongoing building maintenance.</p></details>
+        <details><summary>What areas do you serve?</summary><p>We serve all 5 NYC boroughs — Brooklyn, Manhattan, Queens, Bronx, and Staten Island — plus Nassau County and Suffolk County on Long Island.</p></details>
+        <details><summary>Do you handle permits for renovation work?</summary><p>Yes. We manage all required permits for plumbing, electrical, and structural work. All renovations meet NYC Department of Buildings requirements.</p></details>
       </div>
     </div>
+  </section>
 
-    <div class="areas-group">
-      <h3 class="areas-group-title">Popular Neighborhoods</h3>
-      <div class="areas-grid">
-        <a href="/contact" class="area-pill">Brighton Beach</a>
-        <a href="/contact" class="area-pill">Park Slope</a>
-        <a href="/contact" class="area-pill">Williamsburg</a>
-        <a href="/contact" class="area-pill">Bay Ridge</a>
-        <a href="/contact" class="area-pill">Astoria</a>
-        <a href="/contact" class="area-pill">Long Island City</a>
-        <a href="/contact" class="area-pill">Upper East Side</a>
-        <a href="/contact" class="area-pill">Upper West Side</a>
+  <!-- AREAS -->
+  <section class="v2-section" id="areas">
+    <div class="v2-wrap">
+      <div class="v2-head">
+        <p class="v2-kicker">Where we work</p>
+        <h2>All five boroughs and Long Island</h2>
+      </div>
+      <div class="v2-areas">
+        <div><h3>NYC boroughs</h3><p><a href="/renovation-contractor-brooklyn">Brooklyn</a><a href="/renovation-contractor-manhattan">Manhattan</a><a href="/renovation-contractor-queens">Queens</a><a href="/renovation-contractor-bronx">Bronx</a><a href="/renovation-contractor-staten-island">Staten Island</a></p></div>
+        <div><h3>Long Island</h3><p><a href="/renovation-contractor-nassau-county">Nassau County</a><a href="/renovation-contractor-suffolk-county">Suffolk County</a></p></div>
+        <div><h3>Neighborhoods we work in often</h3><p><span>Brighton Beach</span><span>Park Slope</span><span>Williamsburg</span><span>Bay Ridge</span><span>Astoria</span><span>Long Island City</span><span>Upper East Side</span><span>Upper West Side</span></p></div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+
+</main>
+<!-- HOME-V2:END -->
 
 <!-- ══════════ CONTACT FORM ══════════ -->
 <div id="estimator"></div>
@@ -2653,23 +2282,7 @@ body.modal-locked{overflow:hidden;position:fixed;width:100%}
   </div>
 </section>
 
-<!-- ══════════ CTA ══════════ -->
-<section class="cta-section">
-  <div class="cta-inner">
-    <div class="section-eyebrow center"><div class="line"></div><span>Get Started Today</span><div class="line"></div></div>
-    <h2>Ready to Transform<br>Your <em>Space?</em></h2>
-    <p>Get a free estimate from Brooklyn's most trusted renovation contractor. We serve all 5 boroughs with same-day response and transparent pricing.</p>
-    <div class="cta-btns">
-      <a href="/estimate" class="btn-primary">Get a Free Estimate</a>
-      <a href="tel:3322770990" class="btn-secondary">📞 332-277-0990</a>
-    </div>
-    <div class="cta-info">
-      <div class="cta-info-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>No commitment required</div>
-      <div class="cta-info-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Same-day response</div>
-      <div class="cta-info-item"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Fully insured</div>
-    </div>
-  </div>
-</section>
+
 
 <!-- Footer loaded from partials/footer.html via partials/site.js -->
 
