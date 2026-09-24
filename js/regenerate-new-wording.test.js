@@ -62,7 +62,24 @@ console.log('\n3. The generator, the browser, Save and Send\n');
   ok('THE GENERATOR carries forRegenerate\'s copy and marks the estimate reset / kept', /const carry = forRegenerate\(previousEstimate\);\s*if \(carry\.reset\) estimate\.scopeDraftReset = true;\s*if \(carry\.kept\) estimate\.scopeDraftKept = true;[\s\S]{0,200}preserveContractorFields\(carry\.previous, estimate\);/.test(GEN));
   ok('THE BROWSER does not put a reset draft back after a regenerate', /if \(data\.estimate && data\.estimate\.scopeDraftReset === true\) \{\s*\["manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished"\]\.forEach\(function \(k\) \{ delete keepFields\[k\]; \}\);/.test(DASH));
   ok('SAVE AND SEND carry the whole-project list and the wording report (they used to strip them)', /"projectIncluded", "projectExclusions", "customerTimeline", "scopeWriter", "generatedWith", "generationTiming",/.test(DASH));
-  ok('THE PANEL says when edited wording was kept, and Rebuild draft from AI clears the note', /Your edited wording was kept when the estimate was regenerated\. For the new AI wording, press <b>Rebuild draft from AI<\/b> below\./.test(DASH) && /manualCustomerScopeDraft = buildScopeDraftFromAI\(\);[\s\S]{0,200}currentRecord\.estimate\.scopeDraftKept = false;/.test(DASH));
+  ok('THE PANEL says when edited wording was kept, and Rebuild draft from AI clears the note', /Your edited wording was kept when the estimate was regenerated\. For the new AI wording, press <b>Rebuild draft from AI<\/b> below\./.test(DASH) && /manualCustomerScopeDraft = buildScopeDraftFromAI\(true\);[\s\S]{0,200}currentRecord\.estimate\.scopeDraftKept = false;/.test(DASH));
+}
+console.log('\n4. Rebuild draft from AI reads the AI, not the customer\'s current page\n');
+{
+  const vm = require('vm');
+  const ext = (name) => { const st = DASH.search(new RegExp('function ' + name + '\\s*\\(')); let d = 0; for (let j = DASH.indexOf('{', st); j < DASH.length; j++) { if (DASH[j] === '{') d++; else if (DASH[j] === '}') { d--; if (!d) return DASH.slice(st, j + 1); } } };
+  const ctx = { scopeUniqueServices: () => [], scopeDropEmptyServices: (x) => x, scopeSectionOf: () => 'General', JSON, Object, Array, String };
+  vm.createContext(ctx);
+  vm.runInContext(ext('buildScopeDraftFromAI'), ctx);
+  ctx.currentRecord = { estimate: {
+    customerScopePublished: true,
+    publishedCustomerScope: { services: [{ name: 'Bathroom', included: ['Remove the existing bathroom down to the substrate'], supplied: [], excluded: [] }] },
+    serviceBreakdown: [{ title: 'Bathroom', included: ['We take the bathroom down to the studs and haul it out.'], customerSupplies: ['Vanity'], notIncluded: [] }] } };
+  const rebuilt = vm.runInContext('buildScopeDraftFromAI(true)', ctx);
+  ok('THE ASTORIA BUG: Rebuild draft from AI gives the AI\'s card wording, not the published stock lines', rebuilt.services[0].included[0] === 'We take the bathroom down to the studs and haul it out.' && rebuilt.services[0].supplied[0] === 'Vanity', JSON.stringify(rebuilt));
+  const opened = vm.runInContext('buildScopeDraftFromAI()', ctx);
+  ok('...opening the panel with no draft still starts from what the customer sees', opened.services[0].included[0] === 'Remove the existing bathroom down to the substrate');
+  ok('the Rebuild button asks for the AI version', /function scopeRebuildFromAI\(\)[\s\S]{0,1200}manualCustomerScopeDraft = buildScopeDraftFromAI\(true\);/.test(DASH));
 }
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
