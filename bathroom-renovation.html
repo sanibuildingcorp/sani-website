@@ -381,6 +381,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
   </div>
 </section>
 
+<!-- NATURAL-TABS:START --><nav class="n-tabs" aria-label="On this page"><div class="n-tabs-in"><a class="n-go" href="/estimate">Free Estimate</a><a href="#boroughs">Areas</a><a href="#services">Services</a><a href="#before-after">Before &amp; After</a><a href="#process">Process</a><a href="#projects">Projects</a><a href="#faq">FAQ</a></div></nav><!-- NATURAL-TABS:END -->
 <!-- ============ STATS BAR ============ -->
 <section class="stats-bar">
   <div class="stats-bar-inner">
@@ -579,7 +580,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
 </section>
 
 <!-- ============ BEFORE/AFTER SLIDER ============ -->
-<section class="ba-section">
+<section class="ba-section" id="before-after">
   <div class="ba-inner">
     <div class="ba-eyebrow reveal">Before & After</div>
     <h2 class="ba-title reveal">Real Transformations</h2>
@@ -601,7 +602,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
 </section>
 
 <!-- ============ EVERYTHING YOU NEED ============ -->
-<section class="eyn-section">
+<section class="eyn-section" id="services">
   <div class="eyn-inner">
     <div class="eyn-left">
       <div class="eyebrow reveal">What's Included</div>
@@ -687,7 +688,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
 </section>
 
 <!-- ============ COMPARE: FULL RENO vs NO-DEMO ============ -->
-<section class="compare-section">
+<section class="compare-section" id="compare">
   <div class="compare-inner">
     <div class="compare-head">
       <div class="compare-eyebrow reveal">Two Ways to Transform Your Bathroom</div>
@@ -735,7 +736,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
 </section>
 
 <!-- ============ PROCESS TIMELINE ============ -->
-<section class="process-section">
+<section class="process-section" id="process">
   <div class="process-inner">
     <div class="process-eyebrow reveal">Our Renovation Process</div>
     <h2 class="process-title reveal">A Smooth, Transparent Process</h2>
@@ -781,7 +782,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
 </section>
 
 <!-- ============ RECENT PROJECTS ============ -->
-<section class="projects-section">
+<section class="projects-section" id="projects">
   <div class="projects-inner">
     <div class="projects-head">
       <div class="projects-head-left">
@@ -863,7 +864,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
 </section>
 
 <!-- ============ FAQ ============ -->
-<section class="faq-section">
+<section class="faq-section" id="faq">
   <div class="faq-inner">
     <div class="faq-eyebrow reveal">FAQ</div>
     <h2 class="faq-title reveal">Frequently Asked Questions</h2>
@@ -1083,5 +1084,88 @@ let touchStartX=0;document.getElementById('lightbox').addEventListener('touchsta
 
 <!-- Loads menu/footer partials + mobile menu functions -->
 <script src="partials/site.js"></script>
+<!-- NATURAL-CSS:START --><style id="bath-natural">
+/* BATHROOM PAGE - the calm, natural look (ops/bath-natural.py puts it last).
+     "I like how it's looks them site more human makes, more natural and
+      more professional" - Re-Bath's New York page, without its red.
+   Same words and sections. Light and warm instead of navy: the photo shown
+   whole in a frame, dark words on cream, one charcoal pill button, gold
+   only in small details, a tab bar that stays under the menu, and one warm
+   charcoal band with slanted edges. */
+:root{--n-bg:#faf8f4;--n-cream:#f3eee5;--n-ink:#1f1d1a;--n-soft:#57524b;--n-line:#e4ddd0;--n-gold:#a8762a;--n-dark:#262320;--n-r:16px}
+html body{background:var(--n-bg)}
+
+/* buttons: calm pills, sentence case */
+html body :is(.btn-primary,.btn-outline,.bc-cta){border-radius:999px!important;text-transform:none!important;letter-spacing:.01em!important;font-size:16px!important;font-weight:700!important;box-shadow:none!important}
+html body .btn-primary{background:var(--n-ink)!important;color:#fff!important;border:0!important}
+html body .btn-primary:hover{background:#3a3631!important}
+html body .btn-outline{background:transparent!important;color:var(--n-ink)!important;border:1.5px solid var(--n-ink)!important}
+html body :is(.eyebrow,.eyn-left .eyebrow){letter-spacing:.14em!important;color:var(--n-gold)!important}
+
+/* ── hero: light; the photo whole in a frame, words on cream ── */
+html body .page-hero{background:var(--n-cream)!important;min-height:0!important}
+html body .page-hero-accent{display:none!important}
+html body .page-hero-bg-blur::after{display:none!important}
+html body .page-hero-bg-blur{z-index:1!important;border-radius:var(--n-r)!important;overflow:hidden!important;box-shadow:0 18px 40px -22px rgba(31,29,26,.45)!important}
+html body .page-hero-bg-blur img{position:static!important;width:100%!important;height:100%!important;min-width:0!important;object-fit:cover!important;object-position:center 60%!important}
+html body .page-hero-text h1{color:var(--n-ink)!important;text-shadow:none!important}
+html body .page-hero-text h1 em{color:var(--n-gold)!important}
+html body .page-hero-text p.tagline{color:var(--n-soft)!important;text-shadow:none!important;max-width:520px!important}
+html body .hero-rating-pill{background:#fff!important;border:1px solid var(--n-line)!important;text-shadow:none!important}
+html body .hero-rating-pill .stars{color:#e0a100!important}
+html body .hero-rating-pill .text{color:var(--n-ink)!important;letter-spacing:.06em!important}
+html body .hero-cred-card{background:#fff!important;border:1px solid var(--n-line)!important}
+html body .hero-cred-card .label{color:var(--n-ink)!important}
+@media(min-width:900px){
+  html body .page-hero{padding:104px 0 44px!important;display:block!important}
+  html body .page-hero-bg-blur{position:absolute!important;inset:auto!important;top:104px!important;bottom:44px!important;right:max(28px,calc((100vw - 1280px)/2 + 28px))!important;width:40%!important}
+  html body .page-hero-inner{padding:24px 28px!important}
+  html body .page-hero-text{max-width:min(600px,52%)!important}
+}
+@media(max-width:899px){
+  html body .page-hero{display:block!important;padding:84px 0 8px!important}
+  html body .page-hero-bg-blur{position:relative!important;inset:auto!important;width:calc(100% - 28px)!important;margin:0 auto!important;aspect-ratio:4/3}
+  html body .page-hero-inner{padding:26px 18px 28px!important}
+}
+
+/* ── the tab bar under the menu ── */
+.n-tabs{position:sticky;top:78px;z-index:900;background:rgba(250,248,244,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--n-line)}
+.n-tabs-in{max-width:1280px;margin:0 auto;padding:10px 20px;display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.n-tabs-in::-webkit-scrollbar{display:none}
+.n-tabs a{flex:none;text-decoration:none;color:var(--n-ink);font-weight:600;font-size:16px;padding:9px 16px;border-radius:999px;white-space:nowrap}
+.n-tabs a:hover{background:#ece6da}
+.n-tabs a.n-go{border:1.5px solid var(--n-ink)}
+@media(max-width:600px){.n-tabs{top:68px}.n-tabs a{font-size:15.5px;padding:8px 13px}}
+html{scroll-padding-top:140px}
+
+/* ── lighter sections ── */
+html body .stats-bar{background:var(--n-bg)!important;border-color:var(--n-line)!important}
+html body .norem-card{background:#fff!important;border:1px solid var(--n-line)!important;border-radius:var(--n-r)!important;box-shadow:0 10px 30px -22px rgba(31,29,26,.4)!important}
+html body .norem-card :is(h2,h3){color:var(--n-ink)!important}
+html body .norem-card :is(p,li,span:not([class*="btn"])){color:var(--n-soft)!important}
+html body .norem-section,html body .ba-section,html body .projects-section,html body .faq-section{background:var(--n-bg)!important}
+html body :is(.eyn-section,.compare-section,.testi-section){background:#fff!important}
+html body .related-service{background:var(--n-cream)!important;border:1px solid var(--n-line)!important;border-radius:var(--n-r)!important}
+html body .related-service h3{color:var(--n-ink)!important}
+html body .related-service p{color:var(--n-soft)!important}
+html body .related-service p strong{color:var(--n-gold)!important}
+html body .related-service a{border-radius:999px!important}
+html body .eyn-feat{border-radius:var(--n-r)!important;background:var(--n-dark)!important;border-color:transparent!important}
+/* the photo tiles: a soft charcoal fade under the words, so white titles read on light photos */
+html body .eyn-feat-bg::after,html body .eyn-feat:hover .eyn-feat-bg::after{background:linear-gradient(180deg,rgba(31,29,26,0) 30%,rgba(31,29,26,.55) 60%,rgba(31,29,26,.88) 100%)!important}
+html body .testi-inner{background:var(--n-cream)!important;border-color:var(--n-line)!important;border-radius:var(--n-r)!important}
+
+/* ── one warm charcoal band with slanted edges: the process ── */
+html body .process-section{background:var(--n-dark)!important;clip-path:polygon(0 4vw,100% 0,100% calc(100% - 4vw),0 100%);padding-top:calc(80px + 4vw)!important;padding-bottom:calc(80px + 4vw)!important;margin:-2vw 0}
+html body .process-step-num{background:var(--n-dark)!important}
+
+/* the commercial band and the closing call: warm charcoal, not navy */
+html body section[style*="background:var(--navy)"]{background:var(--n-dark)!important}
+html body .cta-section{background:var(--n-dark)!important}
+html body .cta-title em{color:#d9a54a!important}
+/* buttons on the dark bands stay readable */
+html body :is(.cta-section,.process-section,section[style*="background:var(--navy)"]) .btn-primary{background:#d9a54a!important;color:var(--n-ink)!important}
+html body :is(.cta-section,.process-section,section[style*="background:var(--navy)"]) .btn-outline{color:#fff!important;border-color:rgba(255,255,255,.7)!important}
+</style><!-- NATURAL-CSS:END -->
 </body>
 </html>
