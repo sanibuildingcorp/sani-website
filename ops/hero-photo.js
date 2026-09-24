@@ -108,14 +108,21 @@ function block(r) {
   if (r.killAfter) css += H + '::after{display:none!important}\n';
   css += H + "::before{content:''!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;opacity:1!important;transform:none!important;filter:none!important;"
     + 'background:linear-gradient(90deg,' + INK + ' 0%,' + INK + ' 46%,' + C('.45') + ' 62%,' + C('.08') + " 100%),url('" + url + "') right center/auto 100% no-repeat," + INK + '!important}\n';
-  css += H + ' :is(h1,h2,p){text-shadow:0 1px 14px rgba(0,0,0,.6)}\n';
+  css += H + ' :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[class*="breadcrumb"]){text-shadow:0 1px 14px rgba(0,0,0,.6),0 0 3px rgba(0,0,0,.55)}\n';
   if (r.wrap) {
     const W = 'html body ' + r.wrap;
     css += '@media(min-width:900px){' + W + '{max-width:min(620px,50vw)!important;margin-left:max(40px,calc((100vw - 1240px)/2))!important;margin-right:auto!important;text-align:left!important}'
       + W + ' :is(h1,h2,p,div,span,ul){text-align:left!important;margin-left:0!important;margin-right:0!important}'
       + W + ' :is(div,ul,p){justify-content:flex-start!important;align-items:flex-start}}\n';
   }
-  css += '@media(max-width:899px){' + H + '::before{background:linear-gradient(180deg,' + C('.55') + ' 0,' + C('.30') + ' calc(' + R + '*45vw),' + C('.78') + ' calc(' + R + '*100vw - 90px),' + INK + ' calc(' + R + "*100vw)),url('" + url + "') center top/100% auto no-repeat," + INK + '!important}}\n';
+  /* phones. A wide photo is a short strip above the words, so it needs almost
+     no tint - only its bottom edge fades into the charcoal ("In contact page
+     black dark too covers hero background photos"). A tall photo sits behind
+     the words and keeps the darker tint. */
+  const fade = +R < 0.8
+    ? C('.08') + ' 0,' + C('.08') + ' calc(' + R + '*100vw - 150px),' + C('.80') + ' calc(' + R + '*100vw - 30px),' + INK + ' calc(' + R + '*100vw)'
+    : C('.55') + ' 0,' + C('.30') + ' calc(' + R + '*45vw),' + C('.78') + ' calc(' + R + '*100vw - 90px),' + INK + ' calc(' + R + '*100vw)';
+  css += '@media(max-width:899px){' + H + '::before{background:linear-gradient(180deg,' + fade + "),url('" + url + "') center top/100% auto no-repeat," + INK + '!important}}\n';
   return css;
 }
 
@@ -126,12 +133,17 @@ function block(r) {
   const p = await b.newPage({ viewport: { width: 1300, height: 900 } });
   for (const f of pages) {
     const file = path.join(ROOT, f);
-    const html = strip(fs.readFileSync(file, 'utf8'));
+    const before = fs.readFileSync(file, 'utf8');
+    /* the block goes back where it was, so page rules written after it
+       (hero-full, hero-fit) keep winning; a new block goes before </head> */
+    const at = before.indexOf(START);
+    const html = strip(before);
+    const slot = at === -1 ? html.indexOf('</head>') : at;
     fs.writeFileSync(file, html);
     await p.goto(BASE + f, { waitUntil: 'load' });
     const r = await p.evaluate(probe);
     if (r.skip) { console.log(f.padEnd(44), 'left alone:', r.skip); continue; }
-    fs.writeFileSync(file, html.replace('</head>', START + '\n<style id="sbc-hero">\n' + block(r) + '</style>\n' + END + '\n</head>'));
+    fs.writeFileSync(file, html.slice(0, slot) + START + '\n<style id="sbc-hero">\n' + block(r) + '</style>\n' + END + '\n' + html.slice(slot));
     console.log(f.padEnd(44), r.photo.url.split('?')[0], r.photo.w + 'x' + r.photo.h, 'hid', r.hide.length, r.killAfter ? '+::after' : '');
   }
   await b.close();

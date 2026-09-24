@@ -157,7 +157,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
 html body section.page-hero{position:relative;isolation:isolate;background:#1c1a18!important}
 html body :is(section.page-hero > img.page-hero-img){display:none!important}
 html body section.page-hero::before{content:''!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;opacity:1!important;transform:none!important;filter:none!important;background:linear-gradient(90deg,#1c1a18 0%,#1c1a18 46%,rgba(24,22,20,.45) 62%,rgba(24,22,20,.08) 100%),url('images/bathroom-renovation-brooklyn/hero.jpg') right center/auto 100% no-repeat,#1c1a18!important}
-html body section.page-hero :is(h1,h2,p){text-shadow:0 1px 14px rgba(0,0,0,.6)}
+html body section.page-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[class*="breadcrumb"]){text-shadow:0 1px 14px rgba(0,0,0,.6),0 0 3px rgba(0,0,0,.55)}
 @media(min-width:900px){html body section.page-hero > div.page-hero-content{max-width:min(620px,50vw)!important;margin-left:max(40px,calc((100vw - 1240px)/2))!important;margin-right:auto!important;text-align:left!important}html body section.page-hero > div.page-hero-content :is(h1,h2,p,div,span,ul){text-align:left!important;margin-left:0!important;margin-right:0!important}html body section.page-hero > div.page-hero-content :is(div,ul,p){justify-content:flex-start!important;align-items:flex-start}}
 @media(max-width:899px){html body section.page-hero::before{background:linear-gradient(180deg,rgba(24,22,20,.55) 0,rgba(24,22,20,.30) calc(1.333*45vw),rgba(24,22,20,.78) calc(1.333*100vw - 90px),#1c1a18 calc(1.333*100vw)),url('images/bathroom-renovation-brooklyn/hero.jpg') center top/100% auto no-repeat,#1c1a18!important}}
 </style>

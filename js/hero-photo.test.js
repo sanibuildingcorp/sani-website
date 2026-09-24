@@ -68,5 +68,20 @@ console.log('\n2. Every other page: the same, written by ops/hero-photo.js\n');
   const h = fs.readFileSync(path.join(ROOT, 'handyman-manhattan.html'), 'utf8');
   ok('handyman-manhattan: THE VAN PHOTO FILLS THE WHOLE HERO ON A COMPUTER, dark only on the left', /<!-- SBC-HERO:END -->\n<style id="hero-full">[\s\S]*?@media\(min-width:900px\)\{html body section\.mh-hero::before\{background:linear-gradient\(90deg,rgba\(24,22,20,\.90\) 0%,[^)]*\) 38%,[^)]*\) 58%,[^)]*\) 78%,transparent 100%\),url\('images\/handyman\/manhattan-hero-van\.jpg'\) center 30%\/cover no-repeat/.test(h) && fs.existsSync(path.join(ROOT, 'images/handyman/manhattan-hero-van.jpg')) && /class="mh-hero-img" src="images\/handyman\/manhattan-hero-van\.jpg"/.test(h));
 }
+{
+  /* "In contact page black dark too covers hero background photos": a wide
+     photo is a short strip above the words on a phone, so it gets almost no
+     tint; a tall photo sits behind the words and keeps the darker one */
+  const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+  const phoneOf = (f) => (read(f).match(/<!-- SBC-HERO:START -->[\s\S]*?@media\(max-width:899px\)\{([^\n]*)/) || [, ''])[1];
+  const ratio = (f) => +((phoneOf(f).match(/#1c1a18 calc\(([\d.]+)\*100vw\)/) || [])[1] || 0);
+  const pages = fs.readdirSync(ROOT).filter((f) => f.endsWith('.html') && /SBC-HERO:START/.test(read(f)));
+  const wide = pages.filter((f) => ratio(f) > 0 && ratio(f) < 0.8), tall = pages.filter((f) => ratio(f) >= 0.8);
+  ok('WIDE PHOTOS ON A PHONE ARE BARELY TINTED (' + wide.length + ' pages, contact among them), only their bottom edge fades', wide.length >= 6 && wide.indexOf('contact.html') !== -1 && wide.every((f) => /linear-gradient\(180deg,rgba\(24,22,20,\.08\) 0,rgba\(24,22,20,\.08\) calc/.test(phoneOf(f))));
+  ok('...tall photos, behind the words, keep the darker tint', tall.length >= 20 && tall.every((f) => /linear-gradient\(180deg,rgba\(24,22,20,\.55\) 0,/.test(phoneOf(f))));
+  ok('small labels on the photo (rating pill, eyebrow, breadcrumb) get a shadow too', pages.every((f) => /\[class\*="pill"\],\[class\*="eyebrow"\],\[class\*="breadcrumb"\]\)\{text-shadow:/.test(read(f))));
+  const c = read('contact.html');
+  ok('contact on a phone: the hero fits the photo, the words start right under it (no empty dark gap)', /<!-- SBC-HERO:END -->\n<style id="hero-fit">[\s\S]*?@media\(max-width:899px\)\{html body section\.page-hero\{min-height:0!important;align-items:flex-start!important\}html body section\.page-hero \.page-hero-content\{padding-top:calc\(0\.489\*100vw - 68px \+ 14px\)!important\}\}/.test(c));
+}
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
