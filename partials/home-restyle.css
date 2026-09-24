@@ -1,0 +1,142 @@
+/* HOMEPAGE RESTYLE — cosmetics only.
+     "redesign current home page with fonts, cards and other cosmetics but
+      keep original wordings and structure."
+   Every section, sentence, link and image of the homepage is untouched. This
+   file changes how they look, and is added LAST so it wins over the older
+   style blocks. Fonts are swapped by ops/home-restyle.py, which finds every
+   selector that asks for Playfair Display or DM Sans and re-points it; the
+   rules below are the rest. Menu and footer keep their own styles. */
+:root{--rs-ink:#15181e;--rs-muted:#5d6470;--rs-paper:#f6f3ee;--rs-line:#e3ddd2;--rs-navy:#0f1c2d;--rs-brass:#a8762a;--rs-r:12px}
+
+/* headings: one sturdy sans, the accent word upright instead of gold italic */
+html body h1,html body h2,html body h3{letter-spacing:-.015em!important;font-stretch:88%}
+html body h1 em,html body h2 em,html body h3 em,html body .hero-tagline span{font-style:normal!important}
+html body h2 em,html body h3 em{color:inherit!important}
+html body h1 em{color:inherit!important}
+html body h1 .amp{font-style:normal!important}
+
+/* one icon style everywhere: hand-drawn set, 1.7 stroke, round ends */
+:where(svg.ri){stroke:currentColor}
+html body svg.ri{fill:none!important;stroke-width:1.7!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+
+/* buttons: rounded, readable, same shape everywhere */
+html body .hero-btn,html body .hero-btn-secondary,html body .btn-primary,html body .btn-secondary,html body .gallery-cta a{border-radius:10px!important;letter-spacing:.02em!important;text-transform:none!important;font-size:15.5px!important;min-height:52px}
+html body .hero-btn,html body .btn-primary{box-shadow:none!important}
+
+/* hero stat cards: icons without boxes, a softer panel */
+html body .hero-stats{border-radius:var(--rs-r)!important;overflow:hidden}
+html body .hstat-icon{background:none!important;border:0!important;box-shadow:none!important}
+html body .hstat-label{letter-spacing:.06em!important}
+
+/* service cards */
+html body .svc-card{border-radius:var(--rs-r)!important;overflow:hidden!important;border:1px solid var(--rs-line)!important;box-shadow:0 1px 2px rgba(20,24,30,.04)!important}
+html body .svc-card img{border-radius:0!important}
+html body .svc-num{letter-spacing:.1em!important}
+
+/* gallery */
+html body .gallery-item{border-radius:var(--rs-r)!important;overflow:hidden!important}
+
+/* process: plain numbers instead of numbers in circles */
+html body .process-num{background:none!important;border:0!important;border-radius:0!important;width:auto!important;height:auto!important;color:var(--rs-brass)!important;font-size:34px!important;font-weight:800!important;margin-bottom:10px!important;box-shadow:none!important;transform:none!important}
+html body .process-step{border-top:1px solid var(--rs-line);padding-top:22px!important}
+
+/* values: icons without the gold circle */
+html body .value-icon{background:none!important;border:0!important;border-radius:0!important;width:auto!important;height:auto!important;margin:0 auto 14px!important;box-shadow:none!important;transform:none!important}
+html body .value-icon svg{width:34px!important;height:34px!important}
+
+/* why-us feature icons: no boxes */
+html body .why-feat-col-icon{background:none!important;border-radius:0!important;box-shadow:none!important}
+
+/* review cards */
+html body .review-card{border-radius:var(--rs-r)!important;border:1px solid var(--rs-line)!important;box-shadow:0 1px 2px rgba(20,24,30,.05)!important}
+html body .review-avatar{border-radius:50%!important}
+
+/* faq cards */
+html body .faq-item{border-radius:var(--rs-r)!important;border-color:var(--rs-line)!important}
+
+/* area pills */
+html body .area-pill{border-radius:999px!important;letter-spacing:.01em!important}
+
+/* the about photo and its tag */
+html body .about-image{border-radius:var(--rs-r)!important;overflow:hidden}
+html body .about-image-tag{border-radius:8px!important}
+
+/* contact form fields */
+html body .contact-form input,html body .contact-form select,html body .contact-form textarea{border-radius:10px!important}
+html body .contact-form button,html body #cfSubmitBtn{border-radius:10px!important}
+
+/* the italic eyebrow lines and group titles stand upright too */
+html body [class*="eyebrow"],html body [class*="eyebrow"] span,html body .areas-group-title,html body .values-eyebrow{font-style:normal!important}
+/* long headings wrap instead of running off a phone screen */
+html body h1,html body h2,html body h3{overflow-wrap:break-word}
+html body .why-section-title{font-size:clamp(28px,7.4vw,48px)!important;line-height:1.08!important}
+
+/* ══ HERO: one photo, darkened, white words on top ══
+     "I don't like the hero section" - the words sat on a washed-out
+   collage. Same words, same buttons, same stat cards; now on the marble
+   bathroom (images/hero/home-hero-bath.webp) on every screen. */
+html body .hero{background:#1c1a18!important;min-height:0!important;padding-bottom:0!important}
+html body .hero .hero-image{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;min-height:0!important;filter:none!important;z-index:0!important}
+html body .hero .hero-img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center 85%!important;filter:none!important;opacity:1!important}
+html body .hero .hero-scrim{display:block!important;position:absolute!important;inset:0!important;opacity:1!important;background:linear-gradient(180deg,rgba(24,22,20,.62) 0%,rgba(24,22,20,.38) 45%,rgba(24,22,20,.82) 100%)!important}
+html body .hero .hero-content{min-height:0!important;height:auto!important;padding:110px 22px 30px!important;justify-content:flex-start!important}
+/* the old hero kept its words in a narrow column beside the photo; on the
+   dark photo they use the full width */
+html body .hero .hero-eyebrow,html body .hero h1,html body .hero .hero-tagline,html body .hero .hero-sub,html body .hero .hero-btn-row{width:auto!important;max-width:640px!important}
+html body .hero .hero-eyebrow,html body .hero .hero-eyebrow span{color:#dcb46a!important;letter-spacing:.14em!important;font-size:12px!important;background:none!important;border:0!important}
+html body .hero h1{color:#fff!important;text-shadow:none!important;font-size:clamp(38px,9.4vw,74px)!important;line-height:1.02!important;margin-bottom:14px!important}
+html body .hero h1 em,html body .hero h1 .amp{color:#dcb46a!important;text-shadow:none!important}
+html body .hero .hero-tagline,html body .hero .hero-tagline span{color:#efe3cb!important;text-shadow:none!important;font-size:18px!important}
+html body .hero .hero-tagline .line{display:none!important}
+html body .hero .hero-rating{background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:10px!important;box-shadow:none!important;backdrop-filter:none!important}
+html body .hero .hero-rating .hr-text,html body .hero .hero-rating .hr-text strong{color:#fff!important;text-shadow:none!important}
+html body .hero .hr-stars{color:#dcb46a!important}
+html body .hero .hero-sub{color:#d6dde7!important;text-shadow:none!important;background:none!important}
+html body .hero .hero-btn{background:#c8912f!important;color:#0f1c2d!important;border:0!important}
+html body .hero .hero-btn svg{stroke:#0f1c2d!important}
+html body .hero .hero-btn:hover{background:#d9a33f!important}
+html body .hero .hero-btn-secondary{background:transparent!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.7)!important}
+html body .hero .hero-stats{position:static!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;transform:none!important;width:100%!important;background:rgba(24,22,20,.72)!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:none!important;backdrop-filter:none!important;margin-top:28px!important}
+html body .hero .hero-stats::before,html body .hero .hero-stats::after{display:none!important}
+html body .hero .hstat{border-color:rgba(255,255,255,.12)!important;background:transparent!important}
+html body .hero .hstat-label{color:#fff!important;text-shadow:none!important}
+html body .hero .hstat-icon svg{stroke:#dcb46a!important;color:#dcb46a!important}
+@media(min-width:900px){
+  html body .hero .hero-scrim{background:linear-gradient(90deg,rgba(24,22,20,.90) 0%,rgba(24,22,20,.74) 48%,rgba(24,22,20,.30) 100%)!important}
+  html body .hero{padding-bottom:0!important;overflow:hidden!important}
+  html body .hero .hero-content{padding:150px 36px 48px!important}
+  html body .hero .hero-btn-row{flex-direction:row!important;max-width:640px!important}
+  html body .hero .hero-btn,html body .hero .hero-btn-secondary{width:auto!important}
+  html body .hero .hero-sub{max-width:560px!important}
+}
+
+/* The stat box sits ON the line between the dark photo and the light strip
+   below - half on each ("dropped down to be in the middle between black and
+   white"). Solid, so the half on the light side reads as a card. */
+html body .hero{overflow:visible!important}
+html body .hero .hero-content{padding-bottom:0!important}
+html body .hero .hero-stats{position:relative!important;z-index:6!important;background:#2b2926!important;border:1px solid rgba(255,255,255,.10)!important;box-shadow:0 18px 40px -18px rgba(24,22,20,.55)!important;margin-bottom:-64px!important}
+html body .hero .borough-strip{position:relative!important;z-index:2!important;padding-top:96px!important}
+@media(min-width:900px){
+  html body .hero .hero-content{padding-bottom:0!important}
+  html body .hero .hero-stats{margin-bottom:-70px!important}
+  html body .hero .borough-strip{padding-top:100px!important}
+}
+html body .hero .hero-content{overflow:visible!important;position:relative!important;z-index:5!important;height:auto!important;max-height:none!important}
+
+/* Phones: the photo belongs to the words, not to the whole top block - the
+   hero also holds the light strips below, and they hid the lower half of the
+   bathroom (the tub). Same file the page preloads. */
+@media(max-width:899px){
+  html body .hero .hero-image{display:none!important}
+  html body .hero .hero-content{background:linear-gradient(180deg,rgba(24,22,20,.66) 0%,rgba(24,22,20,.40) 45%,rgba(24,22,20,.78) 100%),url('images/hero/home-hero-bath.webp?v=1790000001') center 78%/cover no-repeat!important}
+}
+
+/* Computers: the same marble bathroom. It is a tall photo, so it sits on the
+   right at its own sharp size and the words sit on warm charcoal on the
+   left, fading into it - stretched across a wide screen it would blur. */
+@media(min-width:900px){
+  html body .hero .hero-image{display:none!important}
+  html body .hero .hero-content{background:none!important}
+  html body .hero .hero-content::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:100vw;transform:translateX(-50%);z-index:-1;background:linear-gradient(90deg,rgba(24,22,20,1) 0%,rgba(24,22,20,1) 54%,rgba(24,22,20,.5) 66%,rgba(24,22,20,.12) 100%),url('images/hero/home-hero-bath.webp?v=1790000001') right center/auto 112% no-repeat,#1c1a18}
+}
