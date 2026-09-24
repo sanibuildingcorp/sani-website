@@ -28,7 +28,7 @@ function ext(name) {
 }
 const ctx = { JSON, String, Array, Number, Math, Set, Object, jobSize: require(path.join(ROOT, 'netlify/functions/lib/job-size.js')), voice: require(path.join(ROOT, 'netlify/functions/lib/customer-voice.js')), buildResearchBlock: () => '' };
 vm.createContext(ctx);
-['cleanText', 'labOf', 'buildHouseRulesBlock', 'buildProjectAnalysisPrompt', 'buildEstimatePrompt', 'buildRepairPrompt'].forEach((n) => vm.runInContext(ext(n), ctx));
+['cleanText', 'labOf', 'buildHouseRulesBlock', 'buildAnchorBlock', 'buildProjectAnalysisPrompt', 'buildEstimatePrompt', 'buildRepairPrompt'].forEach((n) => vm.runInContext(ext(n), ctx));
 const INPUT = () => ({ request: { description: 'Paint 2 rooms, Benjamin Moore Simply White', service: 'Painting', selectedServices: ['Painting'], customerSupplies: [] }, contractor: { houseRules: 'Painting: $4.50/SF labor', extraRequest: '' } });
 const ANALYSIS = { project_type: 'partial renovation', selected_trades: ['Painting'], confirmed_scope: [] };
 function prompts(lab) {
