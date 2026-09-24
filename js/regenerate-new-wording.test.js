@@ -62,7 +62,7 @@ console.log('\n3. The generator, the browser, Save and Send\n');
   ok('THE GENERATOR carries forRegenerate\'s copy and marks the estimate reset / kept', /const carry = forRegenerate\(previousEstimate\);\s*if \(carry\.reset\) estimate\.scopeDraftReset = true;\s*if \(carry\.kept\) estimate\.scopeDraftKept = true;[\s\S]{0,200}preserveContractorFields\(carry\.previous, estimate\);/.test(GEN));
   ok('THE BROWSER does not put a reset draft back after a regenerate', /if \(data\.estimate && data\.estimate\.scopeDraftReset === true\) \{\s*\["manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished"\]\.forEach\(function \(k\) \{ delete keepFields\[k\]; \}\);/.test(DASH));
   ok('SAVE AND SEND carry the whole-project list and the wording report (they used to strip them)', /"projectIncluded", "projectExclusions", "customerTimeline", "scopeWriter", "generatedWith", "generationTiming",/.test(DASH));
-  ok('THE PANEL says when edited wording was kept, and Rebuild draft from AI clears the note', /Your edited wording was kept when the estimate was regenerated\. For the new AI wording, press <b>Rebuild draft from AI<\/b> below\./.test(DASH) && /manualCustomerScopeDraft = buildScopeDraftFromAI\(\);\n  delete currentRecord\.estimate\.scopeDraftKept;/.test(DASH));
+  ok('THE PANEL says when edited wording was kept, and Rebuild draft from AI clears the note', /Your edited wording was kept when the estimate was regenerated\. For the new AI wording, press <b>Rebuild draft from AI<\/b> below\./.test(DASH) && /manualCustomerScopeDraft = buildScopeDraftFromAI\(\);[\s\S]{0,200}currentRecord\.estimate\.scopeDraftKept = false;/.test(DASH));
 }
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
