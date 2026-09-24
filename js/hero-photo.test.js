@@ -11,6 +11,9 @@
  *     charcoal on the left fading into it;
  *   - phones: the whole photo, full width at its own height, at the top,
  *     fading into charcoal under the long words.
+ *
+ * Then every other page with a photo behind its words, by ops/hero-photo.js
+ * ("Merge it and do the other pages").
  */
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -30,6 +33,33 @@ ok('...a light tint over it, solid charcoal from where the photo ends (133vw = i
   ok('...133vw is right: the photo is ' + (m ? m[2] + 'x' + m[3] : '?') + ', 1.33 times as tall as it is wide', !!m && Math.abs(+m[3] / +m[2] - 1.333) < 0.01 && fs.existsSync(path.join(ROOT, m[1])));
 }
 ok('...and the words over it keep a soft shadow, so they stay readable on the light walls', /\.page-hero-text h1,\.page-hero-text p\.tagline,\.hero-rating-pill\{text-shadow:0 1px 14px rgba\(0,0,0,\.6\)\}/.test(phone));
+
+console.log('\n2. Every other page: the same, written by ops/hero-photo.js\n');
+{
+  const LEFT = { 'about.html': 'photo in its own box', 'handyman.html': 'photo beside the words', 'kitchen-cabinet-installation.html': 'photo beside the words',
+    'bathroom-wall-panels.html': 'before/after slider', 'shower-waterproofing.html': 'photo in its own box', 'painting.html': 'a slideshow, kept' };
+  const PRIVATE = ['dashboard.html', 'dashboard-shell.html', 'bid-analyzer.html', 'quote.html', 'invoice.html', 'contract.html', 'agreement.html', 'estimate.html', 'handyman-estimate.html', 'review.html', 'googlee822c2a7421a7276.html', '404.html', 'index.html', 'bathroom-renovation.html'];
+  const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+  const pages = fs.readdirSync(ROOT).filter((f) => f.endsWith('.html') && PRIVATE.indexOf(f) === -1 && !LEFT[f]);
+  const blockOf = (h) => { const m = h.match(/<!-- SBC-HERO:START -->([\s\S]*?)<!-- SBC-HERO:END -->/); return m ? m[1] : ''; };
+  const none = pages.filter((f) => !blockOf(read(f)));
+  ok('EVERY PAGE WITH A PHOTO BEHIND ITS WORDS HAS THE BLOCK (' + pages.length + ' pages), in <head>, once', pages.length >= 30 && none.length === 0 && pages.every((f) => (read(f).match(/SBC-HERO:START/g) || []).length === 1 && read(f).indexOf('SBC-HERO:START') < read(f).indexOf('</head>')), none.join(', '));
+  ok('...the pages whose photo is already whole are left alone', Object.keys(LEFT).every((f) => !/SBC-HERO/.test(read(f))));
+  const bad = pages.filter((f) => {
+    const b = blockOf(read(f)); const url = (b.match(/url\('([^']+)'\) right center\/auto 100% no-repeat/) || [])[1];
+    return !url || !fs.existsSync(path.join(ROOT, url.split('?')[0]))
+      || !/\{position:relative;isolation:isolate;background:#1c1a18!important\}/.test(b)
+      || !/::before\{content:''!important;[^}]*z-index:-1!important/.test(b)
+      || !((b.match(/@media\(max-width:899px\)\{[^\n]*/) || [''])[0].indexOf("url('" + url + "') center top/100% auto no-repeat") !== -1);
+  });
+  ok('EACH: its own photo (the file exists), on the right on a computer, whole at the top on a phone, on warm charcoal', bad.length === 0, bad.join(', '));
+  ok('...each phone fade ends where its photo ends (the photo\'s own height/width)', pages.every((f) => { const b = blockOf(read(f)); const r = b.match(/#1c1a18 calc\(([\d.]+)\*100vw\)/); return !!r && +r[1] > 0.3 && +r[1] < 2.5; }));
+  ok('never a thumbnail from a strip or card: nothing inside a strip is hidden', pages.every((f) => !/strip-item[^,)]*img/.test(blockOf(read(f)))));
+  const centred = ['bathroom-renovation-brooklyn.html', 'renovation-contractor-bronx.html', 'deck-building.html', 'stair-restoration.html'];
+  ok('CENTRED WORDS MOVE LEFT ON A COMPUTER, onto the charcoal (e.g. ' + centred.join(', ') + ')', centred.every((f) => /@media\(min-width:900px\)\{html body [^{]+\{max-width:min\(620px,50vw\)!important;margin-left:max\(40px,calc\(\(100vw - 1240px\)\/2\)\)!important;margin-right:auto!important;text-align:left!important\}/.test(blockOf(read(f)))));
+  ['renovation-contractor-nassau-county.html', 'renovation-contractor-staten-island.html', 'renovation-contractor-suffolk-county.html'].forEach((f) =>
+    ok(f + ': its living-room photo (not a strip thumbnail), and the stats row no longer starts 36px off a phone screen', /url\('images\/renovation-contractor-[a-z-]+\/nyc-luxury-livingroom\.jpg'\)/.test(blockOf(read(f))) && /\.hero-stats\{grid-template-columns:1fr 1fr;padding:24px 0 20px;margin-left:0;margin-right:0\}/.test(read(f))));
+}
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
