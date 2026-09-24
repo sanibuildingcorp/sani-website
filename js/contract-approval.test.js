@@ -17,7 +17,7 @@ function ext(n){const s=Q.indexOf('function '+n+'(');let i=Q.indexOf('{',s),d=0;
 const ctx={console,encodeURIComponent,ref:'SBC-1',E:s=>String(s==null?'':s),
  messageBox:()=>'<MSGBOX>',P:()=>{},S:()=>{}};
 vm.createContext(ctx);
-['contractRequired','contractHtml','actionHtml'].forEach(n=>vm.runInContext(ext(n),ctx));
+['contractRequired','contractHtml','printRow','actionHtml'].forEach(n=>vm.runInContext(ext(n),ctx));
 const req=r=>vm.runInContext('contractRequired',ctx)(r);
 const ui=r=>vm.runInContext('actionHtml',ctx)({name:'A Customer'},false,req(r));
 const card=(r,approved)=>vm.runInContext('contractHtml',ctx)(r,req(r),!!approved);

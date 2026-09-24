@@ -97,7 +97,8 @@ console.log('\nthe server sends the scope link nothing it could print as a price
       URLSearchParams, Array, Object, Number, String, Math, JSON, Map, Set, RegExp, Date, Promise, Error, console, isFinite, encodeURIComponent, decodeURIComponent, setTimeout,
       sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
       Image: function () { const o = {}; Object.defineProperty(o, 'src', { set() { tracked++; } }); return o; },
-      fetch: async () => ({ ok: true, json: async () => clone(record) }),
+      /* the open ping now goes by fetch (keepalive); count it here too */
+      fetch: async (u) => { if (/track-quote-open/.test(String(u))) { tracked++; return { ok: true }; } return { ok: true, json: async () => clone(record) }; },
       addEventListener() {}, parent: null,
     };
     win.window = win;

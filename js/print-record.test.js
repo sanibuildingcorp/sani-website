@@ -22,13 +22,16 @@ const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true 
 function ext(name) { const s = Q.search(new RegExp('function ' + name + '\\s*\\(')); if (s < 0) throw new Error('missing ' + name); let d = 0; for (let j = Q.indexOf('{', s); j < Q.length; j++) { if (Q[j] === '{') d++; else if (Q[j] === '}') { d--; if (!d) return Q.slice(s, j + 1); } } }
 const PRINT = (Q.match(/@media print\{[\s\S]*?\n\}/) || [''])[0];
 
-console.log('\nthe button sits in the message box, next to Add photos or files\n');
+console.log('\nthe button has its own row under the go-ahead / request buttons, always in view\n');
 /* It started in the Messages card header, small and grey. "Print or save
    button is on conversation and also none visible, we may need add it below
    next to the add photos or file." So: same row, same size and shape as the
    attach button, a solid border so it reads as a button. */
-ok('THE PRINT BUTTON IS IN THE ATTACH ROW, right after Add photos or files',
-  /<label class="attach-btn">[^<]*Add photos or files<input[^>]*><\/label><button type="button" class="attach-btn printbtn" onclick="printQuote\(this\)">[^<]*Print \/ save as PDF<\/button>/.test(Q));
+/* Then: "there is no print/save pdf, if i click to request then there is".
+   Inside the message box it was hidden until Request changes was pressed. */
+ok('THE PRINT BUTTON HAS ITS OWN ROW (printRow), no longer hidden inside the message box',
+  /function printRow\(\)\{return'<div class="printrow"><button type="button" class="attach-btn printbtn" onclick="printQuote\(this\)">[^<]*Print \/ save as PDF<\/button><\/div>'\}/.test(Q) &&
+  /<label class="attach-btn">[^<]*Add photos or files<input[^>]*><\/label><div class="attach-prev" id="attprev"><\/div>/.test(Q));
 ok('...and no longer in the Messages header', !/eyrow/.test(Q.replace(/\.eyrow\{[^}]*\}/, '')) && /id="thread-card"\$\{hide\?' style="display:none"':''\}><div class="ey">Messages<\/div>/.test(Q));
 ok('...styled like the attach button, solid border', /\.printbtn\{font:inherit;color:var\(--n-deep\);border-style:solid/.test(Q));
 ok('a printed footer names the estimate, the customer, the print time and the live link', /class="printnote">Printed record of estimate \$\{E\(ref\)\} for/.test(Q) && /live copy: \$\{E\(location\.origin\+'\/quote\.html\?ref='/.test(Q));
