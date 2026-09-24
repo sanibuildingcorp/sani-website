@@ -162,6 +162,13 @@ html body section.mh-hero :is(h1,h2,p){text-shadow:0 1px 14px rgba(0,0,0,.6)}
 @media(max-width:899px){html body section.mh-hero::before{background:linear-gradient(180deg,rgba(24,22,20,.55) 0,rgba(24,22,20,.30) calc(0.667*45vw),rgba(24,22,20,.78) calc(0.667*100vw - 90px),#1c1a18 calc(0.667*100vw)),url('images/handyman/manhattan-hero-van.jpg') center top/100% auto no-repeat,#1c1a18!important}}
 </style>
 <!-- SBC-HERO:END -->
+<style id="hero-full">
+/* "Try to show full photo in background": this photo is wide, so on a
+   computer it fills the whole hero - van and handyman - darkened only
+   behind the words on the left. Phones keep the whole photo at the top
+   (ops/hero-photo.js). Kept outside that block, so a re-run leaves it. */
+@media(min-width:900px){html body section.mh-hero::before{background:linear-gradient(90deg,rgba(24,22,20,.90) 0%,rgba(24,22,20,.78) 38%,rgba(24,22,20,.35) 58%,rgba(24,22,20,.05) 78%,transparent 100%),url('images/handyman/manhattan-hero-van.jpg') center 30%/cover no-repeat,#1c1a18!important}}
+</style>
 </head>
 <body>
 
