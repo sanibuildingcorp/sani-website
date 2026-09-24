@@ -1,0 +1,87 @@
+/* THE FREE ESTIMATE FORM - the calm, natural look of the bathroom page.
+     "Restyle in the new natural look" - same steps, questions and fields.
+   Warm cream page, a white card, dark words, one charcoal pill button,
+   gold only in small details, the site's own fonts (Archivo headings,
+   Source Sans 3 text), and reading text at least 16-17px. */
+.topbar,.wrap{--n-bg:#faf8f4;--n-cream:#f3eee5;--n-ink:#1f1d1a;--n-soft:#57524b;--n-line:#e4ddd0;--n-gold:#a8762a;--n-dark:#262320}
+html,html body{background:#faf8f4!important;color:#1f1d1a!important;font-family:'Source Sans 3','DM Sans',system-ui,sans-serif!important}
+/* one header: the site menu on step 1, the slim bar after it */
+body.menu-on .topbar{display:none!important}
+.topbar{background:#262320!important;border-bottom:0!important}
+.topbar .logo{font-family:'Archivo',system-ui,sans-serif!important;font-weight:800;letter-spacing:.14em!important;font-size:17px!important}
+.topbar .logo span{color:#fff!important}
+.topbar .help{color:#fff!important;font-size:16px!important}
+
+/* progress */
+.wrap .progress-step{font-family:'Archivo',system-ui,sans-serif!important;letter-spacing:.12em!important;font-size:13px!important;color:var(--n-gold)!important;font-weight:700}
+.wrap .progress-count{color:var(--n-soft)!important;font-size:15px!important}
+.wrap .progress-track{background:#e9e2d4!important;height:5px!important;border-radius:99px!important}
+.wrap .progress-fill{background:var(--n-ink)!important;border-radius:99px!important}
+
+/* the card */
+.wrap .card{background:#fff!important;border:1px solid var(--n-line)!important;border-radius:22px!important;box-shadow:0 24px 50px -34px rgba(31,29,26,.45)!important}
+.wrap,.wrap .card,.wrap .step{color:var(--n-ink)!important}
+.wrap .eyebrow{font-family:'Archivo',system-ui,sans-serif!important;letter-spacing:.14em!important;font-size:13px!important;color:var(--n-gold)!important;font-weight:700}
+.wrap h1.title,.wrap h2.title{font-family:'Archivo',system-ui,sans-serif!important;color:var(--n-ink)!important;text-transform:none!important;letter-spacing:-.01em!important;font-weight:800;font-size:clamp(26px,5vw,32px)!important;line-height:1.15!important}
+.wrap p.subtitle{color:var(--n-soft)!important;font-size:17px!important;line-height:1.55!important}
+.wrap .multi-hint{color:var(--n-soft)!important;font-size:15px!important;font-style:normal!important}
+
+/* choices */
+.wrap .service-btn,.wrap .option-btn{background:var(--n-bg)!important;border:1.5px solid var(--n-line)!important;color:var(--n-ink)!important;border-radius:14px!important;box-shadow:none!important;transform:none!important}
+.wrap .service-btn:hover,.wrap .option-btn:hover{border-color:#b9ad97!important;background:#fff!important}
+.wrap .service-btn.selected,.wrap .option-btn.selected{border-color:var(--n-ink)!important;background:#f6efe1!important;box-shadow:0 0 0 1px var(--n-ink) inset!important}
+.wrap .service-icon{color:var(--n-gold)!important}
+.wrap .service-label{font-size:16px!important;font-weight:700!important}
+.wrap .option-btn{font-size:17px!important;font-weight:600!important}
+.wrap .option-check{background:var(--n-ink)!important}
+.wrap .option-check svg{color:#fff!important}
+
+/* fields */
+.wrap .input-label{color:var(--n-ink)!important;font-size:15px!important;letter-spacing:.02em!important;text-transform:none!important;font-weight:700!important}
+.wrap .input-label .req{color:var(--n-gold)!important}
+.wrap .input-field,.wrap .textarea-field{background:var(--n-bg)!important;border:1.5px solid var(--n-line)!important;color:var(--n-ink)!important;border-radius:12px!important;font-size:17px!important}
+.wrap .input-field:focus,.wrap .textarea-field:focus{border-color:var(--n-ink)!important;background:#fff!important}
+.wrap .input-field::placeholder,.wrap .textarea-field::placeholder{color:#8f877b!important}
+
+/* photos */
+.wrap .upload-zone,.wrap .shot{background:var(--n-bg)!important;border-color:#d6ccb9!important}
+.wrap .upload-zone:hover,.wrap .shot:hover{border-color:var(--n-ink)!important;background:#fff!important}
+.wrap .shot.filled{border-color:#4c9a5a!important;background:#f1f7f2!important}
+.wrap .upload-icon{color:var(--n-gold)!important}
+.wrap .upload-title,.wrap .shot-label{font-family:'Archivo',system-ui,sans-serif!important;color:var(--n-ink)!important;letter-spacing:.02em!important;font-weight:800;font-size:16px!important}
+.wrap .upload-hint,.wrap .shot-hint{color:var(--n-soft)!important;font-size:15px!important}
+.wrap .shot-need{color:var(--n-gold)!important;font-size:12px!important}
+.wrap .shot-nudge{background:#f6efe1!important;color:var(--n-ink)!important;border-left-color:var(--n-gold)!important;font-size:16px!important}
+.wrap .photo-thumb{border-color:var(--n-line)!important;background:var(--n-cream)!important}
+
+/* review */
+.wrap .review-block{background:var(--n-bg)!important;border:1px solid var(--n-line)!important;border-radius:14px!important}
+.wrap .review-row + .review-row{border-top-color:var(--n-line)!important}
+.wrap .review-label{color:var(--n-soft)!important;font-size:13px!important}
+.wrap .review-value{color:var(--n-ink)!important;font-size:16px!important}
+
+/* buttons */
+.wrap .btn-continue{background:var(--n-ink)!important;color:#fff!important;border-radius:999px!important;font-family:'Archivo',system-ui,sans-serif!important;text-transform:none!important;letter-spacing:.01em!important;font-size:17px!important;font-weight:700!important;padding:14px 28px!important;box-shadow:none!important}
+.wrap .btn-continue:hover:not(:disabled){background:#3a3631!important;color:#fff!important;transform:none!important}
+.wrap .btn-back{color:var(--n-ink)!important;font-size:16px!important;font-weight:600!important}
+.wrap .skip-link{color:var(--n-soft)!important;font-size:15px!important}
+.wrap .skip-link:hover{color:var(--n-ink)!important}
+
+/* loading and the thank-you */
+.wrap .loading-dot{background:var(--n-ink)!important}
+.wrap .loading-text,.wrap .scan-label{font-family:'Archivo',system-ui,sans-serif!important;color:var(--n-soft)!important;letter-spacing:.06em!important;font-size:15px!important}
+.wrap .success-title{font-family:'Archivo',system-ui,sans-serif!important;color:var(--n-ink)!important;letter-spacing:-.01em!important;text-transform:none!important;font-weight:800}
+.wrap .success-body{color:var(--n-soft)!important;font-size:17px!important}
+.wrap .success-icon{background:#e7f3ea!important}
+.wrap .success-icon svg{color:#2f8a4a!important}
+.wrap .success-meta{background:var(--n-bg)!important;border-color:var(--n-line)!important}
+.wrap .success-meta-label{color:var(--n-soft)!important}
+.wrap .success-meta-value{color:var(--n-ink)!important}
+.wrap .hero-banner{background:var(--n-cream)!important;border-color:var(--n-line)!important}
+.wrap .hero-banner-title{font-family:'Archivo',system-ui,sans-serif!important;color:var(--n-ink)!important;letter-spacing:.02em!important}
+.wrap .hero-banner-sub,.wrap .disclaimer-note,.wrap .no-photos-text{color:var(--n-soft)!important;font-size:15px!important}
+
+/* the footer under the card */
+.estimate-footer{color:#57524b!important;font-size:15px!important;background:transparent!important;border:0!important}
+.estimate-footer .trust-item{font-size:15px!important}
+.estimate-footer a{color:#1f1d1a!important;font-weight:700}
