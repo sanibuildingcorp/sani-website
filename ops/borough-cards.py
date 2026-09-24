@@ -11,7 +11,8 @@ One card per area: a swipeable strip of our own bathroom photos, the Sani
 mark, the area, the Google rating, a few plain badges, a quote box (a real
 Google review, word for word, or - where there is no review to show - what
 we do there, in the area page's own words), the neighborhoods, and two
-buttons: a free estimate and the area's own page.
+a link to the area's own page. ("Maybe the buttons is too much in every
+card" - the one estimate button is the quick form under the cards.)
 
 Everything a card says comes from the site already: reviews from the
 homepage's Google review cards, neighborhoods from each area page, the
@@ -117,7 +118,6 @@ def card(c, i):
       <div class="bc-chips">{chips}</div>
       {quote}
       <div class="bc-hoods">{ICON["pin"]}<span><b>Serving</b> {E(c["hoods"])}</span></div>
-      <a class="bc-cta" href="/estimate">{ICON["mail"]}Get a Free Estimate</a>
       <a class="bc-more" href="{E(c["href"])}">See {E(c["area"])} bathroom work →</a>
     </div>
   </article>'''
@@ -160,7 +160,8 @@ CSS = """<style id="borough-cards-css">
 .bc-cta{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:10px;background:#15181e;color:#fff!important;text-decoration:none;font-weight:700;font-size:17px;padding:14px;border-radius:4px}
 .bc-cta svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:2}
 .bc-cta:hover{background:#2b2926}
-.bc-more{display:block;text-align:center;margin-top:10px;color:#15181e!important;font-weight:600;font-size:15.5px;text-decoration:underline;text-underline-offset:3px}
+.bc-more{margin-top:auto;display:block;text-align:center;color:#15181e!important;font-weight:700;font-size:16px;text-decoration:none;border:1.5px solid #15181e;border-radius:999px;padding:12px 14px}
+.bc-more:hover{background:#15181e;color:#fff!important}
 .bc-note{margin:18px 0 0;font-size:14.5px;color:#5d6470}
 @media(max-width:980px){.bc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.bc-section{padding:52px 14px}.bc-grid{grid-template-columns:1fr;gap:18px}}
