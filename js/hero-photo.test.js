@@ -66,7 +66,7 @@ console.log('\n2. Every other page: the same, written by ops/hero-photo.js\n');
      wide, so on a computer it fills the whole hero, darkened only behind the
      words; kept outside the generated block so a re-run of the tool leaves it */
   const h = fs.readFileSync(path.join(ROOT, 'handyman-manhattan.html'), 'utf8');
-  ok('handyman-manhattan: THE VAN PHOTO FILLS THE WHOLE HERO ON A COMPUTER, dark only on the left', /<!-- SBC-HERO:END -->\n<style id="hero-full">[\s\S]*?@media\(min-width:900px\)\{html body section\.mh-hero::before\{background:linear-gradient\(90deg,rgba\(24,22,20,\.90\) 0%[^)]*\)[^)]*\)[^)]*\)[^)]*\),transparent 100%\),url\('images\/handyman\/manhattan-hero-van\.jpg'\) center 30%\/cover no-repeat/.test(h) && fs.existsSync(path.join(ROOT, 'images/handyman/manhattan-hero-van.jpg')) && /class="mh-hero-img" src="images\/handyman\/manhattan-hero-van\.jpg"/.test(h));
+  ok('handyman-manhattan: THE VAN PHOTO FILLS THE WHOLE HERO ON A COMPUTER, dark only on the left', /<!-- SBC-HERO:END -->\n<style id="hero-full">[\s\S]*?@media\(min-width:900px\)\{html body section\.mh-hero::before\{background:linear-gradient\(90deg,rgba\(24,22,20,\.90\) 0%,[^)]*\) 38%,[^)]*\) 58%,[^)]*\) 78%,transparent 100%\),url\('images\/handyman\/manhattan-hero-van\.jpg'\) center 30%\/cover no-repeat/.test(h) && fs.existsSync(path.join(ROOT, 'images/handyman/manhattan-hero-van.jpg')) && /class="mh-hero-img" src="images\/handyman\/manhattan-hero-van\.jpg"/.test(h));
 }
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
