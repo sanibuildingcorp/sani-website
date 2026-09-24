@@ -121,7 +121,7 @@ OUTPUT: Return ONLY a JSON object (no markdown, no commentary) with this exact s
   "clauses": {
     "hiddenConditions": "Hidden/concealed conditions clause specific to this project type...",
     "changeOrder": "Change order clause...",
-    "warranty": "Workmanship warranty clause (1 year workmanship; manufacturer warranties pass through on materials)...",
+    "warranty": "Workmanship warranty clause (3 years workmanship; manufacturer warranties pass through on materials)...",
     "cancellation": "Cancellation clause (3-business-day right to cancel per NY law; deposit handling)..."
   }
 }

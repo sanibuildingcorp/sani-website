@@ -24,7 +24,7 @@ console.log('\n1. Print / save as PDF is always in view\n');
 {
   const ctx = { E: (x) => String(x == null ? '' : x), encodeURIComponent, Date, ref: 'SBC-260806-YX1G', rec: null, messageBox: (open) => '<MSGBOX open=' + open + '>', validUntil: () => new Date(Date.now() + 86400000) };
   vm.createContext(ctx);
-  vm.runInContext(ext('printRow') + ext('actionHtml'), ctx);
+  vm.runInContext('function whyHtml(){return ""}' + ext('printRow') + ext('actionHtml'), ctx); /* Why Sani: see why-sani.test.js */
   const states = {
     'waiting for a go-ahead': vm.runInContext('actionHtml({name:"Zurabi"},false,false,true)', ctx),
     'contract to sign': vm.runInContext('actionHtml({name:"Zurabi"},false,true,true)', ctx),
