@@ -22,7 +22,7 @@ ok('Bathroom Refresh is a service, with its own items', /id: "bathroom-refresh",
 ok('...and /handyman-estimate?service=bathroom-refresh opens with it ticked', /get\('service'\)/.test(H) && /\/handyman-estimate\?service=bathroom-refresh/.test(read('handyman.html')));
 ok('SEVERAL SERVICES: a card toggles, it does not jump to the next step', /function toggleService\(id\)/.test(H) && /state\.services\.splice\(i, 1\)/.test(H) && !/setTimeout\(function\(\) \{ goToStep\(2\)/.test(H));
 ok('SEVERAL ITEMS per service, tapped as chips, plus the list in their own words', /state\.items\[id\]/.test(H) && /id="own-words"/.test(H));
-const groups = (H.match(/data-single="(\w+)"/g) || []).map((x) => x.match(/"(\w+)"/)[1]);
+const groups = (H.slice(0, H.indexOf('<script>')).match(/data-single="(\w+)"/g) || []).map((x) => x.match(/"(\w+)"/)[1]);
 ok('SIZE AND PLACE: how many things, where, floor and access, parts, how soon', JSON.stringify(groups) === JSON.stringify(['job_size', 'place', 'access', 'parts', 'when']), groups.join(','));
 ok('...how many, where and how soon are required; access and parts are optional', /\[\['job_size', 'how many things'\], \['place', 'where the job is'\], \['when', 'how soon'\]\]/.test(H));
 ok('...a restaurant and an office are places, not only homes', /<div class="chip">Restaurant<\/div>/.test(H) && /<div class="chip">Office or store<\/div>/.test(H));
@@ -34,6 +34,21 @@ ok('THE DATE BOX stays inside the card on an iPhone', /\.input-text, \.input-tex
 ok('THE PHOTO BOX is a block (a bare <label> drew broken dashed pieces)', /\.photo-zone \{ display:flex;/.test(H));
 ok('photos are optional: the button says "Skip photos" until one is added', /Skip photos →/.test(H));
 ok('the customer never sees a price', !/estimatedLabor|\$\d/.test(H.replace(/\$\{[^}]*\}/g, '')));
+
+console.log('\n1b. "How soon" and the date agree\n');
+{
+  /* "i as a customer was marked for tomorrow and in there shows emergency
+      today but below shows tomorrow date" */
+  const src = H.slice(H.indexOf('const WINDOW_DAYS'), H.indexOf('function dateClash()'));
+  const ctx = {}; vm.createContext(ctx); vm.runInContext(src + ';this.f={localDay,daysFromToday,whenForDate,dayWords};', ctx);
+  const f = ctx.f;
+  ok('a date is read as today / tomorrow / a weekday', f.dayWords(f.localDay(0)) === 'today' && f.dayWords(f.localDay(1)) === 'tomorrow' && /^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d+$/.test(f.dayWords(f.localDay(5))));
+  ok('the "How soon" that fits a date: today, this week, 2 weeks, flexible', [0, 1, 7, 8, 14, 15].map((n) => f.whenForDate(f.localDay(n))).join('|') === 'Emergency today|This week|This week|Within 2 weeks|Within 2 weeks|Flexible');
+  ok('windows: emergency is today only, this week 7 days, within 2 weeks 14', /const WINDOW_DAYS = \{ 'Emergency today': 0, 'This week': 7, 'Within 2 weeks': 14 \};/.test(H));
+  ok('a clash is asked, never guessed: two buttons, the date or "How soon"', /id="clash-keep-date"/.test(H) && /id="clash-keep-when"/.test(H) && /Which is right\?/.test(H));
+  ok('...and the request is NOT sent while they disagree', /if \(checkDateClash\(\)\) \{ showErr\('step-5-error'/.test(H) && H.indexOf('if (checkDateClash())') < H.indexOf("goToStep(6);\n  document.getElementById('ai-loading-card')"));
+  ok('an emergency starts with today in the date box; no past dates', /if \(state\.single\.when === 'Emergency today' && !d\.value\) d\.value = localDay\(0\);/.test(H) && /d\.min = localDay\(0\);/.test(H));
+}
 
 console.log('\n2. What reaches the dashboard\n');
 ok('the brief goes first in answers: services, job list, own words, size, place, access, parts, when', /services: serviceNames\(\)\.join\(', '\),\s*job_list: jobList\(\),\s*list_in_own_words: ownWords\(\),\s*job_size:[^,]+,\s*place:[^,]+,\s*access:[^,]+,\s*parts:[^,]+,\s*when:/.test(H));
@@ -79,6 +94,34 @@ const Q = require(path.join(ROOT, 'netlify/functions/handyman-questions.js'));
   ok('no "Full Handyman Day" day rate in the estimator any more', !/Full Handyman Day|\/day/.test(A));
   ok('the job list goes first in its prompt, numbered', /JOB LIST:/.test(A));
   ok('a long list is flagged: quote each item, not a day rate', /Long job list - quote each item, not a day rate/.test(A));
+
+  console.log('\n5. The customer\'s confirmation email ("Yes go do all")\n');
+  {
+    const https = require('https'), { EventEmitter } = require('events');
+    const sent = [], real = https.request;
+    https.request = function (opts, cb) { const req = new EventEmitter(); let body = '';
+      req.write = (d) => { body += d; }; req.setTimeout = () => {};
+      req.end = () => { const res = new EventEmitter(); res.statusCode = 200; if (opts.hostname === 'api.resend.com') sent.push(JSON.parse(body));
+        cb(res); res.emit('data', Buffer.from(opts.hostname === 'api.resend.com' ? '{}' : '[{}]')); res.emit('end'); };
+      return req; };
+    Object.assign(process.env, { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SECRET_KEY: 'k', RESEND_API_KEY: 'r' });
+    const log = console.log, err = console.error; console.log = () => {}; console.error = () => {};
+    const sub = require(path.join(ROOT, 'netlify/functions/handyman-submit.js')).handler;
+    await sub({ httpMethod: 'POST', body: JSON.stringify({ customer: { name: 'Zurabi Test', phone: '1', email: 'z@example.com', address: 'x' },
+      service: 'general-repairs', serviceName: 'General Repairs', urgency: 'emergency-today', preferredDate: '2026-09-26', preferredTime: 'morning',
+      answers: { job_list: ['General Repairs: Door, Drywall hole', 'Bathroom Refresh: Re-caulk'], place: 'Apartment' },
+      aiResult: { estimate: { customerNotes: 'Thanks — we can come today. We recommend a small deposit ($100).' }, internalBrief: {}, confidence: {} } }) });
+    console.log = log; console.error = err; https.request = real;
+    const cust = sent.find((m) => m.to[0] === 'z@example.com') || { html: '' };
+    const mine = sent.find((m) => m.to[0] !== 'z@example.com') || { html: '' };
+    ok('1. the AI note ("we can come today", "$100 deposit") is NOT sent to the customer', !/come today|deposit|\$100/i.test(cust.html));
+    ok('2. urgency in plain words: "Emergency today", never "emergency-today"', /Emergency today/.test(cust.html) && !/emergency-today/.test(cust.html) && /How soon: <strong>Emergency today/.test(mine.html));
+    ok('3. the customer sees their whole job list', /<li>General Repairs: Door, Drywall hole<\/li><li>Bathroom Refresh: Re-caulk<\/li>/.test(cust.html));
+    ok('...and the date in words ("Sat, Sep 26 · morning")', /Sat, Sep 26 · morning/.test(cust.html));
+    ok('4. the calm look: no navy, no "analyzed by our AI" check marks', !/#0d1b2a|analyzed by our AI|Damage identified|Materials estimated/i.test(cust.html) && /#faf8f4/.test(cust.html));
+    ok('...you still get a copy (bcc), and never "licensed"', (cust.bcc || []).length === 1 && !/\blicensed\b/i.test(cust.html));
+    ok('the AI note is kept for you in the dashboard, marked "not sent"', /AI suggested note · not sent to the customer/.test(D) && /esc\(b\.customer_notes\)/.test(D));
+  }
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);

@@ -130,6 +130,12 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
 .btn-secondary { background:#fff; color:var(--ink); border-color:var(--ink); }
 .btn-secondary:hover { background:var(--cream); }
 
+/* "How soon" and the date disagree: ask, never guess */
+.date-clash { margin-top:10px; padding:14px; border-radius:12px; background:var(--gold-soft); border:1px solid #e9d6b3; font-size:16px; color:var(--ink); }
+.date-clash[hidden] { display:none; }
+.date-clash-btns { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.date-clash-btns .chip { font:inherit; font-size:16px; }
+
 .form-err:empty { display:none; }
 .form-err, .error-box { margin:16px 0 0; padding:12px 14px; border-radius:12px; background:#fbeeee; color:var(--bad); font-size:16px; }
 
@@ -291,6 +297,13 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
       <div class="question">
         <label class="question-label" for="cust-date">Preferred date <span class="question-hint">Optional</span></label>
         <input type="date" class="input-text" id="cust-date">
+        <div class="date-clash" id="date-clash" hidden>
+          <div id="date-clash-text"></div>
+          <div class="date-clash-btns">
+            <button type="button" class="chip" id="clash-keep-when"></button>
+            <button type="button" class="chip" id="clash-keep-date"></button>
+          </div>
+        </div>
       </div>
       <div class="question">
         <span class="question-label">Preferred time</span>
@@ -695,6 +708,11 @@ function submitQuestions() {
     return v == null || v === '' || (Array.isArray(v) && v.length === 0);
   });
   if (missing.length) { showErr('err-4', 'Please answer: ' + missing.map(function (m) { return m.label; }).join(', ')); return; }
+  const d = document.getElementById('cust-date');
+  d.min = localDay(0);
+  /* an emergency is today: start the date there */
+  if (state.single.when === 'Emergency today' && !d.value) d.value = localDay(0);
+  checkDateClash();
   goToStep(5);
 }
 
@@ -707,6 +725,65 @@ document.querySelectorAll('#time-options .option').forEach(function (opt) {
     opt.classList.add('selected');
     state.preferredTime = opt.dataset.time;
   });
+});
+
+/* ── "HOW SOON" AND THE DATE MUST AGREE ──────────────────────────────
+   "i as a customer was marked for tomorrow and in there shows emergency
+    today but below shows tomorrow date". The customer picked "Emergency
+   today" on step 2 and tomorrow on step 5, and both went out. Now, when the
+   date falls outside what "How soon" says, the customer is asked which one
+   is right, and the request is not sent until they agree. */
+const WINDOW_DAYS = { 'Emergency today': 0, 'This week': 7, 'Within 2 weeks': 14 };
+
+function localDay(plus) {
+  const t = new Date(); t.setDate(t.getDate() + plus);
+  return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+}
+function daysFromToday(iso) {
+  const a = new Date(localDay(0) + 'T12:00:00'), b = new Date(iso + 'T12:00:00');
+  return Math.round((b - a) / 86400000);
+}
+function dayWords(iso) {
+  const n = daysFromToday(iso);
+  if (n === 0) return 'today';
+  if (n === 1) return 'tomorrow';
+  return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+/* the "How soon" answer that fits a date */
+function whenForDate(iso) {
+  const n = daysFromToday(iso);
+  return n <= 0 ? 'Emergency today' : n <= 7 ? 'This week' : n <= 14 ? 'Within 2 weeks' : 'Flexible';
+}
+function dateClash() {
+  const iso = document.getElementById('cust-date').value;
+  const when = state.single.when;
+  if (!iso || !(when in WINDOW_DAYS)) return null;
+  const n = daysFromToday(iso);
+  return (n < 0 || n > WINDOW_DAYS[when]) ? { iso: iso, when: when } : null;
+}
+function setWhen(label) {
+  state.single.when = label;
+  document.querySelectorAll('.chips[data-single="when"] .chip').forEach(function (c) { c.classList.toggle('selected', c.textContent === label); });
+}
+function checkDateClash() {
+  const box = document.getElementById('date-clash');
+  const c = dateClash();
+  box.hidden = !c;
+  if (!c) return false;
+  const day = dayWords(c.iso);
+  document.getElementById('date-clash-text').textContent = 'You said "' + c.when + '" but picked ' + day + '. Which is right?';
+  document.getElementById('clash-keep-date').textContent = day.charAt(0).toUpperCase() + day.slice(1) + ' is right';
+  document.getElementById('clash-keep-when').textContent = c.when === 'Emergency today' ? 'Today, it is an emergency' : 'Keep "' + c.when + '", clear the date';
+  return true;
+}
+document.getElementById('cust-date').addEventListener('change', function () { showErr('step-5-error', ''); checkDateClash(); });
+document.getElementById('clash-keep-date').addEventListener('click', function () {
+  setWhen(whenForDate(document.getElementById('cust-date').value));
+  checkDateClash();
+});
+document.getElementById('clash-keep-when').addEventListener('click', function () {
+  document.getElementById('cust-date').value = state.single.when === 'Emergency today' ? localDay(0) : '';
+  checkDateClash();
 });
 
 /* ════════════════════════════════════════════════════════════════════
@@ -753,6 +830,7 @@ async function submitRequest() {
 
   if (!name || !phone || !email || !address) { showErr('step-5-error', 'Please fill in your name, phone, email and address.'); return; }
   if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { showErr('step-5-error', 'Please check your email address.'); return; }
+  if (checkDateClash()) { showErr('step-5-error', 'Please choose: the date or "How soon".'); document.getElementById('date-clash').scrollIntoView({ block: 'center' }); return; }
   showErr('step-5-error', '');
 
   const customer = { name: name, phone: phone, email: email, address: address };
