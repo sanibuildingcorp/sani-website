@@ -8965,16 +8965,56 @@ async function downloadEstimatePdf(version) {
     var m = /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") || "");
     var name = m ? m[1] : (version === "internal" ? "Internal-Estimate-" : "Estimate-") + currentRecord.ref + ".pdf";
     var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url; a.download = name; a.rel = "noopener";
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-    toast("✓ " + name);
+    var file = null;
+    try { file = new File([blob], name, { type: "application/pdf" }); } catch (_) {}
+    /* "It's open as pdf but then there is no download button ... after open
+        there is no way for download". On a phone a download link opens the
+       PDF in the browser's viewer with no way out. So on a phone the file is
+       handed to the phone's own share sheet - Save to Files, Mail, Messages,
+       Print - from a button the contractor taps (the share sheet only opens
+       from a tap, and the tap that made the PDF has been used up by now). */
+    var phone = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent || "") || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent || ""));
+    if (phone && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      pdfReadySheet(name, file, url);
+    } else {
+      var a = document.createElement("a");
+      a.href = url; a.download = name; a.rel = "noopener";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      toast("✓ " + name);
+    }
   } catch (e) {
     toast("Could not make the PDF: " + e.message, true);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = label; }
   }
+}
+
+/* The PDF is ready: Save or share (the phone's share sheet) or Open. */
+function pdfReadySheet(name, file, url) {
+  var old = document.getElementById("pdf-ready"); if (old) old.remove();
+  var ov = document.createElement("div");
+  ov.id = "pdf-ready";
+  ov.style.cssText = "position:fixed;inset:0;z-index:99990;background:rgba(5,13,26,.72);display:flex;align-items:center;justify-content:center;padding:18px";
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:22px 20px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+      '<div style="font-size:17px;font-weight:700;color:#0d1b2a">📄 Your PDF is ready</div>' +
+      '<div style="font-size:13.5px;color:#5a6577;margin:6px 0 16px;word-break:break-all">' + esc(name) + '</div>' +
+      '<button type="button" id="pdf-share" class="btn-primary" style="width:100%;padding:14px;font-size:15px">📤 Save or share</button>' +
+      '<div style="font-size:12.5px;color:#5a6577;margin:6px 0 12px;text-align:center">Save to Files, Mail, Messages or Print</div>' +
+      '<div style="display:flex;gap:10px">' +
+        '<button type="button" id="pdf-open" class="btn-secondary" style="flex:1">👁 Open</button>' +
+        '<button type="button" id="pdf-close" class="btn-secondary" style="flex:1">Close</button>' +
+      '</div></div>';
+  document.body.appendChild(ov);
+  var close = function () { ov.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 60000); };
+  document.getElementById("pdf-share").onclick = function () {
+    navigator.share({ files: [file], title: name }).then(close).catch(function (e) {
+      if (e && e.name === "AbortError") return;           /* closed the sheet: stay here */
+      toast("Could not open the share menu: " + (e && e.message || e), true);
+    });
+  };
+  document.getElementById("pdf-open").onclick = function () { window.open(url, "_blank"); };
+  document.getElementById("pdf-close").onclick = close;
 }
 
 function copyScopeLink() {

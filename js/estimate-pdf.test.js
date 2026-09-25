@@ -72,6 +72,9 @@ console.log('\n3. The endpoint and the dashboard\n');
   const D = read('dashboard.html');
   ok('two buttons in the estimate: CUSTOMER PDF and INTERNAL PDF', /onclick="downloadEstimatePdf\(\\'customer\\'\)"[^>]*>⬇ CUSTOMER PDF</.test(D) && /onclick="downloadEstimatePdf\(\\'internal\\'\)"[^>]*>⬇ INTERNAL PDF</.test(D));
   ok('...the file is fetched WITH the key (sbcFetch) and saved as a download', /async function downloadEstimatePdf\(version\) \{[\s\S]{0,700}sbcFetch\("\/\.netlify\/functions\/estimate-pdf\?ref="/.test(D) && /a\.download = name;/.test(D));
+  ok('ON A PHONE the PDF goes to the share sheet (Save to Files, Mail, Print), not a dead-end viewer', /if \(phone && file && navigator\.canShare && navigator\.canShare\(\{ files: \[file\] \}\)\) \{\s*pdfReadySheet\(name, file, url\);/.test(D));
+  ok('...opened from its own tap ("Save or share"), since the share sheet only opens from a tap', /document\.getElementById\("pdf-share"\)\.onclick = function \(\) \{\s*navigator\.share\(\{ files: \[file\], title: name \}\)/.test(D) && />📤 Save or share</.test(D));
+  ok('...with Open and Close as well; a computer still downloads the file', /id="pdf-open"/.test(D) && /id="pdf-close"/.test(D) && /\} else \{\s*var a = document\.createElement\("a"\);\s*a\.href = url; a\.download = name;/.test(D));
   ok('never "licensed" in the PDFs', !/\blicensed\b/i.test(read('netlify/functions/lib/estimate-pdf.js')));
 }
 
