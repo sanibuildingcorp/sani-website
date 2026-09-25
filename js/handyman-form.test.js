@@ -22,7 +22,7 @@ ok('Bathroom Refresh is a service, with its own items', /id: "bathroom-refresh",
 ok('...and /handyman-estimate?service=bathroom-refresh opens with it ticked', /get\('service'\)/.test(H) && /\/handyman-estimate\?service=bathroom-refresh/.test(read('handyman.html')));
 ok('SEVERAL SERVICES: a card toggles, it does not jump to the next step', /function toggleService\(id\)/.test(H) && /state\.services\.splice\(i, 1\)/.test(H) && !/setTimeout\(function\(\) \{ goToStep\(2\)/.test(H));
 ok('SEVERAL ITEMS per service, tapped as chips, plus the list in their own words', /state\.items\[id\]/.test(H) && /id="own-words"/.test(H));
-const groups = (H.match(/data-single="(\w+)"/g) || []).map((x) => x.match(/"(\w+)"/)[1]);
+const groups = (H.slice(0, H.indexOf('<script>')).match(/data-single="(\w+)"/g) || []).map((x) => x.match(/"(\w+)"/)[1]);
 ok('SIZE AND PLACE: how many things, where, floor and access, parts, how soon', JSON.stringify(groups) === JSON.stringify(['job_size', 'place', 'access', 'parts', 'when']), groups.join(','));
 ok('...how many, where and how soon are required; access and parts are optional', /\[\['job_size', 'how many things'\], \['place', 'where the job is'\], \['when', 'how soon'\]\]/.test(H));
 ok('...a restaurant and an office are places, not only homes', /<div class="chip">Restaurant<\/div>/.test(H) && /<div class="chip">Office or store<\/div>/.test(H));
@@ -34,6 +34,21 @@ ok('THE DATE BOX stays inside the card on an iPhone', /\.input-text, \.input-tex
 ok('THE PHOTO BOX is a block (a bare <label> drew broken dashed pieces)', /\.photo-zone \{ display:flex;/.test(H));
 ok('photos are optional: the button says "Skip photos" until one is added', /Skip photos →/.test(H));
 ok('the customer never sees a price', !/estimatedLabor|\$\d/.test(H.replace(/\$\{[^}]*\}/g, '')));
+
+console.log('\n1b. "How soon" and the date agree\n');
+{
+  /* "i as a customer was marked for tomorrow and in there shows emergency
+      today but below shows tomorrow date" */
+  const src = H.slice(H.indexOf('const WINDOW_DAYS'), H.indexOf('function dateClash()'));
+  const ctx = {}; vm.createContext(ctx); vm.runInContext(src + ';this.f={localDay,daysFromToday,whenForDate,dayWords};', ctx);
+  const f = ctx.f;
+  ok('a date is read as today / tomorrow / a weekday', f.dayWords(f.localDay(0)) === 'today' && f.dayWords(f.localDay(1)) === 'tomorrow' && /^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d+$/.test(f.dayWords(f.localDay(5))));
+  ok('the "How soon" that fits a date: today, this week, 2 weeks, flexible', [0, 1, 7, 8, 14, 15].map((n) => f.whenForDate(f.localDay(n))).join('|') === 'Emergency today|This week|This week|Within 2 weeks|Within 2 weeks|Flexible');
+  ok('windows: emergency is today only, this week 7 days, within 2 weeks 14', /const WINDOW_DAYS = \{ 'Emergency today': 0, 'This week': 7, 'Within 2 weeks': 14 \};/.test(H));
+  ok('a clash is asked, never guessed: two buttons, the date or "How soon"', /id="clash-keep-date"/.test(H) && /id="clash-keep-when"/.test(H) && /Which is right\?/.test(H));
+  ok('...and the request is NOT sent while they disagree', /if \(checkDateClash\(\)\) \{ showErr\('step-5-error'/.test(H) && H.indexOf('if (checkDateClash())') < H.indexOf("goToStep(6);\n  document.getElementById('ai-loading-card')"));
+  ok('an emergency starts with today in the date box; no past dates', /if \(state\.single\.when === 'Emergency today' && !d\.value\) d\.value = localDay\(0\);/.test(H) && /d\.min = localDay\(0\);/.test(H));
+}
 
 console.log('\n2. What reaches the dashboard\n');
 ok('the brief goes first in answers: services, job list, own words, size, place, access, parts, when', /services: serviceNames\(\)\.join\(', '\),\s*job_list: jobList\(\),\s*list_in_own_words: ownWords\(\),\s*job_size:[^,]+,\s*place:[^,]+,\s*access:[^,]+,\s*parts:[^,]+,\s*when:/.test(H));
