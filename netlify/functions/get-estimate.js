@@ -132,6 +132,25 @@ function scopeView(data) {
 }
 exports.scopeView = scopeView;
 
+/* ══ THE CUSTOMER'S ESTIMATE, FOR THE DASHBOARD'S "CUSTOMER PDF" ═══════════════
+   What the customer's page shows, prices included: the sent version when there
+   is one, the alternatives he checked. A never-sent record is the draft as it
+   stands, marked notSentYet - the contractor downloads his own draft, the
+   customer never sees this object (estimate-pdf.js is behind the dashboard key). */
+function customerPdfView(data) {
+  const view = buildCustomerView(data, false);
+  applySentVersion(data, view);
+  stripUnoffered(view.estimate, {
+    legacyAllowsAll: everSent(data),
+    keep: (Array.isArray(data.customerOptionSelections) ? data.customerOptionSelections : []).map(function (o) { return o && o.label; }),
+  });
+  delete view.threadRate;
+  delete view.sentVersion;
+  view.notSentYet = !everSent(data);
+  return view;
+}
+exports.customerPdfView = customerPdfView;
+
 /* ══ ADDITIONAL WORK, ON THE CUSTOMER'S PAGE ═══════════════════════════════
      "she already agreed with this current service estimate but then she add
       additional service for painting, i need keep current estimate untouched"

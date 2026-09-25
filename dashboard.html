@@ -5035,6 +5035,13 @@ function renderEdit() {
       stampedTotalHtml(currentRecord) +
       '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
       '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
+      /* "I need download or print function in my dashboard for let me download
+          each estimate" - both versions, as PDF files (estimate-pdf.js). */
+      '<div style="display:flex;gap:10px;margin-top:10px">' +
+        '<button type="button" id="pdf-customer" onclick="downloadEstimatePdf(\'customer\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ CUSTOMER PDF</button>' +
+        '<button type="button" id="pdf-internal" onclick="downloadEstimatePdf(\'internal\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ INTERNAL PDF</button>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;text-align:center">Customer PDF: what the customer sees, with prices. Internal PDF: your lines, rates and markup. Both from the last saved version.</div>' +
       (currentRecord && currentRecord.parentRef ? '' :
         '<button type="button" onclick="addonCreate()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE)</button>') +
     '</div>' +
@@ -8941,6 +8948,35 @@ function scopeLinkUrl() {
 function scopePdfUrl() {
   return "https://www.sanibuildingcorp.com/.netlify/functions/scope-pdf?ref=" + encodeURIComponent(currentRecord.ref);
 }
+/* ══ DOWNLOAD THE ESTIMATE AS A PDF ════════════════════════════════════════
+   Customer: what the customer's page shows, with prices. Internal: every line,
+   rate and the markup, marked "not for the customer". The file is made on the
+   server from the SAVED record (estimate-pdf.js, behind the dashboard key), so
+   it is fetched with the key and saved from here rather than opened as a link. */
+async function downloadEstimatePdf(version) {
+  if (!currentRecord || !currentRecord.ref) { toast("Open an estimate first", true); return; }
+  var btn = document.getElementById(version === "internal" ? "pdf-internal" : "pdf-customer");
+  var label = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "Making PDF…"; }
+  try {
+    var r = await sbcFetch("/.netlify/functions/estimate-pdf?ref=" + encodeURIComponent(currentRecord.ref) + "&v=" + (version === "internal" ? "internal" : "customer"));
+    if (!r.ok) { var t = await r.text().catch(function () { return ""; }); throw new Error(r.status + " " + t.slice(0, 120)); }
+    var blob = await r.blob();
+    var m = /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") || "");
+    var name = m ? m[1] : (version === "internal" ? "Internal-Estimate-" : "Estimate-") + currentRecord.ref + ".pdf";
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name; a.rel = "noopener";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    toast("✓ " + name);
+  } catch (e) {
+    toast("Could not make the PDF: " + e.message, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = label; }
+  }
+}
+
 function copyScopeLink() {
   if (!currentRecord || !currentRecord.ref) { toast("Open an estimate first", true); return; }
   var url = scopeLinkUrl();
