@@ -1021,7 +1021,7 @@ async function uploadPhotosForSubmit(ref){
       try{
         const r=await fetch('/.netlify/functions/upload-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:data,ref:ref})});
         const j=await r.json().catch(function(){return null;});
-        if(r.ok&&j&&j.url){out.push({name:(p.name||('photo-'+(i+1))),data:j.url,slot:p.slot||'other'});continue;}
+        if(r.ok&&j&&j.url){out.push({name:(p.name||('photo-'+(i+1))),data:j.url,slot:p.slot||'other',kind:p.kind||'image'});continue;}
       }catch(err){console.error('upload-photo failed for #'+(i+1),err);}
       // If this one fails, skip it rather than bloat the payload with base64.
     }else if(data){

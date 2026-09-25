@@ -43,6 +43,11 @@ ok('...and a PDF the contractor sent later in a message', docs[2] && /3\.pdf$/.t
 ok('...each one labelled with its name and where it came from', /Drawing \/ document 1 — A-101 Floor plans\.pdf, from the customer's request/.test(blocks[0].text) && /A-201 Elevations\.pdf, from a message from the contractor/.test(blocks[4].text));
 ok('...photos and non-PDF files are not sent as documents, and at most 3 are read', docs.length === 3 && !JSON.stringify(blocks).includes('kitchen.jpg') && !JSON.stringify(blocks).includes('.docx'));
 
+{
+  const noKind = ctx.documentBlocksForClaude({ photos: [{ name: 'A-101.pdf', data: 'https://x.supabase.co/storage/v1/object/public/estimate-photos/SBC/9-a-101.pdf', slot: 'other' }, { name: 'room.jpg', data: 'https://x.supabase.co/storage/v1/object/public/estimate-photos/SBC/9-room.jpg' }] }, {});
+  ok('A PDF THE CUSTOMER FORM SAVED WITH NO KIND is still read as a drawing (the form stored none)', noKind.filter((b) => b.type === 'document').length === 1 && /9-a-101\.pdf$/.test(noKind[1].source.url));
+}
+
 (async () => {
   await ctx.callWithDrawings('k', 'ANALYSIS', 32000, [{ type: 'image' }], blocks, {}, 'analysis');
   ok('THE ANALYSIS READS THEM, after the photos, and is told to take quantities from them per room', calls[0].blocks.length === 1 + blocks.length && calls[0].blocks[0].type === 'image' && /PROJECT DRAWINGS ATTACHED \(3 files\)\. Read every page\. Take room sizes, fixture counts and finish areas from the drawings - per room, then totalled/.test(calls[0].prompt));

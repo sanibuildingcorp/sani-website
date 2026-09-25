@@ -732,8 +732,12 @@ function photoBlocksForClaude(request, record) {
 const MAX_DOCS_TO_READ = 3;
 function documentBlocksForClaude(request, record) {
   const files = [];
+  /* The customer form stores its uploads as {name, data: link} with no kind,
+     so a PDF is known by its link or its name, not only by kind "file". */
+  const isPdf = function (name, data) { return /^data:application\/pdf;/i.test(data) || /\.pdf(?:[?#]|$)/i.test(data) || /\.pdf$/i.test(String(name || "")); };
   (Array.isArray(request && request.photos) ? request.photos : []).forEach(function (p) {
-    if (p && p.kind === "file") files.push({ name: p.name, data: String(p.data || "").trim(), from: "the customer's request" });
+    const data = String((p && (typeof p === "string" ? p : p.data)) || "").trim();
+    if (p && (p.kind === "file" || isPdf(p.name, data))) files.push({ name: p.name, data: data, from: p.slot === "contractor" ? "the contractor" : "the customer's request" });
   });
   let msgs = [];
   try { msgs = thread.normalizeThread(record || {}); } catch (e) { msgs = []; }
