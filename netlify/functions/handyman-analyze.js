@@ -127,7 +127,7 @@ You MUST return valid JSON in this exact structure:
     "customerNotes": "<friendly explanation including: what we'll do, any concerns, why deposit if needed>"
   },
   "internalBrief": {
-    "jobSummary": "<2-3 sentence summary for the contractor>",
+    "jobSummary": "<start with the customer's job list, one item after another; then 1-2 sentences for the contractor>",
     "toolsChecklist": ["<tool 1>", "<tool 2>", ...],
     "materialsChecklist": ["<material 1>", "<material 2>", ...],
     "specialOrderFlag": <true/false>,
@@ -148,7 +148,7 @@ PRICING GUIDELINES (NYC market rates):
 - Leak & Plumbing: $200-250/hr
 - Tile & Grout: $160-210/hr
 - Light Fixture & Electrical: $170-230/hr
-- Full Handyman Day: $750-950/day (8 hours)
+- Bathroom Refresh: each item at the Tile & Grout or Leak & Plumbing rate above that fits it
 - Property Manager: $150-200/hr
 
 CONFIDENCE SCORING RULES:
@@ -169,6 +169,8 @@ WARNINGS to flag (include in warnings array):
 - "Working at heights - may need ladder over 8ft"
 - "Possible hidden damage behind affected area"
 - "Electrical work requires verifying breaker location"
+- "Long job list - quote each item, not a day rate" when the customer has 4 or more things
+- "Walk-up - allow time to carry tools and materials" when the access answer says walk-up
 - Any other professional handyman concerns
 
 BE REALISTIC: Don't underestimate. NYC jobs always take longer than expected. Factor in:
@@ -191,6 +193,9 @@ MATERIALS LIST - include consumables:
 function buildUserPrompt(service, serviceName, answers, urgency, description, photos) {
   const photoCount = Array.isArray(photos) ? photos.length : 0;
   let prompt = `SERVICE: ${serviceName || service}\n`;
+  /* The form sends several services and a job list now; put the list first. */
+  const list = answers && Array.isArray(answers.job_list) ? answers.job_list : [];
+  if (list.length) prompt += `JOB LIST:\n${list.map(function (l, i) { return `${i + 1}. ${l}`; }).join("\n")}\n`;
   if (urgency) prompt += `URGENCY: ${urgency}\n`;
   prompt += `PHOTOS PROVIDED: ${photoCount}\n\n`;
 

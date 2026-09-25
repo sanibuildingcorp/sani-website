@@ -3,643 +3,263 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Book a Handyman · Get Instant AI Estimate · Sani Building Corp</title>
-<meta name="description" content="Book a Brooklyn handyman in minutes. AI-powered estimate with photos. Same-day service. Fully insured.">
+<title>Get a Free Handyman Quote · Sani Building Corp</title>
+<meta name="description" content="One repair or a whole list. Tell us what needs fixing, add a few photos and get a clear flat-rate handyman quote. Same-day service. Fully insured.">
 <meta name="robots" content="noindex">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  THE HANDYMAN REQUEST FORM.
+  "This is a in handyman request form, i need it upgrade for more smart for
+   my business and my understanding" - the owner picked:
+    - several jobs in one request (more than one service, more than one item);
+    - job size and place questions (how many things, home or business,
+      floor and elevator, who buys the parts, how soon);
+    - smarter, fewer photo questions (no repeats of what was just answered);
+    - a clear job brief in the dashboard;
+    - the calm natural look of the free estimate form, a plain headline.
+  The day-rate booking card is gone ("customers need to do a lot work in a day
+  and rate is low"); Bathroom Refresh takes its place. No prices on this page.
+  Same endpoints as before: handyman-questions, handyman-analyze,
+  handyman-submit. js/handyman-form.test.js checks all of it.
+-->
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 :root {
-  --navy:#0d1b2a;
-  --navy-2:#1a2d42;
-  --gold:#c9a84c;
-  --gold-2:#b8930a;
-  --gold-3:#f0a500;
-  --gold-soft:#f7f0e3;
-  --cream:#faf8f5;
-  --bg:#f5f0e8;
+  --bg:#faf8f4;
+  --cream:#f3eee5;
   --card:#ffffff;
-  --ink:#1a1a1a;
-  --ink-soft:#555;
-  --ink-muted:#8a8a8a;
-  --line:#e8e2d9;
-  --good:#2ecc71;
-  --warn:#d4a017;
-  --bad:#e74c3c;
-  --display:'Playfair Display',serif;
-  --body:'DM Sans',-apple-system,sans-serif;
+  --ink:#1f1d1a;
+  --soft:#57524b;
+  --muted:#7a746b;
+  --line:#e4ddd0;
+  --gold:#a8762a;
+  --gold-soft:#f6ecdb;
+  --dark:#262320;
+  --good:#3f7d4e;
+  --bad:#a4322a;
+  --head:'Archivo','Helvetica Neue',Arial,system-ui,sans-serif;
+  --body:'Source Sans 3','Helvetica Neue',Arial,system-ui,sans-serif;
+  --r:16px;
 }
-body {
-  font-family:var(--body);
-  background:var(--bg);
-  color:var(--ink);
-  min-height:100vh;
-  -webkit-font-smoothing:antialiased;
-  line-height:1.5;
-}
-.wrap { max-width:820px; margin:0 auto; padding:20px 16px 80px; }
+html { -webkit-text-size-adjust:100%; }
+body { font-family:var(--body); background:var(--bg); color:var(--ink); min-height:100vh; font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+.wrap { max-width:760px; margin:0 auto; padding:20px 16px 80px; }
 
-/* HEADER */
-.hdr {
-  background:linear-gradient(135deg, var(--navy), var(--navy-2));
-  color:#fff;
-  padding:24px 24px;
-  border-radius:14px;
-  margin-bottom:20px;
-  text-align:center;
-  position:relative;
-  overflow:hidden;
-}
-.hdr::before {
-  content:'';
-  position:absolute;
-  top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg, var(--gold-3), var(--gold), var(--gold-2));
-}
-.brand {
-  display:inline-block;
-  font-family:var(--display);
-  font-size:22px;
-  letter-spacing:3px;
-  color:var(--gold);
-  text-decoration:none;
-  margin-bottom:4px;
-  font-weight:700;
-}
-.tag {
-  font-size:11px;
-  letter-spacing:3px;
-  color:#aaa;
-  text-transform:uppercase;
-}
-.hdr h1 {
-  font-family:var(--display);
-  font-size:28px;
-  margin-top:14px;
-  font-weight:700;
-}
-.hdr h1 em { color:var(--gold); font-style:italic; }
-.hdr p { font-size:14px; color:rgba(255,255,255,0.7); margin-top:8px; max-width:480px; margin-left:auto; margin-right:auto; }
+/* header: light, words on cream */
+.hdr { background:var(--cream); border:1px solid var(--line); border-radius:var(--r); padding:26px 24px 24px; margin-bottom:18px; }
+.brand { font-family:var(--head); font-weight:800; font-size:17px; letter-spacing:.02em; color:var(--ink); text-decoration:none; }
+.eyebrow { font-size:16px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-top:4px; }
+.hdr h1 { font-family:var(--head); font-weight:800; font-size:clamp(28px,6vw,38px); line-height:1.1; margin:14px 0 10px; color:var(--ink); }
+.hdr p { color:var(--soft); font-size:17px; max-width:560px; }
 
-/* PROGRESS BAR */
-.progress-row {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  margin:18px 0 24px;
-}
-.progress-dot {
-  width:30px;
-  height:30px;
-  border-radius:50%;
-  background:var(--card);
-  border:2px solid var(--line);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:13px;
-  font-weight:700;
-  color:var(--ink-muted);
-  transition:all 0.3s;
-}
-.progress-dot.active {
-  background:var(--gold);
-  color:#fff;
-  border-color:var(--gold);
-  transform:scale(1.1);
-}
-.progress-dot.done {
-  background:var(--good);
-  color:#fff;
-  border-color:var(--good);
-}
-.progress-line {
-  width:30px;
-  height:2px;
-  background:var(--line);
-  transition:background 0.3s;
-}
-.progress-line.done { background:var(--good); }
+/* progress: a thin bar and words */
+.progress { margin:0 2px 16px; }
+.progress-top { display:flex; justify-content:space-between; gap:12px; font-size:16px; margin-bottom:8px; }
+.progress-top strong { color:var(--ink); }
+.progress-top span { color:var(--muted); white-space:nowrap; }
+.bar { height:6px; background:var(--line); border-radius:99px; overflow:hidden; }
+.bar-fill { height:100%; width:20%; background:var(--ink); border-radius:99px; transition:width .35s; }
 
-/* CARD - main form container */
-.card {
-  background:var(--card);
-  border-radius:14px;
-  padding:28px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.06);
-  border:1px solid var(--line);
-}
-@media (max-width: 540px) { .card { padding:22px 18px; } }
+/* the card */
+.card { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:28px; box-shadow:0 18px 40px -30px rgba(31,29,26,.45); }
+@media (max-width:540px) { .card { padding:22px 16px; } }
+.step-title { font-family:var(--head); font-weight:800; font-size:clamp(24px,5vw,30px); line-height:1.15; color:var(--ink); margin-bottom:6px; }
+.step-sub { color:var(--soft); font-size:17px; margin-bottom:22px; }
 
-.step-title {
-  font-family:var(--display);
-  font-size:22px;
-  color:var(--navy);
-  margin-bottom:6px;
-  font-weight:700;
-}
-.step-title em { color:var(--gold); font-style:italic; }
-.step-sub {
-  font-size:14px;
-  color:var(--ink-muted);
-  margin-bottom:22px;
-}
+/* step 1: service cards you can tick */
+.service-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+@media (max-width:540px) { .service-grid { grid-template-columns:1fr; } }
+.service-card { position:relative; display:flex; gap:14px; align-items:flex-start; text-align:left; width:100%; background:var(--bg); border:1.5px solid var(--line); border-radius:14px; padding:16px; cursor:pointer; font:inherit; color:inherit; transition:border-color .15s, background .15s; }
+.service-card:hover { border-color:var(--ink); }
+.service-card.selected { border-color:var(--ink); background:var(--gold-soft); }
+.service-icon { font-size:28px; line-height:1; flex:none; margin-top:2px; }
+.service-name { font-family:var(--head); font-weight:700; font-size:18px; color:var(--ink); }
+.service-desc { font-size:16px; color:var(--soft); line-height:1.4; margin-top:2px; }
+.tick { position:absolute; top:12px; right:12px; width:24px; height:24px; border-radius:50%; border:1.5px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; color:transparent; }
+.service-card.selected .tick { background:var(--ink); border-color:var(--ink); color:#fff; }
+.picked-count { margin-top:14px; font-size:16px; color:var(--soft); min-height:24px; }
 
-/* STEP 1: SERVICE GRID */
-.service-grid {
-  display:grid;
-  grid-template-columns:repeat(2, 1fr);
-  gap:12px;
-}
-@media (max-width: 540px) { .service-grid { grid-template-columns:1fr; } }
-.service-card {
-  background:var(--cream);
-  border:2px solid var(--line);
-  border-radius:12px;
-  padding:18px 16px;
-  cursor:pointer;
-  transition:all 0.2s;
-  text-align:left;
-  font-family:inherit;
-  color:inherit;
-  width:100%;
-}
-.service-card:hover { border-color:var(--gold); transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.06); }
-.service-card.selected { border-color:var(--gold); background:var(--gold-soft); }
-.service-icon { font-size:32px; margin-bottom:8px; display:block; }
-.service-name {
-  font-family:var(--display);
-  font-size:16px;
-  font-weight:700;
-  color:var(--navy);
-  margin-bottom:4px;
-}
-.service-desc { font-size:12px; color:var(--ink-muted); line-height:1.4; }
-.service-rate {
-  display:none;
-  font-size:11px;
-  color:var(--gold-2);
-  margin-top:6px;
-  font-weight:600;
-  letter-spacing:0.5px;
-}
-
-/* QUESTIONS */
-.question {
-  margin-bottom:20px;
-}
-.question-label {
-  font-size:14px;
-  font-weight:600;
-  color:var(--navy);
-  margin-bottom:8px;
-  display:block;
-}
+/* questions and chips */
+.question { margin-bottom:22px; }
+.question-label { display:block; font-weight:700; font-size:17px; color:var(--ink); margin-bottom:8px; }
 .question-label .req { color:var(--bad); margin-left:2px; }
-.input-text, .input-textarea, .input-select {
-  width:100%;
-  padding:12px 14px;
-  font-size:14px;
-  font-family:inherit;
-  border:1.5px solid var(--line);
-  border-radius:8px;
-  background:#fff;
-  color:var(--ink);
-  outline:none;
-  transition:border-color 0.2s;
-}
-.input-text:focus, .input-textarea:focus, .input-select:focus { border-color:var(--gold); }
-.input-textarea { resize:vertical; min-height:80px; line-height:1.5; }
+.question-hint { display:block; font-weight:400; font-size:16px; color:var(--muted); margin-top:2px; }
+.chips, .options-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.chip, .option { background:var(--bg); border:1.5px solid var(--line); border-radius:999px; padding:10px 16px; font-size:16px; color:var(--ink); cursor:pointer; user-select:none; line-height:1.3; transition:border-color .15s, background .15s; }
+.chip:hover, .option:hover { border-color:var(--ink); }
+.chip.selected, .option.selected { background:var(--ink); border-color:var(--ink); color:#fff; font-weight:600; }
+.svc-block { border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; background:#fff; }
+.svc-head { font-family:var(--head); font-weight:700; font-size:18px; margin-bottom:10px; display:flex; gap:8px; align-items:center; }
+.section-split { border:0; border-top:1px solid var(--line); margin:24px 0 22px; }
 
-.options-grid {
-  display:grid;
-  grid-template-columns:repeat(2, 1fr);
-  gap:8px;
-}
-@media (max-width: 480px) { .options-grid { grid-template-columns:1fr; } }
-.option {
-  background:var(--cream);
-  border:1.5px solid var(--line);
-  border-radius:8px;
-  padding:10px 14px;
-  cursor:pointer;
-  font-size:13px;
-  color:var(--ink-soft);
-  text-align:center;
-  transition:all 0.15s;
-  user-select:none;
-}
-.option:hover { border-color:var(--gold); }
-.option.selected {
-  border-color:var(--gold);
-  background:var(--gold-soft);
-  color:var(--gold-2);
-  font-weight:600;
-}
+.input-text, .input-textarea { display:block; width:100%; min-width:0; max-width:100%; font:inherit; font-size:17px; color:var(--ink); background:var(--bg); border:1.5px solid var(--line); border-radius:12px; padding:13px 14px; outline:none; -webkit-appearance:none; appearance:none; }
+.input-text:focus, .input-textarea:focus { border-color:var(--ink); background:#fff; }
+.input-textarea { resize:vertical; min-height:96px; line-height:1.5; }
+/* iPhone draws a date box wider than its column unless told not to */
+input[type="date"].input-text { min-height:52px; line-height:1.3; }
+input[type="date"]::-webkit-date-and-time-value { text-align:left; }
 
-/* PHOTOS */
-.photo-zone {
-  border:2px dashed var(--line);
-  border-radius:12px;
-  padding:28px 20px;
-  text-align:center;
-  cursor:pointer;
-  transition:all 0.2s;
-  background:var(--cream);
-}
-.photo-zone:hover { border-color:var(--gold); background:var(--gold-soft); }
-.photo-zone .pz-icon { font-size:40px; margin-bottom:8px; }
-.photo-zone .pz-title { font-size:15px; font-weight:600; color:var(--navy); margin-bottom:4px; }
-.photo-zone .pz-sub { font-size:12px; color:var(--ink-muted); }
+/* photos */
+.photo-zone { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; width:100%; border:2px dashed var(--line); border-radius:14px; padding:28px 18px; background:var(--bg); cursor:pointer; }
+.photo-zone:hover { border-color:var(--ink); }
+.pz-icon { font-size:36px; line-height:1; margin-bottom:8px; }
+.pz-title { font-weight:700; font-size:18px; color:var(--ink); }
+.pz-sub { font-size:16px; color:var(--muted); margin-top:2px; }
 .photo-input { display:none; }
-
-.photo-preview-grid {
-  display:grid;
-  grid-template-columns:repeat(4, 1fr);
-  gap:8px;
-  margin-top:16px;
-}
-@media (max-width: 540px) { .photo-preview-grid { grid-template-columns:repeat(3, 1fr); } }
-.photo-thumb {
-  position:relative;
-  aspect-ratio:1;
-  border-radius:8px;
-  overflow:hidden;
-  background:#000;
-}
+.photo-preview-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin-top:14px; }
+@media (max-width:540px) { .photo-preview-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+.photo-thumb { position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; background:var(--cream); }
 .photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-.photo-thumb .pt-x {
-  position:absolute;
-  top:4px; right:4px;
-  width:22px; height:22px;
-  background:rgba(0,0,0,0.7);
-  color:#fff;
-  border:none;
-  border-radius:50%;
-  font-size:14px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
+.pt-x { position:absolute; top:5px; right:5px; width:28px; height:28px; border:0; border-radius:50%; background:rgba(31,29,26,.8); color:#fff; font-size:17px; line-height:1; cursor:pointer; }
 
-/* AI ANALYSIS LOADING */
-.ai-loading {
-  text-align:center;
-  padding:40px 20px;
-}
-.ai-spinner {
-  width:60px;
-  height:60px;
-  border:4px solid var(--line);
-  border-top-color:var(--gold);
-  border-radius:50%;
-  margin:0 auto 20px;
-  animation:spin 1s linear infinite;
-}
+/* loading */
+.ai-loading { text-align:center; padding:34px 12px; }
+.ai-spinner { width:52px; height:52px; border:4px solid var(--line); border-top-color:var(--ink); border-radius:50%; margin:0 auto 16px; animation:spin 1s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
-.ai-status {
-  font-family:var(--display);
-  font-size:18px;
-  color:var(--navy);
-  margin-bottom:6px;
-}
-.ai-substatus {
-  font-size:13px;
-  color:var(--ink-muted);
-  font-style:italic;
-}
+.ai-status { font-family:var(--head); font-weight:700; font-size:20px; color:var(--ink); margin-bottom:4px; }
+.ai-substatus { font-size:16px; color:var(--soft); }
 
-/* ESTIMATE RESULT */
-.estimate-hero {
-  background:linear-gradient(135deg, var(--navy), var(--navy-2));
-  color:#fff;
-  border-radius:12px;
-  padding:24px;
-  margin-bottom:20px;
-  text-align:center;
-}
-.estimate-hero .eh-label {
-  font-size:11px;
-  letter-spacing:3px;
-  color:var(--gold);
-  margin-bottom:8px;
-  text-transform:uppercase;
-}
-.estimate-hero .eh-amount {
-  font-family:var(--display);
-  font-size:32px;
-  font-weight:700;
-  color:#fff;
-  margin-bottom:6px;
-}
-.estimate-hero .eh-time {
-  font-size:14px;
-  color:rgba(255,255,255,0.7);
-}
-
-.estimate-detail {
-  background:var(--cream);
-  border-radius:10px;
-  padding:16px 18px;
-  margin-bottom:12px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.estimate-detail .ed-label {
-  font-size:13px;
-  color:var(--ink-soft);
-}
-.estimate-detail .ed-value {
-  font-size:15px;
-  font-weight:700;
-  color:var(--navy);
-}
-
-.confidence-badge {
-  display:inline-block;
-  padding:6px 14px;
-  border-radius:16px;
-  font-size:12px;
-  font-weight:700;
-  letter-spacing:1px;
-  text-transform:uppercase;
-  margin-bottom:14px;
-}
-.confidence-badge.ready { background:rgba(46,204,113,0.12); color:var(--good); border:1px solid var(--good); }
-.confidence-badge.maybe { background:rgba(212,160,23,0.12); color:var(--warn); border:1px solid var(--warn); }
-.confidence-badge.inspection { background:rgba(231,76,60,0.12); color:var(--bad); border:1px solid var(--bad); }
-
-.note-box {
-  background:var(--gold-soft);
-  border-left:4px solid var(--gold);
-  padding:14px 16px;
-  border-radius:0 8px 8px 0;
-  margin:16px 0;
-  font-size:13px;
-  color:var(--ink-soft);
-  line-height:1.6;
-}
-.note-box strong { color:var(--gold-2); }
-
-.warnings-box {
-  background:#fef3e0;
-  border:1px solid var(--warn);
-  border-radius:8px;
-  padding:14px 16px;
-  margin:16px 0;
-}
-.warnings-box .wb-title {
-  font-size:12px;
-  font-weight:700;
-  color:#a07a14;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  margin-bottom:8px;
-}
-.warnings-box ul { list-style:none; padding:0; }
-.warnings-box li {
-  font-size:13px;
-  color:#555;
-  padding:4px 0 4px 18px;
-  position:relative;
-}
-.warnings-box li::before {
-  content:'⚠';
-  position:absolute;
-  left:0;
-  color:var(--warn);
-}
-
-/* BUTTONS */
-.btn-row {
-  display:flex;
-  gap:12px;
-  margin-top:24px;
-}
+/* buttons */
+.btn-row { display:flex; gap:12px; margin-top:26px; }
 .btn-row .btn { flex:1; }
-@media (max-width: 480px) { .btn-row { flex-direction:column; } }
+@media (max-width:480px) { .btn-row { flex-direction:column-reverse; } }
+.btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:15px 20px; border-radius:999px; font:inherit; font-size:17px; font-weight:700; cursor:pointer; border:1.5px solid transparent; text-decoration:none; text-align:center; }
+.btn-primary { background:var(--ink); color:#fff; }
+.btn-primary:hover { background:#3a3631; }
+.btn-primary:disabled { opacity:.45; cursor:not-allowed; }
+.btn-secondary { background:#fff; color:var(--ink); border-color:var(--ink); }
+.btn-secondary:hover { background:var(--cream); }
 
-.btn {
-  padding:14px 20px;
-  border-radius:10px;
-  font-family:inherit;
-  font-size:14px;
-  font-weight:700;
-  cursor:pointer;
-  border:2px solid transparent;
-  transition:all 0.2s;
-  text-align:center;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  text-decoration:none;
-}
-.btn-primary {
-  background:linear-gradient(135deg, var(--gold), var(--gold-2));
-  color:var(--navy);
-  letter-spacing:1px;
-}
-.btn-primary:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 18px rgba(201,168,76,0.35); }
-.btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
+.form-err:empty { display:none; }
+.form-err, .error-box { margin:16px 0 0; padding:12px 14px; border-radius:12px; background:#fbeeee; color:var(--bad); font-size:16px; }
 
-.btn-secondary {
-  background:#fff;
-  color:var(--ink-soft);
-  border-color:var(--line);
-}
-.btn-secondary:hover { border-color:var(--gold); color:var(--gold-2); }
+/* done */
+.done-head { text-align:center; padding:6px 0 18px; }
+.done-check { width:60px; height:60px; border-radius:50%; background:var(--good); color:#fff; font-size:30px; font-weight:800; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
+.done-head h2 { font-family:var(--head); font-weight:800; font-size:28px; }
+.done-head p { color:var(--soft); margin-top:4px; }
+.next-steps { list-style:none; counter-reset:n; margin:6px 0 4px; }
+.next-steps li { counter-increment:n; position:relative; padding:10px 0 10px 44px; border-top:1px solid var(--line); color:var(--soft); }
+.next-steps li:first-child { border-top:0; }
+.next-steps li::before { content:counter(n); position:absolute; left:0; top:9px; width:30px; height:30px; border-radius:50%; background:var(--cream); color:var(--ink); font-weight:800; display:flex; align-items:center; justify-content:center; }
+.next-steps strong { color:var(--ink); }
 
-.btn-navy {
-  background:var(--navy);
-  color:var(--gold);
-  letter-spacing:1px;
-}
-.btn-navy:hover { background:var(--navy-2); }
+.foot { margin-top:24px; text-align:center; font-size:16px; color:var(--muted); line-height:1.7; }
+.foot a { color:var(--ink); font-weight:700; text-decoration:none; }
 
-/* ERROR */
-.error-box {
-  background:#fee;
-  border:1px solid var(--bad);
-  border-radius:8px;
-  padding:12px 16px;
-  margin:14px 0;
-  font-size:13px;
-  color:#c0392b;
-}
-
-/* SUCCESS */
-.success-hero {
-  background:linear-gradient(135deg, #2ecc71, #27ae60);
-  color:#fff;
-  border-radius:12px;
-  padding:32px 24px;
-  text-align:center;
-  margin-bottom:20px;
-}
-.success-hero .sh-check {
-  font-size:48px;
-  margin-bottom:8px;
-}
-.success-hero h2 {
-  font-family:var(--display);
-  font-size:24px;
-  margin-bottom:8px;
-}
-.success-hero p {
-  font-size:14px;
-  opacity:0.9;
-}
-
-/* FOOTER */
-.foot {
-  margin-top:24px;
-  text-align:center;
-  font-size:12px;
-  color:var(--ink-muted);
-  line-height:1.7;
-}
-.foot a { color:var(--gold-2); text-decoration:none; font-weight:600; }
-
-/* HIDDEN STEPS */
 .step { display:none; }
-.step.active { display:block; animation:fadeIn 0.3s; }
-@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.step.active { display:block; animation:fadeIn .25s; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- HEADER -->
-  <div class="hdr">
-    <a href="https://www.sanibuildingcorp.com" class="brand">SANI BUILDING CORP</a>
-    <div class="tag">Handyman Booking · NYC Metro</div>
-    <h1>Get Your <em>Free AI-Powered Estimate</em></h1>
-    <p>Upload a few photos, answer a couple of quick questions, and our AI preps your job. Our estimator sends you a professional quote.</p>
+  <header class="hdr">
+    <a href="https://www.sanibuildingcorp.com" class="brand">Sani Building Corp</a>
+    <div class="eyebrow">Handyman · NYC Metro</div>
+    <h1>Get a free handyman quote</h1>
+    <p>One repair or a whole list. Tell us what needs fixing, add a few photos, and we'll send you a clear flat-rate quote.</p>
+  </header>
+
+  <div class="progress" id="progress">
+    <div class="progress-top"><strong id="step-name">What needs doing</strong><span id="step-count">Step 1 of 5</span></div>
+    <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
   </div>
 
-  <!-- PROGRESS BAR -->
-  <div class="progress-row" id="progress">
-    <div class="progress-dot active" data-step="1">1</div>
-    <div class="progress-line" data-line="1"></div>
-    <div class="progress-dot" data-step="2">2</div>
-    <div class="progress-line" data-line="2"></div>
-    <div class="progress-dot" data-step="3">3</div>
-    <div class="progress-line" data-line="3"></div>
-    <div class="progress-dot" data-step="4">4</div>
-    <div class="progress-line" data-line="4"></div>
-    <div class="progress-dot" data-step="5">5</div>
-    <div class="progress-line" data-line="5"></div>
-    <div class="progress-dot" data-step="6">6</div>
-  </div>
-
-  <!-- ────────── STEP 1: SERVICE SELECTION ────────── -->
+  <!-- STEP 1: WHAT NEEDS DOING (more than one allowed) -->
   <div class="step active" id="step-1">
     <div class="card">
-      <div class="step-title">What do you need <em>fixed?</em></div>
-      <div class="step-sub">Pick the service that best matches your job. Be specific in the next steps.</div>
-
-      <div class="service-grid" id="service-grid">
-        <button class="service-card" data-service="general-repairs">
-          <span class="service-icon">🔨</span>
-          <div class="service-name">General Repairs</div>
-          <div class="service-desc">Doors, windows, locks, drywall, fixes</div>
-          <div class="service-rate">From $150/hr</div>
-        </button>
-        <button class="service-card" data-service="painting-touchups">
-          <span class="service-icon">🎨</span>
-          <div class="service-name">Painting Touch-Ups</div>
-          <div class="service-desc">Walls, ceilings, trim, scuffs, patches</div>
-          <div class="service-rate">From $180/hr</div>
-        </button>
-        <button class="service-card" data-service="furniture-assembly">
-          <span class="service-icon">🪑</span>
-          <div class="service-name">Furniture Assembly</div>
-          <!-- TV mounting is not a service Sani offers (standing rule). It was
-               listed here, on the form the customer picks their trades from,
-               which is the one place an offer becomes a promise. -->
-          <div class="service-desc">IKEA, beds, desks, wardrobes, shelves</div>
-          <div class="service-rate">From $120/hr</div>
-        </button>
-        <button class="service-card" data-service="leak-plumbing">
-          <span class="service-icon">🚰</span>
-          <div class="service-name">Leak & Plumbing</div>
-          <div class="service-desc">Faucets, toilets, drains, supply lines</div>
-          <div class="service-rate">From $200/hr</div>
-        </button>
-        <button class="service-card" data-service="tile-grout">
-          <span class="service-icon">🧱</span>
-          <div class="service-name">Tile & Grout Repair</div>
-          <div class="service-desc">Cracked tiles, regrouting, recaulking</div>
-          <div class="service-rate">From $160/hr</div>
-        </button>
-        <button class="service-card" data-service="light-electrical">
-          <span class="service-icon">💡</span>
-          <div class="service-name">Light & Electrical</div>
-          <div class="service-desc">Fixtures, fans, outlets, switches</div>
-          <div class="service-rate">From $170/hr</div>
-        </button>
-        <button class="service-card" data-service="full-handyman-day">
-          <span class="service-icon">📅</span>
-          <div class="service-name">Full Handyman Day</div>
-          <div class="service-desc">8 hours, multiple jobs, best value</div>
-          <div class="service-rate">From $750/day</div>
-        </button>
-        <button class="service-card" data-service="property-manager">
-          <span class="service-icon">🏢</span>
-          <div class="service-name">Property Manager</div>
-          <div class="service-desc">Multi-unit, turnover, ongoing maintenance</div>
-          <div class="service-rate">Custom</div>
-        </button>
+      <div class="step-title">What needs doing?</div>
+      <div class="step-sub">Pick everything that applies. You can choose more than one.</div>
+      <div class="service-grid" id="service-grid"></div>
+      <div class="picked-count" id="picked-count"></div>
+      <div class="form-err" id="err-1"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-1" onclick="continueFromServices()" disabled>Continue →</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 2: SUB-CATEGORY (what specifically) ────────── -->
+  <!-- STEP 2: THE JOB LIST, ITS SIZE AND THE PLACE -->
   <div class="step" id="step-2">
     <div class="card">
-      <div class="step-title">What <em>specifically</em>?</div>
-      <div class="step-sub" id="sub-sub">Pick the closest match — this helps our AI prep the right job.</div>
-      <div class="options-grid" id="subcategory-grid"></div>
+      <div class="step-title">Your job list</div>
+      <div class="step-sub">Tap each thing that needs work.</div>
+      <div id="item-blocks"></div>
+
+      <div class="question">
+        <label class="question-label" for="own-words">Your list in your own words <span class="question-hint">Optional. One line per job helps us quote each one.</span></label>
+        <textarea class="input-textarea" id="own-words" rows="4" placeholder="1. Bedroom door doesn't close&#10;2. Two holes in the living room wall&#10;3. Kitchen faucet drips"></textarea>
+      </div>
+
+      <hr class="section-split">
+
+      <div class="question">
+        <span class="question-label">How many things in total?<span class="req">*</span></span>
+        <div class="chips" data-single="job_size">
+          <div class="chip">1 thing</div><div class="chip">2–3 things</div><div class="chip">4–6 things</div><div class="chip">7 or more</div>
+        </div>
+      </div>
+      <div class="question">
+        <span class="question-label">Where is the job?<span class="req">*</span></span>
+        <div class="chips" data-single="place">
+          <div class="chip">Apartment</div><div class="chip">House</div><div class="chip">Office or store</div><div class="chip">Restaurant</div><div class="chip">Building common area</div>
+        </div>
+      </div>
+      <div class="question">
+        <span class="question-label">Floor and access</span>
+        <div class="chips" data-single="access">
+          <div class="chip">Ground floor</div><div class="chip">Elevator building</div><div class="chip">Walk-up, 2nd–3rd floor</div><div class="chip">Walk-up, 4th floor or higher</div>
+        </div>
+      </div>
+      <div class="question">
+        <span class="question-label">Parts and materials</span>
+        <div class="chips" data-single="parts">
+          <div class="chip">I have them</div><div class="chip">Please bring them</div><div class="chip">Some of both</div><div class="chip">Not sure</div>
+        </div>
+      </div>
+      <div class="question">
+        <span class="question-label">How soon?<span class="req">*</span></span>
+        <div class="chips" data-single="when">
+          <div class="chip">Emergency today</div><div class="chip">This week</div><div class="chip">Within 2 weeks</div><div class="chip">Flexible</div>
+        </div>
+      </div>
+
+      <div class="form-err" id="err-2"></div>
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
-        <button class="btn btn-primary" onclick="continueFromSubcategory()">Continue →</button>
+        <button class="btn btn-primary" onclick="continueFromList()">Continue →</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 3: PHOTOS ────────── -->
+  <!-- STEP 3: PHOTOS -->
   <div class="step" id="step-3">
     <div class="card">
-      <div class="step-title">Add <em>photos</em> of the job</div>
-      <div class="step-sub">📸 Our AI reads your photos to ask the right questions and make sure we arrive with the right materials. 2–5 photos work best (any angle).</div>
-
+      <div class="step-title">Add photos</div>
+      <div class="step-sub">Optional, but it helps us quote without a visit. One photo of each job works best.</div>
       <label class="photo-zone" for="photo-input">
-        <div class="pz-icon">📸</div>
-        <div class="pz-title">Tap to add photos</div>
-        <div class="pz-sub">2-5 photos work best (any angle)</div>
-        <input type="file" id="photo-input" class="photo-input" accept="image/*" multiple>
+        <span class="pz-icon">📷</span>
+        <span class="pz-title">Tap to add photos</span>
+        <span class="pz-sub">Up to 5 photos</span>
       </label>
-
+      <input type="file" id="photo-input" class="photo-input" accept="image/*" multiple>
       <div class="photo-preview-grid" id="photo-previews"></div>
-
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
-        <button class="btn btn-primary" onclick="continueFromPhotos()">Continue →</button>
+        <button class="btn btn-primary" id="btn-3" onclick="continueFromPhotos()">Skip photos →</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 4: AI QUESTIONS (from photos) ────────── -->
+  <!-- STEP 4: A FEW QUESTIONS ABOUT THE JOB (never repeats step 2) -->
   <div class="step" id="step-4">
     <div class="card">
-      <div class="step-title">A few <em>quick questions</em></div>
-      <div class="step-sub" id="step-4-sub">Loading questions...</div>
+      <div class="step-title">A few quick questions</div>
+      <div class="step-sub" id="step-4-sub">Loading…</div>
       <div id="questions-container"></div>
+      <div class="form-err" id="err-4"></div>
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
         <button class="btn btn-primary" onclick="submitQuestions()">Continue →</button>
@@ -647,135 +267,127 @@ body {
     </div>
   </div>
 
-  <!-- ────────── STEP 5: CONTACT INFO ────────── -->
+  <!-- STEP 5: CONTACT -->
   <div class="step" id="step-5">
     <div class="card">
-      <div class="step-title">Your <em>contact info</em></div>
-      <div class="step-sub">So we can send your estimate and schedule with you</div>
-
+      <div class="step-title">Where do we send your quote?</div>
+      <div class="step-sub">We email your quote and call to schedule.</div>
       <div class="question">
-        <label class="question-label">Full Name<span class="req">*</span></label>
-        <input type="text" class="input-text" id="cust-name" placeholder="John Smith">
+        <label class="question-label" for="cust-name">Full name<span class="req">*</span></label>
+        <input type="text" class="input-text" id="cust-name" autocomplete="name" placeholder="John Smith">
       </div>
       <div class="question">
-        <label class="question-label">Phone Number<span class="req">*</span></label>
-        <input type="tel" class="input-text" id="cust-phone" placeholder="(555) 555-1234">
+        <label class="question-label" for="cust-phone">Phone<span class="req">*</span></label>
+        <input type="tel" class="input-text" id="cust-phone" autocomplete="tel" placeholder="(555) 555-1234">
       </div>
       <div class="question">
-        <label class="question-label">Email<span class="req">*</span></label>
-        <input type="email" class="input-text" id="cust-email" placeholder="you@example.com">
+        <label class="question-label" for="cust-email">Email<span class="req">*</span></label>
+        <input type="email" class="input-text" id="cust-email" autocomplete="email" placeholder="you@example.com">
       </div>
       <div class="question">
-        <label class="question-label">Address<span class="req">*</span></label>
-        <input type="text" class="input-text" id="cust-address" placeholder="123 Main St, Apt 2, Brooklyn, NY 11215">
+        <label class="question-label" for="cust-address">Address<span class="req">*</span></label>
+        <input type="text" class="input-text" id="cust-address" autocomplete="street-address" placeholder="123 Main St, Apt 2, Brooklyn, NY 11215">
       </div>
       <div class="question">
-        <label class="question-label">Preferred Date (optional)</label>
+        <label class="question-label" for="cust-date">Preferred date <span class="question-hint">Optional</span></label>
         <input type="date" class="input-text" id="cust-date">
       </div>
       <div class="question">
-        <label class="question-label">Preferred Time</label>
+        <span class="question-label">Preferred time</span>
         <div class="options-grid" id="time-options">
-          <div class="option" data-time="morning">Morning (8-12)</div>
-          <div class="option" data-time="afternoon">Afternoon (12-5)</div>
-          <div class="option" data-time="evening">Evening (5-8)</div>
+          <div class="option" data-time="morning">Morning (8–12)</div>
+          <div class="option" data-time="afternoon">Afternoon (12–5)</div>
+          <div class="option" data-time="evening">Evening (5–8)</div>
           <div class="option" data-time="flexible">Flexible</div>
         </div>
       </div>
-
-      <div id="step-5-error"></div>
-
+      <div class="form-err" id="step-5-error"></div>
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="goToStep(4)">← Back</button>
-        <button class="btn btn-primary" onclick="submitRequest()">✓ Submit Request</button>
+        <button class="btn btn-primary" onclick="submitRequest()">Send my request</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 6: CONFIRMATION (no price shown) ────────── -->
+  <!-- STEP 6: SENT (no price shown) -->
   <div class="step" id="step-6">
-
-    <!-- Loading state -->
     <div class="card" id="ai-loading-card">
       <div class="ai-loading">
         <div class="ai-spinner"></div>
-        <div class="ai-status" id="ai-status-text">Analyzing your photos...</div>
-        <div class="ai-substatus" id="ai-substatus-text">Our AI is reviewing the details and preparing your job file</div>
+        <div class="ai-status" id="ai-status-text">Sending your request…</div>
+        <div class="ai-substatus" id="ai-substatus-text">This takes a few seconds</div>
       </div>
     </div>
-
-    <!-- Confirmation state -->
-    <div id="result-content" style="display:none">
-      <div class="success-hero">
-        <div class="sh-check">✓</div>
-        <h2>Request Received!</h2>
-        <p>Your reference number: <strong id="success-ref">—</strong></p>
+    <div class="card" id="result-content" style="display:none">
+      <div class="done-head">
+        <div class="done-check">✓</div>
+        <h2>Request received</h2>
+        <p>Your reference: <strong id="success-ref">—</strong></p>
       </div>
-      <div class="card">
-        <div class="step-title" style="text-align:center">Your request has been <em>analyzed by AI</em></div>
-        <ul style="list-style:none;padding:0;margin:18px 0;font-size:15px;color:var(--ink-soft);line-height:2.1">
-          <li>✓ Damage identified</li>
-          <li>✓ Materials estimated</li>
-          <li>✓ Labor time estimated</li>
-          <li>✓ Sent to our estimator for final review</li>
-        </ul>
-        <p style="font-size:15px;color:var(--ink-soft);line-height:1.7;text-align:center">
-          You'll receive your <strong style="color:var(--navy)">professional estimate</strong> shortly. We'll email it to you and call to confirm scheduling.
-        </p>
-
-        <div id="submit-error"></div>
-
-        <div class="btn-row">
-          <a href="https://www.sanibuildingcorp.com" class="btn btn-secondary">← Back to Website</a>
-          <a href="tel:+13322770990" class="btn btn-navy">📞 Call Us Now</a>
-        </div>
+      <ol class="next-steps">
+        <li><strong>We review your list and photos.</strong> Every job on your list is priced.</li>
+        <li><strong>You get a flat-rate quote by email.</strong> You approve the price before we start.</li>
+        <li><strong>We call to schedule.</strong> Same-day visits when we can.</li>
+      </ol>
+      <div id="submit-error"></div>
+      <div class="btn-row">
+        <a href="https://www.sanibuildingcorp.com" class="btn btn-secondary">← Back to website</a>
+        <a href="tel:+13322770990" class="btn btn-primary">Call (332) 277-0990</a>
       </div>
     </div>
   </div>
 
   <div class="foot">
     <strong>Sani Building Corp</strong><br>
-    Fully Insured · 4.9 ★ · NYC Metro · Same-Day Service<br>
+    Fully insured · 4.9 ★ on Google · NYC Metro · Same-day service<br>
     <a href="tel:+13322770990">(332) 277-0990</a> · <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a>
   </div>
 </div>
 
 <script>
 /* ════════════════════════════════════════════════════════════════════
-   STATE
+   SERVICES AND THEIR ITEMS
+   The day-rate booking is not offered any more; Bathroom Refresh is.
    ════════════════════════════════════════════════════════════════════ */
+const SERVICES = [
+  { id: "general-repairs", icon: "🔨", name: "General Repairs", desc: "Doors, windows, locks, drywall, shelves",
+    items: ["Door", "Window", "Lock", "Hinge", "Drywall hole", "Caulking", "Cabinet door", "Shelf or rod", "Other"] },
+  { id: "painting-touchups", icon: "🎨", name: "Painting Touch-Ups", desc: "Walls, ceilings, trim, scuffs, patches",
+    items: ["Wall", "Ceiling", "Trim / baseboard", "Door", "Cabinet", "Other"] },
+  { id: "furniture-assembly", icon: "🪑", name: "Furniture Assembly", desc: "IKEA, beds, desks, wardrobes",
+    items: ["Bed frame", "Wardrobe / closet", "Desk", "Bookshelf", "Table", "Chair", "Dresser", "Other"] },
+  { id: "leak-plumbing", icon: "🚰", name: "Leak & Plumbing", desc: "Faucets, toilets, drains, supply lines",
+    items: ["Faucet", "Toilet", "Drain", "Showerhead", "Supply line", "Other"] },
+  { id: "tile-grout", icon: "🧱", name: "Tile & Grout Repair", desc: "Cracked tiles, regrouting, recaulking",
+    items: ["Cracked tiles", "Loose tiles", "Regrouting", "Recaulking", "Other"] },
+  { id: "light-electrical", icon: "💡", name: "Light & Electrical", desc: "Fixtures, fans, outlets, switches",
+    items: ["Light fixture", "Ceiling fan", "Outlet", "Switch", "Other"] },
+  { id: "bathroom-refresh", icon: "🛁", name: "Bathroom Refresh", desc: "Regrout, re-caulk, new faucet, vanity or toilet",
+    items: ["Regrout tub / shower", "Re-caulk", "New faucet", "New vanity", "New toilet", "Grab bars / accessories", "Shower wall panels", "Other"] },
+  { id: "property-manager", icon: "🏢", name: "Property Manager", desc: "Multi-unit, turnover, ongoing maintenance",
+    items: ["Turnover / make-ready", "Ongoing maintenance", "On-call repairs", "Emergency response", "Other"] }
+];
+const byId = {};
+SERVICES.forEach(function (s) { byId[s.id] = s; });
+
+const STEP_NAMES = ["What needs doing", "Your job list", "Photos", "A few questions", "Your contact info", "Done"];
+
 const state = {
-  service: null,
-  serviceName: null,
-  subcategory: null,
+  services: [],       // ids, in SERVICES order
+  items: {},          // id -> [item, ...]
+  single: {},         // job_size, place, access, parts, when
   questions: [],
   answers: {},
-  description: "",
-  photos: [],       // array of base64 strings
-  customer: { name: "", phone: "", email: "", address: "" },
-  preferredDate: "",
+  photos: [],
   preferredTime: "",
-  urgency: "flexible",
-  aiResult: null,
   currentStep: 1
-};
-
-const SERVICE_NAMES = {
-  "general-repairs": "General Repairs",
-  "painting-touchups": "Painting Touch-Ups",
-  "furniture-assembly": "Furniture Assembly",
-  "leak-plumbing": "Leak & Plumbing Fixes",
-  "tile-grout": "Tile & Grout Repair",
-  "light-electrical": "Light Fixture & Electrical",
-  "full-handyman-day": "Full Handyman Day",
-  "property-manager": "Property Manager Service"
 };
 
 /* ════════════════════════════════════════════════════════════════════
    NAVIGATION
    ════════════════════════════════════════════════════════════════════ */
 function goToStep(n) {
-  document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
+  document.querySelectorAll('.step').forEach(function (s) { s.classList.remove('active'); });
   document.getElementById('step-' + n).classList.add('active');
   state.currentStep = n;
   updateProgress(n);
@@ -783,98 +395,158 @@ function goToStep(n) {
 }
 
 function updateProgress(n) {
-  for (var i = 1; i <= 6; i++) {
-    var dot = document.querySelector('[data-step="' + i + '"]');
-    dot.classList.remove('active', 'done');
-    if (i < n) dot.classList.add('done');
-    else if (i === n) dot.classList.add('active');
-  }
-  for (var j = 1; j <= 5; j++) {
-    var line = document.querySelector('[data-line="' + j + '"]');
-    if (line) line.classList.toggle('done', j < n);
-  }
+  document.getElementById('step-name').textContent = STEP_NAMES[n - 1];
+  document.getElementById('step-count').textContent = n <= 5 ? 'Step ' + n + ' of 5' : 'Sent';
+  document.getElementById('bar-fill').style.width = Math.min(100, n * 20) + '%';
+}
+
+function showErr(id, msg) { const e = document.getElementById(id); if (e) e.textContent = msg || ''; }
+
+/* ════════════════════════════════════════════════════════════════════
+   STEP 1: SERVICES (tick as many as apply)
+   ════════════════════════════════════════════════════════════════════ */
+function renderServices() {
+  const grid = document.getElementById('service-grid');
+  grid.innerHTML = '';
+  SERVICES.forEach(function (s) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'service-card' + (state.services.indexOf(s.id) > -1 ? ' selected' : '');
+    b.dataset.service = s.id;
+    b.innerHTML = '<span class="service-icon">' + s.icon + '</span><span><span class="service-name">' + escapeHtml(s.name) +
+      '</span><span class="service-desc" style="display:block">' + escapeHtml(s.desc) + '</span></span><span class="tick">✓</span>';
+    b.addEventListener('click', function () { toggleService(s.id); });
+    grid.appendChild(b);
+  });
+  syncServices();
+}
+
+function toggleService(id) {
+  const i = state.services.indexOf(id);
+  if (i > -1) { state.services.splice(i, 1); delete state.items[id]; }
+  else state.services.push(id);
+  state.services.sort(function (a, b) { return SERVICES.indexOf(byId[a]) - SERVICES.indexOf(byId[b]); });
+  document.querySelectorAll('.service-card').forEach(function (c) { c.classList.toggle('selected', state.services.indexOf(c.dataset.service) > -1); });
+  syncServices();
+}
+
+function syncServices() {
+  const n = state.services.length;
+  document.getElementById('btn-1').disabled = n === 0;
+  document.getElementById('picked-count').textContent = n ? n + ' picked: ' + serviceNames().join(', ') : '';
+  showErr('err-1', '');
+}
+
+function serviceNames() { return state.services.map(function (id) { return byId[id].name; }); }
+
+function continueFromServices() {
+  if (!state.services.length) { showErr('err-1', 'Pick at least one.'); return; }
+  renderItems();
+  goToStep(2);
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 1: SERVICE SELECTION
+   STEP 2: THE JOB LIST, ITS SIZE AND THE PLACE
    ════════════════════════════════════════════════════════════════════ */
-document.querySelectorAll('.service-card').forEach(function(card) {
-  card.addEventListener('click', function() {
-    document.querySelectorAll('.service-card').forEach(function(c) { c.classList.remove('selected'); });
-    this.classList.add('selected');
-    state.service = this.dataset.service;
-    state.serviceName = SERVICE_NAMES[state.service];
-    renderSubcategory();
-    setTimeout(function() { goToStep(2); }, 250);
+function renderItems() {
+  const host = document.getElementById('item-blocks');
+  host.innerHTML = '';
+  state.services.forEach(function (id) {
+    const s = byId[id];
+    state.items[id] = state.items[id] || [];
+    const block = document.createElement('div');
+    block.className = 'svc-block';
+    block.innerHTML = '<div class="svc-head"><span>' + s.icon + '</span>' + escapeHtml(s.name) + '</div>';
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    s.items.forEach(function (item) {
+      const c = document.createElement('div');
+      c.className = 'chip' + (state.items[id].indexOf(item) > -1 ? ' selected' : '');
+      c.textContent = item;
+      c.addEventListener('click', function () {
+        const list = state.items[id];
+        const at = list.indexOf(item);
+        if (at > -1) list.splice(at, 1); else list.push(item);
+        c.classList.toggle('selected', at === -1);
+        showErr('err-2', '');
+      });
+      chips.appendChild(c);
+    });
+    block.appendChild(chips);
+    host.appendChild(block);
+  });
+}
+
+/* one-choice chip groups: job size, place, access, parts, when */
+document.querySelectorAll('.chips[data-single]').forEach(function (group) {
+  group.querySelectorAll('.chip').forEach(function (c) {
+    c.addEventListener('click', function () {
+      group.querySelectorAll('.chip').forEach(function (x) { x.classList.remove('selected'); });
+      c.classList.add('selected');
+      state.single[group.dataset.single] = c.textContent;
+      showErr('err-2', '');
+    });
   });
 });
 
-/* ════════════════════════════════════════════════════════════════════
-   STEP 2: SUB-CATEGORY  (what specifically — steers the AI)
-   ════════════════════════════════════════════════════════════════════ */
-const SUBCATEGORIES = {
-  "general-repairs": ["Door", "Window", "Lock", "Hinge", "Drywall", "Caulking", "Cabinet", "Shelf", "Other"],
-  "painting-touchups": ["Wall", "Ceiling", "Trim / Baseboard", "Door", "Cabinet", "Other"],
-  "furniture-assembly": ["Bed frame", "Wardrobe / Closet", "Desk", "Bookshelf", "Table", "Chair", "Dresser", "TV stand / mount", "Other"],
-  "leak-plumbing": ["Faucet", "Toilet", "Drain", "Showerhead", "Supply line", "Other"],
-  "tile-grout": ["Cracked tiles", "Loose tiles", "Regrouting", "Recaulking", "Other"],
-  "light-electrical": ["Light fixture", "Ceiling fan", "Outlet", "Switch", "Other"],
-  "full-handyman-day": ["General repairs", "Painting", "Plumbing", "Electrical", "Mixed / multiple"],
-  "property-manager": ["Turnover / make-ready", "Ongoing maintenance", "On-call repairs", "Emergency response", "Other"]
-};
+function allItems() {
+  const out = [];
+  state.services.forEach(function (id) { (state.items[id] || []).forEach(function (i) { out.push(i); }); });
+  return out;
+}
 
-function renderSubcategory() {
-  state.subcategory = null;
-  document.getElementById('sub-sub').textContent = 'Service: ' + state.serviceName;
-  const grid = document.getElementById('subcategory-grid');
-  grid.innerHTML = '';
-  const opts = SUBCATEGORIES[state.service] || ['Other'];
-  opts.forEach(function(opt) {
-    const o = document.createElement('div');
-    o.className = 'option';
-    o.textContent = opt;
-    o.addEventListener('click', function() {
-      grid.querySelectorAll('.option').forEach(function(x) { x.classList.remove('selected'); });
-      o.classList.add('selected');
-      state.subcategory = opt;
-    });
-    grid.appendChild(o);
+/* "General Repairs: Door, Hinge" - one line per service, for the dashboard */
+function jobList() {
+  return state.services.map(function (id) {
+    const items = state.items[id] || [];
+    return byId[id].name + (items.length ? ': ' + items.join(', ') : '');
   });
 }
 
-function continueFromSubcategory() {
-  if (!state.subcategory) { alert('Please pick what specifically needs work.'); return; }
+function ownWords() { return document.getElementById('own-words').value.trim(); }
+
+function continueFromList() {
+  const empty = state.services.filter(function (id) { return !(state.items[id] || []).length; });
+  if (empty.length && ownWords().length < 5) {
+    showErr('err-2', 'Tap what needs work under ' + empty.map(function (id) { return byId[id].name; }).join(' and ') + ', or write your list.');
+    return;
+  }
+  const need = [['job_size', 'how many things'], ['place', 'where the job is'], ['when', 'how soon']]
+    .filter(function (k) { return !state.single[k[0]]; });
+  if (need.length) { showErr('err-2', 'Please tell us ' + need.map(function (k) { return k[1]; }).join(', ') + '.'); return; }
   goToStep(3);
 }
 
 /* ════════════════════════════════════════════════════════════════════
    STEP 3: PHOTOS
    ════════════════════════════════════════════════════════════════════ */
-document.getElementById('photo-input').addEventListener('change', function(e) {
+document.getElementById('photo-input').addEventListener('change', function (e) {
   const files = Array.from(e.target.files || []);
-  files.forEach(function(file) {
-    if (state.photos.length >= 5) { alert('Maximum 5 photos'); return; }
+  files.forEach(function (file) {
+    if (state.photos.length >= 5) return;
     compressAndAdd(file);
   });
+  e.target.value = '';
 });
 
 async function compressAndAdd(file) {
   try {
     const compressed = await compressImage(file);
+    if (state.photos.length >= 5) return;
     state.photos.push(compressed);
     renderPhotoPreviews();
   } catch (e) {
     console.error('Compress failed:', e);
-    alert('Could not process this photo. Try a different one.');
+    alert('Could not use this photo. Try a different one.');
   }
 }
 
 function compressImage(file) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       const img = new Image();
-      img.onload = function() {
+      img.onload = function () {
         const maxDim = 1200;
         let w = img.width, h = img.height;
         if (w > maxDim || h > maxDim) {
@@ -897,12 +569,13 @@ function compressImage(file) {
 function renderPhotoPreviews() {
   const grid = document.getElementById('photo-previews');
   grid.innerHTML = '';
-  state.photos.forEach(function(b64, i) {
+  state.photos.forEach(function (b64, i) {
     const div = document.createElement('div');
     div.className = 'photo-thumb';
-    div.innerHTML = '<img src="' + b64 + '"><button class="pt-x" onclick="removePhoto(' + i + ')">×</button>';
+    div.innerHTML = '<img src="' + b64 + '" alt="Your photo ' + (i + 1) + '"><button type="button" class="pt-x" aria-label="Remove photo" onclick="removePhoto(' + i + ')">×</button>';
     grid.appendChild(div);
   });
+  document.getElementById('btn-3').textContent = state.photos.length ? 'Continue →' : 'Skip photos →';
 }
 
 function removePhoto(i) {
@@ -916,61 +589,70 @@ function continueFromPhotos() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 4: AI-GENERATED QUESTIONS (read from the photos + sub-category)
+   STEP 4: A FEW QUESTIONS (from the photos and the list; never asks again
+   what step 2 already answered - handyman-questions is told what is known)
    ════════════════════════════════════════════════════════════════════ */
-async function generateQuestions() {
-  document.getElementById('step-4-sub').textContent = 'Reading your photos…';
-  document.getElementById('questions-container').innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div></div>';
+function knownAnswers() {
+  return { job_list: jobList(), job_size: state.single.job_size || '', place: state.single.place || '',
+    access: state.single.access || '', parts: state.single.parts || '', when: state.single.when || '' };
+}
 
+async function generateQuestions() {
+  document.getElementById('step-4-sub').textContent = state.photos.length ? 'Looking at your photos…' : 'Getting your questions…';
+  document.getElementById('questions-container').innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div></div>';
+  showErr('err-4', '');
   try {
-    const photosForAI = state.photos.map(function(p) { return p.replace(/^data:image\/\w+;base64,/, ''); });
+    const photosForAI = state.photos.map(function (p) { return p.replace(/^data:image\/\w+;base64,/, ''); });
     const r = await fetch('/.netlify/functions/handyman-questions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        service: state.service,
-        serviceName: state.serviceName,
-        subcategory: state.subcategory,
+        service: state.services[0],
+        services: state.services,
+        serviceName: serviceNames().join(' + '),
+        subcategory: allItems().join(', ').slice(0, 60),
+        items: allItems(),
+        known: knownAnswers(),
         photoBase64Array: photosForAI
       })
     });
     if (!r.ok) throw new Error('Failed to load questions');
     const data = await r.json();
     state.questions = data.questions || [];
-    state.answers = {};
-    renderQuestions();
   } catch (e) {
     console.error(e);
-    document.getElementById('step-4-sub').textContent = 'Service: ' + state.serviceName;
-    document.getElementById('questions-container').innerHTML =
-      '<div class="error-box">Could not load questions. Tap ← Back to retry, or call (332) 277-0990.</div>';
+    /* never a dead end: one open question is enough to carry on */
+    state.questions = [{ id: 'description', label: 'Anything else we should know?', type: 'textarea', required: false, placeholder: 'Optional' }];
   }
+  state.answers = {};
+  renderQuestions();
 }
 
 function renderQuestions() {
-  document.getElementById('step-4-sub').textContent = 'Service: ' + state.serviceName + (state.subcategory ? ' · ' + state.subcategory : '');
+  const n = state.questions.filter(function (q) { return q.id !== 'description'; }).length;
+  document.getElementById('step-4-sub').textContent = n ? 'Tap the closest answer. "Not sure" is fine.' : 'Almost done.';
   const container = document.getElementById('questions-container');
   container.innerHTML = '';
 
-  state.questions.forEach(function(q) {
+  state.questions.forEach(function (q) {
     const wrap = document.createElement('div');
     wrap.className = 'question';
 
-    const label = document.createElement('label');
+    const label = document.createElement('span');
     label.className = 'question-label';
-    label.innerHTML = q.label + (q.required ? '<span class="req">*</span>' : '');
+    label.innerHTML = escapeHtml(q.label) + (q.required ? '<span class="req">*</span>' : '');
     wrap.appendChild(label);
 
     if (q.type === 'single_select' || q.type === 'multi_select') {
       const grid = document.createElement('div');
       grid.className = 'options-grid';
-      (q.options || []).forEach(function(opt) {
+      (q.options || []).forEach(function (opt) {
         const o = document.createElement('div');
         o.className = 'option';
         o.textContent = opt;
-        o.addEventListener('click', function() {
+        o.addEventListener('click', function () {
           if (q.type === 'single_select') {
-            grid.querySelectorAll('.option').forEach(function(x) { x.classList.remove('selected'); });
+            grid.querySelectorAll('.option').forEach(function (x) { x.classList.remove('selected'); });
             o.classList.add('selected');
             state.answers[q.id] = opt;
           } else {
@@ -979,10 +661,10 @@ function renderQuestions() {
             if (o.classList.contains('selected')) {
               if (state.answers[q.id].indexOf(opt) === -1) state.answers[q.id].push(opt);
             } else {
-              state.answers[q.id] = state.answers[q.id].filter(function(x) { return x !== opt; });
+              state.answers[q.id] = state.answers[q.id].filter(function (x) { return x !== opt; });
             }
           }
-          if (q.id === 'urgency') state.urgency = opt.toLowerCase();
+          showErr('err-4', '');
         });
         grid.appendChild(o);
       });
@@ -992,55 +674,44 @@ function renderQuestions() {
       ta.className = 'input-textarea';
       ta.placeholder = q.placeholder || '';
       ta.rows = 3;
-      ta.addEventListener('input', function() {
-        state.answers[q.id] = ta.value;
-        if (q.id === 'description') state.description = ta.value;
-      });
+      ta.addEventListener('input', function () { state.answers[q.id] = ta.value; });
       wrap.appendChild(ta);
     } else {
       const input = document.createElement('input');
       input.type = 'text';
       input.className = 'input-text';
       input.placeholder = q.placeholder || '';
-      input.addEventListener('input', function() { state.answers[q.id] = input.value; });
+      input.addEventListener('input', function () { state.answers[q.id] = input.value; });
       wrap.appendChild(input);
     }
-
     container.appendChild(wrap);
   });
 }
 
 function submitQuestions() {
-  const missing = state.questions.filter(function(q) {
+  const missing = state.questions.filter(function (q) {
     if (!q.required) return false;
     const v = state.answers[q.id];
-    if (v == null || v === '') return true;
-    if (Array.isArray(v) && v.length === 0) return true;
-    return false;
+    return v == null || v === '' || (Array.isArray(v) && v.length === 0);
   });
-  if (missing.length > 0) {
-    alert('Please answer: ' + missing.map(function(m) { return m.label; }).join(', '));
-    return;
-  }
-  if (state.answers.description) state.description = state.answers.description;
+  if (missing.length) { showErr('err-4', 'Please answer: ' + missing.map(function (m) { return m.label; }).join(', ')); return; }
   goToStep(5);
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 5: CONTACT FORM
+   STEP 5: CONTACT
    ════════════════════════════════════════════════════════════════════ */
-document.querySelectorAll('#time-options .option').forEach(function(opt) {
-  opt.addEventListener('click', function() {
-    document.querySelectorAll('#time-options .option').forEach(function(o) { o.classList.remove('selected'); });
+document.querySelectorAll('#time-options .option').forEach(function (opt) {
+  opt.addEventListener('click', function () {
+    document.querySelectorAll('#time-options .option').forEach(function (o) { o.classList.remove('selected'); });
     opt.classList.add('selected');
     state.preferredTime = opt.dataset.time;
   });
 });
 
 /* ════════════════════════════════════════════════════════════════════
-   STEP 6: SUBMIT REQUEST  (customer sees a confirmation, NOT a price)
-   The AI job file is still generated + saved so it appears in the
-   dashboard for the estimator to review, adjust, and send.
+   STEP 6: SEND  (the customer sees a confirmation, never a price)
+   The job file is still prepared and saved for the dashboard.
    ════════════════════════════════════════════════════════════════════ */
 function setAiStatus(title, sub) {
   const t = document.getElementById('ai-status-text');
@@ -1049,92 +720,95 @@ function setAiStatus(title, sub) {
   if (s) s.textContent = sub;
 }
 
+/* "Emergency today" -> "emergency-today", the value the dashboard reads */
+function urgencyValue() { return (state.single.when || 'Flexible').toLowerCase().replace(/\s+/g, '-'); }
+
+/* The brief comes first, so it is the first thing read in the dashboard,
+   the contractor email and the job-file prompt. */
+function buildAnswers() {
+  const out = {
+    services: serviceNames().join(', '),
+    job_list: jobList(),
+    list_in_own_words: ownWords(),
+    job_size: state.single.job_size || '',
+    place: state.single.place || '',
+    access: state.single.access || '',
+    parts: state.single.parts || '',
+    when: state.single.when || '',
+    item: allItems().join(', ')
+  };
+  Object.keys(state.answers).forEach(function (k) { if (k !== 'description' && !(k in out)) out[k] = state.answers[k]; });
+  return out;
+}
+
+function buildDescription() {
+  return [ownWords(), (state.answers.description || '').trim()].filter(Boolean).join('\n\n');
+}
+
 async function submitRequest() {
   const name = document.getElementById('cust-name').value.trim();
   const phone = document.getElementById('cust-phone').value.trim();
   const email = document.getElementById('cust-email').value.trim();
   const address = document.getElementById('cust-address').value.trim();
 
-  if (!name || !phone || !email || !address) {
-    document.getElementById('step-5-error').innerHTML = '<div class="error-box">Please fill in all required fields</div>';
-    return;
-  }
-  if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-    document.getElementById('step-5-error').innerHTML = '<div class="error-box">Please enter a valid email</div>';
-    return;
-  }
-  document.getElementById('step-5-error').innerHTML = '';
+  if (!name || !phone || !email || !address) { showErr('step-5-error', 'Please fill in your name, phone, email and address.'); return; }
+  if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { showErr('step-5-error', 'Please check your email address.'); return; }
+  showErr('step-5-error', '');
 
-  state.customer = { name: name, phone: phone, email: email, address: address };
-  state.preferredDate = document.getElementById('cust-date').value;
-
-  // include the sub-category as a captured answer so the dashboard shows it
-  const answersOut = Object.assign({ item: state.subcategory || '' }, state.answers);
+  const customer = { name: name, phone: phone, email: email, address: address };
+  const preferredDate = document.getElementById('cust-date').value;
+  const answersOut = buildAnswers();
+  const description = buildDescription();
+  const service = state.services[0];
+  const serviceName = serviceNames().join(' + ');
+  const subcategory = allItems().join(', ');
 
   goToStep(6);
   document.getElementById('ai-loading-card').innerHTML =
     '<div class="ai-loading"><div class="ai-spinner"></div>' +
-    '<div class="ai-status" id="ai-status-text">Analyzing your photos...</div>' +
-    '<div class="ai-substatus" id="ai-substatus-text">Our AI is reviewing the details and preparing your job file</div></div>';
+    '<div class="ai-status" id="ai-status-text">Sending your request…</div>' +
+    '<div class="ai-substatus" id="ai-substatus-text">This takes a few seconds</div></div>';
   document.getElementById('ai-loading-card').style.display = 'block';
   document.getElementById('result-content').style.display = 'none';
 
   const statuses = [
-    { title: '🔍 Analyzing your photos...', sub: 'Looking at the details to understand the job' },
-    { title: '🧠 Reviewing your answers...', sub: 'Matching tools and materials' },
-    { title: '🧰 Preparing your job file...', sub: 'For our estimator to review' },
-    { title: '📨 Sending to our estimator...', sub: 'Almost done!' }
+    { title: 'Sending your request…', sub: 'This takes a few seconds' },
+    { title: 'Reading your job list…', sub: 'Every item gets looked at' },
+    { title: 'Preparing your job file…', sub: 'For our estimator' },
+    { title: 'Almost done…', sub: 'Saving your photos' }
   ];
   let statusIdx = 0;
-  const statusInterval = setInterval(function() {
+  const statusInterval = setInterval(function () {
     statusIdx = (statusIdx + 1) % statuses.length;
     setAiStatus(statuses[statusIdx].title, statuses[statusIdx].sub);
   }, 2200);
 
-  // 1. Build the AI job file for the dashboard. Failure never blocks the lead.
+  // 1. The job file for the dashboard. A failure never blocks the request.
   let aiResult = null;
   try {
-    const photosForAI = state.photos.map(function(p) { return p.replace(/^data:image\/\w+;base64,/, ''); });
+    const photosForAI = state.photos.map(function (p) { return p.replace(/^data:image\/\w+;base64,/, ''); });
     const ar = await fetch('/.netlify/functions/handyman-analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service: state.service,
-        serviceName: state.serviceName,
-        subcategory: state.subcategory,
-        answers: answersOut,
-        photoBase64Array: photosForAI,
-        urgency: state.urgency,
-        description: state.description
-      })
+      body: JSON.stringify({ service: service, serviceName: serviceName, subcategory: subcategory, answers: answersOut,
+        photoBase64Array: photosForAI, urgency: urgencyValue(), description: description })
     });
     if (ar.ok) aiResult = await ar.json();
   } catch (e) {
     console.error('analyze failed (continuing):', e);
   }
-  state.aiResult = aiResult;
 
-  // 2. Save the lead + send the customer the "request received" email.
+  // 2. Save the request and email the customer "request received".
   try {
     const r = await fetch('/.netlify/functions/handyman-submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customer: state.customer,
-        service: state.service,
-        serviceName: state.serviceName,
-        subcategory: state.subcategory,
-        urgency: state.urgency,
-        answers: answersOut,
-        description: state.description,
-        photos: state.photos,
-        aiResult: state.aiResult,
-        preferredDate: state.preferredDate,
-        preferredTime: state.preferredTime
-      })
+      body: JSON.stringify({ customer: customer, service: service, serviceName: serviceName, subcategory: subcategory,
+        urgency: urgencyValue(), answers: answersOut, description: description, photos: state.photos, aiResult: aiResult,
+        preferredDate: preferredDate, preferredTime: state.preferredTime })
     });
     if (!r.ok) {
-      const err = await r.json().catch(function() { return { error: 'Submit failed' }; });
+      const err = await r.json().catch(function () { return { error: 'Submit failed' }; });
       throw new Error(err.error || 'Submit failed');
     }
     const data = await r.json();
@@ -1147,12 +821,12 @@ async function submitRequest() {
     clearInterval(statusInterval);
     console.error(e);
     document.getElementById('ai-loading-card').innerHTML =
-      '<div style="text-align:center;padding:40px 20px">' +
-      '<div style="font-size:48px;margin-bottom:12px">⚠️</div>' +
-      '<div class="ai-status">Could not send your request</div>' +
-      '<div class="ai-substatus" style="margin-bottom:20px">' + (e.message || 'Please try again') + '</div>' +
-      '<button class="btn btn-primary" onclick="submitRequest()">Try Again</button>' +
-      ' <button class="btn btn-secondary" onclick="goToStep(5)">Edit Details</button>' +
+      '<div class="ai-loading">' +
+      '<div class="ai-status">We could not send your request</div>' +
+      '<div class="ai-substatus" style="margin-bottom:6px">' + escapeHtml(e.message || 'Please try again') + '</div>' +
+      '<div class="ai-substatus">Or call us: <a href="tel:+13322770990" style="color:var(--ink);font-weight:700">(332) 277-0990</a></div>' +
+      '<div class="btn-row"><button class="btn btn-secondary" onclick="goToStep(5)">Edit details</button>' +
+      '<button class="btn btn-primary" onclick="submitRequest()">Try again</button></div>' +
       '</div>';
   }
 }
@@ -1163,6 +837,17 @@ function escapeHtml(t) {
   div.textContent = String(t);
   return div.innerHTML;
 }
+
+/* /handyman-estimate?service=bathroom-refresh opens with that service ticked
+   (the "Get a Bathroom Quote" button on /handyman). */
+(function () {
+  try {
+    const want = new URLSearchParams(location.search).get('service');
+    if (want && byId[want]) state.services.push(want);
+  } catch (e) {}
+  renderServices();
+  updateProgress(1);
+})();
 </script>
 </body>
 </html>

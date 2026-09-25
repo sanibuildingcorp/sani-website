@@ -9320,8 +9320,34 @@ const SERVICE_ICONS = {
   "tile-grout": "🧱",
   "light-electrical": "💡",
   "full-handyman-day": "📅",
+  "bathroom-refresh": "🛁",
   "property-manager": "🏢"
 };
+
+/* THE JOB AT A GLANCE. "Clear job brief in dashboard": the handyman form now
+   asks the job list, how many things, the place, floor and access, the parts
+   and how soon on one page, and they arrive in answers. They are shown first,
+   in plain words, before the photos and the AI analysis. Older bookings have
+   none of these and show nothing extra. */
+function handymanBrief(b) {
+  var a = (b && b.answers) || {};
+  var list = Array.isArray(a.job_list) ? a.job_list : [];
+  var rows = [["📏 Size", a.job_size], ["🏠 Place", a.place], ["🪜 Floor / access", a.access], ["📦 Parts", a.parts], ["⏰ How soon", a.when],
+    ["📅 Preferred", [b.preferred_date, b.preferred_time].filter(Boolean).join(" · ")]].filter(function (r) { return r[1]; });
+  if (!list.length && !rows.length) return "";
+  return '<div class="h-section" id="h-brief" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px">' +
+    '<div class="h-section-title">📋 Job at a glance</div>' +
+    (list.length ? '<ol style="margin:4px 0 10px 20px;padding:0;font-size:14.5px;line-height:1.7;color:var(--ink)">' +
+      list.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ol>' : '') +
+    (a.list_in_own_words ? '<div style="font-size:13.5px;color:var(--ink-soft);white-space:pre-wrap;margin-bottom:10px;font-style:italic">"' + esc(a.list_in_own_words) + '"</div>' : '') +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px">' +
+      rows.map(function (r) {
+        return '<div style="background:var(--bg,#f5f0e8);border-radius:8px;padding:8px 10px"><div style="font-size:11px;color:var(--ink-muted);letter-spacing:.5px;text-transform:uppercase">' + r[0] + '</div>' +
+          '<div style="font-size:14px;font-weight:600;color:var(--ink)">' + esc(r[1]) + '</div></div>';
+      }).join('') +
+    '</div>' +
+  '</div>';
+}
 
 let currentHandymanBooking = null;
 
@@ -9434,6 +9460,9 @@ function renderHandymanList() {
             '<span>·</span>' +
             '<span>' + fmtDate(b.submitted_at) + '</span>' +
             (photoCount > 0 ? '<span>·</span><span>📷 ' + photoCount + '</span>' : '') +
+            /* the size and the place, so a long list is seen before it is opened */
+            ((b.answers || {}).job_size ? '<span>·</span><span>📏 ' + esc(b.answers.job_size) + '</span>' : '') +
+            ((b.answers || {}).place ? '<span>·</span><span>🏠 ' + esc(b.answers.place) + '</span>' : '') +
             '<span>·</span>' +
             '<span style="font-family:monospace;font-size:11px">' + esc(b.ref) + '</span>' +
           '</div>' +
@@ -9530,6 +9559,7 @@ function renderHandymanModal(b) {
       '</div>' +
       '<div class="h-alert-urgency ' + urgency + '">' + urgencyLabel + '</div>' +
     '</div>' +
+    handymanBrief(b) +
     '<div class="h-hero-grid">' +
       '<div class="h-hero-block">' +
         '<div class="h-hero-block-title">' +

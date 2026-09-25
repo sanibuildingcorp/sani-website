@@ -36,8 +36,15 @@ exports.handler = async function (event) {
   const serviceName = body.serviceName || (QUESTIONS[serviceId] ? serviceId : "Handyman Service");
   const subcategory = (body.subcategory || "").toString().slice(0, 60);
   const photos = Array.isArray(body.photoBase64Array) ? body.photoBase64Array.filter(Boolean) : [];
+  /* THE FORM MODE. handyman-estimate.html now asks the job list, how many
+     things, the place, floor and access, who buys the parts and how soon on
+     its own page, and sends them here as `known`. "Smarter questions, fewer":
+     none of those is asked again, and at most MAX_FORM questions come back. */
+  const known = body.known && typeof body.known === "object" ? body.known : null;
+  const services = (Array.isArray(body.services) ? body.services : [serviceId]).filter(function (s) { return QUESTIONS[s]; });
+  const items = (Array.isArray(body.items) ? body.items : []).map(function (x) { return String(x).slice(0, 40); }).slice(0, 30);
 
-  const fallback = QUESTIONS[serviceId] || GENERIC_FALLBACK;
+  const fallback = known ? formFallback(services) : (QUESTIONS[serviceId] || GENERIC_FALLBACK);
 
   // No photos, or no API key -> hand-written questions for this service.
   const apiKey = process.env.OPENAI_API_KEY;
@@ -47,10 +54,10 @@ exports.handler = async function (event) {
 
   // Photos present -> ask the vision model for tailored questions.
   try {
-    const aiQuestions = await generateFromPhotos(apiKey, serviceName, photos, subcategory);
+    const aiQuestions = await generateFromPhotos(apiKey, serviceName, photos, subcategory, known, items);
     const cleaned = sanitizeQuestions(aiQuestions);
-    const final = ensureCoreQuestions(cleaned);
-    if (final.length >= 3) {
+    const final = known ? formQuestions(cleaned) : ensureCoreQuestions(cleaned);
+    if (final.length >= (known ? 1 : 3)) {
       return { statusCode: 200, headers: cors(), body: JSON.stringify({ service: serviceId, questions: final, source: "ai" }) };
     }
     return { statusCode: 200, headers: cors(), body: JSON.stringify({ service: serviceId, questions: fallback, source: "static_thin" }) };
@@ -63,7 +70,8 @@ exports.handler = async function (event) {
 // ════════════════════════════════════════════════════════════════════
 // VISION: ask gpt-4o-mini for tailored follow-up questions
 // ════════════════════════════════════════════════════════════════════
-async function generateFromPhotos(apiKey, serviceName, photos, subcategory) {
+async function generateFromPhotos(apiKey, serviceName, photos, subcategory, known, items) {
+  if (known) return generateForForm(apiKey, serviceName, photos, known, items);
   const prompt =
     "You are an intake assistant for a NYC handyman company (Sani Building Corp). " +
     "The customer selected the service: \"" + serviceName + "\". " +
@@ -101,6 +109,43 @@ async function generateFromPhotos(apiKey, serviceName, photos, subcategory) {
     messages: [{ role: "user", content: content }]
   };
 
+  const raw = await openAIChat(apiKey, payload);
+  const text = (((raw.choices || [])[0] || {}).message || {}).content || "";
+  const jsonMatch = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").match(/\{[\s\S]*\}/);
+  const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+  return Array.isArray(parsed.questions) ? parsed.questions : [];
+}
+
+/* The form already knows the list, its size, the place and the timing. Ask only
+   what the photos and the list leave open. */
+async function generateForForm(apiKey, serviceName, photos, known, items) {
+  const list = Array.isArray(known.job_list) ? known.job_list.join("; ") : String(known.job_list || "");
+  const prompt =
+    "You are an intake assistant for a NYC handyman company (Sani Building Corp). " +
+    "The customer already told us: services \"" + serviceName + "\"; job list \"" + list.slice(0, 400) + "\"; " +
+    "how many things \"" + String(known.job_size || "").slice(0, 30) + "\"; place \"" + String(known.place || "").slice(0, 40) + "\"; " +
+    "floor/access \"" + String(known.access || "").slice(0, 40) + "\"; parts \"" + String(known.parts || "").slice(0, 30) + "\"; " +
+    "how soon \"" + String(known.when || "").slice(0, 30) + "\". " +
+    (photos.length ? "Study the attached job photo(s). " : "There are no photos. ") +
+    "Ask AT MOST " + MAX_FORM + " short questions, only about what is still unclear and would change the price or what to bring " +
+    "(for example the material, how bad the damage is, the size in words, what is broken). " +
+    "NEVER ask again about anything listed above: not the services or items, not how many things, not the place, floor, elevator or access, " +
+    "not who buys the parts or materials, not timing or urgency, not contact details, not price. " +
+    "Fewer is better: if the list and photos are clear, ask one question or none. " +
+    "Use single_select or multi_select with 3-5 short options; every one ends with \"Not sure\". " +
+    "Never require measurements, brands or model numbers. Set required:false on every question. " +
+    "Return ONLY raw JSON: {\"questions\":[{\"id\":\"slug\",\"label\":\"...\",\"type\":\"single_select|multi_select\",\"required\":false,\"options\":[\"..\"]}]}.";
+  const content = [{ type: "text", text: prompt }];
+  photos.slice(0, 4).forEach(function (b64) {
+    const clean = String(b64).replace(/^data:image\/\w+;base64,/, "");
+    content.push({ type: "image_url", image_url: { url: "data:image/jpeg;base64," + clean, detail: "low" } });
+  });
+  const payload = {
+    model: process.env.MINI_MODEL || "gpt-5-mini",
+    max_completion_tokens: 2000,
+    reasoning_effort: "minimal",
+    messages: [{ role: "user", content: content }]
+  };
   const raw = await openAIChat(apiKey, payload);
   const text = (((raw.choices || [])[0] || {}).message || {}).content || "";
   const jsonMatch = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").match(/\{[\s\S]*\}/);
@@ -183,6 +228,35 @@ function ensureCoreQuestions(list) {
   if (!desc) desc = { id: "description", label: "Anything else we should know?", type: "textarea", required: false, placeholder: "Optional — extra details that help us prepare." };
   list.push(desc);
   return list;
+}
+
+/* ── FORM MODE: never ask again what the form's own page answered ─────────
+   The step before this one asks the items, how many, the place, floor and
+   access, the parts and how soon. A question on any of those is dropped,
+   whoever wrote it (the model or the static lists below). */
+const MAX_FORM = 4;
+const ASKED_IN_FORM = /^(urgency|urgent|when|timing|how_soon|has_parts|has_replacement|has_replacement_tiles|has_fixture|has_paint|has_tools|materials_provided|parts|issue_count|quantity|job_count|how_many|property_type|building_type|place|location_type|access|floor|elevator|job_categories|repair_type|surface|furniture_type|issue_type|service_type|refresh_items|description)$/;
+const ASKED_WORDS = /\b(how soon|how urgent|urgen|when do you need|timing|who (?:will )?(?:buy|provide|supply)|do you (?:already )?have (?:the |any )?(?:parts|replacement|materials|paint|fixture)|how many (?:items|things|jobs|issues|pieces)|property type|type of property|which floor|what floor|floor level|elevator|walk-?up|access to)\b/i;
+
+function formQuestions(list) {
+  const kept = (list || []).filter(function (q) { return !ASKED_IN_FORM.test(q.id) && !ASKED_WORDS.test(q.label); })
+    .map(function (q) { return Object.assign({}, q, { required: false }); })
+    .slice(0, MAX_FORM);
+  kept.push({ id: "description", label: "Anything else we should know?", type: "textarea", required: false,
+    placeholder: "Optional: access notes, pets, building rules" });
+  return kept;
+}
+
+/* Several services: take turns, so each one gets its question in the four. */
+function formFallback(services) {
+  const lists = (services.length ? services : ["general-repairs"]).map(function (s) {
+    return (QUESTIONS[s] || []).filter(function (q) { return !ASKED_IN_FORM.test(q.id) && !ASKED_WORDS.test(q.label); });
+  });
+  const all = [];
+  for (let i = 0; all.length < MAX_FORM && lists.some(function (l) { return l.length > i; }); i++) {
+    lists.forEach(function (l) { const q = l[i]; if (q && all.length < MAX_FORM && !all.some(function (x) { return x.id === q.id; })) all.push(q); });
+  }
+  return formQuestions(all);
 }
 
 // Generic fallback if a service id is unknown
@@ -303,6 +377,20 @@ const QUESTIONS = {
       placeholder: "Example:\n1. Fix loose bedroom door\n2. Patch 4 holes in living room wall\n3. Install ceiling fan in kitchen\n..." }
   ],
 
+  /* "Bathroom Refresh" replaced "Full Handyman Day" on the form. */
+  "bathroom-refresh": [
+    { id: "refresh_items", label: "What should we refresh?", type: "multi_select", required: true,
+      options: ["Regrout tub / shower", "Re-caulk", "New faucet", "New vanity", "New toilet", "Grab bars / accessories", "Shower wall panels", "Other"] },
+    { id: "bath_condition", label: "How does the tub or shower look now?", type: "single_select", required: false,
+      options: ["Just dirty or stained", "Some mold in grout or caulk", "Cracked or missing grout", "Water damage or soft spots", "Not sure"] },
+    { id: "bath_surface", label: "What is on the shower walls?", type: "single_select", required: false,
+      options: ["Ceramic or porcelain tile", "Acrylic or fiberglass", "Stone", "Not sure"] },
+    { id: "has_parts", label: "Do you have the new faucet, vanity or toilet?", type: "single_select", required: false,
+      options: ["Yes, I have them", "Please bring them", "Help me choose", "Not needed"] },
+    { id: "description", label: "Anything else about the bathroom?", type: "textarea", required: false,
+      placeholder: "Example: Grout in the shower is black, want it white again..." }
+  ],
+
   "property-manager": [
     { id: "building_type", label: "Type of property?", type: "single_select", required: true,
       options: ["Single building", "2-5 buildings", "Property management firm", "Single landlord with units"] },
@@ -325,3 +413,6 @@ function cors() {
     "Content-Type": "application/json",
   };
 }
+
+/* for js/handyman-form.test.js */
+exports.formQuestions = formQuestions;
