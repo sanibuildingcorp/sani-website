@@ -66,6 +66,32 @@ function pricedCards(estimate, total) {
   return cards;
 }
 
+/* EACH POINT ONCE. The estimator's lists repeat themselves in other words -
+   "Wall and floor tile, with waste and spares" / "... spare quantities" /
+   "Wall & floor tile"; the same assumption with a ";" for a ".", or written
+   again in capitals with a few words changed. A line is dropped when at least
+   half of all its words and a kept line's are shared, when 85% of the shorter
+   one's (5+ words) are, or when all of a 3+ word line is inside one. The
+   first, usually fuller, wording stays. */
+function wordsOf(t) {
+  return C(t).toLowerCase().replace(/&/g, " and ").split(/[^a-z0-9]+/).filter((w) => w && w !== "and" && w !== "the" && w !== "a" && w !== "of")
+    .map((w) => (w.length > 3 && /s$/.test(w) && !/ss$/.test(w) ? w.slice(0, -1) : w));
+}
+function sameOnce(list) {
+  const kept = [];
+  A(list).forEach(function (t) {
+    const a = new Set(wordsOf(t));
+    if (!a.size) return;
+    const dup = kept.some(function (k) {
+      let both = 0; a.forEach((w) => { if (k.w.has(w)) both++; });
+      const union = a.size + k.w.size - both, small = Math.min(a.size, k.w.size);
+      return both / union >= 0.5 || (small >= 5 && both / small >= 0.85) || (small >= 3 && both === small);
+    });
+    if (!dup) kept.push({ t: t, w: a });
+  });
+  return kept.map((k) => k.t);
+}
+
 function header(doc, label, title, v, dateIso) {
   const cust = v.customer || {}, rq = v.request || {};
   doc.text("SANI BUILDING CORP", { size: 10, bold: true, color: GOLD, after: 2 });
@@ -164,7 +190,9 @@ function buildInternalPdf(record, opts) {
   const table = function (label, lines) {
     const list = A(lines).filter((l) => l && C(l.item));
     if (!list.length) return;
-    doc.band(label + "  ·  " + money(list.reduce((s, l) => s + num(l.qty) * num(l.rate), 0)), { size: 11.5 });
+    /* No amount on the heading: it is in Totals above, and printing it twice
+       read as counted twice ("Why there is two times materials and labor"). */
+    doc.band(label + "  ·  " + list.length + " line" + (list.length === 1 ? "" : "s"), { size: 11.5 });
     const cols = [CONTENT_W - 250, 80, 80, 90];
     doc.row([{ text: "Item", w: cols[0], bold: true, color: GREY }, { text: "Qty", w: cols[1], align: "right", bold: true, color: GREY }, { text: "Rate", w: cols[2], align: "right", bold: true, color: GREY }, { text: "Amount", w: cols[3], align: "right", bold: true, color: GREY }], { size: 9.5 });
     let section = null;
@@ -184,7 +212,7 @@ function buildInternalPdf(record, opts) {
   table("Materials", e.materials);
 
   const list = function (label, color, items) {
-    const xs = A(items).map((x) => C(typeof x === "string" ? x : (x && (x.item || x.text || x.label)))).filter(Boolean);
+    const xs = sameOnce(A(items).map((x) => C(typeof x === "string" ? x : (x && (x.item || x.text || x.label)))).filter(Boolean));
     if (!xs.length) return;
     doc.ensure(44);
     doc.text(label, { size: 11, bold: true, color: color, after: 2 });
@@ -204,4 +232,4 @@ function fileName(record, version) {
   return (version === "internal" ? "Internal-Estimate-" : "Estimate-") + (name ? name + "-" : "") + ref + ".pdf";
 }
 
-module.exports = { buildCustomerPdf, buildInternalPdf, fileName, pricedCards, money };
+module.exports = { buildCustomerPdf, buildInternalPdf, fileName, pricedCards, money, sameOnce };

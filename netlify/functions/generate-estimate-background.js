@@ -128,6 +128,8 @@ exports.handler = async function handler(event) {
     if (store) { try { await store.setJSON(ref, record); } catch (_) {} }
 
     const input = buildEstimatorInput(sourceRecord, body);
+    /* The PDF plans, for every AI stage that reads or prices the job. */
+    const docBlocks = anthropicKey ? documentBlocksForClaude(sourceRecord.request, sourceRecord) : [];
     /* ══ TEST MODE (lib/generator-lab.js). Off: "" - every prompt exactly as
        before. On: the foreman block and his lessons ride on every prompt.
        Non-enumerable, so it never enters JSON.stringify(input) or the scope
@@ -135,6 +137,7 @@ exports.handler = async function handler(event) {
     const labData = store ? await genLab.load(store) : genLab.clean(null);
     Object.defineProperty(input, "__lab", { value: genLab.labText(labData), enumerable: false });
     const timing = { startedAt: Date.now(), analysisMs: 0, estimateMs: 0, repairMs: 0, deterministicMs: 0, repairUsed: false };
+    if (docBlocks.length) timing.drawingsRead = docBlocks.length / 2;
     RUN_DEADLINE = timing.startedAt + RUN_MS;
     /* The stage, on the record, for the button. Best effort: a failed write
        changes nothing about the run. */
@@ -182,7 +185,7 @@ exports.handler = async function handler(event) {
            shares this budget with the answer, and a job with photos and a long
            thread thought past 16,000 before it finished the JSON. Same cap as
            the pricing pass; and callClaude tries once more, doubled, when cut. */
-        rawAnalysis = await callClaude(anthropicKey, analysisPrompt, 32000, null, photoBlocks);
+        rawAnalysis = await callWithDrawings(anthropicKey, analysisPrompt, 32000, photoBlocks, docBlocks, timing, "analysis");
         analysisEngine = `Anthropic ${CLAUDE_MODEL}` + (photoBlocks.length ? ` (with ${photoBlocks.length / 2} photos)` : "");
       } else {
         rawAnalysis = await callOpenAI(openaiKey, analysisPrompt);
@@ -223,7 +226,7 @@ exports.handler = async function handler(event) {
     await markStage("Pricing the work");
     const estimatePrompt = buildEstimatePrompt(input, projectAnalysis, marketResearch, anchor);
     const rawEstimate = anthropicKey
-      ? await callClaude(anthropicKey, estimatePrompt, 32000)
+      ? await callWithDrawings(anthropicKey, estimatePrompt, 32000, null, docBlocks, timing, "estimate")
       : await callOpenAI(openaiKey, estimatePrompt);
     let estimate = normalizeEstimate(parseAiJson(rawEstimate, "estimate"), input, projectAnalysis);
     /* Kept aside before applyDeterministicPricing touches a rate — see the repair pass. */
@@ -266,7 +269,7 @@ exports.handler = async function handler(event) {
            is the actual cause. Send the draft as the model wrote it. */
         const repairPrompt = buildRepairPrompt(input, projectAnalysis, preRepairDraft, validation, marketResearch);
         const rawRepair = anthropicKey
-          ? await callClaude(anthropicKey, repairPrompt, 32000)
+          ? await callWithDrawings(anthropicKey, repairPrompt, 32000, null, docBlocks, timing, "repair")
           : await callOpenAI(openaiKey, repairPrompt);
         let repaired = normalizeEstimate(parseAiJson(rawRepair, "repaired estimate"), input, projectAnalysis);
         deterministicStarted = Date.now();
@@ -715,6 +718,70 @@ function photoBlocksForClaude(request, record) {
   return blocks;
 }
 
+/* ══ THE DRAWINGS: PDF PLANS, READ AS DOCUMENTS ════════════════════════════
+     "Page 6 says ... 'no drawings' and quantities came from a typical 5 x 8
+      bathroom. Those notes do not match this estimate or the plans you
+      provided." - the review of SBC-260925-Y373, and it was literally true:
+   photoBlocksForClaude skips every non-image upload, so the plans never
+   reached any AI and 13 bathrooms were priced from a guessed room size.
+   Now every PDF - on the request, or sent later in a message - goes to the
+   AI as a document block (the bid analyzer already reads its packages the
+   same way), labelled, capped at MAX_DOCS_TO_READ. callWithDrawings retries
+   without them if the API refuses a file (too many pages, unreachable), so a
+   bad upload can never cost the estimate. */
+const MAX_DOCS_TO_READ = 3;
+function documentBlocksForClaude(request, record) {
+  const files = [];
+  (Array.isArray(request && request.photos) ? request.photos : []).forEach(function (p) {
+    if (p && p.kind === "file") files.push({ name: p.name, data: String(p.data || "").trim(), from: "the customer's request" });
+  });
+  let msgs = [];
+  try { msgs = thread.normalizeThread(record || {}); } catch (e) { msgs = []; }
+  msgs.forEach(function (m) {
+    (Array.isArray(m && m.attachments) ? m.attachments : []).forEach(function (a) {
+      if (a && a.kind !== "image" && a.url) files.push({ name: a.name, data: String(a.url).trim(), from: "a message from the " + (m.from === "contractor" ? "contractor" : "customer") });
+    });
+  });
+  const blocks = [];
+  let n = 0;
+  files.forEach(function (f) {
+    if (n >= MAX_DOCS_TO_READ || !f.data) return;
+    let source = null;
+    const m = /^data:application\/pdf;base64,([A-Za-z0-9+/=]+)$/.exec(f.data);
+    if (m) source = { type: "base64", media_type: "application/pdf", data: m[1] };
+    else if (/^https:\/\/\S+\.pdf(?:[?#]\S*)?$/i.test(f.data)) source = { type: "url", url: f.data };
+    if (!source) return;
+    n += 1;
+    blocks.push({ type: "text", text: "Drawing / document " + n + " \u2014 " + (cleanText(f.name) || "file").slice(0, 80) + ", from " + f.from });
+    blocks.push({ type: "document", source: source });
+  });
+  return blocks;
+}
+
+/* Said to the AI whenever drawings are attached, at the end of its prompt. */
+function drawingsRule(count, stage) {
+  if (!count) return "";
+  return "\n\nPROJECT DRAWINGS ATTACHED (" + count + " file" + (count === 1 ? "" : "s") + "). Read every page. " +
+    (stage === "analysis"
+      ? "Take room sizes, fixture counts and finish areas from the drawings - per room, then totalled - and put them in quantities. In assumptions, say which quantities came from which drawing and which are still assumed because the drawings do not show them. Where the drawings contradict the description, record it in conflicts."
+      : "The quantities in the project understanding were taken from them; check your line quantities against the drawings. Never write that there are no drawings.");
+}
+
+/* Try with the drawings; if the API refuses the request because of a file,
+   try once without them and say so on the record. */
+async function callWithDrawings(apiKey, prompt, maxTokens, blocks, docBlocks, timing, stage) {
+  const docs = docBlocks || [];
+  if (!docs.length) return callClaude(apiKey, prompt, maxTokens, null, blocks);
+  try {
+    return await callClaude(apiKey, prompt + drawingsRule(docs.length / 2, stage), maxTokens, null, (blocks || []).concat(docs));
+  } catch (e) {
+    if (/token-limit|cut off/i.test(String(e && e.message))) throw e;
+    console.error("drawings could not be read (" + stage + "), retrying without them:", e && e.message);
+    if (timing) timing.drawingsSkipped = String((e && e.message) || e).slice(0, 200);
+    return callClaude(apiKey, prompt, maxTokens, null, blocks);
+  }
+}
+
 /* The last MAX_CONVERSATION_MESSAGES messages, oldest-first within that window so
    the exchange still reads in order, and hard-capped on characters so one long
    message cannot swallow the prompt. Returns [] for a record with no thread,
@@ -812,11 +879,11 @@ function buildAnchorBlock(anchor) {
 }
 
 function buildEstimatePrompt(input, analysis, research, anchor) {
-  return `You are the Senior Construction Estimator for Sani Building Corp in the NYC metro area.${buildHouseRulesBlock(input)}${buildResearchBlock(research)}${buildAnchorBlock(anchor)}\n\nYou receive a STRUCTURED project understanding prepared by another AI. Price the WHOLE documented project accurately and conservatively enough to protect the contractor while remaining market-realistic. Do not manufacture work that is unsupported.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nCUSTOMER / REQUEST INPUT:\n${JSON.stringify(input, null, 2)}\n\nSTRUCTURED PROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nESTIMATING METHOD:\n0. ${jobSize.SIZE_RULE_ESTIMATOR}\n1. Build the estimate TRADE BY TRADE. Every selected trade must receive appropriate labor and necessary contractor-supplied rough/installation materials.\n2. For substantial renovations, use production/crew logic instead of compressing the job into a few generic hourly lines.\n3. Separate meaningful operations: protection/setup, demo/removal, disposal/handling, preparation, rough work, installation, finish work, cleanup, project coordination.\n4. Every labor and material line for the work of a service MUST contain "section" equal to ONE OF THE CUSTOMER'S SELECTED SERVICES. "General" is NOT a permitted section, and neither is any service he did not select.\n4a. ONE PROJECT, SHARED WORK ONCE. Work that serves the whole job - site protection and setup, daily and final cleanup, debris removal and disposal, project coordination and supervision - is done ONCE for the whole project, not once per service. Price each such task ONCE, sized for the whole project, with "section": "Whole Project". Never repeat the same protection, cleanup, debris or coordination line under several services. The system divides these lines across the services by their share of the work, so every service price still includes its part.\n4b. A service that is the only service on the job carries its own protection, cleanup and coordination lines under its own name.\n4c. ITEMISE EVERY MATERIAL AS A REAL PRODUCT YOU COULD BUY. One line per product, with a real quantity, a real unit (ea, box, bag, roll, sheet, sf, lf, gal) and the price of ONE of them. \"Two-piece elongated toilet with seat, 1 ea, $199\" is right. \"Bathroom fixtures and accessories, 1 allowance, $4,200\" is WRONG and will be rejected. NEVER use \"allowance\", \"lump sum\", \"ls\", \"package\" or \"misc\" as a unit, and never roll several products into one line. A lump number cannot be checked against a real price, cannot be edited line by line, and cannot be explained to the customer - it is how this estimator once produced $22,700 of materials for a bathroom under 40 square feet. Small consumables may be grouped ONLY as a named kit under $150, for example \"Thinset, grout and sealant kit\".\\n4d. THE FINISH PRODUCT THE JOB IS FOR GETS ITS OWN MATERIAL LINE: the epoxy coating on an epoxy floor, the tile on a tile job, the flooring on a flooring job, the paint on a paint job - unless the customer supplies it. A primer, bonding coat, filler or leveler for that product does NOT replace it. List every contractor-supplied finish from the project understanding as a real product with quantity and unit price.\\n5. Customer-supplied finish materials: DO NOT charge purchase price for the finish product itself. DO include installation labor, handling if contractor responsibility, rough/connection materials, waterproofing/backer board/thinset/grout/sealant, plumbing fittings/connectors, wiring/boxes/fasteners as applicable, floor prep/adhesive/consumables, protection and disposal.\n6. Bathroom renovation generally requires protection, demolition/removal, debris handling/disposal, plumbing disconnect/rough/connection work where applicable, shower base/pan and drain preparation, waterproofing, substrate prep, tile installation, grout/sealant, fixture installation, shower glass, paint/finish work if requested, and cleanup.\n7. Flooring generally requires existing-floor removal if requested, debris disposal, subfloor evaluation/preparation, installation, cuts/fitting/transitions and cleanup. Do not add underlayment when customer explicitly says none.\n8. Painting must account for measured/estimated paintable area, prep, patching, protection, coats and included trim/doors/ceilings. Honor excluded rooms.\n9. Window replacement must include removal, disposal, opening prep, installation, insulation/sealant/flashing/weatherproofing and finish work appropriate to the request.\n10. Walk-up/access conditions require realistic carrying, debris movement and loading labor when documented.\n11. Multi-trade projects require project coordination/supervision when warranted.\n12. Do not use a "smallest reasonable interpretation" rule. Detailed customer information should produce a detailed estimate. A REPAIR is the exception: it is priced as a repair (rule 0), never grown into a renovation.\n13. Do not inflate by adding arbitrary contingency inside labor quantities. Use reasonable NYC production rates and the provided markup field.\n14. Do not double-mark up individual line rates. Return base contractor cost/rate and markupPct separately.\n15. If required information is unknown but analysis permits a preliminary estimate, state the assumption instead of silently choosing the cheapest interpretation.\n16. NEVER produce options or alternatives: no "Option A / Option B" lines, no alternate scope, no add-on offers. Price the base job only; an alternative the customer mentioned goes into assumptions as not priced. options must be an empty array.\n17. Do not put customer-supplied finish purchases in materials. Record them under customerSupplied.\n18. Do not omit low-visibility but real work such as setup, protection, hauling, cleanup or sealants.\n19. The project understanding already records the customer's own exclusions per trade in confirmed_scope[].customer_exclusions, and those are shown to him against that service. Do NOT repeat them in your "exclusions" array. Use your exclusions array ONLY for project-wide risks he did not raise (permits, concealed conditions, asbestos/mold, structural, out-of-hours work). Returning generic boilerplate risks while his stated exclusions go missing is the worst failure this estimate can have: he asked for this breakdown precisely so he could see what each service does not include.\n\nNYC-METRO LABOR GUIDANCE (use professional judgment, not blindly):\n- General labor / demolition / helper: often $60-$90/hr contractor cost basis\n- Painter / finisher: often $65-$90/hr\n- Skilled carpenter / tile installer / flooring installer: often $90-$135/hr\n- Plumber / electrician / specialist: often $120-$175/hr\n- Project coordination / supervisor: often $95-$150/hr\nThese are guidelines only; complexity, access and skill level matter.\n\n${voice.VOICE}\n\nOUTPUT JSON ONLY:\n{\n  "projectTitle": "",\n  "summary": "two short, calm sentences the customer reads",\n  "estimateStatus": "READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED",\n  "labor": [\n    { "section": "Bathroom", "item": "Bathroom demolition and debris loading", "qty": 24, "unit": "hrs", "rate": 75 }\n  ],\n  "materials": [\n    { "section": "Bathroom", "item": "Two-piece elongated toilet with seat", "qty": 1, "unit": "ea", "rate": 199 },\\n    { "section": "Bathroom", "item": "Single-sink vanity with top, 36 in", "qty": 1, "unit": "ea", "rate": 549 },\\n    { "section": "Bathroom", "item": "Waterproofing membrane, 100 sq ft roll", "qty": 2, "unit": "roll", "rate": 119 },\\n    { "section": "Bathroom", "item": "Large-format tile mortar, 50 lb bag", "qty": 6, "unit": "bag", "rate": 29.97 }\n  ],\n  "customerSupplied": [\n    { "section": "Bathroom", "item": "Vanity", "note": "Purchase price excluded; installation and required connections included" }\n  ],\n  "exclusions": [],\n  "options": [],\n  "timelineText": "one or two short sentences: how long the work takes once it starts; building approval, if any, usually under a week",\n  "markupPct": 25,\n  "assumptions": [],\n  "internalScopeChecklist": [\n    { "trade": "Bathroom", "covered": true, "notes": "" }\n  ],\n  "notes": "Internal estimator notes only"\n}`;
+  return `You are the Senior Construction Estimator for Sani Building Corp in the NYC metro area.${buildHouseRulesBlock(input)}${buildResearchBlock(research)}${buildAnchorBlock(anchor)}\n\nYou receive a STRUCTURED project understanding prepared by another AI. Price the WHOLE documented project accurately and conservatively enough to protect the contractor while remaining market-realistic. Do not manufacture work that is unsupported.\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nCUSTOMER / REQUEST INPUT:\n${JSON.stringify(input, null, 2)}\n\nSTRUCTURED PROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nESTIMATING METHOD:\n0. ${jobSize.SIZE_RULE_ESTIMATOR}\n1. Build the estimate TRADE BY TRADE. Every selected trade must receive appropriate labor and necessary contractor-supplied rough/installation materials.\n2. For substantial renovations, use production/crew logic instead of compressing the job into a few generic hourly lines.\n3. Separate meaningful operations: protection/setup, demo/removal, disposal/handling, preparation, rough work, installation, finish work, cleanup, project coordination.\n4. Every labor and material line for the work of a service MUST contain "section" equal to ONE OF THE CUSTOMER'S SELECTED SERVICES. "General" is NOT a permitted section, and neither is any service he did not select.\n4a. ONE PROJECT, SHARED WORK ONCE. Work that serves the whole job - site protection and setup, daily and final cleanup, debris removal and disposal, project coordination and supervision - is done ONCE for the whole project, not once per service. Price each such task ONCE, sized for the whole project, with "section": "Whole Project". Never repeat the same protection, cleanup, debris or coordination line under several services. The system divides these lines across the services by their share of the work, so every service price still includes its part.\n4b. A service that is the only service on the job carries its own protection, cleanup and coordination lines under its own name.\n4c. ITEMISE EVERY MATERIAL AS A REAL PRODUCT YOU COULD BUY. One line per product, with a real quantity, a real unit (ea, box, bag, roll, sheet, sf, lf, gal) and the price of ONE of them. \"Two-piece elongated toilet with seat, 1 ea, $199\" is right. \"Bathroom fixtures and accessories, 1 allowance, $4,200\" is WRONG and will be rejected. NEVER use \"allowance\", \"lump sum\", \"ls\", \"package\" or \"misc\" as a unit, and never roll several products into one line. A lump number cannot be checked against a real price, cannot be edited line by line, and cannot be explained to the customer - it is how this estimator once produced $22,700 of materials for a bathroom under 40 square feet. Small consumables may be grouped ONLY as a named kit under $150, for example \"Thinset, grout and sealant kit\".\\n4d. THE FINISH PRODUCT THE JOB IS FOR GETS ITS OWN MATERIAL LINE: the epoxy coating on an epoxy floor, the tile on a tile job, the flooring on a flooring job, the paint on a paint job - unless the customer supplies it. A primer, bonding coat, filler or leveler for that product does NOT replace it. List every contractor-supplied finish from the project understanding as a real product with quantity and unit price.\\n5. Customer-supplied finish materials: DO NOT charge purchase price for the finish product itself. DO include installation labor, handling if contractor responsibility, rough/connection materials, waterproofing/backer board/thinset/grout/sealant, plumbing fittings/connectors, wiring/boxes/fasteners as applicable, floor prep/adhesive/consumables, protection and disposal.\n6. Bathroom renovation generally requires protection, demolition/removal, debris handling/disposal, plumbing disconnect/rough/connection work where applicable, shower base/pan and drain preparation, waterproofing, substrate prep, tile installation, grout/sealant, fixture installation, shower glass, paint/finish work if requested, and cleanup.\n7. Flooring generally requires existing-floor removal if requested, debris disposal, subfloor evaluation/preparation, installation, cuts/fitting/transitions and cleanup. Do not add underlayment when customer explicitly says none.\n8. Painting must account for measured/estimated paintable area, prep, patching, protection, coats and included trim/doors/ceilings. Honor excluded rooms.\n9. Window replacement must include removal, disposal, opening prep, installation, insulation/sealant/flashing/weatherproofing and finish work appropriate to the request.\n10. Walk-up/access conditions require realistic carrying, debris movement and loading labor when documented.\n11. Multi-trade projects require project coordination/supervision when warranted.\n12. Do not use a "smallest reasonable interpretation" rule. Detailed customer information should produce a detailed estimate. A REPAIR is the exception: it is priced as a repair (rule 0), never grown into a renovation.\n13. Do not inflate by adding arbitrary contingency inside labor quantities. Use reasonable NYC production rates and the provided markup field.\n14. Do not double-mark up individual line rates. Return base contractor cost/rate and markupPct separately.\n15. If required information is unknown but analysis permits a preliminary estimate, state the assumption instead of silently choosing the cheapest interpretation.\n16. NEVER produce options or alternatives: no "Option A / Option B" lines, no alternate scope, no add-on offers. Price the base job only; an alternative the customer mentioned goes into assumptions as not priced. options must be an empty array.\n17. Do not put customer-supplied finish purchases in materials. Record them under customerSupplied.\n18. Do not omit low-visibility but real work such as setup, protection, hauling, cleanup or sealants.\n19. The project understanding already records the customer's own exclusions per trade in confirmed_scope[].customer_exclusions, and those are shown to him against that service. Do NOT repeat them in your "exclusions" array. Use your exclusions array ONLY for project-wide risks he did not raise (permits, concealed conditions, asbestos/mold, structural, out-of-hours work). Returning generic boilerplate risks while his stated exclusions go missing is the worst failure this estimate can have: he asked for this breakdown precisely so he could see what each service does not include.\n20. NOTES CARRY NO MONEY. The system re-prices every line after you (house rates, markup, live material prices), so a total, a rate, a markup or a selling price written in "notes" is wrong by the time anyone reads it. In notes write only what to check, confirm or watch: open selections, quantities still assumed, site risks.\n\nNYC-METRO LABOR GUIDANCE (use professional judgment, not blindly):\n- General labor / demolition / helper: often $60-$90/hr contractor cost basis\n- Painter / finisher: often $65-$90/hr\n- Skilled carpenter / tile installer / flooring installer: often $90-$135/hr\n- Plumber / electrician / specialist: often $120-$175/hr\n- Project coordination / supervisor: often $95-$150/hr\nThese are guidelines only; complexity, access and skill level matter.\n\n${voice.VOICE}\n\nOUTPUT JSON ONLY:\n{\n  "projectTitle": "",\n  "summary": "two short, calm sentences the customer reads",\n  "estimateStatus": "READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED",\n  "labor": [\n    { "section": "Bathroom", "item": "Bathroom demolition and debris loading", "qty": 24, "unit": "hrs", "rate": 75 }\n  ],\n  "materials": [\n    { "section": "Bathroom", "item": "Two-piece elongated toilet with seat", "qty": 1, "unit": "ea", "rate": 199 },\\n    { "section": "Bathroom", "item": "Single-sink vanity with top, 36 in", "qty": 1, "unit": "ea", "rate": 549 },\\n    { "section": "Bathroom", "item": "Waterproofing membrane, 100 sq ft roll", "qty": 2, "unit": "roll", "rate": 119 },\\n    { "section": "Bathroom", "item": "Large-format tile mortar, 50 lb bag", "qty": 6, "unit": "bag", "rate": 29.97 }\n  ],\n  "customerSupplied": [\n    { "section": "Bathroom", "item": "Vanity", "note": "Purchase price excluded; installation and required connections included" }\n  ],\n  "exclusions": [],\n  "options": [],\n  "timelineText": "one or two short sentences: how long the work takes once it starts; building approval, if any, usually under a week",\n  "markupPct": 25,\n  "assumptions": [],\n  "internalScopeChecklist": [\n    { "trade": "Bathroom", "covered": true, "notes": "" }\n  ],\n  "notes": "Internal estimator notes only"\n}`;
 }
 
 function buildRepairPrompt(input, analysis, estimate, validation, research) {
-  return `You are performing a mandatory estimate QA repair for Sani Building Corp.${buildHouseRulesBlock(input)}${buildResearchBlock(research)}\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nThe previous estimate failed deterministic validation. Repair omissions; do not simply raise prices arbitrarily.\n\nCUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nPROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nFAILED DRAFT:\n${JSON.stringify(estimate, null, 2)}\n\nVALIDATION RESULTS:\n${JSON.stringify(validation, null, 2)}\n\nREPAIR RULES:\n- Correct every failure specifically.\n- Ensure every selected trade has labor and appropriate rough/installation materials.\n- Preserve all customer exclusions and customer-supplied finish materials.\n- Customer-supplied finish materials still need installation labor and supporting materials.\n- Add missing protection, demolition, disposal, handling, preparation, cleanup and coordination only where the documented scope requires them.\n- Recalculate quantities/durations using realistic crew/production logic.\n- Never add options or alternatives; options stays an empty array.\n- Never pad the estimate. Do not add a lump sum, a "contingency" line, or extra hours to make a total look bigger. A small job is meant to produce a small number.\n- Every line for a service's own work keeps a "section" equal to one of the customer's selected services; "General" is not a permitted section. Protection, cleanup, debris and coordination are priced ONCE for the whole project with "section": "Whole Project", never repeated per service.\n- Do not move the customer's own exclusions into your exclusions array. They belong to their trade in confirmed_scope[].customer_exclusions and are already shown there.\n- Return the COMPLETE replacement estimate, not a patch.\n\nUse exactly the same JSON schema as the original estimate request and return JSON only.`;
+  return `You are performing a mandatory estimate QA repair for Sani Building Corp.${buildHouseRulesBlock(input)}${buildResearchBlock(research)}\n\nSTRICT WORDING RULE: Never use the word "licensed" or make any licensing claim.\n\nThe previous estimate failed deterministic validation. Repair omissions; do not simply raise prices arbitrarily.\n\nCUSTOMER INPUT:\n${JSON.stringify(input, null, 2)}\n\nPROJECT UNDERSTANDING:\n${JSON.stringify(analysis, null, 2)}\n\nFAILED DRAFT:\n${JSON.stringify(estimate, null, 2)}\n\nVALIDATION RESULTS:\n${JSON.stringify(validation, null, 2)}\n\nREPAIR RULES:\n- Correct every failure specifically.\n- Ensure every selected trade has labor and appropriate rough/installation materials.\n- Preserve all customer exclusions and customer-supplied finish materials.\n- Customer-supplied finish materials still need installation labor and supporting materials.\n- Add missing protection, demolition, disposal, handling, preparation, cleanup and coordination only where the documented scope requires them.\n- Recalculate quantities/durations using realistic crew/production logic.\n- Never add options or alternatives; options stays an empty array.\n- Never pad the estimate. Do not add a lump sum, a "contingency" line, or extra hours to make a total look bigger. A small job is meant to produce a small number.\n- Every line for a service's own work keeps a "section" equal to one of the customer's selected services; "General" is not a permitted section. Protection, cleanup, debris and coordination are priced ONCE for the whole project with "section": "Whole Project", never repeated per service.\n- Do not move the customer's own exclusions into your exclusions array. They belong to their trade in confirmed_scope[].customer_exclusions and are already shown there.\n- "notes" carries no money: no totals, rates, markup or selling price - the lines are re-priced after you. Only what to check or confirm.\n- Return the COMPLETE replacement estimate, not a patch.\n\nUse exactly the same JSON schema as the original estimate request and return JSON only.`;
 }
 
 function normalizeProjectAnalysis(raw, input) {
@@ -864,6 +931,17 @@ function normalizeProjectAnalysis(raw, input) {
   return jobSize.trimRepairTrades(out);
 }
 
+/* NOTES CARRY NO MONEY. The estimator writes its notes before the lines are
+   re-priced (house rates, markup, live material prices), so a dollar figure in
+   them is stale on arrival: SBC-260925-Y373's notes said "labor $112,700 ...
+   about $164,200" beside an estimate of $68,083.20 labor and $107,869.05.
+   Rule 20 asks for none; this drops any sentence that still carries one. */
+function notesWithoutMoney(v) {
+  const t = cleanText(v);
+  if (!/\$\s?\d/.test(t)) return t;
+  return t.split(/(?<=[.!?])\s+/).filter(function (x) { return !/\$\s?\d/.test(x); }).join(" ").trim();
+}
+
 function normalizeEstimate(raw, input, analysis) {
   const cleanLines = (arr) => (Array.isArray(arr) ? arr : []).map((line) => ({ item: cleanText(line.item), qty: positiveNumber(line.qty), unit: cleanText(line.unit || "ea"), rate: positiveNumber(line.rate), section: titleCase(line.section || "General") || "General" })).filter((line) => line.item && line.qty > 0);
   const supplied = (Array.isArray(raw.customerSupplied) ? raw.customerSupplied : []).map((item) => typeof item === "string" ? { item: cleanText(item), section: "General", note: "Installation labor and required rough materials remain included" } : { item: cleanText(item.item), section: titleCase(item.section || "General"), note: cleanText(item.note || "Installation labor and required rough materials remain included") }).filter((item) => item.item);
@@ -886,7 +964,7 @@ function normalizeEstimate(raw, input, analysis) {
     markupPct: clamp(Number(raw.markupPct) || DEFAULT_MARKUP, 0, 100),
     assumptions: unique([...toStringArray(raw.assumptions), ...analysis.assumptions]),
     internalScopeChecklist: Array.isArray(raw.internalScopeChecklist) ? raw.internalScopeChecklist : [],
-    notes: cleanText(raw.notes),
+    notes: notesWithoutMoney(raw.notes),
   };
   /* Runs on the main AND repair paths, because it lives inside normalizeEstimate
      rather than beside one call of it. */

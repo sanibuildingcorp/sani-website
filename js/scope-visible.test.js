@@ -87,6 +87,11 @@ const DRAFT = {
     included: ['Sani will mask the kitchen cabinets, counters, appliances and floor', 'At both openings the plaster is cut back'],
     supplied: ['Paint and colour matching'],
     excluded: ['Wiring, device installation, cover plates', 'Repair of plaster outside the two existing openings']
+  }, {
+    /* A second service: a card lists its own price lines only when there is
+       more than one service - with one, they are the LABOR / MATERIALS lists
+       again ("why is this two times materials and labor listings?"). */
+    name: 'Painting', included: ['Two coats on the patched walls'], supplied: [], excluded: []
   }]
 };
 
@@ -118,6 +123,12 @@ console.log('\nevery part of the service card is on screen at the same time\n');
   ok('...and so are the price lines, at the same time',
     html.indexOf('Protection and dust containment') !== -1 &&
     html.indexOf('Gypsum board panel') !== -1);
+
+  const one = DRAFT.services.pop();
+  const single = render({});
+  DRAFT.services.push(one);
+  ok('...but with ONE service the card does not list them a second time; it says where they are',
+    single.indexOf('Protection and dust containment') === -1 && single.indexOf('Every line is in the LABOR and MATERIALS lists of this estimate.') !== -1);
 
   ok('EVERY ITEM IN EVERY GROUP IS RENDERED, not just the open one',
     ['Sani will mask the kitchen cabinets', 'Paint and colour matching',
