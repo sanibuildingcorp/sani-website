@@ -337,7 +337,7 @@ async function sendContractorEmail(booking, photoUrls) {
       <div style="font-size:13px;color:#555;margin-top:4px">📞 <a href="tel:${esc(booking.customer_phone)}" style="color:#b8930a;text-decoration:none">${esc(booking.customer_phone)}</a></div>
       <div style="font-size:13px;color:#555;margin-top:2px">✉️ <a href="mailto:${esc(booking.customer_email)}" style="color:#b8930a;text-decoration:none">${esc(booking.customer_email)}</a></div>
       <div style="font-size:13px;color:#555;margin-top:2px">📍 ${esc(booking.customer_address)}</div>
-      <div style="font-size:13px;color:#555;margin-top:6px">⏰ Urgency: <strong>${esc(booking.urgency)}</strong></div>
+      <div style="font-size:13px;color:#555;margin-top:6px">⏰ How soon: <strong>${esc(urgencyWords(booking.urgency))}</strong></div>
     </div>
 
     ${jobBriefHtml(booking.answers)}
@@ -433,51 +433,45 @@ async function sendCustomerEmail(booking) {
 
   const firstName = (booking.customer_name || "there").split(" ")[0];
 
-  const html = `<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#f5f0e8;font-family:Arial,sans-serif;color:#333">
+  /* THE CUSTOMER'S CONFIRMATION. "Yes go do all":
+     1. the AI's own note is NOT sent - it promised "we can come today" and a
+        "$100 deposit" the owner never approved; it is kept on the booking
+        (customer_notes) and shown in the dashboard as a suggestion;
+     2. urgency in plain words, not "emergency-today";
+     3. the customer's job list, not only the first service;
+     4. the calm natural look, no "analyzed by our AI" check marks. */
+  const a = booking.answers || {};
+  const list = Array.isArray(a.job_list) && a.job_list.length ? a.job_list : [booking.service_name];
+  const rows = [["Reference", booking.ref], ["How soon", urgencyWords(booking.urgency)], ["Place", a.place],
+    ["Preferred", [prettyDate(booking.preferred_date), booking.preferred_time].filter(Boolean).join(" · ")]]
+    .filter(function (r) { return r[1]; });
+  const html = `<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#faf8f4;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;color:#1f1d1a">
 <div style="max-width:600px;margin:0 auto">
-  <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d42);color:#fff;padding:32px 24px;border-radius:12px 12px 0 0;text-align:center">
-    <div style="font-size:22px;letter-spacing:3px;color:#c9a84c;font-weight:700">SANI BUILDING CORP</div>
-    <div style="font-size:11px;letter-spacing:2px;color:#aaa;margin-top:6px">HANDYMAN BOOKING RECEIVED</div>
+  <div style="background:#f3eee5;border:1px solid #e4ddd0;border-radius:16px 16px 0 0;padding:26px 28px 22px">
+    <div style="font-size:17px;font-weight:800;color:#1f1d1a">Sani Building Corp</div>
+    <div style="font-size:12px;letter-spacing:2px;color:#a8762a;font-weight:700;text-transform:uppercase;margin-top:4px">Request received</div>
   </div>
+  <div style="background:#ffffff;border:1px solid #e4ddd0;border-top:none;border-radius:0 0 16px 16px;padding:28px">
+    <h1 style="font-size:24px;margin:0 0 10px;color:#1f1d1a">Hi ${esc(firstName)},</h1>
+    <p style="font-size:16px;color:#57524b;line-height:1.6;margin:0">Thank you for your request. We have your job list, and we're preparing your flat-rate quote.</p>
 
-  <div style="background:#fff;padding:30px 28px;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 12px 12px">
-    <h1 style="color:#0d1b2a;font-size:22px;margin:0 0 14px">Hi ${esc(firstName)},</h1>
-
-    <p style="font-size:15px;color:#555;line-height:1.6">Thank you for reaching out to Sani Building Corp! Your request has been received and analyzed by our AI — our estimator is now preparing your professional estimate.</p>
-
-    <div style="background:#faf8f4;border-radius:10px;padding:18px;margin:20px 0">
-      <div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:10px">Your Request</div>
-      <div style="font-size:14px;color:#333;line-height:1.8">
-        <strong>Service:</strong> ${esc(booking.service_name)}<br>
-        <strong>Reference:</strong> ${esc(booking.ref)}<br>
-        <strong>Urgency:</strong> ${esc(booking.urgency)}
-      </div>
+    <div style="background:#faf8f4;border:1px solid #e4ddd0;border-radius:12px;padding:18px 20px;margin:22px 0">
+      <div style="font-size:12px;letter-spacing:2px;color:#7a746b;text-transform:uppercase;margin-bottom:8px">Your job list</div>
+      <ol style="margin:0 0 12px 20px;padding:0;font-size:16px;line-height:1.7;color:#1f1d1a">${list.map(function (l) { return `<li>${esc(l)}</li>`; }).join("")}</ol>
+      ${rows.map(function (r) { return `<div style="font-size:15px;color:#57524b;line-height:1.8"><strong style="color:#1f1d1a">${r[0]}:</strong> ${esc(r[1])}</div>`; }).join("")}
     </div>
 
-    <div style="background:#e8f5e8;border-left:4px solid #2ecc71;padding:16px 18px;margin:20px 0;border-radius:0 8px 8px 0">
-      <div style="font-size:11px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:8px">✓ Analyzed by our AI</div>
-      <div style="font-size:14px;color:#333;line-height:1.9">
-        ✓ Damage identified<br>
-        ✓ Materials estimated<br>
-        ✓ Labor time estimated<br>
-        ✓ Sent to our estimator for final review
-      </div>
+    <div style="font-size:12px;letter-spacing:2px;color:#7a746b;text-transform:uppercase;margin-bottom:8px">What happens next</div>
+    <div style="font-size:16px;color:#57524b;line-height:1.7">
+      <strong style="color:#1f1d1a">1.</strong> We review your list and photos.<br>
+      <strong style="color:#1f1d1a">2.</strong> You get a flat-rate quote by email. You approve the price before we start.<br>
+      <strong style="color:#1f1d1a">3.</strong> We call to schedule.
     </div>
 
-    ${booking.customer_notes ? `
-      <div style="background:#fff8e8;border:1px solid #c9a84c;border-radius:8px;padding:14px 16px;margin:20px 0">
-        <div style="font-size:11px;color:#b8930a;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Note from Sani</div>
-        <div style="font-size:14px;color:#444;line-height:1.6">${esc(booking.customer_notes)}</div>
-      </div>
-    ` : ""}
+    <p style="font-size:15px;color:#57524b;margin-top:24px">Questions? Reply to this email or call <a href="tel:+13322770990" style="color:#1f1d1a;text-decoration:none;font-weight:700">(332) 277-0990</a>.</p>
 
-    <p style="font-size:14px;color:#555;line-height:1.6;margin-top:24px"><strong>Next steps:</strong> Our estimator is preparing your professional estimate. You'll receive it shortly, and we'll call to confirm scheduling.</p>
-
-    <p style="font-size:13px;color:#777;margin-top:20px">Questions? Reply to this email or call <a href="tel:+13322770990" style="color:#b8930a;text-decoration:none;font-weight:600">(332) 277-0990</a>.</p>
-
-    <div style="margin-top:32px;padding-top:20px;border-top:1px solid #eee;text-align:center">
-      <div style="color:#888;font-size:11px;letter-spacing:2px;text-transform:uppercase">Sani Building Corp</div>
-      <div style="font-size:12px;color:#888;margin-top:4px">Fully Insured · 4.9 ★ · NYC Metro</div>
+    <div style="margin-top:28px;padding-top:18px;border-top:1px solid #e4ddd0;text-align:center;font-size:13px;color:#7a746b">
+      Sani Building Corp · Fully insured · 4.9 ★ on Google · NYC Metro
     </div>
   </div>
 </div>
@@ -488,7 +482,7 @@ async function sendCustomerEmail(booking) {
     to: [recipient],
     bcc: [contractorEmail],
     reply_to: ADDR.replyTo(),
-    subject: `Request Received: ${booking.service_name} · ${booking.ref}`,
+    subject: `Request received · ${booking.ref}`,
     html: html
   });
 }
@@ -508,6 +502,19 @@ function jobBriefHtml(a) {
       ${a.list_in_own_words ? `<div style="font-size:13px;color:#444;white-space:pre-wrap;margin-bottom:10px">"${esc(a.list_in_own_words)}"</div>` : ""}
       ${rows.map(function (r) { return `<div style="font-size:13px;color:#555;line-height:1.7"><strong>${r[0]}:</strong> ${esc(r[1])}</div>`; }).join("")}
     </div>`;
+}
+
+/* "emergency-today" -> "Emergency today" */
+function urgencyWords(u) {
+  const s = String(u || "").replace(/[-_]+/g, " ").trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+}
+
+/* "2026-09-26" -> "Sat, Sep 26" */
+function prettyDate(d) {
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(String(d))) return d || "";
+  const t = new Date(d + "T12:00:00Z");
+  return t.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 function sendResend(apiKey, payload) {

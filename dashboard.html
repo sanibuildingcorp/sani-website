@@ -9580,6 +9580,15 @@ function renderHandymanModal(b) {
         '<div class="h-ai-analysis">' +
           (b.job_summary ? esc(b.job_summary) : '<span style="color:var(--ink-muted);font-style:italic">AI did not generate a summary</span>') +
         '</div>' +
+        /* The AI's note used to be emailed to the customer on its own; it
+           promised same-day visits and deposits nobody approved. It is now
+           only shown here, for you to use or ignore. */
+        (b.customer_notes ? (
+          '<div id="h-ai-note" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)">' +
+            '<div style="font-size:11px;color:var(--ink-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">AI suggested note · not sent to the customer</div>' +
+            '<div style="font-size:13px;color:var(--ink-soft);line-height:1.5">' + esc(b.customer_notes) + '</div>' +
+          '</div>'
+        ) : '') +
         (b.customer_description ? (
           '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)">' +
             '<div style="font-size:11px;color:var(--ink-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Customer Said:</div>' +

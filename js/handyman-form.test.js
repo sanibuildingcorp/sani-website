@@ -80,6 +80,34 @@ const Q = require(path.join(ROOT, 'netlify/functions/handyman-questions.js'));
   ok('the job list goes first in its prompt, numbered', /JOB LIST:/.test(A));
   ok('a long list is flagged: quote each item, not a day rate', /Long job list - quote each item, not a day rate/.test(A));
 
+  console.log('\n5. The customer\'s confirmation email ("Yes go do all")\n');
+  {
+    const https = require('https'), { EventEmitter } = require('events');
+    const sent = [], real = https.request;
+    https.request = function (opts, cb) { const req = new EventEmitter(); let body = '';
+      req.write = (d) => { body += d; }; req.setTimeout = () => {};
+      req.end = () => { const res = new EventEmitter(); res.statusCode = 200; if (opts.hostname === 'api.resend.com') sent.push(JSON.parse(body));
+        cb(res); res.emit('data', Buffer.from(opts.hostname === 'api.resend.com' ? '{}' : '[{}]')); res.emit('end'); };
+      return req; };
+    Object.assign(process.env, { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SECRET_KEY: 'k', RESEND_API_KEY: 'r' });
+    const log = console.log, err = console.error; console.log = () => {}; console.error = () => {};
+    const sub = require(path.join(ROOT, 'netlify/functions/handyman-submit.js')).handler;
+    await sub({ httpMethod: 'POST', body: JSON.stringify({ customer: { name: 'Zurabi Test', phone: '1', email: 'z@example.com', address: 'x' },
+      service: 'general-repairs', serviceName: 'General Repairs', urgency: 'emergency-today', preferredDate: '2026-09-26', preferredTime: 'morning',
+      answers: { job_list: ['General Repairs: Door, Drywall hole', 'Bathroom Refresh: Re-caulk'], place: 'Apartment' },
+      aiResult: { estimate: { customerNotes: 'Thanks — we can come today. We recommend a small deposit ($100).' }, internalBrief: {}, confidence: {} } }) });
+    console.log = log; console.error = err; https.request = real;
+    const cust = sent.find((m) => m.to[0] === 'z@example.com') || { html: '' };
+    const mine = sent.find((m) => m.to[0] !== 'z@example.com') || { html: '' };
+    ok('1. the AI note ("we can come today", "$100 deposit") is NOT sent to the customer', !/come today|deposit|\$100/i.test(cust.html));
+    ok('2. urgency in plain words: "Emergency today", never "emergency-today"', /Emergency today/.test(cust.html) && !/emergency-today/.test(cust.html) && /How soon: <strong>Emergency today/.test(mine.html));
+    ok('3. the customer sees their whole job list', /<li>General Repairs: Door, Drywall hole<\/li><li>Bathroom Refresh: Re-caulk<\/li>/.test(cust.html));
+    ok('...and the date in words ("Sat, Sep 26 · morning")', /Sat, Sep 26 · morning/.test(cust.html));
+    ok('4. the calm look: no navy, no "analyzed by our AI" check marks', !/#0d1b2a|analyzed by our AI|Damage identified|Materials estimated/i.test(cust.html) && /#faf8f4/.test(cust.html));
+    ok('...you still get a copy (bcc), and never "licensed"', (cust.bcc || []).length === 1 && !/\blicensed\b/i.test(cust.html));
+    ok('the AI note is kept for you in the dashboard, marked "not sent"', /AI suggested note · not sent to the customer/.test(D) && /esc\(b\.customer_notes\)/.test(D));
+  }
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);
 })();
