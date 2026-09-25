@@ -6941,10 +6941,23 @@ function renderScopeControl() {
        he closes it. The two big Labor and Materials tables above are
        untouched. */
     var kL = scopeMarkupK() || 1;
-    var labTot = scopeRowsRaw(scopeRowsFor(nm, "labor")) * kL, matTot = scopeRowsRaw(scopeRowsFor(nm, "materials")) * kL;
+    /* COST, AS THE LINES SHOW IT, AND THE MARKUP NAMED.
+         "In the top section materials and labor counts are wrong counted"
+       The summary used to print the marked-up sums ($85,104.00) directly above
+       lines that add up to cost ($68,083.20), with nothing saying which was
+       which. Now it reads "$68,083.20 (+25% = $85,104.00)". */
+    var labRaw = scopeRowsRaw(scopeRowsFor(nm, "labor")), matRaw = scopeRowsRaw(scopeRowsFor(nm, "materials"));
+    var mkPct = Math.round((kL - 1) * 1000) / 10;
+    var withMk = function (raw) { return fmt(raw) + (mkPct ? ' (+' + mkPct + '% = ' + fmt(raw * kL) + ')' : ''); };
     var linesOpen = (typeof SCOPE_LINES_OPEN !== 'undefined') && SCOPE_LINES_OPEN[nm] === true;
+    /* ONE SERVICE: NO SECOND COPY OF THE LINES.
+         "why is this two times materials and labor listings?"
+       The card's lines are there to see and move lines between services. With
+       one service they are the LABOR and MATERIALS tables again, line for
+       line, so the card says where they are instead of repeating them. */
+    var foldAt = html.length, oneService = d.services.length === 1;
     html += '<details class="sc-lines-fold" data-nm="' + esc(nm) + '"' + (linesOpen ? ' open' : '') + ' ontoggle="scopeLinesToggle(this.getAttribute(\'data-nm\'), this.open)">' +
-      '<summary><span>Labor ' + lab.length + ' line' + (lab.length === 1 ? '' : 's') + ' · ' + fmt(labTot) + '</span><span>Materials ' + mat.length + ' line' + (mat.length === 1 ? '' : 's') + ' · ' + fmt(matTot) + '</span><b class="sc-fold-cue">' + (linesOpen ? '▾ hide lines' : '▸ show lines') + '</b></summary>';
+      '<summary><span>Labor ' + lab.length + ' line' + (lab.length === 1 ? '' : 's') + ' · ' + withMk(labRaw) + '</span><span>Materials ' + mat.length + ' line' + (mat.length === 1 ? '' : 's') + ' · ' + withMk(matRaw) + '</span><b class="sc-fold-cue">' + (linesOpen ? '▾ hide lines' : '▸ show lines') + '</b></summary>';
     html += '<div class="sc-pane">';
     [{ kind: "labor", label: "Labor", rows: lab }, { kind: "materials", label: "Materials", rows: mat }].forEach(function (blk) {
       html += '<div class="sc-kind">' + blk.label + '</div>';
@@ -6989,13 +7002,18 @@ function renderScopeControl() {
          labor is where the negotiating room is, so the two must move independently. */
       var kindTotal = scopeRowsRaw(scopeRowsFor(nm, blk.kind)) * (scopeMarkupK() || 1);
       html += '<div class="sc-kind-total">' +
-        '<span>' + blk.label + ' total</span>' +
+        '<span>' + blk.label + ' total' + (mkPct ? ' with ' + mkPct + '% markup' : '') + '</span>' +
         '<input value="' + esc(fmt(kindTotal)) + '" ' +
           'title="Type a figure and only the ' + blk.label.toLowerCase() + ' lines in this card are scaled" ' +
           'onchange="scopeSetKindTotal(' + si + ',\'' + blk.kind + '\', this.value)">' +
         '</div>';
     });
     html += '</div></details>';
+    if (oneService) {
+      html = html.slice(0, foldAt) + '<div class="sc-lines-one" style="padding:10px 14px;font-size:13px;color:var(--ink-muted)">' +
+        'Labor ' + lab.length + ' line' + (lab.length === 1 ? '' : 's') + ' · ' + withMk(labRaw) + '<br>Materials ' + mat.length + ' line' + (mat.length === 1 ? '' : 's') + ' · ' + withMk(matRaw) +
+        '<br>Every line is in the LABOR and MATERIALS lists of this estimate.</div>';
+    }
 
     /* the three wording groups, all open, directly under the prices */
     groups.forEach(function (g) {

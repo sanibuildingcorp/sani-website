@@ -44,8 +44,8 @@ const call = (cap) => vm.runInContext("callClaude('k', 'THE PROMPT', " + cap + "
 
 (async () => {
   console.log('\n1. The understanding stage has the room the pricing pass has\n');
-  ok('THE ANALYSIS CALL ASKS FOR 32,000 TOKENS, not 16,000', /rawAnalysis = await callClaude\(anthropicKey, analysisPrompt, 32000, null, photoBlocks\);/.test(SRC) && !/analysisPrompt, 16000/.test(SRC));
-  ok('the pricing and repair passes keep 32,000', /callClaude\(anthropicKey, estimatePrompt, 32000\)/.test(SRC) && /callClaude\(anthropicKey, repairPrompt, 32000\)/.test(SRC));
+  ok('THE ANALYSIS CALL ASKS FOR 32,000 TOKENS, not 16,000', /rawAnalysis = await callWithDrawings\(anthropicKey, analysisPrompt, 32000, photoBlocks, docBlocks, timing, \"analysis\"\);/.test(SRC) && !/analysisPrompt, 16000/.test(SRC));
+  ok('the pricing and repair passes keep 32,000', /callWithDrawings\(anthropicKey, estimatePrompt, 32000, null, docBlocks, timing, \"estimate\"\)/.test(SRC) && /callWithDrawings\(anthropicKey, repairPrompt, 32000, null, docBlocks, timing, \"repair\"\)/.test(SRC));
 
   console.log('\n2. A response cut at max_tokens is tried once more with double the room\n');
   {

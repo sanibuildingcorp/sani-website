@@ -58,6 +58,15 @@ console.log('\n2. The internal PDF\n');
   ok('every labor and material line with qty, rate and amount', /Diamond grind and repair cracked concrete \| 24 hrs \| \$65\.00 \| \$1,560\.00/.test(w) && /100% solids epoxy floor coating, 3 gal kit \| 6 kit \| \$389\.00 \| \$2,334\.00/.test(w));
   ok('the totals with the markup and the customer price', ['Labor (cost) | $3,640.00', 'Materials (cost) | $2,334.00', 'Subtotal | $5,974.00', 'Markup (25%) | $1,493.50', 'Grand total | $7,467.50', 'Customer price | $7,467.50'].every((x) => w.indexOf(x) > -1), w.slice(0, 900));
   ok('phone, email, status, assumptions and your notes', ['(555) 555-1234', 'j@example.com', 'Status: sent', 'SECRET ASSUMPTION', 'SECRET NOTE'].every((x) => w.indexOf(x) > -1));
+  ok('NO AMOUNT ON THE LABOR / MATERIALS HEADINGS - it is in Totals once ("two times materials and labor")', /Labor  ·  2 lines/.test(w) && /Materials  ·  1 line \|/.test(w) && !/Labor  ·  \$/.test(w) && !/Materials  ·  \$/.test(w));
+  const dup = REC();
+  dup.estimate.exclusions = ['Concealed conditions behind walls or above the ceiling', 'Structural work', 'Concealed conditions behind walls or ceiling', 'Structural work'];
+  dup.estimate.assumptions = ['Subfloors are sound, level enough and adequately supported by others. Our leveling is limited to the stated minor prep allowance.', 'Subfloors are sound, level enough and adequately supported by others; our leveling is limited to the stated minor prep allowance.', 'Prevailing-wage rates are not carried.'];
+  dup.estimate.customerSupplied = ['Wall and floor tile, with waste and spares', 'Toilets', 'Wall & floor tile', 'Wall and floor tile, with waste and spare quantities', 'Vanities and countertops'];
+  const wd = words(P.buildInternalPdf(dup));
+  const count = (x) => wd.split(x).length - 1;
+  ok('EACH POINT ONCE: reworded repeats in Not included / Assumptions / Customer supplies are dropped', count('Concealed conditions behind walls') === 1 && count('Structural work') === 1 && count('Subfloors are sound') === 1 && count('Wall and floor tile') === 1 && wd.indexOf('Wall & floor tile') === -1);
+  ok('...and different points all stay', ['Prevailing-wage rates are not carried.', 'Toilets', 'Vanities and countertops'].every((x) => wd.indexOf(x) > -1));
   ok('file name: Internal-Estimate-<name>-<ref>.pdf', P.fileName(REC(), 'internal') === 'Internal-Estimate-Joshua-Inasuen-SBC-260923-66W0.pdf');
 }
 
