@@ -154,6 +154,38 @@ Doc.prototype.rule = function (color) {
   return this;
 };
 
+/**
+ * A table row: the first cell wraps in its width, the others sit on its first
+ * line. For the estimate PDFs' line items and totals.
+ * @param {Array<{text:string,w:number,align?:string,bold?:boolean,color?:number[]}>} cells  widths in points, left to right
+ * @param {object} [s] size, after, fill [r,g,b] behind the row
+ */
+Doc.prototype.row = function (cells, s) {
+  const st = s || {};
+  const size = st.size || 10, lh = size * 1.35;
+  const first = cells[0] || { text: "", w: CONTENT_W };
+  const lines = wrap(first.text, size, !!first.bold, first.w - 6);
+  const h = lines.length * lh;
+  this.ensure(h + 2);
+  const ops = this.ops();
+  if (st.fill) ops.push("q " + rgb(st.fill) + " rg " + MARGIN_X + " " + (this.y - h - 3).toFixed(2) + " " + CONTENT_W + " " + (h + 4).toFixed(2) + " re f Q");
+  let x = MARGIN_X;
+  const top = this.y;
+  cells.forEach(function (c, i) {
+    const bold = !!c.bold, color = rgb(c.color || [0.05, 0.09, 0.16]);
+    const ls = i === 0 ? lines : [wrap(c.text, size, bold, 10000)[0] || ""];
+    ls.forEach(function (line, j) {
+      const y = top - lh * (j + 1);
+      const tw = textWidth(line, size, bold);
+      const tx = c.align === "right" ? x + c.w - tw - 2 : x + 2;
+      ops.push("BT /" + (bold ? "F2" : "F1") + " " + size + " Tf " + color + " rg " + tx.toFixed(2) + " " + y.toFixed(2) + " Td " + literal(line) + " Tj ET");
+    });
+    x += c.w;
+  });
+  this.y = top - h - (st.after != null ? st.after : 3);
+  return this;
+};
+
 /* A filled band behind a heading. */
 Doc.prototype.band = function (text, s) {
   const st = s || {};
