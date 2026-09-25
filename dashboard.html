@@ -11500,6 +11500,11 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 .sbc-ec-err{display:none;color:var(--bad);font-size:13px;margin-top:6px;line-height:1.4}
 .sbc-ec-save{width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:var(--gold);color:#102236;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer}
 .sbc-ec-save:disabled{opacity:.6;cursor:not-allowed}
+.sbc-ec-file{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(13,27,42,0.12);border-radius:8px;margin-bottom:6px;font-size:13.5px;background:#f7f9fc}
+.sbc-ec-file span{flex:1;min-width:0;overflow-wrap:anywhere}
+.sbc-ec-file.gone span{text-decoration:line-through;color:var(--ink-muted)}
+.sbc-ec-file button{background:none;border:none;color:var(--ink-muted);font-size:16px;cursor:pointer;padding:2px 6px}
+.sbc-ec-add{display:block;text-align:center;padding:11px;border:1.5px dashed var(--gold);border-radius:8px;color:var(--gold-2);font-weight:700;font-size:13.5px;cursor:pointer;margin-top:4px}
 </style>
 <div id="sbc-ec-overlay">
   <div class="sbc-ec-card">
@@ -11512,6 +11517,14 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     <div class="sbc-ec-field"><label>Services the AI prices (comma-separated — remove one the customer ticked by mistake)</label><input id="sbc-ec-service" type="text" placeholder="Bathroom, Painting"></div>
     <div class="sbc-ec-field" style="display:flex;gap:10px"><div style="flex:1"><label>Property</label><input id="sbc-ec-property" type="text" placeholder="Apartment"></div><div style="flex:1"><label>Timeline</label><input id="sbc-ec-timeline" type="text" placeholder="2-4 weeks"></div></div>
     <div class="sbc-ec-field"><label>Description (what the customer wrote — you can correct/expand it)</label><textarea id="sbc-ec-desc" placeholder="Describe the job…"></textarea></div>
+    <!-- "I can't re-upload plans in edit section": photos and PDF plans, added
+         here, go straight to storage (upload-estimate-file) and onto the
+         estimate on Save (update-customer addPhotos / removePhotos). -->
+    <div class="sbc-ec-field"><label>Photos and plans</label>
+      <div id="sbc-ec-files"></div>
+      <label class="sbc-ec-add">📎 Add photos or plans (PDF)<input type="file" accept="image/*,application/pdf" multiple onchange="sbcAddFiles(event)" style="display:none"></label>
+      <div style="font-size:12px;color:var(--ink-muted);margin-top:6px;line-height:1.45">The AI reads PDF plans as drawings. After saving, press <b>Re-read the job from scratch</b> so it uses them.</div>
+    </div>
     <div id="sbc-ec-answers"></div>
     <div class="sbc-ec-err" id="sbc-ec-err"></div>
     <button class="sbc-ec-save" id="sbc-ec-save" onclick="sbcSaveCustomer()">💾 Save Changes</button>
@@ -11547,10 +11560,60 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       });
     }
     document.getElementById('sbc-ec-answers').innerHTML = ansHtml;
+    ecAdd = []; ecRemove = {};
+    ecRenderFiles();
     document.getElementById('sbc-ec-err').style.display = 'none';
     document.getElementById('sbc-ec-overlay').classList.add('show');
     document.body.style.overflow = 'hidden';
   };
+  /* ── PHOTOS AND PLANS ─────────────────────────────────────────────────── */
+  var ecAdd = [], ecRemove = {};
+  function ecIsPdf(name, url){ return /\.pdf(?:[?#]|$)/i.test(String(url || '')) || /\.pdf$/i.test(String(name || '')); }
+  function ecRenderFiles(){
+    var r = (typeof currentRecord !== 'undefined') ? currentRecord : null;
+    var have = (r && r.request && Array.isArray(r.request.photos)) ? r.request.photos : [];
+    var html = have.map(function(p, i){
+      var url = typeof p === 'string' ? p : (p && p.data) || '';
+      var name = (p && p.name) || ('photo ' + (i + 1));
+      var pdf = (p && p.kind === 'file') || ecIsPdf(name, url);
+      var gone = !!ecRemove[i];
+      return '<div class="sbc-ec-file' + (gone ? ' gone' : '') + '">' + (pdf ? '📄' : '🖼') + '<span>' + ecEsc(name) + (gone ? ' — will be removed' : '') + '</span>' +
+        '<button type="button" title="' + (gone ? 'Keep' : 'Remove') + '" onclick="sbcToggleFile(' + i + ')">' + (gone ? '↩' : '✕') + '</button></div>';
+    }).join('') + ecAdd.map(function(a, i){
+      var st = a.status === 'up' ? ' — uploading…' : a.status === 'fail' ? ' — failed: ' + a.error : ' — added, press Save';
+      return '<div class="sbc-ec-file">' + (ecIsPdf(a.name, a.url) ? '📄' : '🖼') + '<span>' + ecEsc(a.name + st) + '</span>' +
+        '<button type="button" title="Remove" onclick="sbcDropNewFile(' + i + ')">✕</button></div>';
+    }).join('');
+    document.getElementById('sbc-ec-files').innerHTML = html || '<div style="font-size:13px;color:var(--ink-muted);margin-bottom:6px">No photos or plans on this estimate yet.</div>';
+  }
+  window.sbcToggleFile = function(i){ ecRemove[i] = !ecRemove[i]; if (!ecRemove[i]) delete ecRemove[i]; ecRenderFiles(); };
+  window.sbcDropNewFile = function(i){ ecAdd.splice(i, 1); ecRenderFiles(); };
+  window.sbcAddFiles = async function(ev){
+    var r = (typeof currentRecord !== 'undefined') ? currentRecord : null;
+    var files = Array.prototype.slice.call((ev && ev.target && ev.target.files) || []);
+    if (ev && ev.target) ev.target.value = '';
+    if (!r || !files.length) return;
+    for (var f = 0; f < files.length; f++) {
+      var file = files[f];
+      var type = file.type || (ecIsPdf(file.name) ? 'application/pdf' : '');
+      var item = { name: file.name, status: 'up' };
+      ecAdd.push(item); ecRenderFiles();
+      try {
+        if (!/^image\/|^application\/pdf$/.test(type)) throw new Error('only photos and PDF files');
+        if (file.size > 50 * 1024 * 1024) throw new Error('larger than 50 MB');
+        var res = await sbcFetch('/.netlify/functions/upload-estimate-file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: r.ref, fileName: file.name, contentType: type }) });
+        var d = await res.json().catch(function(){ return {}; });
+        if (!res.ok || !d.signedUrl) throw new Error(d.error || ('upload link ' + res.status));
+        var put = await fetch(d.signedUrl, { method: 'PUT', headers: { 'Content-Type': type, 'x-upsert': 'true' }, body: file });
+        if (!put.ok) throw new Error('upload ' + put.status);
+        item.url = d.publicUrl; item.status = 'done';
+      } catch (e) {
+        item.status = 'fail'; item.error = (e && e.message) || String(e);
+      }
+      ecRenderFiles();
+    }
+  };
+
   window.sbcCloseEditCustomer = function(){
     document.getElementById('sbc-ec-overlay').classList.remove('show');
     document.body.style.overflow = '';
@@ -11584,13 +11647,20 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       err.style.display = 'block';
       return;
     }
+    if (ecAdd.some(function(a){ return a.status === 'up'; })) {
+      err.textContent = 'Wait for the uploads to finish, then save.';
+      err.style.display = 'block';
+      return;
+    }
+    var addPhotos = ecAdd.filter(function(a){ return a.status === 'done' && a.url; }).map(function(a){ return { name: a.name, url: a.url }; });
+    var removePhotos = Object.keys(ecRemove).map(Number);
     var btn = document.getElementById('sbc-ec-save');
     btn.disabled = true; btn.textContent = 'Saving…';
     /* sbcFetch: update-customer is gated on the dashboard key now. */
     sbcFetch('/.netlify/functions/update-customer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ref: r.ref, customer: customer, description: description, serviceAnswers: serviceAnswers, service: service, propertyType: propertyType, timeline: timeline })
+      body: JSON.stringify({ ref: r.ref, customer: customer, description: description, serviceAnswers: serviceAnswers, service: service, propertyType: propertyType, timeline: timeline, addPhotos: addPhotos, removePhotos: removePhotos })
     })
     .then(function(res){ return res.json().then(function(d){ return { ok: res.ok, d: d }; }); })
     .then(function(out){
@@ -11604,6 +11674,8 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       currentRecord.request.selectedServices = currentRecord.request.services.slice();
       currentRecord.request.propertyType = (out.d.propertyType !== undefined) ? out.d.propertyType : propertyType;
       currentRecord.request.timeline = (out.d.timeline !== undefined) ? out.d.timeline : timeline;
+      if (Array.isArray(out.d.photos)) currentRecord.request.photos = out.d.photos;
+      ecAdd = []; ecRemove = {};
       if (Object.keys(serviceAnswers).length) {
         currentRecord.request.serviceAnswers = out.d.serviceAnswers || Object.assign({}, currentRecord.request.serviceAnswers || {}, serviceAnswers);
       }

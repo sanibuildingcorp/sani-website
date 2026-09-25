@@ -24,7 +24,7 @@ exports.handler = async function (event) {
   if (denied) return denied;
 
   try {
-    const { ref, customer, description, serviceAnswers, service, propertyType, timeline } = JSON.parse(event.body || "{}");
+    const { ref, customer, description, serviceAnswers, service, propertyType, timeline, addPhotos, removePhotos } = JSON.parse(event.body || "{}");
     if (!ref || !customer || typeof customer !== "object") {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref or customer" }) };
     }
@@ -75,7 +75,37 @@ exports.handler = async function (event) {
       });
       record.request.serviceAnswers = merged;
     }
+    /* ── PHOTOS AND PLANS ADDED FROM THE DASHBOARD ─────────────────────────
+         "I can't re-upload plans in edit section"
+       The file itself went straight to storage (upload-estimate-file); only
+       its public link arrives here, and only a link into this site's own
+       estimate-photos bucket is accepted. A PDF is stored as kind "file", so
+       the estimator reads it as drawings; an image as a photo. Removal is by
+       position in request.photos. At most MAX_REQUEST_FILES in all. */
+    const filesAdded = [], filesRemoved = [];
+    if (Array.isArray(removePhotos) && removePhotos.length) {
+      record.request = record.request || {};
+      const drop = new Set(removePhotos.map(Number).filter(Number.isInteger));
+      const was = Array.isArray(record.request.photos) ? record.request.photos : [];
+      record.request.photos = was.filter(function (p, i) { if (drop.has(i)) { filesRemoved.push(clean(p && p.name) || "file " + (i + 1)); return false; } return true; });
+    }
+    if (Array.isArray(addPhotos) && addPhotos.length) {
+      const base = String(process.env.SUPABASE_URL || "").replace(/\/+$/, "") + "/storage/v1/object/public/estimate-photos/";
+      record.request = record.request || {};
+      const list = Array.isArray(record.request.photos) ? record.request.photos : [];
+      addPhotos.forEach(function (a) {
+        const url = String((a && a.url) || "").trim();
+        if (list.length >= MAX_REQUEST_FILES || !base.startsWith("https://") || url.indexOf(base) !== 0 || /[\s"'<>]/.test(url)) return;
+        const pdf = /\.pdf(?:[?#]|$)/i.test(url);
+        const name = clean(a && a.name).slice(0, 120) || url.split("/").pop();
+        list.push({ name: name, data: url, kind: pdf ? "file" : "image", slot: "contractor", addedAt: new Date().toISOString() });
+        filesAdded.push(name);
+      });
+      record.request.photos = list;
+    }
     const changed = [];
+    if (filesAdded.length) changed.push("added " + filesAdded.join(", "));
+    if (filesRemoved.length) changed.push("removed " + filesRemoved.join(", "));
     if (JSON.stringify(record.customer) !== JSON.stringify(wasCustomer)) changed.push("customer details");
     if (description !== undefined && String(description == null ? "" : description).trim() !== wasDescription) changed.push("description");
     if (service !== undefined && record.request.service !== wasService) changed.push("services set to " + record.request.service + (wasService ? " (was " + wasService + ")" : ""));
@@ -87,13 +117,15 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: cors(),
-      body: JSON.stringify({ success: true, customer: record.customer, description: (record.request || {}).description, serviceAnswers: (record.request || {}).serviceAnswers, service: (record.request || {}).service, propertyType: (record.request || {}).propertyType, timeline: (record.request || {}).timeline }),
+      body: JSON.stringify({ success: true, photos: (record.request || {}).photos || [], customer: record.customer, description: (record.request || {}).description, serviceAnswers: (record.request || {}).serviceAnswers, service: (record.request || {}).service, propertyType: (record.request || {}).propertyType, timeline: (record.request || {}).timeline }),
     };
   } catch (err) {
     console.error("update-customer error:", err.message);
     return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
   }
 };
+
+const MAX_REQUEST_FILES = 20;
 
 function cors() {
   return {
