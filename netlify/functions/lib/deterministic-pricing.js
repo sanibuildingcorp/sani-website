@@ -1040,9 +1040,19 @@ function priceAlternatives(estimate, adjustments) {
   }
 }
 
-function windowRequested(input, analysis) {
+/* "Look what it's shows in materials window option-a" - Joshua Inasuen's
+   kitchen floor resurfacing came back with "Window Option A" labor and a
+   replacement-windows allowance in its Materials, inside the total. The old
+   test was two words anywhere in the request: "window" (a pass-through
+   window, window protection, a follow-up question) and "repair" or "replace"
+   (the floor). Windows are only a job when they are one of the job's
+   services - picked by the customer, or admitted by resolveServiceSet, the
+   same gate that keeps a phantom Windows card off the estimate. */
+function windowRequested(input, analysis, estimate) {
   const e = requestEvidence(input, analysis);
-  return /window/.test(e) && (/replace|replacement|repair|option\s*a|option\s*b/.test(e));
+  if (!(/window/.test(e) && (/replace|replacement|repair|option\s*a|option\s*b/.test(e)))) return false;
+  const picked = allowedServiceSet([...(analysis?.customer_selected_services || []), ...(input?.request?.selectedServices || []), input?.request?.service].filter(Boolean));
+  return picked.includes('Windows') || resolveServiceSet(analysis, input, estimate).includes('Windows');
 }
 function optionLetter(o) {
   const s = norm(`${o?.label || ''} ${o?.description || ''}`);
@@ -1063,7 +1073,7 @@ function parseWindowCount(input, analysis) {
 }
 
 function ensureWindowOptionEngine(estimate, analysis, input, adjustments) {
-  if (!windowRequested(input, analysis)) return;
+  if (!windowRequested(input, analysis, estimate)) return;
   estimate.options = Array.isArray(estimate.options) ? estimate.options : [];
   const mm = 1 + num(estimate.markupPct || RULES.markupDefault) / 100;
   let hasBase = [...(estimate.labor || []), ...(estimate.materials || [])].some(isWindowLine);
@@ -1125,7 +1135,7 @@ function buildHealth(estimate, analysis, q, adjustments, input) {
   if ((estimate.labor || []).some(isAlt) || (estimate.materials || []).some(isAlt)) {
     issues.push({ severity: 'BLOCK', code: 'ALTERNATIVE_IN_BASE_TOTAL', message: 'A mutually exclusive alternate is still inside base labor/materials.' });
   }
-  if (windowRequested(input, analysis) && ![...(estimate.labor || []), ...(estimate.materials || [])].some(isWindowLine)) {
+  if (windowRequested(input, analysis, estimate) && ![...(estimate.labor || []), ...(estimate.materials || [])].some(isWindowLine)) {
     issues.push({ severity: 'BLOCK', code: 'WINDOW_BASE_OPTION_MISSING', message: 'Windows were requested, but the selected base window option is not priced.' });
   }
   const normalized = adjustments.filter(a => a.type === 'LABOR_RATE_NORMALIZED').length;
