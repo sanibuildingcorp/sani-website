@@ -340,6 +340,8 @@ async function sendContractorEmail(booking, photoUrls) {
       <div style="font-size:13px;color:#555;margin-top:6px">⏰ Urgency: <strong>${esc(booking.urgency)}</strong></div>
     </div>
 
+    ${jobBriefHtml(booking.answers)}
+
     <!-- CUSTOMER ESTIMATE -->
     <div style="background:#e8f5e8;border-left:4px solid #2ecc71;border-radius:0 8px 8px 0;padding:16px;margin-bottom:20px">
       <div style="font-size:11px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:8px">💰 Customer Estimate</div>
@@ -489,6 +491,23 @@ async function sendCustomerEmail(booking) {
     subject: `Request Received: ${booking.service_name} · ${booking.ref}`,
     html: html
   });
+}
+
+/* THE JOB AT A GLANCE. The form now asks the job list, how many things, the
+   place, floor and access, the parts and how soon on one page; they arrive in
+   answers and are shown here first, the same as in the dashboard. */
+function jobBriefHtml(a) {
+  a = a || {};
+  const list = Array.isArray(a.job_list) ? a.job_list : [];
+  const rows = [["Size", a.job_size], ["Place", a.place], ["Floor / access", a.access], ["Parts", a.parts], ["How soon", a.when]]
+    .filter(function (r) { return r[1]; });
+  if (!list.length && !rows.length) return "";
+  return `<div style="background:#faf8f4;border:1px solid #e4ddd0;border-radius:10px;padding:18px;margin-bottom:20px">
+      <div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:10px">📋 Job at a glance</div>
+      ${list.length ? `<ol style="margin:0 0 10px 18px;padding:0;font-size:14px;color:#1f1d1a;line-height:1.7">${list.map(function (l) { return `<li>${esc(l)}</li>`; }).join("")}</ol>` : ""}
+      ${a.list_in_own_words ? `<div style="font-size:13px;color:#444;white-space:pre-wrap;margin-bottom:10px">"${esc(a.list_in_own_words)}"</div>` : ""}
+      ${rows.map(function (r) { return `<div style="font-size:13px;color:#555;line-height:1.7"><strong>${r[0]}:</strong> ${esc(r[1])}</div>`; }).join("")}
+    </div>`;
 }
 
 function sendResend(apiKey, payload) {
