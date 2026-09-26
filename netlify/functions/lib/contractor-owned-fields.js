@@ -49,7 +49,7 @@ const CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   "showLaborLinePrices", "showMaterialLinePrices",
   // Manually set money + hand-built extras
   "customerFinalTotal", "finishGroups", "contract",
-  "quotePhotos", "savedMaterials", "materialsTotalEstimate",
+  "quotePhotos", "hiddenQuotePhotos", "savedMaterials", "materialsTotalEstimate",
   // Price lines parked by "Not included" - the money waiting to come back
   "parkedLines",
   // Snapshot that makes the last service merge reversible
