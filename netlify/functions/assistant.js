@@ -1183,6 +1183,7 @@ function systemPrompt(context, screen, memory, insights, inboxText, estimator) {
       "- A change the CUSTOMER asked for: say what it involves and ask him the price, unless he asks you to price it.",
       "- An allowance is a line whose words say ALLOWANCE and what it covers (e.g. 'Allowance - shower niches, 12 at $150 each').",
       "- Keep the job consistent when you change it: a line removed means its included bullet goes too (a reword in the same answer); a line for work another trade does (plumber, electrician) is removed, not reworded; nothing is priced twice.",
+      "- GAS STAYS WITH THE GAS TRADE: we never set, install or connect an oven, range or cooktop, or anything on a gas line - no line, no add-on, no offer. It goes once under Not included: 'Oven and cooktop - set and connected by your gas contractor.'",
       "- He is the boss of this estimate. What he says in this chat outranks the description, the generator's draft and your own earlier answers.",
       est.houseRules ? "\nHIS HOUSE RULES (the generator prices with these; you do too):\n" + String(est.houseRules).slice(0, 6000) : "",
       "",
