@@ -68,7 +68,7 @@ function scopeInputs(input) {
   const i = input || {};
   const req = i.request || {};
   const con = i.contractor || {};
-  return {
+  const out = {
     address: String((i.customer || {}).address || ""),
     service: req.service,
     selectedServices: req.selectedServices,
@@ -83,6 +83,11 @@ function scopeInputs(input) {
     extraRequest: con.extraRequest,
     houseRules: con.houseRules,
   };
+  /* The job's emails (lib/job-emails.js), by id: a new email reads the job
+     again. Only when there are some, so every job without emails keeps the
+     fingerprint it had before emails were read at all. */
+  if (Array.isArray(req.emails) && req.emails.length) out.emails = req.emails.map(function (e) { return String((e && e.id) || ""); });
+  return out;
 }
 
 /* A short, stable name for one exact set of scope inputs. Two generations that

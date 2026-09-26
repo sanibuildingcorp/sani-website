@@ -24,6 +24,8 @@ console.log('\n1. The plans reach the AI\n');
 const calls = [];
 const ctx = {
   thread: { normalizeThread: (r) => r.thread || [] },
+  /* the plan reader lives in lib/job-documents.js (the chat reads plans too) */
+  jobDocuments: require(path.join(__dirname, '..', 'netlify/functions/lib/job-documents.js')),
   cleanText: (v) => (v == null ? '' : String(v).trim()),
   console: { error: () => {}, log: () => {} },
   callClaude: async (key, prompt, max, tools, blocks) => { calls.push({ prompt, blocks: blocks || null }); if (ctx.refuse && (blocks || []).some((b) => b.type === 'document')) throw new Error('400 PDF has too many pages'); return '{}'; },
@@ -35,7 +37,7 @@ const request = { photos: [
   { name: 'A-101 Floor plans.pdf', kind: 'file', data: 'data:application/pdf;base64,JVBERi0x' },
   { name: 'Finish schedule.pdf', kind: 'file', data: 'https://x.supabase.co/storage/v1/object/public/estimate-photos/SBC/1-abc.pdf' },
   { name: 'notes.docx', kind: 'file', data: 'https://x.supabase.co/storage/v1/object/public/estimate-photos/SBC/2.docx' } ] };
-const record = { thread: [{ from: 'contractor', attachments: [{ name: 'A-201 Elevations.pdf', kind: 'file', url: 'https://x.supabase.co/storage/v1/object/public/estimate-photos/SBC/3.pdf' }, { name: 'extra.pdf', kind: 'file', url: 'https://x.supabase.co/x/4.pdf' }] }] };
+const record = { thread: [{ from: 'contractor', text: 'Plans attached.', at: '2026-09-25T10:00:00Z', attachments: [{ name: 'A-201 Elevations.pdf', kind: 'file', url: 'https://x.supabase.co/storage/v1/object/public/estimate-photos/SBC/3.pdf' }, { name: 'extra.pdf', kind: 'file', url: 'https://x.supabase.co/x/4.pdf' }] }] };
 const blocks = ctx.documentBlocksForClaude(request, record);
 const docs = blocks.filter((b) => b.type === 'document');
 ok('PDF PLANS BECOME DOCUMENT BLOCKS: an uploaded PDF and a PDF link', docs[0] && docs[0].source.type === 'base64' && docs[0].source.media_type === 'application/pdf' && docs[1] && docs[1].source.type === 'url' && /1-abc\.pdf$/.test(docs[1].source.url));

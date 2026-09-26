@@ -57,7 +57,7 @@ const KEY = { 'x-sbc-key': 'k' };
   ok('...the file is PUT straight to the signed URL (never through a function)', /await fetch\(d\.signedUrl, \{ method: 'PUT', headers: \{ 'Content-Type': type, 'x-upsert': 'true' \}, body: file \}\)/.test(D));
   ok('...Save waits for uploads and sends addPhotos / removePhotos', /Wait for the uploads to finish, then save\./.test(D) && /addPhotos: addPhotos, removePhotos: removePhotos/.test(D));
   ok('...and it says to press "Re-read the job from scratch" after', /Re-read the job from scratch<\/b> so it uses them/.test(D));
-  const G = read('netlify/functions/generate-estimate-background.js');
+  const G = read('netlify/functions/lib/job-documents.js');
   ok('THE ESTIMATOR KNOWS A PDF BY ITS LINK OR NAME, not only kind "file" (the form saved none)', /if \(p && \(p\.kind === "file" \|\| isPdf\(p\.name, data\)\)\) files\.push/.test(G));
   ok('the customer form now keeps the kind of each upload', /data:j\.url,slot:p\.slot\|\|'other',kind:p\.kind\|\|'image'\}\)/.test(read('estimate.html')));
 

@@ -3757,6 +3757,9 @@ function askPanelHtml(r) {
         '<button type="button" class="ask-chip" onclick="askQuick(\'What should I ask this customer before I can price this job?\')">What should I ask them?</button>' +
         '<button type="button" class="ask-chip" onclick="askQuick(\'Is there enough information here to price this job, or do I need a site visit? Say which.\')">Enough to price?</button>' +
         '<button type="button" class="ask-chip" onclick="askQuick(\'What could go wrong on this job that I should look for at the site visit?\')">What could go wrong?</button>' +
+        /* "a check before sending compares every line with the emails and
+           plans" - assistant.js CHECK_RE / CHECK_NOTE */
+        '<button type="button" class="ask-chip" onclick="askCheck()">🔍 Check before sending</button>' +
       '</div>' +
       '<div class="ask-log" id="ask-log">' + (log.length ? log.map(askBubble).join("") : '<div class="ask-empty">Nothing asked yet.</div>') + '</div>' +
       '<div class="ask-photos" id="ask-photos">' + aiPhotoThumbs("ask") + '</div>' +
@@ -3900,6 +3903,15 @@ function askRender() {
   el.scrollTop = el.scrollHeight;
 }
 
+/* The check before sending, from the Ask AI chip or the Send step: the
+   estimator reads her emails and the plans against every line
+   (assistant.js CHECK_RE). The panel is brought into view first. */
+var ASK_CHECK_TEXT = "Check before sending: read her emails and the plans against every line and tell me what to fix.";
+function askCheck() {
+  var box = document.getElementById("ask-text");
+  if (box && box.scrollIntoView) box.scrollIntoView({ behavior: "smooth", block: "center" });
+  askQuick(ASK_CHECK_TEXT);
+}
 function askQuick(text) {
   var box = document.getElementById("ask-text");
   if (box) box.value = text;
@@ -5170,6 +5182,7 @@ function renderEdit() {
         '<button type="button" onclick="addonCreate()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE)</button>') +
     '</div>' +
     stepBar(5, 'Send it', 'Preview first if you want. Nothing leaves here until you press send.') +
+    '<button type="button" onclick="askCheck()" style="width:100%;margin:0 0 12px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🔍 CHECK BEFORE SENDING — emails &amp; plans vs every line</button>' +
     (currentRecord && currentRecord.status === 'completed'
       ? '<div id="completed-on" style="margin:0 0 10px;padding:10px 12px;border-radius:9px;background:rgba(13,148,136,0.10);color:#0f766e;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
           '<span>🏁 Completed on <strong>' + esc(fmtDay(completedDayOf(currentRecord)) || 'date not set') + '</strong></span>' +
