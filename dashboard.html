@@ -1289,6 +1289,10 @@ body {
 .sc-pill{display:inline-block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;padding:4px 10px;border-radius:20px;font-weight:700}
 .sc-pill-live{background:#e6f4ea;color:#1e6b34}
 .sc-pill-draft{background:#f1f1f1;color:#666}
+.sc-prow{display:flex;gap:6px;align-items:flex-start;margin-bottom:6px}
+.sc-prow .pi-item{flex:1;min-width:0;resize:none;overflow:hidden;font:inherit;font-size:13.5px;line-height:1.45;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;min-height:36px}
+.sc-boldfab{position:fixed;right:14px;bottom:18px;z-index:10050;display:none;background:#0a1628;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
+.sc-boldfab b{font-size:17px;margin-right:4px}
 .sc-service{border:1px solid var(--line);border-radius:12px;padding:0;margin-bottom:14px;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(10,22,40,.05)}
 .sc-service-head{display:flex;align-items:center;gap:10px;margin:0;background:#0a1628;padding:13px 15px}
 .sc-service-name{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.28);border-radius:0;color:#fff;font-family:inherit;font-weight:700;font-size:16px;padding:3px 0}
@@ -7138,10 +7142,18 @@ function renderScopeControl() {
   /* The shared work, said once - what the customer reads above the
      services. Ask AI edits it ("reword the whole-project line ..."). */
   var shared = (est.projectIncluded || []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }).filter(Boolean);
-  if (shared.length) {
-    html += '<div class="sc-service" style="padding:12px 14px"><div style="font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Included for the whole project</div>' +
-      '<ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.55">' + shared.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
-      '<div style="font-size:11px;color:var(--ink-muted);margin-top:6px">Said once for all services. To change a line, ask Ask AI.</div></div>';
+  /* "if i want add or change some text it's not allowed me, make it editable" -
+     each line is a box he types in, with ✕ and + Add, saved with Save. */
+  if (shared.length || Array.isArray(est.projectIncluded)) {
+    html += '<div class="sc-service sc-proj" style="padding:12px 14px"><div style="font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Included for the whole project</div>' +
+      shared.map(function (t, i) {
+        return '<div class="sc-prow"><textarea class="sc-item pi-item" rows="1" ' +
+          'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" ' +
+          'onchange="projEdit(' + i + ',this.value)">' + esc(t) + '</textarea>' +
+          '<button class="sc-del" onclick="projDelete(' + i + ')" title="Delete">&#10005;</button></div>';
+      }).join('') +
+      '<button class="sc-add" onclick="projAdd()">+ Add</button>' +
+      '<div style="font-size:11px;color:var(--ink-muted);margin-top:6px">Said once for all services. Type to change a line. For <b>bold</b>, select words and tap <b>B</b>. Press Save.</div></div>';
   }
 
   d.services.forEach(function (svc, si) {
@@ -7615,6 +7627,105 @@ function scopeAddItem(si, key) {
   scopeDraft().services[si][key].push("");
   renderScopeControl();
 }
+
+/* ── INCLUDED FOR THE WHOLE PROJECT, EDITED BY HAND ─────────────────────── */
+function projList() {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  return (est.projectIncluded || []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }).filter(Boolean);
+}
+function projEdit(i, val) {
+  if (!currentRecord || !currentRecord.estimate) return;
+  var l = projList(), v = String(val || "").trim();
+  if (v) l[i] = v; else l.splice(i, 1);
+  currentRecord.estimate.projectIncluded = l;
+  if (!v) renderScopeControl();
+}
+function projDelete(i) {
+  if (!currentRecord || !currentRecord.estimate) return;
+  var l = projList(); l.splice(i, 1);
+  currentRecord.estimate.projectIncluded = l;
+  renderScopeControl();
+}
+function projAdd() {
+  if (!currentRecord || !currentRecord.estimate) return;
+  var l = projList(); l.push("New line - type here");
+  currentRecord.estimate.projectIncluded = l;
+  renderScopeControl();
+  var boxes = document.querySelectorAll(".pi-item");
+  var last = boxes[boxes.length - 1];
+  if (last) { last.focus(); try { last.select(); } catch (e) {} }
+}
+
+/* ── BOLD ───────────────────────────────────────────────────────────────────
+     "if i wanna make bold text somewhere let me do it too in keyboard.
+      Example if i wanna make Damage protection words bold"
+   Select words in any customer line (a card line or a whole-project line)
+   and tap the B that appears above the keyboard - or press Ctrl/Cmd+B. The
+   words are wrapped in **...**; tapping B on bold words takes it off. The
+   customer's page and PDF print them bold. */
+function boldToggle(text, a, b) {
+  var t = String(text || ""); a = Math.max(0, a | 0); b = Math.max(a, b | 0);
+  if (a === b) return null;
+  var sel = t.slice(a, b);
+  /* already bold: the marks sit just outside, or inside, the selection */
+  if (t.slice(a - 2, a) === "**" && t.slice(b, b + 2) === "**") return { text: t.slice(0, a - 2) + sel + t.slice(b + 2), a: a - 2, b: b - 2 };
+  if (/^\*\*[\s\S]+\*\*$/.test(sel)) { var inner = sel.slice(2, -2); return { text: t.slice(0, a) + inner + t.slice(b), a: a, b: a + inner.length }; }
+  /* spaces at the edges stay outside the marks */
+  var lead = sel.length - sel.replace(/^\s+/, "").length, trail = sel.length - sel.replace(/\s+$/, "").length;
+  var core = sel.trim();
+  if (!core) return null;
+  var out = t.slice(0, a + lead) + "**" + core + "**" + t.slice(b - trail);
+  return { text: out, a: a + lead, b: a + lead + core.length + 4 };
+}
+var BOLD_FIELD = null;
+function boldTarget(el) { return el && el.classList && el.classList.contains("sc-item") ? el : null; }
+function boldApply() {
+  var el = BOLD_FIELD;
+  if (!el) return;
+  var r = boldToggle(el.value, el.selectionStart, el.selectionEnd);
+  if (!r) { toast("Select the words first, then tap B"); return; }
+  el.value = r.text;
+  try { el.setSelectionRange(r.a, r.b); } catch (e) {}
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+}
+function boldFab() {
+  var b = document.getElementById("sc-boldfab");
+  if (!b) {
+    b = document.createElement("button");
+    b.id = "sc-boldfab"; b.type = "button"; b.className = "sc-boldfab"; b.innerHTML = "<b>B</b> Bold";
+    b.title = "Make the selected words bold";
+    /* keep the text field focused and its selection alive while tapping */
+    b.addEventListener("mousedown", function (e) { e.preventDefault(); });
+    b.addEventListener("touchstart", function (e) { e.preventDefault(); boldApply(); }, { passive: false });
+    b.addEventListener("click", boldApply);
+    document.body.appendChild(b);
+  }
+  return b;
+}
+function boldPlace() {
+  var b = document.getElementById("sc-boldfab");
+  if (!b || b.style.display === "none") return;
+  var vv = window.visualViewport;
+  if (vv) { b.style.top = Math.round(vv.offsetTop + vv.height - 58) + "px"; b.style.bottom = "auto"; }
+}
+document.addEventListener("focusin", function (e) {
+  var el = boldTarget(e.target);
+  if (!el) return;
+  BOLD_FIELD = el;
+  var b = boldFab(); b.style.display = "block"; boldPlace();
+});
+document.addEventListener("focusout", function (e) {
+  if (!boldTarget(e.target)) return;
+  setTimeout(function () {
+    if (boldTarget(document.activeElement)) return;
+    var b = document.getElementById("sc-boldfab"); if (b) b.style.display = "none";
+    BOLD_FIELD = null;
+  }, 150);
+});
+document.addEventListener("keydown", function (e) {
+  if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B") && boldTarget(e.target)) { e.preventDefault(); BOLD_FIELD = e.target; boldApply(); }
+});
+if (window.visualViewport) { window.visualViewport.addEventListener("resize", boldPlace); window.visualViewport.addEventListener("scroll", boldPlace); }
 
 /* ══ THE TICK BOX ON EVERY LINE ════════════════════════════════════════════
    "everything i need control with check point"
@@ -8375,9 +8486,10 @@ function scopePreview() {
   d.services.forEach(function (s2) {
     html += '<div class="sc-prev-svc"><div class="sc-prev-name">' + esc(s2.name) +
       (cardPrices ? '<span class="sc-prev-total">' + fmt(scopeServiceSubtotal(s2.name)) + '</span>' : '') + '</div>';
-    if (s2.included.length) html += '<div class="sc-prev-g"><b>Included</b><ul><li>' + s2.included.map(esc).join("</li><li>") + '</li></ul></div>';
-    if (s2.supplied.length) html += '<div class="sc-prev-g"><b>You supply</b><ul><li>' + s2.supplied.map(esc).join("</li><li>") + '</li></ul></div>';
-    if (s2.excluded.length) html += '<div class="sc-prev-g"><b>Not included</b><ul><li>' + s2.excluded.map(esc).join("</li><li>") + '</li></ul></div>';
+    var escB = function (t) { return esc(t).replace(/\*\*([^*\n]+?)\*\*/g, "<b>$1</b>"); };
+    if (s2.included.length) html += '<div class="sc-prev-g"><b>Included</b><ul><li>' + s2.included.map(escB).join("</li><li>") + '</li></ul></div>';
+    if (s2.supplied.length) html += '<div class="sc-prev-g"><b>You supply</b><ul><li>' + s2.supplied.map(escB).join("</li><li>") + '</li></ul></div>';
+    if (s2.excluded.length) html += '<div class="sc-prev-g"><b>Not included</b><ul><li>' + s2.excluded.map(escB).join("</li><li>") + '</li></ul></div>';
     html += '</div>';
   });
   box.innerHTML = html || "<em>Nothing to preview yet.</em>";

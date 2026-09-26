@@ -127,12 +127,57 @@ Doc.prototype.space = function (n) { this.y -= n; if (this.y < BOTTOM) this.newP
  * @param {string} text
  * @param {object} [s] size, bold, color [r,g,b] 0..1, indent (pt), bullet (string), after (pt), lineHeight (factor)
  */
+/* ── BOLD WORDS INSIDE A LINE ─────────────────────────────────────────────
+     "if i wanna make bold text somewhere let me do it"
+   Text marked **like this** (the dashboard's B button) prints those words in
+   Helvetica-Bold and the rest as usual, wrapped together. A line with no
+   marks takes the plain path below, unchanged. */
+const BOLD_MARK = /\*\*([^*\n]+?)\*\*/;
+function unmark(s) { return String(s == null ? "" : s).replace(/\*\*([^*\n]+?)\*\*/g, "$1"); }
+function richWords(para) {
+  const out = [];
+  String(para).split(/(\*\*[^*\n]+?\*\*)/).forEach(function (seg) {
+    const b = /^\*\*[^*\n]+?\*\*$/.test(seg);
+    (b ? seg.slice(2, -2) : seg).split(/ +/).filter(Boolean).forEach(function (w) { out.push({ w: w, b: b }); });
+  });
+  return out;
+}
+function richWrap(text, size, baseBold, maxW) {
+  const lines = [];
+  normalize(text).split(/\r?\n/).forEach(function (para) {
+    let cur = [], width = 0;
+    richWords(para).forEach(function (t) {
+      const b = t.b || baseBold, ww = textWidth(t.w, size, b), sp = cur.length ? textWidth(" ", size, b) : 0;
+      if (cur.length && width + sp + ww > maxW) { lines.push(cur); cur = []; width = 0; }
+      width += (cur.length ? textWidth(" ", size, b) : 0) + ww;
+      cur.push({ w: t.w, b: b });
+    });
+    lines.push(cur);
+  });
+  return lines;
+}
+
 Doc.prototype.text = function (text, s) {
   const st = s || {};
   const size = st.size || 11, bold = !!st.bold, color = st.color || [0.05, 0.09, 0.16];
   const indent = st.indent || 0, bullet = st.bullet ? normalize(st.bullet) : "";
   const bulletW = bullet ? Math.max(textWidth(bullet + " ", size, bold), 12) : 0;
   const lh = size * (st.lineHeight || 1.4);
+  if (BOLD_MARK.test(String(text == null ? "" : text))) {
+    const rl = richWrap(text, size, bold, CONTENT_W - indent - bulletW);
+    const rx = MARGIN_X + indent + bulletW;
+    for (let i = 0; i < rl.length; i++) {
+      this.ensure(lh);
+      this.y -= lh;
+      const ops = this.ops();
+      if (i === 0 && bullet) ops.push("BT /" + (bold ? "F2" : "F1") + " " + size + " Tf " + rgb(color) + " rg " + (MARGIN_X + indent) + " " + this.y.toFixed(2) + " Td " + literal(bullet) + " Tj ET");
+      let op = "BT " + rgb(color) + " rg " + rx + " " + this.y.toFixed(2) + " Td";
+      rl[i].forEach(function (t, k) { op += " /" + (t.b ? "F2" : "F1") + " " + size + " Tf " + literal((k ? " " : "") + t.w) + " Tj"; });
+      ops.push(op + " ET");
+    }
+    this.y -= st.after != null ? st.after : 4;
+    return this;
+  }
   const lines = wrap(text, size, bold, CONTENT_W - indent - bulletW);
   const x = MARGIN_X + indent + bulletW;
   for (let i = 0; i < lines.length; i++) {
@@ -161,6 +206,7 @@ Doc.prototype.rule = function (color) {
  * @param {object} [s] size, after, fill [r,g,b] behind the row
  */
 Doc.prototype.row = function (cells, s) {
+  cells = (cells || []).map(function (c) { return c ? Object.assign({}, c, { text: unmark(c.text) }) : c; });
   const st = s || {};
   const size = st.size || 10, lh = size * 1.35;
   const first = cells[0] || { text: "", w: CONTENT_W };
@@ -188,6 +234,7 @@ Doc.prototype.row = function (cells, s) {
 
 /* A filled band behind a heading. */
 Doc.prototype.band = function (text, s) {
+  text = unmark(text);
   const st = s || {};
   const size = st.size || 12.5, h = size * 2;
   this.ensure(h + 6);
@@ -235,4 +282,4 @@ Doc.prototype.build = function () {
   return Buffer.from(out, "latin1");
 };
 
-module.exports = { Doc, wrap, textWidth, normalize, literal, CONTENT_W };
+module.exports = { Doc, wrap, textWidth, normalize, literal, CONTENT_W, unmark, richWrap };
