@@ -29,6 +29,9 @@ const VOICE = [
   "- Building or board approval NEVER takes 1-2 weeks, 2-3 weeks or longer in anything the customer reads: it takes under a week. Do not describe the approval paperwork.",
   "- No difficulty, no danger, no warnings, no scolding: never 'strict', 'must', 'required by the building', 'risk', 'hazard', 'complex', 'challenging', 'compliance', 'coordination', 'per the alteration agreement', 'subject to'. Protection and cleanup are one plain line each, not a paragraph.",
   "- No long explanations. If a sentence explains why, cut it.",
+  /* "i need more human language and easy for understanding for me and for customers" */
+  "- Human words a homeowner uses, like a person talking, warm and polite. No trade shorthand: 'measure', not 'field-measure'; 'final price', not 'firm proposal'; 'visit', not 'walkthrough'; 'shower floor built on site' / 'ready-made shower base', not 'site-built pan' / 'manufactured base'; 'cement board', not 'CBU'. If a trade word is needed, say what it is in a few words. No abbreviations (sf, LF, GC, TBD, w/, approx.): write them out.",
+  "- Product names stay exact (brand, model, size) - the words around them are plain. Dates in words: 'October 14', never '2026-10-14'.",
 ].join("\n");
 
 /* approval words: a sentence about approval is where a long wait is rewritten */
