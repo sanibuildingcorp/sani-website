@@ -3777,12 +3777,27 @@ function askPanelHtml(r) {
    customer wrote can ever become markup - only http(s) URLs become <a>.
    A trailing . , ) ; is left out of the link: "see https://x.com." */
 function aiLinkify(text) {
-  return esc(text).replace(/https?:\/\/[^\s<]+/g, function (u) {
+  return aiMarks(esc(text)).replace(/https?:\/\/[^\s<]+/g, function (u) {
     var m = /[.,;:)\]]+$/.exec(u);
     var tail = m ? m[0] : "";
     var url = tail ? u.slice(0, -tail.length) : u;
     return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>' + tail;
   });
+}
+/* "Labor for one: about **23 man-hours**" - the stars were printed. On
+   escaped text: **bold** and a "## heading" line become bold; nothing else. */
+function aiMarks(html) {
+  return String(html || "")
+    .replace(/^[ \t]*#{1,4}[ \t]+(.+)$/gm, "<b>$1</b>")
+    .replace(/\*\*([^*\n]+?)\*\*/g, "<b>$1</b>")
+    .replace(/__([^_\n]+?)__/g, "<b>$1</b>");
+}
+/* The same text for a customer message: the marks taken out, words kept. */
+function aiPlain(text) {
+  return String(text || "")
+    .replace(/^[ \t]*#{1,4}[ \t]+/gm, "")
+    .replace(/\*\*([^*\n]+?)\*\*/g, "$1")
+    .replace(/__([^_\n]+?)__/g, "$1");
 }
 /* ── A PHOTO OR SCREENSHOT WITH THE QUESTION ────────────────────────────
      "sometimes for updates i can upload screenshots for my AI for
@@ -3971,7 +3986,7 @@ function askCopyToCustomer(i) {
   if (!m || m.role !== "assistant") return;
   var box = document.getElementById("cnv-text");
   if (!box) { toast("Open the Conversation section first", true); return; }
-  box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + m.text;
+  box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + aiPlain(m.text);
   var sec = document.getElementById("cnv-section");
   if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "center" });
   box.focus();
@@ -4069,7 +4084,7 @@ function aiCopyToCustomer(i) {
   if (!m || m.role !== "assistant") return;
   var box = document.getElementById("cnv-text");
   if (!box) { toast("Open an estimate first", true); return; }
-  box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + m.text;
+  box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + aiPlain(m.text);
   aiClose();
   var sec = document.getElementById("cnv-section");
   if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "center" });

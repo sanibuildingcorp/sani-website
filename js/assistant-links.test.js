@@ -20,7 +20,7 @@ function ext(name) {
 }
 const ctx = { String, RegExp };
 vm.createContext(ctx);
-vm.runInContext(ext('esc') + '\n' + ext('aiLinkify'), ctx);
+vm.runInContext(ext('esc') + '\n' + ext('aiMarks') + '\n' + ext('aiLinkify'), ctx);
 const L = (t) => vm.runInContext('aiLinkify(' + JSON.stringify(t) + ')', ctx);
 
 console.log('\nURLs in an answer become links\n');
