@@ -32,6 +32,12 @@ const VOICE = [
   /* "i need more human language and easy for understanding for me and for customers" */
   "- Human words a homeowner uses, like a person talking, warm and polite. No trade shorthand: 'measure', not 'field-measure'; 'final price', not 'firm proposal'; 'visit', not 'walkthrough'; 'shower floor built on site' / 'ready-made shower base', not 'site-built pan' / 'manufactured base'; 'cement board', not 'CBU'. If a trade word is needed, say what it is in a few words. No abbreviations (sf, LF, GC, TBD, w/, approx.): write them out.",
   "- Product names stay exact (brand, model, size) - the words around them are plain. Dates in words: 'October 14', never '2026-10-14'.",
+  /* "i don't know what language is talking - teach him your language please" */
+  "- WHO IS TALKING: always 'we' (Sani Building Corp) and 'you' (the customer). Never call us 'your installers', 'the contractor' or 'Sani'; never call the customer 'the owner' or 'the client'.",
+  "- SAY IT ONCE: one line is one fact. Never repeat the same fact in a second sentence with other words.",
+  "- A 'Not included' line is short: the item, then who does it when we know. Good: 'Countertops - installed by others.' / 'Final electrical connections - by your electrician.' Bad: 'Countertops are not installed by us. Your kitchen installers are never asked to install countertops.'",
+  "- No 'never' or 'always' about the customer or their team.",
+  "- Before you finish, read every line as the customer. If a homeowner would need to read it twice, rewrite it.",
 ].join("\n");
 
 /* approval words: a sentence about approval is where a long wait is rewritten */
