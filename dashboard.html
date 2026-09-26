@@ -5139,8 +5139,8 @@ function renderEdit() {
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (sectionsChecked ? " checked" : "") + ' id="cv-sections">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Per-service subtotals</div>' +
-              '<div class="cv-check-amount">Shows the price of each service card exactly as you have them above</div>' +
+              '<div class="cv-check-label">Show a price on each service card</div>' +
+              '<div class="cv-check-amount">Off = the customer sees only the total, no price on the cards (portal and PDF). Save, then send the update.</div>' +
             '</div>' +
           '</div>' +
           '<div class="cv-check' + (laborLinesChecked ? " checked" : "") + '" data-kind="laborLines" onclick="toggleCv(\'laborLines\')">' +
@@ -8282,9 +8282,11 @@ function scopePreview() {
   if (!box) return;
   var d = scopeCleanCopy();
   var html = '<div class="sc-preview-title">What the customer would see</div>';
+  /* "Show a price on each service card" off: the customer sees no card price, so neither does the preview */
+  var cardPrices = !(currentRecord && currentRecord.estimate && currentRecord.estimate.showSectionSubtotals === false);
   d.services.forEach(function (s2) {
     html += '<div class="sc-prev-svc"><div class="sc-prev-name">' + esc(s2.name) +
-      '<span class="sc-prev-total">' + fmt(scopeServiceSubtotal(s2.name)) + '</span></div>';
+      (cardPrices ? '<span class="sc-prev-total">' + fmt(scopeServiceSubtotal(s2.name)) + '</span>' : '') + '</div>';
     if (s2.included.length) html += '<div class="sc-prev-g"><b>Included</b><ul><li>' + s2.included.map(esc).join("</li><li>") + '</li></ul></div>';
     if (s2.supplied.length) html += '<div class="sc-prev-g"><b>You supply</b><ul><li>' + s2.supplied.map(esc).join("</li><li>") + '</li></ul></div>';
     if (s2.excluded.length) html += '<div class="sc-prev-g"><b>Not included</b><ul><li>' + s2.excluded.map(esc).join("</li><li>") + '</li></ul></div>';

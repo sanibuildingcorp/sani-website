@@ -127,7 +127,7 @@ function buildCustomerPdf(view, opts) {
   const W1 = CONTENT_W - 130, W2 = 130;
 
   if (shown > 0) {
-    doc.text("Price by service", { size: 12, bold: true, color: NAVY, after: 4 });
+    doc.text(e.showSectionSubtotals !== false ? "Price by service" : "Your price", { size: 12, bold: true, color: NAVY, after: 4 });
     if (e.showSectionSubtotals !== false) {
       cards.filter((c) => num(c.subtotal) > 0).forEach((c) => {
         doc.row([{ text: c.title, w: W1 }, { text: money(c.subtotal + forCard(c.title)), w: W2, align: "right" }], { size: 11 });
