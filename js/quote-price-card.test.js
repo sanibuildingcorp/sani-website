@@ -61,6 +61,28 @@ console.log('\nthe prices card renders rows and a money total, not source code\n
   ok('with per-service prices switched off the rows are dropped, the total stays', noSub.indexOf('<b>Bathroom</b>') === -1 && /\$12,441\.07/.test(noSub));
 }
 {
+  /* "In this project in the cards i need remove prices for in the customer side":
+     with the switch off, each service card's heading carries no price either. */
+  const line = QUOTE.split('\n').find(l => l.startsWith('function renderV7('));
+  const s = line.indexOf('<div class="head">'), e = line.indexOf('<div class="body">', s);
+  const tpl = '`' + line.slice(s, e) + '`';
+  const ctx = { e: { showSectionSubtotals: true }, s: { title: 'Kitchen', subtotal: 1093.63 }, i: 0, E: (x) => String(x), chosenFor: () => [], M: (n) => '$' + Number(n).toFixed(2) };
+  vm.createContext(ctx);
+  const on = vm.runInContext(tpl, ctx);
+  ok('A SERVICE CARD SHOWS ITS PRICE when the switch is on (the default)', /<h2>Kitchen<\/h2><\/div><b>\$1093\.63<\/b>/.test(on), on);
+  ctx.e = { showSectionSubtotals: false };
+  const off = vm.runInContext(tpl, ctx);
+  ok('...AND NONE when it is off - the heading is the service name only', off.indexOf('$') === -1 && /<h2>Kitchen<\/h2><\/div><\/div>/.test(off), off);
+  ctx.e = {};
+  ok('an older estimate with no setting keeps its card prices', /\$1093\.63/.test(vm.runInContext(tpl, ctx)));
+  ok('the prices card says "Your price" when the cards carry none', line.indexOf("${e.showSectionSubtotals!==false?'Price by service':'Your price'}") !== -1);
+  const pdf = fs.readFileSync(path.join(__dirname, '..', 'netlify/functions/lib/estimate-pdf.js'), 'utf8');
+  ok('the customer PDF: same heading, and its card bands already follow the switch', /e\.showSectionSubtotals !== false \? "Price by service" : "Your price"/.test(pdf) && /num\(c\.subtotal\) > 0 && e\.showSectionSubtotals !== false \?/.test(pdf));
+  const dash = fs.readFileSync(path.join(__dirname, '..', 'dashboard.html'), 'utf8');
+  ok('the dashboard switch says what it does, in plain words', /Show a price on each service card<\/div>/.test(dash) && /Off = the customer sees only the total, no price on the cards/.test(dash));
+  ok('...and "Preview what the customer sees" hides the card prices too', /var cardPrices = !\(currentRecord && currentRecord\.estimate && currentRecord\.estimate\.showSectionSubtotals === false\);/.test(dash) && /\(cardPrices \? '<span class="sc-prev-total">'/.test(dash));
+}
+{
   const line = QUOTE.split('\n').find(l => l.startsWith('function renderLegacy('));
   const s = line.indexOf('${hasPrice?`<section class="card prices">');
   const e = line.indexOf('</section>`:\'\'}', s);
