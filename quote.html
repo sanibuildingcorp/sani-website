@@ -788,7 +788,9 @@ function timelineCard(e){
    quote and saw one. Nothing errored, so nothing gave it away. */
 function heroPhoto(r){
  const rq=r.request||{},e=r.estimate||{};
- const ps=[...A(rq.photos),...A(e.quotePhotos)].filter(x=>x&&x.data);
+ /* a customer photo he marked "Hide" in the dashboard stays off the quote */
+ const off=A(e.hiddenQuotePhotos);
+ const ps=[...A(rq.photos).filter(x=>x&&off.indexOf(x.data)===-1),...A(e.quotePhotos)].filter(x=>x&&x.data);
  if(!ps.length)return'';
  const img=(p,i)=>`<img class="heroimg" alt="Project photo ${i+1}" src="${E(p.data)}" onclick="zoomPhoto(this)">`;
  if(ps.length===1)return img(ps[0],0);

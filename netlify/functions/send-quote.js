@@ -69,7 +69,8 @@ exports.handler = async function (event) {
     const quoteUrl = `${siteUrl}/quote.html?ref=${encodeURIComponent(ref)}`;
     const firstName = (customer.name || "there").split(" ")[0];
     const projectTitle = est.projectTitle || reqData.service || "your project";
-    const photoCount = [...(reqData.photos || []), ...(est.quotePhotos || [])].filter((p) => p && p.data).length;
+    const offQuote = Array.isArray(est.hiddenQuotePhotos) ? est.hiddenQuotePhotos : [];
+    const photoCount = [...(reqData.photos || []).filter((p) => p && offQuote.indexOf(p.data) === -1), ...(est.quotePhotos || [])].filter((p) => p && p.data).length;
     /* New York's date, as the estimate page prints it: a 9:34 pm send read
        "September 24" in the email and "September 23" on the page. */
     const issuedDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" });

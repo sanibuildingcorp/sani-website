@@ -1168,6 +1168,12 @@ body {
 }
 .answer-row .av { color: var(--ink-soft); flex: 1; }
 
+.qp-tile{position:relative;flex:0 0 auto;width:84px;height:84px}
+.qp-tile img{width:84px!important;height:84px!important;object-fit:cover;border-radius:8px;cursor:pointer;display:block}
+.qp-tile.qp-off img{opacity:.35;filter:grayscale(1)}
+.qp-hide{position:absolute;left:4px;right:4px;bottom:4px;font:inherit;font-size:11px;font-weight:600;padding:3px 0;border-radius:6px;border:0;background:rgba(10,22,40,.82);color:#fff;cursor:pointer}
+.qp-off .qp-hide{background:#b8720a}
+.qp-note{position:absolute;top:4px;left:4px;right:4px;font-size:10px;font-weight:700;text-align:center;color:#b3261e;background:rgba(255,255,255,.9);border-radius:5px;padding:1px 0}
 .cust-photos {
   margin-top: 14px;
   display: flex;
@@ -5105,7 +5111,7 @@ function renderEdit() {
     '<div class="form-section">' +
       '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
       ((req.photos && req.photos.length > 0) ?
-        '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Customer Uploaded</div><div class="cust-photos" id="customer-photos-strip">' + photosHtml + '</div></div>'
+        '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Customer Uploaded</div><div class="cust-photos" id="customer-photos-strip">' + quotePhotoTiles() + '</div><div style="font-size:12px;color:var(--ink-muted);margin-top:6px">Tap ✕ Hide to keep a photo off the customer\'s quote. It stays in the job for you and the AI. Save, then send the update.</div></div>'
         : '') +
       '<div><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Your Additional Photos</div>' +
       '<label for="quote-photo-input" style="display:block;border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;font-size:13px;color:var(--ink-muted);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.color=\'var(--gold)\'" onmouseout="this.style.borderColor=\'var(--line)\';this.style.color=\'var(--ink-muted)\'">📸 Add photos to include in the quote (up to 6)</label>' +
@@ -5303,6 +5309,35 @@ function renderQuotePhotoPreview() {
       '<button onclick="removeQuotePhoto(' + i + ')" style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;border:none;cursor:pointer;font-size:13px;line-height:1">×</button>' +
     '</div>';
   }).join("");
+}
+
+/* ── A CUSTOMER PHOTO KEPT OFF THE QUOTE ──────────────────────────────────
+     "This photos i can't delete if i don't wanna to send them with estimate"
+   The customer's own uploads (here: the PDF plan pages) always went onto the
+   quote. They are not deleted - the AI reads them - they are listed in
+   estimate.hiddenQuotePhotos (by link) and quote.html leaves them out. */
+function quotePhotoTiles() {
+  var req = (currentRecord && currentRecord.request) || {};
+  var hidden = (currentRecord && currentRecord.estimate && currentRecord.estimate.hiddenQuotePhotos) || [];
+  return (req.photos || []).slice(0, 10).map(function (p, i) {
+    var off = hidden.indexOf(p && p.data) !== -1;
+    return '<div class="qp-tile' + (off ? ' qp-off' : '') + '">' +
+      '<img src="' + esc(p.data) + '" alt="customer photo" onclick="openLightbox(\'' + esc(p.data) + '\')">' +
+      (off ? '<span class="qp-note">Not on quote</span>' : '') +
+      '<button type="button" class="qp-hide" onclick="toggleQuotePhoto(' + i + ')">' + (off ? 'Show' : '✕ Hide') + '</button>' +
+    '</div>';
+  }).join("");
+}
+function toggleQuotePhoto(i) {
+  if (!currentRecord || !currentRecord.estimate) return;
+  var p = ((currentRecord.request && currentRecord.request.photos) || [])[i];
+  if (!p || !p.data) return;
+  var list = (currentRecord.estimate.hiddenQuotePhotos || []).slice();
+  var at = list.indexOf(p.data);
+  if (at === -1) list.push(p.data); else list.splice(at, 1);
+  currentRecord.estimate.hiddenQuotePhotos = list;
+  var strip = document.getElementById("customer-photos-strip");
+  if (strip) strip.innerHTML = quotePhotoTiles();
 }
 
 function removeQuotePhoto(idx) {
@@ -6402,7 +6437,7 @@ var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   "showLaborLinePrices", "showMaterialLinePrices",
   // Manually set money + hand-built extras
   "customerFinalTotal", "finishGroups", "contract",
-  "quotePhotos", "savedMaterials", "materialsTotalEstimate",
+  "quotePhotos", "hiddenQuotePhotos", "savedMaterials", "materialsTotalEstimate",
   // Price lines parked by "Not included" - the money waiting to come back
   "parkedLines",
   // Snapshot that makes the last service merge reversible
@@ -8384,6 +8419,7 @@ function gatherForm() {
     labor: currentRecord.estimate.labor || [],
     materials: currentRecord.estimate.materials || [],
     quotePhotos: currentRecord.estimate.quotePhotos || [],
+    hiddenQuotePhotos: currentRecord.estimate.hiddenQuotePhotos || [],
     savedMaterials: currentRecord.estimate.savedMaterials || [],
     materialsTotalEstimate: currentRecord.estimate.materialsTotalEstimate || 0,
     /* Customer Scope Control. The draft is private to the contractor; only the
