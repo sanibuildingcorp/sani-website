@@ -96,6 +96,17 @@ const MODEL = "claude-sonnet-5";
    synchronous path stay on the fast model. */
 const ESTIMATOR_MODEL = process.env.ESTIMATOR_MODEL || "claude-opus-5";
 const ESTIMATOR_TOKEN_CAP = 16000;
+const { jobEmails, emailsText } = require("./lib/job-emails");
+const jobDocuments = require("./lib/job-documents");
+/* ══ CHECK BEFORE SENDING ══════════════════════════════════════════════════
+     "A check before sending compares every line with the emails and plans.
+      It flags work for other trades, missing allowances and contradictions."
+   The dashboard's "Check before sending" asks this, in the estimate's chat:
+   the estimator reads the customer's emails and the plans (both attached
+   on this turn) against every line, card, assumption and exclusion. */
+const CHECK_RE = /^\s*check before sending\b/i;
+const CHECK_NOTE = "THIS IS THE CHECK BEFORE SENDING. Read the customer's emails (block below), the drawings attached to this message, the description and the chat, then every line, card, assumption, exclusion and note of the estimate. Report, numbered, most costly first, each with the line ids and the money: (1) work priced that the emails or plans give to another trade or never ask for; (2) work the emails or plans ask for that is not priced - including allowances they ask for (niches, shelves, glass, bases) and quantities the plans show (rooms, fixtures, tubs, showers) that the lines do not match; (3) contradictions between the lines, the cards, the assumptions, the exclusions and the notes; (4) a customer-supplied item priced as material, or anything priced twice; (5) every question the emails ask the contractor to answer (duration, earliest start, allowances, additional preparation, owner-supplied items) that the estimate does not answer yet. Start with one line: READY TO SEND, or NOT READY - N things to fix. Then send the fixes that are clear as actions in this same answer (lines for money, reword for words); anything that needs his decision or a price only he can set, say it as a question and send no action for it. Never invent a finding: if a list is clean, say it is clean.";
+const PLAN_WORDS_RE = /\b(plan|plans|drawing|drawings|pdf|sheet|sheets|dimension|dimensions|takeoff|take-off|layout|measure|square f|sq\.? ?ft|sf)\b/i;
 const MAX_TOKENS = 800;
 /* The screen snapshot as text is capped here. 87 estimates come to ~10k. */
 const SCREEN_CHARS = 14000;
@@ -258,7 +269,19 @@ async function answer(body, clocks) {
     withTimeout(loadInsights(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }),
     withTimeout(inboxContext(str(body.ref), lastUser ? lastUser.text : ""), c.recordMs || RECORD_MS).catch(function () { return ""; }),
     estimatorOn ? withTimeout(loadHouseRules(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }) : Promise.resolve(""),
+    estimatorOn ? withTimeout(loadRecord(str(body.ref)), c.recordMs || RECORD_MS).catch(function () { return null; }) : Promise.resolve(null),
   ]);
+  /* ── THE ESTIMATOR READS HER EMAILS AND THE PLANS ─────────────────────────
+     Her emails about this job in full (lib/job-emails.js), every time. The
+     PDF plans (lib/job-documents.js) on the turns that need them - the check
+     before sending, or a message about the plans - because a plan set is
+     tens of pages and every turn would pay for it. */
+  const jobRec = reads[5];
+  const jobMail = estimatorOn && jobRec ? await withTimeout(jobEmails(jobRec), c.recordMs || RECORD_MS).catch(function () { return []; }) : [];
+  const isCheck = estimatorOn && !!lastUser && CHECK_RE.test(lastUser.text);
+  const wantsPlans = estimatorOn && !!lastUser && (isCheck || PLAN_WORDS_RE.test(lastUser.text));
+  const docBlocks = wantsPlans && jobRec ? jobDocuments.documentBlocks(jobRec.request, jobRec) : [];
+  if (docBlocks.length && lastUser) lastUser.docs = docBlocks;
   const context = reads[0] && typeof reads[0] === "object" ? reads[0].text : reads[0];
   const glance = reads[0] && typeof reads[0] === "object" ? str(reads[0].glance) : "";
   const since = reads[0] && typeof reads[0] === "object" ? str(reads[0].since) : "";
@@ -281,11 +304,23 @@ async function answer(body, clocks) {
   const inboxText = reads[3];
   const screen = screenContext(body.screen);
 
+  /* after the ESTIMATE RIGHT NOW note, which is written above */
+  if (isCheck) lastUser.note = (lastUser.note ? lastUser.note + "\n" : "") + "[" + CHECK_NOTE + "]";
   const deadline = c.deadline || (Date.now() + budgetMs);
-  const system = systemPrompt(context, screen, memory, insights, inboxText, estimatorOn ? { on: true, houseRules: reads[4] } : null);
+  const system = systemPrompt(context, screen, memory, insights, inboxText, estimatorOn ? { on: true, houseRules: reads[4], emails: jobMail, drawings: docBlocks.length / 2 } : null);
   const how = estimatorOn ? { model: ESTIMATOR_MODEL, think: true } : null;
   const maxTokens = estimatorOn ? Math.max(c.maxTokens || 0, ESTIMATOR_TOKEN_CAP) : c.maxTokens;
-  const out = await callClaude(apiKey, system, turns, deadline, maxTokens, how);
+  let out;
+  try {
+    out = await callClaude(apiKey, system, turns, deadline, maxTokens, how);
+  } catch (e) {
+    /* a plan file the API refuses (too many pages, unreachable) never costs
+       the answer: once more without the drawings */
+    if (!(lastUser && lastUser.docs)) throw e;
+    delete lastUser.docs;
+    lastUser.note = (lastUser.note ? lastUser.note + "\n" : "") + "[The drawings could not be attached this time (" + str(e && e.message).slice(0, 120) + "); say so, and check against the emails and the estimate.]";
+    out = await callClaude(apiKey, system, turns, deadline, maxTokens, how);
+  }
   let parsed = extractActions(out.text, out.truncated === true);
   /* ── "FIXING THE SUMMARY LINE NOW" - AND NOTHING WAS SENT ────────────────
        The answer said it was fixing; it carried no ACTION line, so nothing
@@ -319,6 +354,12 @@ async function answer(body, clocks) {
   return { reply: replyText, truncated: out.truncated === true, actions: toClient, estimator: estimatorOn };
 }
 exports.answer = answer;
+
+/* The estimate record, for the emails and the plans of the estimator. */
+async function loadRecord(ref) {
+  if (!ref) return null;
+  return getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN }).get(ref, { type: "json" });
+}
 
 /* His house rules - the pricing notes the generator is given (house-rules.js
    keeps them in the estimates store) - for the chat in estimator mode. */
@@ -1140,6 +1181,11 @@ function systemPrompt(context, screen, memory, insights, inboxText, estimator) {
       "- Keep the job consistent when you change it: a line removed means its included bullet goes too (a reword in the same answer); a line for work another trade does (plumber, electrician) is removed, not reworded; nothing is priced twice.",
       "- He is the boss of this estimate. What he says in this chat outranks the description, the generator's draft and your own earlier answers.",
       est.houseRules ? "\nHIS HOUSE RULES (the generator prices with these; you do too):\n" + String(est.houseRules).slice(0, 6000) : "",
+      "",
+      est.drawings ? "THE DRAWINGS (" + est.drawings + " PDF file" + (est.drawings === 1 ? "" : "s") + ") are attached to his latest message: read every page when the question is about quantities, rooms, fixtures or what the plans show." : "The job's PDF plans are not attached to this message; they come with the check before sending and with any question about the plans - say so if he asks about them now.",
+      arr(est.emails).length
+        ? "\nTHE CUSTOMER'S EMAILS ABOUT THIS JOB (full text, oldest first - her own words; the description may be his rewrite of them. Where the description or the estimate adds what she never asked for, or misses what she did, say so):\n" + emailsText(est.emails)
+        : "\nTHE CUSTOMER'S EMAILS ABOUT THIS JOB: none found in his inbox for this estimate (matched by ref, her address, her name or the street address).",
     ].filter(Boolean).join("\n") : "",
     notes.length ? "THINGS HE ASKED YOU TO REMEMBER:\n" + notes.join("\n") + "\n" : "",
     context ? context : "No job is open." + (screen ? "" : " Answer whatever he asks."),
@@ -1175,8 +1221,10 @@ function callClaude(apiKey, system, turns, deadline, maxTokens, how) {
       /* the glance rides with his latest message and is never written to the chat */
       const text = t.note ? t.text + "\n\n" + t.note : t.text;
       const job = Array.isArray(t.jobImages) ? t.jobImages : [], mine = Array.isArray(t.images) ? t.images : [];
-      if (!job.length && !mine.length) return { role: t.role, content: text };
-      const blocks = [];
+      const docs = Array.isArray(t.docs) ? t.docs : [];
+      if (!job.length && !mine.length && !docs.length) return { role: t.role, content: text };
+      /* the drawings first (lib/job-documents.js blocks: a label, a document) */
+      const blocks = docs.slice();
       job.forEach(function (im) { blocks.push({ type: "text", text: im.label }); blocks.push({ type: "image", source: im.source }); });
       if (mine.length) { if (job.length) blocks.push({ type: "text", text: "Pictures he uploaded with this question:" }); mine.forEach(function (im) { blocks.push({ type: "image", source: { type: "base64", media_type: im.mediaType, data: im.data } }); }); }
       blocks.push({ type: "text", text: text });
