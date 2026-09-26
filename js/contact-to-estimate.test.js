@@ -155,6 +155,7 @@ const MIKE = {
     const dctx = { String };
     vm.createContext(dctx);
     vm.runInContext('function esc(s){return s==null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}', dctx);
+    vm.runInContext(DASH.split('\n').find(l => l.startsWith('function reqFileUrl(')), dctx);
     dctx.p = rec.request.photos[0];
     const img = vm.runInContext('(' + line.trim().replace(/^return\s+/, '').replace(/;$/, '') + ')', dctx);
     ok('THE DASHBOARD IMAGE HAS A REAL src — a broken photo is what was reported',
