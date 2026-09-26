@@ -190,6 +190,81 @@ button{padding:15px;border:0;border-radius:6px;font-weight:700;font-family:var(-
   .actions{grid-template-columns:1fr}
   .hero h1{font-size:22px}
 }
+
+/* ══ DOCUMENT STYLE (Sep 27 2026) ═══════════════════════════════════════════
+   "I like this design, i mean style, can you update in my customer view
+    design? Nothing change just style" - a clean estimate document: white
+   paper, a plain letterhead, navy section headings over a thin rule,
+   table-style price rows and service boxes, simple bullets. Every word,
+   price and button on the page stays exactly as it was; only how it looks
+   changes. Written as overrides so the rules above keep their history. */
+:root{--dn:#1f3a5f;--dline:#d3dbe6;--dhead:#e9eef4;--dtext:#1d2530;--dmuted:#5f6b7a}
+body{background:#f2f4f7;color:var(--dtext);font-family:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif}
+.top{background:#fff;color:var(--dn);max-width:860px;margin:18px auto 0;padding:34px 44px 0;border:1px solid #e3e7ee;border-bottom:0;border-radius:4px 4px 0 0}
+.top .brand{max-width:none;font-size:24px;font-weight:800;letter-spacing:-.01em;color:var(--dn)}
+.top .brand span{color:var(--dn)}
+.top .brand::after{content:"Brooklyn, NY \00B7  (332) 277-0990 \00B7  contact@sanibuildingcorp.com";display:block;font-size:12.5px;font-weight:400;letter-spacing:0;color:var(--dmuted);margin-top:4px}
+.wrap{background:#fff;max-width:860px;padding:22px 44px 44px;border:1px solid #e3e7ee;border-top:0;border-radius:0 0 4px 4px;margin-bottom:10px}
+.pin{background:var(--dn)}
+.pin .pr2{color:#fff}
+/* the title block */
+.hero{background:transparent;color:var(--dtext);padding:0;border-radius:0}
+.hero .ey{color:var(--dmuted);font-weight:600;font-size:13px}
+.hero h1{color:var(--dn);font-size:23px;font-weight:700;letter-spacing:-.01em;margin-top:6px}
+.hero>p{color:var(--dmuted);margin:6px 0 0}
+.meta{gap:0;margin-top:16px;border:1px solid var(--dline)}
+.meta div{border-top:0;border-right:1px solid var(--dline);padding:9px 12px;font-size:14px;color:var(--dtext)}
+.meta div:last-child{border-right:0}
+.meta small{color:var(--dmuted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+.heroimg{border-radius:3px}
+/* sections: a navy heading over a thin rule, on the paper itself */
+.card{background:transparent;border:0;border-radius:0;padding:0;margin-top:28px}
+.card>.ey{display:block;color:var(--dn);font-size:17px;font-weight:700;letter-spacing:0;padding:0 0 7px!important;margin-bottom:12px;border-bottom:1.5px solid var(--dn)}
+.card p{color:var(--dtext);font-size:14.5px}
+/* the price rows read as a table */
+.prices{overflow:visible}
+.pr{border:1px solid var(--dline);border-top:0;padding:10px 14px;font-size:14.5px;color:var(--dtext)}
+.card.prices>.ey+.pr,.card.prices>.pr:first-of-type{border-top:1px solid var(--dline)}
+.pr b{font-weight:600}
+.pr.total{background:var(--dhead);color:var(--dn);font-size:17px;font-weight:700;border:1px solid var(--dline);border-top:0}
+/* each service is a boxed block with a light header row */
+.svc{background:#fff;border:1px solid var(--dline);border-radius:0;margin-top:18px}
+.head{background:var(--dhead);color:var(--dn);border-radius:0;border-bottom:1px solid var(--dline);padding:11px 14px;align-items:center}
+.head .ey{color:var(--dmuted);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.head h2{color:var(--dn);font-size:16.5px;font-weight:700}
+.head b{color:var(--dn);font-size:16px}
+.body{padding:12px 16px 14px}
+.label,.label.in,.label.sup,.label.out{color:var(--dn);font-weight:700;font-size:14px;margin:14px 0 4px}
+li{padding:3px 0 3px 18px;border-bottom:0;font-size:14.5px;line-height:1.5;color:var(--dtext)}
+li:before{top:3px}
+.inlist li:before,.suplist li:before,.outlist li:before{content:'\2022';font-size:16px;font-weight:700;top:1px;line-height:1.4}
+.inlist li:before{color:var(--dn)}
+.suplist li:before{color:#9a6b12}
+.outlist li:before{color:#a8443f}
+details{border-top:1px solid var(--dline)}
+summary{color:var(--dn)}
+.lines td{border-bottom:1px solid #edf0f4}
+/* buttons and notes */
+button{border-radius:4px}
+.approve{background:var(--dn);color:#fff}
+.ask{border:1px solid var(--dn);color:var(--dn)}
+.approved{border-radius:4px}
+.msg.me{background:var(--dn)}
+.msg.me .msgmeta{color:#cfe0f5}
+.footer{color:var(--dmuted)}
+@media(max-width:600px){
+  .top{margin:0;padding:22px 18px 0;border-radius:0;border-left:0;border-right:0}
+  .top .brand{font-size:20px}
+  .wrap{padding:16px 18px 96px;border-radius:0;border-left:0;border-right:0}
+  .meta{grid-template-columns:1fr 1fr}
+  .meta div:nth-child(2n){border-right:0}
+  .meta div:nth-child(n+3){border-top:1px solid var(--dline)}
+  .hero h1{font-size:20px}
+}
+@media print{
+  .top,.wrap{border:0;box-shadow:none;margin:0;padding-left:0;padding-right:0}
+  .pr.total,.head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
