@@ -395,6 +395,7 @@ const THIN = {
       document: { getElementById: (id) => id === 'cnv-text' ? box : (id === 'cnv-section' ? { scrollIntoView() { scrolled = true; } } : null) }
     };
     vm.createContext(ctx);
+    { const a = DASH.search(/function aiPlain\s*\(/); let dd = 0; for (let j = DASH.indexOf('{', a); j < DASH.length; j++) { if (DASH[j] === '{') dd++; else if (DASH[j] === '}') { dd--; if (!dd) { vm.runInContext(DASH.slice(a, j + 1), ctx); break; } } } }
     vm.runInContext(body, ctx);
 
     vm.runInContext('askCopyToCustomer(1)', ctx);
