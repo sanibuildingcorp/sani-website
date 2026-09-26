@@ -111,7 +111,7 @@ console.log('\n3. The scope writer: its own words kept, shared work once, a reas
   console.log('\n4. Everyone shows the one list\n');
   ok('THE CUSTOMER PAGE: "Included for the whole project" above the services', /function projectCard\(e\)\{/.test(QUOTE) && /Included for the whole project/.test(QUOTE) && /\$\{projectCard\(e\)\}\$\{sv\.map\(\(s,i\)=>/.test(QUOTE));
   ok('THE SCOPE PDF: a "Whole project" card first', /cards\.unshift\(\{ title: "Whole project", included: shared/.test(PDF));
-  ok('THE DASHBOARD: the list above the service cards; a warning line when stock phrases were kept', /Included for the whole project<\/div>/.test(DASH) && /Said once for all services\. Type to change a line\./.test(DASH) && /Customer wording: ' \+ esc\(String\(swn\)/.test(DASH));
+  ok('THE DASHBOARD: the list above the service cards; a warning line when stock phrases were kept', /Included for the whole project<\/div>/.test(DASH) && /Tap a line to edit it\./.test(DASH) && /Customer wording: ' \+ esc\(String\(swn\)/.test(DASH));
   ok('ASK AI reads it and can reword it (where "project")', /INCLUDED FOR THE WHOLE PROJECT \(said once, above the services/.test(ASSIST) && /project \(a line of INCLUDED FOR THE WHOLE PROJECT/.test(ASSIST));
   const rec = { estimate: consolidated() }; rec.estimate.scopeOfWork = ST.scopeTextFromCards(rec.estimate);
   const out = R.applyEdits(rec, [{ where: 'project', from: 'Coordinate and supervise every trade, inspection and delivery', to: 'One foreman runs the job and schedules every trade' }]);

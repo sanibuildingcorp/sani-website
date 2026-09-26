@@ -1289,8 +1289,9 @@ body {
 .sc-pill{display:inline-block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;padding:4px 10px;border-radius:20px;font-weight:700}
 .sc-pill-live{background:#e6f4ea;color:#1e6b34}
 .sc-pill-draft{background:#f1f1f1;color:#666}
-.sc-prow{display:flex;gap:6px;align-items:flex-start;margin-bottom:6px}
-.sc-prow .pi-item{flex:1;min-width:0;resize:none;overflow:hidden;font:inherit;font-size:13.5px;line-height:1.45;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;min-height:36px}
+.sc-plist{margin:0 0 6px;padding-left:18px;font-size:13.5px;line-height:1.55}
+.sc-pli{padding:2px 4px;margin:0 -4px 2px;border-radius:5px;outline:none;cursor:text;min-height:1.5em}
+.sc-pli:focus{background:#fffbea;box-shadow:0 0 0 1px #e6d59a}
 .sc-boldfab{position:fixed;right:14px;bottom:18px;z-index:10050;display:none;background:#0a1628;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
 .sc-boldfab b{font-size:17px;margin-right:4px}
 .sc-service{border:1px solid var(--line);border-radius:12px;padding:0;margin-bottom:14px;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(10,22,40,.05)}
@@ -7142,18 +7143,20 @@ function renderScopeControl() {
   /* The shared work, said once - what the customer reads above the
      services. Ask AI edits it ("reword the whole-project line ..."). */
   var shared = (est.projectIncluded || []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }).filter(Boolean);
-  /* "if i want add or change some text it's not allowed me, make it editable" -
-     each line is a box he types in, with ✕ and + Add, saved with Save. */
+  /* "if i want add or change some text it's not allowed me, make it editable"
+     then "No it's terrible ... Just tap finger and start editing": the list
+     looks exactly as it did - plain bullets, bold shown as bold - and each
+     line is edited where it stands. Enter starts a new line; erasing a line
+     removes it. Saved with Save. */
   if (shared.length || Array.isArray(est.projectIncluded)) {
+    var escB = function (t) { return esc(t).replace(/\*\*([^*\n]+?)\*\*/g, "<b>$1</b>"); };
     html += '<div class="sc-service sc-proj" style="padding:12px 14px"><div style="font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Included for the whole project</div>' +
-      shared.map(function (t, i) {
-        return '<div class="sc-prow"><textarea class="sc-item pi-item" rows="1" ' +
-          'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" ' +
-          'onchange="projEdit(' + i + ',this.value)">' + esc(t) + '</textarea>' +
-          '<button class="sc-del" onclick="projDelete(' + i + ')" title="Delete">&#10005;</button></div>';
-      }).join('') +
+      '<ul class="sc-plist">' + shared.map(function (t, i) {
+        return '<li class="sc-pli" contenteditable="true" spellcheck="true" data-i="' + i + '" ' +
+          'onblur="projEditEl(this)" onkeydown="projKey(event,this)" onpaste="projPaste(event)">' + escB(t) + '</li>';
+      }).join('') + '</ul>' +
       '<button class="sc-add" onclick="projAdd()">+ Add</button>' +
-      '<div style="font-size:11px;color:var(--ink-muted);margin-top:6px">Said once for all services. Type to change a line. For <b>bold</b>, select words and tap <b>B</b>. Press Save.</div></div>';
+      '<div style="font-size:11px;color:var(--ink-muted);margin-top:6px">Tap a line to edit it. For <b>bold</b>, select words and tap <b>B</b>. Press Save.</div></div>';
   }
 
   d.services.forEach(function (svc, si) {
@@ -7646,14 +7649,56 @@ function projDelete(i) {
   currentRecord.estimate.projectIncluded = l;
   renderScopeControl();
 }
-function projAdd() {
+function projAdd(at) {
   if (!currentRecord || !currentRecord.estimate) return;
-  var l = projList(); l.push("New line - type here");
+  var l = projList(), pos = at == null ? l.length : at;
+  l.splice(pos, 0, "New line");
   currentRecord.estimate.projectIncluded = l;
   renderScopeControl();
-  var boxes = document.querySelectorAll(".pi-item");
-  var last = boxes[boxes.length - 1];
-  if (last) { last.focus(); try { last.select(); } catch (e) {} }
+  var el = document.querySelectorAll(".sc-pli")[pos];
+  if (el) {
+    el.focus();
+    try { var r = document.createRange(); r.selectNodeContents(el); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch (e) {}
+  }
+}
+/* What he typed, back to text: bold stays as **...**, nothing else is kept. */
+function htmlToMark(node) {
+  return markRaw(node).replace(/\u00a0/g, " ").replace(/\*\*\*\*/g, "").replace(/\s+/g, " ").trim();
+}
+function markRaw(node) {
+  var out = "";
+  (node && node.childNodes ? Array.prototype.slice.call(node.childNodes) : []).forEach(function (c) {
+    if (c.nodeType === 3) { out += c.nodeValue; return; }
+    if (c.nodeType !== 1) return;
+    var tag = String(c.nodeName || "").toLowerCase();
+    if (tag === "br") { out += " "; return; }
+    var inner = markRaw(c);
+    var bold = tag === "b" || tag === "strong" || /bold|[6-9]00/.test(String((c.style && c.style.fontWeight) || ""));
+    if (bold && inner.trim()) {
+      /* spaces at the edges stay outside the marks */
+      var m = /^(\s*)([\s\S]*?)(\s*)$/.exec(inner.replace(/\*\*/g, ""));
+      out += m[1] + "**" + m[2] + "**" + m[3];
+    } else out += inner;
+  });
+  return out;
+}
+function projEditEl(el) {
+  var i = parseInt(el.getAttribute("data-i"), 10);
+  if (isNaN(i)) return;
+  var now = htmlToMark(el), was = projList()[i];
+  if (now === was) return;
+  projEdit(i, now);
+}
+function projKey(e, el) {
+  /* Enter: this line is done, a new one starts under it */
+  if (e.key === "Enter") { e.preventDefault(); projEditEl(el); projAdd(parseInt(el.getAttribute("data-i"), 10) + 1); }
+}
+function projPaste(e) {
+  /* pasted text comes in plain - no fonts or colours from another app */
+  var t = (e.clipboardData || window.clipboardData);
+  if (!t) return;
+  e.preventDefault();
+  document.execCommand("insertText", false, String(t.getData("text") || "").replace(/\s+/g, " "));
 }
 
 /* ── BOLD ───────────────────────────────────────────────────────────────────
@@ -7678,10 +7723,16 @@ function boldToggle(text, a, b) {
   return { text: out, a: a + lead, b: a + lead + core.length + 4 };
 }
 var BOLD_FIELD = null;
-function boldTarget(el) { return el && el.classList && el.classList.contains("sc-item") ? el : null; }
+function boldTarget(el) { return el && el.classList && (el.classList.contains("sc-item") || el.classList.contains("sc-pli")) ? el : null; }
 function boldApply() {
   var el = BOLD_FIELD;
   if (!el) return;
+  if (el.isContentEditable) {
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed) { toast("Select the words first, then tap B"); return; }
+    document.execCommand("bold");
+    return;
+  }
   var r = boldToggle(el.value, el.selectionStart, el.selectionEnd);
   if (!r) { toast("Select the words first, then tap B"); return; }
   el.value = r.text;
@@ -7723,7 +7774,8 @@ document.addEventListener("focusout", function (e) {
   }, 150);
 });
 document.addEventListener("keydown", function (e) {
-  if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B") && boldTarget(e.target)) { e.preventDefault(); BOLD_FIELD = e.target; boldApply(); }
+  /* a typed line (input) gets the ** marks; an edited list line bolds natively */
+  if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B") && boldTarget(e.target) && !e.target.isContentEditable) { e.preventDefault(); BOLD_FIELD = e.target; boldApply(); }
 });
 if (window.visualViewport) { window.visualViewport.addEventListener("resize", boldPlace); window.visualViewport.addEventListener("scroll", boldPlace); }
 
