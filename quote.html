@@ -624,7 +624,11 @@ function pubScope(e,active){
   main.notIncluded=U([...A(main.notIncluded),...A(ps.excluded||ps.notIncluded)]);
  });
  return active}
-function list(label,cl,a){a=U(a);if(!a.length)return'';return`<div class="label ${cl}">${label}</div><ul class="${cl}list">${a.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`}
+/* "if i wanna make bold text somewhere": words he marked **like this** in the
+   dashboard (the B button) show bold. Escaped first, so only the marks turn
+   into <b> - nothing else in the text can become HTML. */
+function EB(s){return E(s).replace(/\*\*([^*\n]+?)\*\*/g,'<b>$1</b>')}
+function list(label,cl,a){a=U(a);if(!a.length)return'';return`<div class="label ${cl}">${label}</div><ul class="${cl}list">${a.map(x=>`<li>${EB(x)}</li>`).join('')}</ul>`}
 function inSvc(x,s){const sec=C(x.section);return (sec&&sec===s.title)||trade(x.item,x.section)===s.title}
 function details(e,s){
  /* A breakdown is a LIST of what the customer is getting. Whether it carries prices
