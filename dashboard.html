@@ -5932,6 +5932,39 @@ function _stScaleBucket(arr, targetSub, kind){
     for(var k=arr.length-1;k>=0;k--){ var q=Number(arr[k].qty)||0; if(q>0){ arr[k].rate = Math.round((arr[k].rate + resid/q)*100)/100; break; } }
   }
 }
+function _stLandExact(est, target, mode, isPinned) {
+  var want = Math.round(target * 100) / 100;
+  var shownTotal = function () { return Math.round(calcCustomerView(est).customerTotal * 100) / 100; };
+  if (shownTotal() === want) return true;
+  var sh = _stShown(est), k = 1 + (Number(est.markupPct) || 0) / 100;
+  var pools = [];
+  if ((mode === "all" || mode === "labor") && sh.labor) pools.push(est.labor || []);
+  if ((mode === "all" || mode === "mat") && sh.mat) pools.push(est.materials || []);
+  var cands = [];
+  pools.forEach(function (arr) { arr.forEach(function (l) { if ((Number(l.qty) || 0) > 0 && !(isPinned && isPinned(l))) cands.push(l); }); });
+  cands.sort(function (a, b) {
+    var a1 = Number(a.qty) === 1 ? 0 : 1, b1 = Number(b.qty) === 1 ? 0 : 1;
+    if (a1 !== b1) return a1 - b1;
+    return (Number(b.qty) || 0) * (Number(b.rate) || 0) - (Number(a.qty) || 0) * (Number(a.rate) || 0);
+  });
+  for (var c = 0; c < cands.length && c < 6; c++) {
+    var l = cands[c], q = Number(l.qty) || 0, was = Number(l.rate) || 0;
+    var raw = calcCustomerView(est).customerTotal;
+    var ideal = was + (want - raw) / (k * q);
+    if (ideal < 0) continue;
+    for (var dp = 2; dp <= 4; dp++) {
+      var f = Math.pow(10, dp), base = Math.round(ideal * f) / f;
+      /* the nearest step, then one step either side */
+      var tries = [base, base + 1 / f, base - 1 / f];
+      for (var t = 0; t < tries.length; t++) {
+        l.rate = Math.round(tries[t] * f) / f;
+        if (l.rate >= 0 && shownTotal() === want) return true;
+      }
+    }
+    l.rate = was;
+  }
+  return false;
+}
 function applySetTotal(){
   if(!currentRecord || !currentRecord.estimate) return;
   syncLines();
@@ -6003,6 +6036,17 @@ function applySetTotal(){
     if(newMatSub < -0.005){ warn.textContent = "Too low — labor alone is " + fmt(laborPart*mk) + "."; warn.style.display="block"; return; }
     _scale("materials", Math.max(0,newMatSub));
   }
+
+  /* ══ EXACTLY THE NUMBER HE TYPED. ═════════════════════════════════════════
+       "Why this total set always add or cut some cents. Let me always add
+        whatever i write"
+     Spreading the total over the lines rounds every rate to a cent, and the
+     markup then multiplies those cents: $2,750 came out $2,750.03. The last
+     step moves ONE line (a free line in the bucket that was adjusted,
+     one-quantity lines first) by the leftover, so the customer total lands on
+     the typed figure to the cent. The rate keeps 2 decimals when that is
+     enough and up to 4 when the markup needs it. */
+  _stLandExact(est, target, _stMode, _isPinned);
 
   /* ══ AND RE-STAMP THE AGREED PRICE. ════════════════════════════════════════
      record.customerFinalTotal is the price the customer was last shown, and
