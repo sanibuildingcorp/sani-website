@@ -22,6 +22,8 @@ const assistant = require("./assistant");
 
 /* Generous, not infinite: a hung socket must still end. */
 const ANSWER_MS = 90000;
+/* The estimator thinks before it prices: four minutes. */
+const ESTIMATOR_MS = 240000;
 const RECORD_MS = 6000, MEMORY_MS = 5000, CHAT_WRITE_MS = 4000;
 /* No clock here, so the answer may be longer than the sync function's 800
    tokens: a reword action copying six lines exactly is not short. */
@@ -52,7 +54,11 @@ exports.handler = async function (event) {
   const jobs = jobStore();
   await jobs.set(id, JSON.stringify({ status: "running", kind: "answer", at: new Date().toISOString() }));
   try {
-    const out = await assistant.answer(body, { deadline: Date.now() + ANSWER_MS, recordMs: RECORD_MS, memoryMs: MEMORY_MS, chatWriteMs: CHAT_WRITE_MS, maxTokens: MAX_TOKENS, jobPhotos: JOB_PHOTOS, estimateChars: ESTIMATE_CHARS });
+    /* Inside an estimate the chat is the estimator (assistant.js): the
+       generator's model, thinking, up to four minutes. */
+    /* The estimate's own chat (chat = the ref), not the drawer. */
+    const estimator = !!str(body.ref) && str(body.chat) === str(body.ref);
+    const out = await assistant.answer(body, { deadline: Date.now() + (estimator ? ESTIMATOR_MS : ANSWER_MS), recordMs: RECORD_MS, memoryMs: MEMORY_MS, chatWriteMs: CHAT_WRITE_MS, maxTokens: MAX_TOKENS, jobPhotos: JOB_PHOTOS, estimateChars: ESTIMATE_CHARS, estimator: estimator });
     await jobs.set(id, JSON.stringify({ status: "done", kind: "answer", reply: out.reply, truncated: out.truncated === true, actions: out.actions, at: new Date().toISOString() }));
     return { statusCode: 200, headers: cors(), body: JSON.stringify({ ok: true, job: id }) };
   } catch (e) {

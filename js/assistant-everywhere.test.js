@@ -105,8 +105,9 @@ const SCREEN = {
     await call({ messages: [{ role: 'user', text: 'hi' }], screen: big });
     /* The list itself is capped at SCREEN_CHARS (14k); the rest is the rules,
        which grow a line at a time. 21k leaves room for that without ever
-       letting a 400-row list through whole (that would be ~50k). */
-    ok('A HUGE LIST IS CUT, NOT SENT WHOLE - the clock is the reason', sent.system.length < 36000 && /list cut here/.test(sent.system), sent.system.length + ' chars');
+       letting a 400-row list through whole (that would be ~50k). The lines and
+       regenerate actions (the chat as the estimator) added ~2k. */
+    ok('A HUGE LIST IS CUT, NOT SENT WHOLE - the clock is the reason', sent.system.length < 39000 && /list cut here/.test(sent.system), sent.system.length + ' chars');
     sent = null;
     await call({ messages: [{ role: 'user', text: 'hi' }], screen: 'garbage' });
     ok('a screen that is not an object is ignored, not a crash', sent && /No job is open\. Answer whatever he asks\./.test(sent.system));
@@ -142,7 +143,7 @@ const SCREEN = {
     await call({ ref: 'SBC-FULL', messages: [{ role: 'user', text: 'why is labor so high?' }] });
     const sys = sent.system;
     ok('EVERY LABOR LINE IS THERE, with qty, unit, rate and line total', /\[Carpentry\] \| Install customer-supplied molding \| 220 ft \| @ \$6\.50 \| = \$1,430\.00/.test(sys) && /Floor and surface protection \| 4 hrs \| @ \$60\.00 \| = \$240\.00/.test(sys), sys.slice(sys.indexOf('LABOR LINES'), sys.indexOf('LABOR LINES') + 260));
-    ok('and every material line', /MATERIAL LINES \(1\)/.test(sys) && /16-gauge finish nails \| 1 box \| @ \$16\.99/.test(sys));
+    ok('and every material line, with its id', /MATERIAL LINES \(1\)/.test(sys) && /M1 \| \[Carpentry\] \| 16-gauge finish nails \| 1 box \| @ \$16\.99/.test(sys));
     /* labor 240 + 1430 = 1670, x1.25 = 2087.50; materials hidden, so that is the customer total */
     ok('the totals as the customer sees them - labor shown, materials hidden', /labor \$2,087\.50/.test(sys) && /materials \(hidden from customer\)/.test(sys) && /customer total \$2,087\.50/.test(sys), sys.slice(sys.indexOf('TOTALS THE CUSTOMER SEES'), sys.indexOf('TOTALS THE CUSTOMER SEES') + 200));
     /* the card carries the price the customer reads - the labor-only total on a
@@ -161,8 +162,9 @@ const SCREEN = {
     sent = null;
     await call({ ref: 'SBC-HUGE', messages: [{ role: 'user', text: 'hi' }] });
     /* The estimate itself is capped at ESTIMATE_CHARS (9k); the rules around
-       it grow a line at a time (the inbox rules added ~1.4k). */
-    ok('a huge estimate is cut, not sent whole', /estimate cut here/.test(sent.system) && sent.system.length < 32000, sent.system.length + ' chars');
+       it grow a line at a time (the inbox rules added ~1.4k, the lines and
+       regenerate actions ~2k). */
+    ok('a huge estimate is cut, not sent whole', /estimate cut here/.test(sent.system) && sent.system.length < 35000, sent.system.length + ' chars');
 
     STORES.estimates.set('SBC-THIN', JSON.stringify({ ref: 'SBC-THIN', status: 'new', customer: { name: 'x' }, request: { description: 'test request' }, estimate: {} }));
     sent = null;

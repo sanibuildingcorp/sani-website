@@ -86,6 +86,16 @@ const { contractDrift } = require("./lib/contract-total");
    CUSTOMER. A draft goes into the box; he presses Send. */
 
 const MODEL = "claude-sonnet-5";
+/* ══ ONE AI, NOT TWO ═══════════════════════════════════════════════════════
+     "why i can't talk to the same AI which doing generates? ... i can give
+      direction from the dashboard chat what to update, where to update"
+   Inside an open estimate, on the background path (no ten-second clock), the
+   chat runs as THE ESTIMATOR: the generator's model (the same ESTIMATOR_MODEL
+   setting generate-estimate-background reads), his house rules, room to
+   think, and the lines action to change prices. The drawer and the quick
+   synchronous path stay on the fast model. */
+const ESTIMATOR_MODEL = process.env.ESTIMATOR_MODEL || "claude-opus-5";
+const ESTIMATOR_TOKEN_CAP = 16000;
 const MAX_TOKENS = 800;
 /* The screen snapshot as text is capped here. 87 estimates come to ~10k. */
 const SCREEN_CHARS = 14000;
@@ -241,11 +251,13 @@ async function answer(body, clocks) {
     const a = turns.filter(function (t) { return t.role === "assistant" && t.at; }).slice(-1)[0];
     return a ? a.at : "";
   }).catch(function () { return ""; }) : "";
+  const estimatorOn = c.estimator === true && !!str(body.ref);
   const reads = await Promise.all([
     str(body.ref) ? withTimeout(recordContext(str(body.ref), c.estimateChars, c.jobPhotos, lastAnswerAt), c.recordMs || RECORD_MS).catch(function () { return ""; }) : Promise.resolve(""),
     withTimeout(loadMemory(), c.memoryMs || MEMORY_MS).catch(function () { return []; }),
     withTimeout(loadInsights(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }),
     withTimeout(inboxContext(str(body.ref), lastUser ? lastUser.text : ""), c.recordMs || RECORD_MS).catch(function () { return ""; }),
+    estimatorOn ? withTimeout(loadHouseRules(), c.memoryMs || MEMORY_MS).catch(function () { return ""; }) : Promise.resolve(""),
   ]);
   const context = reads[0] && typeof reads[0] === "object" ? reads[0].text : reads[0];
   const glance = reads[0] && typeof reads[0] === "object" ? str(reads[0].glance) : "";
@@ -270,8 +282,10 @@ async function answer(body, clocks) {
   const screen = screenContext(body.screen);
 
   const deadline = c.deadline || (Date.now() + budgetMs);
-  const system = systemPrompt(context, screen, memory, insights, inboxText);
-  const out = await callClaude(apiKey, system, turns, deadline, c.maxTokens);
+  const system = systemPrompt(context, screen, memory, insights, inboxText, estimatorOn ? { on: true, houseRules: reads[4] } : null);
+  const how = estimatorOn ? { model: ESTIMATOR_MODEL, think: true } : null;
+  const maxTokens = estimatorOn ? Math.max(c.maxTokens || 0, ESTIMATOR_TOKEN_CAP) : c.maxTokens;
+  const out = await callClaude(apiKey, system, turns, deadline, maxTokens, how);
   let parsed = extractActions(out.text, out.truncated === true);
   /* ── "FIXING THE SUMMARY LINE NOW" - AND NOTHING WAS SENT ────────────────
        The answer said it was fixing; it carried no ACTION line, so nothing
@@ -281,7 +295,7 @@ async function answer(body, clocks) {
        ACTION lines only; those actions ride with the first answer's words. */
   if (!parsed.actions.length && out.truncated !== true && claimsToAct(parsed.text) && deadline - Date.now() > NUDGE_MIN_MS) {
     try {
-      const again = await callClaude(apiKey, system, turns.concat([{ role: "assistant", text: out.text }, { role: "user", text: NUDGE }]), deadline, c.maxTokens);
+      const again = await callClaude(apiKey, system, turns.concat([{ role: "assistant", text: out.text }, { role: "user", text: NUDGE }]), deadline, maxTokens, how);
       const p2 = extractActions(again.text, again.truncated === true);
       if (p2.actions.length) parsed = { text: parsed.text, actions: p2.actions, nudged: true };
     } catch (e) { /* the first answer stands */ }
@@ -302,9 +316,16 @@ async function answer(body, clocks) {
     const mark = last.images ? " [📷 " + photoCount(last.images) + " photo" + (photoCount(last.images) > 1 ? "s" : "") + " attached]" : "";
     await withTimeout(appendChat(chatKey, last.role === "user" ? last.text + mark : "", replyText), c.chatWriteMs || CHAT_WRITE_MS).catch(function () { /* one turn lost, answer kept */ });
   }
-  return { reply: replyText, truncated: out.truncated === true, actions: toClient };
+  return { reply: replyText, truncated: out.truncated === true, actions: toClient, estimator: estimatorOn };
 }
 exports.answer = answer;
+
+/* His house rules - the pricing notes the generator is given (house-rules.js
+   keeps them in the estimates store) - for the chat in estimator mode. */
+async function loadHouseRules() {
+  const d = await getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN }).get("house-rules", { type: "json" });
+  return str(d && d.rules);
+}
 /* The ChatGPT connector (chatgpt-mcp.js) reads an estimate through the same
    eyes as Ask AI, and writes to the same standing memory. */
 exports.recordContext = function (ref, estimateChars, jobPhotos, sinceAt) { return recordContext(ref, estimateChars, jobPhotos, sinceAt); };
@@ -698,12 +719,19 @@ function estimateContext(rec, chars) {
   if (str(est.timelineText)) lines.push("Timeline (the customer sees this text): " + cutText(str(est.timelineText), 600));
   if (str(est.customerTimeline) && str(est.customerTimeline) !== str(est.timelineText)) lines.push("Customer timeline note: " + cutText(str(est.customerTimeline), 400));
 
-  const row = function (l) {
-    const qty = Number(l && l.qty) || 0, rate = Number(l && l.rate) || 0;
-    return "  " + [str(l && l.section) ? "[" + str(l.section) + "]" : "", str(l && l.item), qty + " " + str(l && l.unit), "@ " + money(rate), "= " + money(qty * rate)].filter(Boolean).join(" | ");
+  /* Each line carries its id - L1.. for labor, M1.. for materials - so a
+     "lines" action can name exactly the one line to change. */
+  const row = function (id) {
+    return function (l, i) {
+      const qty = Number(l && l.qty) || 0, rate = Number(l && l.rate) || 0;
+      return "  " + id + (i + 1) + " | " + [str(l && l.section) ? "[" + str(l.section) + "]" : "", str(l && l.item), qty + " " + str(l && l.unit), "@ " + money(rate), "= " + money(qty * rate)].filter(Boolean).join(" | ");
+    };
   };
-  if (labor.length) { lines.push("", "LABOR LINES (" + labor.length + "):"); labor.forEach(function (l) { lines.push(row(l)); }); }
-  if (materials.length) { lines.push("", "MATERIAL LINES (" + materials.length + "):"); materials.forEach(function (l) { lines.push(row(l)); }); }
+  /* The ids are new; the header is as it was. The margin is still never in
+     this prompt (the assistant drafts customer messages): the dashboard's
+     Apply card shows him the customer price of every change. */
+  if (labor.length) { lines.push("", "LABOR LINES (" + labor.length + "):"); labor.forEach(function (l, i) { lines.push(row("L")(l, i)); }); }
+  if (materials.length) { lines.push("", "MATERIAL LINES (" + materials.length + "):"); materials.forEach(function (l, i) { lines.push(row("M")(l, i)); }); }
 
   let totals = null;
   try { totals = customerTotals(est, rec); } catch (e) { totals = null; }
@@ -890,7 +918,7 @@ function screenContext(sc) {
    A closed list. The model writes  ACTION: {"type":...}  on its own line at
    the end; anything else on the line, or a type not here, is dropped. A
    truncated answer drops them all: half an action is worse than none. */
-const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"], search: ["query"], describe: ["ref", "text"], reword: ["ref"], addservice: ["ref", "text"], dedupe: ["ref"], waiting: ["ref"], lesson: ["text"] };
+const ACTION_TYPES = { open: ["ref"], tab: ["tab"], status: ["ref", "status"], visit: ["customer", "datetime"], draft: ["text"], remember: ["text"], search: ["query"], describe: ["ref", "text"], reword: ["ref"], lines: ["ref"], regenerate: ["ref"], addservice: ["ref", "text"], dedupe: ["ref"], waiting: ["ref"], lesson: ["text"] };
 const TABS = ["all", "new", "drafted", "sent", "accepted", "invoiced", "paid", "completed", "declined", "cancelled", "handyman", "visits", "customers"];
 const STATUSES = ["new", "drafted", "sent", "accepted", "declined", "completed", "cancelled"];
 /* ══ "THE ASSISTANT RETURNED NOTHING. TRY AGAIN." ═════════════════════════
@@ -964,6 +992,8 @@ function extractActions(text, truncated) {
     Object.keys(a).forEach(function (k) {
       if (k === "type") return;
       /* reword carries a list of edits; everything else is a string. */
+      /* lines carries a list of price-line operations (see cleanLineOps). */
+      if (k === "ops" && Array.isArray(a[k])) { clean.ops = cleanLineOps(a[k]); return; }
       if (k === "edits" && Array.isArray(a[k])) {
         clean.edits = a[k].slice(0, 20).filter(function (e) { return e && typeof e === "object"; })
           .map(function (e) { const cap = reword.textCap(str(e.where).toLowerCase()); return { where: str(e.where).slice(0, 20), service: str(e.service).slice(0, 120), from: str(e.from).slice(0, cap), to: str(e.to).slice(0, cap) }; });
@@ -977,6 +1007,7 @@ function extractActions(text, truncated) {
       ["where", "service", "from", "to"].forEach(function (k) { delete clean[k]; });
       if (!Array.isArray(clean.edits) || !clean.edits.length) continue;
     }
+    if (type === "lines" && (!Array.isArray(clean.ops) || !clean.ops.length)) continue;
     actions.push(clean);
   }
   let out = kept.join("\n").trim();
@@ -986,6 +1017,35 @@ function extractActions(text, truncated) {
   }
   return { text: out, actions: actions };
 }
+/* ── PRICE LINES: CHANGE, ADD, REMOVE ──────────────────────────────────────
+     "i will have a direct communication with he can update everything line
+      by line if need change only one separate line in already generated
+      estimate and everywhere"
+   One op: { op: change|add|remove, line: "L3" | "M12" (the id in the
+   estimate block), item (the line's words as they read now - a check that
+   the id still points at the same line), and for change/add the new values:
+   to (new words), qty, unit, rate, section; kind (labor|materials) for add.
+   The DASHBOARD applies them, through the same functions as editing a line
+   by hand, after he has seen every change and its price and pressed Apply. */
+const LINE_OPS = ["change", "add", "remove"];
+function cleanLineOps(list) {
+  const num = function (v) { if (v === "" || v == null) return undefined; const n = Number(String(v).replace(/[$,\s]/g, "")); return Number.isFinite(n) && n >= 0 ? Math.round(n * 10000) / 10000 : undefined; };
+  return arr(list).slice(0, 40).filter(function (o) { return o && typeof o === "object" && LINE_OPS.indexOf(str(o.op).toLowerCase()) !== -1; }).map(function (o) {
+    const op = str(o.op).toLowerCase();
+    const kind = /^m/i.test(str(o.kind)) || /^M\d/i.test(str(o.line)) ? "materials" : "labor";
+    const out = { op: op, kind: kind };
+    const id = str(o.line).toUpperCase().replace(/\s+/g, "");
+    if (/^[LM]\d{1,3}$/.test(id)) out.line = id;
+    ["item", "to", "unit", "section", "reason"].forEach(function (k) { if (str(o[k])) out[k] = str(o[k]).slice(0, k === "reason" ? 200 : 300); });
+    ["qty", "rate"].forEach(function (k) { const n = num(o[k]); if (n !== undefined) out[k] = n; });
+    return out;
+  }).filter(function (o) {
+    if (o.op === "add") return !!(o.item || o.to) && o.qty !== undefined && o.rate !== undefined;
+    return !!(o.line || o.item);
+  });
+}
+exports._cleanLineOps = cleanLineOps;
+
 function parseAction(raw) {
   try { const a = JSON.parse(raw); return a && typeof a === "object" ? a : null; } catch (e) { return null; }
 }
@@ -1007,8 +1067,9 @@ function looseAction(raw) {
   return a;
 }
 
-function systemPrompt(context, screen, memory, insights, inboxText) {
+function systemPrompt(context, screen, memory, insights, inboxText, estimator) {
   const notes = arr(memory).map(function (n) { return "- " + str(n && n.text); }).filter(function (l) { return l !== "- "; });
+  const est = estimator && estimator.on ? estimator : null;
   return [
     "You are the assistant to Zurab, who runs Sani Building Corp, a renovation and repair contractor in Brooklyn serving the five NYC boroughs and Long Island.",
     "You are open inside his own dashboard - on every page of it. You see what he sees, you answer what he asks, and when he tells you to do something the dashboard can do, you do it.",
@@ -1030,6 +1091,8 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "- ADD A FACT FROM AN EMAIL TO AN ESTIMATE: ACTION: {\"type\":\"describe\",\"ref\":\"SBC-...\",\"text\":\"...\"}   - when a customer's email carries something the estimate needs (a measurement, a change of scope, a material, a date, a correction) and he asks you to put it in / update the estimate, write the fact in one or two plain sentences; the dashboard asks him to confirm, adds it to that estimate's customer description, and he presses Re-read the job to price it. Say in one line what you are adding. Never invent a fact; quote the email.",
     "- ADD A SERVICE TO AN ESTIMATE THE CUSTOMER ALREADY AGREED TO: ACTION: {\"type\":\"addservice\",\"ref\":\"SBC-...\",\"service\":\"Painting\",\"text\":\"...\"}   - when he asks to add new work (painting, a closet, an extra room, anything not in the estimate) to a job that is already priced or sent, and you know what the work is from this chat, his emails, a photo or the thread. text is the brief the estimator prices: what and where, quantities, colors, products, sheen, what the customer supplies - everything you know, in plain sentences, nothing invented. service is the trade name for the new section. The dashboard shows him the brief, he confirms, and the estimator prices ONLY that work and adds it as its own section; the agreed sections are not touched. Say in one line what you are adding. ONLY WHEN HE ASKS to add it, and only once per request: never offer to fire it yourself, and never add a service that is already on the estimate (the job lists the added sections). REDOING AN ADDED SECTION: when he asks to regenerate, redo, re-price or change an added section (the job lists them under ADDED AFTER THE CUSTOMER AGREED), send addservice with \"replace\" set to that section's exact title and text holding the COMPLETE new brief - everything from the first brief that still applies plus his corrections, never only the change. The dashboard takes the old section out (lines, card, price) and prices the new brief as its own section; the agreed sections stay untouched. Never use regenerate for this. Use addservice for new priced work on an agreed estimate; describe for a fact on an estimate not priced yet.",
     "- FIX THE WORDS OF AN ESTIMATE WITHOUT TOUCHING A PRICE: ACTION: {\"type\":\"reword\",\"ref\":\"SBC-...\",\"edits\":[{\"where\":\"included\",\"service\":\"Bathroom\",\"from\":\"old line as it reads now\",\"to\":\"new line\"}]}   - when he asks you to correct, update or align wording (a finish, a size, a spec, a contradiction between the lines and the included text, a typo) with no price change. where is one of: included, excluded, supplies (a line of a service card - name the service), labor or material (the NAME of a price line: from = its name as shown, to = the new name), project (a line of INCLUDED FOR THE WHOLE PROJECT - the shared work said once above the services: protection, cleanup, debris, coordination), service (RENAME A SERVICE CARD - the card's heading the customer reads, e.g. Windows -> Trim & Hardware: from = the card's name as it is now, to = the new name; its price lines and its price move with it), summary, scope, title, timeline (from = the phrase to replace, or empty to replace the whole field; title is the ESTIMATE's title at the top of the page, never a card's name); on the contract: contractscope or contractmaterials (a line), contracttimeline, contracttype, contractclause (service = hidden conditions / change orders / warranty / cancellation / permits and insurance) - never on a signed contract. from must be copied EXACTLY as the estimate shows it: the title, summary, timeline, scope of work and every card line are printed word for word in the job below - quote from there, never say you do not have the text. to empty removes a card line; from empty adds one. Put every edit for one estimate in ONE action's edits list. The server keeps every price, quantity and total exactly as they are and refuses anything else; the dashboard shows him each before/after and asks first. Use reword for wording; use describe for new work that must be priced.",
+    "- CHANGE THE PRICE LINES - hours, quantities, rates, units, the words of a line, move a line to another service, add a line, remove a line: ACTION: {\"type\":\"lines\",\"ref\":\"SBC-...\",\"ops\":[{\"op\":\"change\",\"line\":\"L3\",\"item\":\"the words of L3 as they read now\",\"qty\":30},{\"op\":\"remove\",\"line\":\"M12\",\"item\":\"the words of M12\"},{\"op\":\"add\",\"kind\":\"materials\",\"section\":\"Bathroom\",\"item\":\"Shower niche allowance, 12x24 in., waterproofed\",\"qty\":12,\"unit\":\"ea\",\"rate\":150}]}   - line is the id in the estimate block (L = labor, M = materials); item is ALWAYS copied from that line as it reads now, so a line that moved is still found; for change send only what changes (qty, rate, unit, to = new words, section = move it to that service). Rates are Sani's COST, like every line in the block - never a customer price. ONE action holds every line change of his request - never one line of several. The dashboard shows him each change with its money and the customer's new total, and nothing changes until he presses Apply; it then saves. Use reword instead when only words change and no money.",
+    "- REGENERATE THE ESTIMATE: ACTION: {\"type\":\"regenerate\",\"ref\":\"SBC-...\",\"how\":\"reprice\"}   - when he says regenerate, re-price or re-read. how is reprice (same scope, new prices) or reread (the AI decides again what the job is - after new plans, new emails or a big change of scope). The generator reads everything he wrote in THIS chat as his instructions, so tell him that in one line. The dashboard asks him to confirm.",
     "- SAVE A LESSON FOR THE GENERATOR: ACTION: {\"type\":\"lesson\",\"text\":\"...\"}   - when he says 'save that as a lesson', 'teach the generator', 'remember this for next estimates', or after he corrects something the generator keeps getting wrong. text is ONE short rule in his words, true for every job of that kind (e.g. 'Paint color never changes the price'). Used only while Test mode is on; the dashboard asks him to keep it.",
     "- MARK AN ESTIMATE AS WAITING FOR THE CUSTOMER'S ANSWER: ACTION: {\"type\":\"waiting\",\"ref\":\"SBC-...\"}   - when he says 'mark as waiting', 'waiting for the customer', 'waiting answer', 'I asked them, waiting', after he sent the customer a question or a message. Not a status: a mark on the record, shown as WAITING FOR CUSTOMER on the card, that clears itself when the customer writes back. \"waiting\":\"clear\" removes it. The dashboard asks him to confirm. Never answer that there is no such status - this is how it is done.",
     "- REMOVE REPEATED LINES FROM A SCOPE: ACTION: {\"type\":\"dedupe\",\"ref\":\"SBC-...\"}   - when he asks to remove duplicates, repeats, doubled lines or the same service listed twice, or when you see the same bullet under more than one heading or card (site setup, protection, coordination, the same plumbing work under Bathroom and under Plumbing). The server drops every bullet that already appeared in an earlier section or card with the same words - in the scope text and in every card copy - keeps each once where it first appears, and leaves every price alone; the dashboard shows him the list and he confirms once. NEVER remove repeats one by one with reword: send dedupe. Lines that say the same work in different words come back as 'similar'; merge those with reword after.",
@@ -1062,10 +1125,22 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
     "WHAT YOU MUST NOT DO:",
     "- Never use the word 'licensed' or make any claim about licensing. Say 'fully insured' if insurance comes up.",
     "- Never mention TV mounting as a service.",
-    "- Never invent a price, a rate or a total. He has a pricing system and it is not you. If he asks what something costs, say what the price depends on and what to measure, or tell him to run the estimator. When the estimate's lines are on screen below, you MAY read them back, add them up, compare them and point out what looks off (a quantity, a missing trade, a line that contradicts the customer's words) - that is reading, not pricing.",
+    est ? "- Prices: you are the estimator of the open job (see YOU ARE THE ESTIMATOR). Outside the open job, never invent a price, a rate or a total." : "",
+    est ? "" : "- Never invent a price, a rate or a total. He has a pricing system and it is not you. If he asks what something costs, say what the price depends on and what to measure, or tell him to run the estimator. When the estimate's lines are on screen below, you MAY read them back, add them up, compare them and point out what looks off (a quantity, a missing trade, a line that contradicts the customer's words) - that is reading, not pricing.",
     "- Never write as if you are the customer or draft something that pretends to be from them.",
     "- Do not tell him to go and look at the dashboard. He is in it.",
     "",
+    est ? [
+      "",
+      "YOU ARE THE ESTIMATOR OF THIS JOB - the same one that generated it, with the same knowledge and the same house rules (below). He talks to you instead of pressing buttons: whatever he tells you to change in the open estimate - one line, a service, the words, the price - you change, with an action, in this answer.",
+      "- To change money you send a lines action; to change words you send a reword; to add a whole new service to an agreed job you send addservice; to start over you send regenerate. Never tell him to edit it himself when an action can do it.",
+      "- PRICING A CHANGE the way the generator does: labor in hours at the rate this estimate already uses for that trade (the rates in the block are Sani's COST rates - never a selling rate); materials as a real product with a real quantity, unit and price for one - one product per line. When he gives a number, use exactly his number. With the action, say in one line what the change adds or removes in cost; the dashboard shows him the customer price before he applies it.",
+      "- A change the CUSTOMER asked for: say what it involves and ask him the price, unless he asks you to price it.",
+      "- An allowance is a line whose words say ALLOWANCE and what it covers (e.g. 'Allowance - shower niches, 12 at $150 each').",
+      "- Keep the job consistent when you change it: a line removed means its included bullet goes too (a reword in the same answer); a line for work another trade does (plumber, electrician) is removed, not reworded; nothing is priced twice.",
+      "- He is the boss of this estimate. What he says in this chat outranks the description, the generator's draft and your own earlier answers.",
+      est.houseRules ? "\nHIS HOUSE RULES (the generator prices with these; you do too):\n" + String(est.houseRules).slice(0, 6000) : "",
+    ].filter(Boolean).join("\n") : "",
     notes.length ? "THINGS HE ASKED YOU TO REMEMBER:\n" + notes.join("\n") + "\n" : "",
     context ? context : "No job is open." + (screen ? "" : " Answer whatever he asks."),
     screen ? "\nWHAT IS ON HIS SCREEN:\n" + screen : "",
@@ -1079,9 +1154,10 @@ function systemPrompt(context, screen, memory, insights, inboxText) {
    - At the deadline the socket is dropped and whatever has arrived is returned
      with truncated:true. If nothing has arrived yet, that is a real timeout.
    - A non-2xx status means the body is a JSON error, not a stream. */
-function callClaude(apiKey, system, turns, deadline, maxTokens) {
+function callClaude(apiKey, system, turns, deadline, maxTokens, how) {
+  const est = how && how.model ? how : null;
   const payload = JSON.stringify({
-    model: MODEL,
+    model: est ? est.model : MODEL,
     max_tokens: maxTokens || MAX_TOKENS,
     stream: true,
     /* ══ NO HIDDEN REASONING ═════════════════════════════════════════════
@@ -1090,7 +1166,10 @@ function callClaude(apiKey, system, turns, deadline, maxTokens) {
        as thinking_delta, which is not text, and on a hard question it used
        the whole budget before the first word. This assistant answers from
        what is in front of it; the budget is for the answer. */
-    thinking: { type: "disabled" },
+    /* The estimator (how.think) keeps the model's default thinking - it has
+       minutes and 16,000 tokens, and pricing is where thinking pays; the
+       thinking deltas are not text and are simply not collected. */
+    ...(est && est.think ? {} : { thinking: { type: "disabled" } }),
     system: system,
     messages: turns.map(function (t) {
       /* the glance rides with his latest message and is never written to the chat */

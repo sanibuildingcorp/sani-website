@@ -3751,7 +3751,7 @@ function askPanelHtml(r) {
   return '<div class="ask-panel">' +
       '<div class="ask-head">' +
         '<span class="ask-title">\u{1F4AC} Ask AI</span>' +
-        '<span class="ask-sub">about this request, or anything else</span>' +
+        '<span class="ask-sub">your estimator — ask, or tell it what to change</span>' +
       '</div>' +
       '<div class="ask-quick">' +
         '<button type="button" class="ask-chip" onclick="askQuick(\'What should I ask this customer before I can price this job?\')">What should I ask them?</button>' +
@@ -3923,7 +3923,9 @@ async function askSend() {
   askRender();
 
   if (btn) { btn.disabled = true; btn.textContent = "Thinking…"; }
-  if (note) note.textContent = "Thinking… a long answer can take up to a minute.";
+  /* inside the estimate the chat is the estimator (the generator's model,
+     thinking before it prices): it takes longer and says so */
+  if (note) note.textContent = "The estimator is thinking… this can take 1–3 minutes.";
   try {
     /* The same snapshot the drawer sends, so the in-record panel sees the
        rest of the dashboard too and can act on it. aiAsk runs the answer in
@@ -4141,7 +4143,9 @@ async function aiSend() {
    pattern" - which he saw twice and could do nothing with. A reply in the
    body is a reply (the synchronous function answers that way); anything
    else that is not an error means "started, collect it". */
-var AI_ANSWER_POLL_MS = 1200, AI_ANSWER_POLLS = 75;
+/* 220 polls: the estimator inside an estimate may think for up to four
+   minutes (assistant-background ESTIMATOR_MS). */
+var AI_ANSWER_POLL_MS = 1200, AI_ANSWER_POLLS = 220;
 function aiAnswerJobId() { return "A-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8); }
 async function aiAsk(payload) {
   var id = aiAnswerJobId();
@@ -4297,6 +4301,85 @@ async function aiResendSkipped(wref, skipped, log, render) {
 
 /* Runs the actions an answer came with, one after another, and writes what
    happened into the log it was asked from (the drawer's or a record panel's). */
+/* ── LINE OPERATIONS (the "lines" action) ───────────────────────────────────
+   Plan first, apply after he says yes. A line is found by its id (L3 = the
+   3rd labor line, M12 = the 12th material line) when its words still match,
+   otherwise by its words alone - so a line that moved since the answer was
+   written is still the one changed, and a guess is never made: words that
+   fit two lines, or none, are left out and said. */
+function lineOpsNorm(t) { return String(t == null ? "" : t).toLowerCase().replace(/[‐-―−]/g, "-").replace(/[^a-z0-9$%.]+/g, " ").replace(/\s+/g, " ").trim(); }
+function lineOpsWords(t) { return lineOpsNorm(t).split(" ").filter(function (w) { return w.length > 2; }); }
+function lineOpsSame(a, b) {
+  var x = lineOpsNorm(a), y = lineOpsNorm(b);
+  if (!x || !y) return false;
+  if (x === y || x.indexOf(y) !== -1 || y.indexOf(x) !== -1) return true;
+  var wa = lineOpsWords(a), wb = lineOpsWords(b);
+  if (!wa.length || !wb.length) return false;
+  var both = wa.filter(function (w) { return wb.indexOf(w) !== -1; }).length;
+  return both / Math.max(wa.length, wb.length) >= 0.6;
+}
+function lineOpsFind(list, op) {
+  var m = /^([LM])(\d{1,3})$/.exec(String(op.line || ""));
+  if (m) {
+    var i = parseInt(m[2], 10) - 1, l = list[i];
+    if (l && (!op.item || lineOpsSame(l.item, op.item))) return { index: i };
+  }
+  if (!op.item) return { reason: String(op.line || "a line") + " is not in the estimate" };
+  var exact = [], near = [];
+  list.forEach(function (l, i) { if (lineOpsNorm(l && l.item) === lineOpsNorm(op.item)) exact.push(i); else if (lineOpsSame(l && l.item, op.item)) near.push(i); });
+  var hits = exact.length ? exact : near;
+  if (hits.length === 1) return { index: hits[0] };
+  return { reason: "\"" + String(op.item).slice(0, 60) + "\" " + (hits.length ? "matches " + hits.length + " lines" : "is not in the estimate") };
+}
+function lineOpsCost(l) { return (Number(l && l.qty) || 0) * (Number(l && l.rate) || 0); }
+function lineOpsTotal(est) { return ["labor", "materials"].reduce(function (s, k) { return s + ((est && est[k]) || []).reduce(function (t, l) { return t + lineOpsCost(l); }, 0); }, 0); }
+function lineOpsPlan(est, ops) {
+  var steps = [], skipped = [], used = {};
+  (ops || []).forEach(function (op) {
+    var kind = op.kind === "materials" ? "materials" : "labor";
+    var list = (est && est[kind]) || [];
+    if (op.op === "add") {
+      var sections = [];
+      ["labor", "materials"].forEach(function (k) { ((est && est[k]) || []).forEach(function (l) { var sc = String((l && l.section) || "").trim(); if (sc && sections.indexOf(sc) === -1) sections.push(sc); }); });
+      var want = String(op.section || "").trim();
+      var sec = sections.filter(function (x) { return x.toLowerCase() === want.toLowerCase(); })[0] || (sections.length === 1 || !want ? sections[0] : want) || "General";
+      var line = { item: String(op.item || op.to || "").trim(), qty: Number(op.qty) || 0, unit: String(op.unit || (kind === "labor" ? "hrs" : "ea")), rate: Number(op.rate) || 0, section: sec };
+      steps.push({ op: "add", kind: kind, after: line, delta: lineOpsCost(line) });
+      return;
+    }
+    var f = lineOpsFind(list, op);
+    if (f.index == null) { skipped.push({ op: op, reason: f.reason }); return; }
+    var key = kind + ":" + f.index;
+    if (used[key]) { skipped.push({ op: op, reason: (op.line || op.item) + " was already changed in this answer" }); return; }
+    used[key] = true;
+    var before = list[f.index];
+    if (op.op === "remove") { steps.push({ op: "remove", kind: kind, index: f.index, before: before, delta: -lineOpsCost(before) }); return; }
+    var after = Object.assign({}, before);
+    if (op.qty != null) after.qty = Number(op.qty) || 0;
+    if (op.rate != null) after.rate = Number(op.rate) || 0;
+    if (op.unit) after.unit = String(op.unit);
+    if (op.to) after.item = String(op.to);
+    if (op.section) after.section = String(op.section);
+    steps.push({ op: "change", kind: kind, index: f.index, before: before, after: after, delta: lineOpsCost(after) - lineOpsCost(before) });
+  });
+  return { steps: steps, skipped: skipped, delta: steps.reduce(function (s, x) { return s + x.delta; }, 0) };
+}
+function lineOpsApply(est, plan) {
+  plan.steps.filter(function (x) { return x.op === "change"; }).forEach(function (x) { est[x.kind][x.index] = x.after; });
+  plan.steps.filter(function (x) { return x.op === "remove"; }).sort(function (a, b) { return b.index - a.index; }).forEach(function (x) { est[x.kind].splice(x.index, 1); });
+  plan.steps.filter(function (x) { return x.op === "add"; }).forEach(function (x) { est[x.kind] = (est[x.kind] || []).concat([x.after]); });
+  return est;
+}
+function lineOpText(x) {
+  var id = function () { return (x.kind === "labor" ? "L" : "M") + (x.index + 1); };
+  var sh = function (l) { return (Number(l.qty) || 0) + " " + String(l.unit || "") + " × " + fmt(Number(l.rate) || 0) + " = " + fmt(lineOpsCost(l)); };
+  var d = (x.delta >= 0 ? " (+" : " (−") + fmt(Math.abs(x.delta)) + ")";
+  if (x.op === "add") return "• Add to " + x.after.section + ": " + x.after.item + "\n   " + sh(x.after) + d;
+  if (x.op === "remove") return "• Remove " + id() + ": " + x.before.item + "\n   " + sh(x.before) + d;
+  return "• " + id() + ": " + x.before.item + (x.after.item !== x.before.item ? "\n   → " + x.after.item : "") +
+    "\n   " + sh(x.before) + "\n   → " + sh(x.after) + (x.after.section !== x.before.section ? " (moved to " + x.after.section + ")" : "") + d;
+}
+
 async function aiRunActions(actions, log, render) {
   for (var i = 0; i < actions.length; i++) {
     var said = "";
@@ -4483,6 +4566,47 @@ async function aiExec(a, log, render) {
     return "Changed " + dw.applied.length + " line" + (dw.applied.length === 1 ? "" : "s") + " on " + wref + "; every price and total is as it was." +
       (dw.skipped && dw.skipped.length ? " Not found: " + dw.skipped.map(function (s) { return s.from || s.to; }).join("; ") + "." : "") +
       (wasSent ? " The customer still sees the sent version until you send an update." : "");
+  }
+  if (t === "lines") {
+    /* ── THE PRICE LINES, FROM THE CHAT ──────────────────────────────────
+         "he can update everything line by line if need change only one
+          separate line in already generated estimate and everywhere"
+       The estimator names each line by its id (L3 / M12) and its words;
+       lineOpsPlan finds it, shows the change with its money and the new
+       total, and nothing moves until he presses Apply. Then the change is
+       made exactly as a hand edit is - the same line arrays, the same
+       refresh (totals, service cards, customer scope) - and saved. */
+    var lref = String(a.ref || "");
+    if (!currentRecord || currentRecord.ref !== lref) return "Open " + lref + " first, then ask me again - I change lines in the estimate that is open.";
+    if (typeof syncLines === "function") syncLines();
+    var lk = (typeof scopeMarkupK === "function" ? scopeMarkupK() : 1) || 1;
+    var plan = lineOpsPlan(currentRecord.estimate || {}, Array.isArray(a.ops) ? a.ops : []);
+    if (!plan.steps.length) return "Nothing changed - " + (plan.skipped.length ? plan.skipped.map(function (x) { return x.reason; }).join("; ") : "no line change in that answer") + ".";
+    var lwas = lineOpsTotal(currentRecord.estimate || {}), lnow = lwas + plan.delta;
+    var lstamp = currentRecord.customerFinalTotal != null && Number(currentRecord.customerFinalTotal) > 0;
+    var ltext = "Change the price lines of " + lref + "?\n\n" + plan.steps.map(lineOpText).join("\n") +
+      "\n\nCost " + (plan.delta >= 0 ? "+" : "−") + fmt(Math.abs(plan.delta)) + "; with markup " + (plan.delta >= 0 ? "+" : "−") + fmt(Math.abs(plan.delta * lk)) +
+      "\nTotal " + fmt(lwas * lk) + " → " + fmt(lnow * lk) +
+      (lstamp ? "\n\nThe customer's agreed price (" + fmt(Number(currentRecord.customerFinalTotal)) + ") was set by hand and does not move - use SET TOTAL if it should." : "") +
+      (plan.skipped.length ? "\n\nNot found, left out: " + plan.skipped.map(function (x) { return x.reason; }).join("; ") : "");
+    if (!(await ask(log, render, ltext, "Apply and save", "Not now"))) return "Cancelled - no line changed.";
+    lineOpsApply(currentRecord.estimate, plan);
+    if (typeof scopeLinesRefresh === "function") scopeLinesRefresh();
+    var lsaved = typeof saveDraft === "function" ? await saveDraft() : true;
+    var lSent = !!(currentRecord.sentVersion || currentRecord.sentAt);
+    return (lsaved === false ? "⚠ Changed on screen but NOT saved - press Save. " : "") +
+      "Changed " + plan.steps.length + " line" + (plan.steps.length === 1 ? "" : "s") + " on " + lref + ". Total now " + fmt(lineOpsTotal(currentRecord.estimate) * lk) + "." +
+      (lSent ? " The customer still sees the sent version until you send an update." : "");
+  }
+  if (t === "regenerate") {
+    /* "regenerate with everything I told you": the generator reads this
+       chat (generate-estimate-background, chatInstructions). generateAI asks
+       him to confirm, as the buttons do. */
+    var gref = String(a.ref || "");
+    if (!currentRecord || currentRecord.ref !== gref) return "Open " + gref + " first, then ask me again.";
+    var reread = /read|scratch|analy/i.test(String(a.how || ""));
+    generateAI(true, reread);
+    return (reread ? "Re-reading the job" : "Re-pricing the job") + " - it uses everything you wrote in this chat as your instructions.";
   }
   if (t === "dedupe") {
     /* ── REPEATED LINES OUT OF THE SCOPE, IN ONE PASS ───────────────────

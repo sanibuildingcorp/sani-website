@@ -100,7 +100,7 @@ STORES.estimates = new Map(); STORES.estimates.set(REC.ref, JSON.stringify(REC))
     ok('...THE CUT SAYS HOW MUCH IS MISSING and tells the model not to describe as complete what it cannot see', /estimate cut here: \d+ more characters not shown\. Say the estimate is too long to read whole; never describe as complete what you cannot see\./.test(est));
     ok('...the scope keeps its short cut on this path, and the cut says so', /SCOPE OF WORK \(the customer reads this text; quote it exactly in a reword\):\nParagraph 1 of the scope/.test(sys) && /Paragraph [5-9] of the scope[^\n]*\.\.\. \(\d+ more characters not shown\)/.test(sys) && !/FINAL PARAGRAPH/.test(sys), (sys.match(/\.\.\. \(\d+ more characters not shown\)/) || [''])[0]);
     ok('...but the summary is always whole: it is short and it is what he asks to reword', /Summary \(the customer sees this text; quote it exactly in a reword\): Full bathroom renovation[^\n]*Water Damage remediation is included\./.test(est));
-    ok('the background caller passes the wider cap, forty thousand', /const ESTIMATE_CHARS = 40000;/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')) && /estimateChars: ESTIMATE_CHARS \}\);/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')));
+    ok('the background caller passes the wider cap, forty thousand', /const ESTIMATE_CHARS = 40000;/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')) && /estimateChars: ESTIMATE_CHARS, estimator: estimator \}\);/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')));
   }
   console.log('\n3. The current state rides on his latest message, above a stale chat\n');
   {
