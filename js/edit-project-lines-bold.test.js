@@ -27,13 +27,24 @@ console.log('\n1. the whole-project lines are editable\n');
   vm.runInContext("projEdit(1, 'OUR DAMAGE GUARANTEE: if anything is damaged, we repair it.')", ctx);
   ok('A LINE IS CHANGED IN PLACE (the list becomes plain text lines)', JSON.stringify(ctx.currentRecord.estimate.projectIncluded) === JSON.stringify(['We cover the floor.', 'OUR DAMAGE GUARANTEE: if anything is damaged, we repair it.']));
   vm.runInContext('projAdd()', ctx);
-  ok('+ Add puts a new line at the end', ctx.currentRecord.estimate.projectIncluded.length === 3 && renders.length === 1);
+  ok('+ Add puts a new line at the end', ctx.currentRecord.estimate.projectIncluded.length === 3 && ctx.currentRecord.estimate.projectIncluded[2] === 'New line' && renders.length === 1);
   vm.runInContext("projEdit(2, '   ')", ctx);
   ok('emptying a line removes it', ctx.currentRecord.estimate.projectIncluded.length === 2 && renders.length === 2);
   vm.runInContext('projDelete(0)', ctx);
   ok('✕ deletes a line', JSON.stringify(ctx.currentRecord.estimate.projectIncluded) === JSON.stringify(['OUR DAMAGE GUARANTEE: if anything is damaged, we repair it.']));
-  ok('the panel shows a box per line with ✕ and + Add, not "ask Ask AI"', /class="sc-item pi-item" rows="1"/.test(DASH) && /onchange="projEdit\(' \+ i \+ ',this\.value\)"/.test(DASH) && /onclick="projDelete\(' \+ i \+ '\)"/.test(DASH) && /onclick="projAdd\(\)">\+ Add<\/button>/.test(DASH) && DASH.indexOf('To change a line, ask Ask AI.') === -1);
+  ok('"JUST TAP AND START EDITING": the list looks as it did (bullets, bold shown bold) and each line is edited in place', /'<ul class="sc-plist">' \+ shared\.map\(function \(t, i\) \{/.test(DASH) && /'<li class="sc-pli" contenteditable="true" spellcheck="true" data-i="' \+ i \+ '" ' \+\s*'onblur="projEditEl\(this\)" onkeydown="projKey\(event,this\)" onpaste="projPaste\(event\)">' \+ escB\(t\) \+ '<\/li>'/.test(DASH) && /onclick="projAdd\(\)">\+ Add<\/button>/.test(DASH) && DASH.indexOf('To change a line, ask Ask AI.') === -1 && DASH.indexOf('pi-item') === -1);
+  ok('Enter starts a new line under this one', /if \(e\.key === "Enter"\) \{ e\.preventDefault\(\); projEditEl\(el\); projAdd\(parseInt\(el\.getAttribute\("data-i"\), 10\) \+ 1\); \}/.test(DASH));
   ok('...and Save carries it (projectIncluded is carried on every save)', /"projectIncluded", "projectExclusions"/.test(DASH));
+}
+
+{
+  /* What the edited line holds, read back: bold as **...**, nothing else. */
+  const T = (v) => ({ nodeType: 3, nodeValue: v });
+  const El = (tag, kids, style) => ({ nodeType: 1, nodeName: tag.toUpperCase(), childNodes: kids, style: style || {} });
+  const ctx = {}; vm.createContext(ctx); vm.runInContext(cut(DASH, 'htmlToMark') + cut(DASH, 'markRaw'), ctx);
+  ok('an edited line with a bold part reads back as **...**', ctx.htmlToMark(El('li', [El('b', [T('OUR DAMAGE GUARANTEE:')]), T(' if anything is damaged')])) === '**OUR DAMAGE GUARANTEE:** if anything is damaged');
+  ok('spaces stay outside the marks; <strong> and bold spans count; a <br> is a space', ctx.htmlToMark(El('li', [El('strong', [T('we repair ')]), T('it'), El('br', []), El('span', [T('now')], { fontWeight: '700' })])) === '**we repair** it **now**');
+  ok('two bold pieces side by side join; plain formatting from elsewhere is dropped', ctx.htmlToMark(El('li', [El('b', [T('a')]), El('b', [T('b')]), El('i', [T(' c')])])) === '**ab** c');
 }
 
 console.log('\n2. bold: select, tap B\n');
