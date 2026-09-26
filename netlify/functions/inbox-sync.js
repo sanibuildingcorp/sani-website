@@ -57,6 +57,30 @@ const inbox = require("./lib/inbox-store");
 const NEW_DOWNLOADS_PER_RUN = 12;
 const INDEX_MS = 2000;
 const ALERT_MS = 2500;
+
+/* ── TWO CLOCKS ─────────────────────────────────────────────────────────
+     "He can't found emails" - Sep 26 2026. The 409 Suydam thread reached
+     info@ on Sep 25; the assistant's copy stopped at Sep 23. Before a
+     single mail is read this run loads every estimate, the CRM and the
+     leads, and that load grows with the business. Inside Netlify's 10s
+     limit it ate the clock: the loop found the deadline already passed, or
+     the function was cut off before the index was written - every run, the
+     same way, so the inbox froze.
+   QUICK is the dashboard button: the same 10s it always had, with each
+   lookup capped so it can no longer take the whole run. FULL is
+   inbox-sync-background, what the 15-minute schedule now runs: minutes,
+   not seconds, a wider window and more downloads, and the index written
+   as it goes so a cut-off run still keeps what it read. */
+const QUICK = { totalMs: 8000, lookupMs: 3500, indexMs: INDEX_MS, downloads: NEW_DOWNLOADS_PER_RUN, window: 60, saveEvery: 0 };
+const FULL = { totalMs: 8 * 60 * 1000, lookupMs: 30000, indexMs: 20000, downloads: 80, window: 200, saveEvery: 10 };
+/* A lookup that takes too long gives its fallback; a lookup that FAILS
+   still fails the run, as before. */
+function bounded(promise, ms, fallback) {
+  return withTimeout(promise, ms).catch(function (e) {
+    if (e && e.message === "timed out") return fallback;
+    throw e;
+  });
+}
 function withTimeout(promise, ms) {
   return new Promise(function (resolve, reject) {
     const t = setTimeout(function () { reject(new Error("timed out")); }, ms);
@@ -140,7 +164,14 @@ async function bridgeToEstimateThread(row, fromAddr, byEmail, rawText) {
   }
 }
 
-exports.handler = async function (event) {
+exports.handler = function (event) { return run(event, QUICK); };
+exports.run = run;
+exports.QUICK = QUICK;
+exports.FULL = FULL;
+
+async function run(event, limits) {
+  const L = limits || QUICK;
+  const started = Date.now();
   const q = event.queryStringParameters || {};
   if (q.ping === "1") {
     return json(200, {
@@ -158,18 +189,25 @@ exports.handler = async function (event) {
   const user = process.env.GMAIL_USER, pass = process.env.GMAIL_APP_PASSWORD;
   if (!user || !pass) return json(200, { synced: 0, skipped: "GMAIL_USER / GMAIL_APP_PASSWORD not set in Netlify env yet" });
 
-  const deadline = Date.now() + 8000; // stay under the 10s function limit
+  const deadline = started + L.totalMs; // QUICK: stay under the 10s function limit
   const bridgedToThreads = [];
+  const lookupsCut = [];
+  const cut = function (name, promise, fallback) {
+    return bounded(promise, L.lookupMs, "__cut__").then(function (v) {
+      if (v === "__cut__") { lookupsCut.push(name); return fallback; }
+      return v;
+    });
+  };
 
   // 1) Known-customer set (this is the spam wall)
   let known, byEmail = {}, customers = [];
   try {
     const [msgs, bookings, leads, ests] = await Promise.all([
-      sbGet("/rest/v1/lead_messages?select=lead_email&limit=1000"),
-      sbGet("/rest/v1/bookings?select=customer_email&limit=1000"),
-      fetch("https://velvety-horse-2aa6e3.netlify.app/.netlify/functions/contact-leads")
+      cut("lead_messages", sbGet("/rest/v1/lead_messages?select=lead_email&limit=1000"), []),
+      cut("bookings", sbGet("/rest/v1/bookings?select=customer_email&limit=1000"), []),
+      cut("contact-leads", fetch("https://velvety-horse-2aa6e3.netlify.app/.netlify/functions/contact-leads")
         .then((r) => (r.ok ? r.json() : { leads: [] }))
-        .catch(() => ({ leads: [] })),
+        .catch(() => ({ leads: [] })), { leads: [] }),
       /* list-estimates is gated on DASHBOARD_KEY now. Server-to-server, so the
          key comes from this function's own environment. Without this header the
          call 401s and every estimate customer silently looks like a stranger,
@@ -180,11 +218,11 @@ exports.handler = async function (event) {
          value in each deploy context, so a preview-context function presenting
          its key to production's gate is refused. Calling our own origin keeps
          both ends in the same context and therefore on the same key. */
-      fetch((process.env.URL || "https://velvety-horse-2aa6e3.netlify.app") + "/.netlify/functions/list-estimates", {
+      cut("list-estimates", fetch((process.env.URL || "https://velvety-horse-2aa6e3.netlify.app") + "/.netlify/functions/list-estimates", {
         headers: process.env.DASHBOARD_KEY ? { "x-sbc-key": process.env.DASHBOARD_KEY } : {},
       })
         .then((r) => (r.ok ? r.json() : {}))
-        .catch(() => ({})),
+        .catch(() => ({})), {}),
     ]);
     const estArr = (ests && (ests.records || ests.estimates || ests.list)) || (Array.isArray(ests) ? ests : []);
     /* address -> that customer's estimates, for mail that names no ref */
@@ -221,8 +259,14 @@ exports.handler = async function (event) {
   /* The assistant's inbox index, read once; a slow store means this run
      files into the CRM only and the next run fills the inbox. */
   let idx = null;
-  try { idx = await withTimeout(inbox.loadIndex(), INDEX_MS); } catch (_) { idx = null; }
+  try { idx = await withTimeout(inbox.loadIndex(), L.indexMs); } catch (_) { idx = null; }
   const stored = idx ? inbox.knownIds(idx) : new Set();
+  /* FULL writes the index every few mails: a run cut off halfway keeps
+     what it already read, and the next run starts past it. */
+  const checkpoint = async function () {
+    if (!L.saveEvery || !idx || !idx.dirty || inboxStored % L.saveEvery !== 0) return;
+    try { await withTimeout(inbox.saveIndex(idx), L.indexMs); } catch (_) {}
+  };
   try {
     await client.connect();
     const lock = await client.getMailboxLock("INBOX");
@@ -230,7 +274,7 @@ exports.handler = async function (event) {
       const since = new Date(Date.now() - 14 * 24 * 3600 * 1000);
       let uids = await client.search({ since: since });
       if (!Array.isArray(uids)) uids = [];
-      uids = uids.slice(-60); // newest 60 max per run
+      uids = uids.slice(-L.window); // QUICK: newest 60 max per run
       for (let i = uids.length - 1; i >= 0; i--) {
         if (Date.now() > deadline) break;
         const msg = await client.fetchOne(uids[i], { envelope: true });
@@ -256,7 +300,7 @@ exports.handler = async function (event) {
           const noise = system || inbox.kindOf(fromAddr, false) === "notification";
           let text = "";
           if (!noise) {
-            if (inboxDownloads >= NEW_DOWNLOADS_PER_RUN) continue;
+            if (inboxDownloads >= L.downloads) continue;
             inboxDownloads++;
             text = await downloadText(client, uids[i]);
           }
@@ -268,6 +312,7 @@ exports.handler = async function (event) {
             stored.add(mid); inboxStored++;
             if (line && line.kind === "customer") alertIds.push(mid);
           } catch (_) {}
+          await checkpoint();
           continue;
         }
 
@@ -304,6 +349,7 @@ exports.handler = async function (event) {
             stored.add(mid); inboxStored++;
             if (res.inserted && line && line.kind === "customer") alertIds.push(mid);
           } catch (_) {}
+          await checkpoint();
         }
       }
     } finally {
@@ -315,7 +361,7 @@ exports.handler = async function (event) {
     return json(502, { error: "IMAP: " + String(e.message || e).slice(0, 250), hint: "Check GMAIL_APP_PASSWORD (needs 2-Step Verification on the Google account) and that IMAP is enabled in Gmail settings." });
   }
 
-  if (idx && idx.dirty) { try { await withTimeout(inbox.saveIndex(idx), INDEX_MS); } catch (_) {} }
+  if (idx && idx.dirty) { try { await withTimeout(inbox.saveIndex(idx), L.indexMs); } catch (_) {} }
 
   /* New customer mail -> the alert job decides if he needs to hear about it
      now (inbox-digest-background). Started, not waited for beyond a moment. */
@@ -340,9 +386,10 @@ exports.handler = async function (event) {
     knownCustomers: known.size,
     bridgedToEstimateThreads: bridgedToThreads,
     inbox: { stored: inboxStored, downloaded: inboxDownloads, indexed: idx ? idx.items.length : null, alertsQueued: alerted },
+    lookupsCut: lookupsCut,
     insertErrors: insertErrors.slice(0, 3),
   });
-};
+}
 
 function norm(s) { return String(s || "").trim().toLowerCase(); }
 
