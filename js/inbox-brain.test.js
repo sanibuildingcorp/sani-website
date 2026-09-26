@@ -161,8 +161,8 @@ const CUSTOMERS = [
     const r2 = await post(sync, {}, {});
     ok('THE NEXT RUN DOWNLOADS NOTHING AGAIN and queues no alert - the index remembers', r2.body.inbox.stored === 0 && downloaded.filter((id) => id !== '<k1@g>').length === 0 && !fetched.some((f) => /inbox-digest-background/.test(f.url)), JSON.stringify(r2.body.inbox));
     const src = fs.readFileSync(path.join(ROOT, 'netlify/functions/inbox-sync.js'), 'utf8');
-    ok('a dozen new downloads per run at most - the schedule catches up', /const NEW_DOWNLOADS_PER_RUN = 12;/.test(src) && /if \(inboxDownloads >= NEW_DOWNLOADS_PER_RUN\) continue;/.test(src));
-    ok('the index is written once at the end, not per mail', (src.match(/inbox\.saveIndex\(idx\)/g) || []).length === 1 && /if \(idx && idx\.dirty\)/.test(src));
+    ok('a dozen new downloads per quick run at most - the full run catches up', /const NEW_DOWNLOADS_PER_RUN = 12;/.test(src) && /const QUICK = \{[^}]*downloads: NEW_DOWNLOADS_PER_RUN/.test(src) && /if \(inboxDownloads >= L\.downloads\) continue;/.test(src));
+    ok('the quick run writes the index once at the end; only the full run checkpoints', /const QUICK = \{[^}]*saveEvery: 0 \}/.test(src) && /if \(!L\.saveEvery \|\| !idx/.test(src) && /if \(idx && idx\.dirty\)/.test(src));
   }
 
   console.log('\n3. the assistant reads the inbox, whole, and can put an email\'s fact into an estimate\n');

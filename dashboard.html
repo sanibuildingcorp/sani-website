@@ -12281,6 +12281,8 @@ var custSyncState='';
 async function custSyncInbox(silent){
   custSyncState = silent ? '' : 'Syncing inbox…';
   var el=document.getElementById('cust-sync-note'); if(el) el.textContent=custSyncState;
+  /* the button also starts the full read (minutes, not 10 seconds) behind the quick one */
+  if(!silent){ try{ var bk=sbcKey(); if(bk) fetch('/.netlify/functions/inbox-sync-background',{method:'POST',headers:{'x-sbc-key':bk}}).catch(function(){}); }catch(e){} }
   try{
     var r=await fetch('/.netlify/functions/inbox-sync',{method:'POST'});
     var d=await r.json();
