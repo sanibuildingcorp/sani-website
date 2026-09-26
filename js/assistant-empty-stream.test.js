@@ -62,7 +62,7 @@ const ask = async (fr, h) => { frames = fr; const r = await (h || fn).handler({ 
   const A = fs2.readFileSync(path2.join(__dirname, '..', 'netlify/functions/assistant.js'), 'utf8');
   const C = fs2.readFileSync(path2.join(__dirname, '..', 'netlify/functions/lib/claude.js'), 'utf8');
   const okk = (n, c) => { c === true ? pass++ : fail++; console.log((c === true ? 'PASS  ' : 'FAIL  ') + n); };
-  okk('THINKING IS SWITCHED OFF on the assistant call - the budget is for the words', /thinking: \{ type: "disabled" \},/.test(A));
+  okk('THINKING IS SWITCHED OFF on the assistant call - the budget is for the words (only the estimator inside an estimate keeps it, with 16,000 tokens)', /\.\.\.\(est && est\.think \? \{\} : \{ thinking: \{ type: "disabled" \} \}\),/.test(A));
   okk('...and on the digest / alert calls', /thinking: \{ type: "disabled" \} \}, payload\)/.test(C));
   okk('the max_tokens message names the stream, so a thinking-only stream shows as such', /ran out of room before writing anything \(stream: " \+ \(events/.test(A));
 })();

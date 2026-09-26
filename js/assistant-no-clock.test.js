@@ -87,7 +87,7 @@ STORES.estimates.set('SBC-1', JSON.stringify({ ref: 'SBC-1', status: 'sent', cus
     ok('nothing to answer -> the job says so as an error, not a hang', empty.code === 502 && je.status === 'error' && /Nothing to answer/.test(je.error));
     ok('the sync handler still answers directly (the fallback) with the same shape', (await post(fn, { messages: [{ role: 'user', text: 'hi' }] })).body.reply === 'Here is the whole answer, every word of it.');
     const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
-    ok('one answer() for both, exported', /exports\.answer = answer;/.test(A) && /assistant\.answer\(body, \{ deadline: Date\.now\(\) \+ ANSWER_MS/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')));
+    ok('one answer() for both, exported', /exports\.answer = answer;/.test(A) && /assistant\.answer\(body, \{ deadline: Date\.now\(\) \+ \(estimator \? ESTIMATOR_MS : ANSWER_MS\)/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant-background.js'), 'utf8')));
   }
 
   console.log('\nit is told what the inbox holds for this customer, even when that is nothing\n');
@@ -148,7 +148,7 @@ STORES.estimates.set('SBC-1', JSON.stringify({ ref: 'SBC-1', status: 'sent', cus
       ok('a dead function still gets the plain sentence with the status code', /HTTP 502/.test(err) && /web page/.test(err), err);
     }
     ok('both panels ask through aiAsk', /await aiAsk\(\{ ref: ref, chat: ref/.test(ext('askSend')) && /await aiAsk\(\{ ref: currentRecord/.test(ext('aiSend')));
-    ok('the record panel warns a long answer can take a minute', /a long answer can take up to a minute/.test(ext('askSend')));
+    ok('the record panel warns the estimator can take a few minutes', /The estimator is thinking… this can take 1–3 minutes\./.test(ext('askSend')));
     const blocks = DASH.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];
     let broken = null;
     blocks.forEach(function (b, i) { try { new vm.Script(b.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')); } catch (e) { if (!broken) broken = 'block ' + (i + 1) + ': ' + e.message; } });
