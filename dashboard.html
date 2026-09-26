@@ -4460,7 +4460,9 @@ async function aiExec(a, log, render) {
   }
   if (t === "visit") {
     var v = { customer: String(a.customer || ""), address: String(a.address || ""), datetime: String(a.datetime || ""), reason: String(a.reason || ""), ref: String(a.ref || "") };
-    if (!(await ask(log, render, "Add this site visit?\n\n" + v.customer + "\n" + v.address + "\n" + v.datetime.replace("T", " ") + (v.reason ? "\n" + v.reason : ""), "Add the visit", "Not now"))) return "Cancelled - the visit was not added.";
+    /* "Wed, Oct 14, 10:00 AM", not "2026-10-14 10:00" */
+    var vwhen = v.datetime && !isNaN(new Date(v.datetime)) && typeof fmtVisitTime === "function" ? fmtVisitTime(v.datetime) : v.datetime.replace("T", " ");
+    if (!(await ask(log, render, "Add this site visit?\n\n" + v.customer + "\n" + v.address + "\n" + vwhen + (v.reason ? "\n" + v.reason : ""), "Add the visit", "Not now"))) return "Cancelled - the visit was not added.";
     var rv = await sbcFetch("/.netlify/functions/visits", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", visit: v }) });
     var dv = await rv.json().catch(function () { return {}; });
     if (!rv.ok) throw new Error(dv.error || "Failed");
