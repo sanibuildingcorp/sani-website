@@ -1170,10 +1170,11 @@ body {
 
 .qp-tile{position:relative;flex:0 0 auto;width:84px;height:84px}
 .qp-tile img{width:84px!important;height:84px!important;object-fit:cover;border-radius:8px;cursor:pointer;display:block}
-.qp-tile.qp-off img{opacity:.35;filter:grayscale(1)}
-.qp-hide{position:absolute;left:4px;right:4px;bottom:4px;font:inherit;font-size:11px;font-weight:600;padding:3px 0;border-radius:6px;border:0;background:rgba(10,22,40,.82);color:#fff;cursor:pointer}
-.qp-off .qp-hide{background:#b8720a}
-.qp-note{position:absolute;top:4px;left:4px;right:4px;font-size:10px;font-weight:700;text-align:center;color:#b3261e;background:rgba(255,255,255,.9);border-radius:5px;padding:1px 0}
+.qp-del{position:absolute;left:4px;right:4px;bottom:4px;font:inherit;font-size:11px;font-weight:600;padding:3px 0;border-radius:6px;border:0;background:rgba(179,38,30,.9);color:#fff;cursor:pointer}
+.doc-tile{flex:0 0 auto;width:84px;height:84px;border:1px solid var(--line,#e5dfd3);border-radius:8px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;cursor:pointer;font:inherit;text-align:center}
+.doc-tile .doc-ic{font-size:24px;line-height:1}
+.doc-tile .doc-nm{font-size:10px;line-height:1.2;color:var(--ink,#1a1f2e);max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc-tile .doc-open{font-size:10px;font-weight:700;color:#b8720a}
 .cust-photos {
   margin-top: 14px;
   display: flex;
@@ -4792,9 +4793,7 @@ function renderEdit() {
   const optHtml = customerOptionsHtml(r);
   const rejHtml = refusedTotalHtml(r);
 
-  const photosHtml = (req.photos || []).slice(0, 10).map(function(p) {
-    return '<img src="' + esc(p.data) + '" alt="customer photo" onclick="openLightbox(\'' + esc(p.data) + '\')" style="cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">';
-  }).join("");
+  const photosHtml = reqPhotosHtml();
 
   /* ══ THE ESTIMATOR'S OWN DOUBTS, WHICH NOBODY HAS EVER SEEN. ════════════════
      The analysis stage works out, on every single estimate, exactly what it was
@@ -4953,7 +4952,7 @@ function renderEdit() {
       (req.description ? '<div class="cust-field" style="margin-top:8px"><span class="lbl">Description</span><span class="val" style="font-size:13px;line-height:1.6;white-space:pre-wrap">' + esc(req.description) + '</span></div>' : "") +
       (answersHtml ? '<div class="answers-list">' + answersHtml + '</div>' : "") +
       optHtml + rejHtml +
-      (photosHtml ? '<div class="cust-photos">' + photosHtml + '</div>' : "") +
+      (photosHtml ? '<div class="cust-photos" id="req-photos-strip">' + photosHtml + '</div>' : "") +
       /* THE ORDER HE WORKS IN, spelled out by him:
            1. the customer's details      2. ask the AI what is missing
            3. the conversation with them   4. generate      5. how sure is it
@@ -5111,7 +5110,7 @@ function renderEdit() {
     '<div class="form-section">' +
       '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
       ((req.photos && req.photos.length > 0) ?
-        '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Customer Uploaded</div><div class="cust-photos" id="customer-photos-strip">' + quotePhotoTiles() + '</div><div style="font-size:12px;color:var(--ink-muted);margin-top:6px">Tap ✕ Hide to keep a photo off the customer\'s quote. It stays in the job for you and the AI. Save, then send the update.</div></div>'
+        '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Customer Uploaded</div><div class="cust-photos" id="customer-photos-strip">' + quotePhotoTiles() + '</div><div style="font-size:12px;color:var(--ink-muted);margin-top:6px">✕ Delete removes a photo from this job for good. Send the update so the customer\'s quote changes too.</div></div>'
         : '') +
       '<div><div style="font-size:10px;letter-spacing:1.5px;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Your Additional Photos</div>' +
       '<label for="quote-photo-input" style="display:block;border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;font-size:13px;color:var(--ink-muted);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.color=\'var(--gold)\'" onmouseout="this.style.borderColor=\'var(--line)\';this.style.color=\'var(--ink-muted)\'">📸 Add photos to include in the quote (up to 6)</label>' +
@@ -5311,33 +5310,87 @@ function renderQuotePhotoPreview() {
   }).join("");
 }
 
-/* ── A CUSTOMER PHOTO KEPT OFF THE QUOTE ──────────────────────────────────
-     "This photos i can't delete if i don't wanna to send them with estimate"
-   The customer's own uploads (here: the PDF plan pages) always went onto the
-   quote. They are not deleted - the AI reads them - they are listed in
-   estimate.hiddenQuotePhotos (by link) and quote.html leaves them out. */
+/* ── THE CUSTOMER'S PHOTOS AND PLANS ──────────────────────────────────────
+     "I need them just delete. If i want i will upload photos."
+     "it's doesn't opens pdf files in my dashboard, when someone will send me
+      requests with pdf drawing how can i see it?"
+   A PDF (a plan, a drawing) was drawn as a picture - a broken image, and a
+   tap opened an empty viewer. It is now a document tile that opens the PDF.
+   The quote photos (step 4) are the pictures only - a PDF never shows on the
+   customer's quote - and each has ✕ Delete, which removes it from the job
+   for good (update-customer removePhotos, saved at once). */
+function reqFileUrl(p) { return typeof p === "string" ? p : String((p && p.data) || ""); }
+function reqIsDoc(p) {
+  var u = reqFileUrl(p), n = String((p && p.name) || "");
+  if (/^data:image\//i.test(u)) return false;
+  return (p && p.kind === "file") || /\.pdf(?:[?#]|$)/i.test(u) || /^data:application\/pdf/i.test(u) || /\.pdf$/i.test(n);
+}
+function reqDocTile(p, i) {
+  var n = String((p && p.name) || "") || ("Plan " + (i + 1) + ".pdf");
+  return '<button type="button" class="doc-tile" onclick="openReqFile(' + i + ')" title="Open ' + esc(n) + '">' +
+    '<span class="doc-ic">📄</span><span class="doc-nm">' + esc(n) + '</span><span class="doc-open">Open PDF</span></button>';
+}
+function reqPhotosHtml() {
+  var req = (currentRecord && currentRecord.request) || {};
+  return (req.photos || []).slice(0, 20).map(function (p, i) {
+    if (reqIsDoc(p)) return reqDocTile(p, i);
+    return '<img src="' + esc(reqFileUrl(p)) + '" alt="customer photo" onclick="openLightbox(\'' + esc(reqFileUrl(p)) + '\')" style="cursor:pointer">';
+  }).join("");
+}
+/* Opens a PDF in a new tab. A file still held as data (not yet in storage)
+   becomes a blob link first - browsers refuse to open a data: link. */
+function openReqFile(i) {
+  var p = ((currentRecord && currentRecord.request && currentRecord.request.photos) || [])[i];
+  openDocUrl(reqFileUrl(p));
+}
+function openDocUrl(url) {
+  if (!url) return;
+  if (/^data:/i.test(url)) {
+    try {
+      var m = /^data:([^;,]+)?(;base64)?,(.*)$/i.exec(url);
+      var bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]);
+      var bytes = new Uint8Array(bin.length);
+      for (var k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+      url = URL.createObjectURL(new Blob([bytes], { type: m[1] || "application/pdf" }));
+    } catch (e) {}
+  }
+  var a = document.createElement("a");
+  a.href = url; a.target = "_blank"; a.rel = "noopener";
+  document.body.appendChild(a); a.click(); a.remove();
+}
 function quotePhotoTiles() {
   var req = (currentRecord && currentRecord.request) || {};
-  var hidden = (currentRecord && currentRecord.estimate && currentRecord.estimate.hiddenQuotePhotos) || [];
-  return (req.photos || []).slice(0, 10).map(function (p, i) {
-    var off = hidden.indexOf(p && p.data) !== -1;
-    return '<div class="qp-tile' + (off ? ' qp-off' : '') + '">' +
-      '<img src="' + esc(p.data) + '" alt="customer photo" onclick="openLightbox(\'' + esc(p.data) + '\')">' +
-      (off ? '<span class="qp-note">Not on quote</span>' : '') +
-      '<button type="button" class="qp-hide" onclick="toggleQuotePhoto(' + i + ')">' + (off ? 'Show' : '✕ Hide') + '</button>' +
+  return (req.photos || []).slice(0, 20).map(function (p, i) {
+    if (reqIsDoc(p)) return "";
+    var u = reqFileUrl(p);
+    return '<div class="qp-tile">' +
+      '<img src="' + esc(u) + '" alt="customer photo" onclick="openLightbox(\'' + esc(u) + '\')">' +
+      '<button type="button" class="qp-del" onclick="deleteReqPhoto(' + i + ')">✕ Delete</button>' +
     '</div>';
   }).join("");
 }
-function toggleQuotePhoto(i) {
-  if (!currentRecord || !currentRecord.estimate) return;
-  var p = ((currentRecord.request && currentRecord.request.photos) || [])[i];
-  if (!p || !p.data) return;
-  var list = (currentRecord.estimate.hiddenQuotePhotos || []).slice();
-  var at = list.indexOf(p.data);
-  if (at === -1) list.push(p.data); else list.splice(at, 1);
-  currentRecord.estimate.hiddenQuotePhotos = list;
-  var strip = document.getElementById("customer-photos-strip");
-  if (strip) strip.innerHTML = quotePhotoTiles();
+async function deleteReqPhoto(i) {
+  if (!currentRecord || !currentRecord.request) return;
+  var p = (currentRecord.request.photos || [])[i];
+  if (!p) return;
+  if (!confirm("Delete this photo from the job?\n\nIt is removed for good. You can upload it again from Edit > Photos and plans.")) return;
+  try {
+    var res = await sbcFetch("/.netlify/functions/update-customer", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: currentRecord.ref, customer: currentRecord.customer || {}, removePhotos: [i] }),
+    });
+    var d = await res.json().catch(function () { return {}; });
+    if (!res.ok || !Array.isArray(d.photos)) throw new Error(d.error || ("HTTP " + res.status));
+    currentRecord.request.photos = d.photos;
+    currentRecord.request.photoCount = d.photos.length;
+    var strip = document.getElementById("customer-photos-strip");
+    if (strip) strip.innerHTML = quotePhotoTiles();
+    var top = document.getElementById("req-photos-strip");
+    if (top) top.innerHTML = reqPhotosHtml();
+    toast("Photo deleted - send the update so the customer's quote changes too");
+  } catch (e) {
+    toast("Could not delete: " + e.message, true);
+  }
 }
 
 function removeQuotePhoto(idx) {
@@ -10046,6 +10099,8 @@ function openLightbox(url) {
     url = (ps[url] && ps[url].data) || "";
     if (!url) return;
   }
+  /* a PDF is not a picture: open it, never an empty viewer */
+  if (/\.pdf(?:[?#]|$)/i.test(url) || /^data:application\/pdf/i.test(url)) { openDocUrl(url); return; }
   document.getElementById("lightbox-img").src = url;
   document.getElementById("lightbox-modal").style.display = "flex";
   document.getElementById("lightbox-modal").classList.add("show");
