@@ -174,6 +174,8 @@
       return n;
     });
   }
+  /* "650+ kitchens" - the total the GC gave, when there is one. */
+  function statedText(R) { var t = R && R.stated_total; return t && t.count ? t.count + (t.plus ? "+" : "") + " kitchens" : ""; }
   function countText(k) { return k && k.count != null ? k.count + (k.count === 1 ? " kitchen" : " kitchens") : "count not confirmed"; }
   function oneKitchen(k) {
     return (k.items || []).map(function (it) { return clip(it.item, 60) + (it.qty != null ? " x" + it.qty + (it.unit && it.unit !== "EA" ? " " + it.unit : "") : ""); }).join("; ");
@@ -192,6 +194,10 @@
     head.push("BID FOR A GENERAL CONTRACTOR - kitchen cabinet installation, multifamily building. ONE estimate for the whole bid: each kitchen type below is its own service - price each one in its own section, named exactly as the service.");
     head.push("Project: " + proj + (P.address ? ", " + clip(P.address, 100) : "") + (P.gc ? ". General contractor: " + clip(P.gc, 80) : "") + (P.bid_due ? ". Bids due: " + clip(P.bid_due, 60) : "") + ".");
     head.push(R.supply === "install_only" ? "Cabinets are supplied by others - we install only (unload, distribute to the units, assemble if needed, install, adjust, hardware)." : R.supply === "furnish_and_install" ? "We furnish and install the cabinets." : "Who supplies the cabinets is not clear yet - price the installation, and list the question.");
+    var stated = statedText(R);
+    if (R.our_scope_summary) head.push("Our work: " + clip(R.our_scope_summary, 400));
+    if ((R.per_kitchen_work || []).length) head.push("In every kitchen also: " + R.per_kitchen_work.slice(0, 8).map(function (x) { return clip(x, 90); }).join("; ") + ".");
+    if (stated && !allCounted) head.push("The general contractor's total: " + stated + (R.stated_total.source ? " (" + clip(R.stated_total.source, 80) + ")" : "") + ". How many of each type is not confirmed yet, so each type is priced per kitchen.");
     head.push("Where a count is given, price all kitchens of that type: the work of one kitchen times the count. Where the count is not confirmed, price ONE kitchen of that type and say so in its section.");
     var tail = [];
     var notOurs = (R.not_in_our_scope || []).slice(0, 8).map(function (x) { return clip(x, 90); });
@@ -213,7 +219,7 @@
     return {
       service: names.join(", "),
       sections: names,
-      projectTitle: clip("Bid: " + proj + " - kitchen cabinets, " + types.length + (types.length === 1 ? " kitchen type" : " kitchen types") + (allCounted ? ", " + total + " kitchens" : ""), 110),
+      projectTitle: clip("Bid: " + proj + " - kitchen cabinets, " + types.length + (types.length === 1 ? " kitchen type" : " kitchen types") + (allCounted ? ", " + total + " kitchens" : statedText(R) ? ", " + statedText(R) + " (mix not confirmed)" : ""), 110),
       description: description
     };
   }
@@ -229,6 +235,9 @@
     [["Address", P.address], ["Owner", P.owner], ["General contractor", P.gc], ["Architect", P.architect], ["Bids due", P.bid_due], ["Walkthrough", P.walkthrough]].forEach(function (x) { if (x[1]) L(x[0] + ": " + x[1]); });
     L("Who supplies the cabinets: " + (R.supply === "install_only" ? "others - we install only" : R.supply === "furnish_and_install" ? "we furnish and install" : "not clear yet") + (R.supply_note ? ". " + R.supply_note : ""));
     if (R.project_summary) L(R.project_summary);
+    if (statedText(R)) L("Total kitchens stated: " + statedText(R) + (R.stated_total.source ? " - " + R.stated_total.source : ""));
+    if (R.our_scope_summary) L("Our work: " + R.our_scope_summary);
+    if ((R.per_kitchen_work || []).length) { out.push("# Work in every kitchen"); R.per_kitchen_work.forEach(function (x) { L("- " + x); }); }
     (types || []).forEach(function (k, i) {
       out.push("# " + names[i] + " - " + countText(k));
       if (k.description) L(k.description);

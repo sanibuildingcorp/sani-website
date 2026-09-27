@@ -682,6 +682,7 @@ function renderPackage(R, pdfUrl){
   if(P.address) h += '<p style="color:var(--ink-muted);font-size:14px">'+esc(P.address)+'</p>';
   if(R.project_summary) h += '<p style="font-size:15px;margin-top:8px">'+esc(R.project_summary)+'</p>';
   if(R.our_scope_summary) h += '<p style="font-size:15px;margin-top:8px"><b>Our part:</b> '+esc(R.our_scope_summary)+'</p>';
+  if((R.per_kitchen_work||[]).length) h += '<p style="font-size:15px;margin-top:8px"><b>In every kitchen:</b></p><ul class="plain">'+R.per_kitchen_work.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join("")+'</ul>';
   const sup = R.supply === "install_only" ? ["high","Install only - cabinets supplied by others"] : R.supply === "furnish_and_install" ? ["medium","We supply and install the cabinets"] : ["low","Who supplies the cabinets: not clear"];
   h += '<div style="margin-top:10px"><span class="pill '+sup[0]+'">'+sup[1]+'</span>'+(R.supply_note ? '<span class="src">'+esc(R.supply_note)+'</span>' : "")+'</div>';
   const files = R.files || [];
@@ -695,7 +696,10 @@ function renderPackage(R, pdfUrl){
   if(!KT.length){
     h += '<div class="warn-box">No kitchen types were found in these pages. Add the unit matrix and the enlarged kitchen plans, then read again.</div>';
   } else {
-    h += '<div class="rollup"><div class="roll"><div class="n" style="color:var(--gold-3)">'+(R.total_kitchens==null?"?":esc(R.total_kitchens))+'</div><div class="l">Kitchens in total</div></div>'+
+    const ST = R.stated_total, allCounted = KT.every(function(k){ return k.count != null; });
+    const totalN = allCounted && R.total_kitchens != null ? esc(R.total_kitchens) : (ST && ST.count ? esc(ST.count) + (ST.plus ? "+" : "") : (R.total_kitchens==null ? "?" : esc(R.total_kitchens)));
+    const totalL = allCounted && R.total_kitchens != null ? "Kitchens in total" : (ST && ST.count ? "Kitchens - their total" : "Kitchens in total");
+    h += '<div class="rollup"><div class="roll"><div class="n" style="color:var(--gold-3)">'+totalN+'</div><div class="l">'+totalL+'</div></div>'+
       '<div class="roll"><div class="n" style="color:var(--gold-3)">'+KT.length+'</div><div class="l">Kitchen types</div></div></div>';
     KT.forEach(function(k){
       h += '<details class="kt" open><summary><span class="cnt">'+(k.count==null?"?":esc(k.count))+'</span> × <span>'+esc(k.name)+'</span>'+
