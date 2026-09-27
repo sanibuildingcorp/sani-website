@@ -752,22 +752,22 @@ function renderPackage(R, pdfUrl){
       (R.assumptions||[]).map(function(m){ return '<li><span class="cat-tag">Assumed</span>'+esc(m)+'</li>'; }).join("")+'</ul></div>';
   }
 
-  // --- Draft estimates ---
+  // --- The draft estimate: ONE for the whole bid, a card per kitchen type ---
   const counted = KT.filter(function(k){ return k.name; });
   if(counted.length){
-    const made = madeDrafts(window.__jobId);
-    h += '<div class="card" id="drafts-card"><h2>Draft <em>estimates</em></h2><div class="sub">One draft per kitchen type goes to your dashboard with its bid pages attached. Open it there and press Generate to price it.</div>'+
+    const made = madeDrafts(window.__jobId).__bid;
+    const names = BidTriage.sectionNames(counted);
+    h += '<div class="card" id="drafts-card"><h2>Draft <em>estimate</em></h2><div class="sub">One estimate for the whole bid. Each kitchen type is its own card with its own price. The takeoff and the bid pages go with it as a PDF. Open it in the dashboard and press Generate.</div>'+
       '<div class="grid2">'+
       '<label class="field">GC company / contact<input id="d-name" value="'+esc(P.contact_name ? P.contact_name + (P.gc ? " - " + P.gc : "") : P.gc)+'"></label>'+
       '<label class="field">Email<input id="d-email" type="email" value="'+esc(P.contact_email)+'"></label>'+
       '<label class="field">Phone<input id="d-phone" value="'+esc(P.contact_phone)+'"></label>'+
       '<label class="field">Project address<input id="d-addr" value="'+esc(P.address)+'"></label></div>'+
       '<div style="margin-top:14px">'+counted.map(function(k, i){
-        const ref = made[k.name];
-        return '<label class="pick"><input type="checkbox" class="d-kt" value="'+i+'"'+(ref?' disabled':(k.count==null?'':' checked'))+'> <span><b>'+esc(k.name)+'</b> - '+(k.count==null?"count not confirmed":esc(k.count)+' kitchens')+
-          (ref?' · <a class="pg" href="/dashboard.html?ref='+encodeURIComponent(ref)+'">made: '+esc(ref)+'</a>':'')+'</span></label>';
+        return '<label class="pick"><input type="checkbox" class="d-kt" value="'+i+'" checked> <span><b>'+esc(names[i])+'</b> - '+(k.count==null?"count not confirmed (priced as one kitchen)":esc(k.count)+' kitchens')+'</span></label>';
       }).join("")+'</div>'+
-      '<button class="btn-gold" id="d-btn" onclick="makeDrafts()">Make draft estimates →</button><div id="d-status" class="done-list" style="margin-top:12px"></div></div>';
+      '<button class="btn-gold" id="d-btn" onclick="makeDrafts()">'+(made?'Make it again →':'Make the draft estimate →')+'</button>'+
+      '<div id="d-status" class="done-list" style="margin-top:12px">'+(made?'Made: <a href="/dashboard.html?ref='+encodeURIComponent(made)+'">'+esc(made)+'</a>':'')+'</div></div>';
   }
 
   h += '<div class="card" style="text-align:center;color:var(--ink-muted);font-size:12.5px">Read '+esc(new Date(R.generated_at).toLocaleString())+' · '+esc(R.file_name||"")+'</div>';
@@ -791,10 +791,6 @@ function copyQuestions(){
   });
 }
 
-/* ============ DRAFT ESTIMATES: one per kitchen type ============
-   create-estimate (the GC as the customer) → the kitchen type's pages as a
-   PDF into estimate-photos → saved on the estimate (update-customer
-   addPhotos), where the estimator reads it as drawings. All behind the key. */
 function madeDrafts(jobId){ try{ return JSON.parse(localStorage.getItem("sbc-bid-drafts:" + jobId) || "{}") || {}; }catch(e){ return {}; } }
 function saveDraft(jobId, name, ref){ try{ const m = madeDrafts(jobId); m[name] = ref; localStorage.setItem("sbc-bid-drafts:" + jobId, JSON.stringify(m)); }catch(e){} }
 
@@ -806,17 +802,43 @@ async function packageBytes(){
   window.__pkgBytes = new Uint8Array(await r.arrayBuffer());
   return window.__pkgBytes;
 }
-async function pagesPdf(bytes, pages){
-  if(!pages.length) return bytes;
-  const src = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
-  const n = src.getPageCount();
-  const idx = pages.filter(function(p){ return p >= 1 && p <= n; }).map(function(p){ return p - 1; });
-  if(!idx.length) return bytes;
-  const out = await PDFLib.PDFDocument.create();
-  (await out.copyPages(src, idx)).forEach(function(pg){ out.addPage(pg); });
-  return out.save();
+
+/* The takeoff as PDF pages: headings bold, lines wrapped. The standard PDF
+   fonts only have Western letters, so anything else becomes a plain one. */
+function pdfSafe(t){
+  return String(t == null ? "" : t).replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u2013\u2014]/g, "-").replace(/\u2026/g, "...").replace(/\u00d7/g, "x").replace(/[^\x20-\x7e\u00a0-\u00ff]/g, "?");
+}
+async function takeoffPages(out, lines){
+  const L = PDFLib, reg = await out.embedFont(L.StandardFonts.Helvetica), bold = await out.embedFont(L.StandardFonts.HelveticaBold);
+  const W = 612, H = 792, M = 50, width = W - 2 * M;
+  let page = out.addPage([W, H]), y = H - M;
+  const wrap = function(text, font, size){
+    const words = text.split(" "), rows = [];
+    let row = "";
+    words.forEach(function(w){
+      const t = row ? row + " " + w : w;
+      if(font.widthOfTextAtSize(t, size) <= width || !row) row = t; else { rows.push(row); row = w; }
+    });
+    if(row) rows.push(row);
+    return rows;
+  };
+  lines.forEach(function(raw){
+    const head = raw.indexOf("# ") === 0, text = pdfSafe(head ? raw.slice(2) : raw);
+    const font = head ? bold : reg, size = head ? 13 : 10, lh = head ? 18 : 13.5;
+    if(head) y -= 8;
+    wrap(text, font, size).forEach(function(r){
+      if(y < M + lh){ page = out.addPage([W, H]); y = H - M; }
+      page.drawText(r, { x: M, y: y - size, size: size, font: font, color: head ? L.rgb(0.04,0.09,0.16) : L.rgb(0.15,0.15,0.15) });
+      y -= lh;
+    });
+  });
 }
 
+/* ============ THE DRAFT ESTIMATE: one for the whole bid ============
+   create-estimate (the GC as the customer, every chosen kitchen type a
+   service) → one PDF: the takeoff, then the bid pages of those types →
+   estimate-photos → saved on the estimate (update-customer addPhotos),
+   where the estimator reads it. All behind the key. */
 async function makeDrafts(){
   const R = window.__pkg || {}, KT = (R.kitchen_types || []).filter(function(k){ return k.name; });
   const status = document.getElementById("d-status");
@@ -827,45 +849,52 @@ async function makeDrafts(){
     address: document.getElementById("d-addr").value.trim()
   };
   if(!customer.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)){
-    status.innerHTML = '<div class="warn-box">Type the GC contact name and email first - the drafts are made out to them.</div>';
+    status.innerHTML = '<div class="warn-box">Type the GC contact name and email first - the estimate is made out to them.</div>';
     return;
   }
   const chosen = Array.prototype.map.call(document.querySelectorAll(".d-kt:checked"), function(c){ return KT[Number(c.value)]; }).filter(Boolean);
   if(!chosen.length){ status.innerHTML = '<div class="warn-box">Tick at least one kitchen type.</div>'; return; }
+  if(madeDrafts(window.__jobId).__bid && !confirm("A draft estimate for this bid was already made. Make another one?")) return;
   const btn = document.getElementById("d-btn");
   btn.disabled = true;
-  const jobId = window.__jobId, lines = [];
-  const say = function(t){ status.innerHTML = lines.join("") + '<div class="src">'+esc(t)+'</div>'; };
+  const jobId = window.__jobId;
   try{
-    const all = await packageBytes();
-    for(const k of chosen){
-      say("Making " + k.name + "…");
-      const d = BidTriage.draftFor(R, k);
-      const r1 = await sbcFetch("/.netlify/functions/create-estimate", { method: "POST", body: JSON.stringify({ customer: customer, service: d.service, projectTitle: d.projectTitle, description: d.description }) });
-      const j1 = await r1.json();
-      if(!j1.ref) throw new Error(j1.error || "Could not make the estimate");
-      saveDraft(jobId, k.name, j1.ref);
-      let attached = "";
+    status.innerHTML = '<div class="src">Making the estimate…</div>';
+    const d = BidTriage.draftForBid(R, chosen);
+    const r1 = await sbcFetch("/.netlify/functions/create-estimate", { method: "POST", body: JSON.stringify({ customer: customer, service: d.service, projectTitle: d.projectTitle, description: d.description }) });
+    const j1 = await r1.json();
+    if(!j1.ref) throw new Error(j1.error || "Could not make the estimate");
+    saveDraft(jobId, "__bid", j1.ref);
+    let attached = "";
+    try{
+      status.innerHTML = '<div class="src">Attaching the takeoff and the bid pages…</div>';
+      const out = await PDFLib.PDFDocument.create();
+      await takeoffPages(out, BidTriage.takeoffLines(R, chosen));
+      const pages = [];
+      chosen.forEach(function(k){ (k.pages || []).forEach(function(p){ if(pages.indexOf(p) === -1) pages.push(p); }); });
+      (R.shared_pages || []).forEach(function(p){ if(pages.indexOf(p) === -1) pages.push(p); });
+      pages.sort(function(a, b){ return a - b; });
       try{
-        const pages = (k.pages || []).concat(R.shared_pages || []).filter(function(p, i, a){ return a.indexOf(p) === i; }).sort(function(a, b){ return a - b; });
-        const bytes = await pagesPdf(all, pages);
-        const fname = "bid-pages-" + String(k.name).toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".pdf";
-        const r2 = await sbcFetch("/.netlify/functions/upload-estimate-file", { method: "POST", body: JSON.stringify({ ref: j1.ref, fileName: fname, contentType: "application/pdf" }) });
-        const j2 = await r2.json();
-        if(!j2.signedUrl) throw new Error(j2.error || "no upload link");
-        const r3 = await fetch(j2.signedUrl, { method: "PUT", headers: { "Content-Type": "application/pdf", "x-upsert": "true" }, body: new Blob([bytes], { type: "application/pdf" }) });
-        if(!r3.ok) throw new Error("upload " + r3.status);
-        const r4 = await sbcFetch("/.netlify/functions/update-customer", { method: "POST", body: JSON.stringify({ ref: j1.ref, customer: customer, addPhotos: [{ url: j2.publicUrl, name: "Bid pages - kitchen type " + k.name + " (" + (pages.length || "all") + " pages)" }] }) });
-        if(!r4.ok) throw new Error("save " + r4.status);
-        attached = " · pages attached";
-      }catch(e){ attached = ' · <b style="color:var(--red)">pages not attached ('+esc(e.message)+') - add them in the dashboard</b>'; }
-      lines.push('<div>✓ <b>'+esc(k.name)+'</b> → <a href="/dashboard.html?ref='+encodeURIComponent(j1.ref)+'">'+esc(j1.ref)+'</a>'+attached+'</div>');
-      say("");
-    }
-    status.innerHTML = lines.join("") + '<p style="margin-top:10px">Open each one in the dashboard and press <b>Generate</b>.</p>';
-    document.querySelectorAll(".d-kt:checked").forEach(function(c){ c.checked = false; c.disabled = true; });
+        const src = await PDFLib.PDFDocument.load(await packageBytes(), { ignoreEncryption: true });
+        const n = src.getPageCount();
+        const idx = (pages.length ? pages : Array.from({ length: n }, function(_, i){ return i + 1; })).filter(function(p){ return p >= 1 && p <= n; }).map(function(p){ return p - 1; });
+        (await out.copyPages(src, idx)).forEach(function(pg){ out.addPage(pg); });
+      }catch(e){ attached = " (bid pages could not be added: " + e.message + ")"; }
+      const bytes = await out.save();
+      const fname = "bid-takeoff-" + String((R.project && R.project.name) || "package").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40) + ".pdf";
+      const r2 = await sbcFetch("/.netlify/functions/upload-estimate-file", { method: "POST", body: JSON.stringify({ ref: j1.ref, fileName: fname, contentType: "application/pdf" }) });
+      const j2 = await r2.json();
+      if(!j2.signedUrl) throw new Error(j2.error || "no upload link");
+      const r3 = await fetch(j2.signedUrl, { method: "PUT", headers: { "Content-Type": "application/pdf", "x-upsert": "true" }, body: new Blob([bytes], { type: "application/pdf" }) });
+      if(!r3.ok) throw new Error("upload " + r3.status);
+      const r4 = await sbcFetch("/.netlify/functions/update-customer", { method: "POST", body: JSON.stringify({ ref: j1.ref, customer: customer, addPhotos: [{ url: j2.publicUrl, name: "Bid takeoff and pages - " + chosen.length + " kitchen types" }] }) });
+      if(!r4.ok) throw new Error("save " + r4.status);
+      attached = " · takeoff and pages attached" + attached;
+    }catch(e){ attached = ' · <b style="color:var(--red)">PDF not attached ('+esc(e.message)+') - add it in the dashboard</b>'; }
+    status.innerHTML = '<div>✓ One estimate, '+chosen.length+' kitchen type'+(chosen.length===1?'':'s')+' → <a href="/dashboard.html?ref='+encodeURIComponent(j1.ref)+'">'+esc(j1.ref)+'</a>'+attached+'</div><p style="margin-top:10px">Open it in the dashboard and press <b>Generate</b>.</p>';
+    btn.textContent = "Make it again →";
   }catch(e){
-    status.innerHTML = lines.join("") + '<div class="warn-box">'+esc(e.message)+'</div>';
+    status.innerHTML = '<div class="warn-box">'+esc(e.message)+'</div>';
   }
   btn.disabled = false;
 }

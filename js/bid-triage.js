@@ -146,45 +146,110 @@
     }).join("\n");
   }
 
-  /* ONE DRAFT ESTIMATE PER KITCHEN TYPE: what create-estimate is sent.
-     The description is what the estimator reads and prices: the count, one
-     kitchen's contents, who supplies the boxes, what is not ours, the rules.
-     No price in it - the estimate system makes the price. */
-  function clip(s, n) { s = String(s == null ? "" : s).replace(/\s*\blicensed\b/gi, "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
-  function draftFor(R, kt) {
-    var P = (R && R.project) || {};
-    var n = kt && kt.count != null ? kt.count : null;
-    var name = clip(kt && kt.name, 40) || "Kitchen";
+  /* ONE DRAFT ESTIMATE FOR THE WHOLE BID - one service card per kitchen type.
+
+       "it was maked several estimate draft in dashboard, it split for couple
+        different projects" - eight $0 drafts for one building, one per
+        kitchen type. One bid is one estimate now: every kitchen type is a
+        service of it (its own card and price), the GC and the address once.
+
+     The description is what the estimator reads and prices; the full
+     takeoff goes with the bid pages as an attached PDF (takeoffLines), so a
+     long package loses nothing to the description's length. No price in it -
+     the estimate system makes the price. */
+  var DESC_MAX = 2990;   /* the estimate keeps 3,000 characters of description */
+  function clip(s, n) { s = String(s == null ? "" : s).replace(/\s*\blicensed\b/gi, "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, Math.max(0, n - 1)) + "…" : s; }
+
+  /* A kitchen type's service name. The estimate splits its services on
+     "," "/" and "&", so those never appear in a name ("Type 01
+     (Kitchen/Kitchenette)" would have become two services). */
+  function sectionNames(types) {
+    var used = {};
+    return (types || []).map(function (k, i) {
+      var n = clip(String((k && k.name) || "").replace(/[,/&]+/g, " or "), 44) || ("Type " + (i + 1));
+      if (!/^kitchen/i.test(n)) n = "Kitchen " + (/^type\b/i.test(n) ? n : "Type " + n);
+      var base = n, j = 2;
+      while (used[n.toLowerCase()]) n = base + " " + (j++);
+      used[n.toLowerCase()] = true;
+      return n;
+    });
+  }
+  function countText(k) { return k && k.count != null ? k.count + (k.count === 1 ? " kitchen" : " kitchens") : "count not confirmed"; }
+  function oneKitchen(k) {
+    return (k.items || []).map(function (it) { return clip(it.item, 60) + (it.qty != null ? " x" + it.qty + (it.unit && it.unit !== "EA" ? " " + it.unit : "") : ""); }).join("; ");
+  }
+
+  function draftForBid(R, types) {
+    R = R || {};
+    types = (types || []).filter(Boolean);
+    var P = R.project || {};
+    var names = sectionNames(types);
     var proj = clip(P.name, 60) || "Bid package";
-    var out = [];
-    out.push("BID FOR A GENERAL CONTRACTOR - kitchen cabinet installation, multifamily building.");
-    out.push("Project: " + proj + (P.address ? ", " + clip(P.address, 100) : "") + (P.gc ? ". General contractor: " + clip(P.gc, 80) : "") + (P.bid_due ? ". Bids due: " + clip(P.bid_due, 60) : "") + ".");
-    out.push("Kitchen type " + name + (kt.description ? " (" + clip(kt.description, 120) + ")" : "") + ": " + (n != null ? n + " kitchens" : "count not confirmed") + (kt.units && kt.units.length ? " - units " + kt.units.slice(0, 12).join(", ") : "") + ".");
-    if (kt.count_source) out.push("How they were counted: " + clip(kt.count_source, 200) + ".");
-    if (n != null) out.push("Price all " + n + " kitchens of this type: the work of one kitchen times " + n + ".");
-    var items = (kt.items || []).slice(0, 30).map(function (it) { return "- " + clip(it.item, 70) + (it.qty != null ? ": " + it.qty + " " + (it.unit || "EA") : ""); });
-    if (items.length) out.push("In ONE kitchen:\n" + items.join("\n"));
-    else out.push("The cabinet list for one kitchen was not found in the pages - read the attached drawings.");
-    out.push(R.supply === "install_only" ? "Cabinets are supplied by others - we install only (unload, distribute to the units, assemble if needed, install, adjust, hardware)." : R.supply === "furnish_and_install" ? "We furnish and install the cabinets." : "Who supplies the cabinets is not clear yet - price the installation, and list the question.");
-    var specs = (R.specs || []).map(function (s) { return clip((s.section ? s.section + " " : "") + (s.requirements || []).slice(0, 4).join("; "), 200); }).filter(Boolean).slice(0, 4);
-    if (specs.length) out.push("Spec requirements: " + specs.join(" | ") + ".");
+    var counted = types.filter(function (k) { return k.count != null; });
+    var allCounted = types.length && counted.length === types.length;
+    var total = counted.reduce(function (a, k) { return a + k.count; }, 0);
+    var head = [];
+    head.push("BID FOR A GENERAL CONTRACTOR - kitchen cabinet installation, multifamily building. ONE estimate for the whole bid: each kitchen type below is its own service - price each one in its own section, named exactly as the service.");
+    head.push("Project: " + proj + (P.address ? ", " + clip(P.address, 100) : "") + (P.gc ? ". General contractor: " + clip(P.gc, 80) : "") + (P.bid_due ? ". Bids due: " + clip(P.bid_due, 60) : "") + ".");
+    head.push(R.supply === "install_only" ? "Cabinets are supplied by others - we install only (unload, distribute to the units, assemble if needed, install, adjust, hardware)." : R.supply === "furnish_and_install" ? "We furnish and install the cabinets." : "Who supplies the cabinets is not clear yet - price the installation, and list the question.");
+    head.push("Where a count is given, price all kitchens of that type: the work of one kitchen times the count. Where the count is not confirmed, price ONE kitchen of that type and say so in its section.");
+    var tail = [];
     var notOurs = (R.not_in_our_scope || []).slice(0, 8).map(function (x) { return clip(x, 90); });
     if (!notOurs.some(function (x) { return /gas/i.test(x); })) notOurs.push("Gas appliances - set and connected by the gas trade");
-    out.push("Not in our work: " + notOurs.join("; ") + ".");
-    var rules = (R.requirements || []).filter(function (r) { return /retainage|payment|insurance|bond|schedule|wage|site/.test(r.category); }).slice(0, 6).map(function (r) { return clip(r.text, 110); });
-    if (rules.length) out.push("Bid rules: " + rules.join("; ") + ".");
-    (kt.notes || []).slice(0, 3).forEach(function (x) { out.push("Note: " + clip(x, 160)); });
-    out.push("The bid pages for this kitchen type are attached as a PDF.");
-    var description = out.join("\n");
-    if (description.length > 1990) description = description.slice(0, 1989) + "…";
+    tail.push("Not in our work: " + notOurs.join("; ") + ".");
+    var rules = (R.requirements || []).filter(function (r) { return /retainage|payment|insurance|bond|schedule|wage|site/.test(r.category); }).slice(0, 5).map(function (r) { return clip(r.text, 100); });
+    if (rules.length) tail.push("Bid rules: " + rules.join("; ") + ".");
+    tail.push("The full takeoff (every item, page and question) and the bid pages are attached as one PDF.");
+    var fixed = head.join("\n").length + tail.join("\n").length + 2 + types.length;
+    var room = Math.max(60, Math.floor((DESC_MAX - fixed) / Math.max(1, types.length)));
+    var body = types.map(function (k, i) {
+      var line = "- " + names[i] + (k.description ? " (" + clip(k.description, 70) + ")" : "") + ": " + countText(k) + (k.units && k.units.length ? ", units " + k.units.slice(0, 8).join(" ") : "") + ".";
+      var one = oneKitchen(k);
+      line += one ? " One kitchen: " + one + "." : " Cabinet list: read the attached pages.";
+      return clip(line, room);
+    });
+    var description = head.concat(body, tail).join("\n");
+    if (description.length > DESC_MAX) description = description.slice(0, DESC_MAX - 1) + "…";
     return {
-      service: "Carpentry",
-      projectTitle: clip("Kitchen type " + name + (n != null ? " - " + n + " kitchens" : "") + " - " + proj, 110),
+      service: names.join(", "),
+      sections: names,
+      projectTitle: clip("Bid: " + proj + " - kitchen cabinets, " + types.length + (types.length === 1 ? " kitchen type" : " kitchen types") + (allCounted ? ", " + total + " kitchens" : ""), 110),
       description: description
     };
   }
 
-  var api = { MAX_PAGES: MAX_PAGES, MAX_BYTES: MAX_BYTES, scorePage: scorePage, scoreFileName: scoreFileName, pickPages: pickPages, trimTo: trimTo, stampText: stampText, pageMapText: pageMapText, draftFor: draftFor };
+  /* The full takeoff, line by line, for the PDF that goes with the draft.
+     "# " starts a heading. */
+  function takeoffLines(R, types) {
+    R = R || {};
+    var P = R.project || {}, out = [], names = sectionNames(types);
+    var L = function (s) { s = clip(s, 600); if (s) out.push(s); };
+    out.push("# BID TAKEOFF - " + clip(P.name || "Bid package", 80));
+    L("Prepared by Sani Building Corp from the bid pages attached after this summary. A draft for review - not a price.");
+    [["Address", P.address], ["Owner", P.owner], ["General contractor", P.gc], ["Architect", P.architect], ["Bids due", P.bid_due], ["Walkthrough", P.walkthrough]].forEach(function (x) { if (x[1]) L(x[0] + ": " + x[1]); });
+    L("Who supplies the cabinets: " + (R.supply === "install_only" ? "others - we install only" : R.supply === "furnish_and_install" ? "we furnish and install" : "not clear yet") + (R.supply_note ? ". " + R.supply_note : ""));
+    if (R.project_summary) L(R.project_summary);
+    (types || []).forEach(function (k, i) {
+      out.push("# " + names[i] + " - " + countText(k));
+      if (k.description) L(k.description);
+      if (k.count_source) L("Counted: " + k.count_source);
+      if (k.units && k.units.length) L("Units: " + k.units.join(", "));
+      if (k.pages && k.pages.length) L("Pages: " + k.pages.map(function (p) { return "p." + p; }).join(" "));
+      (k.items || []).forEach(function (it) { L("- " + it.item + (it.qty != null ? ": " + it.qty + " " + (it.unit || "EA") : "") + (it.page ? " (p." + it.page + ")" : "")); });
+      (k.notes || []).forEach(function (n) { L("Note: " + n); });
+    });
+    var list = function (title, arr, fmt) { arr = arr || []; if (!arr.length) return; out.push("# " + title); arr.forEach(function (x, i) { L(fmt(x, i)); }); };
+    list("Other millwork", R.other_millwork, function (it) { return "- " + it.item + (it.qty != null ? ": " + it.qty + " " + (it.unit || "") : "") + (it.where ? " - " + it.where : "") + (it.page ? " (p." + it.page + ")" : ""); });
+    list("Specs", R.specs, function (s) { return "- " + [s.section, s.title].filter(Boolean).join(" ") + (s.page ? " (p." + s.page + ")" : "") + ((s.requirements || []).length ? ": " + s.requirements.join("; ") : ""); });
+    list("Not in our work", R.not_in_our_scope, function (x) { return "- " + x; });
+    list("Bid rules", R.requirements, function (r) { return "- " + r.text + (r.page ? " (p." + r.page + ")" : ""); });
+    list("Questions for the GC", R.questions_for_gc, function (q, i) { return (i + 1) + ". " + q.question; });
+    list("Missing from the package", R.missing_information, function (x) { return "- " + x; });
+    list("Assumed", R.assumptions, function (x) { return "- " + x; });
+    return out;
+  }
+
+  var api = { MAX_PAGES: MAX_PAGES, MAX_BYTES: MAX_BYTES, scorePage: scorePage, scoreFileName: scoreFileName, pickPages: pickPages, trimTo: trimTo, stampText: stampText, pageMapText: pageMapText, sectionNames: sectionNames, draftForBid: draftForBid, takeoffLines: takeoffLines };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.BidTriage = api;
 })(this);

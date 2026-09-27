@@ -86,7 +86,9 @@ exports.handler = async function (event) {
         service: String(body.service || (parent ? parentReq.service : "") || "Manual Invoice").trim(),
         description: parent
           ? (words.slice(0, 2000) + "\n\n[Additional work to estimate " + parentRef + " - " + parentTitle + " - which the customer already agreed to and which is priced separately. Price ONLY the additional work described above.]")
-          : String(body.description || "Created manually from dashboard").slice(0, 2000),
+          /* 3,000 - what update-customer keeps when he edits it; a bid's
+             draft estimate describes every kitchen type in it. */
+          : String(body.description || "Created manually from dashboard").slice(0, 3000),
         photoCount: 0,
         photos: [],
       },
