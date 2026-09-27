@@ -8,9 +8,14 @@
 
 const BUCKET = "bid-documents";
 
+const { requireDashboardKey } = require("./lib/require-dashboard-key");
+
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
+  /* Contractor only (x-sbc-key): bid packages are private documents. */
+  const denied = requireDashboardKey(event, cors());
+  if (denied) return denied;
 
   try {
     const { fileName } = JSON.parse(event.body || "{}");
@@ -61,7 +66,7 @@ exports.handler = async function (event) {
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json"
   };

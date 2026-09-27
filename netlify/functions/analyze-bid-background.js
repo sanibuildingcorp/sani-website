@@ -19,10 +19,15 @@
 // JSON, price it, save result → dashboard polls get-bid-analysis.js.
 
 const MODEL = "claude-sonnet-5";
+const { requireDashboardKey } = require("./lib/require-dashboard-key");
+const bidPackage = require("./lib/bid-package");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
+  /* Contractor only: every run reads a package with the AI and costs money. */
+  const denied = requireDashboardKey(event, cors());
+  if (denied) return denied;
 
   let jobId = null;
   try {
@@ -50,6 +55,36 @@ exports.handler = async function (event) {
     await sb("POST", "/rest/v1/bid_jobs", {
       id: jobId, status: "processing", file_path: filePath, file_name: fileName
     }, { Prefer: "resolution=merge-duplicates" });
+
+    /* THE BID PACKAGE READER: the pages about cabinets and millwork, from
+       every file of the package, counted per kitchen type. No pricing here -
+       each kitchen type becomes a draft estimate he prices in the dashboard. */
+    if (body.mode === "package") {
+      const meta = {
+        pagesKept: Number(body.pagesKept) || (Array.isArray(body.pageMap) ? body.pageMap.length : 0),
+        pagesTotal: Number(body.pagesTotal) || 0,
+        files: Array.isArray(body.files) ? body.files : [],
+        pageMap: Array.isArray(body.pageMap) ? body.pageMap : [],
+      };
+      const pageMap = meta.pageMap.slice(0, 120).map(function (p, i) {
+        return "p." + (i + 1) + " = " + String((p && p.file) || "file").slice(0, 120) + " p." + (Number(p && p.page) || 0);
+      }).join("\n");
+      const text = await callClaude(apiKey, [{
+        role: "user",
+        content: [
+          { type: "document", source: { type: "url", url: fileUrl } },
+          { type: "text", text: bidPackage.packagePrompt({ notes: notes.slice(0, 3000), pageMap: pageMap, pagesKept: meta.pagesKept, pagesTotal: meta.pagesTotal, fileCount: meta.files.length }) }
+        ]
+      }], { maxTokens: 24000, thinking: true });
+      const parsedPkg = bidPackage.parseJson(text);
+      if (!parsedPkg) throw new Error("The AI answer could not be read - press Analyze again. Start: " + String(text).slice(0, 160));
+      const pkg = bidPackage.normalizePackage(parsedPkg, meta);
+      pkg.generated_at = new Date().toISOString();
+      pkg.model = MODEL;
+      pkg.file_name = fileName;
+      await sb("PATCH", `/rest/v1/bid_jobs?id=eq.${encodeURIComponent(jobId)}`, { status: "done", result: pkg, error: null });
+      return { statusCode: 200, headers: cors(), body: JSON.stringify({ success: true }) };
+    }
 
     // 2) Load price book + settings
     const priceBook = await sb("GET", "/rest/v1/price_book?select=*&order=csi_code.asc") || [];
@@ -275,7 +310,12 @@ Quantity accuracy rules: roll up repeated conditions with visible multipliers in
 };
 
 // ---- Claude API (long timeout — this is a background function) ----
-async function callClaude(apiKey, messages) {
+/* The package reader thinks before it counts (adaptive thinking) and has room
+   for a long answer; only the text blocks are returned. */
+async function callClaude(apiKey, messages, opts) {
+  const o = opts || {};
+  const req = { model: MODEL, max_tokens: o.maxTokens || 8000, messages };
+  if (o.thinking) req.thinking = { type: "adaptive" };
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -283,13 +323,14 @@ async function callClaude(apiKey, messages) {
       "anthropic-version": "2023-06-01",
       "content-type": "application/json"
     },
-    body: JSON.stringify({ model: MODEL, max_tokens: 8000, messages })
+    body: JSON.stringify(req)
   });
   if (!res.ok) {
     const t = await res.text();
     throw new Error(`Claude API ${res.status}: ${t.slice(0, 300)}`);
   }
   const data = await res.json();
+  if (data.stop_reason === "max_tokens") throw new Error("The AI answer was cut off (too long) - press Analyze again, or upload fewer files.");
   return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
 }
 
@@ -337,7 +378,7 @@ function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json"
   };
