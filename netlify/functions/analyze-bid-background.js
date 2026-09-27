@@ -75,7 +75,7 @@ exports.handler = async function (event) {
           { type: "document", source: { type: "url", url: fileUrl } },
           { type: "text", text: bidPackage.packagePrompt({ notes: notes.slice(0, 3000), pageMap: pageMap, pagesKept: meta.pagesKept, pagesTotal: meta.pagesTotal, fileCount: meta.files.length }) }
         ]
-      }], { maxTokens: 24000, thinking: true });
+      }], { maxTokens: 48000, thinking: true, effort: "medium", stream: true });
       const parsedPkg = bidPackage.parseJson(text);
       if (!parsedPkg) throw new Error("The AI answer could not be read - press Analyze again. Start: " + String(text).slice(0, 160));
       const pkg = bidPackage.normalizePackage(parsedPkg, meta);
@@ -311,11 +311,19 @@ Quantity accuracy rules: roll up repeated conditions with visible multipliers in
 
 // ---- Claude API (long timeout — this is a background function) ----
 /* The package reader thinks before it counts (adaptive thinking) and has room
-   for a long answer; only the text blocks are returned. */
+   for a long answer; only the text blocks are returned.
+
+     "Analysis failed: The AI answer was cut off (too long)" - after 5 minutes,
+      on 3 kitchen drawing files.
+   Its thinking and the answer share max_tokens, and 24,000 ran out. The
+   package call now streams (a long answer on one quiet connection is what
+   times out) with 48,000 of room, and thinks at medium effort. */
 async function callClaude(apiKey, messages, opts) {
   const o = opts || {};
   const req = { model: MODEL, max_tokens: o.maxTokens || 8000, messages };
   if (o.thinking) req.thinking = { type: "adaptive" };
+  if (o.effort) req.output_config = { effort: o.effort };
+  if (o.stream) return streamClaude(apiKey, req);
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -332,6 +340,42 @@ async function callClaude(apiKey, messages, opts) {
   const data = await res.json();
   if (data.stop_reason === "max_tokens") throw new Error("The AI answer was cut off (too long) - press Analyze again, or upload fewer files.");
   return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+}
+
+/* The same call, streamed: server-sent events, the text deltas joined. */
+async function streamClaude(apiKey, req) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+      "accept": "text/event-stream"
+    },
+    body: JSON.stringify(Object.assign({}, req, { stream: true }))
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Claude API ${res.status}: ${t.slice(0, 300)}`);
+  }
+  const raw = await res.text();
+  let text = "", stop = null, outTokens = 0;
+  raw.split(/\r?\n\r?\n/).forEach(function (frame) {
+    const data = frame.split(/\r?\n/).filter(function (l) { return l.indexOf("data:") === 0; }).map(function (l) { return l.slice(5).trim(); }).join("");
+    if (!data) return;
+    let ev;
+    try { ev = JSON.parse(data); } catch (e) { return; }
+    if (ev.type === "content_block_delta" && ev.delta && ev.delta.type === "text_delta" && typeof ev.delta.text === "string") text += ev.delta.text;
+    else if (ev.type === "message_delta") {
+      if (ev.delta && ev.delta.stop_reason) stop = ev.delta.stop_reason;
+      if (ev.usage && ev.usage.output_tokens) outTokens = ev.usage.output_tokens;
+    } else if (ev.type === "error") throw new Error("Claude API: " + ((ev.error && ev.error.message) || "stream error"));
+  });
+  console.log("analyze-bid: stream done, stop", stop, "output tokens", outTokens, "text chars", text.length);
+  if (stop === "max_tokens") throw new Error("The AI answer was cut off (too long). Upload fewer files at a time - for example the kitchen drawings first, then the specs.");
+  if (stop === "refusal") throw new Error("The AI declined to read this package. Try again with fewer files.");
+  if (!stop) throw new Error("The AI answer stopped early (connection closed). Press Read again.");
+  return text;
 }
 
 // ---- Signed read URL for the private bid-documents bucket ----

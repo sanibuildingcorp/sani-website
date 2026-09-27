@@ -129,13 +129,22 @@ console.log('\n5. the page\n');
 (async () => {
   console.log('\n6. the background reader, run with the network stubbed\n');
   const calls = [];
+  /* The streamed answer, as the API sends it: a thinking block, then the text in pieces. */
+  const sse = (text, stop) => {
+    const ev = (o) => 'event: ' + o.type + '\ndata: ' + JSON.stringify(o) + '\n\n';
+    const body = ev({ type: 'message_start', message: { id: 'm' } }) + ev({ type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '' } }) +
+      ev({ type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: '' } }) + ev({ type: 'content_block_start', index: 1, content_block: { type: 'text', text: '' } }) +
+      [text.slice(0, 7), text.slice(7, 40), text.slice(40)].map((t) => ev({ type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: t } })).join('') +
+      ev({ type: 'message_delta', delta: { stop_reason: stop }, usage: { output_tokens: 1234 } }) + ev({ type: 'message_stop' });
+    return { ok: true, status: 200, json: async () => { throw new Error('stream'); }, text: async () => body };
+  };
   let answer = { project: { name: 'The Rivet' }, kitchen_types: [{ name: 'K1', count: 24, pages: [2] }], questions_for_gc: ['Who supplies hardware?'] };
   global.fetch = async (url, opts) => {
     const o = opts || {};
     calls.push({ url: String(url), method: o.method || 'GET', body: o.body ? JSON.parse(o.body) : null });
     const res = (status, obj) => ({ ok: status < 300, status, json: async () => obj, text: async () => JSON.stringify(obj) });
     if (/object\/sign\//.test(url)) return res(200, { signedURL: '/object/sign/bid-documents/bids/x.pdf?token=t' });
-    if (/api\.anthropic\.com/.test(url)) return res(200, { stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '...' }, { type: 'text', text: JSON.stringify(answer) }] });
+    if (/api\.anthropic\.com/.test(url)) return sse(JSON.stringify(answer), 'end_turn');
     return res(200, []);
   };
   process.env.SUPABASE_URL = 'https://sb.example.co'; process.env.SUPABASE_SECRET_KEY = 'sk'; process.env.ANTHROPIC_API_KEY = 'ak'; process.env.DASHBOARD_KEY = 'k1';
@@ -151,6 +160,8 @@ console.log('\n5. the page\n');
   ok('with the key it runs', r.statusCode === 200, r.statusCode + ' ' + r.body);
   ok('THE KEPT PAGES GO TO THE AI AS ONE DOCUMENT, WITH THE PACKAGE PROMPT AND PAGE MAP', ai && ai.body.messages[0].content[0].type === 'document' && /bids\/x\.pdf\?token=t/.test(ai.body.messages[0].content[0].source.url) && /p\.2 = A\.pdf p\.51/.test(ai.body.messages[0].content[1].text) && /30 of 900 pages/.test(ai.body.messages[0].content[1].text));
   ok('it thinks before it counts, with room for a long answer', ai && ai.body.thinking && ai.body.thinking.type === 'adaptive' && ai.body.max_tokens >= 20000 && !('temperature' in ai.body));
+  ok('"THE AI ANSWER WAS CUT OFF" AFTER 5 MINUTES: now streamed, 48,000 of room, medium effort', ai && ai.body.stream === true && ai.body.max_tokens >= 48000 && ai.body.output_config && ai.body.output_config.effort === 'medium');
+  ok('...and the answer is told to stay short (one line per cabinet size)', /at most 25 item lines per kitchen type \(one line per cabinet size/.test(BP.packagePrompt({})));
   ok('the price book is not loaded - nothing is priced here', !calls.some((c) => /price_book|bid_settings/.test(c.url)));
   ok('THE CLEANED RESULT IS SAVED ON THE JOB', saved && saved.body.status === 'done' && saved.body.result.mode === 'package' && saved.body.result.total_kitchens === 24 && saved.body.result.page_map[1].page === 51 && saved.body.result.file_name === 'bid-package-30-pages.pdf', JSON.stringify(saved && saved.body).slice(0, 200));
 
@@ -159,12 +170,24 @@ console.log('\n5. the page\n');
     calls.push({ url: String(url), method: (opts || {}).method || 'GET', body: opts && opts.body ? JSON.parse(opts.body) : null });
     const res = (status, obj) => ({ ok: true, status, json: async () => obj, text: async () => JSON.stringify(obj) });
     if (/object\/sign\//.test(url)) return res(200, { signedURL: '/x' });
-    if (/anthropic/.test(url)) return res(200, { stop_reason: 'max_tokens', content: [{ type: 'text', text: '{"project":' }] });
+    if (/anthropic/.test(url)) return sse('{"project":', 'max_tokens');
     return res(200, []);
   };
   r = await handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k1' }, body: JSON.stringify(body) });
   const err = calls.filter((c) => c.method === 'PATCH').pop();
-  ok('a cut-off answer is an error he can read, saved on the job', r.statusCode === 500 && err && err.body.status === 'error' && /cut off/.test(err.body.error));
+  ok('a cut-off answer is an error he can read, with what to do, saved on the job', r.statusCode === 500 && err && err.body.status === 'error' && /cut off/.test(err.body.error) && /Upload fewer files at a time/.test(err.body.error));
+
+  calls.length = 0;
+  global.fetch = async (url, opts) => {
+    calls.push({ url: String(url), method: (opts || {}).method || 'GET', body: opts && opts.body ? JSON.parse(opts.body) : null });
+    const res = (status, obj) => ({ ok: true, status, json: async () => obj, text: async () => JSON.stringify(obj) });
+    if (/object\/sign\//.test(url)) return res(200, { signedURL: '/x' });
+    if (/anthropic/.test(url)) { const s = sse('{"project":{"name":"X"}}', 'end_turn'); const body = (await s.text()).split('event: message_delta')[0]; return { ok: true, status: 200, text: async () => body }; }
+    return res(200, []);
+  };
+  r = await handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k1' }, body: JSON.stringify(body) });
+  const cut = calls.filter((c) => c.method === 'PATCH').pop();
+  ok('a stream that breaks off before the end is an error too, never a half answer', r.statusCode === 500 && cut && /stopped early/.test(cut.body.error));
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
