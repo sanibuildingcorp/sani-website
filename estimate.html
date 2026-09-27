@@ -99,6 +99,10 @@ p.subtitle{font-size:14px;color:var(--gray);line-height:1.6;margin-bottom:24px;m
   padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--cream);margin-bottom:14px}
 .shot-nudge.on{display:block}
 .photo-preview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.look-note{display:flex;gap:12px;align-items:center;background:#fdf6e7;border:1px solid #ecd9ae;border-radius:12px;padding:10px;margin:0 0 14px}
+.look-note img{width:64px;height:64px;object-fit:cover;border-radius:8px;flex:0 0 auto}
+.look-note b{display:block;font-size:14px;color:#0a1628}
+.look-note span{display:block;font-size:12.5px;color:#5b6472;margin-top:2px}
 .photo-thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:rgba(0,0,0,.3)}
 .photo-thumb img{width:100%;height:100%;object-fit:cover}
 .photo-remove{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;border:none;cursor:pointer;font-size:14px;line-height:1}
@@ -1060,6 +1064,34 @@ function showSuccess(ref){
 /* The AI photo analysis step and its two functions are removed. Retired from
    the flow on Jul 27 and unreachable since; deleted now. */
 renderServices();
+
+/* ══ "GET THIS LOOK" FROM THE GALLERY ════════════════════════════════════════
+   A visitor tapped "Get this look" on a gallery photo: /estimate?look=<photo>
+   &title=<name>[&svc=<service>]. The photo is attached to the request (the
+   same way a photo they add is), step 1 says which look they picked, the
+   matching service is ticked where there is one, and the description starts
+   with a line they can change. Only a picture from this site's own images/
+   folder is accepted. */
+(function(){
+  var q=new URLSearchParams(location.search), look=q.get('look')||'', title=(q.get('title')||'').slice(0,80), svc=q.get('svc')||'';
+  if(!/^images\/[a-z0-9\-\/]+\.(?:jpe?g|png|webp)$/i.test(look)||look.indexOf('..')!==-1) return;
+  var grid=document.getElementById('service-grid');
+  if(grid){
+    var note=document.createElement('div'); note.className='look-note';
+    note.innerHTML='<img src="/'+look+'" alt=""><div><b>You picked this look'+(title?': '+esc(title):'')+'</b><span>It is attached to your request. Pick the type of project below.</span></div>';
+    grid.parentNode.insertBefore(note,grid);
+  }
+  var btn=svc&&document.querySelector('.service-btn[data-id="'+svc.replace(/[^a-z\-]/g,'')+'"]');
+  if(btn&&!btn.classList.contains('selected')) selectService(btn);
+  var d=document.getElementById('description-field');
+  if(d&&!d.value){ d.value='I like this look from your gallery'+(title?' ("'+title+'")':'')+'. '; saveDesc(); }
+  fetch('/'+look).then(function(r){ if(!r.ok) throw new Error('photo '+r.status); return r.blob(); }).then(function(b){
+    return compressImage(b,1200,0.85);
+  }).then(function(data){
+    formData.photos.push({name:'Gallery look'+(title?': '+title:''),data:data,kind:'image',slot:'other'});
+    renderPhotoPreview();
+  }).catch(function(e){ console.warn('gallery look not attached',e); });
+})();
 
 /* ===== SBC FUNNEL TRACKING (GA4) — source page + step-by-step + abandon + complete ===== */
 (function(){
