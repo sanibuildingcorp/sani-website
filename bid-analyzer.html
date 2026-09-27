@@ -383,6 +383,7 @@ async function startAnalysis(){
   if(!pickedFiles.length) return;
   const btn = document.getElementById("analyze-btn");
   btn.disabled = true;
+  window.__startedJob = null;
   document.getElementById("upload-card").style.display = "none";
   document.getElementById("results").style.display = "none";
   document.getElementById("progress").style.display = "block";
@@ -439,6 +440,7 @@ async function startAnalysis(){
       method:"POST",
       body:JSON.stringify(Object.assign({ jobId: jobId, filePath: d1.path, fileName: fileName, notes: document.getElementById("notes").value }, extra))
     }).catch(function(){});
+    window.__startedJob = jobId;
     rememberJob(jobId, files.length === 1 ? files[0].name : files.length + " files - " + files[0].name);
 
     // 4) Poll
@@ -474,14 +476,39 @@ function showResult(jobId, R, url){
   else renderResults(R, url);
 }
 
+/* "Analysis failed: Load failed" - the iPhone's words for a dropped
+   connection, while the reading itself finished on the server (650+
+   kitchens found). A dropped connection is said as what it is, and where
+   the reading is. */
+function isDropped(msg){ return /load failed|failed to fetch|networkerror|network connection was lost|internet connection appears to be offline/i.test(String(msg || "")); }
 function showError(msg){
   document.getElementById("progress").style.display = "none";
   document.getElementById("upload-card").style.display = "block";
   document.getElementById("analyze-btn").disabled = !pickedFiles.length;
   const res = document.getElementById("results");
   res.style.display = "block";
-  res.innerHTML = '<div class="card"><div class="warn-box"><b>Analysis failed:</b> '+esc(msg)+'</div></div>';
+  const dropped = isDropped(msg);
+  const text = !dropped ? msg : (window.__startedJob
+    ? "Your phone lost the connection, but the reading goes on without it. In a minute, tap it at the top of Earlier packages."
+    : "Your phone lost the connection before the files were sent. Press Read the package again.");
+  res.innerHTML = '<div class="card"><div class="warn-box"><b>'+(dropped ? "Connection lost:" : "Analysis failed:")+'</b> '+esc(text)+'</div></div>';
   showRecent();
+}
+/* One job's state, tried three times - a phone on the move drops a request now and then. */
+async function getJob(id){
+  let last = null;
+  for(let i = 0; i < 3; i++){
+    try{
+      const r = await sbcFetch("/.netlify/functions/get-bid-analysis?id="+encodeURIComponent(id)+"&t="+Date.now());
+      if(r.status === 401) throw new Error("Your login key is missing on this device. Log out, log in again, then open the package from the list.");
+      return await r.json();
+    }catch(e){
+      last = e;
+      if(!isDropped(e && e.message)) throw e;
+      await new Promise(function(res){ setTimeout(res, 2000); });
+    }
+  }
+  throw last;
 }
 
 /* ============ EARLIER PACKAGES (this device) ============ */
@@ -496,15 +523,15 @@ function rememberJob(id, name){
 function showRecent(){
   const list = recentJobs();
   document.getElementById("recent-holder").innerHTML = list.length ? '<div class="recent"><h4>Earlier packages</h4>' + list.map(function(j){
-    return '<button onclick="openJob(\''+esc(j.id)+'\')">'+esc(j.name || j.id)+'<span>'+esc(new Date(j.at).toLocaleDateString())+'</span></button>';
+    return '<button onclick="openJob(\''+esc(j.id)+'\')">'+esc(j.name || j.id)+'<span>'+esc(new Date(j.at).toLocaleString([], { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }))+'</span></button>';
   }).join("") + '</div>' : "";
 }
 async function openJob(id){
   setMsg("Opening…");
   document.getElementById("progress").style.display = "block";
   try{
-    const r = await sbcFetch("/.netlify/functions/get-bid-analysis?id="+encodeURIComponent(id)+"&t="+Date.now());
-    const d = await r.json();
+    window.__startedJob = id;
+    const d = await getJob(id);
     document.getElementById("progress").style.display = "none";
     window.__pkgBytes = null;
     if(d.status === "done" && d.result) showResult(id, d.result, d.file_signed_url || null);

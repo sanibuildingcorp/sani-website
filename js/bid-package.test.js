@@ -177,6 +177,22 @@ console.log('\n5. the page\n');
   ok('...the takeoff PDF first, then the bid pages of those types, one file', /await takeoffPages\(out, BidTriage\.takeoffLines\(R, chosen\)\);/.test(HTML) && /out\.copyPages\(src, idx\)/.test(HTML));
   ok('...every type ticked; an uncounted one is priced as one kitchen', /class="d-kt" value="'\+i\+'" checked>/.test(HTML) && /count not confirmed \(priced as one kitchen\)/.test(HTML));
   ok('...made once, it asks before making another', /saveDraft\(jobId, "__bid", j1\.ref\)/.test(HTML) && /A draft estimate for this bid was already made\. Make another one\?/.test(HTML));
+  {
+    /* "Analysis failed: Load failed" - while the reading itself finished on the server. */
+    const vm = require('vm');
+    const cutFn = (name) => { const i = HTML.indexOf('function ' + name + '('); let d = 0; for (let j = HTML.indexOf('{', i); j < HTML.length; j++) { if (HTML[j] === '{') d++; else if (HTML[j] === '}') { d--; if (!d) return HTML.slice(i, j + 1); } } };
+    const els = {}; const el = (id) => (els[id] = els[id] || { style: {}, innerHTML: '', disabled: false });
+    const ctx = { window: {}, document: { getElementById: el }, pickedFiles: [], showRecent() {}, esc: (x) => String(x) };
+    vm.createContext(ctx); vm.runInContext(cutFn('isDropped') + cutFn('showError'), ctx);
+    ctx.window.__startedJob = 'bid-1'; ctx.showError('Load failed');
+    ok('A DROPPED CONNECTION AFTER THE FILES WENT: "the reading goes on without it" - not "Analysis failed"', /<b>Connection lost:<\/b> Your phone lost the connection, but the reading goes on without it\. In a minute, tap it at the top of Earlier packages\./.test(els.results.innerHTML), els.results.innerHTML);
+    ctx.window.__startedJob = null; ctx.showError('TypeError: Failed to fetch');
+    ok('...before the files went: press Read again', /before the files were sent\. Press Read the package again\./.test(els.results.innerHTML));
+    ctx.showError('The AI answer was cut off');
+    ok('...a real failure still says "Analysis failed"', /<b>Analysis failed:<\/b> The AI answer was cut off/.test(els.results.innerHTML));
+  }
+  ok('opening an earlier package tries three times before giving up', /for\(let i = 0; i < 3; i\+\+\)/.test(HTML) && /const d = await getJob\(id\);/.test(HTML));
+  ok('earlier packages show the date AND the time, so the same files read twice can be told apart', /toLocaleString\(\[\], \{ month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" \}\)/.test(HTML));
   ok('the questions copy as an email', /Before we price the cabinet and millwork work on/.test(HTML));
   ok('the old "every trade" takeoff is still there', /value="all"/.test(HTML) && /function renderResults\(R, pdfUrl\)/.test(HTML));
   ok('no "licensed", no TV mounting', !/licensed/i.test(HTML) && !/tv mount/i.test(HTML));
