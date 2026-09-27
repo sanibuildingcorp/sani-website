@@ -256,6 +256,8 @@ function checkPass(){
   sbcVerifyPassword(v).then(function(res){
     if(res.ok){
       showApp();
+      showRecent();
+      if(getPending()) openJob(getPending());
     } else {
       err.textContent = res.error;
       err.style.display = "block";
@@ -435,13 +437,16 @@ async function startAnalysis(){
 
     // 3) Start the reading (background function - we poll for the result)
     const jobId = "bid-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+    /* Written down BEFORE the reading starts: if the phone loses the page from
+       here on, the page opens this reading by itself next time. */
+    rememberJob(jobId, files.length === 1 ? files[0].name : files.length + " files - " + files[0].name);
+    setPending(jobId);
     setMsg(extra.mode === "package" ? "Uploaded. The AI is reading the pages - this takes 2 to 6 minutes…" : "Document uploaded. Starting AI takeoff — this takes 1–3 minutes for a full SOW…");
     sbcFetch("/.netlify/functions/analyze-bid-background",{
       method:"POST",
       body:JSON.stringify(Object.assign({ jobId: jobId, filePath: d1.path, fileName: fileName, notes: document.getElementById("notes").value }, extra))
     }).catch(function(){});
     window.__startedJob = jobId;
-    rememberJob(jobId, files.length === 1 ? files[0].name : files.length + " files - " + files[0].name);
 
     // 4) Poll
     await pollJob(jobId);
@@ -464,7 +469,7 @@ async function pollJob(jobId){
       if(r.status === 401){ showError("Your login key is missing on this device. Log out, log in again, then open the package from the list."); return; }
       const d = await r.json();
       if(d.status === "done" && d.result){ showResult(jobId, d.result, d.file_signed_url || null); return; }
-      if(d.status === "error"){ showError(d.error || "Analysis failed"); return; }
+      if(d.status === "error"){ if(getPending() === jobId) setPending(null); showError(d.error || "Analysis failed"); return; }
     }catch(e){ /* transient network — keep polling */ }
   }
   showError("Still not finished after 14 minutes. Open it later from the list below, or try again with fewer files.");
@@ -472,6 +477,7 @@ async function pollJob(jobId){
 
 function showResult(jobId, R, url){
   window.__jobId = jobId;
+  if(getPending() === jobId) setPending(null);
   if(R && R.mode === "package") renderPackage(R, url);
   else renderResults(R, url);
 }
@@ -520,11 +526,35 @@ function rememberJob(id, name){
     localStorage.setItem("sbc-bids", JSON.stringify(list.slice(0, 15)));
   }catch(e){}
 }
+/* The reading this phone started and has not shown yet. */
+function getPending(){ try{ const p = JSON.parse(localStorage.getItem("sbc-bid-pending") || "null"); return p && p.id && Date.now() - p.at < 30*60*1000 ? p.id : null; }catch(e){ return null; } }
+function setPending(id){ try{ if(id) localStorage.setItem("sbc-bid-pending", JSON.stringify({ id: id, at: Date.now() })); else localStorage.removeItem("sbc-bid-pending"); }catch(e){} }
+
+/* EARLIER PACKAGES, FROM THE SERVER. The phone's own list is shown at once;
+   the server's list (every reading, whatever happened to the phone) replaces
+   it as soon as it arrives. */
+function whenText(at){ try{ return new Date(at).toLocaleString([], { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }); }catch(e){ return ""; } }
+function recentRow(id, label, when, state){
+  return '<button onclick="openJob(\''+esc(id)+'\')">'+esc(label)+'<span>'+esc(when)+(state ? ' · '+esc(state) : '')+'</span></button>';
+}
+function recentHtml(rows){ return rows.length ? '<div class="recent"><h4>Earlier packages</h4>' + rows.join("") + '</div>' : ""; }
+function serverRows(jobs){
+  const local = {};
+  recentJobs().forEach(function(j){ local[j.id] = j.name; });
+  return jobs.map(function(j){
+    const total = j.counted != null ? j.counted + " kitchens" : (j.stated != null ? j.stated + (j.plus ? "+" : "") + " kitchens" : "");
+    const label = [j.name || local[j.id] || j.file_name || j.id, total].filter(Boolean).join(" - ");
+    const state = j.status === "done" ? "ready" : j.status === "error" ? "failed" : "still reading";
+    return recentRow(j.id, label, whenText(j.created_at), state);
+  });
+}
 function showRecent(){
-  const list = recentJobs();
-  document.getElementById("recent-holder").innerHTML = list.length ? '<div class="recent"><h4>Earlier packages</h4>' + list.map(function(j){
-    return '<button onclick="openJob(\''+esc(j.id)+'\')">'+esc(j.name || j.id)+'<span>'+esc(new Date(j.at).toLocaleString([], { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }))+'</span></button>';
-  }).join("") + '</div>' : "";
+  const holder = document.getElementById("recent-holder");
+  holder.innerHTML = recentHtml(recentJobs().map(function(j){ return recentRow(j.id, j.name || j.id, whenText(j.at), ""); }));
+  if(typeof sbcKey === "function" && !sbcKey()) return;
+  sbcFetch("/.netlify/functions/list-bid-jobs?t=" + Date.now()).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+    if(d && Array.isArray(d.jobs) && d.jobs.length) holder.innerHTML = recentHtml(serverRows(d.jobs));
+  }).catch(function(){ /* the phone's list stays */ });
 }
 async function openJob(id){
   setMsg("Opening…");
@@ -535,11 +565,14 @@ async function openJob(id){
     document.getElementById("progress").style.display = "none";
     window.__pkgBytes = null;
     if(d.status === "done" && d.result) showResult(id, d.result, d.file_signed_url || null);
-    else if(d.status === "error") showError(d.error || "That reading failed");
+    else if(d.status === "error"){ if(getPending() === id) setPending(null); showError(d.error || "That reading failed"); }
     else { document.getElementById("upload-card").style.display = "none"; document.getElementById("progress").style.display = "block"; await pollJob(id); }
   }catch(e){ showError(e.message); }
 }
 showRecent();
+/* A reading this phone started but never showed (the page was lost, the
+   connection dropped): open it by itself. */
+if(sessionStorage.getItem("sbc-auth") === "1" && getPending()) openJob(getPending());
 
 /* ============ RENDER RESULTS ============ */
 function renderResults(R, pdfUrl){

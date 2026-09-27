@@ -113,6 +113,8 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["upload-bid-file", "POST", { fileName: "plans.pdf" }],
     ["analyze-bid-background", "POST", { jobId: "bid-1", filePath: "bids/x.pdf", mode: "package" }],
     ["get-bid-analysis", "GET", null],
+    /* Every reading's name and status, for the page's list. */
+    ["list-bid-jobs", "GET", null],
   ];
 
   for (const [name, method, body] of GATED) {
