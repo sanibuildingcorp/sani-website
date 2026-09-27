@@ -240,6 +240,64 @@ html body section.gallery-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[c
   .gallery-overlay-icon{display:none}
 }
 </style>
+<style id="sbc-gallery-top3">
+/* ══ LIVE WALL, BEFORE & AFTER, GET THIS LOOK (Sep 27 2026) ═════════════════
+   "Build your top 3 first": something moves in the first second (two rows
+   of the work sliding past, opposite ways), a before/after the visitor drags
+   (it sweeps once by itself when it comes into view, so they know it moves),
+   and on every photo a way to act: "Get this look" opens the estimate form
+   with that photo already attached. Still for anyone who asks for less
+   motion. */
+.lw{background:#0a1628;padding:14px 0;overflow:hidden;display:grid;gap:10px}
+.lw-row{overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.lw-track{display:flex;gap:10px;width:max-content;animation:lw-go 70s linear infinite}
+.lw-b .lw-track{animation-direction:reverse;animation-duration:85s}
+.lw:hover .lw-track{animation-play-state:paused}
+@keyframes lw-go{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.lw-pic{all:unset;cursor:zoom-in;display:block;height:150px;aspect-ratio:4/3;border-radius:10px;overflow:hidden;flex:0 0 auto}
+.lw-pic img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease}
+.lw-pic:hover img{transform:scale(1.07)}
+.lw-pic:focus-visible{outline:2px solid #e0a53a;outline-offset:2px}
+.ba-section{background:#fff;padding:56px 20px 44px}
+.ba-head{text-align:center;max-width:720px;margin:0 auto 26px}
+.ba-eyebrow{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px}
+.ba-eyebrow span{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#b8720a;font-weight:700}
+.ba-eyebrow i{width:28px;height:2px;background:#b8720a;display:block}
+.ba-head h2{font-family:'Playfair Display',serif;font-size:clamp(26px,3.6vw,40px);color:#0a1628;margin:0;line-height:1.15}
+.ba-head h2 em{font-style:italic;color:#b8720a}
+.ba-head p{color:#5b6472;margin:10px 0 0;font-size:15.5px}
+.ba-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.ba{position:relative;margin:0;aspect-ratio:4/5;border-radius:16px;overflow:hidden;box-shadow:0 14px 40px rgba(10,22,40,.16);background:#e9e4dc;--pos:50%;touch-action:pan-y}
+.ba img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.ba-before-wrap{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--pos)) 0 0)}
+.ba-line{position:absolute;top:0;bottom:0;left:var(--pos);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 12px rgba(0,0,0,.35);pointer-events:none}
+.ba-knob{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:#fff;color:#0a1628;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;letter-spacing:-2px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.ba-range{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize;-webkit-appearance:none;appearance:none}
+.ba-range:focus-visible+figcaption{outline:none}
+.ba:focus-within .ba-knob{box-shadow:0 0 0 3px #e0a53a,0 6px 18px rgba(0,0,0,.3)}
+.ba-tag{position:absolute;top:14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 11px;border-radius:999px;pointer-events:none}
+.ba-tag-b{left:14px;background:rgba(10,22,40,.82);color:#fff}
+.ba-tag-a{right:14px;background:#b8720a;color:#fff}
+.ba figcaption{position:absolute;left:0;right:0;bottom:0;padding:44px 16px 14px;background:linear-gradient(180deg,rgba(5,13,26,0),rgba(5,13,26,.85));color:#fff;display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 12px;pointer-events:none}
+.ba figcaption b{font-family:'Playfair Display',serif;font-size:20px;flex:1 1 100%}
+.ba figcaption span{font-size:13px;opacity:.9;flex:1 1 60%}
+.ba-look{pointer-events:auto;margin-left:auto;background:#fff;color:#0a1628;font-size:12.5px;font-weight:700;padding:9px 14px;border-radius:999px;text-decoration:none;white-space:nowrap;position:relative;z-index:2}
+.ba-look:hover{background:#f7e7c8}
+/* "Get this look" in the viewer and on each tile */
+.lb-look{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:#b8720a;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:.3px;padding:12px 20px;border-radius:999px;text-decoration:none;box-shadow:0 8px 24px rgba(184,114,10,.35)}
+.lb-look:hover{background:#9c6008}
+.tile-look{position:absolute;top:12px;right:12px;z-index:3;background:#fff;color:#0a1628;font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:999px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.2);opacity:0;transform:translateY(-4px);transition:opacity .25s,transform .25s}
+.gallery-item:hover .tile-look,.tile-look:focus-visible{opacity:1;transform:none}
+@media(hover:none){.tile-look{display:none}}
+@media(max-width:760px){
+  .ba-grid{grid-template-columns:1fr;gap:16px}
+  .ba-section{padding:40px 12px 30px}
+  .ba figcaption b{font-size:17px}
+  .lw-pic{height:96px}
+  .lw{padding:10px 0;gap:8px}
+}
+@media(prefers-reduced-motion:reduce){.lw-track{animation:none}.lw-row{overflow-x:auto}}
+</style>
 </head>
 <body>
 
@@ -281,6 +339,22 @@ html body section.gallery-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[c
   </div>
 </section>
 
+<!-- GALLERY TOP3 START -->
+<section class="lw" aria-label="Recent work, moving">
+<div class="lw-row lw-a"><div class="lw-track"><button type="button" class="lw-pic" data-for="images/cabinet-work/modern-kitchen-glass-tall-cabinet-led.jpg" aria-label="Open photo: Modern Kitchen, Lit Glass Cabinet"><img src="images/cabinet-work/modern-kitchen-glass-tall-cabinet-led-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/shaker-kitchen-sink-wall-crown-molding.jpg" aria-label="Open photo: Shaker Kitchen, Sink Wall"><img src="images/cabinet-work/shaker-kitchen-sink-wall-crown-molding-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/dark-kitchen-peninsula-oven-tower.jpg" aria-label="Open photo: Peninsula and Oven Tower"><img src="images/cabinet-work/dark-kitchen-peninsula-oven-tower-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/handleless-l-shaped-kitchen-led.jpg" aria-label="Open photo: Handle-Free L-Shaped Kitchen"><img src="images/cabinet-work/handleless-l-shaped-kitchen-led-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/shaker-kitchen-fridge-surround-drawers.jpg" aria-label="Open photo: Built-In Fridge Surround"><img src="images/cabinet-work/shaker-kitchen-fridge-surround-drawers-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/built-in-glass-display-cabinets-shelving.jpg" aria-label="Open photo: Built-In Display Cabinets"><img src="images/cabinet-work/built-in-glass-display-cabinets-shelving-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/marble-tub-brass-2.jpg" aria-label="Open photo: Marble Tub &amp; Brass Fixtures"><img src="images/gallery/thumbs/marble-tub-brass-2.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/custom-closet-glass-and-sliding-doors.jpg" aria-label="Open photo: Custom Closet"><img src="images/cabinet-work/custom-closet-glass-and-sliding-doors-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/white-gloss-kitchen-wine-rack-peninsula.jpg" aria-label="Open photo: Gloss Kitchen with Wine Rack"><img src="images/cabinet-work/white-gloss-kitchen-wine-rack-peninsula-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/coffee-shop-counter-and-wall-shelving.jpg" aria-label="Open photo: Coffee Shop Counter and Shelving"><img src="images/cabinet-work/coffee-shop-counter-and-wall-shelving-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/nyc-luxury-livingroom.jpg" aria-label="Open photo: NYC Luxury Living Room"><img src="images/gallery/thumbs/nyc-luxury-livingroom.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/tall-pantry-and-oven-tower-cabinets.jpg" aria-label="Open photo: Floor-to-Ceiling Pantry"><img src="images/cabinet-work/tall-pantry-and-oven-tower-cabinets-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/high-gloss-red-kitchen-refinishing.jpg" aria-label="Open photo: High-Gloss Kitchen"><img src="images/cabinet-work/high-gloss-red-kitchen-refinishing-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/dark-kitchen-peninsula-open-plan.jpg" aria-label="Open photo: Open Kitchen with Breakfast Bar"><img src="images/cabinet-work/dark-kitchen-peninsula-open-plan-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/modern-kitchen-glass-tall-cabinet-led.jpg" aria-label="Open photo: Modern Kitchen, Lit Glass Cabinet"><img src="images/cabinet-work/modern-kitchen-glass-tall-cabinet-led-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/shaker-kitchen-sink-wall-crown-molding.jpg" aria-label="Open photo: Shaker Kitchen, Sink Wall"><img src="images/cabinet-work/shaker-kitchen-sink-wall-crown-molding-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/dark-kitchen-peninsula-oven-tower.jpg" aria-label="Open photo: Peninsula and Oven Tower"><img src="images/cabinet-work/dark-kitchen-peninsula-oven-tower-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/handleless-l-shaped-kitchen-led.jpg" aria-label="Open photo: Handle-Free L-Shaped Kitchen"><img src="images/cabinet-work/handleless-l-shaped-kitchen-led-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/shaker-kitchen-fridge-surround-drawers.jpg" aria-label="Open photo: Built-In Fridge Surround"><img src="images/cabinet-work/shaker-kitchen-fridge-surround-drawers-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/built-in-glass-display-cabinets-shelving.jpg" aria-label="Open photo: Built-In Display Cabinets"><img src="images/cabinet-work/built-in-glass-display-cabinets-shelving-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/marble-tub-brass-2.jpg" aria-label="Open photo: Marble Tub &amp; Brass Fixtures"><img src="images/gallery/thumbs/marble-tub-brass-2.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/custom-closet-glass-and-sliding-doors.jpg" aria-label="Open photo: Custom Closet"><img src="images/cabinet-work/custom-closet-glass-and-sliding-doors-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/white-gloss-kitchen-wine-rack-peninsula.jpg" aria-label="Open photo: Gloss Kitchen with Wine Rack"><img src="images/cabinet-work/white-gloss-kitchen-wine-rack-peninsula-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/coffee-shop-counter-and-wall-shelving.jpg" aria-label="Open photo: Coffee Shop Counter and Shelving"><img src="images/cabinet-work/coffee-shop-counter-and-wall-shelving-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/nyc-luxury-livingroom.jpg" aria-label="Open photo: NYC Luxury Living Room"><img src="images/gallery/thumbs/nyc-luxury-livingroom.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/tall-pantry-and-oven-tower-cabinets.jpg" aria-label="Open photo: Floor-to-Ceiling Pantry"><img src="images/cabinet-work/tall-pantry-and-oven-tower-cabinets-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/high-gloss-red-kitchen-refinishing.jpg" aria-label="Open photo: High-Gloss Kitchen"><img src="images/cabinet-work/high-gloss-red-kitchen-refinishing-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/dark-kitchen-peninsula-open-plan.jpg" aria-label="Open photo: Open Kitchen with Breakfast Bar"><img src="images/cabinet-work/dark-kitchen-peninsula-open-plan-sm.jpg" alt="" loading="lazy" decoding="async"></button></div></div>
+<div class="lw-row lw-b"><div class="lw-track"><button type="button" class="lw-pic" data-for="images/gallery/marble-mosaic-shower-1.jpg" aria-label="Open photo: Marble Mosaic Shower"><img src="images/gallery/thumbs/marble-mosaic-shower-1.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/project-2.jpg" aria-label="Open photo: Marble Master Bathroom"><img src="images/gallery/thumbs/project-2.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/project-5.jpg" aria-label="Open photo: Custom Built-In Shelving"><img src="images/gallery/thumbs/project-5.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/sage-tile-bathroom.jpg" aria-label="Open photo: Sage Tile Bathroom"><img src="images/gallery/thumbs/sage-tile-bathroom.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/project-6.jpg" aria-label="Open photo: White Oak Hardwood Floors"><img src="images/gallery/thumbs/project-6.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/project-1.jpg" aria-label="Open photo: Custom Shaker Kitchen Renovation"><img src="images/gallery/thumbs/project-1.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/u-shaped-kitchen-glass-display-column.jpg" aria-label="Open photo: Kitchen with Glass Display Column"><img src="images/cabinet-work/u-shaped-kitchen-glass-display-column-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/project-4.jpg" aria-label="Open photo: Full Gut Renovation"><img src="images/gallery/thumbs/project-4.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/project-3.jpg" aria-label="Open photo: Two-Tone Painted Interior"><img src="images/gallery/thumbs/project-3.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/coffee-shop-cabinetry-install.jpg" aria-label="Open photo: Cafe Cabinetry Going In"><img src="images/cabinet-work/coffee-shop-cabinetry-install-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/project-7.jpg" aria-label="Open photo: Brownstone Facade Restoration"><img src="images/gallery/thumbs/project-7.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/cabinet-work/upper-cabinet-installation-in-progress.jpg" aria-label="Open photo: Upper Cabinets Going In"><img src="images/cabinet-work/upper-cabinet-installation-in-progress-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" data-for="images/gallery/project-8.jpg" aria-label="Open photo: Water Damage Restoration"><img src="images/gallery/thumbs/project-8.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/marble-mosaic-shower-1.jpg" aria-label="Open photo: Marble Mosaic Shower"><img src="images/gallery/thumbs/marble-mosaic-shower-1.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/project-2.jpg" aria-label="Open photo: Marble Master Bathroom"><img src="images/gallery/thumbs/project-2.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/project-5.jpg" aria-label="Open photo: Custom Built-In Shelving"><img src="images/gallery/thumbs/project-5.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/sage-tile-bathroom.jpg" aria-label="Open photo: Sage Tile Bathroom"><img src="images/gallery/thumbs/sage-tile-bathroom.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/project-6.jpg" aria-label="Open photo: White Oak Hardwood Floors"><img src="images/gallery/thumbs/project-6.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/project-1.jpg" aria-label="Open photo: Custom Shaker Kitchen Renovation"><img src="images/gallery/thumbs/project-1.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/u-shaped-kitchen-glass-display-column.jpg" aria-label="Open photo: Kitchen with Glass Display Column"><img src="images/cabinet-work/u-shaped-kitchen-glass-display-column-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/project-4.jpg" aria-label="Open photo: Full Gut Renovation"><img src="images/gallery/thumbs/project-4.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/project-3.jpg" aria-label="Open photo: Two-Tone Painted Interior"><img src="images/gallery/thumbs/project-3.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/coffee-shop-cabinetry-install.jpg" aria-label="Open photo: Cafe Cabinetry Going In"><img src="images/cabinet-work/coffee-shop-cabinetry-install-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/project-7.jpg" aria-label="Open photo: Brownstone Facade Restoration"><img src="images/gallery/thumbs/project-7.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/cabinet-work/upper-cabinet-installation-in-progress.jpg" aria-label="Open photo: Upper Cabinets Going In"><img src="images/cabinet-work/upper-cabinet-installation-in-progress-sm.jpg" alt="" loading="lazy" decoding="async"></button><button type="button" class="lw-pic" tabindex="-1" aria-hidden="true" data-for="images/gallery/project-8.jpg" aria-label="Open photo: Water Damage Restoration"><img src="images/gallery/thumbs/project-8.jpg" alt="" loading="lazy" decoding="async"></button></div></div>
+</section>
+<section class="ba-section" id="before-after">
+  <div class="ba-head">
+    <div class="ba-eyebrow"><i></i><span>Before &amp; After</span><i></i></div>
+    <h2>Drag the line. <em>See the change.</em></h2>
+    <p>Real jobs, the same room before we started and after we finished.</p>
+  </div>
+  <div class="ba-grid">
+    <figure class="ba"><img class="ba-after" src="images/before-after/roof-deck-after.jpg" width="622" height="1245" alt="Roof Deck Rebuild - after" loading="lazy" decoding="async"><div class="ba-before-wrap"><img class="ba-before" src="images/before-after/roof-deck-before.jpg" width="622" height="1245" alt="Roof Deck Rebuild - before" loading="lazy" decoding="async"></div><span class="ba-tag ba-tag-b">Before</span><span class="ba-tag ba-tag-a">After</span><div class="ba-line" aria-hidden="true"><span class="ba-knob">&#8249;&#8250;</span></div><input class="ba-range" type="range" min="0" max="100" value="50" aria-label="Drag to compare before and after: Roof Deck Rebuild"><figcaption><b>Roof Deck Rebuild</b><span>Old broken boards out, a new composite deck and privacy fence in.</span><a class="ba-look" href="/estimate?look=images/before-after/roof-deck-after.jpg&title=Roof+Deck+Rebuild&svc=deck">Get a price for this &rarr;</a></figcaption></figure><figure class="ba"><img class="ba-after" src="images/before-after/galley-kitchen-after.jpg" width="528" height="861" alt="Galley Kitchen Refresh - after" loading="lazy" decoding="async"><div class="ba-before-wrap"><img class="ba-before" src="images/before-after/galley-kitchen-before.jpg" width="528" height="861" alt="Galley Kitchen Refresh - before" loading="lazy" decoding="async"></div><span class="ba-tag ba-tag-b">Before</span><span class="ba-tag ba-tag-a">After</span><div class="ba-line" aria-hidden="true"><span class="ba-knob">&#8249;&#8250;</span></div><input class="ba-range" type="range" min="0" max="100" value="50" aria-label="Drag to compare before and after: Galley Kitchen Refresh"><figcaption><b>Galley Kitchen Refresh</b><span>Wood cabinets painted white, new black-and-white checkered floor.</span><a class="ba-look" href="/estimate?look=images/before-after/galley-kitchen-after.jpg&title=Galley+Kitchen+Refresh">Get a price for this &rarr;</a></figcaption></figure>
+  </div>
+</section>
+<!-- GALLERY TOP3 END -->
 <!-- ════════════ FILTERS ════════════ -->
 <div class="gallery-filters">
   <div class="filter-inner">
@@ -865,5 +939,60 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
 })();
 </script>
 
+<script id="sbc-gallery-top3-js">
+(function(){
+  /* the wall: a tap opens that photo in the viewer */
+  document.querySelectorAll('.lw-pic').forEach(function(b){
+    b.addEventListener('click',function(){
+      var it=document.querySelector('.gallery-item[data-img="'+b.getAttribute('data-for')+'"]');
+      if(it){ if(it.classList.contains('hidden')){ var all=document.querySelector('.filter-btn[data-filter="all"]'); if(all) all.click(); } it.click(); }
+    });
+  });
+  /* before & after: the range drives the line; one sweep when first seen */
+  document.querySelectorAll('.ba').forEach(function(f){
+    var r=f.querySelector('.ba-range');
+    var set=function(v){ f.style.setProperty('--pos', v+'%'); };
+    r.addEventListener('input',function(){ f.dataset.touched='1'; set(r.value); });
+    if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if(!('IntersectionObserver' in window)) return;
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(!e.isIntersecting||f.dataset.swept) return;
+        f.dataset.swept='1'; io.unobserve(f);
+        var keys=[[0,50],[700,22],[1500,78],[2200,50]], t0=null;
+        var step=function(ts){
+          if(f.dataset.touched) return;
+          if(t0===null) t0=ts; var t=ts-t0, v=50;
+          for(var i=1;i<keys.length;i++){ if(t<=keys[i][0]){ var a=keys[i-1],b=keys[i],k=(t-a[0])/(b[0]-a[0]); k=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; v=a[1]+(b[1]-a[1])*k; break; } v=keys[keys.length-1][1]; }
+          set(v); r.value=v; if(t<keys[keys.length-1][0]) requestAnimationFrame(step);
+        };
+        setTimeout(function(){ requestAnimationFrame(step); },350);
+      });
+    },{threshold:.55});
+    io.observe(f);
+  });
+  /* "Get this look": on each tile, and in the viewer for the photo on screen */
+  var SVC={bathroom:'bathroom',flooring:'flooring',carpentry:'carpentry',restoration:'water-damage'};
+  var lookUrl=function(it){
+    var u='/estimate?look='+encodeURIComponent(it.getAttribute('data-img'))+'&title='+encodeURIComponent(it.getAttribute('data-title')||'');
+    var s=SVC[it.getAttribute('data-category')]; return s?u+'&svc='+s:u;
+  };
+  document.querySelectorAll('.gallery-item').forEach(function(it){
+    var a=document.createElement('a'); a.className='tile-look'; a.href=lookUrl(it); a.textContent='Get this look \u2192';
+    a.addEventListener('click',function(e){ e.stopPropagation(); });
+    it.appendChild(a);
+  });
+  var cap=document.getElementById('lbCaption'), img=document.getElementById('lbImg');
+  if(cap&&img){
+    var btn=document.createElement('a'); btn.className='lb-look'; btn.textContent='Get a price for this look \u2192';
+    cap.insertAdjacentElement('afterend',btn);
+    new MutationObserver(function(){
+      var src=img.getAttribute('src')||'';
+      var it=Array.prototype.find.call(document.querySelectorAll('.gallery-item'),function(x){ return src.indexOf(x.getAttribute('data-img'))!==-1; });
+      if(it){ btn.href=lookUrl(it); btn.style.display=''; } else btn.style.display='none';
+    }).observe(img,{attributes:true,attributeFilter:['src']});
+  }
+})();
+</script>
 </body>
 </html>
