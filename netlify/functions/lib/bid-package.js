@@ -37,20 +37,22 @@ The attached PDF is NOT the whole bid package. The contractor's device already k
 
 PAGE MAP:
 ${o.pageMap || "(none)"}
-${o.notes ? "\nCONTRACTOR NOTES (true, use them):\n" + o.notes + "\n" : ""}
+${o.notes ? "\nCONTRACTOR NOTES - often the general contractor's own email, pasted in. They are true: take from them the total number of kitchens, the work they ask us to do, and what they give to others.\n" + o.notes + "\n" : ""}
 YOUR JOB:
-1. Find the kitchen types (K1, Type A, 1BR kitchen...) and COUNT how many kitchens of each type the building has. Use the unit matrix / unit mix / apartment schedule first; floor plans if there is no matrix. Show the math in "count_source", e.g. "Unit matrix p.4: floors 2-6, 4 per floor = 20". If the matrix and the plans disagree, use the matrix, set confidence low and ask the GC.
+1. Find the kitchen types (K1, Type A, 1BR kitchen...) and COUNT how many kitchens of each type the building has. Use the unit matrix / unit mix / apartment schedule first; floor plans if there is no matrix. Show the math in "count_source", e.g. "Unit matrix p.4: floors 2-6, 4 per floor = 20". If the matrix and the plans disagree, use the matrix, set confidence low and ask the GC. When the notes or the pages state a TOTAL for the building ("650+ kitchens", "120 units"), put it in stated_total with where it came from - never split a total across the types yourself.
 2. For each kitchen type, list what is in it from the enlarged kitchen plans and interior elevations: base cabinets, wall cabinets, tall / pantry cabinets, sink base, drawer bases, corner units, end panels, appliance panels, fillers, toe kick, crown, light rail, hardware, and anything else of ours. Count boxes (EA); give widths when shown; give linear feet (LF) only when that is how the drawing shows it. If the elevations are not in the pages, say so and ask.
 3. Other work of ours: vanities (when they are in the casework section), closet shelving, window stools, base, casing, wood trim, panelling - with quantity and where. Skip it when the pages do not show it.
 4. The specs for our sections (06 41 00, 06 20 00, 12 35 30, or whatever they are called here): the requirements that change our price (materials, AWI grade, finish, who supplies cabinets, attic stock, mock-up, submittals, warranty).
 5. WHO SUPPLIES THE CABINETS: "furnish_and_install" (we buy and install), "install_only" (owner / GC supplies them, we install), or "unclear".
 6. What is NOT ours: countertops, appliances, plumbing, electrical, backing / blocking, anything the package gives to another trade. GAS RULE: we never set or connect an oven, range, cooktop or anything on a gas line - always list "Gas appliances - set and connected by the gas trade" in not_in_our_scope.
 7. The money and paper rules: bid due date and time, walkthrough, insurance limits, bonds, retainage, payment terms, schedule / duration, prevailing wage, MWBE, submittals.
-8. Questions for the GC: every thing we need to know to price and that the pages do not answer. One question each, written as you would email a general contractor, short and plain.
+8. per_kitchen_work: the work done in EVERY kitchen besides hanging the cabinet boxes, from the notes and the pages - one line each, e.g. "Set and level the refrigerator and dishwasher with their custom panels", "Install the LED light bar and run its wires", "Install hardware". Only what they ask of us; gas appliances never.
+9. Questions for the GC: every thing we need to know to price and that the pages do not answer. One question each, written as you would email a general contractor, short and plain.
 
 RULES:
 - The contact is the person at the GENERAL CONTRACTOR (or owner) who receives bids - never a cabinet supplier, kitchen designer, architect or engineer. Leave contact_name, contact_email and contact_phone empty when the pages do not name that person.
 - Never use the word "licensed".
+- Something the notes give to others only "possibly" (for example "possibly take care of trash removal") goes in not_in_our_scope marked "(to confirm)", with a question.
 - NEVER write a price, a rate or a dollar figure of your own. Copy a dollar figure only when the package states it (an insurance limit, an allowance on the bid form).
 - Never guess a count. A count you cannot read from the pages is null, with a question for the GC.
 - Plain English, short sentences. No shorthand except EA, LF, SF.
@@ -64,6 +66,8 @@ RESPOND WITH ONLY VALID JSON (no markdown fences, no commentary), exactly this s
   "our_scope_summary": "2-3 plain sentences: what we would install",
   "supply": "furnish_and_install | install_only | unclear",
   "supply_note": "what the package says, with the page",
+  "stated_total": { "count": 650, "plus": true, "source": "GC's message: '650+ kitchens'" },
+  "per_kitchen_work": ["Set and level the refrigerator and dishwasher with their custom panels"],
   "unit_types": [ { "unit_type": "A1", "description": "1 bedroom", "count": 20, "kitchen_type": "K1", "page": 4, "confidence": "high" } ],
   "kitchen_types": [
     {
@@ -87,7 +91,7 @@ RESPOND WITH ONLY VALID JSON (no markdown fences, no commentary), exactly this s
   "missing_information": ["pages or facts the package should have and these pages do not"],
   "assumptions": ["every interpretation you made"]
 }
-"shared_pages" = the spec and rule pages every kitchen type's estimate should carry (not the kitchen drawings).`;
+"shared_pages" = the spec and rule pages every kitchen type's estimate should carry (not the kitchen drawings). "stated_total" is null when nothing states a total.`;
 }
 
 function clampPage(p, max) {
@@ -154,6 +158,21 @@ function normalizePackage(parsed, meta) {
     return kt;
   });
   const counted = kitchenTypes.filter(function (k) { return k.count !== null; });
+  const countedSum = counted.reduce(function (a, k) { return a + k.count; }, 0);
+
+  /* THE TOTAL THE GC GAVE ("650+ kitchens") - kept even when the split by
+     type is missing, and checked against the types once they are all
+     counted. */
+  const st = P.stated_total && typeof P.stated_total === "object" ? P.stated_total : null;
+  let statedTotal = null;
+  if (st && num(st.count) !== null && num(st.count) > 0) {
+    statedTotal = { count: Math.round(num(st.count)), plus: st.plus === true || /\+/.test(String(st.count)), source: str(st.source, 200) };
+    const allCounted = kitchenTypes.length && counted.length === kitchenTypes.length;
+    if (allCounted && (statedTotal.plus ? countedSum < statedTotal.count : countedSum !== statedTotal.count)) {
+      checks.push("The kitchen types add up to " + countedSum + " kitchens; the stated total is " + statedTotal.count + (statedTotal.plus ? "+" : "") + ".");
+      questions.push({ question: "The kitchen types in the drawings add up to " + countedSum + " kitchens, but the total given is " + statedTotal.count + (statedTotal.plus ? "+" : "") + ". Which is right?", why: "It multiplies our whole price.", page: null });
+    }
+  }
 
   return {
     mode: "package",
@@ -164,7 +183,9 @@ function normalizePackage(parsed, meta) {
     supply_note: str(P.supply_note, 400),
     unit_types: unitTypes,
     kitchen_types: kitchenTypes,
-    total_kitchens: counted.length ? counted.reduce(function (a, k) { return a + k.count; }, 0) : null,
+    total_kitchens: counted.length ? countedSum : null,
+    stated_total: statedTotal,
+    per_kitchen_work: arr(P.per_kitchen_work).map(function (x) { return str(x, 200); }).filter(function (x) { return x && !/\b(gas|range|cooktop|oven)\b/i.test(x); }).slice(0, 15),
     other_millwork: arr(P.other_millwork).slice(0, 60).map(function (it) { return item(it, max); }).filter(function (it) { return it.item; }),
     specs: arr(P.specs).slice(0, 20).map(function (s) {
       return { section: str(s && s.section, 30), title: str(s && s.title, 120), page: clampPage(s && s.page, max), requirements: arr(s && s.requirements).map(function (r) { return str(r, 300); }).filter(Boolean).slice(0, 20) };

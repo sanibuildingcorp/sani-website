@@ -128,6 +128,44 @@ console.log('\n4. ONE draft estimate for the whole bid, a card per kitchen type\
   ok('the estimate keeps 3,000 characters of a new description (it kept 2,000)', /String\(body\.description \|\| "Created manually from dashboard"\)\.slice\(0, 3000\)/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/create-estimate.js'), 'utf8')));
 }
 
+console.log('\n4b. the GC\'s own words: the total and the work in every kitchen\n');
+{
+  /* "Regardless of what the GC or developer is planning, let's just say that we
+      are providing a quote just for the installation of cabinetry (650+
+      kitchens) ... Set and level appliances with custom panels (fridge and
+      dishwasher). Install LED lights (light bar and run wires) ... we will
+      expect them to distribute the kitchens into the building and possibly
+      take care of trash removal." - the GC's email, pasted into the notes. */
+  const pr = BP.packagePrompt({ notes: 'quote ... (650+ kitchens)' });
+  ok('THE NOTES ARE READ AS THE GC\'S OWN EMAIL: the total, the work for us, what goes to others', /often the general contractor's own email, pasted in/.test(pr) && /the total number of kitchens, the work they ask us to do, and what they give to others/.test(pr));
+  ok('...a stated total is kept, never split across the types by the AI', /put it in stated_total with where it came from - never split a total across the types yourself/.test(pr) && /"stated_total": \{ "count": 650, "plus": true/.test(pr));
+  ok('...the work in every kitchen (panels, LED light bar and wires), never gas', /per_kitchen_work: the work done in EVERY kitchen besides hanging the cabinet boxes/.test(pr) && /gas appliances never/.test(pr));
+  ok('..."possibly" by others is marked "(to confirm)" and asked', /goes in not_in_our_scope marked "\(to confirm\)", with a question/.test(pr));
+
+  const R = BP.normalizePackage({
+    project: { name: '750 3rd Avenue' }, supply: 'install_only',
+    our_scope_summary: 'Install the cabinets, set the fridge and dishwasher with panels and install the LED light bars.',
+    stated_total: { count: '650+', plus: true, source: "GC's message: '650+ kitchens'" },
+    per_kitchen_work: ['Set and level the refrigerator and dishwasher with their custom panels', 'Install the LED light bar and run its wires', 'Set the gas range'],
+    kitchen_types: [{ name: 'Type 01', count: null }, { name: 'Type 02', count: null }],
+    not_in_our_scope: ['Distribution of the kitchens into the building - by others', 'Trash removal - by others (to confirm)', 'Countertops - by others'],
+  }, { pagesKept: 8 });
+  ok('THE TOTAL IS KEPT: 650+, from the GC\'s message', R.stated_total && R.stated_total.count === 650 && R.stated_total.plus === true && /650\+ kitchens/.test(R.stated_total.source), JSON.stringify(R.stated_total));
+  ok('...the work in every kitchen is kept; a gas line never is', R.per_kitchen_work.length === 2 && !R.per_kitchen_work.some((x) => /gas/i.test(x)));
+  const d = T.draftForBid(R, R.kitchen_types);
+  ok('THE DRAFT: title "650+ kitchens (mix not confirmed)", each type priced per kitchen', /Bid: 750 3rd Avenue - kitchen cabinets, 2 kitchen types, 650\+ kitchens \(mix not confirmed\)/.test(d.projectTitle) && /The general contractor's total: 650\+ kitchens .*each type is priced per kitchen/.test(d.description), d.projectTitle + '\n' + d.description);
+  ok('...with our work and the work in every kitchen for the estimator to price', /Our work: Install the cabinets, set the fridge and dishwasher with panels and install the LED light bars\./.test(d.description) && /In every kitchen also: Set and level the refrigerator and dishwasher with their custom panels; Install the LED light bar and run its wires\./.test(d.description));
+  ok('...and what is by others, "to confirm" kept', /Trash removal - by others \(to confirm\)/.test(d.description) && /Distribution of the kitchens into the building - by others/.test(d.description));
+  const lines = T.takeoffLines(R, R.kitchen_types);
+  ok('...the takeoff PDF says it too', lines.indexOf("Total kitchens stated: 650+ kitchens - GC's message: '650+ kitchens'") !== -1 && lines.indexOf('# Work in every kitchen') !== -1 && lines.indexOf('- Install the LED light bar and run its wires') !== -1);
+
+  const C = BP.normalizePackage({ stated_total: { count: 650, plus: true }, kitchen_types: [{ name: 'A', count: 300 }, { name: 'B', count: 200 }] }, { pagesKept: 8 });
+  ok('ONCE EVERY TYPE IS COUNTED, a sum under the stated total becomes a check and a question', C.checks.some((c) => /add up to 500 kitchens; the stated total is 650\+/.test(c)) && C.questions_for_gc.some((q) => /add up to 500 kitchens, but the total given is 650\+/.test(q.question)));
+  const OK = BP.normalizePackage({ stated_total: { count: 650, plus: true }, kitchen_types: [{ name: 'A', count: 400 }, { name: 'B', count: 260 }] }, { pagesKept: 8 });
+  ok('...660 against "650+" is fine', !OK.checks.length && T.draftForBid(OK, OK.kitchen_types).projectTitle === 'Bid: Bid package - kitchen cabinets, 2 kitchen types, 660 kitchens');
+  ok('the page shows 650+ as the total while the mix is not confirmed, and lists the work in every kitchen', /"Kitchens - their total"/.test(HTML) && /<b>In every kitchen:<\/b>/.test(HTML));
+}
+
 console.log('\n5. the page\n');
 {
   ok('ALL THE FILES AT ONCE', /<input type="file" id="file-input" accept="application\/pdf,\.pdf" multiple/.test(HTML));
