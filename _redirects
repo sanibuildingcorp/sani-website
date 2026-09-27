@@ -66,6 +66,7 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 /painting.html                           /painting                           301!
 /flooring.html                           /flooring                           301!
 /carpentry.html                          /carpentry                          301!
+/finish-carpentry-millwork.html          /finish-carpentry-millwork          301!
 /water-damage.html                       /water-damage                       301!
 /kitchen-cabinet-installation.html            /kitchen-cabinet-installation            301!
 /kitchen-cabinet-installation-brooklyn.html   /kitchen-cabinet-installation-brooklyn   301!
