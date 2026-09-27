@@ -150,7 +150,7 @@
      The description is what the estimator reads and prices: the count, one
      kitchen's contents, who supplies the boxes, what is not ours, the rules.
      No price in it - the estimate system makes the price. */
-  function clip(s, n) { s = String(s == null ? "" : s).replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function clip(s, n) { s = String(s == null ? "" : s).replace(/\s*\blicensed\b/gi, "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
   function draftFor(R, kt) {
     var P = (R && R.project) || {};
     var n = kt && kt.count != null ? kt.count : null;

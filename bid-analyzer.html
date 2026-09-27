@@ -764,7 +764,7 @@ function renderPackage(R, pdfUrl){
       '<label class="field">Project address<input id="d-addr" value="'+esc(P.address)+'"></label></div>'+
       '<div style="margin-top:14px">'+counted.map(function(k, i){
         const ref = made[k.name];
-        return '<label class="pick"><input type="checkbox" class="d-kt" value="'+i+'"'+(ref?' disabled':' checked')+'> <span><b>'+esc(k.name)+'</b> - '+(k.count==null?"count not confirmed":esc(k.count)+' kitchens')+
+        return '<label class="pick"><input type="checkbox" class="d-kt" value="'+i+'"'+(ref?' disabled':(k.count==null?'':' checked'))+'> <span><b>'+esc(k.name)+'</b> - '+(k.count==null?"count not confirmed":esc(k.count)+' kitchens')+
           (ref?' · <a class="pg" href="/dashboard.html?ref='+encodeURIComponent(ref)+'">made: '+esc(ref)+'</a>':'')+'</span></label>';
       }).join("")+'</div>'+
       '<button class="btn-gold" id="d-btn" onclick="makeDrafts()">Make draft estimates →</button><div id="d-status" class="done-list" style="margin-top:12px"></div></div>';

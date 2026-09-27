@@ -62,7 +62,8 @@ console.log('\n2. what the AI is asked\n');
   ok('never guesses a count - null and a question instead', /Never guess a count/.test(pr));
   ok('the gas rule', /never set or connect an oven, range, cooktop or anything on a gas line/.test(pr));
   ok('the page map and his notes go in', /p\.1 = A\.pdf p\.4/.test(pr) && /We install only\./.test(pr) && /1 of 900 pages, from 3 file/.test(pr));
-  ok('no "licensed"', !/licensed/i.test(pr));
+  ok('no "licensed" - and the AI is told never to write it', /Never use the word "licensed"\./.test(pr) && pr.replace('Never use the word "licensed".', '').indexOf('licensed') === -1);
+  ok('THE CONTACT IS THE GC\'S BID PERSON, never the cabinet supplier or kitchen designer (a real reading picked the Porcelanosa designer)', /never a cabinet supplier, kitchen designer, architect or engineer/.test(pr));
 }
 
 console.log('\n3. what is kept of the answer\n');
@@ -87,6 +88,8 @@ console.log('\n3. what is kept of the answer\n');
   ok('pages point at real pages only, once each, in order', JSON.stringify(k1.pages) === '[4,12]' && R.project.page === null && JSON.stringify(R.shared_pages) === '[2,20]');
   ok('items: quantities as numbers, units upper case, empty ones dropped', k1.items.length === 1 && k1.items[0].qty === 2 && k1.items[0].unit === 'EA');
   ok('a bad email is not kept (the draft asks him for one)', R.project.contact_email === '');
+  const L = BP.normalizePackage({ not_in_our_scope: ['Plumbing and electrical hookups - by licensed plumbing/electrical contractor (p.1, p.7)'], questions_for_gc: [{ question: 'Is a Licensed electrician on site?' }] }, { pagesKept: 8 });
+  ok('"LICENSED" NEVER REACHES THE PAGE OR A DRAFT ESTIMATE, whatever the AI writes', L.not_in_our_scope[0] === 'Plumbing and electrical hookups - by plumbing/electrical contractor (p.1, p.7)' && L.questions_for_gc[0].question === 'Is a electrician on site?', JSON.stringify(L.not_in_our_scope));
   ok('plain-string questions are kept', R.questions_for_gc[0].question === 'Who supplies the hardware?' && R.questions_for_gc[1].page === 5);
   ok('the files and page map ride along for the page', R.files[0].kept === 30 && R.page_map[0].page === 4 && R.pages_total === 900 && R.mode === 'package');
   ok('the AI\'s JSON is read even with fences or a sentence in front', BP.parseJson('Here it is:\n```json\n{"a":1}\n```').a === 1 && BP.parseJson('nope') === null);
@@ -109,6 +112,8 @@ console.log('\n4. one draft estimate per kitchen type\n');
   ok('...the money rules', /Bid rules: Retainage 10% until completion\./.test(d.description));
   ok('...no price anywhere, under the estimate\'s 2,000 characters', !/\$/.test(d.description) && d.description.length <= 2000);
   ok('...a clear title, as Carpentry', d.projectTitle === 'Kitchen type K1 - 24 kitchens - The Rivet' && d.service === 'Carpentry');
+  const old = T.draftFor({ not_in_our_scope: ['Plumbing hookups - by licensed plumbing contractor'] }, { name: 'Type 01', count: null });
+  ok('...and a package read before this fix still makes a draft without "licensed"', !/licensed/i.test(old.description) && /Plumbing hookups - by plumbing contractor/.test(old.description), old.description);
   const long = T.draftFor(R, Object.assign({}, R.kitchen_types[0], { items: Array.from({ length: 30 }, (_, i) => ({ item: 'Cabinet with a very long description number ' + i + ' '.repeat(3) + 'x'.repeat(60), qty: i, unit: 'EA' })) }));
   ok('a long kitchen still fits in 2,000 characters', long.description.length <= 2000);
 }
@@ -120,6 +125,7 @@ console.log('\n5. the page\n');
   ok('every bid endpoint is called WITH the key', !/fetch\("\/\.netlify\/functions\/(upload-bid-file|analyze-bid-background|get-bid-analysis)/.test(HTML.replace(/sbcFetch\(/g, 'SBC(')) && (HTML.match(/sbcFetch\("\/\.netlify\/functions\/(upload-bid-file|analyze-bid-background|get-bid-analysis)/g) || []).length >= 4);
   ok('the drafts go through create-estimate, upload-estimate-file and update-customer, with the key', /sbcFetch\("\/\.netlify\/functions\/create-estimate"/.test(HTML) && /sbcFetch\("\/\.netlify\/functions\/upload-estimate-file"/.test(HTML) && /sbcFetch\("\/\.netlify\/functions\/update-customer"/.test(HTML));
   ok('the draft needs the GC name and email - it asks, never guesses', /Type the GC contact name and email first/.test(HTML));
+  ok('a kitchen type with no count is not ticked for a draft (tick it by hand once the GC answers)', /\(ref\?' disabled':\(k\.count==null\?'':' checked'\)\)/.test(HTML));
   ok('a draft made once is not made twice', /madeDrafts\(window\.__jobId\)/.test(HTML) && /saveDraft\(jobId, k\.name, j1\.ref\)/.test(HTML));
   ok('the questions copy as an email', /Before we price the cabinet and millwork work on/.test(HTML));
   ok('the old "every trade" takeoff is still there', /value="all"/.test(HTML) && /function renderResults\(R, pdfUrl\)/.test(HTML));
