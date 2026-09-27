@@ -2780,6 +2780,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
 </button>
     <div class="brand-mark">SANI <span class="sep">·</span><span class="sub">DASHBOARD</span></div>
     <button class="topbar-btn" id="ai-open-btn" onclick="aiOpen()" title="Your assistant — reads what is on screen, answers, and does what you tell it">✦ AI</button>
+    <a href="/bid-analyzer.html" class="topbar-btn">📐 Bids</a>
     <a href="/estimate" target="_blank" class="topbar-btn">↗ Customer Form</a>
     <button class="topbar-btn" onclick="loadEstimates()">⟳ Refresh</button>
     <button class="topbar-btn" onclick="logout()">Logout</button>
@@ -10866,6 +10867,7 @@ window.addEventListener('load', function() {
     <button id="menu-ai" onclick="sbcCloseDrawer();aiOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">✦ AI Assistant</button>
     <button id="menu-send-link" onclick="sbcCloseDrawer();var o=document.getElementById('send-link-overlay');if(o){o.style.display='flex';document.body.style.overflow='hidden';}" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📤 Send Estimate Link</button>
     <button id="menu-new-invoice" onclick="sbcCloseDrawer();sbcOpenNewInv()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">➕ New Invoice</button>
+    <a id="menu-bids" href="/bid-analyzer.html" style="display:block;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-weight:700;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📐 Bid Analyzer</a>
     <a href="/estimate" target="_blank" style="display:block;padding:12px 14px;background:#eef2f7;border-radius:10px;color:#44536a;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">↗ Customer Form</a>
     <button onclick="loadEstimates()" style="display:block;width:100%;padding:12px 14px;background:#eef2f7;border-radius:10px;color:#44536a;font-size:13px;border:none;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">⟳ Refresh</button>
     <button onclick="logout()" style="display:block;width:100%;padding:12px 14px;background:#eef2f7;border-radius:10px;color:#44536a;font-size:13px;border:none;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">⎋ Logout</button>
