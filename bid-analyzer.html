@@ -67,6 +67,32 @@ textarea.notes:focus{outline:none;border-color:var(--gold)}
 .btn-gold:disabled{opacity:.45;cursor:not-allowed}
 .btn-ghost{display:inline-block;margin-top:18px;margin-left:10px;padding:14px 24px;background:transparent;color:var(--gold-2);border:1.5px solid var(--gold);border-radius:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:13px}
 
+.modes{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.mode{flex:1;min-width:220px;display:flex;gap:10px;align-items:flex-start;background:var(--navy);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+.mode:has(input:checked){border-color:var(--gold)}
+.mode input{margin-top:4px;accent-color:var(--gold)}
+.mode small{display:block;color:var(--ink-muted);font-size:12.5px}
+.recent{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.recent h4{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-muted);margin-bottom:6px;font-family:var(--body)}
+.recent button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.recent button span{color:var(--ink-muted);font-size:12px;margin-left:8px}
+.kt{background:var(--navy);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:12px}
+.kt summary{cursor:pointer;font-weight:700;font-size:16px;list-style:none;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.kt summary::-webkit-details-marker{display:none}
+.kt .cnt{font-family:var(--display);font-size:24px;color:var(--gold-3)}
+.pg{color:var(--gold-2);font-weight:700;text-decoration:none;white-space:nowrap}
+ol.qs{padding-left:22px}
+ol.qs li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+ol.qs li:last-child{border-bottom:none}
+.field{display:block;margin-top:10px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-muted)}
+.field input{display:block;width:100%;margin-top:4px;padding:11px 12px;background:var(--navy);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);font-family:var(--body);font-size:15px;text-transform:none;letter-spacing:0}
+.field input:focus{outline:none;border-color:var(--gold)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.pick{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.pick input{accent-color:var(--gold);width:18px;height:18px}
+.done-list a{color:var(--gold-2)}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
 /* Progress */
 #progress{display:none;text-align:center;padding:40px 20px}
 .spinner{width:54px;height:54px;border:4px solid var(--line);border-top-color:var(--gold-2);border-radius:50%;margin:0 auto 18px;animation:spin 1s linear infinite}
@@ -162,20 +188,26 @@ ul.plain li:last-child{border-bottom:none}
 
     <!-- UPLOAD -->
     <div class="card" id="upload-card">
-      <h2>Analyze a <em>Bid Package</em></h2>
-      <div class="sub">Upload an RFQ / SOW / drawings PDF. The AI extracts scope, quantities and compliance requirements — prices come ONLY from your Price Book (Supabase → price_book table).</div>
+      <h2>Read a <em>Bid Package</em></h2>
+      <div class="sub">Add every file the GC sent - specs, drawings, bid form. Your device skims all the pages and keeps only the ones about cabinets, millwork, the unit counts and the money rules. The AI reads those pages, counts the kitchens of each type and writes your questions for the GC. It never sets a price.</div>
+
+      <div class="modes" role="radiogroup">
+        <label class="mode"><input type="radio" name="bid-mode" value="package" checked onchange="setMode(this.value)"> <span><b>Cabinets &amp; millwork</b><small>Kitchens per type, questions, draft estimates</small></span></label>
+        <label class="mode"><input type="radio" name="bid-mode" value="all" onchange="setMode(this.value)"> <span><b>Every trade</b><small>The old full takeoff with the Price Book</small></span></label>
+      </div>
 
       <div class="dropzone" id="dz" onclick="document.getElementById('file-input').click()">
         <div class="dz-icon">📐</div>
-        <div class="dz-title">Tap to add bid PDF</div>
-        <div class="dz-hint">One PDF up to 30MB / 100 pages — SOW, drawings, schedules all in one file works best</div>
+        <div class="dz-title">Tap to add the bid files</div>
+        <div class="dz-hint">PDF files - add them all at once, any size. Word files or drawings in other formats: save them as PDF first.</div>
       </div>
-      <input type="file" id="file-input" accept="application/pdf" style="display:none" onchange="pickFile(event)">
+      <input type="file" id="file-input" accept="application/pdf,.pdf" multiple style="display:none" onchange="pickFile(event)">
       <div id="file-chip-holder"></div>
 
-      <textarea class="notes" id="notes" placeholder="Optional notes for the AI — e.g. 'Federal correctional facility, occupied housing area, work hours 7AM–3PM, quote firm-fixed price Net 30'"></textarea>
+      <textarea class="notes" id="notes" placeholder="Optional notes for the AI - e.g. 'Cabinets supplied by the owner, we install only. Bid due Friday.'"></textarea>
 
-      <button class="btn-gold" id="analyze-btn" onclick="startAnalysis()" disabled>Analyze Bid →</button>
+      <button class="btn-gold" id="analyze-btn" onclick="startAnalysis()" disabled>Read the package →</button>
+      <div id="recent-holder"></div>
     </div>
 
     <!-- PROGRESS -->
@@ -205,13 +237,14 @@ ul.plain li:last-child{border-bottom:none}
   </div>
 
   <div class="footer-note">
-    ⚠ This tool produces a <b>draft takeoff and cost buildup for your review</b> — it is not a final bid.
-    Verify every Low/Medium confidence quantity against the drawings, confirm all "Not in Price Book" items,
-    and for federal work confirm Davis-Bacon wage rates at sam.gov before submitting any number.
+    ⚠ This is a <b>draft for your review</b> - it is not a final bid.
+    Check every count marked Medium or Low against the drawings (tap the page link), and send the GC your questions before you commit to a number.
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="/js/bid-triage.js"></script>
 <script src="/js/dashboard-auth.js"></script>
 <script>
 /* ============ AUTH (same password + session as dashboard) ============
@@ -239,81 +272,174 @@ function showApp(){
 }
 if(sessionStorage.getItem("sbc-auth") === "1") showApp();
 
-/* ============ FILE PICK ============ */
-let pickedFile = null;
+/* ============ FILE PICK (many files) ============ */
+let pickedFiles = [];
+let bidMode = "package";
 const dz = document.getElementById("dz");
 ["dragover","dragenter"].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.add("drag");}));
 ["dragleave","drop"].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.remove("drag");}));
-dz.addEventListener("drop",ev=>{
-  const f = ev.dataTransfer.files && ev.dataTransfer.files[0];
-  if(f) setFile(f);
-});
-function pickFile(ev){
-  const f = ev.target.files && ev.target.files[0];
-  if(f) setFile(f);
+dz.addEventListener("drop",ev=>{ addFiles(ev.dataTransfer.files); });
+function pickFile(ev){ addFiles(ev.target.files); ev.target.value = ""; }
+function setMode(m){ bidMode = m === "all" ? "all" : "package"; }
+function addFiles(list){
+  const bad = [];
+  Array.prototype.forEach.call(list || [], function(f){
+    if(f.type !== "application/pdf" && !/\.pdf$/i.test(f.name)){ bad.push(f.name); return; }
+    if(pickedFiles.some(function(p){ return p.name === f.name && p.size === f.size; })) return;
+    pickedFiles.push(f);
+  });
+  if(bad.length) alert("Only PDF files. Save these as PDF first:\n" + bad.join("\n"));
+  showFiles();
 }
-function setFile(f){
-  if(f.type !== "application/pdf" && !/\.pdf$/i.test(f.name)){
-    alert("Please upload a PDF. If you have DWG drawings or Word docs, export/print them to PDF first.");
-    return;
-  }
-  if(f.size > 30*1024*1024){
-    alert("PDF is over 30MB. Compress it (e.g. smallpdf.com) and try again.");
-    return;
-  }
-  pickedFile = f;
-  document.getElementById("file-chip-holder").innerHTML =
-    '<div class="file-chip"><span>📄</span><span class="fname">'+esc(f.name)+'</span>'+
-    '<span class="fsize">'+(f.size/1024/1024).toFixed(1)+' MB</span>'+
-    '<button class="fx" onclick="clearFile()">✕</button></div>';
-  document.getElementById("analyze-btn").disabled = false;
+function showFiles(){
+  document.getElementById("file-chip-holder").innerHTML = pickedFiles.map(function(f, i){
+    return '<div class="file-chip"><span>📄</span><span class="fname">'+esc(f.name)+'</span>'+
+      '<span class="fsize">'+(f.size/1024/1024).toFixed(1)+' MB</span>'+
+      '<button class="fx" onclick="removeFile('+i+')" aria-label="Remove">✕</button></div>';
+  }).join("") + (pickedFiles.length > 1 ? '<div class="dz-hint" style="margin-top:8px">'+pickedFiles.length+' files, '+(pickedFiles.reduce(function(a,f){return a+f.size;},0)/1024/1024).toFixed(1)+' MB</div>' : "");
+  document.getElementById("analyze-btn").disabled = !pickedFiles.length;
 }
-function clearFile(){
-  pickedFile = null;
-  document.getElementById("file-input").value = "";
-  document.getElementById("file-chip-holder").innerHTML = "";
-  document.getElementById("analyze-btn").disabled = true;
-}
+function removeFile(i){ pickedFiles.splice(i,1); showFiles(); }
+function clearFile(){ pickedFiles = []; showFiles(); }
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function money(n){return n==null?"—":"$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
 
-/* ============ ANALYSIS FLOW: upload → trigger → poll ============ */
+/* ============ SKIM: read the text of every page, on this device ============
+   Nothing is uploaded yet. Each page is scored by js/bid-triage.js; a file
+   pdf.js cannot open is reported, not fatal. */
+async function skimFiles(files){
+  const pages = [], perFile = [];
+  for(let fi = 0; fi < files.length; fi++){
+    const f = files[fi];
+    const info = { name: f.name, pages: 0, kept: 0, scanned: false, error: "" };
+    perFile.push(info);
+    let doc = null;
+    try{
+      doc = await pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise;
+      info.pages = doc.numPages;
+      let withText = 0;
+      for(let p = 1; p <= doc.numPages; p++){
+        if(p === 1 || p % 5 === 0) setMsg("Skimming file "+(fi+1)+" of "+files.length+" - page "+p+" of "+doc.numPages);
+        let text = "";
+        try{
+          const page = await doc.getPage(p);
+          const tc = await page.getTextContent();
+          text = tc.items.map(function(it){ return it.str; }).join(" ");
+          page.cleanup();
+        }catch(e){ text = ""; }
+        const sc = BidTriage.scorePage(text);
+        if(!sc.textless) withText++;
+        pages.push({ file: fi, page: p, name: f.name, score: sc.score, why: sc.why, textless: sc.textless });
+      }
+      info.scanned = withText === 0;
+    }catch(e){
+      info.error = "could not be opened (" + (e && e.message || "error") + ")";
+    }finally{
+      if(doc) try{ doc.destroy(); }catch(e){}
+    }
+  }
+  return { pages: pages, perFile: perFile };
+}
+
+/* ============ BUILD: one PDF of the kept pages, each stamped ============ */
+async function buildPackagePdf(files, picked){
+  const L = PDFLib;
+  const out = await L.PDFDocument.create();
+  const font = await out.embedFont(L.StandardFonts.HelveticaBold);
+  const byFile = {};
+  picked.forEach(function(p){ (byFile[p.file] = byFile[p.file] || []).push(p); });
+  let n = 0;
+  for(let fi = 0; fi < files.length; fi++){
+    const want = byFile[fi];
+    if(!want) continue;
+    setMsg("Putting the kept pages together - file "+(fi+1)+" of "+files.length);
+    const src = await L.PDFDocument.load(await files[fi].arrayBuffer(), { ignoreEncryption: true });
+    const copied = await out.copyPages(src, want.map(function(p){ return p.page - 1; }));
+    copied.forEach(function(pg, k){
+      out.addPage(pg);
+      n++;
+      stampPage(pg, BidTriage.stampText(files[fi].name, want[k].page, n), font);
+    });
+  }
+  return out.save();
+}
+/* The stamp sits at the visual top-left, whatever the page rotation. */
+function stampPage(pg, text, font){
+  const L = PDFLib, size = 9;
+  const box = pg.getCropBox(), x0 = box.x, y0 = box.y, w = box.width, h = box.height;
+  const tw = font.widthOfTextAtSize(text, size);
+  const ang = ((pg.getRotation().angle % 360) + 360) % 360;
+  let rect, at, rot;
+  if(ang === 90){ rect = [x0+4, y0+4, 13, tw+8]; at = [x0+13, y0+8]; rot = 90; }
+  else if(ang === 180){ rect = [x0+w-tw-12, y0+4, tw+8, 13]; at = [x0+w-8, y0+13]; rot = 180; }
+  else if(ang === 270){ rect = [x0+w-17, y0+h-tw-12, 13, tw+8]; at = [x0+w-13, y0+h-8]; rot = 270; }
+  else { rect = [x0+4, y0+h-17, tw+8, 13]; at = [x0+8, y0+h-13]; rot = 0; }
+  pg.drawRectangle({ x: rect[0], y: rect[1], width: rect[2], height: rect[3], color: L.rgb(1,1,1), opacity: 0.9 });
+  pg.drawText(text, { x: at[0], y: at[1], size: size, font: font, color: L.rgb(0.75,0.1,0.05), rotate: L.degrees(rot) });
+}
+
+/* ============ ANALYSIS FLOW: skim → keep → upload → trigger → poll ============ */
 async function startAnalysis(){
-  if(!pickedFile) return;
+  if(!pickedFiles.length) return;
   const btn = document.getElementById("analyze-btn");
   btn.disabled = true;
   document.getElementById("upload-card").style.display = "none";
   document.getElementById("results").style.display = "none";
   document.getElementById("progress").style.display = "block";
-  setMsg("Uploading document to secure storage…");
 
   try{
-    // 1) Get signed upload URL (bypasses Netlify 6MB limit — file goes straight to Supabase)
-    const r1 = await fetch("/.netlify/functions/upload-bid-file",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({fileName:pickedFile.name})
-    });
+    const files = pickedFiles.slice();
+    let blob, fileName, extra = {};
+    if(bidMode === "all" && files.length === 1 && files[0].size <= BidTriage.MAX_BYTES){
+      /* The old takeoff on one file: sent as it is. */
+      blob = files[0]; fileName = files[0].name;
+    } else {
+      if(!window.pdfjsLib || !window.PDFLib || !window.BidTriage) throw new Error("The PDF tools did not load. Check the internet connection and reload the page.");
+      const sk = await skimFiles(files);
+      if(!sk.pages.length) throw new Error("None of the files could be opened: " + sk.perFile.map(function(f){ return f.name + " " + f.error; }).join("; "));
+      let picked = BidTriage.pickPages(sk.pages, { mode: bidMode });
+      if(!picked.length) throw new Error("No page mentions cabinets, casework, millwork or the unit counts. If the drawings are scans, add the kitchen sheets as their own file with 'kitchen' in the file name.");
+      let bytes = await buildPackagePdf(files, picked);
+      for(let tries = 0; bytes.length > BidTriage.MAX_BYTES && tries < 6 && picked.length > 5; tries++){
+        picked = BidTriage.trimTo(picked, Math.floor(picked.length * 0.75));
+        setMsg("The pages are heavy - keeping the best "+picked.length);
+        bytes = await buildPackagePdf(files, picked);
+      }
+      if(bytes.length > BidTriage.MAX_BYTES) throw new Error("Even the kept pages are over 30 MB. Upload fewer drawing files at a time.");
+      sk.perFile.forEach(function(f, i){ f.kept = picked.filter(function(p){ return p.file === i; }).length; });
+      window.__pkgBytes = bytes;
+      window.__skim = sk.perFile;
+      blob = new Blob([bytes], { type: "application/pdf" });
+      fileName = (files.length === 1 ? files[0].name.replace(/\.pdf$/i, "") : "bid-package") + "-" + picked.length + "-pages.pdf";
+      extra = {
+        mode: bidMode === "all" ? undefined : "package",
+        pagesKept: picked.length,
+        pagesTotal: sk.pages.length,
+        files: sk.perFile.map(function(f){ return { name: f.name, pages: f.pages, kept: f.kept, scanned: f.scanned }; }),
+        pageMap: picked.map(function(p){ return { file: files[p.file].name, page: p.page }; })
+      };
+      const scans = sk.perFile.filter(function(f){ return f.scanned; }).length;
+      setMsg("Kept "+picked.length+" of "+sk.pages.length+" pages"+(scans ? " ("+scans+" scanned file"+(scans>1?"s":"")+" had no readable text)" : "")+". Uploading…");
+    }
+
+    // 1) Signed upload URL (the file goes straight to Supabase, past Netlify's 6MB limit)
+    const r1 = await sbcFetch("/.netlify/functions/upload-bid-file",{ method:"POST", body:JSON.stringify({fileName:fileName}) });
     const d1 = await r1.json();
+    if(r1.status === 401) throw new Error("Your login key is missing on this device. Log out, log in again, then retry.");
     if(!d1.signedUrl || !d1.path) throw new Error(d1.error || "Could not get upload URL");
 
-    // 2) PUT the PDF directly to Supabase
-    const r2 = await fetch(d1.signedUrl,{
-      method:"PUT",
-      headers:{"Content-Type":"application/pdf","x-upsert":"true"},
-      body:pickedFile
-    });
+    // 2) PUT the PDF
+    const r2 = await fetch(d1.signedUrl,{ method:"PUT", headers:{"Content-Type":"application/pdf","x-upsert":"true"}, body:blob });
     if(!r2.ok) throw new Error("Upload to storage failed ("+r2.status+")");
 
-    // 3) Trigger background analysis
+    // 3) Start the reading (background function - we poll for the result)
     const jobId = "bid-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-    setMsg("Document uploaded. Starting AI takeoff — this takes 1–3 minutes for a full SOW…");
-    fetch("/.netlify/functions/analyze-bid-background",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        jobId, filePath:d1.path, fileName:pickedFile.name,
-        notes:document.getElementById("notes").value
-      })
-    }).catch(function(){}); // background fn — fire & forget, we poll for result
+    setMsg(extra.mode === "package" ? "Uploaded. The AI is reading the pages - this takes 2 to 6 minutes…" : "Document uploaded. Starting AI takeoff — this takes 1–3 minutes for a full SOW…");
+    sbcFetch("/.netlify/functions/analyze-bid-background",{
+      method:"POST",
+      body:JSON.stringify(Object.assign({ jobId: jobId, filePath: d1.path, fileName: fileName, notes: document.getElementById("notes").value }, extra))
+    }).catch(function(){});
+    rememberJob(jobId, files.length === 1 ? files[0].name : files.length + " files - " + files[0].name);
 
     // 4) Poll
     await pollJob(jobId);
@@ -326,29 +452,67 @@ function setMsg(m){document.getElementById("progress-msg").textContent = m;}
 
 async function pollJob(jobId){
   const started = Date.now();
-  const MAX_MS = 10*60*1000; // 10 min ceiling
+  const MAX_MS = 14*60*1000;
   while(Date.now()-started < MAX_MS){
     await new Promise(r=>setTimeout(r,5000));
     const secs = Math.round((Date.now()-started)/1000);
-    setMsg("AI is reading drawings and extracting quantities… "+secs+"s");
+    setMsg("The AI is reading the pages and counting… "+Math.floor(secs/60)+" min "+(secs%60)+" s");
     try{
-      const r = await fetch("/.netlify/functions/get-bid-analysis?id="+encodeURIComponent(jobId)+"&t="+Date.now());
+      const r = await sbcFetch("/.netlify/functions/get-bid-analysis?id="+encodeURIComponent(jobId)+"&t="+Date.now());
+      if(r.status === 401){ showError("Your login key is missing on this device. Log out, log in again, then open the package from the list."); return; }
       const d = await r.json();
-      if(d.status === "done" && d.result){ renderResults(d.result, d.file_signed_url || null); return; }
+      if(d.status === "done" && d.result){ showResult(jobId, d.result, d.file_signed_url || null); return; }
       if(d.status === "error"){ showError(d.error || "Analysis failed"); return; }
     }catch(e){ /* transient network — keep polling */ }
   }
-  showError("Timed out after 10 minutes. Check Netlify function logs for analyze-bid-background, then try again.");
+  showError("Still not finished after 14 minutes. Open it later from the list below, or try again with fewer files.");
+}
+
+function showResult(jobId, R, url){
+  window.__jobId = jobId;
+  if(R && R.mode === "package") renderPackage(R, url);
+  else renderResults(R, url);
 }
 
 function showError(msg){
   document.getElementById("progress").style.display = "none";
   document.getElementById("upload-card").style.display = "block";
-  document.getElementById("analyze-btn").disabled = !pickedFile;
+  document.getElementById("analyze-btn").disabled = !pickedFiles.length;
   const res = document.getElementById("results");
   res.style.display = "block";
   res.innerHTML = '<div class="card"><div class="warn-box"><b>Analysis failed:</b> '+esc(msg)+'</div></div>';
+  showRecent();
 }
+
+/* ============ EARLIER PACKAGES (this device) ============ */
+function recentJobs(){ try{ return JSON.parse(localStorage.getItem("sbc-bids") || "[]").filter(function(j){ return j && j.id; }); }catch(e){ return []; } }
+function rememberJob(id, name){
+  try{
+    const list = recentJobs().filter(function(j){ return j.id !== id; });
+    list.unshift({ id: id, name: String(name || "").slice(0, 90), at: new Date().toISOString() });
+    localStorage.setItem("sbc-bids", JSON.stringify(list.slice(0, 15)));
+  }catch(e){}
+}
+function showRecent(){
+  const list = recentJobs();
+  document.getElementById("recent-holder").innerHTML = list.length ? '<div class="recent"><h4>Earlier packages</h4>' + list.map(function(j){
+    return '<button onclick="openJob(\''+esc(j.id)+'\')">'+esc(j.name || j.id)+'<span>'+esc(new Date(j.at).toLocaleDateString())+'</span></button>';
+  }).join("") + '</div>' : "";
+}
+async function openJob(id){
+  setMsg("Opening…");
+  document.getElementById("progress").style.display = "block";
+  try{
+    const r = await sbcFetch("/.netlify/functions/get-bid-analysis?id="+encodeURIComponent(id)+"&t="+Date.now());
+    const d = await r.json();
+    document.getElementById("progress").style.display = "none";
+    window.__pkgBytes = null;
+    if(d.status === "done" && d.result) showResult(id, d.result, d.file_signed_url || null);
+    else if(d.status === "error") showError(d.error || "That reading failed");
+    else { document.getElementById("upload-card").style.display = "none"; document.getElementById("progress").style.display = "block"; await pollJob(id); }
+  }catch(e){ showError(e.message); }
+}
+showRecent();
 
 /* ============ RENDER RESULTS ============ */
 function renderResults(R, pdfUrl){
@@ -363,7 +527,7 @@ function renderResults(R, pdfUrl){
   }
   document.getElementById("progress").style.display = "none";
   document.getElementById("upload-card").style.display = "block";
-  document.getElementById("analyze-btn").disabled = !pickedFile;
+  document.getElementById("analyze-btn").disabled = !pickedFiles.length;
 
   const c = R.confidence_rollup || {high:0,medium:0,low:0};
   const P = R.pricing || {};
@@ -489,6 +653,223 @@ function renderResults(R, pdfUrl){
   res.scrollIntoView({behavior:"smooth"});
 }
 
+/* ============ RENDER: THE BID PACKAGE READER ============ */
+function pgLink(n){
+  if(!n || !window.__pdfUrl) return n ? '<span class="src" style="display:inline">p.'+esc(n)+'</span>' : "";
+  return '<a href="#" class="pg" onclick="openPage('+Number(n)+');return false">p.'+Number(n)+' 🔎</a>';
+}
+function origOf(n){
+  const m = (window.__pkg && window.__pkg.page_map || [])[n-1];
+  return m ? m.file + " p." + m.page : "";
+}
+function renderPackage(R, pdfUrl){
+  window.__pdfUrl = pdfUrl || null;
+  window.__pkg = R;
+  window.__pdfDoc = null;
+  document.getElementById("progress").style.display = "none";
+  document.getElementById("upload-card").style.display = "block";
+  document.getElementById("analyze-btn").disabled = !pickedFiles.length;
+  const P = R.project || {};
+  const KT = R.kitchen_types || [];
+  let h = "";
+
+  // --- The project ---
+  h += '<div class="card"><h2>'+esc(P.name || "The project")+'</h2>';
+  h += '<div style="margin:6px 0 12px">'+
+    (P.bid_due ? '<span class="pill medium">Bids due: '+esc(P.bid_due)+'</span> ' : "")+
+    (P.walkthrough ? '<span class="pill high">Walkthrough: '+esc(P.walkthrough)+'</span> ' : "")+
+    (P.gc ? '<span class="pill fed">GC: '+esc(P.gc)+'</span>' : "")+'</div>';
+  if(P.address) h += '<p style="color:var(--ink-muted);font-size:14px">'+esc(P.address)+'</p>';
+  if(R.project_summary) h += '<p style="font-size:15px;margin-top:8px">'+esc(R.project_summary)+'</p>';
+  if(R.our_scope_summary) h += '<p style="font-size:15px;margin-top:8px"><b>Our part:</b> '+esc(R.our_scope_summary)+'</p>';
+  const sup = R.supply === "install_only" ? ["high","Install only - cabinets supplied by others"] : R.supply === "furnish_and_install" ? ["medium","We supply and install the cabinets"] : ["low","Who supplies the cabinets: not clear"];
+  h += '<div style="margin-top:10px"><span class="pill '+sup[0]+'">'+sup[1]+'</span>'+(R.supply_note ? '<span class="src">'+esc(R.supply_note)+'</span>' : "")+'</div>';
+  const files = R.files || [];
+  h += '<details style="margin-top:12px"><summary style="cursor:pointer;color:var(--ink-muted);font-size:13px">Read '+esc(R.pages_kept)+' of '+esc(R.pages_total)+' pages from '+files.length+' file'+(files.length===1?"":"s")+'</summary><ul class="plain">'+
+    files.map(function(f){ return '<li>'+esc(f.name)+' <span class="src" style="display:inline">- kept '+esc(f.kept)+' of '+esc(f.pages)+(f.scanned ? ' · scanned, no readable text' : '')+'</span></li>'; }).join("")+'</ul></details>';
+  if((R.checks||[]).length) h += '<div class="warn-box"><b>Check these:</b><br>'+R.checks.map(esc).join("<br>")+'</div>';
+  h += '<button class="btn-ghost" style="margin-left:0" onclick="window.print()">🖨 Print / Save PDF</button></div>';
+
+  // --- Kitchens per type ---
+  h += '<div class="card"><h2>Kitchens <em>per type</em></h2>';
+  if(!KT.length){
+    h += '<div class="warn-box">No kitchen types were found in these pages. Add the unit matrix and the enlarged kitchen plans, then read again.</div>';
+  } else {
+    h += '<div class="rollup"><div class="roll"><div class="n" style="color:var(--gold-3)">'+(R.total_kitchens==null?"?":esc(R.total_kitchens))+'</div><div class="l">Kitchens in total</div></div>'+
+      '<div class="roll"><div class="n" style="color:var(--gold-3)">'+KT.length+'</div><div class="l">Kitchen types</div></div></div>';
+    KT.forEach(function(k){
+      h += '<details class="kt" open><summary><span class="cnt">'+(k.count==null?"?":esc(k.count))+'</span> × <span>'+esc(k.name)+'</span>'+
+        '<span class="pill '+esc(k.confidence)+'">'+esc(k.confidence)+'</span></summary>';
+      if(k.description) h += '<p style="margin-top:6px">'+esc(k.description)+'</p>';
+      if(k.count_source) h += '<span class="src">Counted: '+esc(k.count_source)+'</span>';
+      if((k.units||[]).length) h += '<span class="src">Units: '+esc(k.units.join(", "))+'</span>';
+      if((k.items||[]).length){
+        h += '<div class="tbl-scroll"><table><tr><th>In one kitchen</th><th class="num">Qty</th><th>Unit</th><th>Page</th></tr>'+
+          k.items.map(function(it){ return '<tr><td>'+esc(it.item)+(it.confidence!=="high"?' <span class="pill '+esc(it.confidence)+'">'+esc(it.confidence)+'</span>':'')+'</td><td class="num">'+(it.qty==null?"?":esc(it.qty))+'</td><td>'+esc(it.unit)+'</td><td>'+pgLink(it.page)+'</td></tr>'; }).join("")+'</table></div>';
+      }
+      if((k.notes||[]).length) h += '<ul class="plain">'+k.notes.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join("")+'</ul>';
+      if((k.pages||[]).length) h += '<div class="src">Pages: '+k.pages.map(pgLink).join(" ")+'</div>';
+      h += '</details>';
+    });
+  }
+  if((R.unit_types||[]).length){
+    h += '<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Unit list ('+R.unit_types.length+')</summary><div class="tbl-scroll"><table><tr><th>Unit</th><th class="num">Count</th><th>Kitchen</th><th>Page</th></tr>'+
+      R.unit_types.map(function(u){ return '<tr><td>'+esc(u.unit_type)+(u.description?'<span class="src">'+esc(u.description)+'</span>':'')+'</td><td class="num">'+(u.count==null?"?":esc(u.count))+'</td><td>'+esc(u.kitchen_type)+'</td><td>'+pgLink(u.page)+'</td></tr>'; }).join("")+'</table></div></details>';
+  }
+  h += '</div>';
+
+  // --- Other millwork ---
+  if((R.other_millwork||[]).length){
+    h += '<div class="card"><h2>Other <em>millwork</em></h2><div class="tbl-scroll"><table><tr><th>Item</th><th class="num">Qty</th><th>Unit</th><th>Page</th></tr>'+
+      R.other_millwork.map(function(it){ return '<tr><td>'+esc(it.item)+(it.where?'<span class="src">'+esc(it.where)+'</span>':'')+'</td><td class="num">'+(it.qty==null?"?":esc(it.qty))+'</td><td>'+esc(it.unit)+'</td><td>'+pgLink(it.page)+'</td></tr>'; }).join("")+'</table></div></div>';
+  }
+
+  // --- Questions for the GC ---
+  const Q = R.questions_for_gc || [];
+  if(Q.length){
+    h += '<div class="card"><h2>Questions for <em>the GC</em></h2><div class="sub">Send these before you give a number.</div><ol class="qs">'+
+      Q.map(function(q){ return '<li>'+esc(q.question)+(q.why?'<span class="src">Why: '+esc(q.why)+'</span>':'')+(q.page?' '+pgLink(q.page):'')+'</li>'; }).join("")+'</ol>'+
+      '<button class="btn-gold" onclick="copyQuestions()">Copy the questions</button> <span id="copy-note" class="src" style="display:inline"></span></div>';
+  }
+
+  // --- Specs, not ours, rules ---
+  if((R.specs||[]).length || (R.not_in_our_scope||[]).length){
+    h += '<div class="card"><h2>Specs &amp; <em>what is not ours</em></h2>';
+    (R.specs||[]).forEach(function(s){
+      h += '<p style="margin-top:10px"><span class="cat-tag">'+esc(s.section||"Spec")+'</span><b>'+esc(s.title)+'</b> '+pgLink(s.page)+'</p>';
+      if((s.requirements||[]).length) h += '<ul class="plain">'+s.requirements.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join("")+'</ul>';
+    });
+    if((R.not_in_our_scope||[]).length) h += '<div class="gold-box"><b>Not in our work:</b><br>'+R.not_in_our_scope.map(esc).join("<br>")+'</div>';
+    h += '</div>';
+  }
+  if((R.requirements||[]).length){
+    h += '<div class="card"><h2>Money &amp; <em>paper rules</em></h2><ul class="plain">'+
+      R.requirements.map(function(r){ return '<li><span class="cat-tag">'+esc(String(r.category).replace(/_/g," "))+'</span>'+esc(r.text)+' '+pgLink(r.page)+'</li>'; }).join("")+'</ul></div>';
+  }
+  if((R.missing_information||[]).length || (R.assumptions||[]).length){
+    h += '<div class="card"><h2>Missing &amp; <em>assumed</em></h2><ul class="plain">'+
+      (R.missing_information||[]).map(function(m){ return '<li><span class="cat-tag">Missing</span>'+esc(m)+'</li>'; }).join("")+
+      (R.assumptions||[]).map(function(m){ return '<li><span class="cat-tag">Assumed</span>'+esc(m)+'</li>'; }).join("")+'</ul></div>';
+  }
+
+  // --- Draft estimates ---
+  const counted = KT.filter(function(k){ return k.name; });
+  if(counted.length){
+    const made = madeDrafts(window.__jobId);
+    h += '<div class="card" id="drafts-card"><h2>Draft <em>estimates</em></h2><div class="sub">One draft per kitchen type goes to your dashboard with its bid pages attached. Open it there and press Generate to price it.</div>'+
+      '<div class="grid2">'+
+      '<label class="field">GC company / contact<input id="d-name" value="'+esc(P.contact_name ? P.contact_name + (P.gc ? " - " + P.gc : "") : P.gc)+'"></label>'+
+      '<label class="field">Email<input id="d-email" type="email" value="'+esc(P.contact_email)+'"></label>'+
+      '<label class="field">Phone<input id="d-phone" value="'+esc(P.contact_phone)+'"></label>'+
+      '<label class="field">Project address<input id="d-addr" value="'+esc(P.address)+'"></label></div>'+
+      '<div style="margin-top:14px">'+counted.map(function(k, i){
+        const ref = made[k.name];
+        return '<label class="pick"><input type="checkbox" class="d-kt" value="'+i+'"'+(ref?' disabled':' checked')+'> <span><b>'+esc(k.name)+'</b> - '+(k.count==null?"count not confirmed":esc(k.count)+' kitchens')+
+          (ref?' · <a class="pg" href="/dashboard.html?ref='+encodeURIComponent(ref)+'">made: '+esc(ref)+'</a>':'')+'</span></label>';
+      }).join("")+'</div>'+
+      '<button class="btn-gold" id="d-btn" onclick="makeDrafts()">Make draft estimates →</button><div id="d-status" class="done-list" style="margin-top:12px"></div></div>';
+  }
+
+  h += '<div class="card" style="text-align:center;color:var(--ink-muted);font-size:12.5px">Read '+esc(new Date(R.generated_at).toLocaleString())+' · '+esc(R.file_name||"")+'</div>';
+  const res = document.getElementById("results");
+  res.innerHTML = h;
+  res.style.display = "block";
+  res.scrollIntoView({behavior:"smooth"});
+  showRecent();
+}
+
+function copyQuestions(){
+  const R = window.__pkg || {}, P = R.project || {};
+  const text = "Hello" + (P.contact_name ? " " + P.contact_name.split(" ")[0] : "") + ",\n\nBefore we price the cabinet and millwork work on " + (P.name || "the project") + ", we have a few questions:\n\n" +
+    (R.questions_for_gc || []).map(function(q, i){ return (i + 1) + ". " + q.question; }).join("\n") +
+    "\n\nThank you,\nSani Building Corp";
+  const note = document.getElementById("copy-note");
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function(){ note.textContent = "Copied - paste it into your email."; }, function(){
+    const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); note.textContent = "Copied - paste it into your email."; }catch(e){ note.textContent = "Could not copy on this device."; }
+    ta.remove();
+  });
+}
+
+/* ============ DRAFT ESTIMATES: one per kitchen type ============
+   create-estimate (the GC as the customer) → the kitchen type's pages as a
+   PDF into estimate-photos → saved on the estimate (update-customer
+   addPhotos), where the estimator reads it as drawings. All behind the key. */
+function madeDrafts(jobId){ try{ return JSON.parse(localStorage.getItem("sbc-bid-drafts:" + jobId) || "{}") || {}; }catch(e){ return {}; } }
+function saveDraft(jobId, name, ref){ try{ const m = madeDrafts(jobId); m[name] = ref; localStorage.setItem("sbc-bid-drafts:" + jobId, JSON.stringify(m)); }catch(e){} }
+
+async function packageBytes(){
+  if(window.__pkgBytes) return window.__pkgBytes;
+  if(!window.__pdfUrl) throw new Error("The bid pages are not available - open the package again.");
+  const r = await fetch(window.__pdfUrl);
+  if(!r.ok) throw new Error("Could not load the bid pages ("+r.status+")");
+  window.__pkgBytes = new Uint8Array(await r.arrayBuffer());
+  return window.__pkgBytes;
+}
+async function pagesPdf(bytes, pages){
+  if(!pages.length) return bytes;
+  const src = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+  const n = src.getPageCount();
+  const idx = pages.filter(function(p){ return p >= 1 && p <= n; }).map(function(p){ return p - 1; });
+  if(!idx.length) return bytes;
+  const out = await PDFLib.PDFDocument.create();
+  (await out.copyPages(src, idx)).forEach(function(pg){ out.addPage(pg); });
+  return out.save();
+}
+
+async function makeDrafts(){
+  const R = window.__pkg || {}, KT = (R.kitchen_types || []).filter(function(k){ return k.name; });
+  const status = document.getElementById("d-status");
+  const customer = {
+    name: document.getElementById("d-name").value.trim(),
+    email: document.getElementById("d-email").value.trim(),
+    phone: document.getElementById("d-phone").value.trim(),
+    address: document.getElementById("d-addr").value.trim()
+  };
+  if(!customer.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)){
+    status.innerHTML = '<div class="warn-box">Type the GC contact name and email first - the drafts are made out to them.</div>';
+    return;
+  }
+  const chosen = Array.prototype.map.call(document.querySelectorAll(".d-kt:checked"), function(c){ return KT[Number(c.value)]; }).filter(Boolean);
+  if(!chosen.length){ status.innerHTML = '<div class="warn-box">Tick at least one kitchen type.</div>'; return; }
+  const btn = document.getElementById("d-btn");
+  btn.disabled = true;
+  const jobId = window.__jobId, lines = [];
+  const say = function(t){ status.innerHTML = lines.join("") + '<div class="src">'+esc(t)+'</div>'; };
+  try{
+    const all = await packageBytes();
+    for(const k of chosen){
+      say("Making " + k.name + "…");
+      const d = BidTriage.draftFor(R, k);
+      const r1 = await sbcFetch("/.netlify/functions/create-estimate", { method: "POST", body: JSON.stringify({ customer: customer, service: d.service, projectTitle: d.projectTitle, description: d.description }) });
+      const j1 = await r1.json();
+      if(!j1.ref) throw new Error(j1.error || "Could not make the estimate");
+      saveDraft(jobId, k.name, j1.ref);
+      let attached = "";
+      try{
+        const pages = (k.pages || []).concat(R.shared_pages || []).filter(function(p, i, a){ return a.indexOf(p) === i; }).sort(function(a, b){ return a - b; });
+        const bytes = await pagesPdf(all, pages);
+        const fname = "bid-pages-" + String(k.name).toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".pdf";
+        const r2 = await sbcFetch("/.netlify/functions/upload-estimate-file", { method: "POST", body: JSON.stringify({ ref: j1.ref, fileName: fname, contentType: "application/pdf" }) });
+        const j2 = await r2.json();
+        if(!j2.signedUrl) throw new Error(j2.error || "no upload link");
+        const r3 = await fetch(j2.signedUrl, { method: "PUT", headers: { "Content-Type": "application/pdf", "x-upsert": "true" }, body: new Blob([bytes], { type: "application/pdf" }) });
+        if(!r3.ok) throw new Error("upload " + r3.status);
+        const r4 = await sbcFetch("/.netlify/functions/update-customer", { method: "POST", body: JSON.stringify({ ref: j1.ref, customer: customer, addPhotos: [{ url: j2.publicUrl, name: "Bid pages - kitchen type " + k.name + " (" + (pages.length || "all") + " pages)" }] }) });
+        if(!r4.ok) throw new Error("save " + r4.status);
+        attached = " · pages attached";
+      }catch(e){ attached = ' · <b style="color:var(--red)">pages not attached ('+esc(e.message)+') - add them in the dashboard</b>'; }
+      lines.push('<div>✓ <b>'+esc(k.name)+'</b> → <a href="/dashboard.html?ref='+encodeURIComponent(j1.ref)+'">'+esc(j1.ref)+'</a>'+attached+'</div>');
+      say("");
+    }
+    status.innerHTML = lines.join("") + '<p style="margin-top:10px">Open each one in the dashboard and press <b>Generate</b>.</p>';
+    document.querySelectorAll(".d-kt:checked").forEach(function(c){ c.checked = false; c.disabled = true; });
+  }catch(e){
+    status.innerHTML = lines.join("") + '<div class="warn-box">'+esc(e.message)+'</div>';
+  }
+  btn.disabled = false;
+}
+
 /* ============ PDF SOURCE VIEWER (v1.2) ============
    Renders the cited page and highlights the AI's verbatim source_quote
    using the PDF's OWN text coordinates — the highlight comes from the
@@ -501,12 +882,18 @@ if(window.pdfjsLib){
 function norm(t){return String(t||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
 
 async function viewSource(pageNum, idx){
-  if(!window.__pdfUrl || !window.pdfjsLib) return;
   const li = (window.__lineItems||[])[idx] || {};
-  const quote = li.source_quote || "";
+  return openPage(pageNum, "Page "+pageNum+" — "+(li.description||"source").slice(0,60), li.source_quote || "");
+}
+/* A page of the package: "Page 12 - A-501.pdf p.3". */
+function openPage(pageNum, title, quote){
+  return showPage(pageNum, title || ("Page "+pageNum+(origOf(pageNum) ? " - "+origOf(pageNum) : "")), quote || "");
+}
+async function showPage(pageNum, title, quote){
+  if(!window.__pdfUrl || !window.pdfjsLib) return;
   const modal = document.getElementById("pdf-modal");
   modal.style.display = "block";
-  document.getElementById("pm-title").textContent = "Page "+pageNum+" — "+(li.description||"source").slice(0,60);
+  document.getElementById("pm-title").textContent = title;
   document.getElementById("pm-quote").textContent = quote ? '"'+quote+'"' : "";
   document.getElementById("pm-open").href = window.__pdfUrl + "#page=" + pageNum;
   document.getElementById("pm-note").textContent = "Loading page…";

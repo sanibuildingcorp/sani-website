@@ -108,6 +108,11 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     /* Switches the generator's test mode and edits its lessons. */
     ["generator-lab", "POST", { action: "mode", on: true }],
     ["generator-lab", "GET", null],
+    /* The bid package reader: a GC's private documents, and every reading
+       costs an AI run. The page sends the key on all three. */
+    ["upload-bid-file", "POST", { fileName: "plans.pdf" }],
+    ["analyze-bid-background", "POST", { jobId: "bid-1", filePath: "bids/x.pdf", mode: "package" }],
+    ["get-bid-analysis", "GET", null],
   ];
 
   for (const [name, method, body] of GATED) {
