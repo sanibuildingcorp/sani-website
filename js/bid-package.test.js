@@ -95,27 +95,37 @@ console.log('\n3. what is kept of the answer\n');
   ok('the AI\'s JSON is read even with fences or a sentence in front', BP.parseJson('Here it is:\n```json\n{"a":1}\n```').a === 1 && BP.parseJson('nope') === null);
 }
 
-console.log('\n4. one draft estimate per kitchen type\n');
+console.log('\n4. ONE draft estimate for the whole bid, a card per kitchen type\n');
 {
+  /* "it was maked several estimate draft in dashboard, it split for couple
+      different projects" - eight drafts for one building. */
   const R = BP.normalizePackage({
-    project: { name: 'The Rivet', address: '12 Main St, Brooklyn', gc: 'Acme Builders', bid_due: 'March 3, 2 PM' },
+    project: { name: '750 3rd Avenue', address: '750 3rd Avenue, New York, NY 10017', gc: 'Acme Builders', bid_due: 'March 3, 2 PM' },
     supply: 'install_only',
-    kitchen_types: [{ name: 'K1', description: 'L-shaped with island', count: 24, count_source: 'Unit matrix p.4: floors 2-7, 4 per floor = 24', units: ['A1', 'A2'], items: [{ item: 'Base cabinet 36 in', qty: 2, unit: 'EA' }, { item: 'Wall cabinet 30 in', qty: 4, unit: 'EA' }] }],
-    not_in_our_scope: ['Countertops - by others'],
+    kitchen_types: [
+      { name: 'Type 01 (Kitchen/Kitchenette)', description: 'Galley kitchen', count: 24, count_source: 'Unit matrix p.4', units: ['A1', 'A2'], pages: [4, 5], items: [{ item: 'Base cabinet 36 in', qty: 2, unit: 'EA', page: 5 }, { item: 'Crown molding', qty: 12, unit: 'LF' }] },
+      { name: 'Type 02 (Kitchenette)', count: null, pages: [6] },
+      { name: 'Type 03', count: 8, items: [{ item: 'Wall cabinet 30 in', qty: 3, unit: 'EA' }] },
+      { name: 'K 1', count: 1 }, { name: 'K 1', count: 2 },
+    ],
+    not_in_our_scope: ['Countertops - by others', 'Plumbing hookups - by licensed plumbing contractor'],
     requirements: [{ category: 'retainage', text: 'Retainage 10% until completion' }],
+    questions_for_gc: [{ question: 'Can you send the unit matrix?' }],
   }, { pagesKept: 10 });
-  const d = T.draftFor(R, R.kitchen_types[0]);
-  ok('THE DRAFT SAYS HOW MANY KITCHENS AND TO PRICE ONE TIMES THE COUNT', /K1 \(L-shaped with island\): 24 kitchens - units A1, A2\./.test(d.description) && /the work of one kitchen times 24/.test(d.description), d.description);
-  ok('...what is in one kitchen', /In ONE kitchen:\n- Base cabinet 36 in: 2 EA\n- Wall cabinet 30 in: 4 EA/.test(d.description));
-  ok('...install only, when the package says so', /supplied by others - we install only/.test(d.description));
-  ok('...the gas line even when the AI forgot it', /Not in our work: Countertops - by others; Gas appliances - set and connected by the gas trade\./.test(d.description));
-  ok('...the money rules', /Bid rules: Retainage 10% until completion\./.test(d.description));
-  ok('...no price anywhere, under the estimate\'s 2,000 characters', !/\$/.test(d.description) && d.description.length <= 2000);
-  ok('...a clear title, as Carpentry', d.projectTitle === 'Kitchen type K1 - 24 kitchens - The Rivet' && d.service === 'Carpentry');
-  const old = T.draftFor({ not_in_our_scope: ['Plumbing hookups - by licensed plumbing contractor'] }, { name: 'Type 01', count: null });
-  ok('...and a package read before this fix still makes a draft without "licensed"', !/licensed/i.test(old.description) && /Plumbing hookups - by plumbing contractor/.test(old.description), old.description);
-  const long = T.draftFor(R, Object.assign({}, R.kitchen_types[0], { items: Array.from({ length: 30 }, (_, i) => ({ item: 'Cabinet with a very long description number ' + i + ' '.repeat(3) + 'x'.repeat(60), qty: i, unit: 'EA' })) }));
-  ok('a long kitchen still fits in 2,000 characters', long.description.length <= 2000);
+  const d = T.draftForBid(R, R.kitchen_types);
+  ok('ONE ESTIMATE: EVERY KITCHEN TYPE IS A SERVICE OF IT - its own card and price', d.sections.length === 5 && d.service === d.sections.join(', ') && /ONE estimate for the whole bid/.test(d.description), d.service);
+  ok('...service names never contain the , / & the estimate splits services on ("Kitchen/Kitchenette" stayed one card)', d.sections.every((n) => !/[,/&]/.test(n)) && d.service.split(/[,/&]+/).length === 5 && d.sections[0] === 'Kitchen Type 01 (Kitchen or Kitchenette)', JSON.stringify(d.sections));
+  ok('..."Kitchen Type 03", never "Kitchen type Type 03"; the same name twice gets a number', d.sections[2] === 'Kitchen Type 03' && d.sections[3] === 'Kitchen Type K 1' && d.sections[4] === 'Kitchen Type K 1 2' && !/Type Type/i.test(d.description + d.projectTitle));
+  ok('...each type: its count and one kitchen\'s contents; price all of them, or ONE when not counted', /- Kitchen Type 01 \(Kitchen or Kitchenette\) \(Galley kitchen\): 24 kitchens, units A1 A2\. One kitchen: Base cabinet 36 in x2; Crown molding x12 LF\./.test(d.description) && /Kitchen Type 02 \(Kitchenette\): count not confirmed\./.test(d.description) && /price ONE kitchen of that type/.test(d.description), d.description);
+  ok('...install only, the gas line, the money rules, no "licensed", no price', /supplied by others - we install only/.test(d.description) && /Gas appliances - set and connected by the gas trade/.test(d.description) && /Retainage 10%/.test(d.description) && !/licensed/i.test(d.description) && !/\$/.test(d.description));
+  ok('...one title for the bid', d.projectTitle === 'Bid: 750 3rd Avenue - kitchen cabinets, 5 kitchen types', d.projectTitle);
+  const all = T.draftForBid(R, R.kitchen_types.filter((k) => k.count != null));
+  ok('...with every type counted, the total kitchens are in the title', /4 kitchen types, 35 kitchens$/.test(all.projectTitle), all.projectTitle);
+  const many = T.draftForBid(R, Array.from({ length: 30 }, (_, i) => ({ name: 'Type ' + i, count: 10, units: ['A', 'B'], items: Array.from({ length: 25 }, (_, j) => ({ item: 'Cabinet with a long description ' + j, qty: j, unit: 'EA' })) })));
+  ok('A BIG BID STILL FITS the 3,000 characters the estimate keeps - and still names every type', many.description.length <= 2990 && Array.from({ length: 30 }, (_, i) => 'Kitchen Type ' + i + ':').every((n) => many.description.indexOf(n) !== -1) && /attached as one PDF\.$/.test(many.description), String(many.description.length));
+  const lines = T.takeoffLines(R, R.kitchen_types);
+  ok('THE FULL TAKEOFF GOES WITH IT AS A PDF: every type, every item with its page, the questions', lines[0] === '# BID TAKEOFF - 750 3rd Avenue' && lines.indexOf('# Kitchen Type 01 (Kitchen or Kitchenette) - 24 kitchens') !== -1 && lines.indexOf('- Base cabinet 36 in: 2 EA (p.5)') !== -1 && lines.indexOf('# Questions for the GC') !== -1 && lines.indexOf('1. Can you send the unit matrix?') !== -1 && !lines.some((l) => /licensed/i.test(l)), JSON.stringify(lines.slice(0, 12)));
+  ok('the estimate keeps 3,000 characters of a new description (it kept 2,000)', /String\(body\.description \|\| "Created manually from dashboard"\)\.slice\(0, 3000\)/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/create-estimate.js'), 'utf8')));
 }
 
 console.log('\n5. the page\n');
@@ -125,8 +135,10 @@ console.log('\n5. the page\n');
   ok('every bid endpoint is called WITH the key', !/fetch\("\/\.netlify\/functions\/(upload-bid-file|analyze-bid-background|get-bid-analysis)/.test(HTML.replace(/sbcFetch\(/g, 'SBC(')) && (HTML.match(/sbcFetch\("\/\.netlify\/functions\/(upload-bid-file|analyze-bid-background|get-bid-analysis)/g) || []).length >= 4);
   ok('the drafts go through create-estimate, upload-estimate-file and update-customer, with the key', /sbcFetch\("\/\.netlify\/functions\/create-estimate"/.test(HTML) && /sbcFetch\("\/\.netlify\/functions\/upload-estimate-file"/.test(HTML) && /sbcFetch\("\/\.netlify\/functions\/update-customer"/.test(HTML));
   ok('the draft needs the GC name and email - it asks, never guesses', /Type the GC contact name and email first/.test(HTML));
-  ok('a kitchen type with no count is not ticked for a draft (tick it by hand once the GC answers)', /\(ref\?' disabled':\(k\.count==null\?'':' checked'\)\)/.test(HTML));
-  ok('a draft made once is not made twice', /madeDrafts\(window\.__jobId\)/.test(HTML) && /saveDraft\(jobId, k\.name, j1\.ref\)/.test(HTML));
+  ok('ONE BUTTON MAKES ONE ESTIMATE: create-estimate is called once, with every chosen type', (HTML.match(/sbcFetch\("\/\.netlify\/functions\/create-estimate"/g) || []).length === 1 && /const d = BidTriage\.draftForBid\(R, chosen\);/.test(HTML) && !/for\(const k of chosen\)/.test(HTML));
+  ok('...the takeoff PDF first, then the bid pages of those types, one file', /await takeoffPages\(out, BidTriage\.takeoffLines\(R, chosen\)\);/.test(HTML) && /out\.copyPages\(src, idx\)/.test(HTML));
+  ok('...every type ticked; an uncounted one is priced as one kitchen', /class="d-kt" value="'\+i\+'" checked>/.test(HTML) && /count not confirmed \(priced as one kitchen\)/.test(HTML));
+  ok('...made once, it asks before making another', /saveDraft\(jobId, "__bid", j1\.ref\)/.test(HTML) && /A draft estimate for this bid was already made\. Make another one\?/.test(HTML));
   ok('the questions copy as an email', /Before we price the cabinet and millwork work on/.test(HTML));
   ok('the old "every trade" takeoff is still there', /value="all"/.test(HTML) && /function renderResults\(R, pdfUrl\)/.test(HTML));
   ok('no "licensed", no TV mounting', !/licensed/i.test(HTML) && !/tv mount/i.test(HTML));
