@@ -15,7 +15,10 @@
 
 "use strict";
 
-function str(v, max) { return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, max || 400); }
+/* Every string the page shows. The company never calls itself or anyone
+   "licensed" (a real reading wrote "by licensed plumbing/electrical
+   contractor"), so the word is taken out wherever the AI puts it. */
+function str(v, max) { return String(v == null ? "" : v).replace(/\s*\blicensed\b/gi, "").replace(/\s+/g, " ").trim().slice(0, max || 400); }
 function num(v) {
   if (typeof v === "number") return isFinite(v) ? v : null;
   const s = String(v == null ? "" : v).replace(/[^0-9.\-]/g, "");
@@ -46,6 +49,8 @@ YOUR JOB:
 8. Questions for the GC: every thing we need to know to price and that the pages do not answer. One question each, written as you would email a general contractor, short and plain.
 
 RULES:
+- The contact is the person at the GENERAL CONTRACTOR (or owner) who receives bids - never a cabinet supplier, kitchen designer, architect or engineer. Leave contact_name, contact_email and contact_phone empty when the pages do not name that person.
+- Never use the word "licensed".
 - NEVER write a price, a rate or a dollar figure of your own. Copy a dollar figure only when the package states it (an insurance limit, an allowance on the bid form).
 - Never guess a count. A count you cannot read from the pages is null, with a question for the GC.
 - Plain English, short sentences. No shorthand except EA, LF, SF.
