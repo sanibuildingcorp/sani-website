@@ -261,6 +261,26 @@ console.log('\n5. the page\n');
   const cut = calls.filter((c) => c.method === 'PATCH').pop();
   ok('a stream that breaks off before the end is an error too, never a half answer', r.statusCode === 500 && cut && /stopped early/.test(cut.body.error));
 
+  console.log('\n7. every reading is listed from the server, whatever happened to the phone\n');
+  {
+    /* "It's not working and i tired with it" - three readings finished on the
+       server while the phone showed "Load failed" or nothing. */
+    let asked = null;
+    global.fetch = async (url) => { asked = String(url); return { ok: true, status: 200, json: async () => [
+      { id: 'bid-3', status: 'done', created_at: '2026-09-27T20:40:48Z', file_name: 'bid-package-8-pages.pdf', error: null, name: '750 3rd Avenue', stated: '650', plus: 'true', counted: null },
+      { id: 'bid-2', status: 'processing', created_at: '2026-09-27T20:36:50Z', file_name: 'x.pdf', error: null, name: null, stated: null, plus: null, counted: null } ], text: async () => '' }; };
+    const { handler: list } = require(path.join(ROOT, 'netlify/functions/list-bid-jobs.js'));
+    let r = await list({ httpMethod: 'GET', headers: {} });
+    ok('the list is contractor only', r.statusCode === 401);
+    r = await list({ httpMethod: 'GET', headers: { 'x-sbc-key': 'k1' } });
+    const jobs = JSON.parse(r.body).jobs;
+    ok('THE SERVER LIST: name, status, time and the 650+ total of every reading', r.statusCode === 200 && jobs[0].name === '750 3rd Avenue' && jobs[0].stated === 650 && jobs[0].plus === true && jobs[1].status === 'processing' && jobs[1].stated === null, r.body);
+    ok('...only the few fields the list shows, newest first, never the whole reading', /select=id%2Cstatus%2Ccreated_at%2Cfile_name%2Cerror%2Cname%3Aresult-%3Eproject-%3E%3Ename/.test(asked) && /order=created_at\.desc&limit=20/.test(asked) && !/select=\*/.test(asked), asked);
+  }
+  ok('THE PAGE LISTS THE SERVER\'S READINGS ("750 3rd Avenue - 650+ kitchens · ready")', /sbcFetch\("\/\.netlify\/functions\/list-bid-jobs\?t=" \+ Date\.now\(\)\)/.test(HTML) && /j\.status === "done" \? "ready" : j\.status === "error" \? "failed" : "still reading"/.test(HTML));
+  ok('A READING STARTED BUT NEVER SHOWN OPENS BY ITSELF - written down before it starts', HTML.indexOf('setPending(jobId);') < HTML.indexOf('sbcFetch("/.netlify/functions/analyze-bid-background"') && /if\(sessionStorage\.getItem\("sbc-auth"\) === "1" && getPending\(\)\) openJob\(getPending\(\)\);/.test(HTML) && /if\(getPending\(\)\) openJob\(getPending\(\)\);/.test(HTML));
+  ok('...and is forgotten once shown or failed', /if\(getPending\(\) === jobId\) setPending\(null\);/.test(HTML) && /if\(getPending\(\) === id\) setPending\(null\); showError/.test(HTML));
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
 })();
