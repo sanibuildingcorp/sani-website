@@ -197,6 +197,49 @@ html body section.gallery-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[c
 @media(max-width:899px){html body section.gallery-hero::before{background:linear-gradient(180deg,rgba(24,22,20,.55) 0,rgba(24,22,20,.30) calc(1.000*45vw),rgba(24,22,20,.78) calc(1.000*100vw - 90px),#1c1a18 calc(1.000*100vw)),url('images/gallery/nyc-luxury-livingroom.jpg') center top/100% auto no-repeat,#1c1a18!important}}
 </style>
 <!-- SBC-HERO:END -->
+<style id="sbc-gallery-v2">
+/* ══ THE GALLERY, REDONE (Sep 27 2026) ═══════════════════════════════════════
+   "Help me and share your ideas too for better elegant gallery page".
+   Photos first; a tight grid (3 columns, 2 on a phone) with a few large and
+   wide tiles; the caption always on the photo (a phone has no hover); the
+   filters one scrolling row; the viewer shows the full-size photo. */
+.gallery-filters{padding:14px 16px;background:rgba(250,250,248,.96);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.filter-inner{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;max-width:1200px}
+.filter-inner::-webkit-scrollbar{display:none}
+@media(min-width:1000px){.filter-inner{justify-content:center}}
+.filter-btn{flex:0 0 auto;border-radius:999px;padding:10px 18px;white-space:nowrap}
+.gallery-section{padding:34px 20px 80px}
+.gallery-grid{grid-template-columns:repeat(3,1fr);gap:14px;grid-auto-flow:dense}
+.gallery-item{aspect-ratio:4/5;border:0;border-radius:14px;box-shadow:0 8px 26px rgba(10,22,40,.10);background:#e9e4dc}
+.gallery-item.big{grid-column:span 2;grid-row:span 2;aspect-ratio:4/5}
+.gallery-item.wide{grid-column:span 2;aspect-ratio:8/5}
+.gallery-item:hover img{filter:none}
+.gallery-overlay{opacity:1;padding:18px 18px 16px;background:linear-gradient(180deg,rgba(5,13,26,0) 48%,rgba(5,13,26,.82) 100%)}
+.gallery-overlay-tag{border-radius:999px;background:rgba(255,255,255,.94);color:#0a1628;border:0;font-weight:600;padding:5px 11px;margin-bottom:8px}
+.gallery-overlay-tag.live{background:#b8720a;color:#fff}
+.gallery-overlay-title{font-size:18px;margin-bottom:3px}
+.gallery-item.big .gallery-overlay-title{font-size:26px}
+.gallery-overlay-loc{font-size:11px;letter-spacing:1px}
+.gallery-words{border-top:1px solid rgba(10,22,40,.06)}
+@media(max-width:900px){
+  .gallery-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px}
+  .gallery-item,.gallery-item.tall{grid-row:auto;grid-column:auto;aspect-ratio:4/5!important}
+  .gallery-item.big{grid-column:span 2;aspect-ratio:1/1!important}
+  .gallery-item.wide{grid-column:span 2;aspect-ratio:8/5!important}
+}
+@media(max-width:560px){
+  .gallery-section{padding:18px 10px 60px}
+  .gallery-filters{padding:10px 10px}
+  .filter-btn{padding:8px 14px;font-size:10.5px}
+  .gallery-overlay{padding:10px 10px 9px}
+  .gallery-overlay-tag{font-size:8.5px;letter-spacing:1.2px;padding:4px 8px;margin-bottom:5px}
+  .gallery-overlay-title{font-size:14px;line-height:1.25}
+  .gallery-item.big .gallery-overlay-title{font-size:20px}
+  .gallery-overlay-loc{display:none}
+  .gallery-item.big .gallery-overlay-loc,.gallery-item.wide .gallery-overlay-loc{display:block}
+  .gallery-overlay-icon{display:none}
+}
+</style>
 </head>
 <body>
 
@@ -249,164 +292,284 @@ html body section.gallery-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[c
     <button class="filter-btn" data-filter="carpentry">Carpentry</button>
     <button class="filter-btn" data-filter="flooring">Flooring</button>
     <button class="filter-btn" data-filter="restoration">Restoration</button>
+    <button class="filter-btn" data-filter="commercial">Commercial</button>
   </div>
 </div>
 
 <!-- ════════════ GALLERY GRID ════════════ -->
-<section style="padding:70px 28px;background:#faf8f4"><div style="max-width:860px;margin:0 auto">
-<h2 style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#0a1628;margin:0 0 18px">Real NYC Projects, Photographed on Real Job Sites</h2>
-<p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">Every photo in this gallery comes from an actual Sani Building Corp project &mdash; no stock images, no showroom staging. You&rsquo;re looking at bathrooms gutted and rebuilt in Brooklyn brownstones, kitchen cabinets installed in Manhattan co-ops, commercial tile floors set in Queens restaurants, decks built on Long Island, and repairs completed the same day they were called in. It&rsquo;s the most honest answer to the question every client asks: <em>what does your work actually look like?</em></p>
-<h3 style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#0a1628;margin:26px 0 10px">What to Look For</h3>
-<p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">Look at the details that separate craftsmanship from quick work: grout lines that stay straight through corners, cabinet doors with even reveals, paint edges cut clean against ceilings, tile layouts centered on the room. Those small decisions are made hundreds of times on every project, and they&rsquo;re why our renovations still look right years later &mdash; in busy family homes and high-traffic commercial spaces alike.</p>
-<h3 style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#0a1628;margin:26px 0 10px">Picture Your Own Project</h3>
-<p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">If a bathroom, kitchen, or floor here looks like what you&rsquo;ve been imagining, send us the photo along with pictures of your current space &mdash; it&rsquo;s the fastest way to get an accurate free estimate. We&rsquo;ll tell you what a similar result costs in your building and how long it takes, whether it&rsquo;s a powder room refresh or a full commercial build-out anywhere in NYC or Long Island.</p>
-</div></section>
+
 <section class="gallery-section">
   <div class="gallery-wrap">
     <div class="gallery-grid" id="galleryGrid">
 
-      <div class="gallery-item" data-category="kitchen" data-title="Custom Shaker Kitchen Renovation" data-loc="Brooklyn, NY" data-img="images/gallery/project-1.jpg">
-        <img src="images/gallery/project-1.jpg" alt="Luxury kitchen renovation in Brooklyn featuring custom shaker cabinets, waterfall quartz island and brass pendant lighting">
+      <div class="gallery-item big" data-category="kitchen" data-title="Modern Kitchen, Lit Glass Cabinet" data-loc="Handle-free cabinets, built-in oven and microwave, LED-lit glass cabinet" data-img="images/cabinet-work/modern-kitchen-glass-tall-cabinet-led.jpg">
+        <img src="images/cabinet-work/modern-kitchen-glass-tall-cabinet-led-sm.jpg" width="675" height="900" decoding="async" alt="Modern Kitchen, Lit Glass Cabinet - Handle-free cabinets, built-in oven and microwave, LED-lit glass cabinet - Sani Building Corp">
         <div class="gallery-overlay">
           <span class="gallery-overlay-tag">Kitchen</span>
-          <div class="gallery-overlay-title">Custom Shaker Kitchen</div>
-          <div class="gallery-overlay-loc">Brooklyn, NY</div>
+          <div class="gallery-overlay-title">Modern Kitchen, Lit Glass Cabinet</div>
+          <div class="gallery-overlay-loc">Handle-free cabinets, built-in oven and microwave, LED-lit glass cabinet</div>
         </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
-      </div>
-
-      <div class="gallery-item" data-category="bathroom" data-title="Marble Master Bathroom" data-loc="Park Slope, Brooklyn" data-img="images/gallery/project-2.jpg">
-        <img src="images/gallery/project-2.jpg" alt="Master bathroom remodel in Park Slope with marble tile, freestanding tub and matte black fixtures">
-        <div class="gallery-overlay">
-          <span class="gallery-overlay-tag">Bathroom</span>
-          <div class="gallery-overlay-title">Marble Master Bath</div>
-          <div class="gallery-overlay-loc">Park Slope, Brooklyn</div>
-        </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
-      </div>
-
-      <div class="gallery-item" data-category="interior" data-title="Two-Tone Painted Interior" data-loc="Manhattan, NY" data-img="images/gallery/project-3.jpg">
-        <img src="images/gallery/project-3.jpg" alt="Interior painting in Manhattan apartment with premium two-tone wall finish and crisp trim work">
-        <div class="gallery-overlay">
-          <span class="gallery-overlay-tag">Interior</span>
-          <div class="gallery-overlay-title">Two-Tone Painted Walls</div>
-          <div class="gallery-overlay-loc">Manhattan, NY</div>
-        </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
-      </div>
-
-      <div class="gallery-item" data-category="interior" data-title="Full Gut Renovation" data-loc="Manhattan, NY" data-img="images/gallery/project-4.jpg">
-        <img src="images/gallery/project-4.jpg" alt="Full apartment gut renovation in Manhattan with open-plan living space, white oak floors and custom built-ins">
-        <div class="gallery-overlay">
-          <span class="gallery-overlay-tag">Interior</span>
-          <div class="gallery-overlay-title">Full Apartment Renovation</div>
-          <div class="gallery-overlay-loc">Manhattan, NY</div>
-        </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
-      </div>
-
-      <div class="gallery-item" data-category="carpentry" data-title="Custom Built-In Shelving" data-loc="Queens, NY" data-img="images/gallery/project-5.jpg">
-        <img src="images/gallery/project-5.jpg" alt="Custom carpentry and millwork featuring handcrafted living room built-ins with floating shelves in a Queens brownstone">
-        <div class="gallery-overlay">
-          <span class="gallery-overlay-tag">Carpentry</span>
-          <div class="gallery-overlay-title">Custom Built-Ins</div>
-          <div class="gallery-overlay-loc">Queens Brownstone</div>
-        </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
-      </div>
-
-      <div class="gallery-item" data-category="flooring" data-title="White Oak Hardwood Floors" data-loc="Brooklyn Loft" data-img="images/gallery/project-6.jpg">
-        <img src="images/gallery/project-6.jpg" alt="Wide-plank white oak hardwood flooring installation across an open Brooklyn loft">
-        <div class="gallery-overlay">
-          <span class="gallery-overlay-tag">Flooring</span>
-          <div class="gallery-overlay-title">Wide-Plank White Oak</div>
-          <div class="gallery-overlay-loc">Brooklyn Loft</div>
-        </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
-      </div>
-
-      <div class="gallery-item" data-category="exterior" data-title="Brownstone Facade Restoration" data-loc="Brooklyn, NY" data-img="images/gallery/project-7.jpg">
-        <img src="images/gallery/project-7.jpg" alt="Exterior facade restoration on a Brooklyn brownstone with repointed brick, repaired cornice and new entry door">
-        <div class="gallery-overlay">
-          <span class="gallery-overlay-tag">Exterior</span>
-          <div class="gallery-overlay-title">Brownstone Restoration</div>
-          <div class="gallery-overlay-loc">Brooklyn, NY</div>
-        </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
-      </div>
-
-      <div class="gallery-item" data-category="restoration" data-title="Water Damage Restoration" data-loc="Manhattan Co-op" data-img="images/gallery/project-8.jpg">
-        <img src="images/gallery/project-8.jpg" alt="Water damage restoration and ceiling repair in a Manhattan co-op with drywall replacement, fresh paint and finish">
-        <div class="gallery-overlay">
-          <span class="gallery-overlay-tag">Restoration</span>
-          <div class="gallery-overlay-title">Water Damage Repair</div>
-          <div class="gallery-overlay-loc">Manhattan Co-op</div>
-        </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
       </div>
 
       <div class="gallery-item" data-category="bathroom" data-title="Marble Mosaic Shower" data-loc="Manhattan, NY" data-img="images/gallery/marble-mosaic-shower-1.jpg">
-        <img src="images/gallery/marble-mosaic-shower-1.jpg" alt="Custom marble mosaic shower with brass jets in luxury Manhattan bathroom">
+        <img src="images/gallery/marble-mosaic-shower-1.jpg" width="800" height="960" decoding="async" alt="Custom marble mosaic shower with brass jets in luxury Manhattan bathroom">
         <div class="gallery-overlay">
           <span class="gallery-overlay-tag">Bathroom</span>
           <div class="gallery-overlay-title">Marble Mosaic Shower</div>
           <div class="gallery-overlay-loc">Manhattan, NY</div>
         </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="kitchen" data-title="Shaker Kitchen, Sink Wall" data-loc="Wall and base cabinets to the ceiling with crown molding" data-img="images/cabinet-work/shaker-kitchen-sink-wall-crown-molding.jpg">
+        <img src="images/cabinet-work/shaker-kitchen-sink-wall-crown-molding-sm.jpg" width="675" height="900" loading="lazy" decoding="async" alt="Shaker Kitchen, Sink Wall - Wall and base cabinets to the ceiling with crown molding - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Shaker Kitchen, Sink Wall</div>
+          <div class="gallery-overlay-loc">Wall and base cabinets to the ceiling with crown molding</div>
         </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="bathroom" data-title="Marble Master Bathroom" data-loc="Park Slope, Brooklyn" data-img="images/gallery/project-2.jpg">
+        <img src="images/gallery/project-2.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Master bathroom remodel in Park Slope with marble tile, freestanding tub and matte black fixtures">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Bathroom</span>
+          <div class="gallery-overlay-title">Marble Master Bath</div>
+          <div class="gallery-overlay-loc">Park Slope, Brooklyn</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="kitchen" data-title="Peninsula and Oven Tower" data-loc="Matte cabinets, stone breakfast bar, lit open shelves" data-img="images/cabinet-work/dark-kitchen-peninsula-oven-tower.jpg">
+        <img src="images/cabinet-work/dark-kitchen-peninsula-oven-tower-sm.jpg" width="600" height="900" loading="lazy" decoding="async" alt="Peninsula and Oven Tower - Matte cabinets, stone breakfast bar, lit open shelves - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Peninsula and Oven Tower</div>
+          <div class="gallery-overlay-loc">Matte cabinets, stone breakfast bar, lit open shelves</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="carpentry" data-title="Custom Built-In Shelving" data-loc="Queens, NY" data-img="images/gallery/project-5.jpg">
+        <img src="images/gallery/project-5.jpg" width="1250" height="1250" loading="lazy" decoding="async" alt="Custom carpentry and millwork featuring handcrafted living room built-ins with floating shelves in a Queens brownstone">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Carpentry</span>
+          <div class="gallery-overlay-title">Custom Built-Ins</div>
+          <div class="gallery-overlay-loc">Queens, NY</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item wide" data-category="kitchen" data-title="Handle-Free L-Shaped Kitchen" data-loc="Even gaps and LED lights under the upper cabinets" data-img="images/cabinet-work/handleless-l-shaped-kitchen-led.jpg">
+        <img src="images/cabinet-work/handleless-l-shaped-kitchen-led-sm.jpg" width="900" height="675" loading="lazy" decoding="async" alt="Handle-Free L-Shaped Kitchen - Even gaps and LED lights under the upper cabinets - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Handle-Free L-Shaped Kitchen</div>
+          <div class="gallery-overlay-loc">Even gaps and LED lights under the upper cabinets</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
       </div>
 
       <div class="gallery-item" data-category="bathroom" data-title="Sage Tile Bathroom" data-loc="Brooklyn, NY" data-img="images/gallery/sage-tile-bathroom.jpg">
-        <img src="images/gallery/sage-tile-bathroom.jpg" alt="Sage green tile bathroom with modern fixtures and custom vanity">
+        <img src="images/gallery/sage-tile-bathroom.jpg" width="600" height="938" loading="lazy" decoding="async" alt="Sage green tile bathroom with modern fixtures and custom vanity">
         <div class="gallery-overlay">
           <span class="gallery-overlay-tag">Bathroom</span>
           <div class="gallery-overlay-title">Sage Tile Bathroom</div>
           <div class="gallery-overlay-loc">Brooklyn, NY</div>
         </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
       </div>
 
-      <div class="gallery-item" data-category="interior" data-title="NYC Luxury Living Room" data-loc="Manhattan, NY" data-img="images/gallery/nyc-luxury-livingroom.jpg">
-        <img src="images/gallery/nyc-luxury-livingroom.jpg" alt="NYC luxury living room with chandelier, marble accents and floor-to-ceiling windows">
+      <div class="gallery-item" data-category="kitchen" data-title="Built-In Fridge Surround" data-loc="Tall cabinets over the fridge and deep drawers with brass pulls" data-img="images/cabinet-work/shaker-kitchen-fridge-surround-drawers.jpg">
+        <img src="images/cabinet-work/shaker-kitchen-fridge-surround-drawers-sm.jpg" width="675" height="900" loading="lazy" decoding="async" alt="Built-In Fridge Surround - Tall cabinets over the fridge and deep drawers with brass pulls - Sani Building Corp">
         <div class="gallery-overlay">
-          <span class="gallery-overlay-tag">Interior</span>
-          <div class="gallery-overlay-title">Luxury Living Room</div>
-          <div class="gallery-overlay-loc">Manhattan, NY</div>
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Built-In Fridge Surround</div>
+          <div class="gallery-overlay-loc">Tall cabinets over the fridge and deep drawers with brass pulls</div>
         </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
       </div>
 
-      <div class="gallery-item" data-category="bathroom" data-title="Marble Tub & Brass Fixtures" data-loc="Brooklyn, NY" data-img="images/gallery/marble-tub-brass-2.jpg">
-        <img src="images/gallery/marble-tub-brass-2.jpg" alt="Freestanding marble tub with brass fixtures in luxury Brooklyn bathroom">
+      <div class="gallery-item wide" data-category="flooring" data-title="White Oak Hardwood Floors" data-loc="Brooklyn Loft" data-img="images/gallery/project-6.jpg">
+        <img src="images/gallery/project-6.jpg" width="1206" height="923" loading="lazy" decoding="async" alt="Wide-plank white oak hardwood flooring installation across an open Brooklyn loft">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Flooring</span>
+          <div class="gallery-overlay-title">Wide-Plank White Oak</div>
+          <div class="gallery-overlay-loc">Brooklyn Loft</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="carpentry" data-title="Built-In Display Cabinets" data-loc="Glass-front cabinets and open shelves built into the wall" data-img="images/cabinet-work/built-in-glass-display-cabinets-shelving.jpg">
+        <img src="images/cabinet-work/built-in-glass-display-cabinets-shelving-sm.jpg" width="900" height="675" loading="lazy" decoding="async" alt="Built-In Display Cabinets - Glass-front cabinets and open shelves built into the wall - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Carpentry</span>
+          <div class="gallery-overlay-title">Built-In Display Cabinets</div>
+          <div class="gallery-overlay-loc">Glass-front cabinets and open shelves built into the wall</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="kitchen" data-title="Custom Shaker Kitchen Renovation" data-loc="Brooklyn, NY" data-img="images/gallery/project-1.jpg">
+        <img src="images/gallery/project-1.jpg" width="1402" height="1122" loading="lazy" decoding="async" alt="Luxury kitchen renovation in Brooklyn featuring custom shaker cabinets, waterfall quartz island and brass pendant lighting">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Custom Shaker Kitchen</div>
+          <div class="gallery-overlay-loc">Brooklyn, NY</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item big" data-category="bathroom" data-title="Marble Tub &amp; Brass Fixtures" data-loc="Brooklyn, NY" data-img="images/gallery/marble-tub-brass-2.jpg">
+        <img src="images/gallery/marble-tub-brass-2.jpg" width="1156" height="1542" loading="lazy" decoding="async" alt="Freestanding marble tub with brass fixtures in luxury Brooklyn bathroom">
         <div class="gallery-overlay">
           <span class="gallery-overlay-tag">Bathroom</span>
           <div class="gallery-overlay-title">Marble Tub Suite</div>
           <div class="gallery-overlay-loc">Brooklyn, NY</div>
         </div>
-        <div class="gallery-overlay-icon">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="kitchen" data-title="Kitchen with Glass Display Column" data-loc="Two-tone cabinets framed by a tall glass cabinet" data-img="images/cabinet-work/u-shaped-kitchen-glass-display-column.jpg">
+        <img src="images/cabinet-work/u-shaped-kitchen-glass-display-column-sm.jpg" width="675" height="900" loading="lazy" decoding="async" alt="Kitchen with Glass Display Column - Two-tone cabinets framed by a tall glass cabinet - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Kitchen with Glass Display Column</div>
+          <div class="gallery-overlay-loc">Two-tone cabinets framed by a tall glass cabinet</div>
         </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="carpentry" data-title="Custom Closet" data-loc="Glass doors, drawers, open shelves and sliding doors" data-img="images/cabinet-work/custom-closet-glass-and-sliding-doors.jpg">
+        <img src="images/cabinet-work/custom-closet-glass-and-sliding-doors-sm.jpg" width="675" height="900" loading="lazy" decoding="async" alt="Custom Closet - Glass doors, drawers, open shelves and sliding doors - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag live">Carpentry · In progress</span>
+          <div class="gallery-overlay-title">Custom Closet</div>
+          <div class="gallery-overlay-loc">Glass doors, drawers, open shelves and sliding doors</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="interior" data-title="Full Gut Renovation" data-loc="Manhattan, NY" data-img="images/gallery/project-4.jpg">
+        <img src="images/gallery/project-4.jpg" width="736" height="1308" loading="lazy" decoding="async" alt="Full apartment gut renovation in Manhattan with open-plan living space, white oak floors and custom built-ins">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Interior</span>
+          <div class="gallery-overlay-title">Full Apartment Renovation</div>
+          <div class="gallery-overlay-loc">Manhattan, NY</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="kitchen" data-title="Gloss Kitchen with Wine Rack" data-loc="Lit open boxes above, wine rack under the counter" data-img="images/cabinet-work/white-gloss-kitchen-wine-rack-peninsula.jpg">
+        <img src="images/cabinet-work/white-gloss-kitchen-wine-rack-peninsula-sm.jpg" width="675" height="900" loading="lazy" decoding="async" alt="Gloss Kitchen with Wine Rack - Lit open boxes above, wine rack under the counter - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Gloss Kitchen with Wine Rack</div>
+          <div class="gallery-overlay-loc">Lit open boxes above, wine rack under the counter</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="interior" data-title="Two-Tone Painted Interior" data-loc="Manhattan, NY" data-img="images/gallery/project-3.jpg">
+        <img src="images/gallery/project-3.jpg" width="1600" height="1600" loading="lazy" decoding="async" alt="Interior painting in Manhattan apartment with premium two-tone wall finish and crisp trim work">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Interior</span>
+          <div class="gallery-overlay-title">Two-Tone Painted Walls</div>
+          <div class="gallery-overlay-loc">Manhattan, NY</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="commercial" data-title="Coffee Shop Counter and Shelving" data-loc="Service counter, wall shelves and tall cabinets for a cafe" data-img="images/cabinet-work/coffee-shop-counter-and-wall-shelving.jpg">
+        <img src="images/cabinet-work/coffee-shop-counter-and-wall-shelving-sm.jpg" width="675" height="900" loading="lazy" decoding="async" alt="Coffee Shop Counter and Shelving - Service counter, wall shelves and tall cabinets for a cafe - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag live">Commercial · In progress</span>
+          <div class="gallery-overlay-title">Coffee Shop Counter and Shelving</div>
+          <div class="gallery-overlay-loc">Service counter, wall shelves and tall cabinets for a cafe</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="commercial" data-title="Cafe Cabinetry Going In" data-loc="Counter and wall units fitted before opening day" data-img="images/cabinet-work/coffee-shop-cabinetry-install.jpg">
+        <img src="images/cabinet-work/coffee-shop-cabinetry-install-sm.jpg" width="675" height="900" loading="lazy" decoding="async" alt="Cafe Cabinetry Going In - Counter and wall units fitted before opening day - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag live">Commercial · In progress</span>
+          <div class="gallery-overlay-title">Cafe Cabinetry Going In</div>
+          <div class="gallery-overlay-loc">Counter and wall units fitted before opening day</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="interior" data-title="NYC Luxury Living Room" data-loc="Manhattan, NY" data-img="images/gallery/nyc-luxury-livingroom.jpg">
+        <img src="images/gallery/nyc-luxury-livingroom.jpg" width="736" height="736" loading="lazy" decoding="async" alt="NYC luxury living room with chandelier, marble accents and floor-to-ceiling windows">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Interior</span>
+          <div class="gallery-overlay-title">Luxury Living Room</div>
+          <div class="gallery-overlay-loc">Manhattan, NY</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="exterior" data-title="Brownstone Facade Restoration" data-loc="Brooklyn, NY" data-img="images/gallery/project-7.jpg">
+        <img src="images/gallery/project-7.jpg" width="640" height="640" loading="lazy" decoding="async" alt="Exterior facade restoration on a Brooklyn brownstone with repointed brick, repaired cornice and new entry door">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Exterior</span>
+          <div class="gallery-overlay-title">Brownstone Restoration</div>
+          <div class="gallery-overlay-loc">Brooklyn, NY</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="kitchen" data-title="Floor-to-Ceiling Pantry" data-loc="Tall pantry cabinets with built-in oven and microwave" data-img="images/cabinet-work/tall-pantry-and-oven-tower-cabinets.jpg">
+        <img src="images/cabinet-work/tall-pantry-and-oven-tower-cabinets-sm.jpg" width="675" height="900" loading="lazy" decoding="async" alt="Floor-to-Ceiling Pantry - Tall pantry cabinets with built-in oven and microwave - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Floor-to-Ceiling Pantry</div>
+          <div class="gallery-overlay-loc">Tall pantry cabinets with built-in oven and microwave</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="kitchen" data-title="Upper Cabinets Going In" data-loc="Cabinets hung, shelves set, doors adjusted" data-img="images/cabinet-work/upper-cabinet-installation-in-progress.jpg">
+        <img src="images/cabinet-work/upper-cabinet-installation-in-progress-sm.jpg" width="675" height="900" loading="lazy" decoding="async" alt="Upper Cabinets Going In - Cabinets hung, shelves set, doors adjusted - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag live">Kitchen · In progress</span>
+          <div class="gallery-overlay-title">Upper Cabinets Going In</div>
+          <div class="gallery-overlay-loc">Cabinets hung, shelves set, doors adjusted</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item wide" data-category="kitchen" data-title="High-Gloss Kitchen" data-loc="Curved peninsula and full-height cabinets, floor covered while we work" data-img="images/cabinet-work/high-gloss-red-kitchen-refinishing.jpg">
+        <img src="images/cabinet-work/high-gloss-red-kitchen-refinishing-sm.jpg" width="900" height="675" loading="lazy" decoding="async" alt="High-Gloss Kitchen - Curved peninsula and full-height cabinets, floor covered while we work - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag live">Kitchen · In progress</span>
+          <div class="gallery-overlay-title">High-Gloss Kitchen</div>
+          <div class="gallery-overlay-loc">Curved peninsula and full-height cabinets, floor covered while we work</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item wide" data-category="restoration" data-title="Water Damage Restoration" data-loc="Manhattan Co-op" data-img="images/gallery/project-8.jpg">
+        <img src="images/gallery/project-8.jpg" width="1500" height="1000" loading="lazy" decoding="async" alt="Water damage restoration and ceiling repair in a Manhattan co-op with drywall replacement, fresh paint and finish">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Restoration</span>
+          <div class="gallery-overlay-title">Water Damage Repair</div>
+          <div class="gallery-overlay-loc">Manhattan Co-op</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      </div>
+
+      <div class="gallery-item" data-category="kitchen" data-title="Open Kitchen with Breakfast Bar" data-loc="Matte cabinets and stone counters opening to the living room" data-img="images/cabinet-work/dark-kitchen-peninsula-open-plan.jpg">
+        <img src="images/cabinet-work/dark-kitchen-peninsula-open-plan-sm.jpg" width="600" height="900" loading="lazy" decoding="async" alt="Open Kitchen with Breakfast Bar - Matte cabinets and stone counters opening to the living room - Sani Building Corp">
+        <div class="gallery-overlay">
+          <span class="gallery-overlay-tag">Kitchen</span>
+          <div class="gallery-overlay-title">Open Kitchen with Breakfast Bar</div>
+          <div class="gallery-overlay-loc">Matte cabinets and stone counters opening to the living room</div>
+        </div>
+        <div class="gallery-overlay-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
       </div>
 
     </div>
@@ -417,6 +580,16 @@ html body section.gallery-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[c
     </div>
   </div>
 </section>
+
+<!-- the words about the photos, after the photos (Sep 27 2026) -->
+<section class="gallery-words" style="padding:64px 28px;background:#fff"><div style="max-width:860px;margin:0 auto">
+<h2 style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#0a1628;margin:0 0 18px">Real NYC Projects, Photographed on Real Job Sites</h2>
+<p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">Every photo in this gallery comes from an actual Sani Building Corp project &mdash; no stock images, no showroom staging. You&rsquo;re looking at bathrooms gutted and rebuilt in Brooklyn brownstones, kitchen cabinets installed in Manhattan co-ops, commercial tile floors set in Queens restaurants, decks built on Long Island, and repairs completed the same day they were called in. It&rsquo;s the most honest answer to the question every client asks: <em>what does your work actually look like?</em></p>
+<h3 style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#0a1628;margin:26px 0 10px">What to Look For</h3>
+<p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">Look at the details that separate craftsmanship from quick work: grout lines that stay straight through corners, cabinet doors with even reveals, paint edges cut clean against ceilings, tile layouts centered on the room. Those small decisions are made hundreds of times on every project, and they&rsquo;re why our renovations still look right years later &mdash; in busy family homes and high-traffic commercial spaces alike.</p>
+<h3 style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#0a1628;margin:26px 0 10px">Picture Your Own Project</h3>
+<p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.8;color:#3c4658;margin:0 0 18px">If a bathroom, kitchen, or floor here looks like what you&rsquo;ve been imagining, send us the photo along with pictures of your current space &mdash; it&rsquo;s the fastest way to get an accurate free estimate. We&rsquo;ll tell you what a similar result costs in your building and how long it takes, whether it&rsquo;s a powder room refresh or a full commercial build-out anywhere in NYC or Long Island.</p>
+</div></section>
 
 <!-- ════════════ CTA SECTION ════════════ -->
 <section class="gallery-cta-section">
@@ -636,9 +809,9 @@ section.page-hero.sbc-std>.page-hero-content{position:relative;z-index:2}
     var img=item.querySelector('img');
     var title=item.getAttribute('data-title');
     var loc=item.getAttribute('data-loc');
-    lbImg.src=img.src;
+    lbImg.src=item.getAttribute('data-img')||img.src;
     lbImg.alt=img.alt;
-    lbCaption.innerHTML=title+'<span class="loc">'+loc+'</span>';
+    lbCaption.innerHTML=title+(loc?'<span class="loc">'+loc+'</span>':'');
     lightbox.classList.add('is-open');
     lightbox.setAttribute('aria-hidden','false');
     document.body.classList.add('modal-locked');
