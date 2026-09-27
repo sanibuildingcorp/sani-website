@@ -49,6 +49,7 @@ RULES:
 - NEVER write a price, a rate or a dollar figure of your own. Copy a dollar figure only when the package states it (an insurance limit, an allowance on the bid form).
 - Never guess a count. A count you cannot read from the pages is null, with a question for the GC.
 - Plain English, short sentences. No shorthand except EA, LF, SF.
+- KEEP IT SHORT - the answer must fit: at most 25 item lines per kitchen type (one line per cabinet size, with its count - never one line per box), at most 20 questions, at most 15 assumptions, notes of one sentence. No repeated facts.
 - confidence: "high" = read directly from a schedule or a dimensioned drawing; "medium" = worked out from several pages; "low" = inferred or conflicting (and then ask a question).
 
 RESPOND WITH ONLY VALID JSON (no markdown fences, no commentary), exactly this shape:
