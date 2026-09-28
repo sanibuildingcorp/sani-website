@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- maximum-scale=1: iPhone Safari zooms in when a text box smaller than
+     16px is tapped, and stays zoomed - the job panel then showed half the
+     screen, cut on the left ("Make it in screen with"). Safari still lets
+     him pinch-zoom by hand; only the automatic zoom stops. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Dashboard · Sani Building Corp</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -1073,6 +1077,12 @@ body {
   overflow-y: auto;
 }
 .modal-backdrop.show { display: block; }
+/* THE JOB PANEL NEVER SLIDES SIDEWAYS. Anything inside it wider than the
+   screen made the whole panel scroll left on a phone, cutting off its left
+   side and showing the list behind it. Long words and links wrap instead. */
+.modal-backdrop { overflow-x: hidden; overscroll-behavior-x: none; }
+.modal-card { max-width: min(1000px, 100%); overflow-wrap: anywhere; overflow-x: clip; }
+.modal-card :where(img, video, canvas, iframe, table, pre, textarea, input, select) { max-width: 100%; }
 .modal-card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -2367,6 +2377,7 @@ body {
 
   /* Edit modal — full screen on mobile */
   .modal-backdrop { padding: 0; }
+  html, body { overflow-x: hidden; }
   .modal-card {
     margin: 0;
     border-radius: 0;
