@@ -21,12 +21,14 @@ const ok = (n, c) => { c === true ? pass++ : fail++; console.log((c === true ? '
 ok('NO AUTOMATIC ZOOM WHEN A TEXT BOX IS TAPPED (maximum-scale=1), once', (DASH.match(/<meta name="viewport"/g) || []).length === 1 && /<meta name="viewport" content="width=device-width, initial-scale=1\.0, maximum-scale=1\.0">/.test(DASH));
 ok('...never user-scalable=no: he can still pinch-zoom', !/user-scalable\s*=\s*no/i.test(DASH));
 ok('THE JOB PANEL NEVER SLIDES SIDEWAYS: its backdrop does not scroll sideways', /\.modal-backdrop \{ overflow-x: hidden; overscroll-behavior-x: none; \}/.test(DASH));
-ok('...the panel clips what is wider than it, instead of growing', /\.modal-card \{ max-width: min\(1000px, 100%\); overflow-wrap: anywhere; overflow-x: clip; \}/.test(DASH));
-ok('...long words and links wrap; pictures, tables and boxes stay inside it', /overflow-wrap: anywhere/.test(DASH) && /\.modal-card :where\(img, video, canvas, iframe, table, pre, textarea, input, select\) \{ max-width: 100%; \}/.test(DASH));
+ok('...the panel clips what is wider than it, instead of growing', /\.modal-card \{ max-width: min\(1000px, 100%\); overflow-wrap: break-word; overflow-x: clip; \}/.test(DASH));
+ok('...long words and links wrap; pictures, tables and boxes stay inside it', /overflow-wrap: break-word/.test(DASH) && /\.modal-card :where\(img, video, canvas, iframe, table, pre, textarea, input, select\) \{ max-width: 100%; \}/.test(DASH));
 {
   const phone = DASH.slice(DASH.indexOf('@media (max-width: 640px) {', 2000));
   ok('...and on a phone the page itself never scrolls sideways', /\/\* Edit modal — full screen on mobile \*\/\n  \.modal-backdrop \{ padding: 0; \}\n  html, body \{ overflow-x: hidden; \}/.test(phone));
 }
 
+ok('NEVER overflow-wrap:anywhere on the panel - it squeezed the customer\'s answers to one letter per line', !/\.modal-card \{[^}]*overflow-wrap: anywhere/.test(DASH));
+ok('ON A PHONE EACH QUESTION SITS ABOVE ITS ANSWER', /\.answer-row \{ flex-direction: column; gap: 2px; padding: 6px 0; \}/.test(DASH) && /\.answer-row \.av \{ min-width: 0; \}/.test(DASH));
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
