@@ -1081,7 +1081,9 @@ body {
    screen made the whole panel scroll left on a phone, cutting off its left
    side and showing the list behind it. Long words and links wrap instead. */
 .modal-backdrop { overflow-x: hidden; overscroll-behavior-x: none; }
-.modal-card { max-width: min(1000px, 100%); overflow-wrap: anywhere; overflow-x: clip; }
+/* break-word, never "anywhere": "anywhere" also lets a column shrink to one
+   letter, and the customer's answers came out one letter per line. */
+.modal-card { max-width: min(1000px, 100%); overflow-wrap: break-word; overflow-x: clip; }
 .modal-card :where(img, video, canvas, iframe, table, pre, textarea, input, select) { max-width: 100%; }
 .modal-card {
   background: var(--card);
@@ -1176,7 +1178,14 @@ body {
   min-width: 160px;
   font-size: 12px;
 }
-.answer-row .av { color: var(--ink-soft); flex: 1; }
+.answer-row .av { color: var(--ink-soft); flex: 1; min-width: 120px; }
+/* On a phone the question sits above its answer - side by side there is not
+   room for both. */
+@media (max-width: 640px) {
+  .answer-row { flex-direction: column; gap: 2px; padding: 6px 0; }
+  .answer-row .ak { min-width: 0; }
+  .answer-row .av { min-width: 0; }
+}
 
 .qp-tile{position:relative;flex:0 0 auto;width:84px;height:84px}
 .qp-tile img{width:84px!important;height:84px!important;object-fit:cover;border-radius:8px;cursor:pointer;display:block}
