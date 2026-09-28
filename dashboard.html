@@ -5728,10 +5728,7 @@ function sentVersionHtml(r) {
   /* Compared on the contractor's content only. A customer replying in the thread
      is not the contractor changing the quote, and must not light this up. */
   var moved = false;
-  try {
-    moved = JSON.stringify(r.estimate || {}) !== JSON.stringify(v.estimate || {})
-      || ((r.customerFinalTotal != null ? r.customerFinalTotal : null) !== (v.customerFinalTotal != null ? v.customerFinalTotal : null));
-  } catch (e) { moved = false; }
+  try { moved = quoteMovedSinceSent(r, v); } catch (e) { moved = false; }
 
   var head = '<strong>The customer is looking at version ' + (Number(v.n) || 1) + '</strong>'
     + (when ? ' · sent ' + esc(when) : '');
@@ -5743,10 +5740,51 @@ function sentVersionHtml(r) {
   }
   return '<div style="margin-top:12px;border:1.5px solid var(--gold,#c8860a);background:rgba(200,134,10,.09);border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--ink,#1a2433)">'
     + head + '.<br>'
-    + '<strong style="color:var(--gold-2,#b8720a)">You have changed things since.</strong> '
-    + '<span style="color:var(--ink-soft)">Nothing you have edited is visible to them — their page still shows version ' + (Number(v.n) || 1) + '. '
-    + 'Send it again when you are ready and they will get version ' + ((Number(v.n) || 1) + 1) + '.</span>'
+    + '<strong style="color:var(--gold-2,#b8720a)">You changed the price or the work after sending.</strong> '
+    + '<span style="color:var(--ink-soft)">The customer still sees version ' + (Number(v.n) || 1) + '. '
+    + 'Press Send when you want them to see version ' + ((Number(v.n) || 1) + 1) + '.</span>'
     + '</div>';
+}
+
+/* ══ HAS THE CONTRACTOR REALLY CHANGED THE QUOTE SINCE IT WAS SENT? ══════════
+     "Nothing was changed ... it's saying nothing was changed in below text,
+      yes it's confusing" - an accepted job, untouched, said "You have changed
+      things since".
+   Two false alarms, neither his doing:
+   1. ACCEPTING stamps the accepted price (customerFinalTotal) on the job.
+      The copy sent to the customer was made before that, with no stamp - so
+      the customer's own acceptance counted as the contractor changing the
+      price. A stamp that arrived after sending and equals what the sent
+      version adds up to is the customer accepting, not a change.
+   2. The sent copy always carries offeredOptions (an empty list when none
+      were offered); the draft often has no such key at all. Empty values and
+      key order now never count as a difference - only real content does. */
+function quoteNorm(x) {
+  if (Array.isArray(x)) return x.map(quoteNorm);
+  if (x && typeof x === "object") {
+    var out = {};
+    Object.keys(x).sort().forEach(function (k) {
+      var v = quoteNorm(x[k]);
+      if (v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length) || (v && typeof v === "object" && !Array.isArray(v) && !Object.keys(v).length)) return;
+      out[k] = v;
+    });
+    return out;
+  }
+  return x;
+}
+function quoteMovedSinceSent(r, v) {
+  if (JSON.stringify(quoteNorm(r.estimate || {})) !== JSON.stringify(quoteNorm(v.estimate || {}))) return true;
+  var live = r.customerFinalTotal != null ? Number(r.customerFinalTotal) : null;
+  var sent = v.customerFinalTotal != null ? Number(v.customerFinalTotal) : null;
+  if (live === null && sent === null) return false;
+  if (live !== null && sent !== null) return Math.abs(live - sent) >= 0.005;
+  if (live !== null && sent === null) {
+    /* Stamped after sending: the customer accepting the price they were sent. */
+    var quoted = null;
+    try { quoted = Math.round(calcCustomerView(v.estimate || {}).customerTotal * 100) / 100; } catch (e) { quoted = null; }
+    return quoted === null ? false : Math.abs(live - quoted) >= 0.01;
+  }
+  return true;
 }
 
 /* ══ THE PRICE THAT OVERRIDES EVERY OTHER PRICE ═══════════════════════════════
