@@ -254,8 +254,8 @@ t("the dashboard says which version the customer holds", () => {
   assert.ok(/The customer is looking at version/.test(DASH));
 });
 t("...and warns when the draft has moved since", () => {
-  assert.ok(/You have changed things since/.test(DASH));
-  assert.ok(/Send it again when you are ready/.test(DASH));
+  assert.ok(/You changed the price or the work after sending\./.test(DASH));
+  assert.ok(/Press Send when you want them to see version/.test(DASH));
 });
 t("...and says plainly when nothing has been sent at all", () => {
   assert.ok(/Not sent yet — nothing of this is visible to the customer/.test(DASH));
