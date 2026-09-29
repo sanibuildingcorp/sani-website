@@ -983,19 +983,57 @@ function msgPreview(){
  el.innerHTML=msgFiles.map((f,i)=>`<div class="it">${/^image\//.test(f.type)?`<img alt="" src="${URL.createObjectURL(f)}">`:E((f.name||'file').slice(0,18))}<b onclick="msgRemove(${i})">\u00d7</b></div>`).join('')}
 function readAsDataUrl(f){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=e=>res(e.target.result);r.readAsDataURL(f)})}
 function shrinkImage(f,maxW,q){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=e=>{const img=new Image();img.onerror=rej;img.onload=()=>{let w=img.width,h=img.height;if(w>maxW){h=Math.round(h*(maxW/w));w=maxW}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',q))};img.src=e.target.result};r.readAsDataURL(f)})}
-/* Uploads what was picked and returns [{name,url,kind}]. A file that fails is
-   dropped with a console line, never allowed to sink the message. */
+/* BIG FILES STRAIGHT TO STORAGE - copy of js/big-upload.js (this page loads no
+   <script src>; js/customer-upload.test.js keeps the two identical). */
+var SBC_BIG_UPLOAD_CHARS = 4000000;   /* ~3 MB file; upload-photo takes up to ~4.5 MB */
+function sbcIsBig(dataUrl) { return typeof dataUrl === "string" && dataUrl.length > SBC_BIG_UPLOAD_CHARS; }
+function sbcDataUrlToBlob(dataUrl) {
+  var m = /^data:([^;,]+)?(;base64)?,([\s\S]*)$/.exec(String(dataUrl || ""));
+  if (!m) throw new Error("not a file");
+  var type = (m[1] || "application/octet-stream").toLowerCase();
+  var bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]);
+  var bytes = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: type });
+}
+async function sbcBigUpload(dataUrl, ref, name) {
+  var blob = sbcDataUrlToBlob(dataUrl);
+  var last = null;
+  for (var attempt = 0; attempt < 2; attempt++) {
+    try {
+      var r = await fetch("/.netlify/functions/customer-upload-url", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: ref, fileName: name || "file", contentType: blob.type, size: blob.size })
+      });
+      var j = await r.json().catch(function () { return null; });
+      if (!r.ok || !j || !j.signedUrl) throw new Error((j && j.error) || ("upload link " + r.status));
+      var put = await fetch(j.signedUrl, { method: "PUT", headers: { "Content-Type": blob.type, "x-upsert": "true" }, body: blob });
+      if (!put.ok) throw new Error("storage " + put.status);
+      return j.publicUrl;
+    } catch (e) {
+      last = e;
+      if (/too large|Only photos/i.test(String(e && e.message))) break;   /* no point trying again */
+    }
+  }
+  throw last || new Error("upload failed");
+}
+/* Uploads what was picked and returns [{name,url,kind}]. A big file goes
+   straight to storage; a file that still fails is named in msgUploadFailed,
+   never dropped in silence. */
+let msgUploadFailed=[];
 async function uploadMsgFiles(){
- const out=[];
+ const out=[];msgUploadFailed=[];
  for(const f of msgFiles){
   try{
    const isImg=/^image\//.test(f.type)||/\.(heic|heif)$/i.test(f.name||'');
    let data;
    try{data=isImg?await shrinkImage(f,1600,0.85):await readAsDataUrl(f)}catch(e){data=await readAsDataUrl(f)}
+   if(sbcIsBig(data)){out.push({name:f.name||'file',url:await sbcBigUpload(data,ref,f.name),kind:isImg?'image':'file'});continue}
    const r=await fetch('/.netlify/functions/upload-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:data,ref:ref})});
    const j=await r.json().catch(()=>null);
-   if(r.ok&&j&&j.url)out.push({name:f.name||'file',url:j.url,kind:isImg?'image':'file'});
+   if(r.ok&&j&&j.url){out.push({name:f.name||'file',url:j.url,kind:isImg?'image':'file'});continue}
   }catch(e){console.error('attachment upload failed',f&&f.name,e)}
+  msgUploadFailed.push(f&&f.name||'file')
  }
  return out}
 function messageBox(open){
@@ -1221,6 +1259,7 @@ window.S=async a=>{
  if(a==='question'&&msgFiles.length){
   if(st)st.textContent='Uploading '+msgFiles.length+(msgFiles.length===1?' file…':' files…');
   p.attachments=await uploadMsgFiles();
+  if(msgUploadFailed.length&&(p.attachments.length||p.questionText)&&!confirm('We could not send '+(msgUploadFailed.length===1?'this file':'these files')+':\n\n'+msgUploadFailed.join('\n')+'\n\nPress OK to send your message without '+(msgUploadFailed.length===1?'it':'them')+', or Cancel to try again.')){if(btn)btn.disabled=false;if(st)st.textContent='';return}
   if(!p.attachments.length&&!p.questionText){if(btn)btn.disabled=false;if(st){st.className='sendnote bad';st.textContent='The upload did not go through. Please try again, or call (332) 277-0990.'}return}
   if(st)st.textContent='Sending…'
  }

@@ -341,6 +341,7 @@ html body section.page-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[clas
 <script src="js/camera-coach.js"></script>
 <script src="js/camera-zoom.js"></script>
 <script src="js/guided-camera.js"></script>
+<script src="js/big-upload.js"></script>
 <script>
 /* ══ PHOTOS AND FILES ═════════════════════════════════════════════════════════
    Chosen files are held here as data URIs until the moment of submit, then
@@ -538,20 +539,32 @@ function contactRenderFiles(){
 /* Upload everything and hand back the links. A file that fails to upload is
    DROPPED, never retried into a hang and never allowed to throw: the lead is
    worth more than the photograph, and Zura can always ask for it by reply. */
+/* A big file (over ~3 MB) goes straight to storage (js/big-upload.js): upload-
+   photo refuses anything over ~4.5 MB, and customers' drawings were lost that
+   way. A file that still fails is named in contactUploadFailed, and the
+   customer is asked before the message goes without it. */
+var contactUploadFailed = [];
 async function contactUploadFiles(ref){
   var out = [];
+  contactUploadFailed = [];
   for (var i = 0; i < contactFiles.length; i++) {
     var p = contactFiles[i];
     if (!p || typeof p.data !== "string" || p.data.indexOf("data:") !== 0) continue;
     try {
+      if (typeof sbcIsBig === "function" && sbcIsBig(p.data)) {
+        var big = await sbcBigUpload(p.data, ref, p.name);
+        out.push({ name: p.name || ("file-" + (i+1)), url: big, slot: p.slot || "other" });
+        continue;
+      }
       var r = await fetch("/.netlify/functions/upload-photo",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ base64:p.data, ref:ref })
       });
       var j = await r.json().catch(function(){ return null; });
-      if (r.ok && j && j.url) out.push({ name: p.name || ("file-" + (i+1)), url: j.url, slot: p.slot || "other" });
+      if (r.ok && j && j.url) { out.push({ name: p.name || ("file-" + (i+1)), url: j.url, slot: p.slot || "other" }); continue; }
     } catch (err) { console.error("upload failed for " + (p.name || ("#"+(i+1))), err); }
+    contactUploadFailed.push(p.name || ("file " + (i+1)));
   }
   return out;
 }
@@ -583,6 +596,11 @@ var uploaded=[];
 var contactRef=contactUploadRef();
 try{ if(contactFiles.length) uploaded=await contactUploadFiles(contactRef); }
 catch(_){ uploaded=[]; }   /* never block the lead on a failed upload */
+/* ...but never drop a file in silence: say which, and let them try again. */
+if(contactUploadFailed.length&&!confirm("We could not send "+(contactUploadFailed.length===1?"this file":"these files")+":\n\n"+contactUploadFailed.join("\n")+"\n\nPress OK to send your message without "+(contactUploadFailed.length===1?"it":"them")+" (you can email "+(contactUploadFailed.length===1?"it":"them")+" to contact@sanibuildingcorp.com), or Cancel to try again.")){
+  if(subBtn){subBtn.disabled=false;subBtn.innerHTML=subLabel;}
+  return;
+}
 if(subBtn){subBtn.disabled=false;subBtn.innerHTML=subLabel;}
 var pf=document.getElementById("contact-photos-field");
 var pc=document.getElementById("contact-photo-count-field");
