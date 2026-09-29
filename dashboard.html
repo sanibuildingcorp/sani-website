@@ -3024,6 +3024,15 @@ function esc(s) {
   if (s == null) return "";
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
+/* What the customer ticked on the form as buying themselves. Saved on
+   request.customerSupplies; shown in the request card so it is not missed. */
+function custSuppliesHtml(req) {
+  var list = (req && Array.isArray(req.customerSupplies) ? req.customerSupplies : [])
+    .map(function (x) { return String(x || "").trim(); }).filter(Boolean);
+  if (!list.length) return "";
+  return '<div class="cust-field cust-supplies" style="margin-top:8px"><span class="lbl">Customer supplies</span>' +
+    '<span class="val" style="font-size:13px;line-height:1.6">' + list.map(esc).join(", ") + '</span></div>';
+}
 /* ══ WHAT THE CUSTOMER ADDED TO THEIR OWN JOB. ══════════════════════════════
    The quote page lets them take the priced alternatives — one, or several
    together — and the total they approved includes them. That has to be visible
@@ -4976,6 +4985,7 @@ function renderEdit() {
         '<div class="cust-field"><span class="lbl">Photos</span><span class="val">' + (req.photoCount || 0) + '</span></div>' +
       '</div>' +
       (req.description ? '<div class="cust-field" style="margin-top:8px"><span class="lbl">Description</span><span class="val" style="font-size:13px;line-height:1.6;white-space:pre-wrap">' + esc(req.description) + '</span></div>' : "") +
+      custSuppliesHtml(req) +
       (answersHtml ? '<div class="answers-list">' + answersHtml + '</div>' : "") +
       optHtml + rejHtml +
       (photosHtml ? '<div class="cust-photos" id="req-photos-strip">' + photosHtml + '</div>' : "") +
