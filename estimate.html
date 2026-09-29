@@ -549,6 +549,7 @@ body.menu-on .topbar{display:none!important}
 <script src="js/camera-coach.js"></script>
 <script src="js/camera-zoom.js"></script>
 <script src="js/guided-camera.js"></script>
+<script src="js/big-upload.js"></script>
 <script>
 const formData={service:null,serviceLabel:null,serviceAnswers:{},customerSupplies:[],customerSuppliesOther:'',propertyType:null,description:'',photos:[],timeline:null,name:'',phone:'',email:'',address:''};
 // Capture the "In your own words" textarea (Step 4) into formData so it reaches the
@@ -1017,17 +1018,27 @@ function generateRef(){const d=new Date();return 'SBC-'+d.getFullYear().toString
 
 // Upload base64 photos to Supabase Storage first, return small {name,data:url} objects.
 // Keeps the estimate-request payload tiny so it never hits Netlify's 6MB limit.
+/* "customers who said they uploaded file but i can't see any file": a file over
+   ~4.5 MB was refused by upload-photo and skipped without a word, and the form
+   still said sent. A big file now goes straight to storage (js/big-upload.js),
+   and a file that still fails is NAMED to the customer before sending
+   (uploadFailed), never dropped in silence. */
+let uploadFailed=[];
 async function uploadPhotosForSubmit(ref){
-  const list=formData.photos||[];const out=[];
+  const list=formData.photos||[];const out=[];uploadFailed=[];
   for(let i=0;i<list.length;i++){
     const p=list[i];const data=p&&p.data;
     if(typeof data==='string'&&data.indexOf('data:')===0){
       try{
+        if(typeof sbcIsBig==='function'&&sbcIsBig(data)){
+          const url=await sbcBigUpload(data,ref,p.name);
+          out.push({name:(p.name||('photo-'+(i+1))),data:url,slot:p.slot||'other',kind:p.kind||'image'});continue;
+        }
         const r=await fetch('/.netlify/functions/upload-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:data,ref:ref})});
         const j=await r.json().catch(function(){return null;});
         if(r.ok&&j&&j.url){out.push({name:(p.name||('photo-'+(i+1))),data:j.url,slot:p.slot||'other',kind:p.kind||'image'});continue;}
-      }catch(err){console.error('upload-photo failed for #'+(i+1),err);}
-      // If this one fails, skip it rather than bloat the payload with base64.
+      }catch(err){console.error('upload failed for #'+(i+1),err);}
+      uploadFailed.push(p.name||('file '+(i+1)));
     }else if(data){
       out.push({name:(p.name||('photo-'+(i+1))),data:data,slot:p.slot||'other'}); // already a URL
     }
@@ -1045,6 +1056,9 @@ async function submitForm(){
     btn.textContent=formData.photos.length?'Uploading photos...':'Sending...';
     photos=await uploadPhotosForSubmit(ref);
   }catch(e){console.error('photo upload step failed',e);photos=[];}
+  if(uploadFailed.length&&!confirm('We could not send '+(uploadFailed.length===1?'this file':'these files')+':\n\n'+uploadFailed.join('\n')+'\n\nPress OK to send your request without '+(uploadFailed.length===1?'it':'them')+' (you can email '+(uploadFailed.length===1?'it':'them')+' to contact@sanibuildingcorp.com), or Cancel to try again.')){
+    btn.disabled=false;btn.textContent='Try Again';return;
+  }
 
   btn.textContent='Sending...';
   const payload={ref,name:formData.name,phone:formData.phone,email:formData.email,address:formData.address,service:formData.serviceLabel,serviceId:formData.service,serviceAnswers:formData.serviceAnswers,customerSupplies:allSupplies(),answerTopics:answerTopics,answerLabels:answerLabels,intakeReadAs:intakeReadAs,propertyType:formData.propertyType,description:formData.description,timeline:formData.timeline,photoCount:photos.length,photos:photos,submittedAt:new Date().toISOString(),source:'V3 Estimate Form'};
