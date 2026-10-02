@@ -442,7 +442,7 @@ async function recordContext(ref, estimateChars, jobPhotos, sinceAt) {
     "Status: " + str(rec.status),
     rec.parentRef ? "THIS IS ADDITIONAL WORK to estimate " + str(rec.parentRef) + ", which the customer already agreed to and which stays as it is: price and describe only the new work here." : "",
     arr(rec.addonRefs).length ? "Additional work made for this estimate (separate estimates, priced on their own): " + arr(rec.addonRefs).map(str).join(", ") : "",
-    "Came from: " + (str(rec.source) === "contact-form" ? "the contact form (no follow-up questions were asked)" : "the estimate form"),
+    "Came from: " + (str(rec.source) === "contact-form" ? "the contact form (no follow-up questions were asked)" : str(rec.source) === "email" ? "an email the customer sent (no form, no follow-up questions were asked)" : "the estimate form"),
     "Customer: " + str(cust.name),
     "Address: " + (str(cust.address) || "not given"),
     "Service asked for: " + (str(req.service) || "not given"),

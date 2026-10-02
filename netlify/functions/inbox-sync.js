@@ -256,6 +256,7 @@ async function run(event, limits) {
   let seen = 0, inserted = 0, matchedButDupe = 0, skippedOwn = 0, skippedUnknown = 0, insertErrors = [];
   let inboxStored = 0, inboxDownloads = 0;
   const alertIds = [];
+  const leadIds = [];
   /* The assistant's inbox index, read once; a slow store means this run
      files into the CRM only and the next run fills the inbox. */
   let idx = null;
@@ -311,6 +312,8 @@ async function run(event, limits) {
             const line = await inbox.saveMail(mail, match, false, idx);
             stored.add(mid); inboxStored++;
             if (line && line.kind === "customer") alertIds.push(mid);
+            /* a stranger with something to say: maybe a new job (email-lead-background) */
+            if (line && line.kind === "other" && clean) leadIds.push(mid);
           } catch (_) {}
           await checkpoint();
           continue;
@@ -380,12 +383,31 @@ async function run(event, limits) {
     finally { if (timer) clearTimeout(timer); }
   }
 
+  /* Mail from a sender we do not know -> email-lead-background asks whether
+     it is someone asking for work, and if so writes it into the dashboard as
+     a new request. It also sweeps the last few days, so the scheduled run
+     pokes it even with no new ids; the quick button run only when it has some. */
+  let leadsQueued = 0;
+  if (process.env.DASHBOARD_KEY && (leadIds.length || L === FULL)) {
+    const ids = leadIds.slice(0, 8);
+    const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(function () { ctrl.abort(); }, ALERT_MS) : null;
+    try {
+      await fetch((process.env.URL || "https://www.sanibuildingcorp.com").replace(/\/$/, "") + "/.netlify/functions/email-lead-background", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-sbc-key": process.env.DASHBOARD_KEY },
+        body: JSON.stringify({ ids: ids }), signal: ctrl ? ctrl.signal : undefined,
+      });
+    } catch (_) { /* a 202 is often cut off by the abort; the job runs anyway */ }
+    finally { if (timer) clearTimeout(timer); }
+    leadsQueued = ids.length;
+  }
+
   return json(200, {
     ok: true, scanned: seen, newMessages: inserted, alreadySynced: matchedButDupe,
     skippedOwnOrSystem: skippedOwn, skippedNotACustomer: skippedUnknown,
     knownCustomers: known.size,
     bridgedToEstimateThreads: bridgedToThreads,
-    inbox: { stored: inboxStored, downloaded: inboxDownloads, indexed: idx ? idx.items.length : null, alertsQueued: alerted },
+    inbox: { stored: inboxStored, downloaded: inboxDownloads, indexed: idx ? idx.items.length : null, alertsQueued: alerted, leadsQueued: leadsQueued },
     lookupsCut: lookupsCut,
     insertErrors: insertErrors.slice(0, 3),
   });

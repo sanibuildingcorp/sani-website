@@ -115,6 +115,8 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["get-bid-analysis", "GET", null],
     /* Every reading's name and status, for the page's list. */
     ["list-bid-jobs", "GET", null],
+    /* Reads the inbox, writes new requests, costs an AI run per email. */
+    ["email-lead-background", "POST", { ids: ["<x@example.com>"] }],
   ];
 
   for (const [name, method, body] of GATED) {
