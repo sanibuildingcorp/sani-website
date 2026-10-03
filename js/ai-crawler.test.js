@@ -182,7 +182,9 @@ console.log('\nthe business facts agree with each other everywhere\n');
          matches. */
       .map(function (line) { return line.replace(/\\u[0-9a-fA-F]{4}/g, '-'); })
       .forEach(function (line) {
-        (line.match(/(\d+)\s+(?:Google\s+)?[Rr]eviews?\b/g) || [])
+        /* "66 five-star reviews", "62+ verified reviews" slipped past the
+           narrower pattern; up to two words may sit between number and word */
+        (line.match(/(\d+)\+?\s+(?:[A-Za-z-]+\s+){0,2}[Rr]eviews?\b/g) || [])
           .forEach(function (m) { counts.add(m.match(/(\d+)/)[1]); });
         (line.match(/"reviewCount":\s*"(\d+)"/g) || [])
           .forEach(function (m) { counts.add(m.match(/(\d+)/)[1]); });
@@ -198,8 +200,8 @@ console.log('\nthe business facts agree with each other everywhere\n');
     counts.size === 1, Array.from(counts).sort().join(' / '));
 
   /* And it has to be the number Google actually shows. */
-  ok('...and that number is 67, which is what Google shows',
-    counts.size === 1 && counts.has('67'), Array.from(counts).join(' / '));
+  ok('...and that number is 68, which is what Google shows',
+    counts.size === 1 && counts.has('68'), Array.from(counts).join(' / '));
 
   const PHONE = '(332) 277-0990', ADDR = '2954 Brighton 12th Street';
   ok('llms.txt carries the same phone number as the schema', LLMS.indexOf(PHONE) !== -1);
