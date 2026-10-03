@@ -1123,7 +1123,7 @@ renderServices();
   }
   function alertZura(type,step){
     try{
-      var payload={type:type,step:step,source:src,
+      var payload={type:type,step:step,stepName:(typeof STEP_LABELS!=='undefined'&&STEP_LABEL_BY_DISPLAY[step])||'',source:src,
         name:(window.formData&&formData.name)||'',
         phone:(window.formData&&formData.phone)||'',
         service:(window.formData&&formData.serviceLabel)||''};
@@ -1135,7 +1135,12 @@ renderServices();
       }
     }catch(e){}
   }
-  var maxStep=1,started=false,completed=false;
+  /* Steps are numbered 1,8,5,2,9 inside the form; the customer sees 1-5.
+     maxStep is the furthest step SEEN (1-5), so "stopped at step 3" means
+     the third screen, not internal step 8. */
+  var STEP_LABEL_BY_DISPLAY={};
+  try{Object.keys(DISPLAY_STEP).forEach(function(k){STEP_LABEL_BY_DISPLAY[DISPLAY_STEP[k]]=STEP_LABELS[k];});}catch(e){}
+  var maxStep=1,started=false,completed=false,sentAt=0;
   function markStart(step){
     if(started)return;
     started=true;
@@ -1153,17 +1158,26 @@ renderServices();
   window.goToStep=function(s){
     _go(s);
     if(typeof s==='number'){
-      markStart(s);
-      if(s>maxStep)maxStep=s;
-      ev('estimate_step',{step_number:s});
+      var shown=(typeof DISPLAY_STEP!=='undefined'&&DISPLAY_STEP[s])||s;
+      markStart(shown);
+      if(shown>maxStep)maxStep=shown;
+      ev('estimate_step',{step_number:shown});
     }else if(s==='success'&&!completed){
       completed=true;ev('estimate_complete',{step_number:maxStep});
     }
   };
   ev('estimate_view',{step_number:1});
-  window.addEventListener('pagehide',function(){
-    if(started&&!completed){ev('estimate_abandon',{step_number:maxStep});alertZura('abandon',maxStep);}
-  });
+  /* "Stopped at step N". iPhone Safari rarely fires pagehide when the
+     customer switches apps or locks the phone, so leaving the tab counts
+     too. Sent once per step reached: someone who comes back, goes further
+     and leaves again is reported again, at the new step. */
+  function left(){
+    if(!started||completed||sentAt>=maxStep)return;
+    sentAt=maxStep;
+    ev('estimate_abandon',{step_number:maxStep});alertZura('abandon',maxStep);
+  }
+  window.addEventListener('pagehide',left);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')left();});
 })();
 </script>
 </body>
