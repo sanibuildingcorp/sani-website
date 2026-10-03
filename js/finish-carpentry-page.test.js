@@ -36,7 +36,7 @@ ok('...a bid invitation goes straight to his email', /href="mailto:contact@sanib
 console.log('\n3. only true things\n');
 ok('never "licensed", no TV mounting', !/licensed/i.test(P) && !/\btv\b/i.test(text));
 ok('no price anywhere - estimates are written per job', !/\$\s?\d/.test(text));
-ok('the review count is the real one, 67', (text.match(/\b(\d+) (?:Google )?Reviews\b/gi) || []).every((m) => /67/.test(m)) && /67/.test(text));
+ok('the review count is the real one, 68', (text.match(/\b(\d+) (?:Google )?Reviews\b/gi) || []).every((m) => /68/.test(m)) && /68/.test(text));
 ok('no project counts or years invented', !/\d+\+?\s*(projects|kitchens installed|years)/i.test(text));
 const imgs = Array.from(new Set((P.match(/(?:src|data-full)="(images\/[^"]+)"/g) || []).map((m) => m.split('"')[1])));
 const missing = imgs.filter((f) => !fs.existsSync(path.join(ROOT, f)));

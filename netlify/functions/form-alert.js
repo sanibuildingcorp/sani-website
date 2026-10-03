@@ -61,7 +61,12 @@ exports.handler = async (event) => {
     }
     data = { type: "test" };
   } else if (event.httpMethod === "POST") {
-    try { data = JSON.parse(event.body || "{}"); } catch (e) { data = {}; }
+    /* A sendBeacon body (the "stopped at step" alert) can reach the function
+       base64-encoded; read as-is it failed to parse and was sent as a
+       "started the form" alert at step 1. */
+    let raw = event.body || "{}";
+    if (event.isBase64Encoded) { try { raw = Buffer.from(raw, "base64").toString("utf8"); } catch (e) { raw = "{}"; } }
+    try { data = JSON.parse(raw); } catch (e) { data = {}; }
   } else {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
@@ -95,7 +100,8 @@ exports.handler = async (event) => {
     }
   }
   const src = String(data.source || "direct").slice(0, 120);
-  const step = parseInt(data.step, 10) || 1;
+  const step = Math.min(5, Math.max(1, parseInt(data.step, 10) || 1));
+  const stepName = String(data.stepName || "").slice(0, 40);
   const name = String(data.name || "").slice(0, 80);
   const phone = String(data.phone || "").slice(0, 40);
   const service = String(data.service || "").slice(0, 80);
@@ -120,7 +126,7 @@ exports.handler = async (event) => {
     type === "visit" ? (isBotVisit ? "\uD83E\uDD16 Bot/crawler — " : "\uD83D\uDC40 Visitor on your website — ") + (page || "/") :
     type === "call" ? "\uD83D\uDCDE CALL CLICK — someone is calling you from " + (page || "/") :
     isStart ? "\uD83D\uDFE2 Someone started the estimate form"
-            : "\uD83D\uDFE1 Estimate form abandoned at step " + step;
+            : "\uD83D\uDFE1 Stopped the estimate form at step " + step + " of 5" + (stepName ? " (" + stepName + ")" : "");
 
   const pagesTrail = Array.isArray(data.pages)
     ? data.pages.slice(0, 20).map(function(x){ return String(x).slice(0, 80); }).join(" \u2192 ")
@@ -139,7 +145,7 @@ exports.handler = async (event) => {
     rows.push(row("Came from", src));
   } else if (type !== "test") {
     rows.push(row("Came from page", src));
-    rows.push(row(isStart ? "Reached step" : "Quit at step", String(step) + " of 5"));
+    rows.push(row(isStart ? "Reached step" : "Stopped at step", String(step) + " of 5" + (stepName ? " - " + stepName : "")));
   }
   if (service) rows.push(row("Service picked", service));
   if (name) rows.push(row("Name (partial lead!)", name));
@@ -153,6 +159,7 @@ exports.handler = async (event) => {
     '<p style="font-size:15px;margin:0 0 14px"><strong>' +
     (type === "test" ? "This is a test. Email delivery from form-alert works — alerts will arrive at this inbox." :
      type === "visit" ? "Someone is browsing your website right now." :
+     type === "call" ? "Someone tapped your phone number to call you." :
      isStart ? "A visitor just started filling the free-estimate form." :
       "A visitor left the estimate form without finishing.") +
     "</strong></p><table style=\"font-size:14px;border-collapse:collapse;width:100%\">" +
