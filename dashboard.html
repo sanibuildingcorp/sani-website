@@ -12744,6 +12744,34 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 #edit-card button[style*="background:var(--gold)"],#edit-card button[style*="background: var(--gold)"]{background:var(--brand)!important;color:#0a1628!important;border-color:var(--brand)!important}
 #edit-card .et-tab.on{color:var(--brand-2)!important;border-bottom-color:var(--brand)!important}
 #edit-card .et-ai{border-color:var(--line);background:#f6f8fb}
+.ev-card{border:1px solid #dfe3ea;border-radius:16px;background:#fff;margin:0 0 14px;overflow:hidden}
+.ev-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #eceff3}
+.ev-head h4{flex:1;min-width:0;margin:0;font-family:var(--body);font-size:17px;font-weight:700;letter-spacing:0;text-transform:none;line-height:1.3}
+.ev-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:0;background:#eef2f7;color:#2f6fb5;font-size:16px;cursor:pointer}
+.ev-line{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #eceff3}
+.ev-line .ev-t{flex:1;min-width:0;font-size:15px;line-height:1.35;overflow-wrap:break-word}
+.ev-line .ev-q{display:block;font-size:12.5px;color:#7a879b;margin-top:3px;letter-spacing:.3px}
+.ev-line .ev-lab{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#eceff3;display:flex;align-items:center;justify-content:center;font-size:14px}
+.ev-line .ev-a{flex:0 0 auto;font-weight:700;font-size:15px}
+.ev-sum{display:flex;gap:18px;padding:12px 16px;background:#fafbfc;font-size:12.5px;color:#7a879b}
+.ev-sum b{display:block;font-size:15px;color:var(--ink,#1a2433)}
+.ev-sum .ev-tot{margin-left:auto;text-align:right}
+.ev-total{display:flex;justify-content:space-between;align-items:baseline;padding:16px 4px 6px;font-size:20px;font-weight:800}
+.ev-cust{font-size:13px;color:#7a879b;text-align:right;padding:0 4px 14px}
+.ev-empty{padding:18px 16px;color:#7a879b;font-size:14px}
+.sv-card{border-radius:16px;background:#f4f5f7;margin:0 0 14px;padding:4px 0 6px}
+.sv-head{display:flex;align-items:center;gap:10px;padding:14px 18px 12px;border-bottom:1px solid #dfe3ea;margin:0 0 6px}
+.sv-head h4{flex:1;min-width:0;margin:0;font-family:var(--body);font-size:18px;font-weight:700;letter-spacing:0;text-transform:none;line-height:1.3}
+.sv-card ul{margin:0;padding:4px 18px 6px 38px}
+.sv-card li{font-size:15.5px;line-height:1.55;margin:0 0 10px;color:#22324a}
+.sv-card li::marker{color:#2f6fb5}
+.sv-sub{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#7a879b;padding:6px 18px 0}
+.et-more{border:1px solid #dfe3ea;border-radius:14px;margin:6px 0 14px;background:#fff}
+.et-more>summary{list-style:none;cursor:pointer;padding:15px 16px;font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.et-more>summary::-webkit-details-marker{display:none}
+.et-more>summary::after{content:"\25be";color:#7a879b}
+.et-more[open]>summary::after{transform:rotate(180deg)}
+.et-more>.et-more-body{padding:0 12px 12px}
 #edit-card .ai-bar,#edit-card .hr-fold,#edit-card .lm-fold,#edit-card .cv-panel,#edit-card .cust-panel,#edit-card .totals-box,#edit-card .form-section.sbcf-section{background:#fff!important;border-color:var(--line)!important}
 .et-ai{margin:18px 0 6px;border:1.5px solid var(--gold,#c8860a);border-radius:14px;padding:12px;background:var(--gold-soft,#fbf6ea)}
 .et-ai-row{display:flex;gap:8px;align-items:flex-end}
@@ -12937,6 +12965,16 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     }
     if (!panes.photos.children.length) panes.photos.innerHTML = '<div class="et-empty">No photos on this job yet.</div>';
     panes.history.innerHTML = historyHtml(r);
+    /* the clear view on top, the tools folded under it */
+    var aiBar = panes.estimate.querySelector(':scope > .ai-bar');
+    var evd = document.createElement('div'); evd.id = 'et-ev'; evd.innerHTML = estimateView(r);
+    fold(panes.estimate, 'et-more-est', '⚙️ Edit lines, markup, customer view, PDFs, contract', aiBar ? [aiBar] : []);
+    panes.estimate.insertBefore(evd, panes.estimate.firstChild);
+    if (aiBar) panes.estimate.insertBefore(aiBar, evd.nextSibling);
+    var svd = document.createElement('div'); svd.id = 'et-sv'; svd.innerHTML = scopeView(r);
+    fold(panes.scope, 'et-more-scope', '✏️ Edit the scope wording', []);
+    panes.scope.insertBefore(svd, panes.scope.firstChild);
+    panes.scope.querySelector('.et-more-scope').addEventListener('toggle', function(){ growIn(this); });
     ['scope', 'estimate'].forEach(function(k){
       var holder = document.createElement('div'); holder.innerHTML = aiBox(k);
       var el = holder.firstChild;
@@ -12972,6 +13010,8 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     try {
       var pane = this.closest && this.closest('#edit-card .et-pane');
       if (pane && !pane.classList.contains('on')) show(pane.getAttribute('data-k'));
+      var more = this.closest && this.closest('#edit-card details.et-more');
+      if (more && !more.open) more.open = true;
     } catch (e) {}
     return _siv.apply(this, arguments);
   };
@@ -12979,7 +13019,12 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
   /* The service cards redraw on their own (move, add, undo); size them again. */
   if (typeof renderScopeControl === 'function') {
     var _rsc = renderScopeControl;
-    renderScopeControl = function(){ var out = _rsc.apply(this, arguments); try { var c = document.getElementById('edit-card'); growIn(c && c.querySelector('.et-pane.on')); } catch (e) {} return out; };
+    renderScopeControl = function(){ var out = _rsc.apply(this, arguments); try { var c = document.getElementById('edit-card'); growIn(c && c.querySelector('.et-pane.on')); refreshViews(); } catch (e) {} return out; };
+  }
+  /* a price or markup typed in the folded tables updates the view above */
+  if (typeof recalc === 'function') {
+    var _rc = recalc;
+    recalc = function(){ var out = _rc.apply(this, arguments); try { var c = document.getElementById('edit-card'); var ev = c && c.querySelector('#et-ev'); var r = rec(); if (ev && r) ev.innerHTML = estimateView(r); } catch (e) {} return out; };
   }
   window.addEventListener('resize', function(){ var c = document.getElementById('edit-card'); if (c) growIn(c.querySelector('.et-pane.on')); });
   /* ── FOLLOW-UP EMAILS (lib/follow-up.js) ─────────────────────────────────
@@ -13016,6 +13061,94 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     } catch (e) { if (typeof toast === 'function') toast('Could not change it: ' + e.message, true); }
   };
   window.etFollowUpHtml = followUpHtml;
+
+  /* ── THE CLEAR VIEW (Simplewise) ───────────────────────────────────────
+       "In simplewise are more clear understandable. Shows exactly what
+        customer sees in plan and in estimate ... clearly for what is
+        estimate and what's the charges"
+     Estimate tab: one card per service with its price lines (item, qty x
+     rate, amount), Materials / Labor / Total under it, the markup, the
+     total. Scope tab: the customer's service cards as plain bullets. The
+     tools that were there are folded under them, unchanged; the pencil on a
+     card opens the place it is edited. */
+  function md(t){ return esc3(t).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>'); }
+  function money(n){ return '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function estimateView(r){
+    var e = r.estimate || {};
+    var lines = (e.labor || []).map(function(l){ return { l: l, lab: true }; }).concat((e.materials || []).map(function(l){ return { l: l, lab: false }; }));
+    if (!lines.length) return '<div class="ev-card"><div class="ev-empty">No price yet. Generate the estimate below.</div></div>';
+    var order = [], by = {};
+    lines.forEach(function(x){
+      var sec = (typeof scopeSectionOf === 'function' ? scopeSectionOf(x.l) : (x.l.section || '')) || 'General';
+      if (!by[sec]) { by[sec] = []; order.push(sec); }
+      by[sec].push(x);
+    });
+    var html = order.map(function(sec){
+      var labT = 0, matT = 0;
+      var rows = by[sec].sort(function(a, b){ return (b.lab ? 1 : 0) - (a.lab ? 1 : 0); }).map(function(x){
+        var q = Number(x.l.qty) || 0, rt = Number(x.l.rate) || 0, amt = q * rt;
+        if (x.lab) labT += amt; else matT += amt;
+        return '<div class="ev-line"><span class="ev-t">' + esc3(x.l.item || '') + '<span class="ev-q">' + esc3(String(q) + ' ' + String(x.l.unit || '').toUpperCase()) + ' × ' + money(rt) + '</span></span>' +
+          (x.lab ? '<span class="ev-lab" title="Labor">🔨</span>' : '') + '<span class="ev-a">' + money(amt) + '</span></div>';
+      }).join('');
+      return '<div class="ev-card"><div class="ev-head"><h4>' + esc3(sec) + '</h4><button type="button" class="ev-ic" title="Edit the lines" onclick="etEditLines()">✏️</button></div>' + rows +
+        '<div class="ev-sum"><span>Materials<b>' + money(matT) + '</b></span><span>Labor<b>' + money(labT) + '</b></span><span class="ev-tot">Total<b>' + money(matT + labT) + '</b></span></div></div>';
+    }).join('');
+    var t = typeof calcTotal === 'function' ? calcTotal(e) : { grand: 0, markup: 0 };
+    if (Number(e.markupPct)) html += '<div class="ev-card"><div class="ev-head"><h4>Other</h4></div><div class="ev-line"><span class="ev-t">Markup<span class="ev-q">' + esc3(String(Number(e.markupPct))) + '%</span></span><span class="ev-a">' + money(t.markup) + '</span></div></div>';
+    html += '<div class="ev-total"><span>Total</span><span>' + money(t.grand) + '</span></div>';
+    var cust = null;
+    try { cust = (Number(r.customerFinalTotal) > 0) ? Number(r.customerFinalTotal) : calcCustomerView(e).customerTotal; } catch (x) { cust = null; }
+    if (cust != null && Math.abs(cust - t.grand) >= 0.01) html += '<div class="ev-cust">The customer sees <b>' + money(cust) + '</b> (what you chose to show)</div>';
+    return html;
+  }
+  function scopeView(r){
+    var d = null;
+    try { d = typeof scopeDraft === 'function' ? scopeDraft() : null; } catch (x) { d = null; }
+    var e = r.estimate || {};
+    var cards = [];
+    var proj = (e.projectIncluded || []).map(function(x){ return typeof x === 'string' ? x : (x && x.text) || ''; }).filter(Boolean);
+    if (proj.length) cards.push('<div class="sv-card"><div class="sv-head"><h4>Included for the whole project</h4><button type="button" class="ev-ic" title="Edit" onclick="etEditScope(-1)">✏️</button></div><ul>' + proj.map(function(t){ return '<li>' + md(t) + '</li>'; }).join('') + '</ul></div>');
+    ((d && d.services) || []).forEach(function(sv, i){
+      var inc = (sv.included || []).filter(Boolean), sup = (sv.supplied || []).filter(Boolean), exc = (sv.excluded || []).filter(Boolean);
+      if (!inc.length && !sup.length && !exc.length) return;
+      cards.push('<div class="sv-card"><div class="sv-head"><h4>' + esc3(sv.name || 'Service') + '</h4><button type="button" class="ev-ic" title="Edit" onclick="etEditScope(' + i + ')">✏️</button></div>' +
+        (inc.length ? '<ul>' + inc.map(function(t){ return '<li>' + md(t) + '</li>'; }).join('') + '</ul>' : '') +
+        (sup.length ? '<div class="sv-sub">You supply</div><ul>' + sup.map(function(t){ return '<li>' + md(t) + '</li>'; }).join('') + '</ul>' : '') +
+        (exc.length ? '<div class="sv-sub">Not included</div><ul>' + exc.map(function(t){ return '<li>' + md(t) + '</li>'; }).join('') + '</ul>' : '') + '</div>');
+    });
+    if (!cards.length) return '<div class="ev-card"><div class="ev-empty">No scope yet. It is written when the estimate is generated.</div></div>';
+    return cards.join('');
+  }
+  function fold(pane, cls, label, keep){
+    var det = document.createElement('details'); det.className = 'et-more ' + cls;
+    det.innerHTML = '<summary>' + label + '</summary><div class="et-more-body"></div>';
+    var body = det.querySelector('.et-more-body');
+    [].slice.call(pane.children).forEach(function(el){ if (keep.indexOf(el) < 0) body.appendChild(el); });
+    pane.appendChild(det);
+    return det;
+  }
+  function refreshViews(){
+    var r = rec(), card = document.getElementById('edit-card'); if (!r || !card) return;
+    var ev = card.querySelector('#et-ev'), sv = card.querySelector('#et-sv');
+    if (ev) ev.innerHTML = estimateView(r);
+    if (sv) sv.innerHTML = scopeView(r);
+  }
+  window.etRefreshViews = refreshViews;
+  window.etEditLines = function(){
+    var card = document.getElementById('edit-card'); if (!card) return;
+    var more = card.querySelector('.et-more-est'); if (more) more.open = true;
+    card.querySelectorAll('.et-pane[data-k=estimate] .lm-fold').forEach(function(d){ d.open = true; });
+    var f = card.querySelector('.et-pane[data-k=estimate] .lm-fold');
+    if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  window.etEditScope = function(i){
+    var card = document.getElementById('edit-card'); if (!card) return;
+    var more = card.querySelector('.et-more-scope'); if (more) more.open = true;
+    growIn(card.querySelector('.et-pane.on'));
+    var t = i < 0 ? card.querySelector('#scope-control-wrap .sc-proj') : card.querySelectorAll('#scope-control-wrap .sc-service:not(.sc-proj)')[i];
+    (t || card.querySelector('#scope-control-wrap') || more).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   window.etBuild = build;
   window.etHistoryItems = historyItems;
