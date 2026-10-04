@@ -43,6 +43,11 @@ ok('...and redraw where they sit, so adding an option never sends them back to E
 
 ok('service card lines wrap and show in full (a text box, not a one-line field), Enter kept out', /'<textarea class="sc-item" rows="1" oninput="if\(\/\\\\n\/\.test\(this\.value\)\)/.test(DASH) && !/<input class="sc-item"/.test(DASH));
 
+/* "So many yellow is in my dashboard" -> Simplewise style, estimate screen only */
+ok('the estimate screen redefines gold as blue and the borders as gray - on #edit-card only', /#edit-card\{--brand:#b8930a;--brand-2:#96770a;--gold:#2f6fb5;--gold-2:#1d4f8a;--gold-soft:#eef3f9;--line:#e2e6ec\}/.test(block) && /:root \{[\s\S]{0,200}--gold: #b8930a;/.test(DASH));
+ok('...gold stays on the main buttons (Generate, Send, Edit with AI) and the open tab', /#edit-card \.btn-ai,#edit-card #gen-btn,#edit-card \.btn-primary,#edit-card \.et-ai button\{background:var\(--brand\)!important/.test(block) && /#edit-card \.et-tab\.on\{color:var\(--brand-2\)!important/.test(block));
+ok('...titles are navy, not gold', /#edit-card \.modal-head h2,#edit-card h3[^{]*\{color:var\(--ink,#1a2433\)!important\}/.test(block));
+
 /* History, run for real */
 const ctx = { console, String, Number, Array, Object, Date, Element: function () {}, renderEdit: function () {} };
 ctx.Element.prototype.scrollIntoView = function () {};

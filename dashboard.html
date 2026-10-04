@@ -12730,6 +12730,21 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 .et-hist .et-ht{flex:1;min-width:0;font-size:14px;line-height:1.5;overflow-wrap:break-word}
 .et-hist .et-hw{display:block;font-size:12px;color:var(--ink-muted,#8a9bb0);margin-top:2px}
 .et-empty{color:var(--ink-muted,#8a9bb0);font-size:14px;padding:18px 2px}
+/* ── CALMER COLORS ON THE ESTIMATE SCREEN ─────────────────────────────────
+   "So many yellow is in my dashboard" -> Simplewise style: white cards,
+   light gray borders, navy titles, blue for small controls. Gold stays on
+   the main buttons (Generate, Send) and the open tab. Only this screen:
+   the variables are redefined on #edit-card, the rest of the dashboard
+   keeps its look. */
+#edit-card{--brand:#b8930a;--brand-2:#96770a;--gold:#2f6fb5;--gold-2:#1d4f8a;--gold-soft:#eef3f9;--line:#e2e6ec}
+#edit-card .modal-head h2,#edit-card h3,#edit-card h4,#edit-card .section-title,#edit-card .cust-panel h3,#edit-card .form-section h3,#edit-card .ai-bar h4{color:var(--ink,#1a2433)!important}
+#edit-card .btn-ai,#edit-card #gen-btn,#edit-card .btn-primary,#edit-card .et-ai button{background:var(--brand)!important;color:#0a1628!important}
+#edit-card .btn-ai:hover:not(:disabled),#edit-card .btn-primary:hover:not(:disabled){background:var(--brand-2)!important}
+/* buttons filled with the gold variable in their own inline style stay gold */
+#edit-card button[style*="background:var(--gold)"],#edit-card button[style*="background: var(--gold)"]{background:var(--brand)!important;color:#0a1628!important;border-color:var(--brand)!important}
+#edit-card .et-tab.on{color:var(--brand-2)!important;border-bottom-color:var(--brand)!important}
+#edit-card .et-ai{border-color:var(--line);background:#f6f8fb}
+#edit-card .ai-bar,#edit-card .hr-fold,#edit-card .lm-fold,#edit-card .cv-panel,#edit-card .cust-panel,#edit-card .totals-box,#edit-card .form-section.sbcf-section{background:#fff!important;border-color:var(--line)!important}
 .et-ai{margin:18px 0 6px;border:1.5px solid var(--gold,#c8860a);border-radius:14px;padding:12px;background:var(--gold-soft,#fbf6ea)}
 .et-ai-row{display:flex;gap:8px;align-items:flex-end}
 .et-ai textarea{flex:1;min-width:0;font-family:var(--body);font-size:16px;line-height:1.45;border:1px solid var(--line,#e3e7ee);border-radius:10px;padding:10px 12px;resize:none;min-height:46px;background:#fff;color:inherit}
