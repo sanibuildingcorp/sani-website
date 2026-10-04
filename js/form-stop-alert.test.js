@@ -26,14 +26,36 @@ process.env.RESEND_API_KEY = 'x';
 const fn = require(path.join(ROOT, 'netlify/functions/form-alert'));
 const post = (obj, b64) => fn.handler({ httpMethod: 'POST', headers: {}, isBase64Encoded: !!b64, body: b64 ? Buffer.from(JSON.stringify(obj)).toString('base64') : JSON.stringify(obj) });
 
+/* the visit store and the wait, in memory */
+const Module = require('module'), sess = new Map(), waits = [];
+const _load = Module._load;
+Module._load = function (req) { if (req === '@netlify/blobs') return { getStore: () => ({ get: async (k) => sess.has(k) ? JSON.parse(sess.get(k)) : null, setJSON: async (k, v) => sess.set(k, JSON.stringify(v)) }) }; return _load.apply(this, arguments); };
+global.fetch = async (url, o) => { if (/form-alert-background/.test(url)) waits.push(JSON.parse(o.body)); return { ok: true, status: 202 }; };
+process.env.DASHBOARD_KEY = 'k'.repeat(32);
+const KEY = { 'x-sbc-key': process.env.DASHBOARD_KEY };
+const bg = require(path.join(ROOT, 'netlify/functions/form-alert-background'));
+
 (async () => {
+  /* "When i start estimate form filling up ... in the process i received this" */
   sent.length = 0;
-  await post({ type: 'abandon', step: 3, stepName: 'Describe & Upload', source: '/' }, true);
+  await post({ type: 'abandon', step: 3, stepName: 'Describe & Upload', sid: 'visit12345' }, true);
+  ok('a hidden page sends NO email at once: it only starts the wait', sent.length === 0 && waits.length === 1 && waits[0].sid === 'visit12345' && !!waits[0].abandonAt);
+  await post({ type: 'resume', step: 3, sid: 'visit12345' });
+  ok('the customer came back (photo picker, a text): no alert after the wait', bg.stillGone(JSON.parse(sess.get('visit12345')), waits[0].abandonAt) === false);
+  waits.length = 0; await post({ type: 'abandon', step: 4, sid: 'visit99999' }, true);
+  ok('really gone: the wait ends in the alert', bg.stillGone(JSON.parse(sess.get('visit99999')), waits[0].abandonAt) === true);
+  await post({ type: 'done', step: 5, sid: 'visit99999' });
+  ok('sent the request: never an alert', bg.stillGone(JSON.parse(sess.get('visit99999')), waits[0].abandonAt) === false);
+  ok('a later hide owns the alert, the earlier wait stays quiet', bg.stillGone({ abandonAt: '2026-10-04T10:05:00Z' }, '2026-10-04T10:00:00Z') === false);
+  sent.length = 0; await post({ type: 'abandon', step: 3, sid: 'visit12345', final: true });
+  ok('only the background, with the dashboard key, may send the final alert', sent.length === 0);
+  sent.length = 0;
+  await fn.handler({ httpMethod: 'POST', headers: KEY, isBase64Encoded: true, body: Buffer.from(JSON.stringify({ type: 'abandon', step: 3, stepName: 'Describe & Upload', source: '/', sid: 'visit12345', final: true })).toString('base64') });
   const a = sent[0] || {};
   ok('a base64 beacon is read: the subject says STOPPED, not started', /Stopped the estimate form at step 3 of 5 \(Describe & Upload\)/.test(a.subject || ''), a.subject);
   ok('the email names the step', /Stopped at step/.test(a.html || '') && /3 of 5 - Describe &amp; Upload/.test(a.html || ''));
   sent.length = 0;
-  await post({ type: 'abandon', step: 8 });
+  await fn.handler({ httpMethod: 'POST', headers: KEY, body: JSON.stringify({ type: 'abandon', step: 8, sid: 'visit12345', final: true }) });
   ok('a step past 5 is never shown', /at step 5 of 5/.test((sent[0] || {}).subject || ''), (sent[0] || {}).subject);
   sent.length = 0;
   await post({ type: 'start', step: 1 });
@@ -47,7 +69,8 @@ const post = (obj, b64) => fn.handler({ httpMethod: 'POST', headers: {}, isBase6
   const H = fs.readFileSync(path.join(ROOT, 'estimate.html'), 'utf8');
   ok('the form reports the step the customer SEES (DISPLAY_STEP), not the internal id', /var shown=\(typeof DISPLAY_STEP!=='undefined'&&DISPLAY_STEP\[s\]\)\|\|s;/.test(H) && /if\(shown>maxStep\)maxStep=shown;/.test(H));
   ok('leaving the tab counts (iPhone rarely fires pagehide)', /visibilitychange[\s\S]{0,80}hidden[\s\S]{0,20}left\(\)/.test(H));
-  ok('reported once per step reached', /sentAt>=maxStep\)return;\s*sentAt=maxStep;/.test(H));
+  ok('every hide is told to the server, every return too', /if\(document\.visibilityState==='hidden'\)left\(\);\s*else if\(started&&!completed&&sentAt\)seen\('resume',maxStep\);/.test(H) && /seen\('done',maxStep\)/.test(H) && /seen\('progress',shown\)/.test(H));
+  ok('each visit has its own id', /var SID=Math\.random\(\)/.test(H) && /sid:SID/.test(H));
   ok('the alert carries the step name', /stepName:/.test(H));
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
