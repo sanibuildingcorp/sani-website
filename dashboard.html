@@ -4962,6 +4962,8 @@ function renderEdit() {
     est.showLaborLinePrices = false;
     est.showMaterialLinePrices = false;
   }
+  /* The same work split into pieces on one card (0.77 hrs + 2.23 hrs) is one line. */
+  joinEstimateLines(est);
 
   /* The generator bar used to carry "Use for this estimate" toggles and a
      "Measurements, corrections & extra notes" box. Both are gone: any correction
@@ -5802,8 +5804,38 @@ function quoteNorm(x) {
   }
   return x;
 }
+/* ONE LINE FOR ONE PIECE OF WORK - same as lib/join-lines.js.
+   Lines with the same card, words, unit and rate become one; quantities add up,
+   so the money is exactly the same. */
+function joinSameLines(lines) {
+  if (!Array.isArray(lines)) return lines;
+  var t = function (v) { return String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g, " "); };
+  var out = [], at = {};
+  lines.forEach(function (l) {
+    if (!l || typeof l !== "object" || !String(l.item || "").trim()) { out.push(l); return; }
+    var k = [t(l.section), t(l.item), t(l.unit), String(Number(l.rate) || 0)].join("|");
+    if (at[k] === undefined) { at[k] = out.length; out.push(Object.assign({}, l)); return; }
+    var first = out[at[k]];
+    first.qty = Math.round(((Number(first.qty) || 0) + (Number(l.qty) || 0)) * 10000) / 10000;
+  });
+  return out;
+}
+function joinEstimateLines(est) {
+  if (!est || typeof est !== "object") return est;
+  if (Array.isArray(est.labor)) est.labor = joinSameLines(est.labor);
+  if (Array.isArray(est.materials)) est.materials = joinSameLines(est.materials);
+  return est;
+}
+/* Joining split lines, or switching off the removed line-price choices, is not
+   him changing the quote: compare both sides the same way. */
+function quoteCompareCopy(e) {
+  var c = JSON.parse(JSON.stringify(e || {}));
+  joinEstimateLines(c);
+  delete c.showLaborLinePrices; delete c.showMaterialLinePrices;
+  return quoteNorm(c);
+}
 function quoteMovedSinceSent(r, v) {
-  if (JSON.stringify(quoteNorm(r.estimate || {})) !== JSON.stringify(quoteNorm(v.estimate || {}))) return true;
+  if (JSON.stringify(quoteCompareCopy(r.estimate)) !== JSON.stringify(quoteCompareCopy(v.estimate))) return true;
   var live = r.customerFinalTotal != null ? Number(r.customerFinalTotal) : null;
   var sent = v.customerFinalTotal != null ? Number(v.customerFinalTotal) : null;
   if (live === null && sent === null) return false;
