@@ -2968,6 +2968,7 @@ const TABS = [
   { id: "handyman", label: "🔧 Handyman" },
   { id: "visits", label: "📅 Visits" },
   { id: "customers", label: "👤 Customers" },
+  { id: "google", label: "🔎 Google" },
 ];
 
 let handymanBookings = [];
@@ -3193,7 +3194,7 @@ function renderTabs() {
   document.getElementById("tabs-row").innerHTML = TABS.map(function(t) {
     return '<button class="tab ' + (activeTab === t.id ? "active" : "") + '" data-tab="' + t.id + '">' +
       '<span>' + t.label + '</span>' +
-      '<span class="tab-count">' + (counts[t.id] || 0) + '</span>' +
+      (t.id === "google" ? '' : '<span class="tab-count">' + (counts[t.id] || 0) + '</span>') +
     '</button>';
   }).join("");
   document.querySelectorAll(".tab").forEach(function(btn) {
@@ -10766,6 +10767,84 @@ if (typeof renderList === "function") {
   };
 }
 
+/* ══ 🔎 GOOGLE SEARCH (Search Console, read-only) ═══════════════════════════
+   "How to connect you directly google search console?" -> "Go start number 2".
+   netlify/functions/search-console.js reads Google with a service account he
+   sets up once; this tab shows it, and walks him through the setup until it
+   works. */
+function gscPct(a, b){ if(!b) return ''; var d = (a - b) / b * 100; return (d >= 0 ? '▲ ' : '▼ ') + Math.abs(Math.round(d)) + '%'; }
+function gscPath(u){ try { var x = new URL(u); return x.pathname === '/' ? 'Home page' : x.pathname; } catch(e){ return u || ''; } }
+function gscTable(rows, withPage){
+  if(!rows || !rows.length) return '<p style="color:var(--ink-muted);margin:8px 0 0">Nothing yet.</p>';
+  return '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:10px">'+
+    '<tr style="text-align:left;color:var(--ink-muted);font-size:11px;letter-spacing:1px;text-transform:uppercase"><th style="padding:6px 8px">Search</th><th style="padding:6px 8px">Position</th><th style="padding:6px 8px">Seen</th><th style="padding:6px 8px">Clicks</th>'+(withPage?'<th style="padding:6px 8px">Page</th>':'')+'</tr>'+
+    rows.map(function(r){ return '<tr style="border-top:1px solid var(--line)"><td style="padding:8px">'+esc(r.query)+'</td><td style="padding:8px;font-weight:700">'+r.position+'</td><td style="padding:8px">'+r.impressions+'</td><td style="padding:8px">'+r.clicks+'</td>'+(withPage?'<td style="padding:8px;color:var(--ink-muted)">'+esc(gscPath(r.page))+'</td>':'')+'</tr>'; }).join('')+
+  '</table></div>';
+}
+function gscSetupHtml(account, note){
+  var steps = [
+    'Open <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console.cloud.google.com</a> with your Google account and create a project called <b>Sani Search</b>.',
+    'Open <a href="https://console.cloud.google.com/apis/library/searchconsole.googleapis.com" target="_blank" rel="noopener">Google Search Console API</a> and press <b>Enable</b>.',
+    'Open <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" rel="noopener">Service accounts</a> &rarr; <b>Create service account</b> &rarr; name it <b>search-reader</b> &rarr; <b>Done</b> (skip the roles).',
+    'Click the new account &rarr; <b>Keys</b> &rarr; <b>Add key</b> &rarr; <b>Create new key</b> &rarr; <b>JSON</b>. A .json file downloads.',
+    'Upload that file here:',
+  ];
+  return '<div class="vis-panel"><div class="vis-panel-h">Connect Google Search Console</div>'+
+    (note ? '<p style="margin:10px 0 0;line-height:1.6">'+note+'</p>' : '')+
+    (account ? '' : '<ol style="margin:12px 0 0;padding-left:20px;line-height:1.7">'+steps.map(function(x){ return '<li style="margin-bottom:6px">'+x+'</li>'; }).join('')+'</ol>'+
+      '<input type="file" id="gsc-key-file" accept=".json,application/json" style="margin:6px 0 0 20px" onchange="gscUploadKey(this)"><div id="gsc-key-msg" style="margin:8px 0 0 20px;font-size:13px"></div>')+
+    (account ? '<ol start="5" style="margin:12px 0 0;padding-left:20px;line-height:1.7"><li>Open <a href="https://search.google.com/search-console/users" target="_blank" rel="noopener">Search Console &rarr; Settings &rarr; Users and permissions</a> &rarr; <b>Add user</b>.</li>'+
+      '<li>Paste this email, choose <b>Restricted</b>, press <b>Add</b>:<div style="margin:6px 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-family:monospace;font-size:13px;word-break:break-all;user-select:all">'+esc(account)+'</div></li>'+
+      '<li><button class="topbar-btn" onclick="renderGoogleTab(true)">Check again</button></li></ol>' : '')+
+  '</div>';
+}
+async function gscUploadKey(input){
+  var msg = document.getElementById('gsc-key-msg'), f = input.files && input.files[0]; if(!f) return;
+  msg.textContent = 'Saving…';
+  try {
+    var text = await f.text(), key; try { key = JSON.parse(text); } catch(e){ throw new Error('That file is not the .json key file.'); }
+    var r = await sbcFetch('/.netlify/functions/search-console', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'save-key', key:key }) });
+    var j = await r.json().catch(function(){ return {}; });
+    if(!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    renderGoogleTab(true);
+  } catch(e){ msg.textContent = '⚠️ ' + e.message; }
+}
+/* The list re-renders on its own (new estimates, the badge counts): a report
+   from the last 10 minutes is shown again instead of asking Google each time. */
+var gscCache = null;
+async function renderGoogleTab(force){
+  var host = document.getElementById('list-host');
+  if (!force && gscCache && Date.now() - gscCache.at < 10 * 60 * 1000) { host.innerHTML = gscCache.html; return; }
+  host.innerHTML = '<div class="empty"><div class="empty-icon">⟳</div><h3>Asking Google…</h3></div>';
+  try {
+    var r = await sbcFetch('/.netlify/functions/search-console');
+    var d = await r.json().catch(function(){ return {}; });
+    if(activeTab !== 'google') return;
+    if(!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+    if(d.setup){ host.innerHTML = gscSetupHtml('', 'Do this once (about 10 minutes). It gives the dashboard read-only access to your Search Console - it can look, never change anything.'); return; }
+    if(d.error){ host.innerHTML = gscSetupHtml(d.account, d.code === 'no-access' ? 'Almost done - Google does not let the account see your site yet.' : '⚠️ ' + esc(d.error)); return; }
+    var n = d.now, b = d.before;
+    var tile = function(label, val, a, bb, lowerBetter){ var ch = gscPct(a, bb); var good = lowerBetter ? a <= bb : a >= bb; return '<div class="seo-stat"><div class="seo-stat-label">'+label+'</div><div class="seo-stat-val">'+val+'</div>'+(ch ? '<div style="font-size:12px;margin-top:4px;color:'+(good?'var(--good)':'#b45309')+'">'+ch+' vs 28 days before</div>' : '')+'</div>'; };
+    host.innerHTML = '<div><div class="seo-topline"><div><div class="seo-title">🔎 Google Search</div><div class="seo-daterange">'+esc(d.range.now.startDate)+' – '+esc(d.range.now.endDate)+' · Search Console, read-only</div></div><button class="topbar-btn" onclick="renderGoogleTab(true)">Refresh</button></div>'+
+      '<div class="seo-stats">'+tile('Clicks', n.clicks, n.clicks, b.clicks)+tile('Seen in Google', n.impressions, n.impressions, b.impressions)+tile('Click rate', n.ctr+'%', n.ctr, b.ctr)+tile('Average position', n.position, n.position, b.position, true)+'</div>'+
+      '<div class="vis-panel"><div class="vis-panel-h">Almost page 1 (position 8–20)</div><p style="margin:8px 0 0;color:var(--ink-muted);font-size:13px">The easiest wins: improve the page shown next to each search.</p>'+gscTable(d.almostPage1, true)+'</div>'+
+      '<div class="vis-panel"><div class="vis-panel-h">Top searches</div>'+gscTable(d.topQueries, true)+'</div>'+
+      '<div class="vis-panel"><div class="vis-panel-h">Top pages</div>'+gscTable((d.topPages||[]).map(function(p){ return { query: gscPath(p.page), position: p.position, impressions: p.impressions, clicks: p.clicks }; }), false)+'</div>'+
+    '</div>';
+    gscCache = { at: Date.now(), html: host.innerHTML };
+  } catch(e){
+    if(activeTab !== 'google') return;
+    host.innerHTML = '<div class="empty"><div class="empty-icon">🔎</div><h3>Google Search</h3><p>'+esc(e.message)+'</p><button class="topbar-btn" onclick="renderGoogleTab(true)">Retry</button></div>';
+  }
+}
+if (typeof renderList === "function") {
+  var _sbcGscRenderList = renderList;
+  renderList = function(){
+    if (activeTab === "google") { renderGoogleTab(); return; }
+    return _sbcGscRenderList.apply(this, arguments);
+  };
+}
+
 (function injectVisitorStyles(){
   var css =
   '.vis-livepill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--gold-soft);padding:7px 14px;border-radius:30px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}'+
@@ -10971,6 +11050,7 @@ var SBC_TABS = [
   {id:'handyman', icon:'🔧', label:'Handyman'},
   {id:'visits',   icon:'📅', label:'Visits'},
   {id:'customers', icon:'👤', label:'Customers'},
+  {id:'google', icon:'🔎', label:'Google Search'},
 ];
 
 function sbcOpenDrawer() {

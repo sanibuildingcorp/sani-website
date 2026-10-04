@@ -122,6 +122,9 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["follow-up-switch", "POST", { ref: "SBC-260805-XQNQ", off: true }],
     /* Waits, then emails him the "stopped at step" alert. */
     ["form-alert-background", "POST", { sid: "visit12345", abandonAt: "2026-10-04T10:00:00Z" }],
+    /* His Search Console numbers, and the Google key file that reads them. */
+    ["search-console", "GET", null],
+    ["search-console", "POST", { action: "save-key", key: { type: "service_account" } }],
   ];
 
   for (const [name, method, body] of GATED) {
