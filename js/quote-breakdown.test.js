@@ -167,5 +167,21 @@ console.log('\nthe rest of the breakdown behaves as before\n');
     /View what is included in detail/.test(vm.runInContext('details(est,svc)', ctx)));
 }
 
+/* ══ THE SAME LINE TWICE ══════════════════════════════════════════════════
+   "Bag debris and carry out..." x2 on the customer list: two labor lines with
+   the same words (different hours) read as one thing twice once prices are off. */
+console.log('\nsame words twice, no prices\n');
+{
+  const L = [
+    { item: 'Bag debris and carry out through the service elevator', section: 'Bathroom', qty: 2, rate: 95 },
+    { item: 'Bag debris and carry out through the service elevator', section: 'Bathroom', qty: 3, rate: 65 },
+    { item: 'Final cleanup', section: 'Bathroom', qty: 1, rate: 95 },
+  ];
+  ctx.est = { showLaborLines: true, labor: L, materials: [] };
+  ctx.svc = SERVICE;
+  const rs = rows(vm.runInContext('details(est,svc)', ctx));
+  ok('each line is shown once', rs.length === 2, rs.length + ' rows');
+}
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

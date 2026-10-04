@@ -641,6 +641,9 @@ function details(e,s){
  let z=[];
  if(e.showLaborLines===true)A(e.labor).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Labor',price:(!SOW&&e.showLaborLinePrices===true&&ct.showLabor)}));
  if(e.showMaterialLines===true)A(e.materials).filter(x=>inSvc(x,s)&&!isOption(x.item)).forEach(x=>z.push({...x,t:'Material',price:(!SOW&&e.showMaterialLinePrices===true&&ct.showMat)}));
+ /* With no price on a row, two lines with the same words (e.g. the lead's hours and
+    the helper's hours) read as the same thing twice. Show each one once. */
+ const seen={};z=z.filter(x=>{if(x.price)return true;const k=x.t+'|'+C(itemText(x.item)).toLowerCase();if(seen[k])return false;seen[k]=1;return true});
  if(!z.length)return'';
  const anyPrice=z.some(x=>x.price);
  const label=anyPrice?'View detailed labor & materials':'View what is included in detail';
