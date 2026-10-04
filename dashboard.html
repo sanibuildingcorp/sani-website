@@ -11540,11 +11540,14 @@ function showSendLinkSuccess(msg) {
     var card=document.getElementById('edit-card');
     var r=rec();
     if(!card || !r || !r.estimate) return;
-    var ex=document.getElementById('sbcf-section'); if(ex) ex.remove();
+    var ex=document.getElementById('sbcf-section');
     var sec=document.createElement('div');
     sec.className='form-section sbcf-section';
     sec.id='sbcf-section';
     sec.innerHTML=sectionHTML();
+    /* Redrawn where it already sits (the Photos tab moves it there), so
+       adding an option never sends it back to another tab. */
+    if(ex && ex.parentNode){ ex.parentNode.replaceChild(sec,ex); return; }
     var anchor=card.querySelector('.cv-panel');
     if(anchor && anchor.parentNode) anchor.parentNode.insertBefore(sec,anchor);
     else card.appendChild(sec);
@@ -12799,6 +12802,8 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     if (/ modal-head | modal-actions /.test(c)) return null;            // stays outside the tabs
     if (/ step-bar /.test(c)) return 'skip';
     if (id === 'detail-invoices') return 'client';
+    /* "This finishing option move to the photos card" */
+    if (id === 'sbcf-section') return 'photos';
     if (/ cust-panel /.test(c)) return 'notes';
     if (id === 'scope-control-wrap') return 'scope';
     if (/ form-row /.test(c) && el.querySelector('#f-timeline')) return 'scope';

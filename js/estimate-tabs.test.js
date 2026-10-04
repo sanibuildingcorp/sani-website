@@ -38,6 +38,9 @@ ok('every Scope text box is sized to its whole text when the tab opens, with no 
 ok('...and again as he types, and when the service cards redraw', /addEventListener\('input', function\(\)\{ fit\(t\); \}\)/.test(js) && /renderScopeControl = function/.test(js));
 ok('the project title wraps instead of being cut off, and stays one line of text', /<textarea id="f-title" rows="1"[^>]*replace\(\/\\\\n\/g/.test(DASH));
 
+ok('finishing options sit on the Photos tab', /if \(id === 'sbcf-section'\) return 'photos';/.test(js));
+ok('...and redraw where they sit, so adding an option never sends them back to Estimate', /if\(ex && ex\.parentNode\)\{ ex\.parentNode\.replaceChild\(sec,ex\); return; \}/.test(DASH));
+
 /* History, run for real */
 const ctx = { console, String, Number, Array, Object, Date, Element: function () {}, renderEdit: function () {} };
 ctx.Element.prototype.scrollIntoView = function () {};
