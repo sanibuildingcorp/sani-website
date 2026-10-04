@@ -70,11 +70,14 @@ const between = (a, b) => SRC.slice(SRC.indexOf(a), SRC.indexOf(b));
     };
     vm.createContext(ctx);
     vm.runInContext(DASH.split('\n').find((l) => l.startsWith('var AI_JOB_MAX_MS')), ctx);
-    ['aiPollVerdict', 'sleepUntilVisibleOr', 'watchGeneration'].forEach((n) => vm.runInContext(ext(DASH, n), ctx));
+    vm.runInContext(DASH.split('\n').find((l) => l.startsWith('var GEN_STAGE_PCT')), ctx);
+    ctx.genProgressBar = () => {}; ctx.genProgressClear = () => {};
+    ['genPct', 'aiPollVerdict', 'sleepUntilVisibleOr', 'watchGeneration'].forEach((n) => vm.runInContext(ext(DASH, n), ctx));
     const out = await vm.runInContext('watchGeneration("A", "ai-1", Date.now() - 655000)', ctx);
-    ok('THE LABEL CARRIES THE STAGE from the second poll on: "Generating… 655s", then "· Reading the job", then "· Pricing the work"', labels.length === 3 && /Generating… 65[5-9]s$/.test(labels[0]) && /· Reading the job$/.test(labels[1]) && /· Pricing the work$/.test(labels[2]), labels.join(' || '));
+    /* Phase 2: the label is a percent and the stage (the seconds moved under the bar). */
+    ok('THE LABEL CARRIES THE STAGE from the second poll on, with its percent: "Generating… 1%", then "5% · Reading the job", then "40% · Pricing the work"', labels.length === 3 && /Generating… 1%$/.test(labels[0]) && /Generating… 5% · Reading the job$/.test(labels[1]) && /Generating… 40% · Pricing the work$/.test(labels[2]), labels.join(' || '));
     ok('...and the run still ends with the estimate', out && out.status === 'drafted' && out.customerFinalTotal === 5);
-    ok('a stage from another job is ignored', /if \(rec && rec\.aiJobId === jobId && rec\.aiStatus === "running"\) stage = String\(rec\.aiStage \|\| ""\);/.test(DASH));
+    ok('a stage from another job is ignored', /if \(rec && rec\.aiJobId === jobId && rec\.aiStatus === "running"\) \{ var ns = String\(rec\.aiStage \|\| ""\);/.test(DASH));
   }
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);

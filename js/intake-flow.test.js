@@ -65,6 +65,9 @@ function mkCtx(fetchImpl) {
     function showStep(s){ _steps.push('show:'+s); }
     function goToStep(s){ _steps.push('go:'+s); }
     function hideSiteMenu(){}
+    /* The analyzing screen and the question emoji (js/intake-analyze.test.js). */
+    function analyzeStart(){ return function(){ return Promise.resolve(); }; }
+    function questionEmoji(){ return ''; }
   `, ctx);
 
   ['planIntakeQuestions', 'showPlannedQuestion', 'renderAIQuestion', 'answerAIQuestion',

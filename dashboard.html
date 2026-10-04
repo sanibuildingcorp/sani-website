@@ -6345,11 +6345,40 @@ function sleepUntilVisibleOr(ms) {
 /* Watch a run to its end. Called both by the click that starts one and by the
    reconnect that finds one already going. Looks the button up every tick instead
    of holding a reference, because a re-render replaces the element. */
+/* ── HOW FAR ALONG, IN PERCENT ─────────────────────────────────────────
+     Simplewise shows "65% Building your estimate". The generator writes the
+   stage it is in (aiStage, generate-estimate-background markStage); each
+   stage has a share of the run, and inside a stage the number creeps up
+   slowly so a long stage still moves, never past the next stage's start.
+   It never goes backwards and says 100 only when the estimate is back. */
+var GEN_STAGE_PCT = [["Reading the job", 5], ["Checking current prices", 25], ["Pricing the work", 40], ["Checking the draft", 70], ["Looking up material prices", 80], ["Writing the scope of work", 90]];
+function genPct(stage, msInStage) {
+  var i = -1;
+  for (var k = 0; k < GEN_STAGE_PCT.length; k++) if (String(stage || "").indexOf(GEN_STAGE_PCT[k][0]) === 0) i = k;
+  var from = i < 0 ? 1 : GEN_STAGE_PCT[i][1];
+  var to = i < 0 ? GEN_STAGE_PCT[0][1] : (i + 1 < GEN_STAGE_PCT.length ? GEN_STAGE_PCT[i + 1][1] : 99);
+  var creep = Math.floor((msInStage || 0) / 6000);
+  return Math.min(to - 1, from + creep);
+}
+function genProgressBar(btn, pct, secs) {
+  var bar = document.getElementById("gen-progress");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "gen-progress";
+    bar.innerHTML = '<div style="height:8px;border-radius:4px;background:var(--line,#e3e7ee);overflow:hidden;margin:10px 0 4px"><div class="gp-fill" style="height:100%;width:0;background:var(--gold,#c8860a);transition:width .6s"></div></div><div class="gp-note" style="font-size:12px;color:var(--ink-muted,#8a9bb0)"></div>';
+    if (btn.parentNode) btn.parentNode.insertBefore(bar, btn.nextSibling);
+  }
+  bar.querySelector(".gp-fill").style.width = pct + "%";
+  bar.querySelector(".gp-note").textContent = secs + "s · you can close this window, it keeps working";
+}
+
+function genProgressClear() { var b = document.getElementById("gen-progress"); if (b) b.remove(); }
+
 async function watchGeneration(ref, jobId, startedAt, label) {
   /* "Generating… 655s" - "It's still loading". The server writes the stage
      it is in on the record (aiStage); the button says it after the seconds,
      so a long run reads as progress, not as a hang. */
-  var stage = "";
+  var stage = "", stageAt = Date.now(), lastPct = 0;
   while (true) {
     var elapsed = Date.now() - startedAt;
     var btn = document.getElementById("gen-btn");
@@ -6358,20 +6387,24 @@ async function watchGeneration(ref, jobId, startedAt, label) {
       /* "Adding the service…" on an added service: the same word as a full
          regeneration read as one, and one look at "Generating…" was enough
          to make him think the agreed estimate was being rebuilt. */
-      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + Math.round(elapsed / 1000) + 's' + (stage ? ' · ' + esc(stage) : '');
+      lastPct = Math.max(lastPct, genPct(stage, Date.now() - stageAt));
+      if (btn.style) { btn.style.whiteSpace = "normal"; btn.style.maxWidth = "100%"; }
+      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + lastPct + '%' + (stage ? ' · ' + esc(stage) : '');
+      genProgressBar(btn, lastPct, Math.round(elapsed / 1000));
     }
     var rec = null;
     try {
       var pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       if (pr.ok) rec = await pr.json();
     } catch (_) { rec = null; }
-    if (rec && rec.aiJobId === jobId && rec.aiStatus === "running") stage = String(rec.aiStage || "");
+    if (rec && rec.aiJobId === jobId && rec.aiStatus === "running") { var ns = String(rec.aiStage || ""); if (ns !== stage) { stage = ns; stageAt = Date.now(); } }
 
     var v = aiPollVerdict(rec, jobId, Date.now() - startedAt);
     if (v.state === "done") { aiJobClear(ref); return { estimate: rec.estimate, status: rec.status, customerFinalTotal: rec.customerFinalTotal }; }
-    if (v.state === "error") { aiJobClear(ref); throw new Error(v.message); }
+    if (v.state === "error") { aiJobClear(ref); genProgressClear(); throw new Error(v.message); }
     if (v.state === "timeout") {
       aiJobClear(ref);
+      genProgressClear();
       throw new Error("Still running after 15 minutes — check Netlify → Logs → Functions → generate-estimate-background");
     }
     await sleepUntilVisibleOr(3000);
@@ -12684,6 +12717,13 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 .et-hist .et-ht{flex:1;min-width:0;font-size:14px;line-height:1.5;overflow-wrap:break-word}
 .et-hist .et-hw{display:block;font-size:12px;color:var(--ink-muted,#8a9bb0);margin-top:2px}
 .et-empty{color:var(--ink-muted,#8a9bb0);font-size:14px;padding:18px 2px}
+.et-ai{margin:18px 0 6px;border:1.5px solid var(--gold,#c8860a);border-radius:14px;padding:12px;background:var(--gold-soft,#fbf6ea)}
+.et-ai-row{display:flex;gap:8px;align-items:flex-end}
+.et-ai textarea{flex:1;min-width:0;font-family:var(--body);font-size:16px;line-height:1.45;border:1px solid var(--line,#e3e7ee);border-radius:10px;padding:10px 12px;resize:none;min-height:46px;background:#fff;color:inherit}
+.et-ai button{flex:0 0 auto;border:0;border-radius:10px;background:var(--gold,#c8860a);color:#0a1628;font-weight:800;font-size:13px;letter-spacing:.5px;padding:12px 14px;cursor:pointer}
+.et-ai button:disabled{opacity:.6}
+.et-ai-reply{white-space:pre-wrap;font-size:14px;line-height:1.55;margin-top:10px;overflow-wrap:break-word}
+.et-ai-reply:empty{display:none}
 @media (max-width:640px){.et-tab{padding:9px 10px 7px;font-size:11.5px}}
 </style>
 <script>
@@ -12784,6 +12824,40 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     });
   }
   window.etGrow = growIn;
+
+  /* ── EDIT WITH AI ───────────────────────────────────────────────────────
+     Simplewise's box at the bottom of the plan and the price. It is the same
+     estimator as Ask AI on the Notes tab (askSend: same chat, same actions -
+     a change to the price lines still shows before/after and asks first);
+     the answer is shown right under the box he typed in. */
+  var LAST_AI = {};
+  function aiBox(key){
+    return '<div class="et-ai"><div class="et-ai-row"><textarea id="et-ai-' + key + '" rows="1" placeholder="✨ Edit with AI"></textarea>' +
+      '<button type="button" id="et-ai-btn-' + key + '" onclick="etAi(\'' + key + '\')">Send</button></div>' +
+      '<div class="et-ai-reply" id="et-ai-reply-' + key + '"></div></div>';
+  }
+  window.etAi = async function(key){
+    var r = rec(); if (!r) return;
+    var box = document.getElementById('et-ai-' + key), btn = document.getElementById('et-ai-btn-' + key), out = document.getElementById('et-ai-reply-' + key);
+    var text = box ? String(box.value || '').trim() : '';
+    var ask = document.getElementById('ask-text');
+    if (!text || !ask || typeof askSend !== 'function') return;
+    var ref = String(r.ref || '');
+    ask.value = text;
+    if (box) box.value = '';
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    LAST_AI[ref] = { key: key, text: 'Working on it… this can take 1–3 minutes.' };
+    if (out) out.textContent = LAST_AI[ref].text;
+    try { await askSend(); } catch (e) {}
+    var log = (typeof ASK_LOG !== 'undefined' && ASK_LOG[ref]) || [];
+    var last = null;
+    for (var i = log.length - 1; i >= 0; i--) { if (log[i] && log[i].role === 'assistant') { last = log[i]; break; } }
+    LAST_AI[ref] = { key: key, text: last ? (typeof aiPlain === 'function' ? aiPlain(last.text) : last.text) : '' };
+    /* a change that saved redrew the card: find the new box */
+    out = document.getElementById('et-ai-reply-' + key); btn = document.getElementById('et-ai-btn-' + key);
+    if (out) out.textContent = LAST_AI[ref].text;
+    if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+  };
   window.etShow = function(key){ show(key); var m = document.getElementById('edit-modal'); if (m) m.scrollTop = 0; };
 
   function build(){
@@ -12831,6 +12905,16 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     }
     if (!panes.photos.children.length) panes.photos.innerHTML = '<div class="et-empty">No photos on this job yet.</div>';
     panes.history.innerHTML = historyHtml(r);
+    ['scope', 'estimate'].forEach(function(k){
+      var holder = document.createElement('div'); holder.innerHTML = aiBox(k);
+      var el = holder.firstChild;
+      var p = panes[k];
+      p.insertBefore(el, p.firstChild);
+      var last = LAST_AI[r.ref];
+      if (last && last.key === k) el.querySelector('.et-ai-reply').textContent = last.text;
+      var ta = el.querySelector('textarea');
+      ta.addEventListener('input', function(){ ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 2 + 'px'; });
+    });
 
     var bar = document.createElement('div'); bar.className = 'et-bar';
     var need = typeof threadNeedsReply === 'function' && threadNeedsReply(r);
