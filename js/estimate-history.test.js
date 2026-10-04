@@ -84,7 +84,7 @@ const last = () => { const h = stored().history || []; return h[h.length - 1] ||
     const rmLine = rec.history[rec.history.length - 1];
     ok('REMOVED SECTION: title, price, the total back', rmLine.kind === 'removed' && /^Removed section Painting \(\$625\.00\); total \$2,029\.00 -> \$1,404\.00$/.test(rmLine.text), rmLine.text);
     const BG = fs.readFileSync(path.join(ROOT, 'netlify/functions/generate-estimate-background.js'), 'utf8');
-    ok('A FULL REGENERATION leaves its line: priced / re-priced / re-read, the line counts, the total move', /history\.note\(record, "regenerated", \(previousEstimate && \(previousEstimate\.labor \|\| \[\]\)\.length \? \(body\.reanalyze === true \? "Re-read and re-priced by the AI" : "Re-priced by the AI"\) : "Priced by the AI"\)/.test(BG));
+    ok('A FULL REGENERATION leaves its line: priced / re-priced / re-read, the line counts, the total move', /history\.note\(record, "regenerated", \(previousEstimate && \(previousEstimate\.labor \|\| \[\]\)\.length \? \(body\.reanalyze === true \? "Re-read and re-priced by the AI" : "Re-priced by the AI"\) : \(body\.autoDraft === true \? "Draft made automatically when the request arrived" : "Priced by the AI"\)\)/.test(BG));
     const declined = clone(REC); declined.ref = 'SBC-DECL'; declined.status = 'sent'; STORES.estimates.set('SBC-DECL', declined);
     await post(FN('quote-response'), { ref: 'SBC-DECL', action: 'decline', declineReason: 'Too expensive' }, '');
     ok('CUSTOMER DECLINED, with the reason', STORES.estimates.get('SBC-DECL').history.slice(-1)[0].text === 'Customer declined: Too expensive');

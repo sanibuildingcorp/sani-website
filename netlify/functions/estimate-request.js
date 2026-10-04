@@ -6,6 +6,7 @@
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const ADDR = require("./lib/addresses");
+const autoDraft = require("./lib/auto-draft");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -34,8 +35,12 @@ exports.handler = async function (event) {
 
     // ============ SAVE TO BLOBS ============
     // This is the new piece — dashboard reads from here
+    let savedNew = null;
     try {
       const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
+      /* A retried submit lands on the same ref: it must not start a second draft. */
+      let existed = false;
+      try { existed = !!(ref && (await store.get(ref, { type: "json" }))); } catch (_) { existed = false; }
       const record = {
         ref,
         status: "new", // new | drafted | sent | accepted | declined | invoiced | paid
@@ -83,6 +88,7 @@ exports.handler = async function (event) {
       };
       await store.setJSON(ref, record);
       console.log("Saved to Blobs:", ref);
+      if (!existed) savedNew = record;
     } catch (blobErr) {
       console.error("Blobs save failed:", blobErr.message);
       // Don't fail the whole request if Blobs fails — emails still go
@@ -117,6 +123,12 @@ exports.handler = async function (event) {
           console.error("SMS failed:", e.message)
         )
       );
+    }
+
+    /* A draft is waiting when he opens it (lib/auto-draft.js): only for a
+       request this call created, never one that already existed. */
+    if (savedNew) {
+      tasks.push(autoDraft.kick(savedNew).then(function (r) { console.log("auto draft", ref, JSON.stringify(r)); }));
     }
 
     await Promise.all(tasks);
