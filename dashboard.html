@@ -12661,6 +12661,196 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 </script>
 <!-- ===== END CONTRACT PANEL ===== -->
 
+<!-- ===== ESTIMATE TABS (Phase 1) ===== -->
+<style>
+/* "I like how structured in there, each estimates have on top them screen
+   where i can click and read full texts in mobile version" - Simplewise.
+   The estimate card was one long page in five steps. The same sections now
+   sit behind tabs; nothing in them changed. */
+.et-bar{position:sticky;top:0;z-index:6;display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--bg,#fff);border-bottom:1px solid var(--line,#e3e7ee);margin:0 -4px 14px;padding:0 4px}
+.et-bar::-webkit-scrollbar{display:none}
+.et-tab{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;border-bottom:3px solid transparent;padding:9px 12px 7px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:.3px;color:var(--ink-muted,#8a9bb0);cursor:pointer;white-space:nowrap}
+.et-tab .et-ic{font-size:18px;line-height:1}
+.et-tab.on{color:var(--gold-2,#a86f00);border-bottom-color:var(--gold,#c8860a)}
+.et-tab .et-dot{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:8px;background:#d64545;color:#fff;font-size:10px;padding:0 4px;margin-left:3px}
+.et-pane{display:none}
+.et-pane.on{display:block}
+.et-tabbed .step-bar{display:none}
+.et-client-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}
+.et-client-head h3{margin:0}
+.et-hist{list-style:none;margin:0;padding:0}
+.et-hist li{display:flex;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line,#e3e7ee)}
+.et-hist .et-hi{flex:0 0 26px;font-size:18px;text-align:center}
+.et-hist .et-ht{flex:1;min-width:0;font-size:14px;line-height:1.5;overflow-wrap:break-word}
+.et-hist .et-hw{display:block;font-size:12px;color:var(--ink-muted,#8a9bb0);margin-top:2px}
+.et-empty{color:var(--ink-muted,#8a9bb0);font-size:14px;padding:18px 2px}
+@media (max-width:640px){.et-tab{padding:9px 10px 7px;font-size:11.5px}}
+</style>
+<script>
+(function(){
+  var TABS = [
+    { key: 'estimate', label: 'Estimate', icon: '🧮' },
+    { key: 'scope',    label: 'Scope',    icon: '📋' },
+    { key: 'photos',   label: 'Photos',   icon: '📷' },
+    { key: 'notes',    label: 'Notes',    icon: '📝' },
+    { key: 'messages', label: 'Messages', icon: '💬' },
+    { key: 'client',   label: 'Client',   icon: '👤' },
+    { key: 'history',  label: 'History',  icon: '🕘' }
+  ];
+  /* The tab open on each record, so a save or a regenerate (which redraw the
+     whole card) never throws him back to the first tab. */
+  var OPEN = {};
+
+  function esc3(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function when(iso){
+    var d = new Date(iso); if (isNaN(d)) return '';
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  /* currentRecord is a top-level let: not on window, but visible here. */
+  function rec(){ return typeof currentRecord !== 'undefined' ? currentRecord : null; }
+  function hasPrice(r){ var e = (r && r.estimate) || {}; return (e.labor || []).length > 0 || (e.materials || []).length > 0; }
+
+  /* ── WHAT HAPPENED, NEWEST FIRST ──────────────────────────────────────
+     record.history is written on the server by every step (lib/history.js);
+     the dates on the record fill in what happened before that log existed. */
+  var KIND_ICON = { sent: '📨', accepted: '✅', declined: '❌', review: '⭐', question: '❓', regenerated: '✨', added: '➕', removed: '➖', reworded: '✏️', saved: '💾', total: '💲', customer: '👤', services: '🧾', email: '✉️', opened: '👀', submitted: '📥', completed: '🏁', invoice: '💳', paid: '💰' };
+  function historyItems(r){
+    var out = [], seen = {};
+    function add(at, kind, text){ if (!at || !text) return; var k = kind + '|' + String(at).slice(0, 16); if (seen[k]) return; seen[k] = 1; out.push({ at: at, kind: kind, text: text }); }
+    (Array.isArray(r.history) ? r.history : []).forEach(function(h){ if (h && h.at && h.text) add(h.at, h.kind || 'note', h.text); });
+    var logged = function(kind){ return (r.history || []).some(function(h){ return h && h.kind === kind; }); };
+    add(r.submittedAt, 'submitted', 'Request received' + (r.source === 'email' ? ' by email' : r.source === 'contact-form' ? ' from the contact form' : ' from the estimate form'));
+    if (!logged('sent')) add(r.sentAt, 'sent', 'Estimate sent to the customer');
+    if (r.openedAt) add(r.openedAt, 'opened', 'Customer opened the estimate');
+    if (r.lastOpenedAt && r.lastOpenedAt !== r.openedAt) add(r.lastOpenedAt, 'opened', 'Customer opened it again' + (r.openCount > 1 ? ' (' + r.openCount + ' times in all)' : ''));
+    if (!logged('accepted')) add(r.acceptedAt, 'accepted', 'Customer approved the estimate');
+    if (!logged('declined')) add(r.declinedAt, 'declined', 'Customer declined the estimate');
+    add(r.completedAt, 'completed', 'Job marked completed');
+    (Array.isArray(r.invoices) ? r.invoices : []).forEach(function(inv){
+      if (!inv) return;
+      add(inv.sentAt || inv.createdAt, 'invoice', 'Invoice sent' + (inv.amount ? ' - $' + Number(inv.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''));
+      if (inv.paidAt) add(inv.paidAt, 'paid', 'Invoice paid');
+    });
+    out.sort(function(a, b){ return String(b.at).localeCompare(String(a.at)); });
+    return out;
+  }
+  function historyHtml(r){
+    var items = historyItems(r);
+    if (!items.length) return '<div class="et-empty">Nothing has happened on this estimate yet.</div>';
+    return '<ul class="et-hist">' + items.map(function(h){
+      return '<li><span class="et-hi">' + (KIND_ICON[h.kind] || '•') + '</span><span class="et-ht">' + esc3(h.text) + '<span class="et-hw">' + esc3(when(h.at)) + '</span></span></li>';
+    }).join('') + '</ul>';
+  }
+
+  /* Which pane each top-level section of the card goes to. Anything new or
+     unknown goes to Estimate, so nothing is ever lost from the card. */
+  function paneFor(el){
+    var id = el.id || '', c = ' ' + (el.className || '') + ' ';
+    if (/ modal-head | modal-actions /.test(c)) return null;            // stays outside the tabs
+    if (/ step-bar /.test(c)) return 'skip';
+    if (id === 'detail-invoices') return 'client';
+    if (/ cust-panel /.test(c)) return 'notes';
+    if (id === 'scope-control-wrap') return 'scope';
+    if (/ form-row /.test(c) && el.querySelector('#f-timeline')) return 'scope';
+    if (/ form-section /.test(c) && el.querySelector('#f-scope')) return 'scope';
+    if (/ form-section /.test(c) && el.querySelector('#quote-photo-preview')) return 'photos';
+    return 'estimate';
+  }
+
+  function show(key){
+    var card = document.getElementById('edit-card'); if (!card) return;
+    card.querySelectorAll('.et-tab').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-k') === key); });
+    card.querySelectorAll('.et-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-k') === key); });
+    var cr = rec(); if (cr && cr.ref) OPEN[cr.ref] = key;
+    var bar = card.querySelector('.et-bar'), on = card.querySelector('.et-tab.on');
+    if (bar && on) { var l = on.offsetLeft - 40; bar.scrollLeft = l < 0 ? 0 : l; }
+  }
+  window.etShow = function(key){ show(key); var m = document.getElementById('edit-modal'); if (m) m.scrollTop = 0; };
+
+  function build(){
+    var card = document.getElementById('edit-card');
+    var r = rec();
+    if (!card || !r || card.querySelector('.et-bar')) return;
+    var head = card.querySelector(':scope > .modal-head');
+    if (!head) return;                                                   // a loading or error screen
+    var panes = {};
+    TABS.forEach(function(t){ var p = document.createElement('div'); p.className = 'et-pane'; p.setAttribute('data-k', t.key); panes[t.key] = p; });
+
+    /* Move every section into its pane, in order; inline handlers and ids go with it. */
+    var actions = null;
+    [].slice.call(card.children).forEach(function(el){
+      if (el === head) return;
+      var k = paneFor(el);
+      if (k === null) { if (/modal-actions/.test(el.className)) actions = el; return; }
+      if (k === 'skip') { el.remove(); return; }
+      panes[k].appendChild(el);
+    });
+
+    /* The request card holds four things; each goes to its own tab. */
+    var cust = panes.notes.querySelector('.cust-panel:not(#detail-invoices)');
+    if (cust) {
+      var grid = cust.querySelector('.cust-grid');
+      if (grid) {
+        var ch = document.createElement('div'); ch.className = 'et-client-head';
+        ch.innerHTML = '<h3>👤 CLIENT</h3><button type="button" onclick="sbcEditCustomer()" style="font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold-2);padding:6px 12px;border-radius:8px;cursor:pointer">✏️ Edit</button>';
+        var wrap = document.createElement('div'); wrap.className = 'form-section';
+        wrap.appendChild(ch); wrap.appendChild(grid);
+        var st = document.createElement('div'); st.className = 'cust-field'; st.style.marginTop = '10px';
+        st.innerHTML = '<span class="lbl">Status</span><span class="val">' + esc3(String(r.status || 'new').toUpperCase()) + '</span>';
+        wrap.appendChild(st);
+        panes.client.insertBefore(wrap, panes.client.firstChild);
+      }
+      var strip = cust.querySelector('#req-photos-strip');
+      if (strip) {
+        var ps = document.createElement('div'); ps.className = 'form-section';
+        ps.innerHTML = '<h3>📥 FROM THE CUSTOMER</h3>';
+        ps.appendChild(strip);
+        panes.photos.insertBefore(ps, panes.photos.firstChild);
+      }
+      var cnv = cust.querySelector('#cnv-section');
+      if (cnv) panes.messages.appendChild(cnv);
+    }
+    if (!panes.photos.children.length) panes.photos.innerHTML = '<div class="et-empty">No photos on this job yet.</div>';
+    panes.history.innerHTML = historyHtml(r);
+
+    var bar = document.createElement('div'); bar.className = 'et-bar';
+    var need = typeof threadNeedsReply === 'function' && threadNeedsReply(r);
+    bar.innerHTML = TABS.map(function(t){
+      return '<button type="button" class="et-tab" data-k="' + t.key + '" onclick="etShow(\'' + t.key + '\')"><span class="et-ic">' + t.icon + '</span><span>' + t.label + (t.key === 'messages' && need ? '<span class="et-dot">!</span>' : '') + '</span></button>';
+    }).join('');
+
+    var after = head.nextSibling;
+    card.insertBefore(bar, after);
+    TABS.forEach(function(t){ card.insertBefore(panes[t.key], actions || null); });
+    if (actions) card.appendChild(actions);
+    card.classList.add('et-tabbed');
+
+    /* A new request opens on what the customer wrote; a priced one on the price. */
+    var key = OPEN[r.ref] || (need ? 'messages' : hasPrice(r) ? 'estimate' : 'notes');
+    show(key);
+  }
+
+  /* Code that scrolls to something on the card ("Reply needed", the send box,
+     the generate button) first opens the tab that holds it. */
+  var _siv = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function(){
+    try {
+      var pane = this.closest && this.closest('#edit-card .et-pane');
+      if (pane && !pane.classList.contains('on')) show(pane.getAttribute('data-k'));
+    } catch (e) {}
+    return _siv.apply(this, arguments);
+  };
+
+  window.etBuild = build;
+  window.etHistoryItems = historyItems;
+  if (typeof renderEdit === 'function') {
+    var _orig = renderEdit;
+    renderEdit = function(){ var out = _orig.apply(this, arguments); try { build(); } catch (e) { console.error('estimate tabs', e); } return out; };
+  }
+})();
+</script>
+<!-- ===== END ESTIMATE TABS ===== -->
+
 <script>
 /* ═══════════ CUSTOMERS TAB — unified inbox + per-customer history (Jul 30 2026) ═══════════ */
 var custCache = null, custOpenEmail = null, custFilter = '', custView = [], custRestoreFocus = false;
