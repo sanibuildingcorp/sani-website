@@ -115,9 +115,7 @@ const MAIL = {
   console.log('\n4. The buttons\n');
   {
     ok('"🔍 Check before sending" in the Ask AI chips', /onclick="askCheck\(\)">🔍 Check before sending<\/button>/.test(DASH));
-    /* "Both we have in other cards and they are double" (Oct 4): the Send-step
-       copy is gone; the Ask AI chip on the Notes tab is the one place. */
-    ok('...and only there: no second copy on the Estimate tab', !/onclick="askCheck\(\)" style="width:100%/.test(DASH));
+    ok('...and at the top of step 5 (Send it)', /stepBar\(5, 'Send it'[^\n]*\n\s*'<button type="button" onclick="askCheck\(\)"[^>]*>🔍 CHECK BEFORE SENDING/.test(DASH));
     ok('the text it sends is the one the estimator recognises', /var ASK_CHECK_TEXT = "Check before sending: read her emails and the plans against every line and tell me what to fix\.";/.test(DASH) && /const CHECK_RE = \/\^\\s\*check before sending\\b\/i;/.test(A));
     ok('both the generator and the chat read plans through the same module', /jobDocuments\.documentBlocks\(request, record\)/.test(GEN) && /jobDocuments\.documentBlocks\(jobRec\.request, jobRec\)/.test(A));
   }

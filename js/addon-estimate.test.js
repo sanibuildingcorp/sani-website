@@ -114,9 +114,7 @@ const PARENT = {
 
   console.log('\n4. The dashboard: the button, the badges, the flow\n');
   {
-    /* "Remove add separate estimate" (Oct 4): the button is gone from the card;
-       addonCreate stays for the assistant's and any future caller. */
-    ok('THE BUTTON is no longer on the estimate card', !/onclick="addonCreate\(\)"/.test(DASH));
+    ok('THE BUTTON sits under the scope link, not on an add-on itself', /currentRecord && currentRecord\.parentRef \? '' :\s*'<button type="button" onclick="addonCreate\(\)"[^>]*>➕ ADD ADDITIONAL WORK \(SEPARATE ESTIMATE\)<\/button>'/.test(DASH));
     ok('the list badges say ADD-ON TO … and N ADD-ONS', /➕ ADD-ON TO ' \+ esc\(e\.parentRef\)/.test(DASH) && /e\.addonRefs\.length \+ ' ADD-ON' \+ \(e\.addonRefs\.length > 1 \? 'S' : ''\)/.test(DASH));
     ok('the record header names the link both ways', /addonHeaderHtml\(r\) \+/.test(DASH));
     ok('the manual "new invoice" create now sends the key', /sbcFetch\('\/\.netlify\/functions\/create-estimate',\{\s*method:'POST',/.test(DASH) && !/[^c]fetch\('\/\.netlify\/functions\/create-estimate'/.test(DASH));

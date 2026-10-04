@@ -3,19 +3,15 @@
  *   "There is a so many double times with different prices" - one shared line
  *   (debris, protection, cleanup) split into 0.77 hrs + 2.23 hrs on ONE card.
  *   Same card, words, unit and rate -> one line, same money.
- *   The server lib and the dashboard copy must agree.
+ *   (The estimate screen went back to the version before the tabs; the join
+ *   runs on new estimates only.)
  */
 "use strict";
-const fs = require("fs"), path = require("path"), vm = require("vm");
+const fs = require("fs"), path = require("path");
 const { joinSameLines } = require("../netlify/functions/lib/join-lines");
-const DASH = fs.readFileSync(path.join(__dirname, "..", "dashboard.html"), "utf8");
 const GEN = fs.readFileSync(path.join(__dirname, "..", "netlify", "functions", "generate-estimate-background.js"), "utf8");
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true ? "PASS  " : "FAIL  ") + n + (d ? "\n        " + d : "")); };
-const cut = (name) => { const s = DASH.search(new RegExp("^function " + name + "\\s*\\(", "m")); if (s < 0) throw new Error("missing " + name); let d = 0; for (let j = DASH.indexOf("{", s); j < DASH.length; j++) { if (DASH[j] === "{") d++; else if (DASH[j] === "}") { d--; if (!d) return DASH.slice(s, j + 1); } } };
-const ctx = { Math, Number, String, JSON, Object, Array };
-vm.createContext(ctx);
-vm.runInContext(["quoteNorm", "joinSameLines", "joinEstimateLines", "quoteCompareCopy"].map(cut).join("\n"), ctx);
 
 const L = () => [
   { section: "Bathroom", item: "Bag debris and carry out through the service elevator", qty: 0.77, unit: "hrs", rate: 41.6, sbcSharedSplit: true },
@@ -28,7 +24,7 @@ const L = () => [
 ];
 const money = (a) => Math.round(a.reduce((s, l) => s + l.qty * l.rate, 0) * 100) / 100;
 
-[["server lib", joinSameLines], ["dashboard", (a) => ctx.joinSameLines(a)]].forEach(([who, join]) => {
+[["server lib", joinSameLines]].forEach(([who, join]) => {
   const before = L(), after = join(before);
   ok(who + ": the split pieces on one card are one line", after.filter((l) => /Bag debris/.test(l.item) && l.section === "Bathroom").length === 1 && after.filter((l) => /haul-away/.test(l.item)).length === 1);
   ok(who + ": ...with the whole quantity", after.find((l) => /Bag debris/.test(l.item) && l.section === "Bathroom").qty === 3 && after.find((l) => /haul-away/.test(l.item)).qty === 1);
@@ -38,9 +34,6 @@ const money = (a) => Math.round(a.reduce((s, l) => s + l.qty * l.rate, 0) * 100)
   ok(who + ": the input is not changed", before.length === 7 && before[0].qty === 0.77);
 });
 
-ok("an estimate sent with split lines and opened (joined) is not \"You changed it\"",
-  JSON.stringify(ctx.quoteCompareCopy({ labor: L(), materials: [] })) === JSON.stringify(ctx.quoteCompareCopy({ labor: ctx.joinSameLines(L()), materials: [] })));
-ok("the dashboard joins on open", /joinEstimateLines\(est\);/.test(DASH));
 ok("a new estimate is joined before it is saved", /estimate = consolidateCustomerPresentation\(estimate, projectAnalysis, input\);\n[^\n]*\n\s*estimate = joinEstimateLines\(estimate\);/.test(GEN));
 
 console.log("\n" + pass + " passed, " + fail + " failed\n");
