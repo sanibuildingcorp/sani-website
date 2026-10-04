@@ -46,7 +46,9 @@ ok('NO RED anywhere in the look (its rules, not its comments)', !/#(c00|f00|e00|
 {
   const words = (s) => s.replace(/<nav class="n-tabs"[\s\S]*?<\/nav>/, '').replace(/<!-- QUICK-ESTIMATE:START -->[\s\S]*?<!-- QUICK-ESTIMATE:END -->/, '').replace(/<!-- BOROUGH-CARDS:START -->[\s\S]*?<!-- BOROUGH-CARDS:END -->/, '').replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<svg[\s\S]*?<\/svg>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
     /* the Google review count moves as reviews come in; it is not the look */
-    .replace(/\b\d{2,3}(?= (?:Google )?[Rr]eviews?\b)/g, 'N');
+    .replace(/\b\d{2,3}(?= (?:Google )?[Rr]eviews?\b)/g, 'N')
+    /* the bottom bar's line under "Free Estimate" ("About 30 seconds" became "Reply within 24 hours") */
+    .replace(/Free Estimate (About 30 seconds|Reply within 24 hours)/g, 'Free Estimate LINE');
   let before = null; try { before = cp.execSync('git show HEAD:bathroom-renovation.html', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString(); } catch (e) {}
   if (before && /NATURAL-CSS/.test(before)) before = null;  /* already committed: compare with the last page without it */
   if (!before) { try { const sha = cp.execSync('git log --format=%H -n 1 -S "NATURAL-CSS:START" -- bathroom-renovation.html', { cwd: ROOT }).toString().trim(); if (sha) before = cp.execSync('git show ' + sha + '~1:bathroom-renovation.html', { cwd: ROOT }).toString(); } catch (e) {} }
