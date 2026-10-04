@@ -16,7 +16,7 @@ const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true 
 const cut = (name) => { const s = DASH.search(new RegExp('^function ' + name + '\\s*\\(', 'm')); let d = 0; for (let j = DASH.indexOf('{', s); j < DASH.length; j++) { if (DASH[j] === '{') d++; else if (DASH[j] === '}') { d--; if (!d) return DASH.slice(s, j + 1); } } };
 const ctx = { Math, Number, String, JSON, Object, Array, esc: (x) => String(x), scopeSectionOf: (l) => l.section || '' };
 vm.createContext(ctx);
-vm.runInContext(['calcTotal', 'calcCustomerView', 'quoteNorm', 'quoteMovedSinceSent', 'sentVersionHtml'].map(cut).join('\n'), ctx);
+vm.runInContext(['calcTotal', 'calcCustomerView', 'quoteNorm', 'joinSameLines', 'joinEstimateLines', 'quoteCompareCopy', 'quoteMovedSinceSent', 'sentVersionHtml'].map(cut).join('\n'), ctx);
 
 const est = () => ({ markupPct: 30, showLaborCost: true, showMaterialsCost: false, labor: [{ section: 'Windows', item: 'Reverse the curtain track', qty: 2, unit: 'hrs', rate: 75.1 }], materials: [{ section: 'Windows', item: 'Track stop', qty: 1, unit: 'ea', rate: 120.26 }], projectIncluded: [] });
 const quoted = Math.round(vm.runInContext('calcCustomerView', ctx)(est()).customerTotal * 100) / 100;

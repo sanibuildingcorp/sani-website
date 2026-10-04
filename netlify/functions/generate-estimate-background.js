@@ -19,6 +19,7 @@ const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const { applyDeterministicPricing, consolidateCustomerPresentation } = require("./lib/deterministic-pricing");
 const { writeCustomerScope } = require("./lib/scope-writer");
+const { joinEstimateLines } = require("./lib/join-lines");
 const { syncScopeText } = require("./lib/scope-text");
 const { tidyCards, bySize, pricedNames } = require("./lib/shared-once");
 const genLab = require("./lib/generator-lab");
@@ -360,6 +361,8 @@ exports.handler = async function handler(event) {
 
     estimate = finalizeCustomerPresentation(estimate, projectAnalysis, input);
     estimate = consolidateCustomerPresentation(estimate, projectAnalysis, input);
+    /* Split pieces of one shared line that landed on the same card: one line again. */
+    estimate = joinEstimateLines(estimate);
     /* ONE SCOPE OF WORK. finalizeCustomerPresentation wrote the analyst's raw
        scope blocks and the price lines into scopeOfWork - the same work twice,
        in the analyst's words - and the customer never saw that text: he sees
