@@ -12736,7 +12736,10 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
    the main buttons (Generate, Send) and the open tab. Only this screen:
    the variables are redefined on #edit-card, the rest of the dashboard
    keeps its look. */
-#edit-card{--brand:#b8930a;--brand-2:#96770a;--gold:#2f6fb5;--gold-2:#1d4f8a;--gold-soft:#eef3f9;--line:#e2e6ec}
+#edit-card{--brand:#b8930a;--brand-2:#96770a;--gold:#1a2433;--gold-2:#1a2433;--gold-soft:#f2f4f7;--line:#e2e6ec}
+/* "Change to black inside the buttons": the words on the outline buttons are
+   black, their borders a quiet gray; filled gold buttons keep their gold. */
+#edit-card button:not(.et-tab):not(.btn-ai):not(.btn-primary):not(#gen-btn):not(.btn-danger):not(.sc-del):not(.ev-ic):not([style*="color:#fff"]):not([style*="color: #fff"]):not([style*="color:white"]){color:#1a2433!important;border-color:#cfd5de!important}
 #edit-card .modal-head h2,#edit-card h3,#edit-card h4,#edit-card .section-title,#edit-card .cust-panel h3,#edit-card .form-section h3,#edit-card .ai-bar h4{color:var(--ink,#1a2433)!important}
 #edit-card .btn-ai,#edit-card #gen-btn,#edit-card .btn-primary,#edit-card .et-ai button{background:var(--brand)!important;color:#0a1628!important}
 #edit-card .btn-ai:hover:not(:disabled),#edit-card .btn-primary:hover:not(:disabled){background:var(--brand-2)!important}
