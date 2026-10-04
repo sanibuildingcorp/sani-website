@@ -163,7 +163,7 @@ console.log('\nthe control is a real checkbox, in the right state\n');
     /scopeEditItem\(0,'included',2,/.test(on));
   ok('a quote mark in the wording cannot break the row',
     vm.runInContext("scopeItemRow(0,'included',0,'He said \"no\" & left',true)", ctx)
-      .indexOf('>He said &quot;no&quot; &amp; left</textarea>') !== -1);   /* a wrapping text box now (Oct 4), still escaped */
+      .indexOf('value="He said &quot;no&quot; &amp; left"') !== -1);
 }
 
 /* ══ IT HAS TO SURVIVE A SAVE ═════════════════════════════════════════════ */

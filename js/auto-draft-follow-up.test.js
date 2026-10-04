@@ -92,7 +92,7 @@ const ad = require(path.join(ROOT, 'netlify/functions/lib/auto-draft'));
   ok('History says the draft was made automatically', /Draft made automatically when the request arrived/.test(GEN));
   const D = fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8');
   ok('opening a record whose draft is still running shows its progress', /currentRecord\.aiStatus === "running" && \/\^auto-\/\.test/.test(D));
-  ok('the Messages tab shows the follow-ups and a switch', /🔔 AUTOMATIC FOLLOW-UP EMAILS/.test(D) && /etFollowUp\(/.test(D));
+  ok('the estimate shows the follow-ups and a switch', /🔔 AUTOMATIC FOLLOW-UP EMAILS/.test(D) && /etFollowUp\(/.test(D));
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

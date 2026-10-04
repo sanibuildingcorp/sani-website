@@ -16,13 +16,13 @@ const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true 
 const cut = (name) => { const s = DASH.search(new RegExp('^function ' + name + '\\s*\\(', 'm')); let d = 0; for (let j = DASH.indexOf('{', s); j < DASH.length; j++) { if (DASH[j] === '{') d++; else if (DASH[j] === '}') { d--; if (!d) return DASH.slice(s, j + 1); } } };
 const ctx = { Math, Number, String, JSON, Object, Array, esc: (x) => String(x), scopeSectionOf: (l) => l.section || '' };
 vm.createContext(ctx);
-vm.runInContext(['calcTotal', 'calcCustomerView', 'quoteNorm', 'joinSameLines', 'joinEstimateLines', 'quoteCompareCopy', 'quoteMovedSinceSent', 'sentVersionHtml'].map(cut).join('\n'), ctx);
+vm.runInContext(['calcTotal', 'calcCustomerView', 'quoteNorm', 'quoteMovedSinceSent', 'sentVersionHtml'].map(cut).join('\n'), ctx);
 
 const est = () => ({ markupPct: 30, showLaborCost: true, showMaterialsCost: false, labor: [{ section: 'Windows', item: 'Reverse the curtain track', qty: 2, unit: 'hrs', rate: 75.1 }], materials: [{ section: 'Windows', item: 'Track stop', qty: 1, unit: 'ea', rate: 120.26 }], projectIncluded: [] });
 const quoted = Math.round(vm.runInContext('calcCustomerView', ctx)(est()).customerTotal * 100) / 100;
 const record = (live, sent, extra) => Object.assign({ estimate: live, sentVersion: { n: 1, at: '2026-09-25T16:30:00Z', estimate: sent, customerFinalTotal: null } }, extra || {});
 const says = (r) => ctx.sentVersionHtml(r);
-const matches = (h) => /Same as your draft\./.test(h) && !/changed/.test(h);
+const matches = (h) => /Your draft matches it\./.test(h) && !/changed/.test(h);
 
 ok('nothing changed: "Your draft matches it"', matches(says(record(est(), est()))));
 {
@@ -40,7 +40,7 @@ ok('THE CUSTOMER ACCEPTING - the price stamped after sending - IS NOT A CHANGE',
 }
 {
   const a = est(); a.labor[0].rate = 80;
-  ok('A NEW RATE IS A CHANGE - and it says so plainly', /You changed it\./.test(says(record(a, est()))) && /Press Send to update\./.test(says(record(a, est()))));
+  ok('A NEW RATE IS A CHANGE - and it says so plainly', /You changed the price or the work after sending\./.test(says(record(a, est()))) && /The customer still sees version 1\. Press Send when you want them to see version 2\./.test(says(record(a, est()))));
 }
 {
   const a = est(); a.labor.push({ section: 'Windows', item: 'Tidy the cords', qty: 1, unit: 'hrs', rate: 75 });

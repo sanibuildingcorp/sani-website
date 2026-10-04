@@ -1404,11 +1404,7 @@ body {
 .sc-row-off .sc-item{opacity:.5;text-decoration:line-through;background:#fafbfc}
 .sc-offtag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);flex:0 0 auto;padding:0 4px}
 .sc-offn{font-weight:700;color:var(--gold)}
-.sc-item{flex:1;min-width:0;font-size:14px;line-height:1.45;border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-family:inherit;color:inherit;background:#fff;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word}
-/* The text gets the whole width; move and delete go under it, on the right. */
-.sc-row{flex-wrap:wrap}
-.sc-row .sc-item{flex:1 1 calc(100% - 34px)}
-.sc-row .sc-move{margin-left:auto}
+.sc-item{flex:1;min-width:0;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:6px 8px}
 .sc-move{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:5px;background:#fff;max-width:110px}
 .sc-del{border:none;background:none;color:#c0392b;font-size:14px;cursor:pointer;padding:2px 5px}
 .sc-add{font-size:12px;border:1px dashed var(--line);background:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:var(--ink-muted)}
@@ -4954,16 +4950,11 @@ function renderEdit() {
   const sectionsChecked = est.showSectionSubtotals !== false;
   const laborLinesChecked = est.showLaborLines === true;
   const materialLinesChecked = est.showMaterialLines === true;
-  /* A breakdown is a LIST of what the customer is getting, never what each line
-     costs. The "...with prices" choices were removed at his request; an older
-     estimate that had one on is switched off here, so the next Save and Send
-     shows the lists without prices. */
-  if (est.showLaborLinePrices === true || est.showMaterialLinePrices === true) {
-    est.showLaborLinePrices = false;
-    est.showMaterialLinePrices = false;
-  }
-  /* The same work split into pieces on one card (0.77 hrs + 2.23 hrs) is one line. */
-  joinEstimateLines(est);
+  /* Default OFF: a breakdown is a LIST of what the customer is getting. Prices in it
+     are a separate decision, and showing them while the matching cost toggle is off
+     would leak a cost the contractor chose to hide. */
+  const laborLinePricesChecked = est.showLaborLinePrices === true;
+  const materialLinePricesChecked = est.showMaterialLinePrices === true;
 
   /* The generator bar used to carry "Use for this estimate" toggles and a
      "Measurements, corrections & extra notes" box. Both are gone: any correction
@@ -5078,7 +5069,7 @@ function renderEdit() {
       '<h3>📋 PROJECT</h3>' +
       '<div class="field" style="margin-bottom:12px">' +
         '<label>Project Title</label>' +
-        '<textarea id="f-title" rows="1" class="et-grow" oninput="this.value=this.value.replace(/\\n/g,\' \')" placeholder="e.g. Master Bathroom Renovation — Brooklyn">' + esc(est.projectTitle || "") + '</textarea>' +
+        '<input type="text" id="f-title" value="' + esc(est.projectTitle || "") + '" placeholder="e.g. Master Bathroom Renovation — Brooklyn">' +
       '</div>' +
       '<div class="field" style="margin-bottom:12px">' +
         '<label>Summary (shown to customer)</label>' +
@@ -5166,14 +5157,14 @@ function renderEdit() {
     '<div id="scope-control-wrap"></div>' +
     '<div class="cv-panel">' +
       '<h3>👁 CUSTOMER VIEW MODE</h3>' +
-      '<div class="cv-helper">Tick what the customer sees.</div>' +
+      '<div class="cv-helper">Choose what costs to show on the customer\'s quote. The total they see equals only what you check. Markup still applies internally.</div>' +
       '<div class="cv-grid">' +
         '<div class="cv-checks">' +
           '<div class="cv-check' + (laborChecked ? " checked" : "") + '" data-kind="labor" onclick="toggleCv(\'labor\')">' +
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (laborChecked ? " checked" : "") + ' id="cv-labor">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Labor cost</div>' +
+              '<div class="cv-check-label">Show Labor Cost</div>' +
               '<div class="cv-check-amount" id="cv-labor-amt">—</div>' +
             '</div>' +
           '</div>' +
@@ -5181,7 +5172,7 @@ function renderEdit() {
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (materialsChecked ? " checked" : "") + ' id="cv-materials">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Materials cost</div>' +
+              '<div class="cv-check-label">Show Materials Cost</div>' +
               '<div class="cv-check-amount" id="cv-materials-amt">—</div>' +
             '</div>' +
           '</div>' +
@@ -5189,26 +5180,28 @@ function renderEdit() {
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (sectionsChecked ? " checked" : "") + ' id="cv-sections">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Price on each service</div>' +
-              '<div class="cv-check-amount">Off = total only</div>' +
+              '<div class="cv-check-label">Show a price on each service card</div>' +
+              '<div class="cv-check-amount">Off = the customer sees only the total, no price on the cards (portal and PDF). Save, then send the update.</div>' +
             '</div>' +
           '</div>' +
           '<div class="cv-check' + (laborLinesChecked ? " checked" : "") + '" data-kind="laborLines" onclick="toggleCv(\'laborLines\')">' +
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (laborLinesChecked ? " checked" : "") + ' id="cv-laborlines">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Labor list</div>' +
-              '<div class="cv-check-amount">' + (est.labor||[]).length + ' items, no prices</div>' +
+              '<div class="cv-check-label">Labor breakdown</div>' +
+              '<div class="cv-check-amount">Lists every labor line (' + (est.labor||[]).length + ' items) on the customer page.</div>' +
             '</div>' +
           '</div>' +
+          '<div class="cv-check' + (laborLinePricesChecked ? " checked" : "") + '" style="margin:-4px 0 0 26px;padding:8px 12px;border-style:dashed" data-kind="laborLinePrices" onclick="event.stopPropagation();toggleCv(\'laborLinePrices\')">' +'<span class="cv-checkbox-box"></span>' +'<input type="checkbox"' + (laborLinePricesChecked ? " checked" : "") + ' id="cv-laborlineprices">' +'<div class="cv-check-text"><div class="cv-check-label" style="font-size:12px">…with prices</div>' +'<div class="cv-check-amount">Off = the customer sees WHAT is included, not what each item costs.</div>' +'</div></div>' +
           '<div class="cv-check' + (materialLinesChecked ? " checked" : "") + '" data-kind="materialLines" onclick="toggleCv(\'materialLines\')">' +
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (materialLinesChecked ? " checked" : "") + ' id="cv-materiallines">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Materials list</div>' +
-              '<div class="cv-check-amount">' + (est.materials||[]).length + ' items, no prices</div>' +
+              '<div class="cv-check-label">Materials breakdown</div>' +
+              '<div class="cv-check-amount">Lists every material line (' + (est.materials||[]).length + ' items) on the customer page.</div>' +
             '</div>' +
           '</div>' +
+          '<div class="cv-check' + (materialLinePricesChecked ? " checked" : "") + '" style="margin:-4px 0 0 26px;padding:8px 12px;border-style:dashed" data-kind="materialLinePrices" onclick="event.stopPropagation();toggleCv(\'materialLinePrices\')">' +'<span class="cv-checkbox-box"></span>' +'<input type="checkbox"' + (materialLinePricesChecked ? " checked" : "") + ' id="cv-materiallineprices">' +'<div class="cv-check-text"><div class="cv-check-label" style="font-size:12px">…with prices</div>' +'<div class="cv-check-amount">Off = the customer sees WHICH materials you will use, not what each one costs.</div>' +'</div></div>' +
         '</div>' +
         '<div class="cv-preview">' +
           '<div class="cv-preview-label">Customer Sees</div>' +
@@ -5242,9 +5235,12 @@ function renderEdit() {
         '<button type="button" id="pdf-customer" onclick="downloadEstimatePdf(\'customer\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ CUSTOMER PDF</button>' +
         '<button type="button" id="pdf-internal" onclick="downloadEstimatePdf(\'internal\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ INTERNAL PDF</button>' +
       '</div>' +
-      '<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;text-align:center">Internal PDF = with your rates and markup.</div>' +
+      '<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;text-align:center">Customer PDF: what the customer sees, with prices. Internal PDF: your lines, rates and markup. Both from the last saved version.</div>' +
+      (currentRecord && currentRecord.parentRef ? '' :
+        '<button type="button" onclick="addonCreate()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE)</button>') +
     '</div>' +
     stepBar(5, 'Send it', 'Preview first if you want. Nothing leaves here until you press send.') +
+    '<button type="button" onclick="askCheck()" style="width:100%;margin:0 0 12px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🔍 CHECK BEFORE SENDING — emails &amp; plans vs every line</button>' +
     (currentRecord && currentRecord.status === 'completed'
       ? '<div id="completed-on" style="margin:0 0 10px;padding:10px 12px;border-radius:9px;background:rgba(13,148,136,0.10);color:#0f766e;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
           '<span>🏁 Completed on <strong>' + esc(fmtDay(completedDayOf(currentRecord)) || 'date not set') + '</strong></span>' +
@@ -5604,10 +5600,10 @@ function updateCvPreview() {
     html += '<div class="cv-preview-note"><strong>✓ All materials included</strong> in the total price.</div>';
   }
   if (!cv.showLabor && cv.showMaterials && t.labor > 0) {
-    html += '<div class="cv-preview-note"><strong>Materials only</strong> — no labor.</div>';
+    html += '<div class="cv-preview-note"><strong>Materials only</strong> — labor is not part of this price.</div>';
   }
   if (cv.showLabor && !cv.showMaterials && t.mat > 0) {
-    html += '<div class="cv-preview-note"><strong>Labor only</strong> — no materials.</div>';
+    html += '<div class="cv-preview-note"><strong>Labor only</strong> — materials are not part of this price.</div>';
   }
   body.innerHTML = html;
 }
@@ -5764,17 +5760,19 @@ function sentVersionHtml(r) {
   var moved = false;
   try { moved = quoteMovedSinceSent(r, v); } catch (e) { moved = false; }
 
-  var head = '<strong>Customer sees version ' + (Number(v.n) || 1) + '</strong>'
+  var head = '<strong>The customer is looking at version ' + (Number(v.n) || 1) + '</strong>'
     + (when ? ' · sent ' + esc(when) : '');
 
   if (!moved) {
     return '<div style="margin-top:12px;border:1px solid #16a34a;background:rgba(22,163,74,.07);border-radius:12px;padding:10px 13px;font-size:12.5px;line-height:1.5;color:var(--ink,#1a2433)">'
-      + '✓ ' + head + '. Same as your draft.'
+      + '✓ ' + head + '. Your draft matches it.'
       + '</div>';
   }
   return '<div style="margin-top:12px;border:1.5px solid var(--gold,#c8860a);background:rgba(200,134,10,.09);border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--ink,#1a2433)">'
     + head + '.<br>'
-    + '<strong>You changed it.</strong> Press Send to update.'
+    + '<strong style="color:var(--gold-2,#b8720a)">You changed the price or the work after sending.</strong> '
+    + '<span style="color:var(--ink-soft)">The customer still sees version ' + (Number(v.n) || 1) + '. '
+    + 'Press Send when you want them to see version ' + ((Number(v.n) || 1) + 1) + '.</span>'
     + '</div>';
 }
 
@@ -5804,38 +5802,8 @@ function quoteNorm(x) {
   }
   return x;
 }
-/* ONE LINE FOR ONE PIECE OF WORK - same as lib/join-lines.js.
-   Lines with the same card, words, unit and rate become one; quantities add up,
-   so the money is exactly the same. */
-function joinSameLines(lines) {
-  if (!Array.isArray(lines)) return lines;
-  var t = function (v) { return String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g, " "); };
-  var out = [], at = {};
-  lines.forEach(function (l) {
-    if (!l || typeof l !== "object" || !String(l.item || "").trim()) { out.push(l); return; }
-    var k = [t(l.section), t(l.item), t(l.unit), String(Number(l.rate) || 0)].join("|");
-    if (at[k] === undefined) { at[k] = out.length; out.push(Object.assign({}, l)); return; }
-    var first = out[at[k]];
-    first.qty = Math.round(((Number(first.qty) || 0) + (Number(l.qty) || 0)) * 10000) / 10000;
-  });
-  return out;
-}
-function joinEstimateLines(est) {
-  if (!est || typeof est !== "object") return est;
-  if (Array.isArray(est.labor)) est.labor = joinSameLines(est.labor);
-  if (Array.isArray(est.materials)) est.materials = joinSameLines(est.materials);
-  return est;
-}
-/* Joining split lines, or switching off the removed line-price choices, is not
-   him changing the quote: compare both sides the same way. */
-function quoteCompareCopy(e) {
-  var c = JSON.parse(JSON.stringify(e || {}));
-  joinEstimateLines(c);
-  delete c.showLaborLinePrices; delete c.showMaterialLinePrices;
-  return quoteNorm(c);
-}
 function quoteMovedSinceSent(r, v) {
-  if (JSON.stringify(quoteCompareCopy(r.estimate)) !== JSON.stringify(quoteCompareCopy(v.estimate))) return true;
+  if (JSON.stringify(quoteNorm(r.estimate || {})) !== JSON.stringify(quoteNorm(v.estimate || {}))) return true;
   var live = r.customerFinalTotal != null ? Number(r.customerFinalTotal) : null;
   var sent = v.customerFinalTotal != null ? Number(v.customerFinalTotal) : null;
   if (live === null && sent === null) return false;
@@ -5868,9 +5836,10 @@ function stampedTotalHtml(r) {
   var lines = 0;
   try { lines = Number(calcCustomerView(r.estimate || {}).customerTotal) || 0; } catch (e) { lines = 0; }
   if (!(lines > 0) || Math.abs(lines - stamped) <= 1) return "";
-  return '<div style="margin-top:12px;border:1.5px solid #cfd5de;background:#f6f7f9;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:var(--ink)">'
-    + '<strong style="color:var(--ink)">Customer price: ' + fmt(stamped) + '</strong><br>'
-    + '<button type="button" onclick="restampCustomerTotal()" style="margin-top:9px;padding:9px 16px;background:#1a2433;color:#fff;border:none;border-radius:8px;font-family:var(--body,inherit);font-size:11.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">Change to ' + fmt(lines) + '</button>'
+  return '<div style="margin-top:12px;border:1.5px solid #dc2626;background:rgba(220,38,38,.08);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:var(--ink)">'
+    + '<strong style="color:#b91c1c">The customer is being quoted ' + fmt(stamped) + ', not ' + fmt(lines) + '.</strong><br>'
+    + '<span style="color:var(--ink-soft)">A price was agreed at ' + fmt(stamped) + ' and it overrides these lines everywhere the customer looks — their quote page, the emailed total and the contract. Changing the lines alone does not move it.</span><br>'
+    + '<button type="button" onclick="restampCustomerTotal()" style="margin-top:9px;padding:9px 16px;background:#b91c1c;color:#fff;border:none;border-radius:8px;font-family:var(--body,inherit);font-size:11.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">Charge ' + fmt(lines) + ' instead</button>'
     + '</div>';
 }
 
@@ -6376,40 +6345,11 @@ function sleepUntilVisibleOr(ms) {
 /* Watch a run to its end. Called both by the click that starts one and by the
    reconnect that finds one already going. Looks the button up every tick instead
    of holding a reference, because a re-render replaces the element. */
-/* ── HOW FAR ALONG, IN PERCENT ─────────────────────────────────────────
-     Simplewise shows "65% Building your estimate". The generator writes the
-   stage it is in (aiStage, generate-estimate-background markStage); each
-   stage has a share of the run, and inside a stage the number creeps up
-   slowly so a long stage still moves, never past the next stage's start.
-   It never goes backwards and says 100 only when the estimate is back. */
-var GEN_STAGE_PCT = [["Reading the job", 5], ["Checking current prices", 25], ["Pricing the work", 40], ["Checking the draft", 70], ["Looking up material prices", 80], ["Writing the scope of work", 90]];
-function genPct(stage, msInStage) {
-  var i = -1;
-  for (var k = 0; k < GEN_STAGE_PCT.length; k++) if (String(stage || "").indexOf(GEN_STAGE_PCT[k][0]) === 0) i = k;
-  var from = i < 0 ? 1 : GEN_STAGE_PCT[i][1];
-  var to = i < 0 ? GEN_STAGE_PCT[0][1] : (i + 1 < GEN_STAGE_PCT.length ? GEN_STAGE_PCT[i + 1][1] : 99);
-  var creep = Math.floor((msInStage || 0) / 6000);
-  return Math.min(to - 1, from + creep);
-}
-function genProgressBar(btn, pct, secs) {
-  var bar = document.getElementById("gen-progress");
-  if (!bar) {
-    bar = document.createElement("div");
-    bar.id = "gen-progress";
-    bar.innerHTML = '<div style="height:8px;border-radius:4px;background:var(--line,#e3e7ee);overflow:hidden;margin:10px 0 4px"><div class="gp-fill" style="height:100%;width:0;background:var(--gold,#c8860a);transition:width .6s"></div></div><div class="gp-note" style="font-size:12px;color:var(--ink-muted,#8a9bb0)"></div>';
-    if (btn.parentNode) btn.parentNode.insertBefore(bar, btn.nextSibling);
-  }
-  bar.querySelector(".gp-fill").style.width = pct + "%";
-  bar.querySelector(".gp-note").textContent = secs + "s · you can close this window, it keeps working";
-}
-
-function genProgressClear() { var b = document.getElementById("gen-progress"); if (b) b.remove(); }
-
 async function watchGeneration(ref, jobId, startedAt, label) {
   /* "Generating… 655s" - "It's still loading". The server writes the stage
      it is in on the record (aiStage); the button says it after the seconds,
      so a long run reads as progress, not as a hang. */
-  var stage = "", stageAt = Date.now(), lastPct = 0;
+  var stage = "";
   while (true) {
     var elapsed = Date.now() - startedAt;
     var btn = document.getElementById("gen-btn");
@@ -6418,24 +6358,20 @@ async function watchGeneration(ref, jobId, startedAt, label) {
       /* "Adding the service…" on an added service: the same word as a full
          regeneration read as one, and one look at "Generating…" was enough
          to make him think the agreed estimate was being rebuilt. */
-      lastPct = Math.max(lastPct, genPct(stage, Date.now() - stageAt));
-      if (btn.style) { btn.style.whiteSpace = "normal"; btn.style.maxWidth = "100%"; }
-      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + lastPct + '%' + (stage ? ' · ' + esc(stage) : '');
-      genProgressBar(btn, lastPct, Math.round(elapsed / 1000));
+      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + Math.round(elapsed / 1000) + 's' + (stage ? ' · ' + esc(stage) : '');
     }
     var rec = null;
     try {
       var pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       if (pr.ok) rec = await pr.json();
     } catch (_) { rec = null; }
-    if (rec && rec.aiJobId === jobId && rec.aiStatus === "running") { var ns = String(rec.aiStage || ""); if (ns !== stage) { stage = ns; stageAt = Date.now(); } }
+    if (rec && rec.aiJobId === jobId && rec.aiStatus === "running") stage = String(rec.aiStage || "");
 
     var v = aiPollVerdict(rec, jobId, Date.now() - startedAt);
     if (v.state === "done") { aiJobClear(ref); return { estimate: rec.estimate, status: rec.status, customerFinalTotal: rec.customerFinalTotal }; }
-    if (v.state === "error") { aiJobClear(ref); genProgressClear(); throw new Error(v.message); }
+    if (v.state === "error") { aiJobClear(ref); throw new Error(v.message); }
     if (v.state === "timeout") {
       aiJobClear(ref);
-      genProgressClear();
       throw new Error("Still running after 15 minutes — check Netlify → Logs → Functions → generate-estimate-background");
     }
     await sleepUntilVisibleOr(3000);
@@ -8001,11 +7937,8 @@ function scopeItemRow(si, gkey, ii, txt, on) {
     '<label class="sc-check" title="' + (on ? 'The customer sees this line' : 'Hidden from the customer') + '">' +
       '<input type="checkbox"' + (on ? ' checked' : '') +
       ' onchange="scopeToggleItem(' + si + ',\'' + gkey + '\',' + ii + ',this.checked)"></label>' +
-    /* A text box that wraps, not a one-line field: "the texts still not
-       shows full like in simplewise". One line of text still - Enter is
-       taken out - and it grows to fit (estimate tabs, etGrow). */
-    '<textarea class="sc-item" rows="1" oninput="if(/\\n/.test(this.value))this.value=this.value.replace(/\\s*\\n+\\s*/g,\' \')" ' +
-      'onchange="scopeEditItem(' + si + ',\'' + arrKey + '\',' + ii + ',this.value)">' + esc(txt) + '</textarea>' +
+    '<input class="sc-item" value="' + esc(txt) + '" ' +
+      'onchange="scopeEditItem(' + si + ',\'' + arrKey + '\',' + ii + ',this.value)">' +
     (on
       ? '<select class="sc-move" onchange="scopeMoveItem(' + si + ',\'' + gkey + '\',' + ii + ',this.value);this.selectedIndex=0">' +
           '<option value="">move&hellip;</option>' +
@@ -9035,11 +8968,6 @@ async function sendToCustomer() {
     visibility = "Materials only";
   } else {
     visibility = "Total only (no breakdown)";
-  }
-  /* The line lists are a separate choice; say so, or "no breakdown" sits over
-     a page that lists every line. */
-  if (est.showLaborLines || est.showMaterialLines) {
-    visibility = visibility.replace(" (no breakdown)", "") + " · lists " + (est.showLaborLines && est.showMaterialLines ? "labor and material lines" : est.showLaborLines ? "labor lines" : "material lines") + ((est.showLaborLinePrices && est.showLaborLines) || (est.showMaterialLinePrices && est.showMaterialLines) ? " with prices" : ", no prices");
   }
 
   /* ══ SHOW HIM THE CUSTOMER'S PAGE, NOT A SENTENCE ABOUT IT. ═══════════════
@@ -11579,14 +11507,11 @@ function showSendLinkSuccess(msg) {
     var card=document.getElementById('edit-card');
     var r=rec();
     if(!card || !r || !r.estimate) return;
-    var ex=document.getElementById('sbcf-section');
+    var ex=document.getElementById('sbcf-section'); if(ex) ex.remove();
     var sec=document.createElement('div');
     sec.className='form-section sbcf-section';
     sec.id='sbcf-section';
     sec.innerHTML=sectionHTML();
-    /* Redrawn where it already sits (the Photos tab moves it there), so
-       adding an option never sends it back to another tab. */
-    if(ex && ex.parentNode){ ex.parentNode.replaceChild(sec,ex); return; }
     var anchor=card.querySelector('.cv-panel');
     if(anchor && anchor.parentNode) anchor.parentNode.insertBefore(sec,anchor);
     else card.appendChild(sec);
@@ -12344,12 +12269,12 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     var includeBox =
       '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;background:var(--gold-soft,#fbf4e3);border:1.5px solid var(--gold);border-radius:9px;padding:11px 13px;margin:2px 0 14px;font-size:12.5px;color:var(--ink);line-height:1.45">'+
         '<input type="checkbox" id="sbc-include-contract" '+(__inc?'checked':'')+' onchange="window.__sbcIncludeContract=this.checked" style="width:18px;height:18px;margin-top:1px;accent-color:var(--gold);cursor:pointer;flex:none">'+
-        '<span><strong>Customer signs a contract to approve</strong></span>'+
+        '<span><strong>Include contract with this estimate.</strong> When checked, the customer must review &amp; sign the contract to approve. Leave unchecked for quote-only approval (no contract).</span>'+
       '</label>';
 
     if (!ct || !ct.sections){
       panel.innerHTML = head + includeBox +
-        '<div style="font-size:12.5px;color:var(--ink-muted);margin-bottom:12px;line-height:1.5">You can edit it before the customer sees it.</div>'+
+        '<div style="font-size:12.5px;color:var(--ink-muted);margin-bottom:12px;line-height:1.5">Generate the project-specific agreement the customer signs when they approve. You can review and edit everything before they see it.</div>'+
         '<button onclick="sbcGenContract(false)" id="sbc-ct-gen" style="padding:12px 22px;background:var(--gold);color:#102236;border:none;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer">✨ Generate Contract with AI</button>'+
         '<span id="sbc-ct-genmsg" style="font-size:12px;color:var(--ink-muted);margin-left:10px"></span>';
       return;
@@ -12742,337 +12667,14 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 </script>
 <!-- ===== END CONTRACT PANEL ===== -->
 
-<!-- ===== ESTIMATE TABS (Phase 1) ===== -->
-<style>
-/* "I like how structured in there, each estimates have on top them screen
-   where i can click and read full texts in mobile version" - Simplewise.
-   The estimate card was one long page in five steps. The same sections now
-   sit behind tabs; nothing in them changed. */
-.et-bar{position:sticky;top:0;z-index:6;display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--bg,#fff);border-bottom:1px solid var(--line,#e3e7ee);margin:0 -4px 14px;padding:0 4px}
-.et-bar::-webkit-scrollbar{display:none}
-.et-tab{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;border-bottom:3px solid transparent;padding:9px 12px 7px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:.3px;color:var(--ink-muted,#8a9bb0);cursor:pointer;white-space:nowrap}
-.et-tab .et-ic{font-size:18px;line-height:1}
-.et-tab.on{color:var(--gold-2,#a86f00);border-bottom-color:var(--gold,#c8860a)}
-.et-tab .et-dot{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:8px;background:#d64545;color:#fff;font-size:10px;padding:0 4px;margin-left:3px}
-.et-pane{display:none}
-.et-pane.on{display:block}
-.et-tabbed .step-bar{display:none}
-.et-client-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}
-.et-client-head h3{margin:0}
-.et-hist{list-style:none;margin:0;padding:0}
-.et-hist li{display:flex;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line,#e3e7ee)}
-.et-hist .et-hi{flex:0 0 26px;font-size:18px;text-align:center}
-.et-hist .et-ht{flex:1;min-width:0;font-size:14px;line-height:1.5;overflow-wrap:break-word}
-.et-hist .et-hw{display:block;font-size:12px;color:var(--ink-muted,#8a9bb0);margin-top:2px}
-.et-empty{color:var(--ink-muted,#8a9bb0);font-size:14px;padding:18px 2px}
-/* ── CALMER COLORS ON THE ESTIMATE SCREEN ─────────────────────────────────
-   "So many yellow is in my dashboard" -> Simplewise style: white cards,
-   light gray borders, navy titles, blue for small controls. Gold stays on
-   the main buttons (Generate, Send) and the open tab. Only this screen:
-   the variables are redefined on #edit-card, the rest of the dashboard
-   keeps its look. */
-#edit-card{--brand:#b8930a;--brand-2:#96770a;--gold:#1a2433;--gold-2:#1a2433;--gold-soft:#f2f4f7;--line:#e2e6ec}
-/* "Change to black inside the buttons": the words on the outline buttons are
-   black, their borders a quiet gray; filled gold buttons keep their gold. */
-#edit-card button:not(.et-tab):not(.btn-ai):not(.btn-primary):not(#gen-btn):not(.btn-danger):not(.sc-del):not(.ev-ic):not([style*="color:#fff"]):not([style*="color: #fff"]):not([style*="color:white"]){color:#1a2433!important;border-color:#cfd5de!important}
-#edit-card .modal-head h2,#edit-card h3,#edit-card h4,#edit-card .section-title,#edit-card .cust-panel h3,#edit-card .form-section h3,#edit-card .ai-bar h4{color:var(--ink,#1a2433)!important}
-#edit-card .btn-ai,#edit-card #gen-btn,#edit-card .btn-primary,#edit-card .et-ai button{background:var(--brand)!important;color:#0a1628!important}
-#edit-card .btn-ai:hover:not(:disabled),#edit-card .btn-primary:hover:not(:disabled){background:var(--brand-2)!important}
-/* things filled with the accent (now black) get white marks: the ticked
-   boxes, the "Customer sees" label, the finish-group button */
-#edit-card .cv-checkbox-box::after,#edit-card .ilt-box::after,#edit-card .cv-preview-label,#edit-card .sbcf-add-group{color:#fff!important}
-/* buttons filled with the gold variable in their own inline style stay gold */
-#edit-card button[style*="background:var(--gold)"],#edit-card button[style*="background: var(--gold)"]{background:var(--brand)!important;color:#0a1628!important;border-color:var(--brand)!important}
-#edit-card .et-tab.on{color:var(--brand-2)!important;border-bottom-color:var(--brand)!important}
-#edit-card .et-ai{border-color:var(--line);background:#f6f8fb}
-.ev-card{border:1px solid #dfe3ea;border-radius:16px;background:#fff;margin:0 0 14px;overflow:hidden}
-.ev-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #eceff3}
-.ev-head h4{flex:1;min-width:0;margin:0;font-family:var(--body);font-size:17px;font-weight:700;letter-spacing:0;text-transform:none;line-height:1.3}
-.ev-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:0;background:#eef2f7;color:#2f6fb5;font-size:16px;cursor:pointer}
-.ev-line{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #eceff3}
-.ev-line .ev-t{flex:1;min-width:0;font-size:15px;line-height:1.35;overflow-wrap:break-word}
-.ev-line .ev-q{display:block;font-size:12.5px;color:#7a879b;margin-top:3px;letter-spacing:.3px}
-.ev-line .ev-lab{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#eceff3;display:flex;align-items:center;justify-content:center;font-size:14px}
-.ev-line .ev-a{flex:0 0 auto;font-weight:700;font-size:15px}
-.ev-sum{display:flex;gap:18px;padding:12px 16px;background:#fafbfc;font-size:12.5px;color:#7a879b}
-.ev-sum b{display:block;font-size:15px;color:var(--ink,#1a2433)}
-.ev-sum .ev-tot{margin-left:auto;text-align:right}
-.ev-total{display:flex;justify-content:space-between;align-items:baseline;padding:16px 4px 6px;font-size:20px;font-weight:800}
-.ev-cust{font-size:13px;color:#7a879b;text-align:right;padding:0 4px 14px}
-.ev-empty{padding:18px 16px;color:#7a879b;font-size:14px}
-.sv-card{border-radius:16px;background:#f4f5f7;margin:0 0 14px;padding:4px 0 6px}
-.sv-head{display:flex;align-items:center;gap:10px;padding:14px 18px 12px;border-bottom:1px solid #dfe3ea;margin:0 0 6px}
-.sv-head h4{flex:1;min-width:0;margin:0;font-family:var(--body);font-size:18px;font-weight:700;letter-spacing:0;text-transform:none;line-height:1.3}
-.sv-card ul{margin:0;padding:4px 18px 6px 38px}
-.sv-card li{font-size:15.5px;line-height:1.55;margin:0 0 10px;color:#22324a}
-.sv-card li::marker{color:#2f6fb5}
-.sv-sub{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#7a879b;padding:6px 18px 0}
-.et-more{border:1px solid #dfe3ea;border-radius:14px;margin:6px 0 14px;background:#fff}
-.et-more>summary{list-style:none;cursor:pointer;padding:15px 16px;font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:center}
-.et-more>summary::-webkit-details-marker{display:none}
-.et-more>summary::after{content:"\25be";color:#7a879b}
-.et-more[open]>summary::after{transform:rotate(180deg)}
-.et-more>.et-more-body{padding:0 12px 12px}
-#edit-card .ai-bar,#edit-card .hr-fold,#edit-card .lm-fold,#edit-card .cv-panel,#edit-card .cust-panel,#edit-card .totals-box,#edit-card .form-section.sbcf-section{background:#fff!important;border-color:var(--line)!important}
-.et-ai{margin:18px 0 6px;border:1.5px solid var(--gold,#c8860a);border-radius:14px;padding:12px;background:var(--gold-soft,#fbf6ea)}
-.et-ai-row{display:flex;gap:8px;align-items:flex-end}
-.et-ai textarea{flex:1;min-width:0;font-family:var(--body);font-size:16px;line-height:1.45;border:1px solid var(--line,#e3e7ee);border-radius:10px;padding:10px 12px;resize:none;min-height:46px;background:#fff;color:inherit}
-.et-ai button{flex:0 0 auto;border:0;border-radius:10px;background:var(--gold,#c8860a);color:#0a1628;font-weight:800;font-size:13px;letter-spacing:.5px;padding:12px 14px;cursor:pointer}
-.et-ai button:disabled{opacity:.6}
-.et-ai-reply{white-space:pre-wrap;font-size:14px;line-height:1.55;margin-top:10px;overflow-wrap:break-word}
-.et-ai-reply:empty{display:none}
-@media (max-width:640px){.et-tab{padding:9px 10px 7px;font-size:11.5px}}
-</style>
 <script>
+/* ── FOLLOW-UP EMAILS (lib/follow-up.js) ─────────────────────────────────
+   Day 2, 5 and 10 after the send, until the customer answers. The same rules
+   as the server, read off the record, so the switch says what will happen;
+   the server decides. Shown at the bottom of the estimate. */
 (function(){
-  var TABS = [
-    { key: 'estimate', label: 'Estimate', icon: '🧮' },
-    { key: 'scope',    label: 'Scope',    icon: '📋' },
-    { key: 'photos',   label: 'Photos',   icon: '📷' },
-    { key: 'notes',    label: 'Notes',    icon: '📝' },
-    { key: 'messages', label: 'Messages', icon: '💬' },
-    { key: 'client',   label: 'Client',   icon: '👤' },
-    { key: 'history',  label: 'History',  icon: '🕘' }
-  ];
-  /* The tab open on each record, so a save or a regenerate (which redraw the
-     whole card) never throws him back to the first tab. */
-  var OPEN = {};
-
-  function esc3(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function when(iso){
-    var d = new Date(iso); if (isNaN(d)) return '';
-    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
-  }
-  /* currentRecord is a top-level let: not on window, but visible here. */
-  function rec(){ return typeof currentRecord !== 'undefined' ? currentRecord : null; }
-  function hasPrice(r){ var e = (r && r.estimate) || {}; return (e.labor || []).length > 0 || (e.materials || []).length > 0; }
-
-  /* ── WHAT HAPPENED, NEWEST FIRST ──────────────────────────────────────
-     record.history is written on the server by every step (lib/history.js);
-     the dates on the record fill in what happened before that log existed. */
-  var KIND_ICON = { sent: '📨', accepted: '✅', declined: '❌', review: '⭐', question: '❓', regenerated: '✨', added: '➕', removed: '➖', reworded: '✏️', saved: '💾', total: '💲', customer: '👤', services: '🧾', email: '✉️', followup: '🔔', opened: '👀', submitted: '📥', completed: '🏁', invoice: '💳', paid: '💰' };
-  function historyItems(r){
-    var out = [], seen = {};
-    function add(at, kind, text){ if (!at || !text) return; var k = kind + '|' + String(at).slice(0, 16); if (seen[k]) return; seen[k] = 1; out.push({ at: at, kind: kind, text: text }); }
-    (Array.isArray(r.history) ? r.history : []).forEach(function(h){ if (h && h.at && h.text) add(h.at, h.kind || 'note', h.text); });
-    var logged = function(kind){ return (r.history || []).some(function(h){ return h && h.kind === kind; }); };
-    add(r.submittedAt, 'submitted', 'Request received' + (r.source === 'email' ? ' by email' : r.source === 'contact-form' ? ' from the contact form' : ' from the estimate form'));
-    if (!logged('sent')) add(r.sentAt, 'sent', 'Estimate sent to the customer');
-    /* The server log already says "The customer opened the quote page"; the
-       open dates only add a line when they are later than that by a minute. */
-    var loggedOpen = (r.history || []).reduce(function(m, h){ return h && /opened/i.test(h.text || '') && String(h.at) > m ? String(h.at) : m; }, '');
-    var newer = function(at){ return at && (!loggedOpen || Date.parse(at) - Date.parse(loggedOpen) > 60000); };
-    if (newer(r.openedAt)) add(r.openedAt, 'opened', 'Customer opened the estimate');
-    if (newer(r.lastOpenedAt) && r.lastOpenedAt !== r.openedAt) add(r.lastOpenedAt, 'opened', 'Customer opened it again' + (r.openCount > 1 ? ' (' + r.openCount + ' times in all)' : ''));
-    if (!logged('accepted')) add(r.acceptedAt, 'accepted', 'Customer approved the estimate');
-    if (!logged('declined')) add(r.declinedAt, 'declined', 'Customer declined the estimate');
-    add(r.completedAt, 'completed', 'Job marked completed');
-    (Array.isArray(r.invoices) ? r.invoices : []).forEach(function(inv){
-      if (!inv) return;
-      add(inv.sentAt || inv.createdAt, 'invoice', 'Invoice sent' + (inv.amount ? ' - $' + Number(inv.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''));
-      if (inv.paidAt) add(inv.paidAt, 'paid', 'Invoice paid');
-    });
-    out.sort(function(a, b){ return String(b.at).localeCompare(String(a.at)); });
-    return out;
-  }
-  function historyHtml(r){
-    var items = historyItems(r);
-    if (!items.length) return '<div class="et-empty">Nothing has happened on this estimate yet.</div>';
-    return '<ul class="et-hist">' + items.map(function(h){
-      return '<li><span class="et-hi">' + (KIND_ICON[h.kind] || '•') + '</span><span class="et-ht">' + esc3(h.text) + '<span class="et-hw">' + esc3(when(h.at)) + '</span></span></li>';
-    }).join('') + '</ul>';
-  }
-
-  /* Which pane each top-level section of the card goes to. Anything new or
-     unknown goes to Estimate, so nothing is ever lost from the card. */
-  function paneFor(el){
-    var id = el.id || '', c = ' ' + (el.className || '') + ' ';
-    if (/ modal-head | modal-actions /.test(c)) return null;            // stays outside the tabs
-    if (/ step-bar /.test(c)) return 'skip';
-    if (id === 'detail-invoices') return 'client';
-    /* "This finishing option move to the photos card" */
-    if (id === 'sbcf-section') return 'photos';
-    if (/ cust-panel /.test(c)) return 'notes';
-    if (id === 'scope-control-wrap') return 'scope';
-    if (/ form-row /.test(c) && el.querySelector('#f-timeline')) return 'scope';
-    if (/ form-section /.test(c) && el.querySelector('#f-scope')) return 'scope';
-    if (/ form-section /.test(c) && el.querySelector('#quote-photo-preview')) return 'photos';
-    return 'estimate';
-  }
-
-  function show(key){
-    var card = document.getElementById('edit-card'); if (!card) return;
-    card.querySelectorAll('.et-tab').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-k') === key); });
-    card.querySelectorAll('.et-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-k') === key); });
-    growIn(card.querySelector('.et-pane.on'));
-    var cr = rec(); if (cr && cr.ref) OPEN[cr.ref] = key;
-    var bar = card.querySelector('.et-bar'), on = card.querySelector('.et-tab.on');
-    if (bar && on) { var l = on.offsetLeft - 40; bar.scrollLeft = l < 0 ? 0 : l; }
-  }
-  /* "in scope the texts doesn't shows full until i scroll and i need to see
-     always full texts". A box measured while its tab is hidden has no height
-     to measure, so every text box on the tab is sized when the tab opens, and
-     again as he types - the whole text, no inner scroll bar. */
-  var GROW = '#f-title, #f-summary, #f-scope, #f-timeline, #scope-control-wrap textarea';
-  function fit(t){ t.style.maxHeight = 'none'; t.style.overflowY = 'hidden'; t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
-  function growIn(pane){
-    if (!pane) return;
-    pane.querySelectorAll(GROW).forEach(function(t){
-      fit(t);
-      if (!t.__etGrow) { t.__etGrow = 1; t.addEventListener('input', function(){ fit(t); }); }
-    });
-  }
-  window.etGrow = growIn;
-
-  /* ── EDIT WITH AI ───────────────────────────────────────────────────────
-     Simplewise's box at the bottom of the plan and the price. It is the same
-     estimator as Ask AI on the Notes tab (askSend: same chat, same actions -
-     a change to the price lines still shows before/after and asks first);
-     the answer is shown right under the box he typed in. */
-  var LAST_AI = {};
-  function aiBox(key){
-    return '<div class="et-ai"><div class="et-ai-row"><textarea id="et-ai-' + key + '" rows="1" placeholder="✨ Edit with AI"></textarea>' +
-      '<button type="button" id="et-ai-btn-' + key + '" onclick="etAi(\'' + key + '\')">Send</button></div>' +
-      '<div class="et-ai-reply" id="et-ai-reply-' + key + '"></div></div>';
-  }
-  window.etAi = async function(key){
-    var r = rec(); if (!r) return;
-    var box = document.getElementById('et-ai-' + key), btn = document.getElementById('et-ai-btn-' + key), out = document.getElementById('et-ai-reply-' + key);
-    var text = box ? String(box.value || '').trim() : '';
-    var ask = document.getElementById('ask-text');
-    if (!text || !ask || typeof askSend !== 'function') return;
-    var ref = String(r.ref || '');
-    ask.value = text;
-    if (box) box.value = '';
-    if (btn) { btn.disabled = true; btn.textContent = '…'; }
-    LAST_AI[ref] = { key: key, text: 'Working on it… this can take 1–3 minutes.' };
-    if (out) out.textContent = LAST_AI[ref].text;
-    try { await askSend(); } catch (e) {}
-    var log = (typeof ASK_LOG !== 'undefined' && ASK_LOG[ref]) || [];
-    var last = null;
-    for (var i = log.length - 1; i >= 0; i--) { if (log[i] && log[i].role === 'assistant') { last = log[i]; break; } }
-    LAST_AI[ref] = { key: key, text: last ? (typeof aiPlain === 'function' ? aiPlain(last.text) : last.text) : '' };
-    /* a change that saved redrew the card: find the new box */
-    out = document.getElementById('et-ai-reply-' + key); btn = document.getElementById('et-ai-btn-' + key);
-    if (out) out.textContent = LAST_AI[ref].text;
-    if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
-  };
-  window.etShow = function(key){ show(key); var m = document.getElementById('edit-modal'); if (m) m.scrollTop = 0; };
-
-  function build(){
-    var card = document.getElementById('edit-card');
-    var r = rec();
-    if (!card || !r || card.querySelector('.et-bar')) return;
-    var head = card.querySelector(':scope > .modal-head');
-    if (!head) return;                                                   // a loading or error screen
-    var panes = {};
-    TABS.forEach(function(t){ var p = document.createElement('div'); p.className = 'et-pane'; p.setAttribute('data-k', t.key); panes[t.key] = p; });
-
-    /* Move every section into its pane, in order; inline handlers and ids go with it. */
-    var actions = null;
-    [].slice.call(card.children).forEach(function(el){
-      if (el === head) return;
-      var k = paneFor(el);
-      if (k === null) { if (/modal-actions/.test(el.className)) actions = el; return; }
-      if (k === 'skip') { el.remove(); return; }
-      panes[k].appendChild(el);
-    });
-
-    /* The request card holds four things; each goes to its own tab. */
-    var cust = panes.notes.querySelector('.cust-panel:not(#detail-invoices)');
-    if (cust) {
-      var grid = cust.querySelector('.cust-grid');
-      if (grid) {
-        var ch = document.createElement('div'); ch.className = 'et-client-head';
-        ch.innerHTML = '<h3>👤 CLIENT</h3><button type="button" onclick="sbcEditCustomer()" style="font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold-2);padding:6px 12px;border-radius:8px;cursor:pointer">✏️ Edit</button>';
-        var wrap = document.createElement('div'); wrap.className = 'form-section';
-        wrap.appendChild(ch); wrap.appendChild(grid);
-        var st = document.createElement('div'); st.className = 'cust-field'; st.style.marginTop = '10px';
-        st.innerHTML = '<span class="lbl">Status</span><span class="val">' + esc3(String(r.status || 'new').toUpperCase()) + '</span>';
-        wrap.appendChild(st);
-        panes.client.insertBefore(wrap, panes.client.firstChild);
-      }
-      var strip = cust.querySelector('#req-photos-strip');
-      if (strip) {
-        var ps = document.createElement('div'); ps.className = 'form-section';
-        ps.innerHTML = '<h3>📥 FROM THE CUSTOMER</h3>';
-        ps.appendChild(strip);
-        panes.photos.insertBefore(ps, panes.photos.firstChild);
-      }
-      var cnv = cust.querySelector('#cnv-section');
-      if (cnv) panes.messages.appendChild(cnv);
-      var fu = document.createElement('div'); fu.innerHTML = followUpHtml(r);
-      if (fu.firstChild) panes.messages.insertBefore(fu.firstChild, panes.messages.firstChild);
-    }
-    if (!panes.photos.children.length) panes.photos.innerHTML = '<div class="et-empty">No photos on this job yet.</div>';
-    panes.history.innerHTML = historyHtml(r);
-    /* the clear view on top, the tools folded under it */
-    var aiBar = panes.estimate.querySelector(':scope > .ai-bar');
-    var evd = document.createElement('div'); evd.id = 'et-ev'; evd.innerHTML = estimateView(r);
-    fold(panes.estimate, 'et-more-est', '⚙️ Edit lines, markup, customer view, PDFs, contract', aiBar ? [aiBar] : []);
-    panes.estimate.insertBefore(evd, panes.estimate.firstChild);
-    if (aiBar) panes.estimate.insertBefore(aiBar, evd.nextSibling);
-    var svd = document.createElement('div'); svd.id = 'et-sv'; svd.innerHTML = scopeView(r);
-    fold(panes.scope, 'et-more-scope', '✏️ Edit the scope wording', []);
-    panes.scope.insertBefore(svd, panes.scope.firstChild);
-    panes.scope.querySelector('.et-more-scope').addEventListener('toggle', function(){ growIn(this); });
-    ['scope', 'estimate'].forEach(function(k){
-      var holder = document.createElement('div'); holder.innerHTML = aiBox(k);
-      var el = holder.firstChild;
-      var p = panes[k];
-      p.insertBefore(el, p.firstChild);
-      var last = LAST_AI[r.ref];
-      if (last && last.key === k) el.querySelector('.et-ai-reply').textContent = last.text;
-      var ta = el.querySelector('textarea');
-      ta.addEventListener('input', function(){ ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 2 + 'px'; });
-    });
-
-    var bar = document.createElement('div'); bar.className = 'et-bar';
-    var need = typeof threadNeedsReply === 'function' && threadNeedsReply(r);
-    bar.innerHTML = TABS.map(function(t){
-      return '<button type="button" class="et-tab" data-k="' + t.key + '" onclick="etShow(\'' + t.key + '\')"><span class="et-ic">' + t.icon + '</span><span>' + t.label + (t.key === 'messages' && need ? '<span class="et-dot">!</span>' : '') + '</span></button>';
-    }).join('');
-
-    var after = head.nextSibling;
-    card.insertBefore(bar, after);
-    TABS.forEach(function(t){ card.insertBefore(panes[t.key], actions || null); });
-    if (actions) card.appendChild(actions);
-    card.classList.add('et-tabbed');
-
-    /* A new request opens on what the customer wrote; a priced one on the price. */
-    var key = OPEN[r.ref] || (need ? 'messages' : hasPrice(r) ? 'estimate' : 'notes');
-    show(key);
-  }
-
-  /* Code that scrolls to something on the card ("Reply needed", the send box,
-     the generate button) first opens the tab that holds it. */
-  var _siv = Element.prototype.scrollIntoView;
-  Element.prototype.scrollIntoView = function(){
-    try {
-      var pane = this.closest && this.closest('#edit-card .et-pane');
-      if (pane && !pane.classList.contains('on')) show(pane.getAttribute('data-k'));
-      var more = this.closest && this.closest('#edit-card details.et-more');
-      if (more && !more.open) more.open = true;
-    } catch (e) {}
-    return _siv.apply(this, arguments);
-  };
-
-  /* The service cards redraw on their own (move, add, undo); size them again. */
-  if (typeof renderScopeControl === 'function') {
-    var _rsc = renderScopeControl;
-    renderScopeControl = function(){ var out = _rsc.apply(this, arguments); try { var c = document.getElementById('edit-card'); growIn(c && c.querySelector('.et-pane.on')); refreshViews(); } catch (e) {} return out; };
-  }
-  /* a price or markup typed in the folded tables updates the view above */
-  if (typeof recalc === 'function') {
-    var _rc = recalc;
-    recalc = function(){ var out = _rc.apply(this, arguments); try { var c = document.getElementById('edit-card'); var ev = c && c.querySelector('#et-ev'); var r = rec(); if (ev && r) ev.innerHTML = estimateView(r); } catch (e) {} return out; };
-  }
-  window.addEventListener('resize', function(){ var c = document.getElementById('edit-card'); if (c) growIn(c.querySelector('.et-pane.on')); });
-  /* ── FOLLOW-UP EMAILS (lib/follow-up.js) ─────────────────────────────────
-     Day 2, 5 and 10 after the send, until the customer answers. The same
-     rules as the server, read off the record, so the switch says what will
-     happen; the server decides. */
   var FU_DAYS = [2, 5, 10], FU_SINCE = Date.parse('2026-10-04T00:00:00Z');
+  var esc3 = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(m){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]; }); };
   function followUpHtml(r){
     var sentAt = Date.parse(r.sentAt || '');
     if (!sentAt || sentAt < FU_SINCE) return '';
@@ -13084,13 +12686,13 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       : answered ? 'Stopped — the customer answered.'
       : done.length >= FU_DAYS.length ? 'All 3 sent.'
       : done.length + ' of 3 sent · next on day ' + FU_DAYS[done.length] + ' after you sent it.';
-    return '<div class="form-section" style="display:flex;align-items:center;gap:12px;justify-content:space-between">' +
-      '<div><div style="font-weight:800;font-size:13px;letter-spacing:.5px">🔔 AUTOMATIC FOLLOW-UP EMAILS</div><div style="font-size:13px;color:var(--ink-muted,#8a9bb0);margin-top:3px">Day 2, 5 and 10 if they do not answer. ' + esc3(line) + '</div></div>' +
-      (answered ? '' : '<button type="button" class="btn-secondary" style="flex:0 0 auto" onclick="etFollowUp(' + (off ? 'false' : 'true') + ')">' + (off ? 'Turn on' : 'Turn off') + '</button>') +
+    return '<div class="form-section" id="fu-box" style="margin-top:16px;display:flex;align-items:center;gap:12px;justify-content:space-between">' +
+      '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:13px;letter-spacing:.5px">🔔 AUTOMATIC FOLLOW-UP EMAILS</div><div style="font-size:13px;color:var(--ink-muted,#8a9bb0);margin-top:3px">Day 2, 5 and 10 if they do not answer. ' + esc3(line) + '</div></div>' +
+      (answered ? '' : '<button type="button" class="btn-secondary" style="flex:0 0 auto;width:auto;padding:10px 14px" onclick="etFollowUp(' + (off ? 'false' : 'true') + ')">' + (off ? 'Turn on' : 'Turn off') + '</button>') +
     '</div>';
   }
   window.etFollowUp = async function(off){
-    var r = rec(); if (!r) return;
+    var r = typeof currentRecord !== 'undefined' ? currentRecord : null; if (!r) return;
     try {
       var res = await sbcFetch('/.netlify/functions/follow-up-switch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: r.ref, off: off }) });
       var j = await res.json().catch(function(){ return {}; });
@@ -13102,104 +12704,20 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     } catch (e) { if (typeof toast === 'function') toast('Could not change it: ' + e.message, true); }
   };
   window.etFollowUpHtml = followUpHtml;
-
-  /* ── THE CLEAR VIEW (Simplewise) ───────────────────────────────────────
-       "In simplewise are more clear understandable. Shows exactly what
-        customer sees in plan and in estimate ... clearly for what is
-        estimate and what's the charges"
-     Estimate tab: one card per service with its price lines (item, qty x
-     rate, amount), Materials / Labor / Total under it, the markup, the
-     total. Scope tab: the customer's service cards as plain bullets. The
-     tools that were there are folded under them, unchanged; the pencil on a
-     card opens the place it is edited. */
-  function md(t){ return esc3(t).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>'); }
-  function money(n){ return '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-  function estimateView(r){
-    var e = r.estimate || {};
-    var lines = (e.labor || []).map(function(l){ return { l: l, lab: true }; }).concat((e.materials || []).map(function(l){ return { l: l, lab: false }; }));
-    if (!lines.length) return '<div class="ev-card"><div class="ev-empty">No price yet. Generate the estimate below.</div></div>';
-    var order = [], by = {};
-    lines.forEach(function(x){
-      var sec = (typeof scopeSectionOf === 'function' ? scopeSectionOf(x.l) : (x.l.section || '')) || 'General';
-      if (!by[sec]) { by[sec] = []; order.push(sec); }
-      by[sec].push(x);
-    });
-    var html = order.map(function(sec){
-      var labT = 0, matT = 0;
-      var rows = by[sec].sort(function(a, b){ return (b.lab ? 1 : 0) - (a.lab ? 1 : 0); }).map(function(x){
-        var q = Number(x.l.qty) || 0, rt = Number(x.l.rate) || 0, amt = q * rt;
-        if (x.lab) labT += amt; else matT += amt;
-        return '<div class="ev-line"><span class="ev-t">' + esc3(x.l.item || '') + '<span class="ev-q">' + esc3(String(q) + ' ' + String(x.l.unit || '').toUpperCase()) + ' × ' + money(rt) + '</span></span>' +
-          (x.lab ? '<span class="ev-lab" title="Labor">🔨</span>' : '') + '<span class="ev-a">' + money(amt) + '</span></div>';
-      }).join('');
-      return '<div class="ev-card"><div class="ev-head"><h4>' + esc3(sec) + '</h4><button type="button" class="ev-ic" title="Edit the lines" onclick="etEditLines()">✏️</button></div>' + rows +
-        '<div class="ev-sum"><span>Materials<b>' + money(matT) + '</b></span><span>Labor<b>' + money(labT) + '</b></span><span class="ev-tot">Total<b>' + money(matT + labT) + '</b></span></div></div>';
-    }).join('');
-    var t = typeof calcTotal === 'function' ? calcTotal(e) : { grand: 0, markup: 0 };
-    if (Number(e.markupPct)) html += '<div class="ev-card"><div class="ev-head"><h4>Other</h4></div><div class="ev-line"><span class="ev-t">Markup<span class="ev-q">' + esc3(String(Number(e.markupPct))) + '%</span></span><span class="ev-a">' + money(t.markup) + '</span></div></div>';
-    html += '<div class="ev-total"><span>Total</span><span>' + money(t.grand) + '</span></div>';
-    var cust = null;
-    try { cust = (Number(r.customerFinalTotal) > 0) ? Number(r.customerFinalTotal) : calcCustomerView(e).customerTotal; } catch (x) { cust = null; }
-    if (cust != null && Math.abs(cust - t.grand) >= 0.01) html += '<div class="ev-cust">The customer sees <b>' + money(cust) + '</b> (what you chose to show)</div>';
-    return html;
+  function inject(){
+    var card = document.getElementById('edit-card');
+    var r = typeof currentRecord !== 'undefined' ? currentRecord : null;
+    if (!card || !r) return;
+    var old = document.getElementById('fu-box'); if (old) old.remove();
+    var fu = document.createElement('div'); fu.innerHTML = followUpHtml(r);
+    if (fu.firstChild) card.appendChild(fu.firstChild);
   }
-  function scopeView(r){
-    var d = null;
-    try { d = typeof scopeDraft === 'function' ? scopeDraft() : null; } catch (x) { d = null; }
-    var e = r.estimate || {};
-    var cards = [];
-    var proj = (e.projectIncluded || []).map(function(x){ return typeof x === 'string' ? x : (x && x.text) || ''; }).filter(Boolean);
-    if (proj.length) cards.push('<div class="sv-card"><div class="sv-head"><h4>Included for the whole project</h4><button type="button" class="ev-ic" title="Edit" onclick="etEditScope(-1)">✏️</button></div><ul>' + proj.map(function(t){ return '<li>' + md(t) + '</li>'; }).join('') + '</ul></div>');
-    ((d && d.services) || []).forEach(function(sv, i){
-      var inc = (sv.included || []).filter(Boolean), sup = (sv.supplied || []).filter(Boolean), exc = (sv.excluded || []).filter(Boolean);
-      if (!inc.length && !sup.length && !exc.length) return;
-      cards.push('<div class="sv-card"><div class="sv-head"><h4>' + esc3(sv.name || 'Service') + '</h4><button type="button" class="ev-ic" title="Edit" onclick="etEditScope(' + i + ')">✏️</button></div>' +
-        (inc.length ? '<ul>' + inc.map(function(t){ return '<li>' + md(t) + '</li>'; }).join('') + '</ul>' : '') +
-        (sup.length ? '<div class="sv-sub">You supply</div><ul>' + sup.map(function(t){ return '<li>' + md(t) + '</li>'; }).join('') + '</ul>' : '') +
-        (exc.length ? '<div class="sv-sub">Not included</div><ul>' + exc.map(function(t){ return '<li>' + md(t) + '</li>'; }).join('') + '</ul>' : '') + '</div>');
-    });
-    if (!cards.length) return '<div class="ev-card"><div class="ev-empty">No scope yet. It is written when the estimate is generated.</div></div>';
-    return cards.join('');
-  }
-  function fold(pane, cls, label, keep){
-    var det = document.createElement('details'); det.className = 'et-more ' + cls;
-    det.innerHTML = '<summary>' + label + '</summary><div class="et-more-body"></div>';
-    var body = det.querySelector('.et-more-body');
-    [].slice.call(pane.children).forEach(function(el){ if (keep.indexOf(el) < 0) body.appendChild(el); });
-    pane.appendChild(det);
-    return det;
-  }
-  function refreshViews(){
-    var r = rec(), card = document.getElementById('edit-card'); if (!r || !card) return;
-    var ev = card.querySelector('#et-ev'), sv = card.querySelector('#et-sv');
-    if (ev) ev.innerHTML = estimateView(r);
-    if (sv) sv.innerHTML = scopeView(r);
-  }
-  window.etRefreshViews = refreshViews;
-  window.etEditLines = function(){
-    var card = document.getElementById('edit-card'); if (!card) return;
-    var more = card.querySelector('.et-more-est'); if (more) more.open = true;
-    card.querySelectorAll('.et-pane[data-k=estimate] .lm-fold').forEach(function(d){ d.open = true; });
-    var f = card.querySelector('.et-pane[data-k=estimate] .lm-fold');
-    if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-  window.etEditScope = function(i){
-    var card = document.getElementById('edit-card'); if (!card) return;
-    var more = card.querySelector('.et-more-scope'); if (more) more.open = true;
-    growIn(card.querySelector('.et-pane.on'));
-    var t = i < 0 ? card.querySelector('#scope-control-wrap .sc-proj') : card.querySelectorAll('#scope-control-wrap .sc-service:not(.sc-proj)')[i];
-    (t || card.querySelector('#scope-control-wrap') || more).scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  window.etBuild = build;
-  window.etHistoryItems = historyItems;
   if (typeof renderEdit === 'function') {
     var _orig = renderEdit;
-    renderEdit = function(){ var out = _orig.apply(this, arguments); try { build(); } catch (e) { console.error('estimate tabs', e); } return out; };
+    renderEdit = function(){ var out = _orig.apply(this, arguments); try { inject(); } catch (e) { console.error('follow-ups', e); } return out; };
   }
 })();
 </script>
-<!-- ===== END ESTIMATE TABS ===== -->
 
 <script>
 /* ═══════════ CUSTOMERS TAB — unified inbox + per-customer history (Jul 30 2026) ═══════════ */
