@@ -436,7 +436,7 @@ exports.handler = async function handler(event) {
     const wasTotal = history.customerTotal({ estimate: previousEstimate, customerFinalTotal: record.customerFinalTotal });
     record.estimate = estimate;
     record.status = record.status === "new" ? "drafted" : record.status;
-    history.note(record, "regenerated", (previousEstimate && (previousEstimate.labor || []).length ? (body.reanalyze === true ? "Re-read and re-priced by the AI" : "Re-priced by the AI") : "Priced by the AI") + ": " + (estimate.labor || []).length + " labor and " + (estimate.materials || []).length + " material lines, " + history.totalMove(previousEstimate && (previousEstimate.labor || []).length ? wasTotal : null, history.customerTotal(record)), { total: history.customerTotal(record) });
+    history.note(record, "regenerated", (previousEstimate && (previousEstimate.labor || []).length ? (body.reanalyze === true ? "Re-read and re-priced by the AI" : "Re-priced by the AI") : (body.autoDraft === true ? "Draft made automatically when the request arrived" : "Priced by the AI")) + ": " + (estimate.labor || []).length + " labor and " + (estimate.materials || []).length + " material lines, " + history.totalMove(previousEstimate && (previousEstimate.labor || []).length ? wasTotal : null, history.customerTotal(record)), { total: history.customerTotal(record) });
     }
     record.updatedAt = new Date().toISOString();
     record.aiStatus = "done";

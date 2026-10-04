@@ -6466,6 +6466,12 @@ function applyGeneratedEstimate(data, serverMerged) {
    on a locked phone. */
 async function resumeGenerationIfRunning(ref) {
   var job = aiJobFor(ref);
+  /* A draft started by the server when the request arrived (lib/auto-draft.js)
+     has no note on this phone: the record itself says it is running. */
+  if (!job && currentRecord && currentRecord.ref === ref && currentRecord.aiStatus === "running" && /^auto-/.test(String(currentRecord.aiJobId || ""))) {
+    var st = Date.parse(currentRecord.aiStartedAt || "") || Date.now();
+    if (Date.now() - st < AI_JOB_MAX_MS) job = { jobId: currentRecord.aiJobId, startedAt: st };
+  }
   if (!job) return;
   /* It may well have finished while the phone was in a pocket. openEdit has just
      fetched the record, so check that copy before polling for another. */
@@ -6476,7 +6482,7 @@ async function resumeGenerationIfRunning(ref) {
     return;
   }
   if (v.state === "error" || v.state === "timeout") { aiJobClear(ref); return; }
-  toast("Still generating — picking it back up");
+  toast(/^auto-/.test(job.jobId) ? "The draft is being made — it started when the request arrived" : "Still generating — picking it back up");
   try {
     applyGeneratedEstimate(await watchGeneration(ref, job.jobId, job.startedAt, job.addService === true ? "Adding the service… (the rest stays as it is)" : ""), job.addService === true);
     toast(job.addService === true ? "✓ The added service is on the estimate" : "✓ AI estimate generated");
@@ -12753,7 +12759,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
   /* ── WHAT HAPPENED, NEWEST FIRST ──────────────────────────────────────
      record.history is written on the server by every step (lib/history.js);
      the dates on the record fill in what happened before that log existed. */
-  var KIND_ICON = { sent: '📨', accepted: '✅', declined: '❌', review: '⭐', question: '❓', regenerated: '✨', added: '➕', removed: '➖', reworded: '✏️', saved: '💾', total: '💲', customer: '👤', services: '🧾', email: '✉️', opened: '👀', submitted: '📥', completed: '🏁', invoice: '💳', paid: '💰' };
+  var KIND_ICON = { sent: '📨', accepted: '✅', declined: '❌', review: '⭐', question: '❓', regenerated: '✨', added: '➕', removed: '➖', reworded: '✏️', saved: '💾', total: '💲', customer: '👤', services: '🧾', email: '✉️', followup: '🔔', opened: '👀', submitted: '📥', completed: '🏁', invoice: '💳', paid: '💰' };
   function historyItems(r){
     var out = [], seen = {};
     function add(at, kind, text){ if (!at || !text) return; var k = kind + '|' + String(at).slice(0, 16); if (seen[k]) return; seen[k] = 1; out.push({ at: at, kind: kind, text: text }); }
@@ -12902,6 +12908,8 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
       }
       var cnv = cust.querySelector('#cnv-section');
       if (cnv) panes.messages.appendChild(cnv);
+      var fu = document.createElement('div'); fu.innerHTML = followUpHtml(r);
+      if (fu.firstChild) panes.messages.insertBefore(fu.firstChild, panes.messages.firstChild);
     }
     if (!panes.photos.children.length) panes.photos.innerHTML = '<div class="et-empty">No photos on this job yet.</div>';
     panes.history.innerHTML = historyHtml(r);
@@ -12950,6 +12958,41 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     renderScopeControl = function(){ var out = _rsc.apply(this, arguments); try { var c = document.getElementById('edit-card'); growIn(c && c.querySelector('.et-pane.on')); } catch (e) {} return out; };
   }
   window.addEventListener('resize', function(){ var c = document.getElementById('edit-card'); if (c) growIn(c.querySelector('.et-pane.on')); });
+  /* ── FOLLOW-UP EMAILS (lib/follow-up.js) ─────────────────────────────────
+     Day 2, 5 and 10 after the send, until the customer answers. The same
+     rules as the server, read off the record, so the switch says what will
+     happen; the server decides. */
+  var FU_DAYS = [2, 5, 10], FU_SINCE = Date.parse('2026-10-04T00:00:00Z');
+  function followUpHtml(r){
+    var sentAt = Date.parse(r.sentAt || '');
+    if (!sentAt || sentAt < FU_SINCE) return '';
+    var done = (r.followUps || []).filter(function(f){ return f && f.basis === String(r.sentAt || ''); });
+    var after = function(iso){ var t = Date.parse(iso || ''); return t && t > sentAt; };
+    var answered = after(r.acceptedAt) || after(r.declinedAt) || after(r.lastCustomerMessageAt) || ['sent', 'opened'].indexOf(String(r.status || '')) < 0;
+    var off = r.followUpOff === true;
+    var line = off ? 'Off for this job.'
+      : answered ? 'Stopped — the customer answered.'
+      : done.length >= FU_DAYS.length ? 'All 3 sent.'
+      : done.length + ' of 3 sent · next on day ' + FU_DAYS[done.length] + ' after you sent it.';
+    return '<div class="form-section" style="display:flex;align-items:center;gap:12px;justify-content:space-between">' +
+      '<div><div style="font-weight:800;font-size:13px;letter-spacing:.5px">🔔 AUTOMATIC FOLLOW-UP EMAILS</div><div style="font-size:13px;color:var(--ink-muted,#8a9bb0);margin-top:3px">Day 2, 5 and 10 if they do not answer. ' + esc3(line) + '</div></div>' +
+      (answered ? '' : '<button type="button" class="btn-secondary" style="flex:0 0 auto" onclick="etFollowUp(' + (off ? 'false' : 'true') + ')">' + (off ? 'Turn on' : 'Turn off') + '</button>') +
+    '</div>';
+  }
+  window.etFollowUp = async function(off){
+    var r = rec(); if (!r) return;
+    try {
+      var res = await sbcFetch('/.netlify/functions/follow-up-switch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: r.ref, off: off }) });
+      var j = await res.json().catch(function(){ return {}; });
+      if (!res.ok) throw new Error(j.error || ('HTTP ' + res.status));
+      r.followUpOff = off;
+      (r.history = r.history || []).push({ at: new Date().toISOString(), kind: 'followup', text: off ? 'Automatic follow-up emails switched off' : 'Automatic follow-up emails switched on' });
+      if (typeof toast === 'function') toast(off ? 'Follow-up emails off for this job' : 'Follow-up emails on');
+      renderEdit();
+    } catch (e) { if (typeof toast === 'function') toast('Could not change it: ' + e.message, true); }
+  };
+  window.etFollowUpHtml = followUpHtml;
+
   window.etBuild = build;
   window.etHistoryItems = historyItems;
   if (typeof renderEdit === 'function') {

@@ -29,6 +29,11 @@
 [functions."inbox-digest-scheduled"]
   schedule = "30 11 * * *"
 
+# Follow-up emails on sent estimates nobody answered (lib/follow-up.js):
+# day 2, 5 and 10. 14:12 UTC = 10:12 am New York (summer) / 9:12 am (winter).
+[functions."follow-ups-scheduled"]
+  schedule = "12 14 * * *"
+
 # Every Gmail he connected from the dashboard (Customers > Connected
 # mailboxes), read into the assistant's inbox every 15 minutes, offset
 # from inbox-sync. gmail-sync itself is contractor-only; this caller
