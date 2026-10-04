@@ -9006,6 +9006,11 @@ async function sendToCustomer() {
   } else {
     visibility = "Total only (no breakdown)";
   }
+  /* The line lists are a separate choice; say so, or "no breakdown" sits over
+     a page that lists every line. */
+  if (est.showLaborLines || est.showMaterialLines) {
+    visibility = visibility.replace(" (no breakdown)", "") + " · lists " + (est.showLaborLines && est.showMaterialLines ? "labor and material lines" : est.showLaborLines ? "labor lines" : "material lines") + ((est.showLaborLinePrices && est.showLaborLines) || (est.showMaterialLinePrices && est.showMaterialLines) ? " with prices" : ", no prices");
+  }
 
   /* ══ SHOW HIM THE CUSTOMER'S PAGE, NOT A SENTENCE ABOUT IT. ═══════════════
      This was a confirm() reading "Customer will see: Total only (no breakdown)"
@@ -12743,6 +12748,9 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 #edit-card .modal-head h2,#edit-card h3,#edit-card h4,#edit-card .section-title,#edit-card .cust-panel h3,#edit-card .form-section h3,#edit-card .ai-bar h4{color:var(--ink,#1a2433)!important}
 #edit-card .btn-ai,#edit-card #gen-btn,#edit-card .btn-primary,#edit-card .et-ai button{background:var(--brand)!important;color:#0a1628!important}
 #edit-card .btn-ai:hover:not(:disabled),#edit-card .btn-primary:hover:not(:disabled){background:var(--brand-2)!important}
+/* things filled with the accent (now black) get white marks: the ticked
+   boxes, the "Customer sees" label, the finish-group button */
+#edit-card .cv-checkbox-box::after,#edit-card .ilt-box::after,#edit-card .cv-preview-label,#edit-card .sbcf-add-group{color:#fff!important}
 /* buttons filled with the gold variable in their own inline style stay gold */
 #edit-card button[style*="background:var(--gold)"],#edit-card button[style*="background: var(--gold)"]{background:var(--brand)!important;color:#0a1628!important;border-color:var(--brand)!important}
 #edit-card .et-tab.on{color:var(--brand-2)!important;border-bottom-color:var(--brand)!important}

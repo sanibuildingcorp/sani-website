@@ -59,6 +59,9 @@ ok('the bullets are escaped; only **bold** is turned into bold', /function md\(t
 
 ok('outline buttons have black words and a gray border; filled buttons (gold, red, white text) keep theirs', /#edit-card button:not\(\.et-tab\)[^{]*:not\(\[style\*="color:#fff"\]\)[^{]*\{color:#1a2433!important;border-color:#cfd5de!important\}/.test(block));
 
+ok('a ticked box shows a white tick on the black box; "Customer sees" is readable', /#edit-card \.cv-checkbox-box::after,#edit-card \.ilt-box::after,#edit-card \.cv-preview-label,#edit-card \.sbcf-add-group\{color:#fff!important\}/.test(block));
+ok('the send preview says whether the line lists are shown, with or without prices', /visibility\.replace\(" \(no breakdown\)", ""\) \+ " · lists "/.test(DASH));
+
 /* History, run for real */
 const ctx = { console, String, Number, Array, Object, Date, Element: function () {}, renderEdit: function () {} };
 ctx.Element.prototype.scrollIntoView = function () {};
