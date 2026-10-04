@@ -5164,14 +5164,14 @@ function renderEdit() {
     '<div id="scope-control-wrap"></div>' +
     '<div class="cv-panel">' +
       '<h3>👁 CUSTOMER VIEW MODE</h3>' +
-      '<div class="cv-helper">Choose what costs to show on the customer\'s quote. The total they see equals only what you check. Markup still applies internally.</div>' +
+      '<div class="cv-helper">Tick what the customer sees.</div>' +
       '<div class="cv-grid">' +
         '<div class="cv-checks">' +
           '<div class="cv-check' + (laborChecked ? " checked" : "") + '" data-kind="labor" onclick="toggleCv(\'labor\')">' +
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (laborChecked ? " checked" : "") + ' id="cv-labor">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Show Labor Cost</div>' +
+              '<div class="cv-check-label">Labor cost</div>' +
               '<div class="cv-check-amount" id="cv-labor-amt">—</div>' +
             '</div>' +
           '</div>' +
@@ -5179,7 +5179,7 @@ function renderEdit() {
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (materialsChecked ? " checked" : "") + ' id="cv-materials">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Show Materials Cost</div>' +
+              '<div class="cv-check-label">Materials cost</div>' +
               '<div class="cv-check-amount" id="cv-materials-amt">—</div>' +
             '</div>' +
           '</div>' +
@@ -5187,24 +5187,24 @@ function renderEdit() {
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (sectionsChecked ? " checked" : "") + ' id="cv-sections">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Show a price on each service card</div>' +
-              '<div class="cv-check-amount">Off = the customer sees only the total, no price on the cards (portal and PDF). Save, then send the update.</div>' +
+              '<div class="cv-check-label">Price on each service</div>' +
+              '<div class="cv-check-amount">Off = total only</div>' +
             '</div>' +
           '</div>' +
           '<div class="cv-check' + (laborLinesChecked ? " checked" : "") + '" data-kind="laborLines" onclick="toggleCv(\'laborLines\')">' +
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (laborLinesChecked ? " checked" : "") + ' id="cv-laborlines">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Labor breakdown</div>' +
-              '<div class="cv-check-amount">Lists every labor line (' + (est.labor||[]).length + ' items) on the customer page.</div>' +
+              '<div class="cv-check-label">Labor list</div>' +
+              '<div class="cv-check-amount">' + (est.labor||[]).length + ' items, no prices</div>' +
             '</div>' +
           '</div>' +
           '<div class="cv-check' + (materialLinesChecked ? " checked" : "") + '" data-kind="materialLines" onclick="toggleCv(\'materialLines\')">' +
             '<span class="cv-checkbox-box"></span>' +
             '<input type="checkbox"' + (materialLinesChecked ? " checked" : "") + ' id="cv-materiallines">' +
             '<div class="cv-check-text">' +
-              '<div class="cv-check-label">Materials breakdown</div>' +
-              '<div class="cv-check-amount">Lists every material line (' + (est.materials||[]).length + ' items) on the customer page.</div>' +
+              '<div class="cv-check-label">Materials list</div>' +
+              '<div class="cv-check-amount">' + (est.materials||[]).length + ' items, no prices</div>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -5240,7 +5240,7 @@ function renderEdit() {
         '<button type="button" id="pdf-customer" onclick="downloadEstimatePdf(\'customer\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ CUSTOMER PDF</button>' +
         '<button type="button" id="pdf-internal" onclick="downloadEstimatePdf(\'internal\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ INTERNAL PDF</button>' +
       '</div>' +
-      '<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;text-align:center">Customer PDF: what the customer sees, with prices. Internal PDF: your lines, rates and markup. Both from the last saved version.</div>' +
+      '<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;text-align:center">Internal PDF = with your rates and markup.</div>' +
     '</div>' +
     stepBar(5, 'Send it', 'Preview first if you want. Nothing leaves here until you press send.') +
     (currentRecord && currentRecord.status === 'completed'
@@ -5602,10 +5602,10 @@ function updateCvPreview() {
     html += '<div class="cv-preview-note"><strong>✓ All materials included</strong> in the total price.</div>';
   }
   if (!cv.showLabor && cv.showMaterials && t.labor > 0) {
-    html += '<div class="cv-preview-note"><strong>Materials only</strong> — labor is not part of this price.</div>';
+    html += '<div class="cv-preview-note"><strong>Materials only</strong> — no labor.</div>';
   }
   if (cv.showLabor && !cv.showMaterials && t.mat > 0) {
-    html += '<div class="cv-preview-note"><strong>Labor only</strong> — materials are not part of this price.</div>';
+    html += '<div class="cv-preview-note"><strong>Labor only</strong> — no materials.</div>';
   }
   body.innerHTML = html;
 }
@@ -5762,19 +5762,17 @@ function sentVersionHtml(r) {
   var moved = false;
   try { moved = quoteMovedSinceSent(r, v); } catch (e) { moved = false; }
 
-  var head = '<strong>The customer is looking at version ' + (Number(v.n) || 1) + '</strong>'
+  var head = '<strong>Customer sees version ' + (Number(v.n) || 1) + '</strong>'
     + (when ? ' · sent ' + esc(when) : '');
 
   if (!moved) {
     return '<div style="margin-top:12px;border:1px solid #16a34a;background:rgba(22,163,74,.07);border-radius:12px;padding:10px 13px;font-size:12.5px;line-height:1.5;color:var(--ink,#1a2433)">'
-      + '✓ ' + head + '. Your draft matches it.'
+      + '✓ ' + head + '. Same as your draft.'
       + '</div>';
   }
   return '<div style="margin-top:12px;border:1.5px solid var(--gold,#c8860a);background:rgba(200,134,10,.09);border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--ink,#1a2433)">'
     + head + '.<br>'
-    + '<strong style="color:var(--gold-2,#b8720a)">You changed the price or the work after sending.</strong> '
-    + '<span style="color:var(--ink-soft)">The customer still sees version ' + (Number(v.n) || 1) + '. '
-    + 'Press Send when you want them to see version ' + ((Number(v.n) || 1) + 1) + '.</span>'
+    + '<strong>You changed it.</strong> Press Send to update.'
     + '</div>';
 }
 
@@ -5839,8 +5837,7 @@ function stampedTotalHtml(r) {
   try { lines = Number(calcCustomerView(r.estimate || {}).customerTotal) || 0; } catch (e) { lines = 0; }
   if (!(lines > 0) || Math.abs(lines - stamped) <= 1) return "";
   return '<div style="margin-top:12px;border:1.5px solid #cfd5de;background:#f6f7f9;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:var(--ink)">'
-    + '<strong style="color:var(--ink)">The customer is being quoted ' + fmt(stamped) + ', not ' + fmt(lines) + '.</strong><br>'
-    + '<span style="color:var(--ink-soft)">A price was agreed at ' + fmt(stamped) + ' and it overrides these lines everywhere the customer looks — their quote page, the emailed total and the contract. Changing the lines alone does not move it.</span><br>'
+    + '<strong style="color:var(--ink)">Customer pays ' + fmt(stamped) + ' (agreed price), not ' + fmt(lines) + '.</strong><br>'
     + '<button type="button" onclick="restampCustomerTotal()" style="margin-top:9px;padding:9px 16px;background:#1a2433;color:#fff;border:none;border-radius:8px;font-family:var(--body,inherit);font-size:11.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">Charge ' + fmt(lines) + ' instead</button>'
     + '</div>';
 }
@@ -12315,12 +12312,12 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     var includeBox =
       '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;background:var(--gold-soft,#fbf4e3);border:1.5px solid var(--gold);border-radius:9px;padding:11px 13px;margin:2px 0 14px;font-size:12.5px;color:var(--ink);line-height:1.45">'+
         '<input type="checkbox" id="sbc-include-contract" '+(__inc?'checked':'')+' onchange="window.__sbcIncludeContract=this.checked" style="width:18px;height:18px;margin-top:1px;accent-color:var(--gold);cursor:pointer;flex:none">'+
-        '<span><strong>Include contract with this estimate.</strong> When checked, the customer must review &amp; sign the contract to approve. Leave unchecked for quote-only approval (no contract).</span>'+
+        '<span><strong>Customer signs a contract to approve</strong></span>'+
       '</label>';
 
     if (!ct || !ct.sections){
       panel.innerHTML = head + includeBox +
-        '<div style="font-size:12.5px;color:var(--ink-muted);margin-bottom:12px;line-height:1.5">Generate the project-specific agreement the customer signs when they approve. You can review and edit everything before they see it.</div>'+
+        '<div style="font-size:12.5px;color:var(--ink-muted);margin-bottom:12px;line-height:1.5">You can edit it before the customer sees it.</div>'+
         '<button onclick="sbcGenContract(false)" id="sbc-ct-gen" style="padding:12px 22px;background:var(--gold);color:#102236;border:none;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer">✨ Generate Contract with AI</button>'+
         '<span id="sbc-ct-genmsg" style="font-size:12px;color:var(--ink-muted);margin-left:10px"></span>';
       return;

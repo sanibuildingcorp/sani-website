@@ -79,7 +79,7 @@ console.log('\nthe prices card renders rows and a money total, not source code\n
   const pdf = fs.readFileSync(path.join(__dirname, '..', 'netlify/functions/lib/estimate-pdf.js'), 'utf8');
   ok('the customer PDF: same heading, and its card bands already follow the switch', /e\.showSectionSubtotals !== false \? "Price by service" : "Your price"/.test(pdf) && /num\(c\.subtotal\) > 0 && e\.showSectionSubtotals !== false \?/.test(pdf));
   const dash = fs.readFileSync(path.join(__dirname, '..', 'dashboard.html'), 'utf8');
-  ok('the dashboard switch says what it does, in plain words', /Show a price on each service card<\/div>/.test(dash) && /Off = the customer sees only the total, no price on the cards/.test(dash));
+  ok('the dashboard switch says what it does, in plain words', /Price on each service<\/div>/.test(dash) && /Off = total only/.test(dash));
   ok('...and "Preview what the customer sees" hides the card prices too', /var cardPrices = !\(currentRecord && currentRecord\.estimate && currentRecord\.estimate\.showSectionSubtotals === false\);/.test(dash) && /\(cardPrices \? '<span class="sc-prev-total">'/.test(dash));
 }
 {
