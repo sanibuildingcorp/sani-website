@@ -48,6 +48,15 @@ ok('the estimate screen redefines gold as blue and the borders as gray - on #edi
 ok('...gold stays on the main buttons (Generate, Send, Edit with AI) and the open tab', /#edit-card \.btn-ai,#edit-card #gen-btn,#edit-card \.btn-primary,#edit-card \.et-ai button\{background:var\(--brand\)!important/.test(block) && /#edit-card \.et-tab\.on\{color:var\(--brand-2\)!important/.test(block));
 ok('...titles are navy, not gold', /#edit-card \.modal-head h2,#edit-card h3[^{]*\{color:var\(--ink,#1a2433\)!important\}/.test(block));
 
+/* "In simplewise are more clear understandable" -> the clear view */
+ok('Estimate tab: a card per service with its lines (item, qty x rate, amount, a hammer on labor), then Materials / Labor / Total', /function estimateView\(r\)/.test(js) && /' × ' \+ money\(rt\)/.test(js) && /title="Labor">🔨/.test(js) && /Materials<b>' \+ money\(matT\)/.test(js));
+ok('...the markup and the total, and what the customer sees when it differs', /<h4>Other<\/h4>[\s\S]{0,200}Markup/.test(js) && /The customer sees <b>/.test(js));
+ok('Scope tab: the customer\'s cards as plain bullets, You supply / Not included under them', /function scopeView\(r\)/.test(js) && /You supply<\/div>/.test(js) && /Not included<\/div>/.test(js));
+ok('the old tools are folded under the view, not removed; Generate stays out', /fold\(panes\.estimate, 'et-more-est'[^)]*aiBar \? \[aiBar\] : \[\]\)/.test(js) && /fold\(panes\.scope, 'et-more-scope'/.test(js));
+ok('the pencil opens the place it is edited; a scroll into a fold opens it', /window\.etEditLines = function/.test(js) && /window\.etEditScope = function/.test(js) && /closest\('#edit-card details\.et-more'\)/.test(js));
+ok('the views follow edits (typed prices, card changes)', /recalc = function\(\)\{ var out = _rc\.apply/.test(js) && /refreshViews\(\); \} catch/.test(js));
+ok('the bullets are escaped; only **bold** is turned into bold', /function md\(t\)\{ return esc3\(t\)\.replace/.test(js));
+
 /* History, run for real */
 const ctx = { console, String, Number, Array, Object, Date, Element: function () {}, renderEdit: function () {} };
 ctx.Element.prototype.scrollIntoView = function () {};
