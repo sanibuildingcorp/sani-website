@@ -120,6 +120,8 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     /* Emails customers: never on a bare call. */
     ["follow-ups-background", "POST", {}],
     ["follow-up-switch", "POST", { ref: "SBC-260805-XQNQ", off: true }],
+    /* Waits, then emails him the "stopped at step" alert. */
+    ["form-alert-background", "POST", { sid: "visit12345", abandonAt: "2026-10-04T10:00:00Z" }],
   ];
 
   for (const [name, method, body] of GATED) {

@@ -53,6 +53,33 @@ async function lookupIp(ip) {
   } catch (e) { return {}; }
 }
 
+/* One visit of the estimate form, in its own small store. */
+function sessions() {
+  const { getStore } = require("@netlify/blobs");
+  return getStore({ name: "form-sessions", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
+}
+async function formSession(sid, change) {
+  try {
+    const st = sessions();
+    const cur = (await st.get(sid, { type: "json" })) || {};
+    await st.setJSON(sid, change(cur));
+  } catch (e) { console.error("form session", e && e.message); }
+}
+exports.formSession = formSession;
+exports.readSession = async function (sid) { try { return (await sessions().get(sid, { type: "json" })) || {}; } catch (e) { return {}; } };
+
+/* Hand the wait to the background function; it answers 202 at once. */
+async function startWait(payload) {
+  if (!process.env.DASHBOARD_KEY) return;
+  const base = (process.env.URL || "https://www.sanibuildingcorp.com").replace(/\/$/, "");
+  const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+  const t = ctrl ? setTimeout(function () { ctrl.abort(); }, 4000) : null;
+  try {
+    await fetch(base + "/.netlify/functions/form-alert-background", { method: "POST", headers: { "Content-Type": "application/json", "x-sbc-key": process.env.DASHBOARD_KEY }, body: JSON.stringify(payload), signal: ctrl ? ctrl.signal : undefined });
+  } catch (e) { /* a 202 is often cut off by the abort; the wait runs anyway */ }
+  finally { if (t) clearTimeout(t); }
+}
+
 exports.handler = async (event) => {
   let data = {};
   if (event.httpMethod === "GET") {
@@ -69,6 +96,34 @@ exports.handler = async (event) => {
     try { data = JSON.parse(raw); } catch (e) { data = {}; }
   } else {
     return { statusCode: 405, body: "Method Not Allowed" };
+  }
+
+  /* ── "STOPPED AT STEP" WAITS TO BE SURE ─────────────────────────────────
+       "When i start estimate form filling up ... in the process i received
+        this" - the alert came while he was still filling it in.
+     The page goes hidden every time the customer opens the photo picker,
+     reads a text or switches apps, and that was reported as leaving. Now
+     the form says where the customer is ("progress", "resume", "done") and
+     "abandon" only starts a wait (form-alert-background): ten minutes later,
+     if the same visit has not come back, moved on or sent the request, the
+     alert goes out - as "abandon" with final:true and the dashboard key, the
+     only way this function emails it. */
+  const sid = /^[a-z0-9]{8,24}$/i.test(String(data.sid || "")) ? String(data.sid) : "";
+  if (["progress", "resume", "done"].includes(data.type)) {
+    if (sid) await formSession(sid, function (s) { s.lastSeenAt = new Date().toISOString(); if (data.type === "done") s.done = true; if (data.step) s.step = Number(data.step) || s.step; return s; });
+    return { statusCode: 200, body: "ok" };
+  }
+  if (data.type === "abandon" && data.final !== true) {
+    if (!sid) return { statusCode: 200, body: "ok" };   /* an old page with no visit id: no alert rather than a wrong one */
+    const at = new Date().toISOString();
+    await formSession(sid, function (s) { s.abandonAt = at; return s; });
+    await startWait(Object.assign({}, data, { sid: sid, abandonAt: at }));
+    return { statusCode: 200, body: "ok" };
+  }
+  if (data.type === "abandon" && data.final === true) {
+    const key = process.env.DASHBOARD_KEY || "";
+    const got = String((event.headers || {})["x-sbc-key"] || "");
+    if (!key || got !== key) return { statusCode: 401, body: "no" };
   }
 
   const type = ["abandon","visit","call","test"].includes(data.type) ? data.type : "start";

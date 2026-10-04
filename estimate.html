@@ -1210,7 +1210,7 @@ renderServices();
   }
   function alertZura(type,step){
     try{
-      var payload={type:type,step:step,stepName:(typeof STEP_LABELS!=='undefined'&&STEP_LABEL_BY_DISPLAY[step])||'',source:src,
+      var payload={type:type,step:step,sid:SID,stepName:(typeof STEP_LABELS!=='undefined'&&STEP_LABEL_BY_DISPLAY[step])||'',source:src,
         name:(window.formData&&formData.name)||'',
         phone:(window.formData&&formData.phone)||'',
         service:(window.formData&&formData.serviceLabel)||''};
@@ -1225,6 +1225,10 @@ renderServices();
   /* Steps are numbered 1,8,5,2,9 inside the form; the customer sees 1-5.
      maxStep is the furthest step SEEN (1-5), so "stopped at step 3" means
      the third screen, not internal step 8. */
+  /* One id per visit of this page, so the server can tell a customer who
+     only opened the photo picker from one who left (form-alert). */
+  var SID=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+  function seen(type,step){try{fetch('/.netlify/functions/form-alert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:type,step:step||0,sid:SID}),keepalive:true}).catch(function(){});}catch(e){}}
   var STEP_LABEL_BY_DISPLAY={};
   try{Object.keys(DISPLAY_STEP).forEach(function(k){STEP_LABEL_BY_DISPLAY[DISPLAY_STEP[k]]=STEP_LABELS[k];});}catch(e){}
   var maxStep=1,started=false,completed=false,sentAt=0;
@@ -1249,22 +1253,31 @@ renderServices();
       markStart(shown);
       if(shown>maxStep)maxStep=shown;
       ev('estimate_step',{step_number:shown});
+      if(started&&sentAt)seen('progress',shown);
     }else if(s==='success'&&!completed){
       completed=true;ev('estimate_complete',{step_number:maxStep});
+      if(sentAt)seen('done',maxStep);
     }
   };
   ev('estimate_view',{step_number:1});
   /* "Stopped at step N". iPhone Safari rarely fires pagehide when the
      customer switches apps or locks the phone, so leaving the tab counts
-     too. Sent once per step reached: someone who comes back, goes further
-     and leaves again is reported again, at the new step. */
+     too - but the photo picker, a text message or a screenshot hide the
+     page as well. So hiding only tells the server; the alert goes out ten
+     minutes later and only if this visit never came back (form-alert,
+     form-alert-background). Every hide is told, every return too. */
   function left(){
-    if(!started||completed||sentAt>=maxStep)return;
+    if(!started||completed)return;
+    if(sentAt<maxStep)ev('estimate_abandon',{step_number:maxStep});
     sentAt=maxStep;
-    ev('estimate_abandon',{step_number:maxStep});alertZura('abandon',maxStep);
+    alertZura('abandon',maxStep);
   }
   window.addEventListener('pagehide',left);
-  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')left();});
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='hidden')left();
+    else if(started&&!completed&&sentAt)seen('resume',maxStep);
+  });
+  window.addEventListener('pageshow',function(e){if(e.persisted&&started&&!completed&&sentAt)seen('resume',maxStep);});
 })();
 </script>
 </body>
