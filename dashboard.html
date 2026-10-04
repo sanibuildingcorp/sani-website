@@ -1404,7 +1404,11 @@ body {
 .sc-row-off .sc-item{opacity:.5;text-decoration:line-through;background:#fafbfc}
 .sc-offtag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);flex:0 0 auto;padding:0 4px}
 .sc-offn{font-weight:700;color:var(--gold)}
-.sc-item{flex:1;min-width:0;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.sc-item{flex:1;min-width:0;font-size:14px;line-height:1.45;border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-family:inherit;color:inherit;background:#fff;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word}
+/* The text gets the whole width; move and delete go under it, on the right. */
+.sc-row{flex-wrap:wrap}
+.sc-row .sc-item{flex:1 1 calc(100% - 34px)}
+.sc-row .sc-move{margin-left:auto}
 .sc-move{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:5px;background:#fff;max-width:110px}
 .sc-del{border:none;background:none;color:#c0392b;font-size:14px;cursor:pointer;padding:2px 5px}
 .sc-add{font-size:12px;border:1px dashed var(--line);background:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:var(--ink-muted)}
@@ -7967,8 +7971,11 @@ function scopeItemRow(si, gkey, ii, txt, on) {
     '<label class="sc-check" title="' + (on ? 'The customer sees this line' : 'Hidden from the customer') + '">' +
       '<input type="checkbox"' + (on ? ' checked' : '') +
       ' onchange="scopeToggleItem(' + si + ',\'' + gkey + '\',' + ii + ',this.checked)"></label>' +
-    '<input class="sc-item" value="' + esc(txt) + '" ' +
-      'onchange="scopeEditItem(' + si + ',\'' + arrKey + '\',' + ii + ',this.value)">' +
+    /* A text box that wraps, not a one-line field: "the texts still not
+       shows full like in simplewise". One line of text still - Enter is
+       taken out - and it grows to fit (estimate tabs, etGrow). */
+    '<textarea class="sc-item" rows="1" oninput="if(/\\n/.test(this.value))this.value=this.value.replace(/\\s*\\n+\\s*/g,\' \')" ' +
+      'onchange="scopeEditItem(' + si + ',\'' + arrKey + '\',' + ii + ',this.value)">' + esc(txt) + '</textarea>' +
     (on
       ? '<select class="sc-move" onchange="scopeMoveItem(' + si + ',\'' + gkey + '\',' + ii + ',this.value);this.selectedIndex=0">' +
           '<option value="">move&hellip;</option>' +
@@ -12723,6 +12730,21 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 .et-hist .et-ht{flex:1;min-width:0;font-size:14px;line-height:1.5;overflow-wrap:break-word}
 .et-hist .et-hw{display:block;font-size:12px;color:var(--ink-muted,#8a9bb0);margin-top:2px}
 .et-empty{color:var(--ink-muted,#8a9bb0);font-size:14px;padding:18px 2px}
+/* ── CALMER COLORS ON THE ESTIMATE SCREEN ─────────────────────────────────
+   "So many yellow is in my dashboard" -> Simplewise style: white cards,
+   light gray borders, navy titles, blue for small controls. Gold stays on
+   the main buttons (Generate, Send) and the open tab. Only this screen:
+   the variables are redefined on #edit-card, the rest of the dashboard
+   keeps its look. */
+#edit-card{--brand:#b8930a;--brand-2:#96770a;--gold:#2f6fb5;--gold-2:#1d4f8a;--gold-soft:#eef3f9;--line:#e2e6ec}
+#edit-card .modal-head h2,#edit-card h3,#edit-card h4,#edit-card .section-title,#edit-card .cust-panel h3,#edit-card .form-section h3,#edit-card .ai-bar h4{color:var(--ink,#1a2433)!important}
+#edit-card .btn-ai,#edit-card #gen-btn,#edit-card .btn-primary,#edit-card .et-ai button{background:var(--brand)!important;color:#0a1628!important}
+#edit-card .btn-ai:hover:not(:disabled),#edit-card .btn-primary:hover:not(:disabled){background:var(--brand-2)!important}
+/* buttons filled with the gold variable in their own inline style stay gold */
+#edit-card button[style*="background:var(--gold)"],#edit-card button[style*="background: var(--gold)"]{background:var(--brand)!important;color:#0a1628!important;border-color:var(--brand)!important}
+#edit-card .et-tab.on{color:var(--brand-2)!important;border-bottom-color:var(--brand)!important}
+#edit-card .et-ai{border-color:var(--line);background:#f6f8fb}
+#edit-card .ai-bar,#edit-card .hr-fold,#edit-card .lm-fold,#edit-card .cv-panel,#edit-card .cust-panel,#edit-card .totals-box,#edit-card .form-section.sbcf-section{background:#fff!important;border-color:var(--line)!important}
 .et-ai{margin:18px 0 6px;border:1.5px solid var(--gold,#c8860a);border-radius:14px;padding:12px;background:var(--gold-soft,#fbf6ea)}
 .et-ai-row{display:flex;gap:8px;align-items:flex-end}
 .et-ai textarea{flex:1;min-width:0;font-family:var(--body);font-size:16px;line-height:1.45;border:1px solid var(--line,#e3e7ee);border-radius:10px;padding:10px 12px;resize:none;min-height:46px;background:#fff;color:inherit}
