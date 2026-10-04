@@ -1404,7 +1404,11 @@ body {
 .sc-row-off .sc-item{opacity:.5;text-decoration:line-through;background:#fafbfc}
 .sc-offtag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);flex:0 0 auto;padding:0 4px}
 .sc-offn{font-weight:700;color:var(--gold)}
-.sc-item{flex:1;min-width:0;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.sc-item{flex:1;min-width:0;font-size:14px;line-height:1.45;border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-family:inherit;color:inherit;background:#fff;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word}
+/* The text gets the whole width; move and delete go under it, on the right. */
+.sc-row{flex-wrap:wrap}
+.sc-row .sc-item{flex:1 1 calc(100% - 34px)}
+.sc-row .sc-move{margin-left:auto}
 .sc-move{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:5px;background:#fff;max-width:110px}
 .sc-del{border:none;background:none;color:#c0392b;font-size:14px;cursor:pointer;padding:2px 5px}
 .sc-add{font-size:12px;border:1px dashed var(--line);background:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:var(--ink-muted)}
@@ -7967,8 +7971,11 @@ function scopeItemRow(si, gkey, ii, txt, on) {
     '<label class="sc-check" title="' + (on ? 'The customer sees this line' : 'Hidden from the customer') + '">' +
       '<input type="checkbox"' + (on ? ' checked' : '') +
       ' onchange="scopeToggleItem(' + si + ',\'' + gkey + '\',' + ii + ',this.checked)"></label>' +
-    '<input class="sc-item" value="' + esc(txt) + '" ' +
-      'onchange="scopeEditItem(' + si + ',\'' + arrKey + '\',' + ii + ',this.value)">' +
+    /* A text box that wraps, not a one-line field: "the texts still not
+       shows full like in simplewise". One line of text still - Enter is
+       taken out - and it grows to fit (estimate tabs, etGrow). */
+    '<textarea class="sc-item" rows="1" oninput="if(/\\n/.test(this.value))this.value=this.value.replace(/\\s*\\n+\\s*/g,\' \')" ' +
+      'onchange="scopeEditItem(' + si + ',\'' + arrKey + '\',' + ii + ',this.value)">' + esc(txt) + '</textarea>' +
     (on
       ? '<select class="sc-move" onchange="scopeMoveItem(' + si + ',\'' + gkey + '\',' + ii + ',this.value);this.selectedIndex=0">' +
           '<option value="">move&hellip;</option>' +

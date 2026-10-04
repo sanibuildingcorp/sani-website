@@ -41,6 +41,8 @@ ok('the project title wraps instead of being cut off, and stays one line of text
 ok('finishing options sit on the Photos tab', /if \(id === 'sbcf-section'\) return 'photos';/.test(js));
 ok('...and redraw where they sit, so adding an option never sends them back to Estimate', /if\(ex && ex\.parentNode\)\{ ex\.parentNode\.replaceChild\(sec,ex\); return; \}/.test(DASH));
 
+ok('service card lines wrap and show in full (a text box, not a one-line field), Enter kept out', /'<textarea class="sc-item" rows="1" oninput="if\(\/\\\\n\/\.test\(this\.value\)\)/.test(DASH) && !/<input class="sc-item"/.test(DASH));
+
 /* History, run for real */
 const ctx = { console, String, Number, Array, Object, Date, Element: function () {}, renderEdit: function () {} };
 ctx.Element.prototype.scrollIntoView = function () {};
