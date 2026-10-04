@@ -12721,8 +12721,12 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     var logged = function(kind){ return (r.history || []).some(function(h){ return h && h.kind === kind; }); };
     add(r.submittedAt, 'submitted', 'Request received' + (r.source === 'email' ? ' by email' : r.source === 'contact-form' ? ' from the contact form' : ' from the estimate form'));
     if (!logged('sent')) add(r.sentAt, 'sent', 'Estimate sent to the customer');
-    if (r.openedAt) add(r.openedAt, 'opened', 'Customer opened the estimate');
-    if (r.lastOpenedAt && r.lastOpenedAt !== r.openedAt) add(r.lastOpenedAt, 'opened', 'Customer opened it again' + (r.openCount > 1 ? ' (' + r.openCount + ' times in all)' : ''));
+    /* The server log already says "The customer opened the quote page"; the
+       open dates only add a line when they are later than that by a minute. */
+    var loggedOpen = (r.history || []).reduce(function(m, h){ return h && /opened/i.test(h.text || '') && String(h.at) > m ? String(h.at) : m; }, '');
+    var newer = function(at){ return at && (!loggedOpen || Date.parse(at) - Date.parse(loggedOpen) > 60000); };
+    if (newer(r.openedAt)) add(r.openedAt, 'opened', 'Customer opened the estimate');
+    if (newer(r.lastOpenedAt) && r.lastOpenedAt !== r.openedAt) add(r.lastOpenedAt, 'opened', 'Customer opened it again' + (r.openCount > 1 ? ' (' + r.openCount + ' times in all)' : ''));
     if (!logged('accepted')) add(r.acceptedAt, 'accepted', 'Customer approved the estimate');
     if (!logged('declined')) add(r.declinedAt, 'declined', 'Customer declined the estimate');
     add(r.completedAt, 'completed', 'Job marked completed');
