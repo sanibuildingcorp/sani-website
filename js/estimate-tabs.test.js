@@ -32,10 +32,16 @@ ok('the Send / Delete / Complete buttons stay outside the tabs', /modal-head \| 
 ok('a scroll to something on a closed tab opens that tab first', /Element\.prototype\.scrollIntoView = function/.test(js));
 ok('currentRecord is read as the top-level let it is, not window.currentRecord', /typeof currentRecord !== 'undefined' \? currentRecord : null/.test(js) && !/window\.currentRecord/.test(js));
 
+/* "in scope the texts doesn't shows full until i scroll and i need to see always full texts" */
+ok('every Scope text box is sized to its whole text when the tab opens, with no inner scroll bar',
+  /var GROW = '#f-title, #f-summary, #f-scope, #f-timeline, #scope-control-wrap textarea'/.test(js) && /t\.style\.maxHeight = 'none'; t\.style\.overflowY = 'hidden'/.test(js) && /growIn\(card\.querySelector\('\.et-pane\.on'\)\)/.test(js));
+ok('...and again as he types, and when the service cards redraw', /addEventListener\('input', function\(\)\{ fit\(t\); \}\)/.test(js) && /renderScopeControl = function/.test(js));
+ok('the project title wraps instead of being cut off, and stays one line of text', /<textarea id="f-title" rows="1"[^>]*replace\(\/\\\\n\/g/.test(DASH));
+
 /* History, run for real */
 const ctx = { console, String, Number, Array, Object, Date, Element: function () {}, renderEdit: function () {} };
 ctx.Element.prototype.scrollIntoView = function () {};
-ctx.window = ctx; vm.createContext(ctx); vm.runInContext(js, ctx);
+ctx.window = ctx; ctx.addEventListener = function () {}; vm.createContext(ctx); vm.runInContext(js, ctx);
 const items = ctx.etHistoryItems({
   submittedAt: '2026-09-26T12:00:00Z', source: 'email', sentAt: '2026-09-26T16:31:10Z', openedAt: '2026-09-26T18:00:00Z', lastOpenedAt: '2026-09-27T09:00:00Z', openCount: 3, acceptedAt: '2026-09-27T09:05:00Z',
   history: [{ at: '2026-09-26T16:30:00Z', kind: 'sent', text: 'Sent version 1 - total $28,172.92' }, { at: '2026-09-26T15:00:00Z', kind: 'regenerated', text: 'Estimate generated' }],
