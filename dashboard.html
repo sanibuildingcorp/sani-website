@@ -5069,7 +5069,7 @@ function renderEdit() {
       '<h3>📋 PROJECT</h3>' +
       '<div class="field" style="margin-bottom:12px">' +
         '<label>Project Title</label>' +
-        '<input type="text" id="f-title" value="' + esc(est.projectTitle || "") + '" placeholder="e.g. Master Bathroom Renovation — Brooklyn">' +
+        '<textarea id="f-title" rows="1" class="et-grow" oninput="this.value=this.value.replace(/\\n/g,\' \')" placeholder="e.g. Master Bathroom Renovation — Brooklyn">' + esc(est.projectTitle || "") + '</textarea>' +
       '</div>' +
       '<div class="field" style="margin-bottom:12px">' +
         '<label>Summary (shown to customer)</label>' +
@@ -12765,10 +12765,25 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     var card = document.getElementById('edit-card'); if (!card) return;
     card.querySelectorAll('.et-tab').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-k') === key); });
     card.querySelectorAll('.et-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-k') === key); });
+    growIn(card.querySelector('.et-pane.on'));
     var cr = rec(); if (cr && cr.ref) OPEN[cr.ref] = key;
     var bar = card.querySelector('.et-bar'), on = card.querySelector('.et-tab.on');
     if (bar && on) { var l = on.offsetLeft - 40; bar.scrollLeft = l < 0 ? 0 : l; }
   }
+  /* "in scope the texts doesn't shows full until i scroll and i need to see
+     always full texts". A box measured while its tab is hidden has no height
+     to measure, so every text box on the tab is sized when the tab opens, and
+     again as he types - the whole text, no inner scroll bar. */
+  var GROW = '#f-title, #f-summary, #f-scope, #f-timeline, #scope-control-wrap textarea';
+  function fit(t){ t.style.maxHeight = 'none'; t.style.overflowY = 'hidden'; t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
+  function growIn(pane){
+    if (!pane) return;
+    pane.querySelectorAll(GROW).forEach(function(t){
+      fit(t);
+      if (!t.__etGrow) { t.__etGrow = 1; t.addEventListener('input', function(){ fit(t); }); }
+    });
+  }
+  window.etGrow = growIn;
   window.etShow = function(key){ show(key); var m = document.getElementById('edit-modal'); if (m) m.scrollTop = 0; };
 
   function build(){
@@ -12845,6 +12860,12 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     return _siv.apply(this, arguments);
   };
 
+  /* The service cards redraw on their own (move, add, undo); size them again. */
+  if (typeof renderScopeControl === 'function') {
+    var _rsc = renderScopeControl;
+    renderScopeControl = function(){ var out = _rsc.apply(this, arguments); try { var c = document.getElementById('edit-card'); growIn(c && c.querySelector('.et-pane.on')); } catch (e) {} return out; };
+  }
+  window.addEventListener('resize', function(){ var c = document.getElementById('edit-card'); if (c) growIn(c.querySelector('.et-pane.on')); });
   window.etBuild = build;
   window.etHistoryItems = historyItems;
   if (typeof renderEdit === 'function') {
