@@ -122,7 +122,7 @@ def panel(c, i):
       <ul class="bc-list">{items}</ul>
       <p class="bc-hoods">{ICON["pin"]}<span><b>Serving</b> {E(c["hoods"])}</span></p>
       <div class="bc-actions"><a class="bc-cta" href="#quick-estimate" data-area="{E(c["form"])}">Get my free estimate</a><a class="bc-call" href="tel:3322770990">{ICON["phone"]}(332) 277-0990</a></div>
-      <a class="bc-more" href="{E(c["href"])}">See {E(c["area"])} bathroom work &rarr;</a>
+      <a class="bc-more" href="{E(c["href"])}">Bathroom remodeling &amp; renovation {"on" if c["area"] in ("Staten Island", "Long Island") else "in"} {E(c["area"])} &rarr;</a>
     </div>
   </article>'''
 
@@ -208,8 +208,8 @@ TRUST = ('<div class="bc-trust"><span><span class="bc-stars" aria-hidden="true">
 
 section = (START + "\n" + CSS + "\n"
   + '<section class="bc-section" id="boroughs">\n<div class="bc-inner">\n'
-  + '  <div class="bc-head"><div class="eyebrow">Bathroom remodeling · NYC &amp; Long Island</div>'
-  + '<h2>Bathroom Remodeling Near You</h2>'
+  + '  <div class="bc-head"><div class="eyebrow">Bathroom remodeling &amp; renovation · New York City &amp; Long Island</div>'
+  + '<h2>Bathroom Remodeling &amp; Renovation Near You</h2>'
   + '<p>One Sani Building Corp crew in every borough. Pick your area, see our bathroom work there, and get a free estimate.</p>'
   + TRUST + '</div>\n'
   + '  <div class="bc-tabs" role="tablist" aria-label="Choose your area">' + "".join(tab(c, i) for i, c in enumerate(CARDS)) + '</div>\n'
