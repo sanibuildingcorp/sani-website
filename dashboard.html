@@ -6345,11 +6345,40 @@ function sleepUntilVisibleOr(ms) {
 /* Watch a run to its end. Called both by the click that starts one and by the
    reconnect that finds one already going. Looks the button up every tick instead
    of holding a reference, because a re-render replaces the element. */
+/* ── HOW FAR ALONG, IN PERCENT ─────────────────────────────────────────
+     Simplewise shows "65% Building your estimate". The generator writes the
+   stage it is in (aiStage, generate-estimate-background markStage); each
+   stage has a share of the run, and inside a stage the number creeps up
+   slowly so a long stage still moves, never past the next stage's start.
+   It never goes backwards and says 100 only when the estimate is back. */
+var GEN_STAGE_PCT = [["Reading the job", 5], ["Checking current prices", 25], ["Pricing the work", 40], ["Checking the draft", 70], ["Looking up material prices", 80], ["Writing the scope of work", 90]];
+function genPct(stage, msInStage) {
+  var i = -1;
+  for (var k = 0; k < GEN_STAGE_PCT.length; k++) if (String(stage || "").indexOf(GEN_STAGE_PCT[k][0]) === 0) i = k;
+  var from = i < 0 ? 1 : GEN_STAGE_PCT[i][1];
+  var to = i < 0 ? GEN_STAGE_PCT[0][1] : (i + 1 < GEN_STAGE_PCT.length ? GEN_STAGE_PCT[i + 1][1] : 99);
+  var creep = Math.floor((msInStage || 0) / 6000);
+  return Math.min(to - 1, from + creep);
+}
+function genProgressBar(btn, pct, secs) {
+  var bar = document.getElementById("gen-progress");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "gen-progress";
+    bar.innerHTML = '<div style="height:8px;border-radius:4px;background:var(--line,#e3e7ee);overflow:hidden;margin:10px 0 4px"><div class="gp-fill" style="height:100%;width:0;background:var(--gold,#c8860a);transition:width .6s"></div></div><div class="gp-note" style="font-size:12px;color:var(--ink-muted,#8a9bb0)"></div>';
+    if (btn.parentNode) btn.parentNode.insertBefore(bar, btn.nextSibling);
+  }
+  bar.querySelector(".gp-fill").style.width = pct + "%";
+  bar.querySelector(".gp-note").textContent = secs + "s · you can close this window, it keeps working";
+}
+
+function genProgressClear() { var b = document.getElementById("gen-progress"); if (b) b.remove(); }
+
 async function watchGeneration(ref, jobId, startedAt, label) {
   /* "Generating… 655s" - "It's still loading". The server writes the stage
      it is in on the record (aiStage); the button says it after the seconds,
      so a long run reads as progress, not as a hang. */
-  var stage = "";
+  var stage = "", stageAt = Date.now(), lastPct = 0;
   while (true) {
     var elapsed = Date.now() - startedAt;
     var btn = document.getElementById("gen-btn");
@@ -6358,20 +6387,24 @@ async function watchGeneration(ref, jobId, startedAt, label) {
       /* "Adding the service…" on an added service: the same word as a full
          regeneration read as one, and one look at "Generating…" was enough
          to make him think the agreed estimate was being rebuilt. */
-      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + Math.round(elapsed / 1000) + 's' + (stage ? ' · ' + esc(stage) : '');
+      lastPct = Math.max(lastPct, genPct(stage, Date.now() - stageAt));
+      if (btn.style) { btn.style.whiteSpace = "normal"; btn.style.maxWidth = "100%"; }
+      btn.innerHTML = '<span class="ai-spin"></span> ' + (label || "Generating…") + ' ' + lastPct + '%' + (stage ? ' · ' + esc(stage) : '');
+      genProgressBar(btn, lastPct, Math.round(elapsed / 1000));
     }
     var rec = null;
     try {
       var pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       if (pr.ok) rec = await pr.json();
     } catch (_) { rec = null; }
-    if (rec && rec.aiJobId === jobId && rec.aiStatus === "running") stage = String(rec.aiStage || "");
+    if (rec && rec.aiJobId === jobId && rec.aiStatus === "running") { var ns = String(rec.aiStage || ""); if (ns !== stage) { stage = ns; stageAt = Date.now(); } }
 
     var v = aiPollVerdict(rec, jobId, Date.now() - startedAt);
     if (v.state === "done") { aiJobClear(ref); return { estimate: rec.estimate, status: rec.status, customerFinalTotal: rec.customerFinalTotal }; }
-    if (v.state === "error") { aiJobClear(ref); throw new Error(v.message); }
+    if (v.state === "error") { aiJobClear(ref); genProgressClear(); throw new Error(v.message); }
     if (v.state === "timeout") {
       aiJobClear(ref);
+      genProgressClear();
       throw new Error("Still running after 15 minutes — check Netlify → Logs → Functions → generate-estimate-background");
     }
     await sleepUntilVisibleOr(3000);
@@ -12684,6 +12717,35 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
 .et-hist .et-ht{flex:1;min-width:0;font-size:14px;line-height:1.5;overflow-wrap:break-word}
 .et-hist .et-hw{display:block;font-size:12px;color:var(--ink-muted,#8a9bb0);margin-top:2px}
 .et-empty{color:var(--ink-muted,#8a9bb0);font-size:14px;padding:18px 2px}
+.et-ai{margin:18px 0 6px;border:1.5px solid var(--gold,#c8860a);border-radius:14px;padding:12px;background:var(--gold-soft,#fbf6ea)}
+.et-ai-row{display:flex;gap:8px;align-items:flex-end}
+.et-ai textarea{flex:1;min-width:0;font-family:var(--body);font-size:16px;line-height:1.45;border:1px solid var(--line,#e3e7ee);border-radius:10px;padding:10px 12px;resize:none;min-height:46px;background:#fff;color:inherit}
+.et-ai button{flex:0 0 auto;border:0;border-radius:10px;background:var(--gold,#c8860a);color:#0a1628;font-weight:800;font-size:13px;letter-spacing:.5px;padding:12px 14px;cursor:pointer}
+.et-ai button:disabled{opacity:.6}
+.et-ai-reply{white-space:pre-wrap;font-size:14px;line-height:1.55;margin-top:10px;overflow-wrap:break-word}
+.et-ai-reply:empty{display:none}
+.et-q-btn{display:block;width:100%;margin:0 0 14px;border:1.5px dashed var(--gold,#c8860a);border-radius:12px;background:transparent;color:var(--gold-2,#a86f00);font-family:var(--body);font-weight:800;font-size:13px;letter-spacing:.5px;padding:13px;cursor:pointer}
+#cq-ov{position:fixed;inset:0;z-index:9999;background:#f4f3ef;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#cq-ov .cq-top{background:#0a1628;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;font-weight:800;font-size:17px;position:sticky;top:0}
+#cq-ov .cq-top button{background:none;border:0;color:#fff;font-size:26px;line-height:1;cursor:pointer;padding:0 4px}
+#cq-ov .cq-body{padding:18px 16px 40px;max-width:640px;width:100%;margin:0 auto;box-sizing:border-box}
+#cq-ov .cq-bar{height:8px;border-radius:4px;background:#ddd;overflow:hidden;margin-bottom:22px}
+#cq-ov .cq-bar div{height:100%;background:#2f6fb5;transition:width .3s}
+#cq-ov h2{font-size:23px;line-height:1.3;margin:0 0 8px;color:#111;font-family:var(--body);letter-spacing:0;text-transform:none}
+#cq-ov .cq-why{font-size:14px;color:#6b7280;margin:0 0 18px;line-height:1.45}
+#cq-ov .cq-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:#fff;border:1.5px solid #e2e4ea;border-radius:26px;padding:16px 20px;margin:0 0 12px;font-size:16px;line-height:1.35;color:#111;cursor:pointer;font-family:var(--body)}
+#cq-ov .cq-opt.sel{border-color:#2f6fb5;background:#e6f0fa;color:#1d4f8a}
+#cq-ov .cq-star{color:#f0a500;font-size:20px;flex:0 0 auto}
+#cq-ov .cq-other{display:none;margin:0 0 12px}
+#cq-ov .cq-other.on{display:block}
+#cq-ov .cq-other textarea{width:100%;box-sizing:border-box;font-size:16px;border:1.5px solid #2f6fb5;border-radius:14px;padding:12px;min-height:70px;font-family:var(--body)}
+#cq-ov .cq-nav{display:flex;justify-content:space-between;gap:10px;margin-top:10px}
+#cq-ov .cq-nav button,#cq-ov .cq-main{border:0;border-radius:26px;padding:14px 22px;font-size:15px;font-weight:800;cursor:pointer;font-family:var(--body)}
+#cq-ov .cq-back{background:transparent;color:#2f6fb5}
+#cq-ov .cq-main{background:#2f6fb5;color:#fff;width:100%;margin-top:14px}
+#cq-ov .cq-sum li{margin:0 0 12px;line-height:1.45;font-size:15px}
+#cq-ov .cq-sum b{display:block}
+#cq-ov .cq-wait{text-align:center;padding:60px 10px;font-size:16px;color:#374151}
 @media (max-width:640px){.et-tab{padding:9px 10px 7px;font-size:11.5px}}
 </style>
 <script>
@@ -12784,6 +12846,40 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     });
   }
   window.etGrow = growIn;
+
+  /* ── EDIT WITH AI ───────────────────────────────────────────────────────
+     Simplewise's box at the bottom of the plan and the price. It is the same
+     estimator as Ask AI on the Notes tab (askSend: same chat, same actions -
+     a change to the price lines still shows before/after and asks first);
+     the answer is shown right under the box he typed in. */
+  var LAST_AI = {};
+  function aiBox(key){
+    return '<div class="et-ai"><div class="et-ai-row"><textarea id="et-ai-' + key + '" rows="1" placeholder="✨ Edit with AI"></textarea>' +
+      '<button type="button" id="et-ai-btn-' + key + '" onclick="etAi(\'' + key + '\')">Send</button></div>' +
+      '<div class="et-ai-reply" id="et-ai-reply-' + key + '"></div></div>';
+  }
+  window.etAi = async function(key){
+    var r = rec(); if (!r) return;
+    var box = document.getElementById('et-ai-' + key), btn = document.getElementById('et-ai-btn-' + key), out = document.getElementById('et-ai-reply-' + key);
+    var text = box ? String(box.value || '').trim() : '';
+    var ask = document.getElementById('ask-text');
+    if (!text || !ask || typeof askSend !== 'function') return;
+    var ref = String(r.ref || '');
+    ask.value = text;
+    if (box) box.value = '';
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    LAST_AI[ref] = { key: key, text: 'Working on it… this can take 1–3 minutes.' };
+    if (out) out.textContent = LAST_AI[ref].text;
+    try { await askSend(); } catch (e) {}
+    var log = (typeof ASK_LOG !== 'undefined' && ASK_LOG[ref]) || [];
+    var last = null;
+    for (var i = log.length - 1; i >= 0; i--) { if (log[i] && log[i].role === 'assistant') { last = log[i]; break; } }
+    LAST_AI[ref] = { key: key, text: last ? (typeof aiPlain === 'function' ? aiPlain(last.text) : last.text) : '' };
+    /* a change that saved redrew the card: find the new box */
+    out = document.getElementById('et-ai-reply-' + key); btn = document.getElementById('et-ai-btn-' + key);
+    if (out) out.textContent = LAST_AI[ref].text;
+    if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+  };
   window.etShow = function(key){ show(key); var m = document.getElementById('edit-modal'); if (m) m.scrollTop = 0; };
 
   function build(){
@@ -12831,6 +12927,21 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     }
     if (!panes.photos.children.length) panes.photos.innerHTML = '<div class="et-empty">No photos on this job yet.</div>';
     panes.history.innerHTML = historyHtml(r);
+    var nAns = (r.contractorAnswers || []).length;
+    var qb = document.createElement('button'); qb.type = 'button'; qb.className = 'et-q-btn';
+    qb.textContent = nAns ? '❓ Questions before pricing · ' + nAns + ' answered' : '❓ Questions before pricing';
+    qb.setAttribute('onclick', 'cqStart(false)');
+    panes.estimate.insertBefore(qb, panes.estimate.firstChild);
+    ['scope', 'estimate'].forEach(function(k){
+      var holder = document.createElement('div'); holder.innerHTML = aiBox(k);
+      var el = holder.firstChild;
+      var p = panes[k];
+      p.insertBefore(el, p.firstChild);
+      var last = LAST_AI[r.ref];
+      if (last && last.key === k) el.querySelector('.et-ai-reply').textContent = last.text;
+      var ta = el.querySelector('textarea');
+      ta.addEventListener('input', function(){ ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 2 + 'px'; });
+    });
 
     var bar = document.createElement('div'); bar.className = 'et-bar';
     var need = typeof threadNeedsReply === 'function' && threadNeedsReply(r);
@@ -12866,6 +12977,97 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     renderScopeControl = function(){ var out = _rsc.apply(this, arguments); try { var c = document.getElementById('edit-card'); growIn(c && c.querySelector('.et-pane.on')); } catch (e) {} return out; };
   }
   window.addEventListener('resize', function(){ var c = document.getElementById('edit-card'); if (c) growIn(c.querySelector('.et-pane.on')); });
+  /* ── QUESTIONS BEFORE PRICING ──────────────────────────────────────────
+     Simplewise's "Further Questions": one per screen, a star on the likely
+     answer, Unsure, Other. Written for HIM from everything on the record
+     (contractor-questions-background); his answers are saved on the record
+     and the generator reads them as his notes. */
+  var CQ = null;   /* { ref, questions, picks: {id: answer}, i } */
+  function cqEl(){ var o = document.getElementById('cq-ov'); if (!o) { o = document.createElement('div'); o.id = 'cq-ov'; document.body.appendChild(o); } return o; }
+  function cqClose(){ var o = document.getElementById('cq-ov'); if (o) o.remove(); CQ = null; }
+  function cqFrame(inner){ cqEl().innerHTML = '<div class="cq-top"><span>Questions before pricing</span><button type="button" onclick="cqClose()" aria-label="Close">×</button></div><div class="cq-body">' + inner + '</div>'; }
+  window.cqClose = cqClose;
+  function cqWait(text){ cqFrame('<div class="cq-wait"><span class="ai-spin"></span> ' + esc3(text) + '</div>'); }
+  function cqShow(){
+    if (!CQ) return;
+    var qs = CQ.questions, i = CQ.i;
+    if (i >= qs.length) return cqSummary();
+    var q = qs[i], pick = CQ.picks[q.id] || '';
+    var opts = q.options.concat(['Unsure']);
+    var isOther = pick && opts.indexOf(pick) < 0;
+    var html = '<div class="cq-bar"><div style="width:' + Math.round(i / qs.length * 100) + '%"></div></div>' +
+      '<h2>' + esc3((q.emoji ? q.emoji + ' ' : '') + q.question) + '</h2>' + (q.why ? '<p class="cq-why">' + esc3(q.why) + '</p>' : '') +
+      opts.map(function(o, k){ return '<button type="button" class="cq-opt' + (pick === o ? ' sel' : '') + '" onclick="cqPick(' + k + ')"><span>' + esc3(o) + '</span>' + (k === q.recommended ? '<span class="cq-star">★</span>' : '') + '</button>'; }).join('') +
+      '<button type="button" class="cq-opt' + (isOther ? ' sel' : '') + '" onclick="cqOther()"><span>Other</span></button>' +
+      '<div class="cq-other' + (isOther ? ' on' : '') + '" id="cq-other"><textarea id="cq-other-text" placeholder="Type your answer">' + esc3(isOther ? pick : '') + '</textarea><button type="button" class="cq-main" onclick="cqOtherOk()">OK</button></div>' +
+      '<div class="cq-nav">' + (i > 0 ? '<button type="button" class="cq-back" onclick="cqGo(-1)">‹ Back</button>' : '<span></span>') + '<button type="button" class="cq-back" onclick="cqGo(1)">Skip ›</button></div>';
+    cqFrame(html);
+  }
+  function cqSummary(){
+    var qs = CQ.questions;
+    var rows = qs.map(function(q){ var a = CQ.picks[q.id]; return '<li><b>' + esc3(q.question) + '</b>' + (a ? esc3(a) : '<span style="color:#9ca3af">skipped</span>') + '</li>'; }).join('');
+    var n = qs.filter(function(q){ return CQ.picks[q.id]; }).length;
+    cqFrame('<div class="cq-bar"><div style="width:100%"></div></div><h2>Your answers</h2><p class="cq-why">' + n + ' of ' + qs.length + ' answered. They go to the estimator as your notes.</p><ul class="cq-sum">' + rows + '</ul>' +
+      '<button type="button" class="cq-main" onclick="cqSave(true)">Save and generate the estimate</button>' +
+      '<button type="button" class="cq-main" style="background:#fff;color:#2f6fb5;border:1.5px solid #2f6fb5" onclick="cqSave(false)">Save only</button>' +
+      '<div class="cq-nav"><button type="button" class="cq-back" onclick="cqGo(-1)">‹ Back</button><button type="button" class="cq-back" onclick="cqStart(true)">↻ New questions</button></div>');
+  }
+  window.cqPick = function(k){ var q = CQ.questions[CQ.i]; var opts = q.options.concat(['Unsure']); CQ.picks[q.id] = opts[k]; CQ.i++; cqShow(); };
+  window.cqOther = function(){ var b = document.getElementById('cq-other'); if (b) { b.classList.add('on'); var t = document.getElementById('cq-other-text'); if (t) t.focus(); } };
+  window.cqOtherOk = function(){ var t = document.getElementById('cq-other-text'); var v = t ? String(t.value || '').trim() : ''; if (!v) return; CQ.picks[CQ.questions[CQ.i].id] = v; CQ.i++; cqShow(); };
+  window.cqGo = function(d){ CQ.i = Math.max(0, Math.min(CQ.questions.length, CQ.i + d)); cqShow(); };
+  window.cqSave = async function(andGenerate){
+    var r = rec(); if (!CQ || !r) return;
+    var answers = CQ.questions.filter(function(q){ return CQ.picks[q.id]; }).map(function(q){ return { id: q.id, question: q.question, answer: CQ.picks[q.id] }; });
+    cqWait('Saving…');
+    try {
+      var res = await sbcFetch('/.netlify/functions/contractor-questions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: r.ref, answers: answers }) });
+      var j = await res.json().catch(function(){ return {}; });
+      if (!res.ok) throw new Error(j.error || ('HTTP ' + res.status));
+      r.contractorAnswers = j.answers || answers;
+      cqClose();
+      if (typeof toast === 'function') toast('✓ Answers saved');
+      if (andGenerate && typeof generateAI === 'function') { show('estimate'); generateAI(hasPrice(r), false); }
+      else if (typeof renderEdit === 'function') renderEdit();
+    } catch (e) { cqFrame('<div class="cq-wait">⚠ ' + esc3(e.message) + '</div><button type="button" class="cq-main" onclick="cqSummary2()">Back</button>'); }
+  };
+  window.cqSummary2 = function(){ cqShow(); };
+  /* Questions already written for this job open at once; otherwise (or for
+     "New questions") they are written now, in about half a minute. */
+  window.cqStart = async function(fresh){
+    var r = rec(); if (!r) return;
+    var ref = r.ref, picks = {};
+    (r.contractorAnswers || []).forEach(function(a){ if (a && a.question) picks['Q:' + a.question.toLowerCase()] = a.answer; });
+    function open(qs){
+      if (!qs.length) { cqFrame('<div class="cq-wait">Nothing to ask — the request already answers what the price needs.</div><button type="button" class="cq-main" onclick="cqClose()">OK</button>'); return; }
+      var p = {}; qs.forEach(function(q){ var a = picks['Q:' + q.question.toLowerCase()]; if (a) p[q.id] = a; });
+      CQ = { ref: ref, questions: qs, picks: p, i: 0 }; cqShow();
+    }
+    cqWait('Reading the job…');
+    try {
+      if (!fresh) {
+        var g = await sbcFetch('/.netlify/functions/contractor-questions?ref=' + encodeURIComponent(ref));
+        var gj = await g.json().catch(function(){ return {}; });
+        if (g.ok && gj.status === 'done' && (gj.questions || []).length) return open(gj.questions);
+      }
+      var job = 'cq-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      cqWait('Preparing your questions… about half a minute.');
+      await sbcFetch('/.netlify/functions/contractor-questions-background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: ref, job: job }) });
+      var t0 = Date.now();
+      while (Date.now() - t0 < 150000) {
+        await new Promise(function(res){ setTimeout(res, 2500); });
+        if (!document.getElementById('cq-ov')) return;            // closed while waiting
+        var p2 = await sbcFetch('/.netlify/functions/contractor-questions?ref=' + encodeURIComponent(ref));
+        var j2 = await p2.json().catch(function(){ return {}; });
+        if (j2.job === job && j2.status === 'done') return open(j2.questions || []);
+        if (j2.job === job && j2.status === 'error') throw new Error(j2.error || 'Could not prepare the questions');
+      }
+      throw new Error('Taking too long — try again in a minute.');
+    } catch (e) {
+      cqFrame('<div class="cq-wait">⚠ ' + esc3(e.message) + '</div><button type="button" class="cq-main" onclick="cqClose()">Close</button>');
+    }
+  };
+
   window.etBuild = build;
   window.etHistoryItems = historyItems;
   if (typeof renderEdit === 'function') {

@@ -89,8 +89,9 @@ function mkctx(opts) {
   ctx.fetch = opts.fetch || function () { return Promise.reject(new Error('no fetch stub')); };
 
   vm.createContext(ctx);
-  [extVar('AI_JOB_KEY'), extVar('AI_JOB_MAX_MS')].forEach(function (s) { vm.runInContext(s, ctx); });
-  ['aiJobsRead', 'aiJobsWrite', 'aiJobsPrune', 'aiJobStart', 'aiJobClear', 'aiJobFor',
+  [extVar('AI_JOB_KEY'), extVar('AI_JOB_MAX_MS'), extVar('GEN_STAGE_PCT')].forEach(function (s) { vm.runInContext(s, ctx); });
+  ctx.genProgressBar = function () {}; ctx.genProgressClear = function () {};
+  ['genPct', 'aiJobsRead', 'aiJobsWrite', 'aiJobsPrune', 'aiJobStart', 'aiJobClear', 'aiJobFor',
     'aiPollVerdict', 'sleepUntilVisibleOr', 'watchGeneration'].forEach(function (n) {
     vm.runInContext(ext(n), ctx);
   });
@@ -325,8 +326,10 @@ const FINISHED = { aiJobId: 'ai-1', aiStatus: 'done', status: 'drafted', estimat
   h.ctx.out = {};
   h.run('watchGeneration("A","ai-1", Date.now() - 42000).then(function(d){out.d=d},function(e){out.e=e.message})');
   await h.flush(8);
-  ok('the button counts real elapsed seconds, not ticks it managed to run',
-    /Generating… 4[23]s/.test(btn.innerHTML) || /Generating… 4\ds/.test(btn.innerHTML), btn.innerHTML);
+  /* Phase 2: the button shows a percent; the seconds sit under the bar
+     (genProgressBar), still counted from startedAt, never from ticks. */
+  ok('the button shows a percent, and the seconds passed to the bar are real elapsed seconds, not ticks it managed to run',
+    /Generating… \d+%/.test(btn.innerHTML) && /genProgressBar\(btn, lastPct, Math\.round\(elapsed \/ 1000\)\)/.test(HTML), btn.innerHTML);
 }
 {
   /* The button is redrawn by renderEdit() while a run is in flight; holding a
