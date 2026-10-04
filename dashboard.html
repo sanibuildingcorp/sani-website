@@ -4947,6 +4947,10 @@ function renderEdit() {
      undefined means SHOW. The dashboard read === true, which meant opening an older
      record and pressing Save Draft wrote false and silently deleted the per-service
      prices from an already-sent quote. One polarity: !== false, everywhere. */
+  /* "Keep them always unchecked until i check them manually." A quote the
+     customer has never been sent starts with no price on the service cards;
+     one already sent keeps what the customer saw. */
+  if (!r.sentAt && est.showSectionSubtotals === undefined) est.showSectionSubtotals = false;
   const sectionsChecked = est.showSectionSubtotals !== false;
   const laborLinesChecked = est.showLaborLines === true;
   const materialLinesChecked = est.showMaterialLines === true;

@@ -369,6 +369,12 @@ exports.handler = async function handler(event) {
        the cards. The box now holds the cards, here from the phrase library and
        again below once the scope writer has written them. See lib/scope-text.js. */
     syncScopeText(estimate);
+    /* "Keep them always unchecked until i check them manually": a new draft
+       shows the customer no per-service prices and no line lists. A choice he
+       made on an earlier draft comes back through the contractor-owned fields. */
+    ["showSectionSubtotals", "showLaborLines", "showMaterialLines", "showLaborLinePrices", "showMaterialLinePrices"].forEach(function (k) {
+      if (typeof estimate[k] !== "boolean") estimate[k] = false;
+    });
 
     /* SCOPE OF WORK — written last, on purpose.
        Runs only after pricing and card consolidation are final, so it describes
