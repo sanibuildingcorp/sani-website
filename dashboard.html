@@ -5236,11 +5236,8 @@ function renderEdit() {
         '<button type="button" id="pdf-internal" onclick="downloadEstimatePdf(\'internal\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ INTERNAL PDF</button>' +
       '</div>' +
       '<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;text-align:center">Customer PDF: what the customer sees, with prices. Internal PDF: your lines, rates and markup. Both from the last saved version.</div>' +
-      (currentRecord && currentRecord.parentRef ? '' :
-        '<button type="button" onclick="addonCreate()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE)</button>') +
     '</div>' +
     stepBar(5, 'Send it', 'Preview first if you want. Nothing leaves here until you press send.') +
-    '<button type="button" onclick="askCheck()" style="width:100%;margin:0 0 12px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🔍 CHECK BEFORE SENDING — emails &amp; plans vs every line</button>' +
     (currentRecord && currentRecord.status === 'completed'
       ? '<div id="completed-on" style="margin:0 0 10px;padding:10px 12px;border-radius:9px;background:rgba(13,148,136,0.10);color:#0f766e;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
           '<span>🏁 Completed on <strong>' + esc(fmtDay(completedDayOf(currentRecord)) || 'date not set') + '</strong></span>' +
