@@ -22,7 +22,7 @@ const est = () => ({ markupPct: 30, showLaborCost: true, showMaterialsCost: fals
 const quoted = Math.round(vm.runInContext('calcCustomerView', ctx)(est()).customerTotal * 100) / 100;
 const record = (live, sent, extra) => Object.assign({ estimate: live, sentVersion: { n: 1, at: '2026-09-25T16:30:00Z', estimate: sent, customerFinalTotal: null } }, extra || {});
 const says = (r) => ctx.sentVersionHtml(r);
-const matches = (h) => /Your draft matches it\./.test(h) && !/changed/.test(h);
+const matches = (h) => /Same as your draft\./.test(h) && !/changed/.test(h);
 
 ok('nothing changed: "Your draft matches it"', matches(says(record(est(), est()))));
 {
@@ -40,7 +40,7 @@ ok('THE CUSTOMER ACCEPTING - the price stamped after sending - IS NOT A CHANGE',
 }
 {
   const a = est(); a.labor[0].rate = 80;
-  ok('A NEW RATE IS A CHANGE - and it says so plainly', /You changed the price or the work after sending\./.test(says(record(a, est()))) && /The customer still sees version 1\. Press Send when you want them to see version 2\./.test(says(record(a, est()))));
+  ok('A NEW RATE IS A CHANGE - and it says so plainly', /You changed it\./.test(says(record(a, est()))) && /Press Send to update\./.test(says(record(a, est()))));
 }
 {
   const a = est(); a.labor.push({ section: 'Windows', item: 'Tidy the cords', qty: 1, unit: 'hrs', rate: 75 });

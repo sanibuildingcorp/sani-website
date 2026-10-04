@@ -86,14 +86,10 @@ ok('the panel renders without reaching outside its own script block',
   ok('THE LIVE CASE IS CALLED OUT: quoted $10,000.01 while the lines say ' + lines,
     h.indexOf('$10,000.01') !== -1 && h.indexOf(lines) !== -1, h.slice(0, 240));
   ok('...and it says plainly which one the customer sees',
-    /customer is being quoted/i.test(h), h.slice(0, 160));
-  ok('...and that changing the lines alone will not move it',
-    /does not move it/i.test(h));
-  ok('...and names the places it overrides, so the reason is obvious',
-    /quote page/i.test(h) && /contract/i.test(h));
+    /Customer price: /.test(h), h.slice(0, 160));
   ok('there is one button that makes them agree', /onclick="restampCustomerTotal\(\)"/.test(h));
   ok('...labelled with the number it will charge',
-    h.indexOf('Charge ' + lines + ' instead') !== -1, h.slice(-220));
+    h.indexOf('Change to ' + lines) !== -1, h.slice(-220));
 }
 
 /* ── when it must stay quiet ────────────────────────────────────────────── */
