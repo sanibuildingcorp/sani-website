@@ -46,6 +46,13 @@ ok('newest first', items.every((h, i) => i === 0 || String(items[i - 1].at) >= S
 ok('the server log is shown as written', texts.includes('Sent version 1 - total $28,172.92') && texts.includes('Estimate generated'));
 ok('a sent line already in the log is not repeated from sentAt', texts.filter((t) => /^Sent|sent to the customer/.test(t)).length === 1);
 ok('opened, opened again with the count, approved, invoice, paid, received by email', texts.includes('Customer opened the estimate') && texts.includes('Customer opened it again (3 times in all)') && texts.includes('Customer approved the estimate') && texts.includes('Invoice sent - $5,000.00') && texts.includes('Invoice paid') && texts.includes('Request received by email'));
+{
+  /* Oct 2, 76 Schermerhorn St: the log said "The customer opened the quote page" at 1:20 and the open date added "Customer opened it again" at 1:20 too. */
+  const t = ctx.etHistoryItems({ history: [{ at: '2026-10-02T17:20:10Z', kind: 'customer', text: 'The customer opened the quote page' }], openedAt: '2026-10-02T17:20:05Z', lastOpenedAt: '2026-10-02T17:20:40Z', openCount: 2 }).map((h) => h.text);
+  ok('an open the server already logged is not shown twice', t.length === 1 && t[0] === 'The customer opened the quote page', t.join(' | '));
+  const t2 = ctx.etHistoryItems({ history: [{ at: '2026-10-02T17:20:10Z', kind: 'customer', text: 'The customer opened the quote page' }], lastOpenedAt: '2026-10-03T09:00:00Z', openCount: 2 }).map((h) => h.text);
+  ok('...but a later open still is', t2.includes('Customer opened it again (2 times in all)'), t2.join(' | '));
+}
 ok('an empty record has no history but the request', ctx.etHistoryItems({}).length === 0 && ctx.etHistoryItems({ submittedAt: '2026-10-04T10:00:00Z' }).length === 1);
 ok('history text is escaped before it reaches the page', /esc3\(h\.text\)/.test(js));
 
