@@ -44,7 +44,7 @@ ok('...and redraw where they sit, so adding an option never sends them back to E
 ok('service card lines wrap and show in full (a text box, not a one-line field), Enter kept out', /'<textarea class="sc-item" rows="1" oninput="if\(\/\\\\n\/\.test\(this\.value\)\)/.test(DASH) && !/<input class="sc-item"/.test(DASH));
 
 /* "So many yellow is in my dashboard" -> Simplewise style, estimate screen only */
-ok('the estimate screen redefines gold as blue and the borders as gray - on #edit-card only', /#edit-card\{--brand:#b8930a;--brand-2:#96770a;--gold:#2f6fb5;--gold-2:#1d4f8a;--gold-soft:#eef3f9;--line:#e2e6ec\}/.test(block) && /:root \{[\s\S]{0,200}--gold: #b8930a;/.test(DASH));
+ok('the estimate screen redefines gold as black ("Change to black inside the buttons") and the borders as gray - on #edit-card only', /#edit-card\{--brand:#b8930a;--brand-2:#96770a;--gold:#1a2433;--gold-2:#1a2433;--gold-soft:#f2f4f7;--line:#e2e6ec\}/.test(block) && /:root \{[\s\S]{0,200}--gold: #b8930a;/.test(DASH));
 ok('...gold stays on the main buttons (Generate, Send, Edit with AI) and the open tab', /#edit-card \.btn-ai,#edit-card #gen-btn,#edit-card \.btn-primary,#edit-card \.et-ai button\{background:var\(--brand\)!important/.test(block) && /#edit-card \.et-tab\.on\{color:var\(--brand-2\)!important/.test(block));
 ok('...titles are navy, not gold', /#edit-card \.modal-head h2,#edit-card h3[^{]*\{color:var\(--ink,#1a2433\)!important\}/.test(block));
 
@@ -56,6 +56,8 @@ ok('the old tools are folded under the view, not removed; Generate stays out', /
 ok('the pencil opens the place it is edited; a scroll into a fold opens it', /window\.etEditLines = function/.test(js) && /window\.etEditScope = function/.test(js) && /closest\('#edit-card details\.et-more'\)/.test(js));
 ok('the views follow edits (typed prices, card changes)', /recalc = function\(\)\{ var out = _rc\.apply/.test(js) && /refreshViews\(\); \} catch/.test(js));
 ok('the bullets are escaped; only **bold** is turned into bold', /function md\(t\)\{ return esc3\(t\)\.replace/.test(js));
+
+ok('outline buttons have black words and a gray border; filled buttons (gold, red, white text) keep theirs', /#edit-card button:not\(\.et-tab\)[^{]*:not\(\[style\*="color:#fff"\]\)[^{]*\{color:#1a2433!important;border-color:#cfd5de!important\}/.test(block));
 
 /* History, run for real */
 const ctx = { console, String, Number, Array, Object, Date, Element: function () {}, renderEdit: function () {} };
