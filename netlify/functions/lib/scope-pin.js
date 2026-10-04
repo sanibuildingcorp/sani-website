@@ -86,9 +86,6 @@ function scopeInputs(input) {
   /* The job's emails (lib/job-emails.js), by id: a new email reads the job
      again. Only when there are some, so every job without emails keeps the
      fingerprint it had before emails were read at all. */
-  /* His answers before pricing (contractor-questions.js) define the job:
-     a new answer reads it again. Only when there are some. */
-  if (Array.isArray(con.answers) && con.answers.length) out.contractorAnswers = con.answers;
   if (Array.isArray(req.emails) && req.emails.length) out.emails = req.emails.map(function (e) { return String((e && e.id) || ""); });
   return out;
 }

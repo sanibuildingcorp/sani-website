@@ -117,10 +117,6 @@ const reset = () => { STORE = { "SBC-260805-XQNQ": estimateRecord() }; writes = 
     ["list-bid-jobs", "GET", null],
     /* Reads the inbox, writes new requests, costs an AI run per email. */
     ["email-lead-background", "POST", { ids: ["<x@example.com>"] }],
-    /* Questions before pricing: reads a whole job, costs an AI run, writes answers. */
-    ["contractor-questions-background", "POST", { ref: "SBC-260805-XQNQ", job: "cq-abcdef" }],
-    ["contractor-questions", "GET", null],
-    ["contractor-questions", "POST", { ref: "SBC-260805-XQNQ", answers: [{ question: "q", answer: "a" }] }],
   ];
 
   for (const [name, method, body] of GATED) {
