@@ -109,7 +109,7 @@ console.log('\n3. The scope writer: its own words kept, shared work once, a reas
   ok('THE CLOCK: live material prices are skipped when they would leave the writer under its two minutes, and an out-of-time skip is written on the estimate', /const MATERIAL_MIN_MS = SCOPE_MIN_MS \+ 90 \* 1000;/.test(GEN) && /if \(process\.env\.SERPER_API_KEY && timeLeft\(\) < MATERIAL_MIN_MS\) \{/.test(GEN) && /estimate\.scopeWriter = \{ version: "scope-writer-v1", servicesWritten: 0, servicesFallback: \(estimate\.serviceBreakdown \|\| \[\]\)\.length, note: timing\.scopeSkipped/.test(GEN));
 
   console.log('\n4. Everyone shows the one list\n');
-  ok('THE CUSTOMER PAGE: "Included for the whole project" above the services', /function projectCard\(e\)\{/.test(QUOTE) && /Included for the whole project/.test(QUOTE) && /\$\{projectCard\(e\)\}\$\{sv\.map\(\(s,i\)=>/.test(QUOTE));
+  ok('THE CUSTOMER PAGE: "Included for the whole project" above the services', /function projectCard\(e\)\{/.test(QUOTE) && /Included for the whole project/.test(QUOTE) && /\$\{projectCard\(e\)\}(\$\{finishCard\(e\)\})?\$\{sv\.map\(\(s,i\)=>/.test(QUOTE));
   ok('THE SCOPE PDF: a "Whole project" card first', /cards\.unshift\(\{ title: "Whole project", included: shared/.test(PDF));
   ok('THE DASHBOARD: the list above the service cards; a warning line when stock phrases were kept', /Included for the whole project<\/div>/.test(DASH) && /Tap a line to edit it\./.test(DASH) && /Customer wording: ' \+ esc\(String\(swn\)/.test(DASH));
   ok('ASK AI reads it and can reword it (where "project")', /INCLUDED FOR THE WHOLE PROJECT \(said once, above the services/.test(ASSIST) && /project \(a line of INCLUDED FOR THE WHOLE PROJECT/.test(ASSIST));

@@ -11573,6 +11573,9 @@ function showSendLinkSuccess(msg) {
           +'<div class="sbcf-opt-fields">'
             +'<input class="sbcf-oname" type="text" value="'+escAttr(o.name||'')+'" placeholder="Option name (e.g. Marble-look porcelain)" oninput="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'name\',this.value)">'
             +'<input class="sbcf-ospec" type="text" value="'+escAttr(o.spec||'')+'" placeholder="Spec (e.g. 12x24 matte) — optional" oninput="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'spec\',this.value)">'
+            /* "show real photos with links for let's customers click knows exactly finishing we have to use":
+               the product page (Home Depot, Wayfair...) - the customer's quote shows it with the photo. */
+            +'<input class="sbcf-ospec" type="url" inputmode="url" value="'+escAttr(o.link||'')+'" placeholder="Product link (Home Depot, Wayfair…) — optional" oninput="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'link\',this.value.trim())">'
             +'<div class="sbcf-opt-row2">'
               +'<span class="sbcf-price-wrap">$<input type="number" class="sbcf-oprice" value="'+(o.price!=null?o.price:'')+'" placeholder="0" step="1" min="0" onchange="sbcfEditOpt(\''+g.id+'\',\''+o.id+'\',\'price\',this.value)"></span>'
               +'<label class="sbcf-def-lbl"><input type="radio" name="sbcf-def-'+g.id+'" '+(o.isDefault?'checked':'')+' onclick="sbcfSetDefault(\''+g.id+'\',\''+o.id+'\')"> Default</label>'
