@@ -38,6 +38,8 @@ const { resolveScopePin } = require("./lib/scope-pin");
    of record.estimate below. This used to happen only in the browser, so locking
    the phone mid-generation deleted them. See lib/contractor-owned-fields.js. */
 const { preserveContractorFields, preservedFieldNames, forRegenerate } = require("./lib/contractor-owned-fields");
+/* Customer View Mode: all unchecked after every generation (see below). */
+const VIEW_FLAGS = ["showLaborCost", "showMaterialsCost", "showSectionSubtotals", "showLaborLines", "showMaterialLines", "showLaborLinePrices", "showMaterialLinePrices"];
 /* A service added to an agreed estimate: generated alone, appended as its
    own section, nothing already there touched. See lib/add-service.js. */
 const { addServiceRequest, mergeAddedService } = require("./lib/add-service");
@@ -442,6 +444,14 @@ exports.handler = async function handler(event) {
     if (carry.kept) estimate.scopeDraftKept = true;
     estimate.preservedContractorFields = preservedFieldNames(carry.previous);
     preserveContractorFields(carry.previous, estimate);
+    /* "Keep everything as it is at this moment but just make sure ones
+       generate keeps all check box unchecked": every Generate / Regenerate
+       comes out with Customer View Mode all unchecked - the customer sees one
+       total with everything included - whatever the last draft had. He checks
+       what he wants after. (Adding a service is not a generation: it keeps
+       his choices.) */
+    VIEW_FLAGS.forEach(function (k) { estimate[k] = false; });
+    estimate.viewReset = true;
     const wasTotal = history.customerTotal({ estimate: previousEstimate, customerFinalTotal: record.customerFinalTotal });
     record.estimate = estimate;
     record.status = record.status === "new" ? "drafted" : record.status;

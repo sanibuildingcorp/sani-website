@@ -6429,9 +6429,16 @@ function applyGeneratedEstimate(data, serverMerged) {
   if (data.estimate && data.estimate.scopeDraftReset === true) {
     ["manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished"].forEach(function (k) { delete keepFields[k]; });
   }
+  /* A new generation comes back with Customer View Mode all unchecked
+     ("ones generate keeps all check box unchecked"): do not put the old
+     boxes back. */
+  if (data.estimate && data.estimate.viewReset === true) {
+    ["showLaborCost", "showMaterialsCost", "showSectionSubtotals", "showLaborLines", "showMaterialLines", "showLaborLinePrices", "showMaterialLinePrices"].forEach(function (k) { delete keepFields[k]; });
+  }
   Object.keys(keepFields).forEach(function (k) {
     currentRecord.estimate[k] = keepFields[k];
   });
+  delete currentRecord.estimate.viewReset;
   normalizeDisplayFlags(currentRecord.estimate);
   currentRecord.status = data.status;
   renderEdit();
