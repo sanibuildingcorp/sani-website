@@ -4986,17 +4986,25 @@ function renderEdit() {
      or measurement is written straight into the customer description with the
      Edit button on the request card, so the AI always reads one text. */
 
+  /* THE PERPLEXITY LAYOUT. "I need exactly this dashboard layout made by
+     perplexity": a navy bar that stays on top (total, cost, profit, work days,
+     ready count, Preview, Send, the five steps), the estimate in numbered cards
+     on the left, Ready to send / Money / Quick actions on the right, Save /
+     Preview / Send at the bottom. Every control that was here is still here. */
+  document.getElementById("edit-modal").classList.add("ws-on");
+  document.getElementById("edit-card").classList.add("ws-card");
   document.getElementById("edit-card").innerHTML =
+    '<div class="ws-head" id="ws-head">' + wsHeadHtml(r) + '</div>' +
+    '<div class="ws-grid"><div class="ws-main">' +
     '<div class="modal-head">' +
       '<div>' +
         '<h2>' + esc(est.projectTitle || req.service || "ESTIMATE") + '</h2>' +
         '<div class="ref-sub">Ref ' + esc(r.ref) + ' · ' + esc((r.status || "new").toUpperCase()) + ' · Submitted ' + fmtDate(r.submittedAt) + '</div>' +
         addonHeaderHtml(r) +
       '</div>' +
-      '<button class="modal-close" onclick="closeEdit()">×</button>' +
     '</div>' +
     detailInvoicesHtml(r) +
-    stepBar(1, 'Read the job and ask what is missing', 'Their words, their photos, the assistant, and the thread with them.') +
+    stepBar(1, 'Request', 'What they asked for, their photos, Ask AI and the conversation.') +
     '<div class="cust-panel">' +
       '<h3 style="display:flex;align-items:center;justify-content:space-between"><span>📥 CUSTOMER REQUEST</span><button type="button" onclick="sbcEditCustomer()" style="font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:var(--gold-soft);border:1px solid var(--line);color:var(--gold-2);padding:6px 12px;border-radius:8px;cursor:pointer">✏️ Edit</button></h3>' +
       '<div class="cust-grid">' +
@@ -5028,7 +5036,7 @@ function renderEdit() {
         cnvPanelHtml(r) +
       '</div>' +
     '</div>' +
-    stepBar(2, 'Let the AI price it', 'It reads the description, the photos and every message above.') +
+    stepBar(2, 'Scope & Price', 'One card per service: its prices, who supplies what, what is and is not included.') +
     (showAiBar ?
       '<div class="ai-bar">' +
         '<div class="ai-bar-text">' +
@@ -5089,7 +5097,10 @@ function renderEdit() {
     (readinessHtml ?
       '<div class="form-section" id="readiness-section">' + readinessHtml + '</div>'
       : '') +
-    stepBar(3, 'Check the price it came back with', 'Title, scope, every labor and material line, timeline and your private notes.') +
+    '<div id="scope-control-wrap"></div>' +
+    v4EditHtml(est, "text") +
+    '<details class="form-section ws-more" id="ws-more">' +
+    '<summary>More: project title, summary, every line in one list, timeline text</summary>' +
     '<div class="form-section">' +
       '<h3>📋 PROJECT</h3>' +
       '<div class="field" style="margin-bottom:12px">' +
@@ -5166,9 +5177,44 @@ function renderEdit() {
          est.notes - gatherForm keeps whatever the record has - so nothing the AI
          wrote is lost, it is just not shown. */
     '</div>' +
-
-    v4EditHtml(est) +
-    stepBar(4, 'Decide what the customer sees', 'Photos on their quote, the wording of each service, and which prices show.') +
+    '</details>' +
+    stepBar(3, 'Timeline', 'Counted from the labor hours. Change people, hours or days and it follows.') +
+    v4EditHtml(est, "timeline") +
+    stepBar(4, 'Terms', 'Markup, payment, warranty and how long the price holds.') +
+    wsTermsHtml(est) +
+    '<div class="totals-box">' +
+      '<div class="internal-tag">Internal · Not shown to customer</div>' +
+      '<div class="tot-line"><span>Labor subtotal</span><span id="tot-labor">$0.00</span></div>' +
+      '<div class="tot-line"><span>Materials subtotal</span><span id="tot-mat">$0.00</span></div>' +
+      '<div class="tot-line"><span>Subtotal</span><span id="tot-sub">$0.00</span></div>' +
+      '<div class="tot-line">' +
+        '<span class="markup-row">Markup <input type="number" id="f-markup" class="markup-input" value="' + esc(est.markupPct == null ? 25 : est.markupPct) + '" min="0" max="100" step="1"> %</span>' +
+        '<span id="tot-markup">$0.00</span>' +
+      '</div>' +
+      '<div class="tot-line grand"><span>GRAND TOTAL</span><span id="tot-grand">$0.00</span></div>' +
+      /* The tiered markup was silent: computed on every estimate, displayed nowhere, and
+         dropped by the next save. A number nobody can see is a number nobody can
+         disagree with, which is the opposite of what it is for. */
+      '<div id="markup-advice" style="display:none;margin-top:10px;padding:10px 12px;border-radius:9px;' +
+        'background:var(--gold-soft,rgba(212,181,114,0.12));border:1px solid var(--line,rgba(212,181,114,0.28));' +
+        'font-size:12.5px;line-height:1.5;color:var(--ink,#1a2433)"></div>' +
+      sentVersionHtml(currentRecord) +
+      stampedTotalHtml(currentRecord) +
+      '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
+      '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
+      /* "I need download or print function in my dashboard for let me download
+          each estimate" - both versions, as PDF files (estimate-pdf.js). */
+      '<div style="display:flex;gap:10px;margin-top:10px">' +
+        '<button type="button" id="pdf-customer" onclick="downloadEstimatePdf(\'customer\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ CUSTOMER PDF</button>' +
+        '<button type="button" id="pdf-internal" onclick="downloadEstimatePdf(\'internal\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ INTERNAL PDF</button>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;text-align:center">Customer PDF: what the customer sees, with prices. Internal PDF: your lines, rates and markup. Both from the last saved version.</div>' +
+      (currentRecord && currentRecord.parentRef ? '' :
+        '<button type="button" onclick="addonCreate()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE)</button>') +
+    '</div>' +
+    stepBar(5, 'Review & Send', 'What you need from the customer, photos, what prices they see, then send.') +
+    '<button type="button" onclick="askCheck()" style="width:100%;margin:0 0 12px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🔍 CHECK BEFORE SENDING — emails &amp; plans vs every line</button>' +
+    v4EditHtml(est, "lists") +
     '<div class="form-section">' +
       '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
       ((req.photos && req.photos.length > 0) ?
@@ -5180,7 +5226,6 @@ function renderEdit() {
       '<div id="quote-photo-preview" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px"></div>' +
       '</div>' +
     '</div>' +
-    '<div id="scope-control-wrap"></div>' +
     '<div class="cv-panel">' +
       '<h3>👁 CUSTOMER VIEW MODE</h3>' +
       '<div class="cv-helper">Choose what costs to show on the customer\'s quote. The total they see equals only what you check. Markup still applies internally.</div>' +
@@ -5235,38 +5280,6 @@ function renderEdit() {
         '</div>' +
       '</div>' +
     '</div>' +
-    '<div class="totals-box">' +
-      '<div class="internal-tag">Internal · Not shown to customer</div>' +
-      '<div class="tot-line"><span>Labor subtotal</span><span id="tot-labor">$0.00</span></div>' +
-      '<div class="tot-line"><span>Materials subtotal</span><span id="tot-mat">$0.00</span></div>' +
-      '<div class="tot-line"><span>Subtotal</span><span id="tot-sub">$0.00</span></div>' +
-      '<div class="tot-line">' +
-        '<span class="markup-row">Markup <input type="number" id="f-markup" class="markup-input" value="' + esc(est.markupPct == null ? 25 : est.markupPct) + '" min="0" max="100" step="1"> %</span>' +
-        '<span id="tot-markup">$0.00</span>' +
-      '</div>' +
-      '<div class="tot-line grand"><span>GRAND TOTAL</span><span id="tot-grand">$0.00</span></div>' +
-      /* The tiered markup was silent: computed on every estimate, displayed nowhere, and
-         dropped by the next save. A number nobody can see is a number nobody can
-         disagree with, which is the opposite of what it is for. */
-      '<div id="markup-advice" style="display:none;margin-top:10px;padding:10px 12px;border-radius:9px;' +
-        'background:var(--gold-soft,rgba(212,181,114,0.12));border:1px solid var(--line,rgba(212,181,114,0.28));' +
-        'font-size:12.5px;line-height:1.5;color:var(--ink,#1a2433)"></div>' +
-      sentVersionHtml(currentRecord) +
-      stampedTotalHtml(currentRecord) +
-      '<button type="button" onclick="openSetTotalModal()" style="width:100%;margin-top:12px;padding:13px;border:1.5px solid var(--gold-2);background:var(--gold-soft);color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🎯 SET TOTAL TO A NUMBER</button>' +
-      '<button type="button" onclick="copyScopeLink()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">📋 SCOPE OF WORK LINK (NO PRICES)</button>' +
-      /* "I need download or print function in my dashboard for let me download
-          each estimate" - both versions, as PDF files (estimate-pdf.js). */
-      '<div style="display:flex;gap:10px;margin-top:10px">' +
-        '<button type="button" id="pdf-customer" onclick="downloadEstimatePdf(\'customer\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ CUSTOMER PDF</button>' +
-        '<button type="button" id="pdf-internal" onclick="downloadEstimatePdf(\'internal\')" style="flex:1;padding:13px 8px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">⬇ INTERNAL PDF</button>' +
-      '</div>' +
-      '<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;text-align:center">Customer PDF: what the customer sees, with prices. Internal PDF: your lines, rates and markup. Both from the last saved version.</div>' +
-      (currentRecord && currentRecord.parentRef ? '' :
-        '<button type="button" onclick="addonCreate()" style="width:100%;margin-top:10px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">➕ ADD ADDITIONAL WORK (SEPARATE ESTIMATE)</button>') +
-    '</div>' +
-    stepBar(5, 'Send it', 'Preview first if you want. Nothing leaves here until you press send.') +
-    '<button type="button" onclick="askCheck()" style="width:100%;margin:0 0 12px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🔍 CHECK BEFORE SENDING — emails &amp; plans vs every line</button>' +
     (currentRecord && currentRecord.status === 'completed'
       ? '<div id="completed-on" style="margin:0 0 10px;padding:10px 12px;border-radius:9px;background:rgba(13,148,136,0.10);color:#0f766e;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
           '<span>🏁 Completed on <strong>' + esc(fmtDay(completedDayOf(currentRecord)) || 'date not set') + '</strong></span>' +
@@ -5287,6 +5300,13 @@ function renderEdit() {
         '<button class="btn-secondary" onclick="openInvoiceModal()">💳 Send Invoice</button>' +
         '<button class="btn-primary" onclick="sendToCustomer()">📨 Send to Customer</button>' +
       '</div>' +
+    '</div>' +
+    '</div>' +
+    '<aside class="ws-side" id="ws-side"></aside>' +
+    '</div>' +
+    '<div class="ws-foot" id="ws-foot">' +
+      '<button type="button" class="ws-btn" onclick="wsPreview()">Preview customer view</button>' +
+      '<button type="button" class="ws-btn ws-gold" onclick="sendToCustomer()">Send estimate</button>' +
     '</div>';
 
   renderLines("labor", est.labor || []);
@@ -7360,16 +7380,20 @@ function renderScopeControl() {
     var labRaw = scopeRowsRaw(scopeRowsFor(nm, "labor")), matRaw = scopeRowsRaw(scopeRowsFor(nm, "materials"));
     var mkPct = Math.round((kL - 1) * 1000) / 10;
     var withMk = function (raw) { return fmt(raw) + (mkPct ? ' (+' + mkPct + '% = ' + fmt(raw * kL) + ')' : ''); };
-    var linesOpen = (typeof SCOPE_LINES_OPEN !== 'undefined') && SCOPE_LINES_OPEN[nm] === true;
+    /* "I need exactly this dashboard layout made by perplexity": the prices
+       are open on every card, as a table, until he closes one. */
+    var linesOpen = !((typeof SCOPE_LINES_OPEN !== 'undefined') && SCOPE_LINES_OPEN[nm] === false);
     /* ONE SERVICE: NO SECOND COPY OF THE LINES.
          "why is this two times materials and labor listings?"
        The card's lines are there to see and move lines between services. With
        one service they are the LABOR and MATERIALS tables again, line for
        line, so the card says where they are instead of repeating them. */
-    var foldAt = html.length, oneService = d.services.length === 1;
+    /* Every card shows its own lines, one service or ten: the flat LABOR and
+       MATERIALS lists are folded under "More" in the Perplexity layout. */
     html += '<details class="sc-lines-fold" data-nm="' + esc(nm) + '"' + (linesOpen ? ' open' : '') + ' ontoggle="scopeLinesToggle(this.getAttribute(\'data-nm\'), this.open)">' +
-      '<summary><span>Labor ' + lab.length + ' line' + (lab.length === 1 ? '' : 's') + ' · ' + withMk(labRaw) + '</span><span>Materials ' + mat.length + ' line' + (mat.length === 1 ? '' : 's') + ' · ' + withMk(matRaw) + '</span><b class="sc-fold-cue">' + (linesOpen ? '▾ hide lines' : '▸ show lines') + '</b></summary>';
-    html += '<div class="sc-pane">';
+      '<summary><b class="ws-sum-t">Prices</b><span>Labor ' + lab.length + ' line' + (lab.length === 1 ? '' : 's') + ' · ' + withMk(labRaw) + '</span><span>Materials ' + mat.length + ' line' + (mat.length === 1 ? '' : 's') + ' · ' + withMk(matRaw) + '</span><b class="sc-fold-cue">' + (linesOpen ? '▾ hide lines' : '▸ show lines') + '</b></summary>';
+    html += '<div class="sc-pane">' +
+      '<div class="ws-th"><span></span><span>Line</span><span>Qty</span><span>Unit</span><span></span><span>Rate</span><span>Total</span><span></span></div>';
     [{ kind: "labor", label: "Labor", rows: lab }, { kind: "materials", label: "Materials", rows: mat }].forEach(function (blk) {
       html += '<div class="sc-kind">' + blk.label + '</div>';
       if (!blk.rows.length) {
@@ -7386,7 +7410,7 @@ function renderScopeControl() {
           var q = Number(r.l.qty) || 0, rt = Number(r.l.rate) || 0;
           var unit = String(r.l.unit || (blk.kind === "labor" ? "hrs" : "ea"));
           var src = String(r.l.sbcPricedFrom || "");
-          html += '<div class="sc-pl2">' +
+          html += '<div class="sc-pl2 ws-k-' + blk.kind + '"><span class="ws-tag">' + (blk.kind === "labor" ? "LAB" : "MAT") + '</span>' +
             /* A single-line <input> truncated every item name — "Site setup, corridor
                and apartment protection" showed as "Site setup, corridor/elevator and
                apart". A textarea wraps, so the whole line is readable, and it grows
@@ -7420,12 +7444,8 @@ function renderScopeControl() {
         '</div>';
     });
     html += '</div></details>';
-    if (oneService) {
-      html = html.slice(0, foldAt) + '<div class="sc-lines-one" style="padding:10px 14px;font-size:13px;color:var(--ink-muted)">' +
-        'Labor ' + lab.length + ' line' + (lab.length === 1 ? '' : 's') + ' · ' + withMk(labRaw) + '<br>Materials ' + mat.length + ' line' + (mat.length === 1 ? '' : 's') + ' · ' + withMk(matRaw) +
-        '<br>Every line is in the LABOR and MATERIALS lists of this estimate.</div>';
-    }
 
+    html += (typeof wsSupplyGridHtml === "function" ? wsSupplyGridHtml(si, nm) : "");
     /* the three wording groups, all open, directly under the prices */
     groups.forEach(function (g) {
       var items = svc[g.key] || [];
@@ -8781,7 +8801,32 @@ async function scopePublish() {
    customer. The timeline is counted from the labor lines; a number typed
    here wins over the count, an empty box means automatic. */
 function v4Lines(v) { return (Array.isArray(v) ? v : []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }).filter(Boolean).join("\n"); }
-function v4ReadLines(id) { var el = document.getElementById(id); return el ? el.value.split(/\n+/).map(function (x) { return x.replace(/^\s*[-•*]\s*/, "").trim(); }).filter(Boolean) : []; }
+function v4ReadLines(id) {
+  var el = document.getElementById(id);
+  if (!el) return [];
+  /* A list on the page (Perplexity layout): one line per row, edited in place. */
+  if (el.tagName === "UL") return Array.prototype.map.call(el.querySelectorAll(".ws-li-t"), function (x) { return String(x.textContent || "").trim(); }).filter(Boolean);
+  return el.value.split(/\n+/).map(function (x) { return x.replace(/^\s*[-•*]\s*/, "").trim(); }).filter(Boolean);
+}
+/* A plain list with a cross on each line and an Add box under it. Each line
+   is edited where it stands; Save keeps it. */
+function wsListHtml(id, items, placeholder) {
+  var list = (Array.isArray(items) ? items : []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }).filter(Boolean);
+  return '<ul class="ws-list" id="' + id + '">' + list.map(function (t) {
+      return '<li><span class="ws-li-t" contenteditable="true" spellcheck="true">' + esc(t) + '</span><button type="button" class="ws-x" title="Remove" onclick="this.parentNode.remove();wsRefresh()">✕</button></li>';
+    }).join("") + '</ul>' +
+    '<div class="ws-add"><input type="text" id="' + id + '-in" placeholder="' + esc(placeholder || "Add") + '" onkeydown="if(event.key===\'Enter\'){event.preventDefault();wsListAdd(\'' + id + '\')}"><button type="button" class="ws-btn ws-sm" onclick="wsListAdd(\'' + id + '\')">Add</button></div>';
+}
+function wsListAdd(id) {
+  var inp = document.getElementById(id + "-in"), ul = document.getElementById(id);
+  if (!inp || !ul || !inp.value.trim()) return;
+  var li = document.createElement("li");
+  li.innerHTML = '<span class="ws-li-t" contenteditable="true" spellcheck="true"></span><button type="button" class="ws-x" title="Remove" onclick="this.parentNode.remove();wsRefresh()">✕</button>';
+  li.firstChild.textContent = inp.value.trim();
+  ul.appendChild(li);
+  inp.value = "";
+  if (typeof wsRefresh === "function") wsRefresh();
+}
 function v4StepRow(st, i) {
   return '<div class="v4-step" data-i="' + i + '"><div class="v4-n">' + (i + 1) + '</div><div class="v4-in">' +
     '<input type="text" class="v4-st" placeholder="Step title, e.g. Protect and prepare" value="' + esc(st.title || "") + '">' +
@@ -8799,7 +8844,12 @@ function v4DrawSteps(steps) {
 }
 function v4AddStep() { var st = v4ReadSteps(); st.push({ title: "", text: "" }); v4DrawSteps(st); var r = document.querySelectorAll("#v4-steps .v4-st"); if (r.length) r[r.length - 1].focus(); }
 function v4RemoveStep(i) { var st = v4ReadSteps(); st.splice(i, 1); v4DrawSteps(st); }
-function v4EditHtml(est) {
+/* The customer-page sections, as the Perplexity layout places them:
+     "text"     - what we will do, and the steps (Scope & Price)
+     "timeline" - people, hours a day, days, start date, the bar (Timeline)
+     "lists"    - what we need from them, Sani supplies, price basis (Review & Send)
+   No part given: all of them, in one block. */
+function v4EditHtml(est, part) {
   var e = est || {}, sch = e.schedule || {}, auto = sch.auto || sch, ed = e.scheduleEdit || {};
   var num = function (v) { return v === undefined || v === null ? "" : String(v); };
   var steps = (Array.isArray(e.workSteps) ? e.workSteps : []).filter(function (x) { return x && (x.title || x.text); });
@@ -8808,22 +8858,32 @@ function v4EditHtml(est) {
     return '<div class="field"><label for="' + id + '">' + label + '</label>' + (hint ? '<div class="v4-hint">' + hint + '</div>' : '') +
       '<textarea id="' + id + '" rows="' + (rows || 4) + '" class="v4-box">' + esc(value || "") + '</textarea></div>';
   };
-  return '<div class="form-section v4-edit" id="v4-edit">' +
-    '<h3>📝 CUSTOMER PAGE TEXT <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(what the customer reads; empty = hidden)</span></h3>' +
+  var text = '<div class="form-section v4-edit ws-cardbox" id="v4-edit">' +
+    '<h3>📝 FOR THE CUSTOMER <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(what they read; empty = hidden)</span></h3>' +
     box("f-overview", "What we will do", e.overview, 4) +
-    '<div class="field"><label>How the work will go (steps)</label><div id="v4-steps">' + steps.map(v4StepRow).join("") + '</div>' +
+    '<div class="field"><label>Steps for the customer (how the work will go)</label><div id="v4-steps">' + steps.map(v4StepRow).join("") + '</div>' +
       '<button type="button" class="btn-add-row" onclick="v4AddStep()">+ Add step</button></div>' +
-    '<div class="field"><label>Timeline</label><div class="v4-hint">' + esc(countLine) + '</div><div class="v4-days">' +
-      '<div class="field"><label for="f-crew">People on the job</label><input id="f-crew" type="number" min="1" step="1" inputmode="numeric" placeholder="auto ' + esc(num(sch.crew || 2)) + '" value="' + esc(num(ed.crew)) + '"></div>' +
-      '<div class="field"><label for="f-dayhours">Hours a day</label><input id="f-dayhours" type="number" min="1" step="0.5" inputmode="decimal" placeholder="auto ' + esc(num(sch.dailyHours || 8)) + '" value="' + esc(num(ed.dailyHours)) + '"></div>' +
-      '<div class="field"><label for="f-workdays">Working days</label><input id="f-workdays" type="number" min="0.5" step="0.5" inputmode="decimal" placeholder="auto' + (auto.workDays ? ' ' + esc(num(auto.workDays)) : '') + '" value="' + esc(num(ed.workDays)) + '"></div>' +
-      '<div class="field"><label for="f-waitdays">Drying days</label><input id="f-waitdays" type="number" min="0" step="0.5" inputmode="decimal" placeholder="auto' + (sch.workDays ? ' ' + esc(num(auto.waitDays || 0)) : '') + '" value="' + esc(num(ed.waitDays)) + '"></div>' +
-    '</div></div>' +
-    box("f-sani", "Sani supplies (one per line)", v4Lines(e.saniSupplies), 4) +
-    '<div class="field"><label>You supply</label><div class="v4-hint">Comes from each service\'s "Customer supplies" in Customer Scope Control below.</div></div>' +
-    box("f-needs", "What we need from you (one per line)", v4Lines(e.customerNeeds), 3) +
-    box("f-basis", "This price is based on (one per line)", v4Lines(e.priceBasis), 3) +
   '</div>';
+  var timeline = '<div class="form-section ws-cardbox" id="ws-timeline">' +
+    '<div class="v4-hint">' + esc(countLine) + '</div><div class="v4-days">' +
+      '<div class="field"><label for="f-crew">Crew (people)</label><input id="f-crew" type="number" min="1" step="1" inputmode="numeric" placeholder="auto ' + esc(num(sch.crew || 2)) + '" value="' + esc(num(ed.crew)) + '" oninput="wsRefresh()"></div>' +
+      '<div class="field"><label for="f-dayhours">Day (hours)</label><input id="f-dayhours" type="number" min="1" step="0.5" inputmode="decimal" placeholder="auto ' + esc(num(sch.dailyHours || 8)) + '" value="' + esc(num(ed.dailyHours)) + '" oninput="wsRefresh()"></div>' +
+      '<div class="field"><label for="f-workdays">Working days</label><input id="f-workdays" type="number" min="0.5" step="0.5" inputmode="decimal" placeholder="auto' + (auto.workDays ? ' ' + esc(num(auto.workDays)) : '') + '" value="' + esc(num(ed.workDays)) + '" oninput="wsRefresh()"></div>' +
+      '<div class="field"><label for="f-waitdays">Drying days</label><input id="f-waitdays" type="number" min="0" step="0.5" inputmode="decimal" placeholder="auto' + (sch.workDays ? ' ' + esc(num(auto.waitDays || 0)) : '') + '" value="' + esc(num(ed.waitDays)) + '" oninput="wsRefresh()"></div>' +
+      '<div class="field"><label for="f-start">Start</label><input id="f-start" type="date" value="' + esc(/^\d{4}-\d{2}-\d{2}$/.test(String(ed.start || "")) ? ed.start : "") + '" oninput="wsRefresh()"></div>' +
+    '</div>' +
+    '<div class="ws-tl" id="ws-tl"></div><div class="v4-hint" id="ws-tl-txt"></div>' +
+  '</div>';
+  var lists = '<div class="form-section ws-cardbox" id="ws-lists">' +
+    '<div class="field"><label>What we need from the customer</label>' + wsListHtml("f-needs", e.customerNeeds, "Add (e.g. Clear the bathroom before we start)") + '</div>' +
+    '<div class="field"><label>Sani supplies</label>' + wsListHtml("f-sani", e.saniSupplies, "Add (e.g. Grout, sealer and caulk)") + '</div>' +
+    '<div class="field"><label>You supply</label><div class="v4-hint">Tick "Customer supplies" on a material in its service card, or add it to the card\'s Customer supplies.</div></div>' +
+    '<div class="field"><label>This price is based on</label>' + wsListHtml("f-basis", e.priceBasis, "Add (e.g. Bathroom about 5x8 ft)") + '</div>' +
+  '</div>';
+  if (part === "text") return text;
+  if (part === "timeline") return timeline;
+  if (part === "lists") return lists;
+  return text + timeline + lists;
 }
 /* Read the boxes back into the estimate. Only when the boxes are on the page:
    a save from anywhere else keeps what the record has. */
@@ -8837,6 +8897,8 @@ function v4Gather(out) {
   var n = function (id) { var el = document.getElementById(id); var v = el ? el.value.trim() : ""; return v === "" ? null : Number(v); };
   var ed = { crew: n("f-crew"), dailyHours: n("f-dayhours"), workDays: n("f-workdays"), waitDays: n("f-waitdays") };
   Object.keys(ed).forEach(function (k) { if (ed[k] === null || !isFinite(ed[k]) || ed[k] < 0) delete ed[k]; });
+  var startEl = document.getElementById("f-start");
+  if (startEl && /^\d{4}-\d{2}-\d{2}$/.test(startEl.value)) ed.start = startEl.value;
   out.scheduleEdit = Object.keys(ed).length ? ed : null;
   /* Text written here turns the new customer page on, the same as the AI's. */
   if (out.overview || out.workSteps.length) out.docVersion = 4;
@@ -13347,6 +13409,422 @@ try {
     loadEstimates();
   } catch (e2) { console.error("fallback render failed:", e2); }
 }
+</script>
+
+<style id="ws-styles">
+/* ═══════════ THE PERPLEXITY LAYOUT (estimate screen) ═══════════
+   "I need exactly this dashboard layout made by perplexity". Scoped to
+   .ws-on / .ws-card so nothing else in the dashboard changes. */
+#edit-modal.ws-on{padding:0;background:#f4f5f8}
+#edit-card.ws-card{max-width:none;margin:0;border:0;border-radius:0;padding:0 0 84px;background:#f4f5f8;min-height:100vh;box-shadow:none}
+.ws-card .ws-head{position:sticky;top:0;z-index:30;background:#0f1f3a;color:#fff;padding:12px 16px 10px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.ws-head .ws-in{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+.ws-head .ws-who{font-size:12px;color:#c8d0dd}
+.ws-head .ws-tot{font-size:26px;font-weight:800;line-height:1.15;color:#fff}
+.ws-head .ws-sub{font-size:12px;color:#c8d0dd}
+.ws-head .ws-acts{display:flex;gap:8px;align-items:center}
+.ws-prog{display:flex;gap:4px;max-width:1200px;margin:10px auto 0}
+.ws-prog button{flex:1;background:rgba(255,255,255,.1);border:0;border-radius:6px;color:#c8d0dd;font-size:12px;padding:7px 2px;cursor:pointer;font-family:inherit}
+.ws-prog button.on{background:#c9a24a;color:#1b1404;font-weight:700}
+.ws-btn{border:1px solid #e3e6ec;background:#fff;color:#16202e;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px}
+.ws-btn.ws-gold{background:#c9a24a;border-color:#c9a24a;color:#1b1404}
+.ws-btn.ws-sm{padding:6px 10px;font-size:13px}
+.ws-x-close{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:9px;width:38px;height:38px;font-size:20px;cursor:pointer}
+.ws-pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
+.ws-pill.ok{background:#e4f4ea;color:#1f8a4c}.ws-pill.wa{background:#fff3dc;color:#b86e00}
+.ws-grid{max-width:1200px;margin:0 auto;padding:16px 12px;display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:980px){.ws-grid{grid-template-columns:minmax(0,1fr) 340px}.ws-side{position:sticky;top:150px;align-self:start;max-height:calc(100vh - 170px);overflow:auto}}
+.ws-card .ws-main>.modal-head{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:12px 16px;margin-bottom:12px}
+.ws-card .ws-main>.modal-head h2{font-size:18px;letter-spacing:.5px}
+.ws-card .step-bar{background:transparent;color:#16202e;padding:4px 2px;margin:22px 0 8px;scroll-margin-top:150px}
+.ws-card .step-bar .step-n{background:transparent;color:#16202e;width:auto;font-size:19px;font-weight:800}
+.ws-card .step-bar .step-n::after{content:" \00B7"}
+.ws-card .step-bar .step-t{font-size:19px;font-weight:800}
+.ws-card .step-bar .step-s{color:#5d6878;font-size:12.5px}
+.ws-card .cust-panel,.ws-card .form-section,.ws-card .ai-bar,.ws-card .cv-panel,.ws-card .totals-box,.ws-card .ws-cardbox,.ws-card #sbc-contract-panel,.ws-card #fu-box{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.ws-card .ws-more>summary{cursor:pointer;font-weight:700;color:#0f1f3a}
+.ws-card .ws-more[open]>summary{margin-bottom:10px}
+.ws-side .ws-box{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.ws-ey{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5d6878;font-weight:700;margin-bottom:6px}
+.ws-chk{list-style:none;margin:0;padding:0}
+.ws-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;font-size:14px;align-items:flex-start}
+.ws-chk li:last-child{border:0}
+.ws-dot{width:20px;height:20px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:800}
+.ws-row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:14.5px}
+.ws-qa{display:grid;gap:6px}
+.ws-foot{position:fixed;left:0;right:0;bottom:0;z-index:31;background:#fff;border-top:1px solid #e3e6ec;padding:10px 12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.ws-tl{display:flex;height:30px;border-radius:6px;overflow:hidden;margin:10px 0 6px}
+.ws-tl div{color:#fff;font-size:11px;display:grid;place-items:center;font-weight:700;overflow:hidden;white-space:nowrap;min-width:0;padding:0 4px}
+.ws-card .v4-days{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:640px){.ws-card .v4-days{grid-template-columns:1fr 1fr}}
+.ws-list{margin:4px 0 6px;padding-left:20px}
+.ws-list li{margin:3px 0;font-size:14.5px}
+.ws-li-t{outline:none;border-radius:4px;padding:1px 3px}
+.ws-li-t:focus{background:#fff8e6;box-shadow:0 0 0 1px #c9a24a}
+.ws-x{background:none;border:0;color:#5d6878;cursor:pointer;font-size:14px;margin-left:6px}
+.ws-add{display:flex;gap:6px;margin-top:4px}
+.ws-add input{flex:1;min-width:0;border:1px solid #e3e6ec;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit}
+.ws-terms .ws-row{align-items:center;border-bottom:1px solid #eef0f4;padding:7px 0}
+.ws-terms input[type=range]{width:100%;accent-color:#c9a24a}
+.ws-pay{width:100%;border-collapse:collapse;font-size:14px;margin:4px 0}
+.ws-pay td{padding:6px 2px;border-bottom:1px solid #eef0f4}.ws-pay td.n{text-align:right}
+/* service cards */
+.ws-card .sc-service{background:#fff;border:1px solid #e3e6ec;border-radius:12px;margin-bottom:12px;overflow:hidden}
+.ws-card .sc-lines-fold>summary{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:10px 14px;cursor:pointer;font-size:12.5px;color:#5d6878}
+.ws-card .sc-lines-fold>summary .ws-sum-t{font-size:15px;color:#0f1f3a}
+.ws-th{display:none}
+.ws-card .ws-th{display:grid;grid-template-columns:46px minmax(0,1fr) 64px 52px 12px 76px 86px 30px;text-align:left;gap:6px;padding:0 0 4px;font-size:11px;color:#5d6878;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e3e6ec}
+.ws-tag{display:none}
+.ws-card .ws-tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;background:#e9edf4;color:#18305a;align-self:center;justify-self:start}
+.ws-card .ws-k-materials .ws-tag{background:#f6eedb;color:#7a5a12}
+.ws-card .sc-pl2{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #eef0f4}
+.ws-card .sc-pl2 .sc-pl2-top{min-width:0}
+.ws-card .sc-pl2 .sc-pl2-sub{display:grid;grid-template-columns:64px 52px 12px 76px 86px 30px;gap:6px;align-items:center;margin:0}
+.ws-card .sc-pl2 .sc-pl2-tot{text-align:right}
+.ws-card .sc-pl2 textarea,.ws-card .sc-pl2 input{background:#f7f8fb;border:1px solid transparent;border-radius:6px;padding:5px 6px;font-size:14px;width:100%;box-sizing:border-box;min-width:0}
+.ws-card .sc-pl2 textarea:focus,.ws-card .sc-pl2 input:focus{border-color:#c9a24a;background:#fff;outline:0}
+.ws-card .sc-pl2 .sc-n{text-align:right}
+.ws-card .sc-pl2 .sc-src{display:none}
+.ws-card .sc-pl2 .sc-srctxt{grid-column:1/-1;font-size:11.5px;color:#5d6878;order:9}
+.ws-card .sc-kind{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5d6878;font-weight:700;margin-top:8px}
+@media(max-width:760px){.ws-card .ws-th{display:none}.ws-card .sc-pl2{grid-template-columns:46px minmax(0,1fr)}.ws-card .sc-pl2 .sc-pl2-sub{grid-column:1/-1;grid-template-columns:58px 48px 10px 70px 1fr 28px}}
+.ws-fgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin:6px 0 4px}
+.ws-fc{border:1px solid #e3e6ec;border-radius:10px;overflow:hidden;background:#fff}
+.ws-fc .ws-fimg{height:64px;background:#eef0f4;display:grid;place-items:center;font-size:26px}
+.ws-fc .ws-fb{padding:8px 10px;font-size:13px}
+.ws-fc .ws-fb b{display:block}
+.ws-fc label{display:flex;gap:6px;align-items:center;margin-top:6px;font-weight:600;cursor:pointer}
+.ws-fc.ws-cs{background:#fbf6ea}
+.ws-sup-h{font-weight:700;color:#0f1f3a;font-size:15px;padding:10px 14px 0}
+.ws-sup{padding:0 14px 10px}
+</style>
+<script>
+/* ═══════════ THE PERPLEXITY LAYOUT: head, side, timeline, terms ═══════════
+   Every number here is worked out from the estimate on screen. Nothing is
+   invented: the payment schedule and the 3-year warranty are the terms his
+   contract is written with (generate-contract-background.js); the timeline is
+   the same count as lib/schedule.js. */
+var WS_HOUR = /^(h|hr|hrs|hour|hours|man-?hours?)$/i;
+var WS_WAITS = [
+  { re: /waterproof|membrane|redgard|kerdi/i, days: 1, label: "Waterproofing cures" },
+  { re: /mortar bed|mud bed|pre-?slope|leveling|self-?level/i, days: 1, label: "Floor base cures" },
+  { re: /\btile\b|thinset|set tile|install tile/i, days: 1, label: "Tile sets" },
+  { re: /\bgrout/i, days: 1, label: "Grout cures" },
+  { re: /skim|spackle|joint compound|\bmud\b|tape and|taping|patch/i, days: 1, label: "Patches dry" }
+];
+/* lib/schedule.js scheduleOf, for the screen (js/dashboard-layout.test.js keeps them equal). */
+function wsScheduleOf(e) {
+  e = e || {};
+  var num = function (v) { var n = Number(v); return isFinite(n) ? n : 0; };
+  var raw = e.scheduleEdit && typeof e.scheduleEdit === "object" ? e.scheduleEdit : {};
+  var pos = function (v) { var n = Number(v); return v !== "" && v != null && isFinite(n) && n > 0 ? n : null; };
+  var zeroOk = function (v) { var n = Number(v); return v !== "" && v != null && isFinite(n) && n >= 0 ? n : null; };
+  var ed = { crew: pos(raw.crew), dailyHours: pos(raw.dailyHours), workDays: pos(raw.workDays), waitDays: zeroOk(raw.waitDays) };
+  var s = { crew: 2, dailyHours: 8 };
+  if (ed.crew != null) s.crew = ed.crew;
+  if (ed.dailyHours != null) s.dailyHours = ed.dailyHours;
+  var withEdit = function (sch) {
+    sch.auto = { workDays: sch.workDays, waitDays: sch.waitDays };
+    if (ed.workDays != null) sch.workDays = ed.workDays;
+    if (ed.waitDays != null) sch.waitDays = ed.waitDays;
+    if (ed.workDays != null || ed.waitDays != null) sch.edited = true;
+    sch.totalDays = Math.ceil(sch.workDays + sch.waitDays);
+    return sch;
+  };
+  var typedOnly = function () {
+    return ed.workDays == null ? null : withEdit({ version: 1, laborHours: 0, crew: Math.max(1, Math.round(num(s.crew)) || 1), dailyHours: num(s.dailyHours) || 8, workDays: ed.workDays, waitDays: 0, totalDays: 0, waits: [], sections: [] });
+  };
+  var labor = (Array.isArray(e.labor) ? e.labor : []).filter(function (l) { return l && String(l.item || "").trim(); });
+  if (!labor.length) return typedOnly();
+  var hourLines = labor.filter(function (l) { return WS_HOUR.test(String(l.unit || "").trim()) && num(l.rate) > 0; });
+  var avg = hourLines.length ? hourLines.reduce(function (t, l) { return t + num(l.rate); }, 0) / hourLines.length : 85;
+  var by = {}, hours = 0;
+  labor.forEach(function (l) {
+    var h = WS_HOUR.test(String(l.unit || "").trim()) ? Math.max(0, num(l.qty)) : (num(l.qty) * num(l.rate) > 0 ? num(l.qty) * num(l.rate) / (avg || 85) : 0);
+    hours += h;
+    var k = String(l.section || "Work").trim() || "Work";
+    by[k] = (by[k] || 0) + h;
+  });
+  if (!(hours > 0)) return typedOnly();
+  hours = Math.round(hours * 10) / 10;
+  var crew = ed.crew != null ? Math.max(1, Math.round(ed.crew)) : (hours <= num(s.dailyHours) ? 1 : Math.max(1, Math.round(num(s.crew)) || 1));
+  var workDays = Math.max(0.5, Math.ceil((hours / (crew * Math.max(1, num(s.dailyHours) || 8))) * 2) / 2);
+  var text = labor.map(function (l) { return String(l.item || ""); }).join(" | ");
+  var waits = [];
+  WS_WAITS.forEach(function (w) { if (w.re.test(text) && waits.length < 3) waits.push({ label: w.label, days: w.days }); });
+  var waitDays = workDays <= 1 ? 0 : waits.reduce(function (t, w) { return t + w.days; }, 0);
+  var sections = Object.keys(by).map(function (k) { return { name: k, hours: Math.round(by[k] * 10) / 10 }; }).filter(function (x) { return x.hours > 0; });
+  return withEdit({ version: 1, laborHours: hours, crew: crew, dailyHours: num(s.dailyHours) || 8, workDays: workDays, waitDays: waitDays, totalDays: Math.ceil(workDays + waitDays), waits: waits, sections: sections });
+}
+/* Working days from a start date, Monday to Friday. */
+function wsFinish(startIso, days) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(startIso || "")) || !(days > 0)) return null;
+  var d = new Date(startIso + "T12:00:00"), left = Math.ceil(days) - 1;
+  while (left > 0) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) left--; }
+  return d;
+}
+function wsDay(d) { return d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""; }
+/* His payment terms, the ones the contract generator writes (and quote.html shows). */
+function wsPayPlan(total, r) {
+  if (!(total > 0)) return [];
+  var cs = (((r || {}).contract || {}).sections || {}).paymentSchedule;
+  cs = (Array.isArray(cs) ? cs : []).filter(function (p) { return p && String(p.label || "").trim() && Number(p.amount) > 0; });
+  if (cs.length && Math.abs(cs.reduce(function (t, p) { return t + Number(p.amount); }, 0) - total) <= 1) {
+    return cs.map(function (p) { return { label: String(p.label).trim(), amount: Number(p.amount), pct: Math.round(Number(p.amount) / total * 100), contract: true }; });
+  }
+  var rule = total < 1000 ? [["Payment in full, on completion", 1]]
+    : total <= 5000 ? [["Deposit, when they sign", 0.5], ["On completion and walkthrough", 0.5]]
+    : [["Deposit, when they sign", 0.4], ["Midway, when the main work is done", 0.4], ["On completion and walkthrough", 0.2]];
+  var left = total;
+  return rule.map(function (x, i) {
+    var amt = i === rule.length - 1 ? Math.round(left * 100) / 100 : Math.round(total * x[1] * 100) / 100;
+    left -= amt;
+    return { label: x[0], amount: amt, pct: Math.round(x[1] * 100) };
+  });
+}
+function wsCustomerTotal(r) {
+  var e = (r && r.estimate) || {};
+  if (r && r.customerFinalTotal != null && isFinite(Number(r.customerFinalTotal))) return Number(r.customerFinalTotal);
+  return calcCustomerView(e).customerTotal;
+}
+function wsHeadHtml(r) {
+  var c = (r && r.customer) || {}, q = (r && r.request) || {};
+  var who = [r && r.ref, c.name, c.address, q.propertyType].filter(function (x) { return x && String(x).trim(); }).map(function (x) { return esc(String(x).trim()); }).join(" · ");
+  return '<div class="ws-in">' +
+      '<div><div class="ws-who">' + who + '</div><div class="ws-tot" id="ws-tot">$0</div><div class="ws-sub" id="ws-sub"></div></div>' +
+      '<div class="ws-acts"><span class="ws-pill wa" id="ws-ready"></span>' +
+        '<button type="button" class="ws-btn ws-sm" onclick="wsPreview()">Preview</button>' +
+        '<button type="button" class="ws-btn ws-gold" onclick="sendToCustomer()">Send</button>' +
+        '<button type="button" class="ws-x-close" title="Close" onclick="closeEdit()">×</button></div>' +
+    '</div>' +
+    '<div class="ws-prog">' + ["Request", "Scope & Price", "Timeline", "Terms", "Review & Send"].map(function (t, i) {
+      return '<button type="button" onclick="wsGo(' + i + ')"' + (i === 0 ? ' class="on"' : '') + '>' + (i + 1) + ' ' + esc(t) + '</button>';
+    }).join("") + '</div>';
+}
+function wsGo(i) {
+  var bars = document.querySelectorAll("#edit-card .step-bar");
+  if (bars[i]) bars[i].scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function wsTermsHtml(est) {
+  var mk = Number(est && est.markupPct);
+  if (!isFinite(mk)) mk = 25;
+  return '<div class="form-section ws-cardbox ws-terms" id="ws-terms">' +
+    '<div class="ws-row"><span>Markup</span><b id="ws-mk-l">' + esc(String(mk)) + '%</b></div>' +
+    '<input type="range" min="0" max="60" step="1" id="ws-mk" value="' + esc(String(Math.min(60, Math.max(0, mk)))) + '" oninput="wsMarkup(this.value)">' +
+    '<div class="ws-row" style="border:0"><span>Payment</span><span class="v4-hint" id="ws-pay-src"></span></div>' +
+    '<table class="ws-pay" id="ws-pay"></table>' +
+    '<div class="ws-row"><span>Warranty</span><b>3-year workmanship</b></div>' +
+    '<div class="ws-row"><span>Valid for</span><b>30 days</b></div>' +
+  '</div>';
+}
+function wsMarkup(v) {
+  var box = document.getElementById("f-markup");
+  if (box) box.value = v;
+  var l = document.getElementById("ws-mk-l");
+  if (l) l.textContent = v + "%";
+  recalc();
+}
+/* Finishes & who supplies, per service: every material line as a card with a
+   "Customer supplies" tick. Ticked: the material comes off the price (labor
+   stays) and the item is listed as Customer supplies on that card. Unticked:
+   the very same line comes back. Uses the parked-lines store, so the money is
+   never lost. */
+function wsSupplyGridHtml(si, nm) {
+  var est = (currentRecord && currentRecord.estimate) || {};
+  var cards = [];
+  (est.materials || []).forEach(function (l, gi) {
+    if (scopeSectionOf(l) !== nm || !String(l.item || "").trim()) return;
+    cards.push('<div class="ws-fc"><div class="ws-fimg">🧰</div><div class="ws-fb"><b>' + esc(l.item) + '</b>' +
+      '<label><input type="checkbox" onchange="wsSupplyToggle(' + si + ',' + gi + ',this.checked)"> Customer supplies</label>' +
+      '<div class="v4-hint">Sani supplies · ' + fmt((Number(l.qty) || 0) * (Number(l.rate) || 0)) + '</div></div></div>');
+  });
+  (est.parkedLines || []).forEach(function (p, pi) {
+    if (!p || p.custSupplied !== true || scopeNorm(p.service) !== scopeNorm(nm)) return;
+    cards.push('<div class="ws-fc ws-cs"><div class="ws-fimg">📦</div><div class="ws-fb"><b>' + esc((p.line && p.line.item) || p.ownerText) + '</b>' +
+      '<label><input type="checkbox" checked onchange="wsSupplyUndo(' + si + ',' + pi + ')"> Customer supplies</label>' +
+      '<div class="v4-hint">Material $0 · labor kept</div></div></div>');
+  });
+  if (!cards.length) return "";
+  return '<div class="ws-sup-h">Finishes &amp; who supplies</div><div class="ws-sup"><div class="ws-fgrid">' + cards.join("") + '</div></div>';
+}
+function wsSupplyToggle(si, gi, on) {
+  if (!on) return;
+  syncLines();
+  var est = currentRecord.estimate || {}, d = scopeDraft(), svc = d.services[si];
+  var l = (est.materials || [])[gi];
+  if (!svc || !l) return;
+  var nm = String(svc.name || "").trim(), item = String(l.item || "").trim();
+  est.parkedLines = est.parkedLines || [];
+  est.parkedLines.push({ kind: "materials", ownerText: item, service: nm, idx: gi, line: l, custSupplied: true });
+  est.materials.splice(gi, 1);
+  svc.supplied = svc.supplied || [];
+  if (!svc.supplied.some(function (x) { return scopeNorm(x) === scopeNorm(item); })) svc.supplied.push(item);
+  toast(item + " — customer supplies. Material " + fmt(scopeLineValue(l)) + " off, labor kept.");
+  scopeLinesRefresh();
+}
+function wsSupplyUndo(si, pi) {
+  var est = currentRecord.estimate || {}, d = scopeDraft(), svc = d.services[si];
+  var p = (est.parkedLines || [])[pi];
+  if (!svc || !p) return;
+  var item = String(p.ownerText || "");
+  scopeUnparkFor(String(svc.name || "").trim(), item);
+  svc.supplied = (svc.supplied || []).filter(function (x) { return scopeNorm(x) !== scopeNorm(item); });
+  scopeLinesRefresh();
+}
+function wsPreview() {
+  if (!currentRecord) return;
+  var w = window.open("about:blank", "_blank");
+  Promise.resolve(saveDraft()).then(function (ok) {
+    var url = "/quote.html?ref=" + encodeURIComponent(currentRecord.ref) + "&preview=1";
+    if (w) w.location.href = url; else if (ok) window.location.href = url;
+  });
+}
+/* What the checklist reads: the screen as it is now. */
+function wsTextNow() {
+  var parts = [];
+  try { (scopeDraft().services || []).forEach(function (s) { ["included", "supplied", "excluded"].forEach(function (k) { parts = parts.concat(s[k] || []); }); }); } catch (e) {}
+  ["f-overview", "f-summary", "f-scope"].forEach(function (id) { var el = document.getElementById(id); if (el) parts.push(el.value); });
+  ["f-needs", "f-sani", "f-basis"].forEach(function (id) { parts = parts.concat(v4ReadLines(id)); });
+  try { parts = parts.concat(v4ReadSteps().map(function (x) { return x.title + " " + x.text; })); } catch (e) {}
+  return parts.join("\n");
+}
+function wsChecks(r) {
+  var e = (r && r.estimate) || {}, q = (r && r.request) || {}, c = (r && r.customer) || {};
+  var svcs = []; try { svcs = scopeDraft().services || []; } catch (x) {}
+  var lines = (e.labor || []).concat(e.materials || []);
+  var needs = v4ReadLines("f-needs");
+  var steps = []; try { steps = v4ReadSteps().filter(function (x) { return x.title || x.text; }); } catch (x) {}
+  var supplied = svcs.some(function (s) { return (s.supplied || []).length; });
+  var building = /co-?op|condo|building|apartment|\bapt\b|management|doorman|elevator/i.test([q.description, q.propertyType, c.address].join(" "));
+  var out = [
+    [svcs.length > 0 && lines.length > 0, "At least one service"],
+    [lines.length > 0 && lines.every(function (l) { return Number(l.qty) > 0; }), "Every line has a quantity"],
+    [steps.length > 0, "Steps for the customer are written"],
+    [svcs.length > 0 && svcs.every(function (s) { return (s.excluded || []).length; }), 'Every service has "Not included"']
+  ];
+  if (supplied) out.push([needs.some(function (x) { return /on site|deliver|by (mon|tue|wed|thu|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|day|the)/i.test(x); }), "Delivery date for customer-supplied items", "deliver"]);
+  if (building) out.push([needs.some(function (x) { return /\bcoi\b|insurance cert/i.test(x); }), "Building COI mentioned", "coi"]);
+  out.push([!/licens|\bgas (line|hook|pipe|connect|appliance)|option [ab]\b/i.test(wsTextNow()), 'No "licensed", no options, no gas work']);
+  return out;
+}
+function wsAddNeed(kind) {
+  var inp = document.getElementById("f-needs-in");
+  if (!inp) return;
+  if (kind === "coi") inp.value = "Send our insurance certificate (COI) request to your building management";
+  else {
+    var st = document.getElementById("f-start"), d = st && st.value ? new Date(st.value + "T12:00:00") : null;
+    if (d) d.setDate(d.getDate() - 1);
+    inp.value = "Have your items on site " + (d ? "by " + wsDay(d) : "before we start");
+  }
+  wsListAdd("f-needs");
+}
+function wsSideHtml(r, t, sch, total) {
+  var checks = wsChecks(r), okN = checks.filter(function (x) { return x[0]; }).length;
+  var profit = t.grand - t.sub, pct = t.grand > 0 ? Math.round(profit / t.grand * 100) : 0;
+  var days = sch && sch.workDays ? sch.workDays : 0;
+  return '<div class="ws-box"><div class="ws-ey">Ready to send</div><ul class="ws-chk">' + checks.map(function (x) {
+      return '<li><span class="ws-dot" style="background:' + (x[0] ? '#1f8a4c' : '#b86e00') + '">' + (x[0] ? '✓' : '!') + '</span><span>' + esc(x[1]) +
+        (!x[0] && x[2] ? ' <a href="#" onclick="wsAddNeed(\'' + x[2] + '\');return false">add</a>' : '') + '</span></li>';
+    }).join("") + '</ul></div>' +
+    '<div class="ws-box"><div class="ws-ey">Money (you only)</div>' +
+      '<div class="ws-row"><span>Labor cost</span><b>' + fmt(t.labor) + '</b></div>' +
+      '<div class="ws-row"><span>Material cost</span><b>' + fmt(t.mat) + '</b></div>' +
+      '<div class="ws-row"><span>Profit</span><b>' + fmt(profit) + ' (' + pct + '%)</b></div>' +
+      (days ? '<div class="ws-row"><span>Profit per work day</span><b>' + fmt(profit / days) + '</b></div>' : '') +
+      (Math.abs(total - t.grand) >= 0.01 ? '<div class="v4-hint" style="margin-top:6px">The customer sees ' + fmt(total) + ' (your view settings or a set total).</div>' : '') +
+    '</div>' +
+    '<div class="ws-box"><div class="ws-ey">Quick actions</div><div class="ws-qa">' +
+      '<button type="button" class="ws-btn ws-sm" onclick="askCheck()">Check before sending</button>' +
+      '<button type="button" class="ws-btn ws-sm" onclick="copyScopeLink()">Scope only (no prices)</button>' +
+      '<button type="button" class="ws-btn ws-sm" onclick="downloadEstimatePdf(\'customer\')">Customer PDF</button>' +
+      '<button type="button" class="ws-btn ws-sm" onclick="downloadEstimatePdf(\'internal\')">Internal PDF</button>' +
+      '<button type="button" class="ws-btn ws-sm" onclick="var a=document.querySelector(\'#edit-card .ask-panel\');if(a)a.scrollIntoView({behavior:\'smooth\',block:\'center\'})">AI chat</button>' +
+      '<button type="button" class="ws-btn ws-sm" onclick="openSetTotalModal()">Set total to a number</button>' +
+      (r && !r.parentRef ? '<button type="button" class="ws-btn ws-sm" onclick="addonCreate()">Add additional work</button>' : '') +
+    '</div></div>';
+}
+/* Refresh the head, the side, the timeline bar and the payment table from
+   what is on screen. Cheap: it writes text, never an input he is typing in. */
+function wsRefresh() {
+  var r = typeof currentRecord !== "undefined" ? currentRecord : null;
+  if (!r || !document.getElementById("ws-head")) return;
+  var e = r.estimate || {};
+  var t = calcTotal(e), total = wsCustomerTotal(r);
+  var n = function (id) { var el = document.getElementById(id); var v = el ? el.value.trim() : ""; return v === "" ? undefined : Number(v); };
+  var probe = Object.assign({}, e, { scheduleEdit: { crew: n("f-crew"), dailyHours: n("f-dayhours"), workDays: n("f-workdays"), waitDays: n("f-waitdays") } });
+  var sch = wsScheduleOf(probe);
+  var profit = t.grand - t.sub, pct = t.grand > 0 ? Math.round(profit / t.grand * 100) : 0;
+  var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+  set("ws-tot", fmt(total));
+  set("ws-sub", "Cost " + fmt(t.sub) + " · Profit " + fmt(profit) + " (" + pct + "%)" + (sch ? " · " + sch.workDays + " work day" + (sch.workDays === 1 ? "" : "s") : ""));
+  var checks = wsChecks(r), okN = checks.filter(function (x) { return x[0]; }).length;
+  var pill = document.getElementById("ws-ready");
+  if (pill) { pill.textContent = "Ready " + okN + "/" + checks.length; pill.className = "ws-pill " + (okN === checks.length ? "ok" : "wa"); }
+  var side = document.getElementById("ws-side");
+  if (side && !side.contains(document.activeElement)) side.innerHTML = wsSideHtml(r, t, sch, total);
+  /* timeline */
+  var tl = document.getElementById("ws-tl"), tx = document.getElementById("ws-tl-txt");
+  if (tl && tx) {
+    if (!sch) { tl.innerHTML = ""; tx.textContent = "Add labor lines, or type the working days, and the timeline is counted."; }
+    else {
+      var cols = ["#5d6878", "#18305a", "#1f8a4c", "#7a5a12", "#2c5aa0"], segs = [];
+      (sch.sections || []).forEach(function (x, i) { var share = sch.laborHours > 0 ? x.hours / sch.laborHours * sch.workDays : 0; if (share > 0) segs.push('<div style="flex:' + share + ';background:' + cols[i % 5] + '">' + esc(x.name) + '</div>'); });
+      if (!segs.length) segs.push('<div style="flex:' + sch.workDays + ';background:#18305a">Work</div>');
+      if (sch.waitDays > 0) segs.push('<div style="flex:' + sch.waitDays + ';background:#c9a24a;color:#1b1404">Drying</div>');
+      tl.innerHTML = segs.join("");
+      var st = document.getElementById("f-start"), fin = st ? wsFinish(st.value, sch.totalDays) : null;
+      tx.textContent = (sch.laborHours ? sch.laborHours + " labor hours ÷ " + sch.crew + " " + (sch.crew === 1 ? "person" : "people") + " × " + sch.dailyHours + " h = " : "") +
+        sch.workDays + " work day" + (sch.workDays === 1 ? "" : "s") + (sch.waitDays > 0 ? " + " + sch.waitDays + " drying day" + (sch.waitDays === 1 ? "" : "s") : "") +
+        (fin ? ". Start " + wsDay(new Date(st.value + "T12:00:00")) + " → finish about " + wsDay(fin) + " (Mon–Fri)." : ".");
+    }
+  }
+  /* payment */
+  var pay = document.getElementById("ws-pay");
+  if (pay) {
+    var plan = wsPayPlan(total, r);
+    pay.innerHTML = plan.map(function (p) { return '<tr><td>' + esc(p.label) + '</td><td class="n">' + p.pct + '%</td><td class="n"><b>' + fmt(p.amount) + '</b></td></tr>'; }).join("");
+    set("ws-pay-src", plan.length && plan[0].contract ? "from this job's contract" : "your contract terms");
+  }
+  var mk = document.getElementById("ws-mk"), box = document.getElementById("f-markup");
+  if (mk && box && document.activeElement !== mk) { mk.value = box.value; set("ws-mk-l", box.value + "%"); }
+}
+/* Last wrapper on renderEdit: put the panels other parts of the page append
+   (contract, follow-up emails) into their numbered sections, then fill the
+   head and the side. */
+(function () {
+  if (typeof renderEdit !== "function") return;
+  var _orig = renderEdit;
+  renderEdit = function () {
+    var out = _orig.apply(this, arguments);
+    try {
+      var card = document.getElementById("edit-card");
+      var terms = document.getElementById("ws-terms");
+      var totals = card && card.querySelector(".totals-box");
+      var ct = document.getElementById("sbc-contract-panel");
+      if (ct && totals && totals.parentNode) totals.parentNode.insertBefore(ct, totals.nextSibling);
+      var fu = document.getElementById("fu-box"), acts = card && card.querySelector(".modal-actions");
+      if (fu && acts && acts.parentNode) acts.parentNode.insertBefore(fu, acts);
+      var foot = document.getElementById("ws-foot");
+      if (foot && card) card.appendChild(foot);
+      wsRefresh();
+    } catch (e) { console.error("layout", e); }
+    return out;
+  };
+  /* The step you are reading lights up in the bar, as in the Perplexity layout. */
+  var modal = document.getElementById("edit-modal");
+  if (modal) modal.addEventListener("scroll", function () {
+    var bars = document.querySelectorAll("#edit-card .step-bar"), btns = document.querySelectorAll("#ws-head .ws-prog button");
+    if (!bars.length || !btns.length) return;
+    var cur = 0;
+    bars.forEach(function (b, i) { if (b.getBoundingClientRect().top < 200) cur = i; });
+    if (modal.scrollTop + modal.clientHeight >= modal.scrollHeight - 4) cur = bars.length - 1;
+    btns.forEach(function (b, i) { b.classList.toggle("on", i === cur); });
+  }, { passive: true });
+  if (typeof recalc === "function") {
+    var _rc = recalc;
+    recalc = function () { var o = _rc.apply(this, arguments); try { wsRefresh(); } catch (e) {} return o; };
+  }
+})();
 </script>
 
 </body>

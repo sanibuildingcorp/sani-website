@@ -72,12 +72,14 @@ console.log('\nfive steps, in the order the work actually happens\n');
   const view = DASH.slice(start, end + 200);
 
   const at = (needle) => view.indexOf(needle);
+  /* The five sections of the Perplexity layout ("I need exactly this
+     dashboard layout made by perplexity", Oct 7). */
   const STEPS = [
-    [1, 'Read the job and ask what is missing'],
-    [2, 'Let the AI price it'],
-    [3, 'Check the price it came back with'],
-    [4, 'Decide what the customer sees'],
-    [5, 'Send it'],
+    [1, 'Request'],
+    [2, 'Scope & Price'],
+    [3, 'Timeline'],
+    [4, 'Terms'],
+    [5, 'Review & Send'],
   ];
   STEPS.forEach(function (s) {
     ok('step ' + s[0] + ' is on the page: "' + s[1] + '"', at("stepBar(" + s[0] + ", '" + s[1] + "'") !== -1);
