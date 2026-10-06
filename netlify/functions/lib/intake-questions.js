@@ -83,6 +83,7 @@ const TOPIC_LABELS = {
    so nobody is ever forced to invent an answer. A guessed number is worse than
    no number: it looks like a fact and it prices like one. */
 const NOT_SURE = "I'm not sure";
+const ALL_OF_THESE = /^(all of (these|the above|them)|all (three|four|five)( of these)?|both( of these| of them)?)\.?$/i;
 
 /* Questions that belong to no trade at all. These have to be recognised FIRST,
    because their wording collides with real trades: "which floor is the unit on"
@@ -224,6 +225,7 @@ Return ONLY valid JSON. No markdown, no backticks, no explanation before or afte
       "topic": "flooring|windows|painting|tile|bathroom|kitchen|doors|electrical|plumbing|deck|stairs|water|demolition|general",
       "type": "options-stack" | "options-grid" | "text",
       "options": ["...", "...", "..."],
+      "multi": false,
       "placeholder": "only when type is text"
     }
   ]
@@ -234,6 +236,7 @@ Return ONLY valid JSON. No markdown, no backticks, no explanation before or afte
 - "text": free text. Use only when a number or a name is the only possible answer.
 - Ranges beat exact numbers. "Under 50 sq ft / 50-100 / 100-200 / bigger" gets answered; "how many square feet" gets abandoned.
 - Do not add an "I'm not sure" option. One is added for you.
+- "multi": true when several choices can be true at the same time (features to add, items to include, things that are damaged). The customer can then tick more than one, so do NOT add an "All of these" or "Both" option. false when only one answer can be right (a size, a floor number, yes/no).
 
 Return the questions now, hardest-hitting first, or an empty list if the description already says enough.`;
 }
@@ -263,6 +266,15 @@ function normalizeQuestions(raw, input) {
     let options = Array.isArray(q.options)
       ? q.options.map((o) => String(o == null ? "" : o).trim()).filter(Boolean).slice(0, 5)
       : [];
+    /* "In there need to add both, bench and grab bar but i can't mark both":
+       a question whose choices can all be true takes more than one answer.
+       The model says so with multi:true; an "All of these" / "Both" choice
+       says it too - that choice is dropped, the customer ticks them instead. */
+    let multi = q.multi === true;
+    if (type !== "text" && options.some((o) => ALL_OF_THESE.test(o))) {
+      multi = true;
+      options = options.filter((o) => !ALL_OF_THESE.test(o));
+    }
     // A choice question with fewer than two choices is not a choice question.
     if (type !== "text" && options.length < 2) type = "text";
     if (type === "text") options = [];
@@ -273,6 +285,7 @@ function normalizeQuestions(raw, input) {
       why: String(q.why || "").trim().slice(0, 90),
       type: type,
       options: options,
+      multi: multi && type !== "text",
       placeholder: String(q.placeholder || "").trim().slice(0, 60),
     };
 
