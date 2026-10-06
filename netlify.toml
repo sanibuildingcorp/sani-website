@@ -62,6 +62,18 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# The shared menu/footer and the service worker: always checked with the
+# server, so a removed menu item does not live on in a phone's copy.
+[[headers]]
+  for = "/partials/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, max-age=0"
+
 [[headers]]
   for = "/dashboard-shell.html"
   [headers.values]
