@@ -133,10 +133,11 @@ function buildScopePdf(view, opts) {
   const sch = v4 && e.schedule && e.schedule.workDays ? e.schedule : null;
   if (sch) {
     head("Timeline");
-    const small = sch.workDays <= 1;
+    const small = sch.workDays <= 1 && !(sch.waitDays > 0);
     const days = function (n) { return n === 1 ? "1 day" : n + " days"; };
-    doc.text(small ? "1 day - about " + sch.laborHours + " hours of work" + (A(sch.waits).length ? ", with drying time between the steps." : ".")
-      : "About " + days(sch.totalDays) + ": " + days(sch.workDays) + " of work" + (sch.waitDays > 0 ? " and " + days(sch.waitDays) + " of waiting while " + A(sch.waits).map(function (w) { return String(w.label || "").toLowerCase(); }).join(", ") : "") + ".", { size: 11, after: 10 });
+    const waiting = A(sch.waits).length ? "while " + A(sch.waits).map(function (w) { return String(w.label || "").toLowerCase(); }).join(", ") : "for drying and curing";
+    doc.text(small ? (sch.laborHours > 0 ? "1 day - about " + sch.laborHours + " hours of work" + (A(sch.waits).length ? ", with drying time between the steps." : ".") : "1 day.")
+      : "About " + days(sch.totalDays) + ": " + days(sch.workDays) + " of work" + (sch.waitDays > 0 ? " and " + days(sch.waitDays) + " of waiting " + waiting : "") + ".", { size: 11, after: 10 });
   } else if (C(e.timelineText)) {
     head("Timeline");
     doc.text(C(e.timelineText), { size: 11, after: 10 });

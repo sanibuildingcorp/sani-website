@@ -457,6 +457,9 @@ exports.handler = async function handler(event) {
        his choices.) */
     VIEW_FLAGS.forEach(function (k) { estimate[k] = false; });
     estimate.viewReset = true;
+    /* His own timeline numbers (people, hours a day, days) came back with the
+       contractor fields: count the timeline again with them. */
+    if (estimate.scheduleEdit) { try { const sch = scheduleOf(estimate); if (sch) estimate.schedule = sch; } catch (e) { console.error("schedule", e && e.message); } }
     const wasTotal = history.customerTotal({ estimate: previousEstimate, customerFinalTotal: record.customerFinalTotal });
     record.estimate = estimate;
     record.status = record.status === "new" ? "drafted" : record.status;
