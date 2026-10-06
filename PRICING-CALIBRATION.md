@@ -212,7 +212,7 @@ This matters commercially because customers arrive pre-anchored. Google's AI Ove
 **Do not**
 - Do not reintroduce price floors or ceilings on *amount*. Zura's instruction: *"small jobs count small amounts, big jobs count big amounts."* Validation checks completeness only (no labor, zero subtotal, missing protection/cleanup/demolition).
 - Do not use the word "licensed" or make any licensing claim, anywhere. Always "fully insured".
-- Do not mention TV mounting anywhere.
+- Do not offer or mention TV mounting anywhere in text. Photos that show a TV are fine - keep them.
 - Do not let the benchmark file change a price. It reports.
 
 ---

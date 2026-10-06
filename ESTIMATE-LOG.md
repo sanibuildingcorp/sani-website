@@ -153,7 +153,7 @@ to `.topbar` and `.wrap` only, so the shared menu/footer partials are untouched.
 **LICENSE RULE:** never “licensed” anywhere — copy, schema, contracts, function output.
 Always “fully insured”. Enforced in the `generate-estimate.js` prompt as a top-level rule.
 
-**TV RULE:** no TV-mounting service, never mention TV anywhere.
+**TV RULE:** no TV-mounting service: never offer or mention TV mounting / TV installation in any text. Photos that happen to show a TV (a media wall, a living room) are fine - keep them, never remove or skip a photo because a TV is in it (Zura, Oct 7 2026).
 
 -----
 
