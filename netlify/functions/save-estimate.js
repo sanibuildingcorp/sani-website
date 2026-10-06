@@ -13,6 +13,7 @@
 const { getStore } = require("@netlify/blobs");
 const { requireDashboardKey } = require("./lib/require-dashboard-key");
 const history = require("./lib/history");
+const { scheduleOf } = require("./lib/schedule");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -57,6 +58,8 @@ exports.handler = async function (event) {
     const wasStamped = existing.customerFinalTotal;
     if (estimate) {
       existing.estimate = { ...existing.estimate, ...estimate };
+      /* The timeline follows the lines he just saved (lib/schedule.js). */
+      try { const sch = scheduleOf(existing.estimate); if (sch) existing.estimate.schedule = sch; } catch (e) {}
     }
     /* A save carries the status the page loaded with. Opened in the Gmail app
        while the dashboard sat open on "sent", the next Save wrote "sent" back

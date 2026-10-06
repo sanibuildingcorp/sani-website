@@ -8798,7 +8798,10 @@ function gatherForm() {
     "internalScopeChecklist", "projectAnalysis",
     // the shared work said once, and how the wording and test mode went
     "projectIncluded", "projectExclusions", "customerTimeline", "scopeWriter", "generatedWith", "generationTiming",
-    "scopeDraftReset", "scopeDraftKept", "repairReport", "marketResearch"
+    "scopeDraftReset", "scopeDraftKept", "repairReport", "marketResearch",
+    // the whole estimate for the customer (docVersion 4): overview, steps,
+    // what Sani supplies, what we need from them, price basis, the timeline
+    "docVersion", "overview", "workSteps", "saniSupplies", "customerNeeds", "priceBasis", "schedule"
   // plus every contractor-owned setting, from the same single list the AI
   // regeneration path uses, so the two can never drift apart
   ].concat(CONTRACTOR_OWNED_ESTIMATE_FIELDS);

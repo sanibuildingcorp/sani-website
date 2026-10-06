@@ -117,13 +117,35 @@ function buildScopePdf(view, opts) {
   doc.rule();
   doc.text("This document lists the work to be performed, what is and is not included, and the timeline. It contains no pricing. Prepared by Sani Building Corp, Brooklyn, NY · fully insured · (332) 277-0990 · contact@sanibuildingcorp.com", { size: 9.5, color: GREY, after: 10 });
 
-  if (C(e.summary)) {
-    doc.text("Project summary", { size: 12, bold: true, color: NAVY, after: 3 });
-    doc.text(C(e.summary), { size: 11, after: 10 });
+  /* The whole estimate (docVersion 4, the same sections as the customer's
+     page): what we will do, how the work will go, the counted timeline, who
+     supplies what. An older estimate keeps the PDF it always had. */
+  const v4 = e.docVersion === 4 && (C(e.overview) || A(e.workSteps).length);
+  const head = function (t) { doc.text(t, { size: 12, bold: true, color: NAVY, after: 3 }); };
+  const bullets = function (items, bullet) { items.forEach(function (it) { doc.text(it, { size: 10.5, indent: 6, bullet: bullet || "•", after: 1 }); }); doc.space(8); };
+  if (v4 && C(e.overview)) { head("What we will do"); doc.text(C(e.overview), { size: 11, after: 10 }); }
+  else if (C(e.summary)) { head("Project summary"); doc.text(C(e.summary), { size: 11, after: 10 }); }
+  if (v4 && A(e.workSteps).length) {
+    head("How the work will go");
+    A(e.workSteps).forEach(function (st, i) { if (!st || !C(st.title)) return; doc.text((i + 1) + ". " + C(st.title), { size: 10.5, bold: true, after: 1 }); if (C(st.text)) doc.text(C(st.text), { size: 10.5, indent: 12, after: 4 }); });
+    doc.space(6);
   }
-  if (C(e.timelineText)) {
-    doc.text("Timeline", { size: 12, bold: true, color: NAVY, after: 3 });
+  const sch = v4 && e.schedule && e.schedule.workDays ? e.schedule : null;
+  if (sch) {
+    head("Timeline");
+    const small = sch.workDays <= 1;
+    const days = function (n) { return n === 1 ? "1 day" : n + " days"; };
+    doc.text(small ? "1 day - about " + sch.laborHours + " hours of work" + (A(sch.waits).length ? ", with drying time between the steps." : ".")
+      : "About " + days(sch.totalDays) + ": " + days(sch.workDays) + " of work" + (sch.waitDays > 0 ? " and " + days(sch.waitDays) + " of waiting while " + A(sch.waits).map(function (w) { return String(w.label || "").toLowerCase(); }).join(", ") : "") + ".", { size: 11, after: 10 });
+  } else if (C(e.timelineText)) {
+    head("Timeline");
     doc.text(C(e.timelineText), { size: 11, after: 10 });
+  }
+  if (v4) {
+    const sani = uniq(e.saniSupplies);
+    const yours = uniq([].concat.apply([], A(e.serviceBreakdown).map(function (s) { return A(s && s.customerSupplies).map(function (x) { return typeof x === "string" ? x : C(x && (x.item || x.text)); }); })));
+    if (sani.length) { head("Sani supplies"); bullets(sani); }
+    if (yours.length) { head("You supply"); bullets(yours.concat(["Please have your items on site before we start. Installing them is included."]).slice(0, 40)); }
   }
 
   const cards = scopeCards(e);
@@ -137,13 +159,15 @@ function buildScopePdf(view, opts) {
       doc.space(6);
     };
     section("Included in this service", GREEN, c.included, "•");
-    section("Customer supplies", BROWN, c.supplies, "•");
+    if (!v4) section("Customer supplies", BROWN, c.supplies, "•");
     section("Not included", RED, c.excluded, "–");
     /* No "Optional alternatives" block: "I need to completely remove
        alternative offers, i never use them and remove from everywhere." */
     doc.space(6);
   });
   if (!cards.length) doc.text("The scope of work for this project has not been written yet.", { size: 11, color: GREY });
+  if (v4 && uniq(e.customerNeeds).length) { head("What we need from you"); bullets(uniq(e.customerNeeds)); }
+  if (v4 && uniq(e.priceBasis).length) { head("This scope is based on"); bullets(uniq(e.priceBasis)); }
   /* No closing paragraph: the footer on every page already says who made
      this and how to reach them, and a closing line alone on a fresh page is
      the only thing it would ever add. */
