@@ -1300,6 +1300,21 @@ body {
    stop before one paragraph pushes every other control off the screen. Past that
    they scroll, and the drag handle still works. */
 .field textarea.grow-box { max-height: 340px; overflow-y: auto; }
+/* The customer page, written out (docVersion 4): every section editable. */
+.v4-edit .field { margin-bottom: 14px; }
+.v4-edit textarea.v4-box { max-height: 340px; overflow-y: auto; }
+.v4-hint { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+.v4-step { display: grid; grid-template-columns: 28px 1fr 36px; gap: 8px; align-items: start; margin-bottom: 8px; }
+.v4-step .v4-n { width: 26px; height: 26px; border-radius: 50%; background: var(--gold); color: #1b1404; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; margin-top: 8px; }
+.v4-step .v4-in { display: flex; flex-direction: column; gap: 6px; }
+.v4-step textarea { min-height: 54px; }
+.v4-step .v4-x { border: 1px solid var(--line-soft); background: transparent; color: var(--ink-muted); border-radius: 8px; height: 36px; cursor: pointer; margin-top: 4px; }
+.v4-days { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 640px) { .v4-days { grid-template-columns: 1fr 1fr; } }
+.v4-days label { font-size: 10.5px; letter-spacing: .8px; }
+.v4-days > .field { min-width: 0; margin-bottom: 0; }
+.v4-days input { width: 100%; min-width: 0; box-sizing: border-box; }
+.v4-days input::placeholder { color: var(--ink-muted); opacity: .6; font-style: italic; }
 
 /* ============ CUSTOMER SCOPE CONTROL ============ */
 .sc-panel{border:1px solid var(--line);border-radius:12px}
@@ -5152,6 +5167,7 @@ function renderEdit() {
          wrote is lost, it is just not shown. */
     '</div>' +
 
+    v4EditHtml(est) +
     stepBar(4, 'Decide what the customer sees', 'Photos on their quote, the wording of each service, and which prices show.') +
     '<div class="form-section">' +
       '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
@@ -6637,7 +6653,9 @@ var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   // Snapshot that makes the last service merge reversible
   "lastMerge", "mergeHistory",
   // Which alternatives he checked to show the customer (none until he does)
-  "offeredOptions"
+  "offeredOptions",
+  // His own timeline numbers: people on the job, hours a day, days
+  "scheduleEdit"
 ];
 
 var SCOPE_SHARED_STATUSES = ["sent", "opened", "accepted", "invoiced", "paid", "completed"];
@@ -8755,6 +8773,76 @@ async function scopePublish() {
   toast("✓ Saved. The customer sees exactly this");
 }
 
+/* THE CUSTOMER PAGE, EDITABLE. "Yes all functions i need to be editable in my
+   dashboard": what we will do, the steps, the timeline, who supplies what,
+   what we need from the customer, what the price is based on. The AI writes
+   them; every word can be changed here, and Save Draft keeps the change.
+   One item per line in the lists. Empty boxes hide that section from the
+   customer. The timeline is counted from the labor lines; a number typed
+   here wins over the count, an empty box means automatic. */
+function v4Lines(v) { return (Array.isArray(v) ? v : []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }).filter(Boolean).join("\n"); }
+function v4ReadLines(id) { var el = document.getElementById(id); return el ? el.value.split(/\n+/).map(function (x) { return x.replace(/^\s*[-•*]\s*/, "").trim(); }).filter(Boolean) : []; }
+function v4StepRow(st, i) {
+  return '<div class="v4-step" data-i="' + i + '"><div class="v4-n">' + (i + 1) + '</div><div class="v4-in">' +
+    '<input type="text" class="v4-st" placeholder="Step title, e.g. Protect and prepare" value="' + esc(st.title || "") + '">' +
+    '<textarea class="v4-sx" rows="2" placeholder="What happens in this step">' + esc(st.text || "") + '</textarea></div>' +
+    '<button type="button" class="v4-x" title="Remove this step" onclick="v4RemoveStep(' + i + ')">✕</button></div>';
+}
+function v4ReadSteps() {
+  return Array.prototype.map.call(document.querySelectorAll("#v4-steps .v4-step"), function (row) {
+    return { title: row.querySelector(".v4-st").value.trim(), text: row.querySelector(".v4-sx").value.trim() };
+  });
+}
+function v4DrawSteps(steps) {
+  var box = document.getElementById("v4-steps");
+  if (box) box.innerHTML = steps.map(v4StepRow).join("");
+}
+function v4AddStep() { var st = v4ReadSteps(); st.push({ title: "", text: "" }); v4DrawSteps(st); var r = document.querySelectorAll("#v4-steps .v4-st"); if (r.length) r[r.length - 1].focus(); }
+function v4RemoveStep(i) { var st = v4ReadSteps(); st.splice(i, 1); v4DrawSteps(st); }
+function v4EditHtml(est) {
+  var e = est || {}, sch = e.schedule || {}, auto = sch.auto || sch, ed = e.scheduleEdit || {};
+  var num = function (v) { return v === undefined || v === null ? "" : String(v); };
+  var steps = (Array.isArray(e.workSteps) ? e.workSteps : []).filter(function (x) { return x && (x.title || x.text); });
+  var countLine = sch.workDays ? "Counted from your labor lines: " + (auto.workDays || sch.workDays) + " working day" + ((auto.workDays || sch.workDays) === 1 ? "" : "s") + (auto.waitDays > 0 ? " + " + auto.waitDays + " drying" : "") + (sch.laborHours ? " (about " + sch.laborHours + " hours of work)" : "") + ". Type a number to change it; leave empty for automatic." : "Type the days if you want a timeline shown. Leave empty for automatic.";
+  var box = function (id, label, value, rows, hint) {
+    return '<div class="field"><label for="' + id + '">' + label + '</label>' + (hint ? '<div class="v4-hint">' + hint + '</div>' : '') +
+      '<textarea id="' + id + '" rows="' + (rows || 4) + '" class="v4-box">' + esc(value || "") + '</textarea></div>';
+  };
+  return '<div class="form-section v4-edit" id="v4-edit">' +
+    '<h3>📝 CUSTOMER PAGE TEXT <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(what the customer reads; empty = hidden)</span></h3>' +
+    box("f-overview", "What we will do", e.overview, 4) +
+    '<div class="field"><label>How the work will go (steps)</label><div id="v4-steps">' + steps.map(v4StepRow).join("") + '</div>' +
+      '<button type="button" class="btn-add-row" onclick="v4AddStep()">+ Add step</button></div>' +
+    '<div class="field"><label>Timeline</label><div class="v4-hint">' + esc(countLine) + '</div><div class="v4-days">' +
+      '<div class="field"><label for="f-crew">People on the job</label><input id="f-crew" type="number" min="1" step="1" inputmode="numeric" placeholder="auto ' + esc(num(sch.crew || 2)) + '" value="' + esc(num(ed.crew)) + '"></div>' +
+      '<div class="field"><label for="f-dayhours">Hours a day</label><input id="f-dayhours" type="number" min="1" step="0.5" inputmode="decimal" placeholder="auto ' + esc(num(sch.dailyHours || 8)) + '" value="' + esc(num(ed.dailyHours)) + '"></div>' +
+      '<div class="field"><label for="f-workdays">Working days</label><input id="f-workdays" type="number" min="0.5" step="0.5" inputmode="decimal" placeholder="auto' + (auto.workDays ? ' ' + esc(num(auto.workDays)) : '') + '" value="' + esc(num(ed.workDays)) + '"></div>' +
+      '<div class="field"><label for="f-waitdays">Drying days</label><input id="f-waitdays" type="number" min="0" step="0.5" inputmode="decimal" placeholder="auto' + (sch.workDays ? ' ' + esc(num(auto.waitDays || 0)) : '') + '" value="' + esc(num(ed.waitDays)) + '"></div>' +
+    '</div></div>' +
+    box("f-sani", "Sani supplies (one per line)", v4Lines(e.saniSupplies), 4) +
+    '<div class="field"><label>You supply</label><div class="v4-hint">Comes from each service\'s "Customer supplies" in Customer Scope Control below.</div></div>' +
+    box("f-needs", "What we need from you (one per line)", v4Lines(e.customerNeeds), 3) +
+    box("f-basis", "This price is based on (one per line)", v4Lines(e.priceBasis), 3) +
+  '</div>';
+}
+/* Read the boxes back into the estimate. Only when the boxes are on the page:
+   a save from anywhere else keeps what the record has. */
+function v4Gather(out) {
+  if (!document.getElementById("f-overview")) return out;
+  out.overview = document.getElementById("f-overview").value.trim();
+  out.workSteps = v4ReadSteps().filter(function (x) { return x.title || x.text; }).map(function (x) { return x.title ? x : { title: x.text, text: "" }; });
+  out.saniSupplies = v4ReadLines("f-sani");
+  out.customerNeeds = v4ReadLines("f-needs");
+  out.priceBasis = v4ReadLines("f-basis");
+  var n = function (id) { var el = document.getElementById(id); var v = el ? el.value.trim() : ""; return v === "" ? null : Number(v); };
+  var ed = { crew: n("f-crew"), dailyHours: n("f-dayhours"), workDays: n("f-workdays"), waitDays: n("f-waitdays") };
+  Object.keys(ed).forEach(function (k) { if (ed[k] === null || !isFinite(ed[k]) || ed[k] < 0) delete ed[k]; });
+  out.scheduleEdit = Object.keys(ed).length ? ed : null;
+  /* Text written here turns the new customer page on, the same as the AI's. */
+  if (out.overview || out.workSteps.length) out.docVersion = 4;
+  return out;
+}
+
 function gatherForm() {
   syncLines();
   var out = {
@@ -8809,7 +8897,7 @@ function gatherForm() {
     if (currentRecord.estimate[k] !== undefined) out[k] = currentRecord.estimate[k];
   });
 
-  return out;
+  return v4Gather(out);
 }
 
 /* "Save failed: Save failed" said nothing. The reason is now in the message,

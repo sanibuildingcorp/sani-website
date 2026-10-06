@@ -39,11 +39,36 @@ function lineHours(l, avgRate) {
   return money > 0 ? money / (avgRate || DEFAULT_RATE) : 0;
 }
 
+/* The contractor's own numbers from the dashboard (estimate.scheduleEdit):
+   people on the job, hours a day, and the working and drying days when he
+   knows better than the count. An empty box means automatic. */
+function editOf(e) {
+  const ed = e && e.scheduleEdit && typeof e.scheduleEdit === "object" ? e.scheduleEdit : {};
+  const pos = function (v) { const n = Number(v); return v !== "" && v != null && Number.isFinite(n) && n > 0 ? n : null; };
+  const zeroOk = function (v) { const n = Number(v); return v !== "" && v != null && Number.isFinite(n) && n >= 0 ? n : null; };
+  return { crew: pos(ed.crew), dailyHours: pos(ed.dailyHours), workDays: pos(ed.workDays), waitDays: zeroOk(ed.waitDays) };
+}
+
+function withEdit(sch, ed) {
+  sch.auto = { workDays: sch.workDays, waitDays: sch.waitDays };
+  if (ed.workDays != null) sch.workDays = ed.workDays;
+  if (ed.waitDays != null) sch.waitDays = ed.waitDays;
+  if (ed.workDays != null || ed.waitDays != null) sch.edited = true;
+  sch.totalDays = Math.ceil(sch.workDays + sch.waitDays);
+  return sch;
+}
+
 function scheduleOf(est, settings) {
   const e = est || {};
+  const ed = editOf(e);
   const s = Object.assign({}, DEFAULTS, settings || {});
+  if (ed.crew != null) s.crew = ed.crew;
+  if (ed.dailyHours != null) s.dailyHours = ed.dailyHours;
   const labor = (Array.isArray(e.labor) ? e.labor : []).filter(function (l) { return l && String(l.item || "").trim(); });
-  if (!labor.length) return null;
+  const typedOnly = function () {
+    return ed.workDays == null ? null : withEdit({ version: 1, laborHours: 0, crew: Math.max(1, Math.round(num(s.crew)) || 1), dailyHours: num(s.dailyHours) || 8, workDays: ed.workDays, waitDays: 0, totalDays: 0, waits: [], sections: [] }, ed);
+  };
+  if (!labor.length) return typedOnly();
   const hourLines = labor.filter(function (l) { return HOUR_UNIT.test(String(l.unit || "").trim()) && num(l.rate) > 0; });
   const avgRate = hourLines.length ? hourLines.reduce(function (t, l) { return t + num(l.rate); }, 0) / hourLines.length : DEFAULT_RATE;
   const bySection = {};
@@ -54,9 +79,9 @@ function scheduleOf(est, settings) {
     const k = String(l.section || "Work").trim() || "Work";
     bySection[k] = (bySection[k] || 0) + h;
   });
-  if (!(hours > 0)) return null;
+  if (!(hours > 0)) return typedOnly();
   hours = Math.round(hours * 10) / 10;
-  const crew = hours <= num(s.dailyHours) ? 1 : Math.max(1, Math.round(num(s.crew)) || 1);
+  const crew = ed.crew != null ? Math.max(1, Math.round(ed.crew)) : (hours <= num(s.dailyHours) ? 1 : Math.max(1, Math.round(num(s.crew)) || 1));
   const dayCap = crew * Math.max(1, num(s.dailyHours) || 8);
   const workDays = Math.max(0.5, Math.ceil((hours / dayCap) * 2) / 2);
   const text = labor.map(function (l) { return String(l.item || ""); }).join(" | ");
@@ -66,7 +91,7 @@ function scheduleOf(est, settings) {
      the steps that same visit ("it is couple hours job"). */
   const waitDays = workDays <= 1 ? 0 : waits.reduce(function (t, w) { return t + w.days; }, 0);
   const sections = Object.keys(bySection).map(function (k) { return { name: k, hours: Math.round(bySection[k] * 10) / 10 }; }).filter(function (x) { return x.hours > 0; });
-  return { version: 1, laborHours: hours, crew: crew, dailyHours: num(s.dailyHours) || 8, workDays: workDays, waitDays: waitDays, totalDays: Math.ceil(workDays + waitDays), waits: waits, sections: sections };
+  return withEdit({ version: 1, laborHours: hours, crew: crew, dailyHours: num(s.dailyHours) || 8, workDays: workDays, waitDays: waitDays, totalDays: Math.ceil(workDays + waitDays), waits: waits, sections: sections }, ed);
 }
 
 module.exports = { scheduleOf, DEFAULTS, HOUR_UNIT };

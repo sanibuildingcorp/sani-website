@@ -55,7 +55,9 @@ const CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   // Snapshot that makes the last service merge reversible
   "lastMerge", "mergeHistory",
   // Which alternatives he checked to show the customer (none until he does)
-  "offeredOptions"
+  "offeredOptions",
+  // His own timeline numbers: people on the job, hours a day, days
+  "scheduleEdit"
 ];
 
 /**
