@@ -25,7 +25,11 @@
 // pathname only and never cached, because dashboard-shell.html fetches
 // /dashboard.html?core=4 with `accept: */*` and v5 let that slip into the
 // cache-first branch, freezing the installed app on an old dashboard.
-const CACHE = 'sbc-v7-passthrough-api';
+/* v8: the shared menu (partials/menu.html), footer and site scripts were
+   served cache-first, so a phone that had opened the dashboard kept showing an
+   old menu for good - "Exterior Carpentry" after it was removed. They are now
+   network-first like pages; a new cache name drops every old copy. */
+const CACHE = 'sbc-v8-fresh-partials';
 
 /* Always from the network, never from the cache. Query strings are ignored. */
 function isAlwaysFresh(pathname) {
@@ -103,7 +107,26 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  /* Remaining static assets: cache first, then network. */
+  /* The site's own code and the shared menu/footer: network first, cached copy
+     only when offline. A stale copy here changes what every page shows. */
+  if (url.pathname.startsWith('/partials/') || /\.(js|css|html)$/.test(url.pathname)) {
+    e.respondWith(
+      fetch(e.request).then(function (res) {
+        if (res && res.ok) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(e.request, copy); }).catch(function () {});
+        }
+        return res;
+      }).catch(function () {
+        return caches.match(e.request).then(function (hit) {
+          return hit || new Response('', { status: 504, statusText: 'Offline' });
+        });
+      })
+    );
+    return;
+  }
+
+  /* Remaining static assets (photos, fonts): cache first, then network. */
   e.respondWith(
     caches.match(e.request).then(function (cached) {
       if (cached) return cached;
