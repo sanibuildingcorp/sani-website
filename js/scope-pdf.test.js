@@ -128,7 +128,9 @@ console.log('\nthe document: the same cards as the page, nothing priced, nothing
   ok('THE SCOPE PAGE HAS A DOWNLOAD PDF BUTTON pointing at scope-pdf, next to Print', /href="\/\.netlify\/functions\/scope-pdf\?ref=\$\{encodeURIComponent\(ref\)\}" download="Scope-of-Work-\$\{E\(ref\)\}\.pdf">⬇ Download PDF<\/a><button type="button" class="attach-btn printbtn" onclick="printQuote\(this\)">🖨 Print<\/button>/.test(QUOTE));
   const SL = fs.readFileSync(path.join(ROOT, 'netlify/functions/send-scope-link.js'), 'utf8');
   ok('the scope email carries the PDF link too, in text and as a button', /"Download it as a PDF:\\n" \+ pdfUrl/.test(SL) && /Download as PDF<\/a>/.test(SL) && /scope-pdf\?ref=/.test(SL));
-  ok('the dashboard window has a PDF button', /onclick="window\.open\(scopePdfUrl\(\), \\'_blank\\'\)">⬇ PDF<\/button>/.test(DASH) && /function scopePdfUrl\(\)/.test(DASH));
+  /* "Ones it's open there is no button close or download, it's flat and stack":
+     fetched and handed to Save or share (with Close), never opened in a viewer. */
+  ok('the dashboard window has a PDF button that saves or shares the file', /onclick="downloadScopePdf\(this\)">⬇ PDF<\/button>/.test(DASH) && /fetch\("\/\.netlify\/functions\/scope-pdf\?ref="/.test(DASH) && /savePdfFile\(blob,/.test(DASH) && !/window\.open\(scopePdfUrl/.test(DASH));
 
   [['dashboard.html', DASH], ['quote.html', QUOTE]].forEach(([name, src]) => {
     const blocks = src.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || [];
