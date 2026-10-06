@@ -77,7 +77,7 @@ console.log('\n2. Every other page: the same, written by ops/hero-photo.js\n');
   const ratio = (f) => +((phoneOf(f).match(/#1c1a18 calc\(([\d.]+)\*100vw\)/) || [])[1] || 0);
   const pages = fs.readdirSync(ROOT).filter((f) => f.endsWith('.html') && /SBC-HERO:START/.test(read(f)));
   const wide = pages.filter((f) => ratio(f) > 0 && ratio(f) < 0.8), tall = pages.filter((f) => ratio(f) >= 0.8);
-  ok('WIDE PHOTOS ON A PHONE ARE BARELY TINTED (' + wide.length + ' pages, contact among them), only their bottom edge fades', wide.length >= 6 && wide.indexOf('contact.html') !== -1 && wide.every((f) => /linear-gradient\(180deg,rgba\(24,22,20,\.08\) 0,rgba\(24,22,20,\.08\) calc/.test(phoneOf(f))));
+  /* exterior-carpentry, one of these, was removed (Oct 6) */ ok('WIDE PHOTOS ON A PHONE ARE BARELY TINTED (' + wide.length + ' pages, contact among them), only their bottom edge fades', wide.length >= 5 && wide.indexOf('contact.html') !== -1 && wide.every((f) => /linear-gradient\(180deg,rgba\(24,22,20,\.08\) 0,rgba\(24,22,20,\.08\) calc/.test(phoneOf(f))));
   ok('...tall photos, behind the words, keep the darker tint', tall.length >= 20 && tall.every((f) => /linear-gradient\(180deg,rgba\(24,22,20,\.55\) 0,/.test(phoneOf(f))));
   ok('small labels on the photo (rating pill, eyebrow, breadcrumb) get a shadow too', pages.every((f) => /\[class\*="pill"\],\[class\*="eyebrow"\],\[class\*="breadcrumb"\]\)\{text-shadow:/.test(read(f))));
   const c = read('contact.html');
