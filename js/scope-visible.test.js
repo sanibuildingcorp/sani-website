@@ -127,8 +127,8 @@ console.log('\nevery part of the service card is on screen at the same time\n');
   const one = DRAFT.services.pop();
   const single = render({});
   DRAFT.services.push(one);
-  ok('...but with ONE service the card does not list them a second time; it says where they are',
-    single.indexOf('Protection and dust containment') === -1 && single.indexOf('Every line is in the LABOR and MATERIALS lists of this estimate.') !== -1);
+  ok('...and with ONE service the card lists its own lines too (Perplexity layout: the flat lists are folded under More)',
+    single.indexOf('Protection and dust containment') !== -1 && single.indexOf('Every line is in the LABOR and MATERIALS lists of this estimate.') === -1);
 
   ok('EVERY ITEM IN EVERY GROUP IS RENDERED, not just the open one',
     ['Sani will mask the kitchen cabinets', 'Paint and colour matching',

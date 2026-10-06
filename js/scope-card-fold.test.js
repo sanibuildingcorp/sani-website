@@ -24,9 +24,10 @@ function ext(name) {
 
 console.log('\nthe fold\n');
 {
-  ok('THE PRICE LINES SIT INSIDE A <details> WITH ONE SUMMARY ROW: labor count and total, materials count and total, a cue', /<details class="sc-lines-fold" data-nm="' \+ esc\(nm\) \+ '"' \+ \(linesOpen \? ' open' : ''\)/.test(DASH) && /var linesOpen = \(typeof SCOPE_LINES_OPEN !== 'undefined'\) && SCOPE_LINES_OPEN\[nm\] === true;/.test(DASH) && /<summary><span>Labor ' \+ lab\.length \+ ' line' \+ \(lab\.length === 1 \? '' : 's'\) \+ ' · ' \+ withMk\(labRaw\) \+ '<\/span><span>Materials ' \+ mat\.length/.test(DASH) && /'▾ hide lines' : '▸ show lines'/.test(DASH));
-  ok('...closed by default: nothing marks a card open until he opens it', /var SCOPE_LINES_OPEN = \{\};/.test(DASH));
-  ok('...and the details closes before the wording groups, which are untouched', /html \+= '<\/div><\/details>';\s*\n\s*if \(oneService\) \{[\s\S]{0,600}?\}\s*\n\s*\/\* the three wording groups, all open, directly under the prices \*\//.test(DASH));
+  ok('THE PRICE LINES SIT INSIDE A <details> WITH ONE SUMMARY ROW: Prices, labor count and total, materials count and total, a cue', /<details class="sc-lines-fold" data-nm="' \+ esc\(nm\) \+ '"' \+ \(linesOpen \? ' open' : ''\)/.test(DASH) && /var linesOpen = !\(\(typeof SCOPE_LINES_OPEN !== 'undefined'\) && SCOPE_LINES_OPEN\[nm\] === false\);/.test(DASH) && /<summary><b class="ws-sum-t">Prices<\/b><span>Labor ' \+ lab\.length \+ ' line'/.test(DASH));
+  /* Perplexity layout (Oct 7): the prices are OPEN on every card until he closes one. */
+  ok('...open by default; closing one is remembered', /var SCOPE_LINES_OPEN = \{\};/.test(DASH) && /SCOPE_LINES_OPEN\[nm\] === false/.test(DASH));
+  ok('...and the details closes before Finishes & who supplies and the wording groups, which are untouched', /html \+= '<\/div><\/details>';\s*\n\s*html \+= \(typeof wsSupplyGridHtml === "function" \? wsSupplyGridHtml\(si, nm\) : ""\);\s*\n\s*\/\* the three wording groups, all open, directly under the prices \*\//.test(DASH));
   ok('the totals come from the card\'s own lines: COST as the lines show it, the markup named ("$68,083.20 (+25% = $85,104.00)")', /var labRaw = scopeRowsRaw\(scopeRowsFor\(nm, "labor"\)\), matRaw = scopeRowsRaw\(scopeRowsFor\(nm, "materials"\)\);/.test(DASH) && /var withMk = function \(raw\) \{ return fmt\(raw\) \+ \(mkPct \? ' \(\+' \+ mkPct \+ '% = ' \+ fmt\(raw \* kL\) \+ '\)' : ''\); \};/.test(DASH));
   {
     const mk = DASH.slice(DASH.indexOf('var mkPct ='), DASH.indexOf('var linesOpen ='));
@@ -34,7 +35,7 @@ console.log('\nthe fold\n');
     vm.createContext(c2); vm.runInContext(mk + ';this.out = withMk(68083.20);', c2);
     ok('...on the 13-bathroom job it reads "$68,083.20 (+25% = $85,104.00)"', c2.out === '$68,083.20 (+25% = $85,104.00)', c2.out);
   }
-  ok('ONE SERVICE: the card does not list the lines a second time, it says where they are', /var foldAt = html\.length, oneService = d\.services\.length === 1;/.test(DASH) && /html = html\.slice\(0, foldAt\) \+ '<div class="sc-lines-one"/.test(DASH) && /Every line is in the LABOR and MATERIALS lists of this estimate\./.test(DASH));
+  ok('ONE SERVICE: the card shows its own lines too (the flat lists are folded under More)', !/oneService/.test(DASH) && /<summary>More: project title, summary, every line in one list, timeline text<\/summary>/.test(DASH));
   ok('...the editable half-totals say they include the markup', /' total' \+ \(mkPct \? ' with ' \+ mkPct \+ '% markup' : ''\)/.test(DASH));
   ok('the summary has no browser marker and the cue sits at the right', /\.sc-lines-fold>summary::-webkit-details-marker\{display:none\}/.test(DASH) && /\.sc-lines-fold>summary \.sc-fold-cue\{margin-left:auto/.test(DASH));
   const cue = { textContent: '▸ show lines' };
