@@ -11587,6 +11587,11 @@ function showSendLinkSuccess(msg) {
 .sbcf-add-opt,.sbcf-from-mat{background:var(--gold-soft);border:1px dashed var(--line);color:var(--gold);padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--body);letter-spacing:.5px}
 .sbcf-from-mat{background:var(--card-2);border-style:solid;border-color:var(--line-soft);color:var(--ink-soft);max-width:230px}
 .sbcf-from-mat:focus{outline:none;border-color:var(--gold)}
+.sbcf-card-fields{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+.sbcf-card-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+@media(max-width:640px){.sbcf-card-row{grid-template-columns:1fr 1fr}.sbcf-card-row .sbcf-by{grid-column:1/-1}}
+.sbcf-gsel{background:var(--card-2);border:1.5px solid var(--line-soft);color:var(--ink);padding:8px 10px;border-radius:8px;font-family:var(--body);font-size:13px;min-width:0}
+.sbcf-card-row input{min-width:0;box-sizing:border-box;width:100%}
 .sbcf-foot{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
 .sbcf-add-group{background:var(--gold);color:var(--navy);border:none;padding:11px 18px;border-radius:9px;font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase}
 .sbcf-add-group:hover{background:var(--gold-2);color:#fff}
@@ -11688,6 +11693,17 @@ function showSendLinkSuccess(msg) {
         +'<input class="sbcf-gname" type="text" value="'+escAttr(g.name||'')+'" placeholder="Group name (e.g. Wall Tile)" oninput="sbcfEditGroup(\''+g.id+'\',this.value)">'
         +'<button class="sbcf-del" onclick="sbcfRemoveGroup(\''+g.id+'\')">Remove</button>'
       +'</div>';
+      /* The product card the customer sees ("What will be installed"): where
+         it goes, who supplies it, and chosen / to choose by / on site by. */
+      var sel=function(field,opts){ return '<select class="sbcf-gsel" onchange="sbcfEditGroupField(\''+g.id+'\',\''+field+'\',this.value)">'+opts.map(function(o){ return '<option value="'+o[0]+'"'+(String(g[field]||'')===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select>'; };
+      html+='<div class="sbcf-card-fields">'
+        +'<input class="sbcf-ospec" type="text" value="'+escAttr(g.where||'')+'" placeholder="Where it goes (e.g. Bathroom, sink wall)" oninput="sbcfEditGroupField(\''+g.id+'\',\'where\',this.value)">'
+        +'<div class="sbcf-card-row">'
+          +sel('supplier',[['','Supplied by…'],['sani','Sani supplies'],['customer','Customer supplies']])
+          +sel('status',[['','Status…'],['chosen','Chosen'],['choose','To choose by'],['deliver','On site by']])
+          +'<input class="sbcf-ospec sbcf-by" type="text" value="'+escAttr(g.by||'')+'" placeholder="Date (e.g. Oct 14, Day 3)" oninput="sbcfEditGroupField(\''+g.id+'\',\'by\',this.value)">'
+        +'</div>'
+      +'</div>';
 
       (g.options||[]).forEach(function(o){
         var delta=(Number(o.price)||0)-(Number(d.price)||0);
@@ -11783,6 +11799,7 @@ function showSendLinkSuccess(msg) {
     if(window.toast) toast(applied?('✓ Applied '+applied+' customer choice(s) as defaults'):'Could not match choices — set defaults manually',!applied);
   };
   window.sbcfEditGroup=function(gid,val){ var g=find(gid); if(g) g.name=val; };
+  window.sbcfEditGroupField=function(gid,field,val){ var g=find(gid); if(g && ['where','supplier','status','by'].indexOf(field)!==-1) g[field]=String(val||'').trim(); };
   window.sbcfEditOpt=function(gid,oid,field,val){ var o=findOpt(gid,oid); if(!o) return; if(field==='price'){ o.price=parseFloat(val)||0; render(); } else { o[field]=val; } };
   window.sbcfPhoto=function(gid,oid,ev){ var f=ev.target.files&&ev.target.files[0]; if(!f) return; compress(f,900,0.8).then(function(data){ var o=findOpt(gid,oid); if(o){ o.photo=data; render(); } }).catch(function(){ if(window.toast) toast('Photo failed — try a smaller image',true); }); ev.target.value=''; };
   /* The two render-dependent finish handlers ("use in render", "detect from
