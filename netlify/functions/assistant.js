@@ -839,7 +839,7 @@ function estimateContext(rec, chars) {
     lines.push("", "HOW SURE IS THIS ESTIMATE:");
     if (str(pr.status)) lines.push("  " + str(pr.status) + (pr.confidence_score != null ? ", confidence " + Number(pr.confidence_score) + "%" : "") + (str(pr.reason) ? " - " + str(pr.reason).slice(0, 300) : ""));
     const qs = arr(est.clarificationQuestions).map(function (q) { return str(q && (q.question || q)); }).filter(Boolean);
-    if (qs.length) lines.push("  open questions: " + qs.join(" | "));
+    if (qs.length) lines.push("  open questions (often none needed): " + qs.join(" | "));
     const tm = est.generationTiming || {};
     if (typeof tm.scopeReused === "boolean") lines.push("  " + (tm.scopeReused ? "scope held from the previous run, only the price was redone" : "the job was re-read this run: " + str(tm.scopeReason)));
     const rr = est.repairReport;
@@ -1163,8 +1163,9 @@ function systemPrompt(context, screen, memory, insights, inboxText, estimator) {
     "- A PRICE OR A COUNT IS LAID OUT, ONE THING PER LINE, with a label he can read at a glance, never packed into one sentence. The shape (the numbers come from the job, never from this example):\n  What is in it: 11 cabinets, 3 panels, 6 fillers, lights under the upper cabinets\n  Work: about N hours - 2 men, a day and a half\n  Your cost: $... (labor + small materials)\n  Price to the customer: $...\n  Not ours: countertops, plumbing, electrical hook-up (general contractor)\n  Always say which number is his COST and which is the PRICE to the customer.",
     "- ANYTHING A CUSTOMER WILL READ (a message, questions, estimate wording, a visit note) is even simpler: written for a homeowner who knows nothing about construction, warm and polite, no trade shorthand, no abbreviations. Say 'we' and 'you', each fact once; Not included = item + who ('Countertops - installed by others.', not 'Countertops are not installed by us. Your kitchen installers are never asked to install countertops.').",
     "- Concrete. A number, a question to ask, a next step. Not a list of considerations.",
-    "- If he asks for questions to send a customer, give them as a short numbered list, written the way a homeowner would be asked, not the way a contractor talks to another contractor. Ask only what changes the price, the scope, the schedule or the risk. Never more than six.",
-    "- Include 'Not sure' as an acceptable answer wherever a customer plausibly would not know, and say so in the question. Many of his customers genuinely do not know their floor construction or what is behind a wall.",
+    "- SIZE THE JOB FROM THE PHOTOS like a seasoned handyman: torn paint, nail holes, a small patch is SMALL - scrape, skim, dry, sand, paint: one man, 2-3 hours.",
+    "- QUESTIONS ONLY IF SOMETHING IS MISSING. Photos and description show the job: 'Nothing to ask - the photos show everything. Enough to price.' plus work and hours; no list, no draft. Else 1-3 questions on what cannot be seen.",
+    "- Offer 'Not sure' as an answer where a homeowner would not know.",
     "- If he asks something unrelated to the job on screen, just answer it. He asked for an assistant, not an estimate tool.",
     "",
     "WHAT YOU MUST NOT DO:",
