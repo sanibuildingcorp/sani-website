@@ -147,6 +147,18 @@ function buildScopePdf(view, opts) {
     const yours = uniq([].concat.apply([], A(e.serviceBreakdown).map(function (s) { return A(s && s.customerSupplies).map(function (x) { return typeof x === "string" ? x : C(x && (x.item || x.text)); }); })));
     if (sani.length) { head("Sani supplies"); bullets(sani); }
     if (yours.length) { head("You supply"); bullets(yours.concat(["Please have your items on site before we start. Installing them is included."]).slice(0, 40)); }
+    /* What will be installed: the finishes he set up, as on the page. */
+    const SUP = { sani: "Sani supplies", customer: "You supply" };
+    const prods = A(e.finishGroups).map(function (g) {
+      const os = A(g && g.options).filter(function (o) { return o && C(o.name); });
+      const o = os.find(function (x) { return x.isDefault; }) || os[0];
+      if (!o) return "";
+      const by = C(g.by), st = C(g.status);
+      const status = st === "chosen" ? "chosen" : st === "choose" ? "to choose" + (by ? " by " + by : "") : st === "deliver" ? "on site" + (by ? " by " + by : "") : "";
+      const name = C(g.name) && N(g.name) !== N(o.name) ? C(g.name) + ": " + C(o.name) : C(o.name);
+      return [name + (C(o.spec) ? ", " + C(o.spec) : ""), C(g.where), SUP[C(g.supplier)] || "", status].filter(Boolean).join(" - ");
+    }).filter(Boolean);
+    if (prods.length) { head("What will be installed"); bullets(prods); }
   }
 
   const cards = scopeCards(e);
