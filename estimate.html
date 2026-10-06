@@ -789,12 +789,35 @@ function renderAIQuestion(q){
   }else{
     const cls=q.type==='options-grid'?'option-grid-2':'option-stack';
     const chk='<span class="option-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
+    /* q.multi: more than one answer can be true ("bench and grab bars") -
+       each tap toggles, and the answer is every ticked choice. */
     const opts=(q.options||[]).map(opt=>`<button class="option-btn" data-value="${esc(opt)}" onclick="selectAIOption(this)"><span>${esc(opt)}</span>${chk}</button>`).join('');
+    const multiHint=q.multi?'<div class="multi-hint">You can select more than one</div>':'';
     const other=`<button class="option-btn" data-value="__other__" onclick="selectAIOtherOption(this)"><span>Other — let me explain</span>${chk}</button>`;
-    c.innerHTML=`<div class="${cls}">${opts}${other}</div><div class="input-group" id="ai-other-wrap" style="display:none;margin-top:12px"><input type="text" class="input-field" id="ai-other-input" placeholder="Tell us in your own words…" oninput="aiOtherChanged(this.value)"></div>`;
+    c.innerHTML=`${multiHint}<div class="${cls}">${opts}${other}</div><div class="input-group" id="ai-other-wrap" style="display:none;margin-top:12px"><input type="text" class="input-field" id="ai-other-input" placeholder="Tell us in your own words…" oninput="aiOtherChanged(this.value)"></div>`;
   }
 }
+/* Several answers: every ticked choice, plus their own words under Other.
+   "I'm not sure" stands alone - ticking it clears the rest, and the reverse. */
+function aiMultiAnswer(){
+  var box=document.getElementById('ai-question-container');
+  var picked=[].map.call(box.querySelectorAll('.option-btn.selected'),function(b){return b.dataset.value;});
+  var vals=picked.filter(function(v){return v!=='__other__';});
+  var inp=document.getElementById('ai-other-input'),own=inp?inp.value.trim():'';
+  if(picked.indexOf('__other__')!==-1&&own)vals.push(own);
+  if(vals.length){formData.serviceAnswers[currentAIQuestion.questionId]=vals.join(', ');document.getElementById('continue-2').disabled=false;}
+  else{delete formData.serviceAnswers[currentAIQuestion.questionId];document.getElementById('continue-2').disabled=true;}
+}
+function aiIsUnsure(v){return /^i'?m not sure|^not sure/i.test(String(v||''));}
 function selectAIOption(el){
+  if(currentAIQuestion&&currentAIQuestion.multi){
+    var all=el.parentElement.querySelectorAll('.option-btn');
+    if(aiIsUnsure(el.dataset.value)){all.forEach(function(b){if(b!==el)b.classList.remove('selected');});var ow=document.getElementById('ai-other-wrap');if(ow)ow.style.display='none';}
+    else all.forEach(function(b){if(aiIsUnsure(b.dataset.value))b.classList.remove('selected');});
+    el.classList.toggle('selected');
+    aiMultiAnswer();
+    return;
+  }
   el.parentElement.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');
   var w=document.getElementById('ai-other-wrap');if(w)w.style.display='none';
@@ -802,6 +825,15 @@ function selectAIOption(el){
   document.getElementById('continue-2').disabled=false;
 }
 function selectAIOtherOption(el){
+  if(currentAIQuestion&&currentAIQuestion.multi){
+    el.parentElement.querySelectorAll('.option-btn').forEach(function(b){if(aiIsUnsure(b.dataset.value))b.classList.remove('selected');});
+    el.classList.toggle('selected');
+    var mw=document.getElementById('ai-other-wrap'),on=el.classList.contains('selected');
+    if(mw)mw.style.display=on?'block':'none';
+    var mi=document.getElementById('ai-other-input');if(on&&mi)setTimeout(function(){mi.focus();},60);
+    aiMultiAnswer();
+    return;
+  }
   el.parentElement.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');
   var w=document.getElementById('ai-other-wrap');if(w)w.style.display='block';
@@ -812,6 +844,7 @@ function selectAIOtherOption(el){
   if(inp)setTimeout(function(){inp.focus();},60);
 }
 function aiOtherChanged(v){
+  if(currentAIQuestion&&currentAIQuestion.multi){aiMultiAnswer();return;}
   if(v&&v.trim()){formData.serviceAnswers[currentAIQuestion.questionId]=v.trim();document.getElementById('continue-2').disabled=false;}
   else{document.getElementById('continue-2').disabled=true;}
 }
