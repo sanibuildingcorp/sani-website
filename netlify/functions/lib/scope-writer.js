@@ -181,10 +181,12 @@ function servicePayload(estimate, serviceName) {
     }))
     .filter(l => l.item);
 
+  const card = (estimate.serviceBreakdown || []).find(c => norm(c && (c.title || c.name || c.section)) === norm(serviceName)) || {};
   return {
     service: serviceName,
     priced_labor_tasks: pick(estimate.labor),
-    priced_materials: pick(estimate.materials)
+    priced_materials: pick(estimate.materials),
+    customer_supplies: (Array.isArray(card.customerSupplies) ? card.customerSupplies : []).map(x => clean(typeof x === 'string' ? x : (x && (x.item || x.text)))).filter(Boolean)
   };
 }
 
@@ -256,6 +258,18 @@ ${services.length > 1 ? 'ONE PROJECT: these services are one job at one address.
   - Say each limit once. Two bullets that mean the same thing in different words is one bullet.
   - Leave the array empty rather than inventing a limit.
 
+THE WHOLE ESTIMATE, FOR THE CUSTOMER (Perplexity's estimate design - one professional document, in the same plain words):
+
+"overview" - ${jobSize.isRepair(analysis) ? '1 to 2 sentences' : '2 to 4 sentences'}: what we will do, where, and the result the customer gets. Name what stays as it is when it matters ("your fixtures stay where they are").${jobSize.isRepair(analysis) ? ' A small repair stays small: say it plainly, no drama.' : ''}
+
+"steps" - ${jobSize.isRepair(analysis) ? '2 to 4' : '3 to 8'} numbered stages of how the work will go, in order, each { "title": "2 to 5 words", "text": "one or two plain sentences" }. Protection and cleanup are a step only when they are priced. Say when something must dry or cure and that the customer should not use it meanwhile. No days or dates - the timeline is counted separately.
+
+"saniSupplies" - 0 to 8 short lines: what Sani buys and brings, from the priced materials only. Name a product the way the line names it; group small consumables into one line ("Grout, sealer and caulk", "Patching and sanding materials"). NEVER an item the customer supplies (customer_supplies above). Empty when no materials are priced.
+
+"customerNeeds" - 0 to ${jobSize.isRepair(analysis) ? 2 : 5} short lines: what we need from the customer before or during the work, only when real for this job - building approval and our insurance certificate in a co-op, condo or managed building; reserving the elevator; clearing the room; having their own items on site before we start; choosing a color. Empty is fine.
+
+"priceBasis" - 0 to 4 short lines: what this price is based on, in customer words - the sizes and quantities used, the condition assumed, normal working hours. Only facts from the data above; never invent a size.
+
 HARD RULES
 ${voice.VOICE}${input && typeof input.__lab === "string" ? input.__lab : ""}
 - Never write a dollar amount, a rate, an hourly figure or a percentage anywhere.
@@ -270,7 +284,12 @@ Return JSON only. No preamble, no markdown fence:
   "services": [
     { "service": "<exact name from above>", "included": ["..."], "notIncluded": ["..."] }
   ],${services.length > 1 ? '\n  "project": ["<1 to 4 bullets: the work done once for the whole job>"],' : ''}
-  "timeline": "<one short sentence the customer reads about duration and scheduling, or empty string>"
+  "timeline": "<one short sentence the customer reads about duration and scheduling, or empty string>",
+  "overview": "...",
+  "steps": [{ "title": "...", "text": "..." }],
+  "saniSupplies": ["..."],
+  "customerNeeds": ["..."],
+  "priceBasis": ["..."]
 }`;
 }
 
@@ -379,6 +398,27 @@ function applyScopeToEstimate(estimate, written, fallbackFor, minBullets) {
 
   const tl = voice.softenTimeline(stripBanned(written && written.timeline));
   if (tl && tl.length > 8) estimate.customerTimeline = tl;
+
+  /* THE WHOLE ESTIMATE FOR THE CUSTOMER (docVersion 4): overview, steps,
+     what Sani supplies, what we need from them, what the price is based on.
+     Written with the cards, from the same final lines; cleaned like them. */
+  if (written && typeof written === 'object') {
+    const lines = (a, max) => dedupe((Array.isArray(a) ? a : []).map(x => tidyBullet(typeof x === 'string' ? x : (x && (x.text || x.item))))).filter(Boolean).slice(0, max);
+    const ov = stripBanned(String(written.overview || '')).replace(/\s+/g, ' ').trim();
+    if (ov.length > 20) estimate.overview = ov.slice(0, 900);
+    const steps = (Array.isArray(written.steps) ? written.steps : []).map(x => ({
+      title: stripBanned(String((x && x.title) || '')).replace(/[.\s]+$/, '').slice(0, 60),
+      text: tidyBullet(String((x && (x.text || x.description)) || ''))
+    })).filter(x => x.title && x.text).slice(0, 10);
+    if (steps.length) estimate.workSteps = steps;
+    const sup = lines(written.saniSupplies, 10);
+    const theirs = cards.flatMap(c => (Array.isArray(c.customerSupplies) ? c.customerSupplies : []).map(x => contentKey(typeof x === 'string' ? x : (x && (x.item || x.text)))));
+    const notTheirs = sup.filter(t => !theirs.some(k => k && (contentKey(t).indexOf(k) !== -1 || k.indexOf(contentKey(t)) !== -1)));
+    if (notTheirs.length) estimate.saniSupplies = notTheirs;
+    const needs = lines(written.customerNeeds, 6); if (needs.length) estimate.customerNeeds = needs;
+    const basis = lines(written.priceBasis, 5); if (basis.length) estimate.priceBasis = basis;
+    if (estimate.overview || estimate.workSteps) estimate.docVersion = 4;
+  }
 
   estimate.scopeWriter = {
     version: 'scope-writer-v1',

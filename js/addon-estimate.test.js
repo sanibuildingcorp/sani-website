@@ -98,7 +98,7 @@ const PARENT = {
 
   console.log('\n3. The customer page renders them\n');
   {
-    ok('both renderers place the cards after the hero', (QUOTE.match(/\$\{heroPhoto\(r\)\}<\/section>\$\{addonHtml\(r\)\}/g) || []).length === 2);
+    ok('every renderer places the cards after the hero (three since the docVersion 4 page, Oct 7)', (QUOTE.match(/\$\{heroPhoto\(r\)\}<\/section>\$\{addonHtml\(r\)\}/g) || []).length === 3);
     const ctx = { SOW: false, E: (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;'), encodeURIComponent, Array };
     vm.createContext(ctx);
     vm.runInContext(ext(QUOTE, 'addonHtml'), ctx);

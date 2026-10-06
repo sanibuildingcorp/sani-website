@@ -20,6 +20,7 @@ const { getStore } = require("@netlify/blobs");
 const { applyDeterministicPricing, consolidateCustomerPresentation } = require("./lib/deterministic-pricing");
 const { writeCustomerScope } = require("./lib/scope-writer");
 const { joinEstimateLines } = require("./lib/join-lines");
+const { scheduleOf } = require("./lib/schedule");
 const { syncScopeText } = require("./lib/scope-text");
 const { tidyCards, bySize, pricedNames } = require("./lib/shared-once");
 const genLab = require("./lib/generator-lab");
@@ -406,6 +407,10 @@ exports.handler = async function handler(event) {
       bySize(tidyCards(estimate.projectIncluded, estimate.serviceBreakdown, { sup: "customerSupplies", exc: "notIncluded" }, pricedNames(estimate)));
       syncScopeText(estimate);
     }
+    /* THE TIMELINE IS COUNTED, NOT GUESSED: labor hours / crew and hours a
+       day, plus drying and curing days (lib/schedule.js). Kept for the
+       no-price page and the PDF, which carry no rates to count from. */
+    try { const sch = scheduleOf(estimate); if (sch) estimate.schedule = sch; } catch (e) { console.error("schedule", e && e.message); }
 
     timing.totalMs = Date.now() - timing.startedAt;
     estimate.generationTiming = { ...timing };
