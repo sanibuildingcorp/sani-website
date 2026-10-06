@@ -89,7 +89,8 @@ http://sanibuildingcorp.com/*   https://www.sanibuildingcorp.com/:splat  301!
 /painting-manhattan.html                 /painting-manhattan                 301!
 
 # Carpentry / deck / stair pages
-/exterior-carpentry.html                 /exterior-carpentry                 301!
+/exterior-carpentry.html                 /carpentry                          301!
+/exterior-carpentry                      /carpentry                          301!
 /deck-building.html                      /deck-building                      301!
 /deck-renovation.html                    /deck-renovation                    301!
 /stair-building.html                     /stair-building                     301!
