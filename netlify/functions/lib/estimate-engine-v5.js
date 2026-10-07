@@ -89,6 +89,11 @@ function build(reading, opts) {
   // Access adders
   const site = R.site || {};
   const floor = Number(site.floor) || 0;
+  /* Walk-up: carrying charge per floor above the 2nd; floor unknown -> one floor, and say so. */
+  if (site.elevator === false && site.walkup && floor <= 2 && !floor) {
+    labor.push({ section: multi ? 'Whole Project' : (services[0] && services[0].name), item: 'Walk-up carrying (floor not given)', qty: 1, unit: 'floor', rate: BOOK.ACCESS.walkupPerFloor, engine: 'v5' });
+    warnings.push('Walk-up: floor number not given, priced as 1 floor of carrying');
+  }
   if (floor > 2 && site.elevator === false) {
     labor.push({ section: multi ? 'Whole Project' : (services[0] && services[0].name), item: 'Walk-up carrying, floor ' + floor, qty: floor - 2, unit: 'floor', rate: BOOK.ACCESS.walkupPerFloor, engine: 'v5' });
   }
