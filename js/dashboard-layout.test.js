@@ -1,13 +1,13 @@
 /* dashboard-layout.test.js — run: node js/dashboard-layout.test.js
  *
- *   "I need exactly this dashboard layout made by perplexity"
+ *   "Rebuild exactly one in one copy design layout!!! From current dashboard
+ *    remove whatever need to remove!"
  *
- * The estimate screen as Perplexity drew it: a navy bar that stays on top
- * (total, cost, profit, work days, Ready n/N, Preview, Send, the five steps),
- * numbered sections on the left, Ready to send / Money / Quick actions on the
- * right, Preview / Send at the bottom; one card per service with its prices as
- * a table (LAB / MAT), "Finishes & who supplies" with a Customer supplies tick.
- * Every number is worked out from the estimate; nothing is invented.
+ * The estimate screen is Perplexity's dashboard-layout.html, wired to the real
+ * record (the pz- block at the end of dashboard.html). The old screen is the
+ * hidden "More tools" drawer. These tests hold the design's parts, its numbers,
+ * and the edits that move money: the customer-supplies tick, autosave, the
+ * timeline count, the payment rows.
  */
 "use strict";
 const fs = require("fs"), path = require("path"), vm = require("vm");
@@ -15,6 +15,13 @@ const ROOT = path.join(__dirname, "..");
 const D = fs.readFileSync(path.join(ROOT, "dashboard.html"), "utf8");
 const Q = fs.readFileSync(path.join(ROOT, "quote.html"), "utf8");
 const { scheduleOf } = require("../netlify/functions/lib/schedule");
+const Module = require("module");
+const STORES = {};
+const origResolve = Module._resolveFilename;
+Module._resolveFilename = function (request, ...rest) { if (request === "@netlify/blobs") return request; return origResolve.call(this, request, ...rest); };
+require.cache["@netlify/blobs"] = { id: "@netlify/blobs", filename: "@netlify/blobs", loaded: true, exports: { getStore: (o) => { const m = STORES[o.name] || (STORES[o.name] = new Map()); return { get: async (k) => (m.has(k) ? JSON.parse(m.get(k)) : null), setJSON: async (k, v) => { m.set(k, JSON.stringify(v)); } }; } } };
+process.env.DASHBOARD_KEY = "k";
+const PB = require("../netlify/functions/price-book");
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true ? "PASS  " : "FAIL  ") + n + (d ? "\n        " + d : "")); };
 const fn = (src, name) => {
@@ -24,91 +31,96 @@ const fn = (src, name) => {
   for (let j = src.indexOf("{", s); j < src.length; j++) { if (src[j] === "{") d++; else if (src[j] === "}") { d--; if (!d) return src.slice(s, j + 1); } }
   throw new Error("unbalanced " + name);
 };
-const varLine = (src, name) => { const s = src.indexOf("var " + name + " ="); return src.slice(s, src.indexOf(";\n", s) + 1); };
-const ws = D.slice(D.indexOf('<script>\n/* ═══════════ THE PERPLEXITY LAYOUT: head'), D.lastIndexOf("</body>"));
+const pz = D.slice(D.indexOf('<style id="pz-styles">'), D.lastIndexOf("</body>"));
+const lit = (name, open, close) => { const s = pz.indexOf("var " + name + " = " + open); return "var " + name + " = " + pz.slice(s + ("var " + name + " = ").length, pz.indexOf(close + ";", s) + close.length) + ";"; };
 
-console.log("\n1. The timeline and the payment, the same as the server and the customer page\n");
+console.log("\n1. The design, part for part\n");
+[
+  ["the sticky top bar: ref and customer, total, cost / profit / work days", /class="pz-top"/.test(pz) && /id="pz-tot"/.test(pz) && /"Cost " \+ pzF\(t\.sub\) \+ " · Profit "/.test(pz)],
+  ["Ready n/8, Preview and Send in the top bar", /"Ready " \+ okN \+ "\/" \+ C\.length/.test(pz) && /onclick="pzPreview\(\)">Preview</.test(pz) && /onclick="pzSend\(\)">Send</.test(pz)],
+  ["the 5-step bar", /\["Request", "Scope & Price", "Timeline", "Terms", "Review & Send"\]/.test(pz)],
+  ["1 · Request with photos · messages and the AI read", /<h2>1 · Request<\/h2>/.test(pz) && /<b>AI read:<\/b>/.test(pz)],
+  ["2 · Scope & Price with the price book packages", /2 · Scope &amp; Price/.test(pz) && /class="pz-tpl"/.test(pz)],
+  ["each service: Prices, Finishes & who supplies, Steps for the customer, Included, Not included — stacked and foldable, no tabs", /"Prices"[\s\S]{0,200}"Finishes &amp; who supplies"[\s\S]{0,200}"Steps for the customer"[\s\S]{0,200}"Included"[\s\S]{0,200}"Not included"/.test(pz) && /<details class="pz-sec"/.test(pz)],
+  ["+ Labor / + Material, + Add service, + Add from my product library, ↻ AI rewrite", /\+ Labor</.test(pz) && /\+ Material</.test(pz) && /\+ Add service</.test(pz) && /\+ Add from my product library</.test(pz) && /↻ AI rewrite</.test(pz)],
+  ["3 · Timeline: crew, day hours, start, the bar", /3 · Timeline \(auto from labor hours\)/.test(pz) && /id="pz-tl"/.test(pz) && /type="date"/.test(pz)],
+  ["4 · Terms: markup, payment, warranty, valid for", /4 · Terms \(saved defaults\)/.test(pz) && /type="range"/.test(pz) && /Warranty/.test(pz) && /Valid for/.test(pz)],
+  ["5 · What we need from the customer", /5 · What we need from the customer/.test(pz)],
+  ["Ready to send, Money (you only), Quick actions with the design's five buttons", /Ready to send/.test(pz) && /Money \(you only\)/.test(pz) && ["Duplicate estimate", "Save as my template", "Scope only (no prices)", ">PDF<", "AI chat"].every((k) => pz.indexOf(k) !== -1)],
+  ["the sticky bottom bar: Preview customer view, Send estimate", /class="pz-foot"[\s\S]{0,200}Preview customer view[\s\S]{0,120}Send estimate/.test(pz)],
+  ["phone: the line name on its own row, then tag / qty / unit / rate / total / ✕", /\.pz-sec \.pz-t tr\{display:grid;grid-template-columns:44px 64px 34px 78px 1fr 26px/.test(pz) && /\.pz-sec \.pz-t td:nth-child\(2\)\{grid-column:1\/-1;order:-1\}/.test(pz)],
+  ["the old screen is the hidden More tools drawer (every tool still there)", /while \(card\.firstChild\) tools\.appendChild\(card\.firstChild\)/.test(pz) && /<b>More tools<\/b>/.test(pz)],
+  ["the screen mounts after every other part of the page has drawn (last renderEdit wrapper)", D.lastIndexOf("try { pzMount(); }") > D.lastIndexOf("var _orig = renderEdit") && D.lastIndexOf("var _orig = renderEdit") > D.indexOf('<style id="pz-styles">')],
+  ["no \"licensed\", no TV mounting, no gas work in the screen", !/licensed contractor|tv mount|gas (line|hook)up/i.test(pz)],
+].forEach((x) => ok(x[0], x[1] === true));
+
+console.log("\n2. The numbers\n");
 const ctx = { console, isFinite, Number, Math, Date, String, Array, Object };
 vm.createContext(ctx);
-vm.runInContext(varLine(ws, "WS_HOUR") + "\nvar WS_WAITS = " + ws.slice(ws.indexOf("var WS_WAITS = [") + 15, ws.indexOf("];", ws.indexOf("var WS_WAITS = [")) + 2) + "\n" +
-  ["wsScheduleOf", "wsFinish", "wsDay", "wsPayPlan"].map((n) => fn(ws, n)).join("\n"), ctx);
+vm.runInContext([
+  "var PZ_HOUR = /^(h|hr|hrs|hour|hours|man-?hours?)$/i;",
+  lit("PZ_WAITS", "[", "]"), lit("PZ_PAY", "{", "}"), lit("PZ_PAY_LBL", "{", "}"),
+].join("\n") + "\n" + ["pzScheduleOf", "pzFinish", "pzDay", "pzPayPlan", "pzF"].map((n) => fn(pz, n)).join("\n"), ctx);
 const bath = { labor: [
   { section: "Bathroom", item: "Protect and demo", qty: 8, unit: "hrs", rate: 70 },
   { section: "Bathroom", item: "Waterproofing membrane", qty: 6, unit: "hrs", rate: 90 },
   { section: "Bathroom", item: "Install wall tile", qty: 60, unit: "sf", rate: 14 },
   { section: "Painting", item: "Patch and paint 2 coats", qty: 320, unit: "sf", rate: 1.6 }] };
-const cases = [bath, Object.assign({}, bath, { scheduleEdit: { crew: 1 } }), Object.assign({}, bath, { scheduleEdit: { workDays: 4, waitDays: 0 } }), { labor: [], scheduleEdit: { workDays: 2 } }, { labor: [{ item: "Small wall repair, skim coat", qty: 2.5, unit: "hrs", rate: 75 }] }, { labor: [{ item: "Remove and grout the shower", qty: 8, unit: "hrs", rate: 80 }] }, {}];
-ok("the dashboard counts the timeline exactly as lib/schedule.js", cases.every((e) => JSON.stringify(vm.runInContext("wsScheduleOf(" + JSON.stringify(e) + ")", ctx)) === JSON.stringify(scheduleOf(e))));
-const fin = vm.runInContext('wsDay(wsFinish("2026-10-15", 4))', ctx);
-ok("start Thursday Oct 15, 4 days, Monday to Friday -> finish Tuesday Oct 20", fin === "Oct 20", fin);
-ok("no start date, no finish", vm.runInContext('wsFinish("", 3)', ctx) === null);
+const cases = [bath, Object.assign({}, bath, { scheduleEdit: { crew: 1 } }), Object.assign({}, bath, { scheduleEdit: { crew: 3, dailyHours: 9 } }), Object.assign({}, bath, { scheduleEdit: { workDays: 4, waitDays: 0 } }), { labor: [], scheduleEdit: { workDays: 2 } }, { labor: [{ item: "Small wall repair, skim coat", qty: 2.5, unit: "hrs", rate: 75 }] }, { labor: [{ item: "Remove and grout the shower", qty: 8, unit: "hrs", rate: 80 }] }, {}];
+ok("the screen counts the timeline exactly as lib/schedule.js (crew and day hours too)", cases.every((e) => JSON.stringify(vm.runInContext("pzScheduleOf(" + JSON.stringify(e) + ")", ctx)) === JSON.stringify(scheduleOf(e))));
+ok("start Thursday Oct 15, 4 days, Monday to Friday -> finish Oct 20", vm.runInContext('pzDay(pzFinish("2026-10-15", 4))', ctx) === "Oct 20");
+const rows = (t, c) => vm.runInContext("pzPayPlan(" + t + "," + JSON.stringify(c) + ")", ctx);
+ok("30 / 40 / 30 on $4,869: $1,461 / $1,948 / $1,461 (the design's numbers)", JSON.stringify(rows(4869, "30,40,30").map((p) => vm.runInContext("pzF(" + p.amount + ")", ctx))) === '["$1,461","$1,948","$1,461"]');
+ok("...the rows always add up to the total to the cent", ["30,40,30", "50,50", "25,25,25,25", "100", "contract"].every((c) => Math.abs(rows(7777.77, c).reduce((t, p) => t + p.amount, 0) - 7777.77) < 0.001));
 const qctx = { console, SOW: false }; vm.createContext(qctx);
 vm.runInContext(Q.split("\n").find((l) => l.startsWith("const A=v=>Array.isArray")), qctx);
 const ps = Q.indexOf("const PAY_SMALL=");
 vm.runInContext(Q.slice(ps, Q.indexOf("\n", ps)) + "\n" + Q.slice(Q.indexOf("function payPlan("), Q.indexOf("\n", Q.indexOf("function payPlan("))), qctx);
-const amounts = (p) => JSON.stringify(p.map((x) => [x.amount, x.pct]));
-ok("the payment rows match the customer page for every tier", [400, 999.99, 1000, 3000, 5000, 5000.01, 5900, 7777.77].every((t) => amounts(vm.runInContext("wsPayPlan(" + t + ")", ctx)) === amounts(vm.runInContext("payPlan({}," + t + ")", qctx))));
-const contract = { contract: { sections: { paymentSchedule: [{ label: "Deposit", amount: 1000 }, { label: "Tile set", amount: 4900 }] } } };
-ok("a contract written for the job wins when it adds up", vm.runInContext("wsPayPlan(5900," + JSON.stringify(contract) + ")[1].label", ctx) === "Tile set" && vm.runInContext("wsPayPlan(6000," + JSON.stringify(contract) + ").length", ctx) === 3);
-const start = fn(Q, "schStartCells");
-const sctx = {}; vm.createContext(sctx);
-vm.runInContext(Q.split("\n").find((l) => l.startsWith("const A=v=>Array.isArray")).replace(/M=n=>SOW\?'':/, "M=n=>") + "\n" + start, sctx);
-ok("the customer's timeline shows Start and Expected finish when he set a start", /Start<b>Oct 15<\/b><\/div><div>Expected finish<b>Oct 20<\/b>/.test(vm.runInContext('schStartCells({scheduleEdit:{start:"2026-10-15"}},{totalDays:4,workDays:4})', sctx)) && vm.runInContext("schStartCells({},{totalDays:4})", sctx) === "");
+ok("\"Your contract terms\" (the default) is what the customer page shows today", [400, 3000, 5000, 5900].every((t) => JSON.stringify(rows(t, "contract").map((p) => [p.amount, p.pct])) === JSON.stringify(vm.runInContext("payPlan({}," + t + ")", qctx).map((p) => [p.amount, p.pct]))));
+ok("defaults: contract payment, 3-year warranty, 30 days (nothing changes until he picks)", /\(tm\.payment \|\| "contract"\) === v/.test(pz) && /\(tm\.warranty \|\| "3-year workmanship"\) === v/.test(pz) && /Number\(tm\.validDays \|\| 30\) === v/.test(pz));
 
-console.log("\n2. The screen\n");
-const view = D.slice(D.indexOf("document.getElementById(\"edit-card\").innerHTML ="), D.indexOf("renderLines(\"labor\", est.labor || []);"));
-const at = (k) => view.indexOf(k);
-ok("the navy bar comes first, the sections in a grid, the side panel and the bottom bar last", at("wsHeadHtml(r)") > 0 && at("wsHeadHtml(r)") < at("stepBar(1,") && at('<aside class="ws-side" id="ws-side"></aside>') > at("modal-actions") && at('id="ws-foot"') > at("ws-side"));
-ok("five sections in order: Request, Scope & Price, Timeline, Terms, Review & Send", ["stepBar(1, 'Request'", "stepBar(2, 'Scope & Price'", "stepBar(3, 'Timeline'", "stepBar(4, 'Terms'", "stepBar(5, 'Review & Send'"].reduce((p, k) => { const i = at(k); return p !== -1 && i > p ? i : -1; }, 0) > 0);
-ok("the service cards sit in Scope & Price, the old flat line lists folded under More", at("stepBar(2,") < at('<div id="scope-control-wrap"></div>') && at('<div id="scope-control-wrap"></div>') < at("ws-more") && at("ws-more") < at('id="labor-body"') && at('id="labor-body"') < at("stepBar(3,"));
-ok("Terms holds the markup slider, payment, warranty, validity and the internal totals", at("wsTermsHtml(est)") > at("stepBar(4,") && at("'<div class=\"totals-box\">'") > at("wsTermsHtml(est)") && at("'<div class=\"totals-box\">'") < at("stepBar(5,") && /<b>3-year workmanship<\/b>/.test(D) && /<b>30 days<\/b>/.test(D));
-ok("one Save (the Services card): the bottom bar is Preview and Send only", !/id="ws-foot"[\s\S]{0,300}saveDraft\(\)/.test(D) && /wsPreview\(\)">Preview customer view</.test(D) && /sendToCustomer\(\)">Send estimate</.test(D));
-ok("the head has the total, the cost / profit / days line, Ready n/N, Preview, Send and close", /id="ws-tot"/.test(ws) && /id="ws-sub"/.test(ws) && /id="ws-ready"/.test(ws) && /onclick="wsPreview\(\)">Preview</.test(ws) && /onclick="closeEdit\(\)"/.test(ws));
-ok("the panels other parts of the page add (contract, follow-ups) are moved into their sections", /insertBefore\(ct, totals\.nextSibling\)/.test(ws) && /insertBefore\(fu, acts\)/.test(ws));
-ok("the head and side follow every change (recalc), without redrawing a box he is typing in", /recalc = function \(\) \{ var o = _rc\.apply\(this, arguments\); try \{ wsRefresh\(\); \}/.test(ws) && /!side\.contains\(document\.activeElement\)/.test(ws));
-ok("prices are a table: LAB / MAT tag on every line, open on every card", /<span class="ws-tag">' \+ \(blk\.kind === "labor" \? "LAB" : "MAT"\) \+ '<\/span>/.test(D) && /var linesOpen = !\(/.test(D));
-ok("no price book buttons, no 'profit too low' warning: nothing that needs numbers he has not given", !/From price book|Profit per crew day is low|\+ Bathroom refresh/.test(D));
-ok("no \"licensed\", TV mounting or gas work in the new code", !/licensed contractor|tv mount|gas (line|hook)up/i.test(ws));
-
-console.log("\n3. Ready to send and Customer supplies\n");
+console.log("\n3. Edits that move money, and saving\n");
 {
-  const c2 = { console, Object, Array, String, Number, isFinite, Math };
-  vm.createContext(c2);
-  vm.runInContext(fn(ws, "wsChecks") + "\nvar NEEDS=[];var STEPS=[];var TEXT='';var SVCS=[];" +
-    "function scopeDraft(){return {services:SVCS}}function v4ReadLines(){return NEEDS}function v4ReadSteps(){return STEPS}function wsTextNow(){return TEXT}", c2);
-  const rec = { estimate: { labor: [{ qty: 3 }], materials: [{ qty: 1 }] }, request: { description: "Bathroom in a co-op, elevator building" }, customer: {} };
-  vm.runInContext("SVCS=[{name:'Bathroom',excluded:['Retile'],supplied:['Vanity']}];STEPS=[{title:'Protect',text:''}];", c2);
-  let r = vm.runInContext("wsChecks(" + JSON.stringify(rec) + ")", c2).map((x) => [x[0], x[1]]);
-  const get = (t) => (r.find((x) => x[1] === t) || [])[0];
-  ok("checks: services, quantities, steps, Not included all pass", get("At least one service") && get("Every line has a quantity") && get("Steps for the customer are written") && get('Every service has "Not included"'));
-  ok("a customer-supplied item needs a delivery date; a co-op needs the COI", get("Delivery date for customer-supplied items") === false && get("Building COI mentioned") === false);
-  vm.runInContext("NEEDS=['Have your items on site by Oct 14','Send our insurance certificate (COI) request to your building management'];", c2);
-  r = vm.runInContext("wsChecks(" + JSON.stringify(rec) + ")", c2).map((x) => [x[0], x[1]]);
-  ok("...both pass once they are in What we need", get("Delivery date for customer-supplied items") === true && get("Building COI mentioned") === true);
-  const house = { estimate: rec.estimate, request: { description: "House, kitchen" }, customer: {} };
-  vm.runInContext("SVCS=[{name:'Kitchen',excluded:['x'],supplied:[]}];", c2);
-  r = vm.runInContext("wsChecks(" + JSON.stringify(house) + ")", c2).map((x) => [x[0], x[1]]);
-  ok("a house with nothing customer-supplied is not asked for either", !r.some((x) => /COI|Delivery/.test(x[1])));
-  vm.runInContext("TEXT='We are a licensed contractor';", c2);
-  r = vm.runInContext("wsChecks(" + JSON.stringify(house) + ")", c2).map((x) => [x[0], x[1]]);
-  ok('"licensed" in the customer text is caught', get('No "licensed", no options, no gas work') === false);
-}
-{
-  const c3 = { console, Object, Array, String, Number, isFinite, Math };
+  const c3 = { console, Object, Array, String, Number, isFinite, Math, JSON };
   vm.createContext(c3);
-  vm.runInContext([fn(ws, "wsSupplyToggle"), fn(ws, "wsSupplyUndo"), fn(D, "scopeNorm"), fn(D, "scopeUnparkFor")].join("\n") +
-    "\nvar toasts=[];function toast(t){toasts.push(t)}function syncLines(){}function scopeLinesRefresh(){}function fmt(n){return '$'+n}function scopeLineValue(l){return l.qty*l.rate}" +
-    "\nvar SVC={name:'Bathroom',supplied:[]};function scopeDraft(){return {services:[SVC]}}" +
-    "\nvar currentRecord={estimate:{labor:[{item:'Install vanity',qty:4,rate:120,section:'Bathroom'}],materials:[{item:'Grout kit',qty:1,rate:85,section:'Bathroom'},{item:'Vanity with top',qty:1,rate:489,section:'Bathroom'}]}};", c3);
-  vm.runInContext("wsSupplyToggle(0,1,true)", c3);
+  vm.runInContext(["pzEst", "pzSvcs", "pzSupply", "pzUnsupply", "pzLinesOf", "pzSum", "pzMk"].map((n) => fn(pz, n)).concat([fn(D, "scopeNorm"), fn(D, "scopeUnparkFor")]).join("\n") +
+    "\nvar PZ={scopeTouched:false};var dirty=0;function pzDirty(){dirty++}function pzSyncOld(){}function pzRender(){}function toast(){}function fmt(n){return '$'+n}function scopeLineValue(l){return l.qty*l.rate}" +
+    "\nfunction scopeSectionOf(l){return l.section}var SVC={name:'Bathroom',supplied:[]};function scopeDraft(){return {services:[SVC]}}" +
+    "\nvar currentRecord={estimate:{markupPct:25,labor:[{item:'Install vanity',qty:4,rate:120,section:'Bathroom'}],materials:[{item:'Grout kit',qty:1,rate:85,section:'Bathroom'},{item:'Vanity with top, 30 in',qty:1,rate:489,section:'Bathroom'}]}};", c3);
+  vm.runInContext("pzSupply(0,1,true)", c3);
   const e = vm.runInContext("currentRecord.estimate", c3);
-  ok("TICK: the vanity's material leaves the price, its labor stays", e.materials.length === 1 && e.materials[0].item === "Grout kit" && e.labor.length === 1 && e.parkedLines.length === 1 && e.parkedLines[0].custSupplied === true);
-  ok("...and it is listed as Customer supplies on the card", JSON.stringify(vm.runInContext("SVC.supplied", c3)) === '["Vanity with top"]');
-  vm.runInContext("wsSupplyUndo(0,0)", c3);
+  ok("TICK Customer supplies: the vanity's $489 leaves the price, its labor stays", e.materials.length === 1 && e.labor.length === 1 && vm.runInContext("pzSum('Bathroom')", c3) === 565 && e.parkedLines[0].custSupplied === true);
+  ok("...it is listed as Customer supplies, and the change saves itself", JSON.stringify(vm.runInContext("SVC.supplied", c3)) === '["Vanity with top, 30 in"]' && vm.runInContext("dirty", c3) === 1 && vm.runInContext("PZ.scopeTouched", c3) === true);
+  vm.runInContext("pzUnsupply(0,0)", c3);
   const e2 = vm.runInContext("currentRecord.estimate", c3);
-  ok("UNTICK: the very same line comes back where it was, and the wording goes", e2.materials.length === 2 && e2.materials[1].item === "Vanity with top" && e2.materials[1].rate === 489 && e2.parkedLines.length === 0 && vm.runInContext("SVC.supplied.length", c3) === 0);
-  ok("an untick never fires the tick path", vm.runInContext("(function(){var n=currentRecord.estimate.materials.length;wsSupplyToggle(0,0,false);return currentRecord.estimate.materials.length===n})()", c3) === true);
+  ok("UNTICK: the very same line comes back where it was", e2.materials.length === 2 && e2.materials[1].item === "Vanity with top, 30 in" && e2.materials[1].rate === 489 && e2.parkedLines.length === 0 && vm.runInContext("SVC.supplied.length", c3) === 0);
 }
+ok("every change saves itself, 1.2 s after the last one, to save-estimate", /PZ\.saveT = setTimeout\(pzSaveNow, 1200\)/.test(pz) && /sbcFetch\("\/\.netlify\/functions\/save-estimate"/.test(pz));
+ok("the save stamps the service prices and publishes the wording when he changed it", /scopeStampBreakdown\(\)/.test(fn(pz, "pzPrepare")) && /PZ\.scopeTouched \|\| e\.customerScopePublished === true/.test(fn(pz, "pzPrepare")));
+ok("one estimate object: in this screen the save reads it straight, never an old box", /gatherForm = function \(\) \{ return document\.getElementById\("pz-main"\) \? pzGather\(\) : _g\.apply\(this, arguments\); \}/.test(pz));
+ok("the hidden tools are kept in step with every line edit (no old copy can write back)", /renderLines\("labor", e\.labor \|\| \[\]\); renderLines\("materials", e\.materials \|\| \[\]\)/.test(fn(pz, "pzSyncOld")));
+ok("Send prepares the same estimate first, then the usual send (preview, contract, email)", /pzPrepare\(\); sendToCustomer\(\);/.test(fn(pz, "pzSend")));
+ok("Preview shows the real customer page with the unsaved estimate (one renderer)", /quote\.html\?ref=' \+ encodeURIComponent\(currentRecord\.ref\) \+ '&preview=1/.test(fn(pz, "pzPreview")) && /sbc-preview-record/.test(fn(pz, "pzPreview")));
 
-console.log("\n" + pass + " passed, " + fail + " failed\n");
-process.exit(fail ? 1 : 0);
+console.log("\n4. Price book (his own templates and products)\n");
+const t = PB.cleanTemplate({ name: " Bathroom refresh ", lines: [{ kind: "labor", item: "Protect floors", qty: 3, unit: "h", rate: 70 }, { kind: "materials", item: "Toilet", qty: 1, unit: "ea", rate: 199 }, { item: "" }], included: ["a", ""], excluded: ["b"], steps: [{ title: "Protect", text: "x" }] });
+ok("a template keeps his lines, wording and steps, nothing else", t.name === "Bathroom refresh" && t.lines.length === 2 && t.lines[1].kind === "materials" && t.included.length === 1 && t.steps.length === 1);
+ok("no name, no template; negative or junk prices become 0", PB.cleanTemplate({ name: "" }) === null && PB.cleanTemplate({ name: "x", lines: [{ item: "a", qty: -1, rate: "abc" }] }).lines[0].rate === 0);
+const pr = PB.cleanProduct({ name: "Toilet", spec: "Cadet 3", rate: 199, link: "javascript:alert(1)", photo: "http://x" });
+ok("a product keeps name / spec / price; unsafe links and photos are dropped", pr.name === "Toilet" && pr.rate === 199 && pr.link === "" && pr.photo === "");
+const pbSrc = fs.readFileSync(path.join(ROOT, "netlify", "functions", "price-book.js"), "utf8");
+ok("contractor only: every method checks the dashboard key", /const denied = requireDashboardKey\(event, cors\(\)\);\s*if \(denied\) return denied;/.test(pbSrc));
+(async () => {
+  const call = (method, body, key) => PB.handler({ httpMethod: method, headers: key ? { "x-sbc-key": key } : {}, body: body ? JSON.stringify(body) : "" });
+  const no = await call("GET", null, "");
+  const saved = await call("POST", { template: { name: "Bathroom refresh", lines: [{ kind: "labor", item: "Protect", qty: 3, unit: "h", rate: 70 }] } }, "k");
+  const again = await call("POST", { template: { name: "bathroom REFRESH", lines: [] } }, "k");
+  const got = JSON.parse((await call("GET", null, "k")).body);
+  ok("no key, no price book; with the key a template saves, the same name replaces it", no.statusCode === 401 && saved.statusCode === 200 && again.statusCode === 200 && got.templates.length === 1 && got.templates[0].name === "bathroom REFRESH");
+  await call("POST", { remove: "template", name: "Bathroom Refresh" }, "k");
+  ok("...and removes it", JSON.parse((await call("GET", null, "k")).body).templates.length === 0);
+  console.log("\n" + pass + " passed, " + fail + " failed\n");
+  process.exit(fail ? 1 : 0);
+})();
+ok("the package buttons come only from what he saved (none are invented)", /var book = \(PZ\.book && PZ\.book\.templates\) \|\| \[\];/.test(pz) && !/Bathroom refresh|Room painting|Shower tile|Floor tile/.test(pz));
+

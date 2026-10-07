@@ -49,42 +49,12 @@ const card = Q.slice(Q.indexOf("function scheduleCard("), Q.indexOf("\n", Q.inde
 ok("drying typed with no drying step named reads \"for drying and curing\", never \"while .\"", /'for drying and curing'/.test(card));
 ok("a 1-day job with drying days typed is not shown as \"1 day\"", /function schSmall\(sch\)\{return sch\.workDays<=1&&!\(sch\.waitDays>0\)\}/.test(Q) && /const small=schSmall\(sch\)/.test(card));
 
-console.log("\n2. The dashboard has a box for every section\n");
-const html = D.slice(D.indexOf("function v4Lines("), D.indexOf("function gatherForm() {"));
-["f-overview", "v4-steps", "f-crew", "f-dayhours", "f-workdays", "f-waitdays", "f-sani", "f-needs", "f-basis"].forEach((id) => ok("box " + id, html.indexOf(id) !== -1));
-/* Perplexity layout (Oct 7): the words in Scope & Price, the timeline in its own step, the lists in Review & Send. */
-const at = (k) => D.indexOf(k);
-ok("each part sits in its step: words in Scope & Price, timeline in Timeline, lists in Review & Send",
-  at("stepBar(2, 'Scope & Price'") < at('v4EditHtml(est, "text")') && at('v4EditHtml(est, "text")') < at("stepBar(3, 'Timeline'") &&
-  at("stepBar(3, 'Timeline'") < at('v4EditHtml(est, "timeline")') && at('v4EditHtml(est, "timeline")') < at("stepBar(4, 'Terms'") &&
-  at("stepBar(5, 'Review & Send'") < at('v4EditHtml(est, "lists")'));
-ok("Save reads the boxes AFTER the carried fields, so the edit is what is saved", /return v4Gather\(out\);\n\}/.test(D));
+console.log("\n2. His numbers survive a regenerate\n");
+/* The dashboard boxes themselves are the Perplexity estimate screen now
+   (crew, hours a day, start date): js/dashboard-layout.test.js. */
 ok("his timeline numbers survive a regenerate (server and dashboard lists)", OWNED.CONTRACTOR_OWNED_ESTIMATE_FIELDS.indexOf("scheduleEdit") !== -1 && /"scheduleEdit"\n\];/.test(D));
 const gen = fs.readFileSync(path.join(ROOT, "netlify", "functions", "generate-estimate-background.js"), "utf8");
 ok("...and the regenerated timeline is counted with them", gen.indexOf("if (estimate.scheduleEdit)") > gen.indexOf("preserveContractorFields(carry.previous, estimate)"));
-
-/* Run the dashboard functions against a tiny page. */
-const dctx = { console, isFinite, Number }; vm.createContext(dctx);
-vm.runInContext(D.slice(D.indexOf("function esc("), D.indexOf("}", D.indexOf("function esc(")) + 1) + "\n" + html, dctx);
-const rec = { overview: "We will refresh your bathroom.", workSteps: [{ title: "Protect", text: "Cover floors." }], saniSupplies: ["Toilet", "Grout"], customerNeeds: ["Clear the room"], priceBasis: ["5x8 ft"], schedule: auto, scheduleEdit: { crew: 1 } };
-const out = vm.runInContext("v4EditHtml(" + JSON.stringify(rec) + ")", dctx);
-ok("the boxes open with what the AI wrote", /We will refresh your bathroom\./.test(out) && /value="Protect"/.test(out) && /class="ws-li-t"[^>]*>Toilet<\/span>/.test(out) && /class="ws-li-t"[^>]*>Grout<\/span>/.test(out) && /id="f-crew"[^>]*value="1"/.test(out) && /Counted from your labor lines/.test(out));
-const vals = { "f-overview": "  New words.  ", "f-sani": "• Toilet\n\n- Grout\n", "f-needs": "Clear the room", "f-basis": "", "f-crew": "3", "f-dayhours": "", "f-workdays": "5", "f-waitdays": "0" };
-const rows = [{ t: "Protect", x: "Cover floors." }, { t: "", x: "" }, { t: "", x: "Paint two coats" }];
-dctx.document = {
-  getElementById: (id) => (id in vals ? { value: vals[id] } : null),
-  querySelectorAll: () => rows.map((r) => ({ querySelector: (c) => ({ value: c === ".v4-st" ? r.t : r.x }) })),
-};
-const g = vm.runInContext("v4Gather({ docVersion: undefined })", dctx);
-ok("Save keeps the edited words", g.overview === "New words." && g.saniSupplies.join("|") === "Toilet|Grout" && g.customerNeeds.length === 1 && g.priceBasis.length === 0);
-ok("steps: empty rows dropped, a step with only text becomes its title", g.workSteps.length === 2 && g.workSteps[1].title === "Paint two coats");
-ok("timeline: typed numbers kept, empty boxes left automatic, 0 drying kept", g.scheduleEdit.crew === 3 && g.scheduleEdit.workDays === 5 && g.scheduleEdit.waitDays === 0 && !("dailyHours" in g.scheduleEdit));
-ok("text written by hand turns the new customer page on", g.docVersion === 4);
-vals["f-overview"] = ""; rows.length = 0; ["f-crew", "f-workdays", "f-waitdays"].forEach((k) => { vals[k] = ""; });
-const g2 = vm.runInContext("v4Gather({})", dctx);
-ok("all boxes empty: nothing turned on, no timeline edit", g2.docVersion === undefined && g2.scheduleEdit === null);
-dctx.document = { getElementById: () => null, querySelectorAll: () => [] };
-ok("a save made where the boxes are not on screen keeps the record as it is", JSON.stringify(vm.runInContext("v4Gather({ overview: 'kept' })", dctx)) === JSON.stringify({ overview: "kept" }));
 
 console.log("\n" + pass + " passed, " + fail + " failed\n");
 process.exit(fail ? 1 : 0);

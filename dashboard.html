@@ -4991,11 +4991,7 @@ function renderEdit() {
      ready count, Preview, Send, the five steps), the estimate in numbered cards
      on the left, Ready to send / Money / Quick actions on the right, Save /
      Preview / Send at the bottom. Every control that was here is still here. */
-  document.getElementById("edit-modal").classList.add("ws-on");
-  document.getElementById("edit-card").classList.add("ws-card");
   document.getElementById("edit-card").innerHTML =
-    '<div class="ws-head" id="ws-head">' + wsHeadHtml(r) + '</div>' +
-    '<div class="ws-grid"><div class="ws-main">' +
     '<div class="modal-head">' +
       '<div>' +
         '<h2>' + esc(est.projectTitle || req.service || "ESTIMATE") + '</h2>' +
@@ -5098,7 +5094,6 @@ function renderEdit() {
       '<div class="form-section" id="readiness-section">' + readinessHtml + '</div>'
       : '') +
     '<div id="scope-control-wrap"></div>' +
-    v4EditHtml(est, "text") +
     '<details class="form-section ws-more" id="ws-more">' +
     '<summary>More: project title, summary, every line in one list, timeline text</summary>' +
     '<div class="form-section">' +
@@ -5179,9 +5174,7 @@ function renderEdit() {
     '</div>' +
     '</details>' +
     stepBar(3, 'Timeline', 'Counted from the labor hours. Change people, hours or days and it follows.') +
-    v4EditHtml(est, "timeline") +
     stepBar(4, 'Terms', 'Markup, payment, warranty and how long the price holds.') +
-    wsTermsHtml(est) +
     '<div class="totals-box">' +
       '<div class="internal-tag">Internal · Not shown to customer</div>' +
       '<div class="tot-line"><span>Labor subtotal</span><span id="tot-labor">$0.00</span></div>' +
@@ -5214,7 +5207,6 @@ function renderEdit() {
     '</div>' +
     stepBar(5, 'Review & Send', 'What you need from the customer, photos, what prices they see, then send.') +
     '<button type="button" onclick="askCheck()" style="width:100%;margin:0 0 12px;padding:13px;border:1.5px solid var(--gold-2);background:#fff;color:var(--gold);font-family:var(--display,inherit);font-weight:700;font-size:14px;letter-spacing:.5px;border-radius:12px;cursor:pointer">🔍 CHECK BEFORE SENDING — emails &amp; plans vs every line</button>' +
-    v4EditHtml(est, "lists") +
     '<div class="form-section">' +
       '<h3>📷 QUOTE PHOTOS <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(shown to customer in their quote)</span></h3>' +
       ((req.photos && req.photos.length > 0) ?
@@ -5300,13 +5292,6 @@ function renderEdit() {
         '<button class="btn-secondary" onclick="openInvoiceModal()">💳 Send Invoice</button>' +
         '<button class="btn-primary" onclick="sendToCustomer()">📨 Send to Customer</button>' +
       '</div>' +
-    '</div>' +
-    '</div>' +
-    '<aside class="ws-side" id="ws-side"></aside>' +
-    '</div>' +
-    '<div class="ws-foot" id="ws-foot">' +
-      '<button type="button" class="ws-btn" onclick="wsPreview()">Preview customer view</button>' +
-      '<button type="button" class="ws-btn ws-gold" onclick="sendToCustomer()">Send estimate</button>' +
     '</div>';
 
   renderLines("labor", est.labor || []);
@@ -7392,8 +7377,7 @@ function renderScopeControl() {
        MATERIALS lists are folded under "More" in the Perplexity layout. */
     html += '<details class="sc-lines-fold" data-nm="' + esc(nm) + '"' + (linesOpen ? ' open' : '') + ' ontoggle="scopeLinesToggle(this.getAttribute(\'data-nm\'), this.open)">' +
       '<summary><b class="ws-sum-t">Prices</b><span>Labor ' + lab.length + ' line' + (lab.length === 1 ? '' : 's') + ' · ' + withMk(labRaw) + '</span><span>Materials ' + mat.length + ' line' + (mat.length === 1 ? '' : 's') + ' · ' + withMk(matRaw) + '</span><b class="sc-fold-cue">' + (linesOpen ? '▾ hide lines' : '▸ show lines') + '</b></summary>';
-    html += '<div class="sc-pane">' +
-      '<div class="ws-th"><span></span><span>Line</span><span>Qty</span><span>Unit</span><span></span><span>Rate</span><span>Total</span><span></span></div>';
+    html += '<div class="sc-pane">';
     [{ kind: "labor", label: "Labor", rows: lab }, { kind: "materials", label: "Materials", rows: mat }].forEach(function (blk) {
       html += '<div class="sc-kind">' + blk.label + '</div>';
       if (!blk.rows.length) {
@@ -7410,7 +7394,7 @@ function renderScopeControl() {
           var q = Number(r.l.qty) || 0, rt = Number(r.l.rate) || 0;
           var unit = String(r.l.unit || (blk.kind === "labor" ? "hrs" : "ea"));
           var src = String(r.l.sbcPricedFrom || "");
-          html += '<div class="sc-pl2 ws-k-' + blk.kind + '"><span class="ws-tag">' + (blk.kind === "labor" ? "LAB" : "MAT") + '</span>' +
+          html += '<div class="sc-pl2">' +
             /* A single-line <input> truncated every item name — "Site setup, corridor
                and apartment protection" showed as "Site setup, corridor/elevator and
                apart". A textarea wraps, so the whole line is readable, and it grows
@@ -7445,7 +7429,6 @@ function renderScopeControl() {
     });
     html += '</div></details>';
 
-    html += (typeof wsSupplyGridHtml === "function" ? wsSupplyGridHtml(si, nm) : "");
     /* the three wording groups, all open, directly under the prices */
     groups.forEach(function (g) {
       var items = svc[g.key] || [];
@@ -8793,118 +8776,6 @@ async function scopePublish() {
   toast("✓ Saved. The customer sees exactly this");
 }
 
-/* THE CUSTOMER PAGE, EDITABLE. "Yes all functions i need to be editable in my
-   dashboard": what we will do, the steps, the timeline, who supplies what,
-   what we need from the customer, what the price is based on. The AI writes
-   them; every word can be changed here, and Save Draft keeps the change.
-   One item per line in the lists. Empty boxes hide that section from the
-   customer. The timeline is counted from the labor lines; a number typed
-   here wins over the count, an empty box means automatic. */
-function v4Lines(v) { return (Array.isArray(v) ? v : []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }).filter(Boolean).join("\n"); }
-function v4ReadLines(id) {
-  var el = document.getElementById(id);
-  if (!el) return [];
-  /* A list on the page (Perplexity layout): one line per row, edited in place. */
-  if (el.tagName === "UL") return Array.prototype.map.call(el.querySelectorAll(".ws-li-t"), function (x) { return String(x.textContent || "").trim(); }).filter(Boolean);
-  return el.value.split(/\n+/).map(function (x) { return x.replace(/^\s*[-•*]\s*/, "").trim(); }).filter(Boolean);
-}
-/* A plain list with a cross on each line and an Add box under it. Each line
-   is edited where it stands; Save keeps it. */
-function wsListHtml(id, items, placeholder) {
-  var list = (Array.isArray(items) ? items : []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.item)) || "").trim(); }).filter(Boolean);
-  return '<ul class="ws-list" id="' + id + '">' + list.map(function (t) {
-      return '<li><span class="ws-li-t" contenteditable="true" spellcheck="true">' + esc(t) + '</span><button type="button" class="ws-x" title="Remove" onclick="this.parentNode.remove();wsRefresh()">✕</button></li>';
-    }).join("") + '</ul>' +
-    '<div class="ws-add"><input type="text" id="' + id + '-in" placeholder="' + esc(placeholder || "Add") + '" onkeydown="if(event.key===\'Enter\'){event.preventDefault();wsListAdd(\'' + id + '\')}"><button type="button" class="ws-btn ws-sm" onclick="wsListAdd(\'' + id + '\')">Add</button></div>';
-}
-function wsListAdd(id) {
-  var inp = document.getElementById(id + "-in"), ul = document.getElementById(id);
-  if (!inp || !ul || !inp.value.trim()) return;
-  var li = document.createElement("li");
-  li.innerHTML = '<span class="ws-li-t" contenteditable="true" spellcheck="true"></span><button type="button" class="ws-x" title="Remove" onclick="this.parentNode.remove();wsRefresh()">✕</button>';
-  li.firstChild.textContent = inp.value.trim();
-  ul.appendChild(li);
-  inp.value = "";
-  if (typeof wsRefresh === "function") wsRefresh();
-}
-function v4StepRow(st, i) {
-  return '<div class="v4-step" data-i="' + i + '"><div class="v4-n">' + (i + 1) + '</div><div class="v4-in">' +
-    '<input type="text" class="v4-st" placeholder="Step title, e.g. Protect and prepare" value="' + esc(st.title || "") + '">' +
-    '<textarea class="v4-sx" rows="2" placeholder="What happens in this step">' + esc(st.text || "") + '</textarea></div>' +
-    '<button type="button" class="v4-x" title="Remove this step" onclick="v4RemoveStep(' + i + ')">✕</button></div>';
-}
-function v4ReadSteps() {
-  return Array.prototype.map.call(document.querySelectorAll("#v4-steps .v4-step"), function (row) {
-    return { title: row.querySelector(".v4-st").value.trim(), text: row.querySelector(".v4-sx").value.trim() };
-  });
-}
-function v4DrawSteps(steps) {
-  var box = document.getElementById("v4-steps");
-  if (box) box.innerHTML = steps.map(v4StepRow).join("");
-}
-function v4AddStep() { var st = v4ReadSteps(); st.push({ title: "", text: "" }); v4DrawSteps(st); var r = document.querySelectorAll("#v4-steps .v4-st"); if (r.length) r[r.length - 1].focus(); }
-function v4RemoveStep(i) { var st = v4ReadSteps(); st.splice(i, 1); v4DrawSteps(st); }
-/* The customer-page sections, as the Perplexity layout places them:
-     "text"     - what we will do, and the steps (Scope & Price)
-     "timeline" - people, hours a day, days, start date, the bar (Timeline)
-     "lists"    - what we need from them, Sani supplies, price basis (Review & Send)
-   No part given: all of them, in one block. */
-function v4EditHtml(est, part) {
-  var e = est || {}, sch = e.schedule || {}, auto = sch.auto || sch, ed = e.scheduleEdit || {};
-  var num = function (v) { return v === undefined || v === null ? "" : String(v); };
-  var steps = (Array.isArray(e.workSteps) ? e.workSteps : []).filter(function (x) { return x && (x.title || x.text); });
-  var countLine = sch.workDays ? "Counted from your labor lines: " + (auto.workDays || sch.workDays) + " working day" + ((auto.workDays || sch.workDays) === 1 ? "" : "s") + (auto.waitDays > 0 ? " + " + auto.waitDays + " drying" : "") + (sch.laborHours ? " (about " + sch.laborHours + " hours of work)" : "") + ". Type a number to change it; leave empty for automatic." : "Type the days if you want a timeline shown. Leave empty for automatic.";
-  var box = function (id, label, value, rows, hint) {
-    return '<div class="field"><label for="' + id + '">' + label + '</label>' + (hint ? '<div class="v4-hint">' + hint + '</div>' : '') +
-      '<textarea id="' + id + '" rows="' + (rows || 4) + '" class="v4-box">' + esc(value || "") + '</textarea></div>';
-  };
-  var text = '<div class="form-section v4-edit ws-cardbox" id="v4-edit">' +
-    '<h3>📝 FOR THE CUSTOMER <span style="font-size:12px;font-weight:400;color:var(--ink-muted);letter-spacing:0">(what they read; empty = hidden)</span></h3>' +
-    box("f-overview", "What we will do", e.overview, 4) +
-    '<div class="field"><label>Steps for the customer (how the work will go)</label><div id="v4-steps">' + steps.map(v4StepRow).join("") + '</div>' +
-      '<button type="button" class="btn-add-row" onclick="v4AddStep()">+ Add step</button></div>' +
-  '</div>';
-  var timeline = '<div class="form-section ws-cardbox" id="ws-timeline">' +
-    '<div class="v4-hint">' + esc(countLine) + '</div><div class="v4-days">' +
-      '<div class="field"><label for="f-crew">Crew (people)</label><input id="f-crew" type="number" min="1" step="1" inputmode="numeric" placeholder="auto ' + esc(num(sch.crew || 2)) + '" value="' + esc(num(ed.crew)) + '" oninput="wsRefresh()"></div>' +
-      '<div class="field"><label for="f-dayhours">Day (hours)</label><input id="f-dayhours" type="number" min="1" step="0.5" inputmode="decimal" placeholder="auto ' + esc(num(sch.dailyHours || 8)) + '" value="' + esc(num(ed.dailyHours)) + '" oninput="wsRefresh()"></div>' +
-      '<div class="field"><label for="f-workdays">Working days</label><input id="f-workdays" type="number" min="0.5" step="0.5" inputmode="decimal" placeholder="auto' + (auto.workDays ? ' ' + esc(num(auto.workDays)) : '') + '" value="' + esc(num(ed.workDays)) + '" oninput="wsRefresh()"></div>' +
-      '<div class="field"><label for="f-waitdays">Drying days</label><input id="f-waitdays" type="number" min="0" step="0.5" inputmode="decimal" placeholder="auto' + (sch.workDays ? ' ' + esc(num(auto.waitDays || 0)) : '') + '" value="' + esc(num(ed.waitDays)) + '" oninput="wsRefresh()"></div>' +
-      '<div class="field"><label for="f-start">Start</label><input id="f-start" type="date" value="' + esc(/^\d{4}-\d{2}-\d{2}$/.test(String(ed.start || "")) ? ed.start : "") + '" oninput="wsRefresh()"></div>' +
-    '</div>' +
-    '<div class="ws-tl" id="ws-tl"></div><div class="v4-hint" id="ws-tl-txt"></div>' +
-  '</div>';
-  var lists = '<div class="form-section ws-cardbox" id="ws-lists">' +
-    '<div class="field"><label>What we need from the customer</label>' + wsListHtml("f-needs", e.customerNeeds, "Add (e.g. Clear the bathroom before we start)") + '</div>' +
-    '<div class="field"><label>Sani supplies</label>' + wsListHtml("f-sani", e.saniSupplies, "Add (e.g. Grout, sealer and caulk)") + '</div>' +
-    '<div class="field"><label>You supply</label><div class="v4-hint">Tick "Customer supplies" on a material in its service card, or add it to the card\'s Customer supplies.</div></div>' +
-    '<div class="field"><label>This price is based on</label>' + wsListHtml("f-basis", e.priceBasis, "Add (e.g. Bathroom about 5x8 ft)") + '</div>' +
-  '</div>';
-  if (part === "text") return text;
-  if (part === "timeline") return timeline;
-  if (part === "lists") return lists;
-  return text + timeline + lists;
-}
-/* Read the boxes back into the estimate. Only when the boxes are on the page:
-   a save from anywhere else keeps what the record has. */
-function v4Gather(out) {
-  if (!document.getElementById("f-overview")) return out;
-  out.overview = document.getElementById("f-overview").value.trim();
-  out.workSteps = v4ReadSteps().filter(function (x) { return x.title || x.text; }).map(function (x) { return x.title ? x : { title: x.text, text: "" }; });
-  out.saniSupplies = v4ReadLines("f-sani");
-  out.customerNeeds = v4ReadLines("f-needs");
-  out.priceBasis = v4ReadLines("f-basis");
-  var n = function (id) { var el = document.getElementById(id); var v = el ? el.value.trim() : ""; return v === "" ? null : Number(v); };
-  var ed = { crew: n("f-crew"), dailyHours: n("f-dayhours"), workDays: n("f-workdays"), waitDays: n("f-waitdays") };
-  Object.keys(ed).forEach(function (k) { if (ed[k] === null || !isFinite(ed[k]) || ed[k] < 0) delete ed[k]; });
-  var startEl = document.getElementById("f-start");
-  if (startEl && /^\d{4}-\d{2}-\d{2}$/.test(startEl.value)) ed.start = startEl.value;
-  out.scheduleEdit = Object.keys(ed).length ? ed : null;
-  /* Text written here turns the new customer page on, the same as the AI's. */
-  if (out.overview || out.workSteps.length) out.docVersion = 4;
-  return out;
-}
-
 function gatherForm() {
   syncLines();
   var out = {
@@ -8959,7 +8830,7 @@ function gatherForm() {
     if (currentRecord.estimate[k] !== undefined) out[k] = currentRecord.estimate[k];
   });
 
-  return v4Gather(out);
+  return out;
 }
 
 /* "Save failed: Save failed" said nothing. The reason is now in the message,
@@ -13411,109 +13282,135 @@ try {
 }
 </script>
 
-<style id="ws-styles">
-/* ═══════════ THE PERPLEXITY LAYOUT (estimate screen) ═══════════
-   "I need exactly this dashboard layout made by perplexity". Scoped to
-   .ws-on / .ws-card so nothing else in the dashboard changes. */
-#edit-modal.ws-on{padding:0;background:#f4f5f8}
-#edit-card.ws-card{max-width:none;margin:0;border:0;border-radius:0;padding:0 0 84px;background:#f4f5f8;min-height:100vh;box-shadow:none}
-.ws-card .ws-head{position:sticky;top:0;z-index:30;background:#0f1f3a;color:#fff;padding:12px 16px 10px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.ws-head .ws-in{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
-.ws-head .ws-who{font-size:12px;color:#c8d0dd}
-.ws-head .ws-tot{font-size:26px;font-weight:800;line-height:1.15;color:#fff}
-.ws-head .ws-sub{font-size:12px;color:#c8d0dd}
-.ws-head .ws-acts{display:flex;gap:8px;align-items:center}
-.ws-prog{display:flex;gap:4px;max-width:1200px;margin:10px auto 0}
-.ws-prog button{flex:1;background:rgba(255,255,255,.1);border:0;border-radius:6px;color:#c8d0dd;font-size:12px;padding:7px 2px;cursor:pointer;font-family:inherit}
-.ws-prog button.on{background:#c9a24a;color:#1b1404;font-weight:700}
-.ws-btn{border:1px solid #e3e6ec;background:#fff;color:#16202e;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px}
-.ws-btn.ws-gold{background:#c9a24a;border-color:#c9a24a;color:#1b1404}
-.ws-btn.ws-sm{padding:6px 10px;font-size:13px}
-.ws-x-close{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:9px;width:38px;height:38px;font-size:20px;cursor:pointer}
-.ws-pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
-.ws-pill.ok{background:#e4f4ea;color:#1f8a4c}.ws-pill.wa{background:#fff3dc;color:#b86e00}
-.ws-grid{max-width:1200px;margin:0 auto;padding:16px 12px;display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
-@media(min-width:980px){.ws-grid{grid-template-columns:minmax(0,1fr) 340px}.ws-side{position:sticky;top:150px;align-self:start;max-height:calc(100vh - 170px);overflow:auto}}
-.ws-card .ws-main>.modal-head{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:12px 16px;margin-bottom:12px}
-.ws-card .ws-main>.modal-head h2{font-size:18px;letter-spacing:.5px}
-.ws-card .step-bar{background:transparent;color:#16202e;padding:4px 2px;margin:22px 0 8px;scroll-margin-top:150px}
-.ws-card .step-bar .step-n{background:transparent;color:#16202e;width:auto;font-size:19px;font-weight:800}
-.ws-card .step-bar .step-n::after{content:" \00B7"}
-.ws-card .step-bar .step-t{font-size:19px;font-weight:800}
-.ws-card .step-bar .step-s{color:#5d6878;font-size:12.5px}
-.ws-card .cust-panel,.ws-card .form-section,.ws-card .ai-bar,.ws-card .cv-panel,.ws-card .totals-box,.ws-card .ws-cardbox,.ws-card #sbc-contract-panel,.ws-card #fu-box{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:14px 16px;margin-bottom:12px}
-.ws-card .ws-more>summary{cursor:pointer;font-weight:700;color:#0f1f3a}
-.ws-card .ws-more[open]>summary{margin-bottom:10px}
-.ws-side .ws-box{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:14px 16px;margin-bottom:12px}
-.ws-ey{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5d6878;font-weight:700;margin-bottom:6px}
-.ws-chk{list-style:none;margin:0;padding:0}
-.ws-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;font-size:14px;align-items:flex-start}
-.ws-chk li:last-child{border:0}
-.ws-dot{width:20px;height:20px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:800}
-.ws-row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:14.5px}
-.ws-qa{display:grid;gap:6px}
-.ws-foot{position:fixed;left:0;right:0;bottom:0;z-index:31;background:#fff;border-top:1px solid #e3e6ec;padding:10px 12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.ws-tl{display:flex;height:30px;border-radius:6px;overflow:hidden;margin:10px 0 6px}
-.ws-tl div{color:#fff;font-size:11px;display:grid;place-items:center;font-weight:700;overflow:hidden;white-space:nowrap;min-width:0;padding:0 4px}
-.ws-card .v4-days{grid-template-columns:repeat(5,minmax(0,1fr))}
-@media(max-width:640px){.ws-card .v4-days{grid-template-columns:1fr 1fr}}
-.ws-list{margin:4px 0 6px;padding-left:20px}
-.ws-list li{margin:3px 0;font-size:14.5px}
-.ws-li-t{outline:none;border-radius:4px;padding:1px 3px}
-.ws-li-t:focus{background:#fff8e6;box-shadow:0 0 0 1px #c9a24a}
-.ws-x{background:none;border:0;color:#5d6878;cursor:pointer;font-size:14px;margin-left:6px}
-.ws-add{display:flex;gap:6px;margin-top:4px}
-.ws-add input{flex:1;min-width:0;border:1px solid #e3e6ec;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit}
-.ws-terms .ws-row{align-items:center;border-bottom:1px solid #eef0f4;padding:7px 0}
-.ws-terms input[type=range]{width:100%;accent-color:#c9a24a}
-.ws-pay{width:100%;border-collapse:collapse;font-size:14px;margin:4px 0}
-.ws-pay td{padding:6px 2px;border-bottom:1px solid #eef0f4}.ws-pay td.n{text-align:right}
-/* service cards */
-.ws-card .sc-service{background:#fff;border:1px solid #e3e6ec;border-radius:12px;margin-bottom:12px;overflow:hidden}
-.ws-card .sc-lines-fold>summary{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:10px 14px;cursor:pointer;font-size:12.5px;color:#5d6878}
-.ws-card .sc-lines-fold>summary .ws-sum-t{font-size:15px;color:#0f1f3a}
-.ws-th{display:none}
-.ws-card .ws-th{display:grid;grid-template-columns:46px minmax(0,1fr) 64px 52px 12px 76px 86px 30px;text-align:left;gap:6px;padding:0 0 4px;font-size:11px;color:#5d6878;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e3e6ec}
-.ws-tag{display:none}
-.ws-card .ws-tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;background:#e9edf4;color:#18305a;align-self:center;justify-self:start}
-.ws-card .ws-k-materials .ws-tag{background:#f6eedb;color:#7a5a12}
-.ws-card .sc-pl2{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #eef0f4}
-.ws-card .sc-pl2 .sc-pl2-top{min-width:0}
-.ws-card .sc-pl2 .sc-pl2-sub{display:grid;grid-template-columns:64px 52px 12px 76px 86px 30px;gap:6px;align-items:center;margin:0}
-.ws-card .sc-pl2 .sc-pl2-tot{text-align:right}
-.ws-card .sc-pl2 textarea,.ws-card .sc-pl2 input{background:#f7f8fb;border:1px solid transparent;border-radius:6px;padding:5px 6px;font-size:14px;width:100%;box-sizing:border-box;min-width:0}
-.ws-card .sc-pl2 textarea:focus,.ws-card .sc-pl2 input:focus{border-color:#c9a24a;background:#fff;outline:0}
-.ws-card .sc-pl2 .sc-n{text-align:right}
-.ws-card .sc-pl2 .sc-src{display:none}
-.ws-card .sc-pl2 .sc-srctxt{grid-column:1/-1;font-size:11.5px;color:#5d6878;order:9}
-.ws-card .sc-kind{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5d6878;font-weight:700;margin-top:8px}
-@media(max-width:760px){.ws-card .ws-th{display:none}.ws-card .sc-pl2{grid-template-columns:46px minmax(0,1fr)}.ws-card .sc-pl2 .sc-pl2-sub{grid-column:1/-1;grid-template-columns:58px 48px 10px 70px 1fr 28px}}
-.ws-fgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin:6px 0 4px}
-.ws-fc{border:1px solid #e3e6ec;border-radius:10px;overflow:hidden;background:#fff}
-.ws-fc .ws-fimg{height:64px;background:#eef0f4;display:grid;place-items:center;font-size:26px}
-.ws-fc .ws-fb{padding:8px 10px;font-size:13px}
-.ws-fc .ws-fb b{display:block}
-.ws-fc label{display:flex;gap:6px;align-items:center;margin-top:6px;font-weight:600;cursor:pointer}
-.ws-fc.ws-cs{background:#fbf6ea}
-.ws-sup-h{font-weight:700;color:#0f1f3a;font-size:15px;padding:10px 14px 0}
-.ws-sup{padding:0 14px 10px}
+
+<style id="pz-styles">
+/* ═══════════ THE ESTIMATE SCREEN — PERPLEXITY'S DESIGN, 1:1 ═══════════
+   "Rebuild exactly one in one copy design layout". Colours, sizes, spacing and
+   wording are taken from Perplexity's dashboard-layout.html; every class is
+   prefixed pz- and scoped to the estimate screen so nothing else moves. */
+#edit-modal.pz-on{padding:0;background:#f4f5f8}
+#edit-card.pz-card{max-width:none;margin:0;border:0;border-radius:0;padding:0;background:#f4f5f8;min-height:100vh;box-shadow:none;font:15px/1.45 -apple-system,"Segoe UI",Inter,Arial,sans-serif;color:#16202e}
+#edit-card.pz-card *{box-sizing:border-box}
+:where(#edit-card.pz-card) :where(button,input,select,textarea){font:inherit;color:inherit}
+.pz-top{position:sticky;top:0;z-index:20;background:#0f1f3a;color:#fff;padding:10px 16px;box-shadow:0 2px 8px #0003}
+.pz-top .pz-in{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+.pz-top .pz-who{font-size:12px;color:#c8d0dd}.pz-top .pz-tot{font-size:26px;font-weight:800}.pz-top .pz-sub{font-size:12px;color:#c8d0dd}
+.pz-prog{display:flex;gap:4px;max-width:1200px;margin:8px auto 0}
+.pz-prog button{flex:1;background:#ffffff1a;border:0;border-radius:6px;color:#c8d0dd;font-size:12px;padding:6px 2px;cursor:pointer}
+.pz-prog button.on{background:#c9a24a;color:#1b1404;font-weight:700}.pz-prog button.done{background:#ffffff33;color:#fff}
+.pz-btn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
+.pz-gold{background:#c9a24a;color:#1b1404}.pz-ghost{background:#fff;border:1px solid #e3e6ec;color:#16202e}.pz-sm{padding:6px 10px;font-size:13px}
+.pz-close{background:none;border:1px solid #ffffff55;color:#fff;border-radius:9px;width:36px;height:36px;font-size:18px;cursor:pointer}
+.pz-pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
+.pz-ok{background:#e4f4ea;color:#1f8a4c}.pz-wa{background:#fff3dc;color:#b86e00}.pz-ba{background:#fbe7e5;color:#c0392b}
+.pz-wrap{max-width:1200px;margin:0 auto;padding:16px 12px 90px;display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:980px){.pz-wrap{grid-template-columns:minmax(0,1fr) 340px}}
+.pz-c{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.pz-ey{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5d6878;font-weight:700}
+#edit-card.pz-card h2{font-size:17px;margin:2px 0 8px;font-family:inherit;letter-spacing:0;color:#16202e}
+#edit-card.pz-card h3{font-size:16px;margin:0;font-family:inherit;letter-spacing:0;color:#16202e}
+.pz-mut{color:#5d6878;font-size:13px}
+.pz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pz-t{width:100%;border-collapse:collapse;font-size:14px}
+.pz-t td,.pz-t th{padding:5px 3px;border-bottom:1px solid #e3e6ec;text-align:left;vertical-align:middle}
+.pz-t th{font-size:11px;color:#5d6878;text-transform:uppercase}
+.pz-t td input{width:100%;border:1px solid transparent;border-radius:6px;padding:4px 5px;background:#f7f8fb}
+.pz-t td input:focus{border-color:#c9a24a;outline:0;background:#fff}
+.pz-t td.n,.pz-t th.n{text-align:right}#edit-card .pz-t td.n input{text-align:right}
+.pz-t td input.pz-qty{width:58px}.pz-t td input.pz-rate{width:72px}
+.pz-tag{font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;background:#e9edf4;color:#18305a}.pz-tag.m{background:#f6eedb;color:#7a5a12}
+.pz-x{background:none;border:0;color:#5d6878;cursor:pointer;font-size:16px}
+.pz-cs{text-decoration:line-through;color:#5d6878}
+ul.pz-chk{list-style:none;margin:0;padding:0}
+ul.pz-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;font-size:14px}ul.pz-chk li:last-child{border:0}
+.pz-dot{width:20px;height:20px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:800}
+.pz-tl{display:flex;height:30px;border-radius:6px;overflow:hidden;margin:8px 0}
+.pz-tl div{color:#fff;font-size:11px;display:grid;place-items:center;font-weight:700;overflow:hidden;white-space:nowrap}
+.pz-tpl{display:flex;gap:6px;flex-wrap:wrap}
+.pz-tpl button{border:1px dashed #18305a;background:#f2f5fa;border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer}
+.pz-list{padding-left:40px;margin:12px 0}.pz-sec ol{padding-left:36px;margin:8px 0}.pz-sec ol li{margin:3px 0}.pz-list li{margin:3px 0}
+.pz-edl{display:flex;gap:6px;margin-top:6px}.pz-edl input{flex:1;min-width:0;border:1px solid #e3e6ec;border-radius:7px;padding:6px}
+.pz-ai{background:#eef2f9;border-left:3px solid #18305a;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:8px}
+.pz-foot{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e3e6ec;padding:10px 12px;display:flex;gap:8px;justify-content:center;z-index:25}
+.pz-sec{border-top:1px solid #e3e6ec;margin:0 -16px;padding:8px 16px}
+.pz-sec summary{font-weight:700;cursor:pointer;padding:4px 0;color:#0f1f3a}
+.pz-pb{background:#eef2f9;color:#18305a;font-size:11px}
+.pz-fgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.pz-fc{border:1px solid #e3e6ec;border-radius:10px;overflow:hidden}.pz-fc.rough{opacity:.75}
+.pz-fimg{height:80px;background:#eef0f4 center/cover no-repeat;display:grid;place-items:center;font-size:32px;position:relative;cursor:pointer}
+.pz-fimg em{position:absolute;bottom:3px;right:6px;font-size:10px;font-style:normal;color:#5d6878}
+.pz-fb{padding:8px 10px;font-size:13px}.pz-tg{display:flex;gap:6px;align-items:center;margin-top:6px;font-weight:600}
+.pz-st{width:100%;margin-top:6px;border:1px solid #e3e6ec;border-radius:6px;padding:4px}
+.pz-drawer{position:fixed;inset:0;background:#0007;z-index:120;display:none}.pz-drawer.on{display:block}
+.pz-drawer .pz-pan{position:absolute;right:0;top:0;bottom:0;width:min(560px,100%);background:#fff;overflow:auto;-webkit-overflow-scrolling:touch}
+.pz-drawer.wide .pz-pan{width:min(1000px,100%)}
+.pz-pan iframe{display:block;width:100%;height:calc(100% - 52px);border:0}
+#pz-tools-body{padding:12px 14px 40px}
+#pz-tools-body .step-bar,#pz-tools-body #scope-control-wrap,#pz-tools-body .ws-more{display:none}
+.pz-saved{font-size:11px;color:#9fb0c6;margin-left:6px}
+@media(max-width:640px){
+ .pz-sec .pz-t tr:first-child{display:none}
+ .pz-sec .pz-t tr{display:grid;grid-template-columns:44px 64px 34px 78px 1fr 26px;align-items:center;border-bottom:1px solid #e3e6ec;padding:4px 0}
+ .pz-sec .pz-t td{border:0}.pz-sec .pz-t td:nth-child(2){grid-column:1/-1;order:-1}
+ .pz-sec .pz-t td.n input.pz-qty,.pz-sec .pz-t td.n input.pz-rate{width:100%}
+}
 </style>
 <script>
-/* ═══════════ THE PERPLEXITY LAYOUT: head, side, timeline, terms ═══════════
-   Every number here is worked out from the estimate on screen. Nothing is
-   invented: the payment schedule and the 3-year warranty are the terms his
-   contract is written with (generate-contract-background.js); the timeline is
-   the same count as lib/schedule.js. */
-var WS_HOUR = /^(h|hr|hrs|hour|hours|man-?hours?)$/i;
-var WS_WAITS = [
+/* ═══════════ THE ESTIMATE SCREEN — PERPLEXITY'S DESIGN, 1:1 ═══════════
+   "Rebuild exactly one in one copy design layout!!! From current dashboard
+    remove whatever need to remove!"
+
+   The screen is Perplexity's dashboard-layout.html, wired to the real record:
+   the sticky top bar (total, cost, profit, work days, Ready, Preview, Send),
+   the five steps, 1 Request, 2 Scope & Price (one card per service: Prices,
+   Finishes & who supplies, Steps for the customer, Included, Not included),
+   3 Timeline, 4 Terms, 5 What we need from the customer, Ready to send, Money,
+   Quick actions, and the bottom bar. Every change saves itself.
+
+   The tools the design has no place for (Generate, Ask AI and the
+   conversation, photos, what prices show, contract, invoice, delete) open from
+   Quick actions: "AI chat" and "More tools". The estimate itself is one
+   object, currentRecord.estimate; this screen edits it directly. */
+var PZ = { open: {}, secs: {}, book: null, saveT: null, saving: false, scopeTouched: false, genT: null };
+var PZ_HOUR = /^(h|hr|hrs|hour|hours|man-?hours?)$/i;
+var PZ_WAITS = [
   { re: /waterproof|membrane|redgard|kerdi/i, days: 1, label: "Waterproofing cures" },
   { re: /mortar bed|mud bed|pre-?slope|leveling|self-?level/i, days: 1, label: "Floor base cures" },
   { re: /\btile\b|thinset|set tile|install tile/i, days: 1, label: "Tile sets" },
   { re: /\bgrout/i, days: 1, label: "Grout cures" },
   { re: /skim|spackle|joint compound|\bmud\b|tape and|taping|patch/i, days: 1, label: "Patches dry" }
 ];
+var PZ_ICON = [[/vanity|sink|faucet/i, "🚰"], [/toilet/i, "🚽"], [/paint|primer/i, "🎨"], [/tile|floor|backsplash/i, "▦"]];
+var PZ_FIN = /vanity|toilet|faucet|sink|tile|paint|cabinet|counter|light|fixture|\bfan\b|mirror|door|hardware|appliance|\btub\b|shower (valve|trim|door|base|glass)|backsplash|vinyl|laminate|hardwood|flooring|baseboard|molding|medicine|shelf|towel|grab bar|bench|vanity top/i;
+var PZ_ROUGH = /\bkit\b|supplies|supply line|wax|fitting|screw|tape|primer|patch|sealant|caulk|adhesive|thinset|mortar|membrane|cement board|protection|plastic|drop cloth|debris|dumpster|joint compound|spackle|sandpaper/i;
+function pzF(n) { return "$" + Math.round(Number(n) || 0).toLocaleString("en-US"); }
+function pzEst() { return (currentRecord && currentRecord.estimate) || {}; }
+function pzMk() { var m = Number(pzEst().markupPct); return isFinite(m) ? m : 25; }
+function pzSvcs() { try { return scopeDraft().services || []; } catch (e) { return []; } }
+function pzLinesOf(nm) {
+  var e = pzEst(), out = [];
+  ["labor", "materials"].forEach(function (k) { (e[k] || []).forEach(function (l, gi) { if (scopeSectionOf(l) === nm) out.push({ kind: k, gi: gi, l: l }); }); });
+  return out;
+}
+function pzParkedOf(nm) {
+  var out = [];
+  (pzEst().parkedLines || []).forEach(function (p, pi) { if (p && p.custSupplied === true && scopeNorm(p.service) === scopeNorm(nm)) out.push({ p: p, pi: pi }); });
+  return out;
+}
+function pzSum(nm, kind) { return pzLinesOf(nm).filter(function (x) { return !kind || x.kind === kind; }).reduce(function (a, x) { return a + (Number(x.l.qty) || 0) * (Number(x.l.rate) || 0); }, 0); }
+function pzIsFinish(l) { if (typeof l.finish === "boolean") return l.finish; var t = String(l.item || ""); return PZ_FIN.test(t) && !PZ_ROUGH.test(t); }
+function pzIcon(t) { for (var i = 0; i < PZ_ICON.length; i++) if (PZ_ICON[i][0].test(t)) return PZ_ICON[i][1]; return "▦"; }
+/* A step that leaves something to dry or cure before the next one. */
+var PZ_STEP_CURE = /waterproof|membrane|mortar bed|mud bed|self-?level|thinset|set tile|\bgrout|skim/i;
+function pzCure(st) { return PZ_STEP_CURE.test(String((st.title || "") + " " + (st.text || ""))) ? 1 : 0; }
+function pzStepsOf(nm, first) {
+  return (pzEst().workSteps || []).map(function (st, i) { return { st: st, i: i }; }).filter(function (x) {
+    var s = String(x.st && x.st.service || "").trim();
+    return x.st && (x.st.title || x.st.text) && (s ? scopeNorm(s) === scopeNorm(nm) : first);
+  });
+}
 /* lib/schedule.js scheduleOf, for the screen (js/dashboard-layout.test.js keeps them equal). */
-function wsScheduleOf(e) {
+function pzScheduleOf(e) {
   e = e || {};
   var num = function (v) { var n = Number(v); return isFinite(n) ? n : 0; };
   var raw = e.scheduleEdit && typeof e.scheduleEdit === "object" ? e.scheduleEdit : {};
@@ -13536,11 +13433,11 @@ function wsScheduleOf(e) {
   };
   var labor = (Array.isArray(e.labor) ? e.labor : []).filter(function (l) { return l && String(l.item || "").trim(); });
   if (!labor.length) return typedOnly();
-  var hourLines = labor.filter(function (l) { return WS_HOUR.test(String(l.unit || "").trim()) && num(l.rate) > 0; });
+  var hourLines = labor.filter(function (l) { return PZ_HOUR.test(String(l.unit || "").trim()) && num(l.rate) > 0; });
   var avg = hourLines.length ? hourLines.reduce(function (t, l) { return t + num(l.rate); }, 0) / hourLines.length : 85;
   var by = {}, hours = 0;
   labor.forEach(function (l) {
-    var h = WS_HOUR.test(String(l.unit || "").trim()) ? Math.max(0, num(l.qty)) : (num(l.qty) * num(l.rate) > 0 ? num(l.qty) * num(l.rate) / (avg || 85) : 0);
+    var h = PZ_HOUR.test(String(l.unit || "").trim()) ? Math.max(0, num(l.qty)) : (num(l.qty) * num(l.rate) > 0 ? num(l.qty) * num(l.rate) / (avg || 85) : 0);
     hours += h;
     var k = String(l.section || "Work").trim() || "Work";
     by[k] = (by[k] || 0) + h;
@@ -13551,278 +13448,599 @@ function wsScheduleOf(e) {
   var workDays = Math.max(0.5, Math.ceil((hours / (crew * Math.max(1, num(s.dailyHours) || 8))) * 2) / 2);
   var text = labor.map(function (l) { return String(l.item || ""); }).join(" | ");
   var waits = [];
-  WS_WAITS.forEach(function (w) { if (w.re.test(text) && waits.length < 3) waits.push({ label: w.label, days: w.days }); });
+  PZ_WAITS.forEach(function (w) { if (w.re.test(text) && waits.length < 3) waits.push({ label: w.label, days: w.days }); });
   var waitDays = workDays <= 1 ? 0 : waits.reduce(function (t, w) { return t + w.days; }, 0);
   var sections = Object.keys(by).map(function (k) { return { name: k, hours: Math.round(by[k] * 10) / 10 }; }).filter(function (x) { return x.hours > 0; });
   return withEdit({ version: 1, laborHours: hours, crew: crew, dailyHours: num(s.dailyHours) || 8, workDays: workDays, waitDays: waitDays, totalDays: Math.ceil(workDays + waitDays), waits: waits, sections: sections });
 }
 /* Working days from a start date, Monday to Friday. */
-function wsFinish(startIso, days) {
+function pzFinish(startIso, days) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(startIso || "")) || !(days > 0)) return null;
   var d = new Date(startIso + "T12:00:00"), left = Math.ceil(days) - 1;
   while (left > 0) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) left--; }
   return d;
 }
-function wsDay(d) { return d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""; }
-/* His payment terms, the ones the contract generator writes (and quote.html shows). */
-function wsPayPlan(total, r) {
+function pzDay(d) { return d ? d.toDateString().slice(4, 10) : ""; }
+/* Payment rows. "contract" = the terms his contract is written with
+   (generate-contract-background.js), which the customer page shows today. */
+var PZ_PAY = { "contract": "Your contract terms", "30,40,30": "30 / 40 / 30", "50,50": "50 / 50", "25,25,25,25": "25 × 4", "100": "100% on completion (small job)" };
+var PZ_PAY_LBL = { 1: ["On completion"], 2: ["Deposit to schedule", "On completion"], 3: ["Deposit to schedule", "After installation", "On completion"], 4: ["Deposit", "Start of work", "Midway", "On completion"] };
+function pzPayPlan(total, choice) {
   if (!(total > 0)) return [];
-  var cs = (((r || {}).contract || {}).sections || {}).paymentSchedule;
-  cs = (Array.isArray(cs) ? cs : []).filter(function (p) { return p && String(p.label || "").trim() && Number(p.amount) > 0; });
-  if (cs.length && Math.abs(cs.reduce(function (t, p) { return t + Number(p.amount); }, 0) - total) <= 1) {
-    return cs.map(function (p) { return { label: String(p.label).trim(), amount: Number(p.amount), pct: Math.round(Number(p.amount) / total * 100), contract: true }; });
+  var parts;
+  if (!choice || choice === "contract" || !PZ_PAY[choice]) {
+    parts = total < 1000 ? [["Payment in full, on completion", 100]] : total <= 5000 ? [["Deposit to schedule", 50], ["On completion", 50]] : [["Deposit to schedule", 40], ["Midway", 40], ["On completion", 20]];
+  } else {
+    var p = choice.split(",").map(Number);
+    parts = p.map(function (x, k) { return [PZ_PAY_LBL[p.length][k], x]; });
   }
-  var rule = total < 1000 ? [["Payment in full, on completion", 1]]
-    : total <= 5000 ? [["Deposit, when they sign", 0.5], ["On completion and walkthrough", 0.5]]
-    : [["Deposit, when they sign", 0.4], ["Midway, when the main work is done", 0.4], ["On completion and walkthrough", 0.2]];
   var left = total;
-  return rule.map(function (x, i) {
-    var amt = i === rule.length - 1 ? Math.round(left * 100) / 100 : Math.round(total * x[1] * 100) / 100;
-    left -= amt;
-    return { label: x[0], amount: amt, pct: Math.round(x[1] * 100) };
-  });
+  return parts.map(function (x, i) { var amt = i === parts.length - 1 ? Math.round(left * 100) / 100 : Math.round(total * x[1]) / 100; left -= amt; return { label: x[0], pct: x[1], amount: amt }; });
 }
-function wsCustomerTotal(r) {
-  var e = (r && r.estimate) || {};
-  if (r && r.customerFinalTotal != null && isFinite(Number(r.customerFinalTotal))) return Number(r.customerFinalTotal);
-  return calcCustomerView(e).customerTotal;
+function pzTerms() { var e = pzEst(); if (!e.terms || typeof e.terms !== "object") e.terms = {}; return e.terms; }
+function pzTotal() {
+  var r = currentRecord || {};
+  if (r.customerFinalTotal != null && isFinite(Number(r.customerFinalTotal))) return Number(r.customerFinalTotal);
+  return calcCustomerView(pzEst()).customerTotal;
 }
-function wsHeadHtml(r) {
-  var c = (r && r.customer) || {}, q = (r && r.request) || {};
-  var who = [r && r.ref, c.name, c.address, q.propertyType].filter(function (x) { return x && String(x).trim(); }).map(function (x) { return esc(String(x).trim()); }).join(" · ");
-  return '<div class="ws-in">' +
-      '<div><div class="ws-who">' + who + '</div><div class="ws-tot" id="ws-tot">$0</div><div class="ws-sub" id="ws-sub"></div></div>' +
-      '<div class="ws-acts"><span class="ws-pill wa" id="ws-ready"></span>' +
-        '<button type="button" class="ws-btn ws-sm" onclick="wsPreview()">Preview</button>' +
-        '<button type="button" class="ws-btn ws-gold" onclick="sendToCustomer()">Send</button>' +
-        '<button type="button" class="ws-x-close" title="Close" onclick="closeEdit()">×</button></div>' +
-    '</div>' +
-    '<div class="ws-prog">' + ["Request", "Scope & Price", "Timeline", "Terms", "Review & Send"].map(function (t, i) {
-      return '<button type="button" onclick="wsGo(' + i + ')"' + (i === 0 ? ' class="on"' : '') + '>' + (i + 1) + ' ' + esc(t) + '</button>';
-    }).join("") + '</div>';
-}
-function wsGo(i) {
-  var bars = document.querySelectorAll("#edit-card .step-bar");
-  if (bars[i]) bars[i].scrollIntoView({ behavior: "smooth", block: "start" });
-}
-function wsTermsHtml(est) {
-  var mk = Number(est && est.markupPct);
-  if (!isFinite(mk)) mk = 25;
-  return '<div class="form-section ws-cardbox ws-terms" id="ws-terms">' +
-    '<div class="ws-row"><span>Markup</span><b id="ws-mk-l">' + esc(String(mk)) + '%</b></div>' +
-    '<input type="range" min="0" max="60" step="1" id="ws-mk" value="' + esc(String(Math.min(60, Math.max(0, mk)))) + '" oninput="wsMarkup(this.value)">' +
-    '<div class="ws-row" style="border:0"><span>Payment</span><span class="v4-hint" id="ws-pay-src"></span></div>' +
-    '<table class="ws-pay" id="ws-pay"></table>' +
-    '<div class="ws-row"><span>Warranty</span><b>3-year workmanship</b></div>' +
-    '<div class="ws-row"><span>Valid for</span><b>30 days</b></div>' +
-  '</div>';
-}
-function wsMarkup(v) {
-  var box = document.getElementById("f-markup");
-  if (box) box.value = v;
-  var l = document.getElementById("ws-mk-l");
-  if (l) l.textContent = v + "%";
-  recalc();
-}
-/* Finishes & who supplies, per service: every material line as a card with a
-   "Customer supplies" tick. Ticked: the material comes off the price (labor
-   stays) and the item is listed as Customer supplies on that card. Unticked:
-   the very same line comes back. Uses the parked-lines store, so the money is
-   never lost. */
-function wsSupplyGridHtml(si, nm) {
-  var est = (currentRecord && currentRecord.estimate) || {};
-  var cards = [];
-  (est.materials || []).forEach(function (l, gi) {
-    if (scopeSectionOf(l) !== nm || !String(l.item || "").trim()) return;
-    cards.push('<div class="ws-fc"><div class="ws-fimg">🧰</div><div class="ws-fb"><b>' + esc(l.item) + '</b>' +
-      '<label><input type="checkbox" onchange="wsSupplyToggle(' + si + ',' + gi + ',this.checked)"> Customer supplies</label>' +
-      '<div class="v4-hint">Sani supplies · ' + fmt((Number(l.qty) || 0) * (Number(l.rate) || 0)) + '</div></div></div>');
-  });
-  (est.parkedLines || []).forEach(function (p, pi) {
-    if (!p || p.custSupplied !== true || scopeNorm(p.service) !== scopeNorm(nm)) return;
-    cards.push('<div class="ws-fc ws-cs"><div class="ws-fimg">📦</div><div class="ws-fb"><b>' + esc((p.line && p.line.item) || p.ownerText) + '</b>' +
-      '<label><input type="checkbox" checked onchange="wsSupplyUndo(' + si + ',' + pi + ')"> Customer supplies</label>' +
-      '<div class="v4-hint">Material $0 · labor kept</div></div></div>');
-  });
-  if (!cards.length) return "";
-  return '<div class="ws-sup-h">Finishes &amp; who supplies</div><div class="ws-sup"><div class="ws-fgrid">' + cards.join("") + '</div></div>';
-}
-function wsSupplyToggle(si, gi, on) {
-  if (!on) return;
-  syncLines();
-  var est = currentRecord.estimate || {}, d = scopeDraft(), svc = d.services[si];
-  var l = (est.materials || [])[gi];
-  if (!svc || !l) return;
-  var nm = String(svc.name || "").trim(), item = String(l.item || "").trim();
-  est.parkedLines = est.parkedLines || [];
-  est.parkedLines.push({ kind: "materials", ownerText: item, service: nm, idx: gi, line: l, custSupplied: true });
-  est.materials.splice(gi, 1);
-  svc.supplied = svc.supplied || [];
-  if (!svc.supplied.some(function (x) { return scopeNorm(x) === scopeNorm(item); })) svc.supplied.push(item);
-  toast(item + " — customer supplies. Material " + fmt(scopeLineValue(l)) + " off, labor kept.");
-  scopeLinesRefresh();
-}
-function wsSupplyUndo(si, pi) {
-  var est = currentRecord.estimate || {}, d = scopeDraft(), svc = d.services[si];
-  var p = (est.parkedLines || [])[pi];
-  if (!svc || !p) return;
-  var item = String(p.ownerText || "");
-  scopeUnparkFor(String(svc.name || "").trim(), item);
-  svc.supplied = (svc.supplied || []).filter(function (x) { return scopeNorm(x) !== scopeNorm(item); });
-  scopeLinesRefresh();
-}
-function wsPreview() {
-  if (!currentRecord) return;
-  var w = window.open("about:blank", "_blank");
-  Promise.resolve(saveDraft()).then(function (ok) {
-    var url = "/quote.html?ref=" + encodeURIComponent(currentRecord.ref) + "&preview=1";
-    if (w) w.location.href = url; else if (ok) window.location.href = url;
-  });
-}
-/* What the checklist reads: the screen as it is now. */
-function wsTextNow() {
-  var parts = [];
-  try { (scopeDraft().services || []).forEach(function (s) { ["included", "supplied", "excluded"].forEach(function (k) { parts = parts.concat(s[k] || []); }); }); } catch (e) {}
-  ["f-overview", "f-summary", "f-scope"].forEach(function (id) { var el = document.getElementById(id); if (el) parts.push(el.value); });
-  ["f-needs", "f-sani", "f-basis"].forEach(function (id) { parts = parts.concat(v4ReadLines(id)); });
-  try { parts = parts.concat(v4ReadSteps().map(function (x) { return x.title + " " + x.text; })); } catch (e) {}
-  return parts.join("\n");
-}
-function wsChecks(r) {
-  var e = (r && r.estimate) || {}, q = (r && r.request) || {}, c = (r && r.customer) || {};
-  var svcs = []; try { svcs = scopeDraft().services || []; } catch (x) {}
+
+/* ── the checklist (8 lines, as the design has them) ── */
+function pzChecks() {
+  var r = currentRecord || {}, e = pzEst(), svcs = pzSvcs();
   var lines = (e.labor || []).concat(e.materials || []);
-  var needs = v4ReadLines("f-needs");
-  var steps = []; try { steps = v4ReadSteps().filter(function (x) { return x.title || x.text; }); } catch (x) {}
-  var supplied = svcs.some(function (s) { return (s.supplied || []).length; });
-  var building = /co-?op|condo|building|apartment|\bapt\b|management|doorman|elevator/i.test([q.description, q.propertyType, c.address].join(" "));
-  var out = [
-    [svcs.length > 0 && lines.length > 0, "At least one service"],
+  var needs = (e.customerNeeds || []).map(function (x) { return String(typeof x === "string" ? x : (x && x.text) || ""); });
+  var sup = [];
+  svcs.forEach(function (s) { (s.supplied || []).forEach(function (x) { if (String(x).trim()) sup.push(String(x).trim()); }); });
+  var t = calcTotal(e), pro = t.grand - t.sub;
+  var text = [];
+  svcs.forEach(function (s) { ["included", "supplied", "excluded"].forEach(function (k) { text = text.concat(s[k] || []); }); });
+  (e.workSteps || []).forEach(function (st) { text.push((st && st.title) + " " + (st && st.text)); });
+  text = text.concat(needs, [e.overview, e.summary]);
+  var supName = sup.length ? sup[0].trim().split(/[\s,(]+/)[0].toLowerCase() : "items";
+  return [
+    [svcs.length > 0, "At least one service"],
     [lines.length > 0 && lines.every(function (l) { return Number(l.qty) > 0; }), "Every line has a quantity"],
-    [steps.length > 0, "Steps for the customer are written"],
-    [svcs.length > 0 && svcs.every(function (s) { return (s.excluded || []).length; }), 'Every service has "Not included"']
+    [svcs.length > 0 && svcs.every(function (s, i) { return pzStepsOf(s.name, i === 0).length; }), "Every service has steps"],
+    [svcs.length > 0 && svcs.every(function (s) { return (s.excluded || []).length; }), 'Every service has "Not included"'],
+    [!sup.length || needs.some(function (x) { return /on site|deliver/i.test(x); }), "Delivery date for customer-supplied " + supName, "deliver"],
+    [needs.some(function (x) { return /\bcoi\b|insurance/i.test(x); }), "Building COI mentioned", "coi"],
+    [t.grand > 0 && pro / t.grand >= 0.15, "Profit at least 15%"],
+    [!/licens|\bgas (line|hook|pipe|connect|appliance)|option [ab]\b/i.test(text.join("\n")), 'No "licensed", no options, no gas work']
   ];
-  if (supplied) out.push([needs.some(function (x) { return /on site|deliver|by (mon|tue|wed|thu|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|day|the)/i.test(x); }), "Delivery date for customer-supplied items", "deliver"]);
-  if (building) out.push([needs.some(function (x) { return /\bcoi\b|insurance cert/i.test(x); }), "Building COI mentioned", "coi"]);
-  out.push([!/licens|\bgas (line|hook|pipe|connect|appliance)|option [ab]\b/i.test(wsTextNow()), 'No "licensed", no options, no gas work']);
+}
+
+/* ── render ── */
+function pzRender() {
+  var card = document.getElementById("edit-card");
+  if (!card || !currentRecord) return;
+  var main = document.getElementById("pz-main");
+  if (!main) return;
+  var r = currentRecord, e = pzEst(), q = r.request || {}, c = r.customer || {};
+  var svcs = pzSvcs(), mk = pzMk(), k = 1 + mk / 100;
+  var photos = (q.photos || []).length || Number(q.photoCount) || 0;
+  var msgs = (Array.isArray(r.thread) ? r.thread : []).length;
+  var pr = e.pricingReadiness || {}, qs = Array.isArray(e.clarificationQuestions) ? e.clarificationQuestions : [];
+  var asm = (Array.isArray(e.assumptions) ? e.assumptions : []).map(function (x) { return String(typeof x === "string" ? x : (x && (x.text || x.assumption)) || ""); }).filter(Boolean).slice(0, 2);
+  var STATUS = { READY_TO_ESTIMATE: "Ready to price.", PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS: "Priced on assumptions.", NEEDS_CUSTOMER_QUESTIONS: "Needs answers first.", SITE_VISIT_REQUIRED: "Site visit needed." };
+  var q0 = qs.length ? String(typeof qs[0] === "string" ? qs[0] : (qs[0] && (qs[0].question || qs[0].text)) || "") : "";
+  var lines = (e.labor || []).length + (e.materials || []).length;
+  var aiRead = lines
+    ? '<div class="pz-ai"><b>AI read:</b> ' + esc(STATUS[pr.status] || "Priced.") + (asm.length ? " Assumed " + esc(asm.join("; ").replace(/\.$/, "")) + "." : "") +
+      (q0 ? ' <a href="#" onclick="pzAskCustomer();return false">Ask customer: ' + esc(q0.length > 60 ? q0.slice(0, 57) + "…" : q0) + '</a>' : "") + '</div>'
+    : '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>';
+
+  var html = '<div class="pz-c" id="pz-s1"><div class="pz-row"><h2>1 · Request</h2><span class="pz-mut">' + photos + ' photo' + (photos === 1 ? '' : 's') + ' · ' + msgs + ' email' + (msgs === 1 ? '' : 's') + '</span></div>' +
+    '<p style="margin:0 0 8px">' + esc(q.description ? '"' + q.description + '"' : (q.service || "")) + '</p>' + aiRead + '</div>';
+
+  /* 2 · Scope & Price */
+  var book = (PZ.book && PZ.book.templates) || [];
+  html += '<div class="pz-c" id="pz-s2"><div class="pz-row"><h2 style="margin:0">2 · Scope &amp; Price</h2><div class="pz-tpl">' +
+    book.map(function (t, i) { return '<button type="button" onclick="pzLoadTemplate(' + i + ')">+ ' + esc(t.name) + '</button>'; }).join("") + '</div></div>' +
+    '<div class="pz-mut" style="margin-top:4px">' + (book.length ? 'Price book packages: your own rates and hours. Tap one to add it as a service.' : 'Price book packages: your own rates and hours. Save a service with "Save as my template" and it appears here.') + '</div></div>';
+  var pbNames = (e.priceBookServices || []).map(function (x) { return String(x).toLowerCase(); });
+  var aiFilled = !!(e.generationTiming || e.generatedWith || e.pricingReadiness);
+  svcs.forEach(function (s, i) {
+    var nm = String(s.name || "").trim(), ls = pzLinesOf(nm), pk = pzParkedOf(nm);
+    var open = PZ.open[nm] !== false;
+    var st = pzSum(nm) * k;
+    var issues = ls.some(function (x) { return !(Number(x.l.qty) > 0); }) ? '<span class="pz-pill pz-wa">qty missing</span>' : '<span class="pz-pill pz-ok">ok</span>';
+    html += '<div class="pz-c"><div class="pz-row" onclick="pzToggleSvc(' + i + ')" style="cursor:pointer"><h3>' + esc(nm) + ' ' + issues +
+      (pbNames.indexOf(nm.toLowerCase()) !== -1 ? ' <span class="pz-pill pz-pb">From price book</span>' : '') + '</h3><b>' + pzF(st) + ' ' + (open ? '▴' : '▾') + '</b></div>';
+    if (open) {
+      html += pzSec(i, "p", "Prices", pzPricesHtml(i, nm), aiFilled ? ' <span class="pz-mut">· AI filled quantities from the request</span>' : '') +
+        pzSec(i, "w", "Finishes &amp; who supplies", pzFinishesHtml(i, nm, s)) +
+        pzSec(i, "s", "Steps for the customer", pzStepsHtml(i, nm)) +
+        pzSec(i, "i", "Included", pzListHtml(i, "included", s.included || [])) +
+        pzSec(i, "n", "Not included", pzListHtml(i, "excluded", s.excluded || []));
+    }
+    html += '</div>';
+  });
+  html += '<div class="pz-c" style="text-align:center"><button type="button" class="pz-btn pz-ghost" onclick="pzAddService()">+ Add service</button></div>';
+
+  /* 3 · Timeline */
+  var ed = e.scheduleEdit || {}, sch = pzScheduleOf(e);
+  var crewNow = ed.crew || (sch ? sch.crew : 2), dayNow = ed.dailyHours || (sch ? sch.dailyHours : 8);
+  var opt = function (vals, cur) { if (vals.indexOf(Number(cur)) === -1) vals = vals.concat([Number(cur)]).sort(function (a, b) { return a - b; }); return vals.map(function (v) { return '<option' + (Number(v) === Number(cur) ? ' selected' : '') + '>' + v + '</option>'; }).join(""); };
+  html += '<div class="pz-c" id="pz-s3"><h2>3 · Timeline (auto from labor hours)</h2>' +
+    '<div class="pz-row"><label class="pz-mut">Crew <select onchange="pzSched(\'crew\',this.value)">' + opt([1, 2, 3], crewNow) + '</select> people</label>' +
+    '<label class="pz-mut">Day <select onchange="pzSched(\'dailyHours\',this.value)">' + opt([7, 8, 9], dayNow) + '</select> hrs</label>' +
+    '<label class="pz-mut">Start <input type="date" value="' + esc(/^\d{4}-\d{2}-\d{2}$/.test(String(ed.start || "")) ? ed.start : "") + '" onchange="pzSched(\'start\',this.value)" style="border:1px solid #e3e6ec;border-radius:6px;padding:3px"></label></div>' +
+    '<div class="pz-tl" id="pz-tl"></div><div id="pz-tltxt" class="pz-mut"></div></div>';
+
+  /* 4 · Terms */
+  var tm = pzTerms();
+  html += '<div class="pz-c" id="pz-s4"><h2>4 · Terms (saved defaults)</h2>' +
+    '<div class="pz-row"><span>Markup</span><b id="pz-mkl">' + mk + '%</b></div><input type="range" min="0" max="60" value="' + esc(String(mk)) + '" style="width:100%" oninput="pzMarkup(this.value)" onchange="pzDirty()">' +
+    '<div class="pz-row" style="margin-top:8px"><span>Payment</span><select onchange="pzTerm(\'payment\',this.value)">' + Object.keys(PZ_PAY).map(function (v) { return '<option value="' + v + '"' + ((tm.payment || "contract") === v ? ' selected' : '') + '>' + PZ_PAY[v] + '</option>'; }).join("") + '</select></div>' +
+    '<table class="pz-t" id="pz-pay" style="margin-top:6px"></table>' +
+    '<div class="pz-row" style="margin-top:8px"><span>Warranty</span><select onchange="pzTerm(\'warranty\',this.value)">' + ["3-year workmanship", "1-year workmanship", "2-year workmanship", "90-day workmanship"].map(function (v) { return '<option' + ((tm.warranty || "3-year workmanship") === v ? ' selected' : '') + '>' + v + '</option>'; }).join("") + '</select></div>' +
+    '<div class="pz-row" style="margin-top:8px"><span>Valid for</span><select onchange="pzTerm(\'validDays\',Number(this.value))">' + [14, 30, 60].map(function (v) { return '<option' + (Number(tm.validDays || 30) === v ? ' selected' : '') + '>' + v + '</option>'; }).join("") + '</select> days</div></div>';
+
+  /* 5 · What we need from the customer */
+  html += '<div class="pz-c" id="pz-s5"><h2>5 · What we need from the customer</h2><ul class="pz-list">' +
+    (e.customerNeeds || []).map(function (x, j) { return '<li>' + esc(String(typeof x === "string" ? x : (x && x.text) || "")) + ' <button type="button" class="pz-x" onclick="pzNeedDel(' + j + ')">✕</button></li>'; }).join("") + '</ul>' +
+    '<div class="pz-edl"><input id="pz-need" placeholder="Add (e.g. Remove items from vanity)" onkeydown="if(event.key===\'Enter\')pzNeedAdd()"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzNeedAdd()">Add</button></div></div>';
+  main.innerHTML = html;
+
+  /* the side */
+  var side = document.getElementById("pz-side");
+  if (side) side.innerHTML = '<div class="pz-c" id="pz-ready"><div class="pz-ey">Ready to send</div><ul class="pz-chk" id="pz-chk"></ul></div>' +
+    '<div class="pz-c"><div class="pz-ey">Money (you only)</div>' +
+      '<div class="pz-row"><span>Labor cost</span><b id="pz-mlab"></b></div><div class="pz-row"><span>Material cost</span><b id="pz-mmat"></b></div>' +
+      '<div class="pz-row"><span>Profit</span><b id="pz-mpro"></b></div><div class="pz-row"><span>Profit per crew day</span><b id="pz-mday"></b></div>' +
+      '<div class="pz-ai" id="pz-mai" style="display:none"></div></div>' +
+    '<div class="pz-c"><div class="pz-ey">Quick actions</div><div style="display:grid;gap:6px;margin-top:6px">' +
+      '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzDuplicate()">Duplicate estimate</button>' +
+      '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzSaveTemplate()">Save as my template</button>' +
+      '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="copyScopeLink()">Scope only (no prices)</button>' +
+      '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="downloadEstimatePdf(\'customer\')">PDF</button>' +
+      '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzTools(\'ask\')">AI chat</button>' +
+      '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzTools()">More tools</button></div></div>';
+  pzRefresh();
+}
+function pzSec(i, key, title, body, extra) {
+  var id = i + key, open = PZ.secs[id] !== false;
+  return '<details class="pz-sec"' + (open ? ' open' : '') + ' ontoggle="PZ.secs[\'' + id + '\']=this.open"><summary>' + title + (extra || '') + '</summary>' + body + '</details>';
+}
+function pzPricesHtml(i, nm) {
+  var rows = pzOrdered(nm).map(function (x) {
+    if (x.parked) {
+      var pl = x.parked.p.line || {};
+      return '<tr class="pz-cs"><td><span class="pz-tag m">MAT</span></td><td><input value="' + esc(pl.item || x.parked.p.ownerText || "") + '" disabled></td>' +
+        '<td class="n"><input class="pz-qty" value="' + esc(pl.qty == null ? "" : pl.qty) + '" disabled></td><td class="pz-mut">' + esc(pl.unit || "") + '</td>' +
+        '<td class="n"><input class="pz-rate" value="' + esc(pl.rate == null ? "" : pl.rate) + '" disabled></td><td class="n">by owner</td>' +
+        '<td><button type="button" class="pz-x" onclick="pzDelParked(' + x.parked.pi + ')">✕</button></td></tr>';
+    }
+    var l = x.l, ref = "'" + x.kind + "'," + x.gi;
+    return '<tr><td><span class="pz-tag' + (x.kind === "materials" ? ' m' : '') + '">' + (x.kind === "labor" ? 'LAB' : 'MAT') + '</span></td>' +
+      '<td><input value="' + esc(l.item || "") + '" oninput="pzLine(' + ref + ',\'item\',this.value)" onchange="pzDirty()"></td>' +
+      '<td class="n"><input class="pz-qty" type="number" step="any" value="' + esc(l.qty == null ? "" : l.qty) + '" oninput="pzLine(' + ref + ',\'qty\',this.value)" onchange="pzDirty();pzRender()"></td>' +
+      '<td class="pz-mut">' + esc(l.unit || "") + '</td>' +
+      '<td class="n"><input class="pz-rate" type="number" step="any" value="' + esc(l.rate == null ? "" : l.rate) + '" oninput="pzLine(' + ref + ',\'rate\',this.value)" onchange="pzDirty();pzRender()"></td>' +
+      '<td class="n" data-pzt="' + x.kind + x.gi + '">' + pzF((Number(l.qty) || 0) * (Number(l.rate) || 0)) + '</td>' +
+      '<td><button type="button" class="pz-x" onclick="pzDelLine(' + ref + ')">✕</button></td></tr>';
+  }).join("");
+  return '<table class="pz-t"><tr><th></th><th>Line</th><th class="n">Qty</th><th>Unit</th><th class="n">Rate</th><th class="n">Total</th><th></th></tr>' + rows + '</table>' +
+    '<div class="pz-row" style="margin-top:6px"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzAddLine(' + i + ',\'labor\')">+ Labor</button><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzAddLine(' + i + ',\'materials\')">+ Material</button><span class="pz-mut">Labor ' + pzF(pzSum(nm, "labor")) + ' · Material ' + pzF(pzSum(nm, "materials")) + '</span></div>';
+}
+function pzFinishesHtml(i, nm, s) {
+  var STATUS = ["Chosen", "To choose by date", "Customer delivers by date"];
+  var sel = function (cur, onch) { return '<select class="pz-st" onchange="' + onch + '">' + STATUS.map(function (o) { return '<option' + ((cur || "Chosen") === o ? ' selected' : '') + '>' + o + '</option>'; }).join("") + '</select>'; };
+  var parkedNames = [];
+  var cards = pzOrdered(nm).filter(function (x) { return x.parked || x.kind === "materials"; }).map(function (x) {
+    if (x.parked) {
+      var pl = x.parked.p.line || {};
+      parkedNames.push(scopeNorm(x.parked.p.ownerText));
+      return '<div class="pz-fc"><div class="pz-fimg">' + pzIcon(pl.item || "") + '<em>tap to add photo</em></div><div class="pz-fb"><b>' + esc(pl.item || x.parked.p.ownerText) + '</b><div class="pz-mut">' + esc(pl.spec || "Brand / model / color") + '</div>' +
+        '<label class="pz-tg"><input type="checkbox" checked onchange="pzUnsupply(' + i + ',' + x.parked.pi + ')"> Customer supplies</label><div class="pz-mut">Material $0 · labor kept</div>' +
+        sel(pl.finishStatus, "pzParkedStatus(" + x.parked.pi + ",this.value)") + '</div></div>';
+    }
+    var l = x.l, fin = pzIsFinish(l), cost = (Number(l.qty) || 0) * (Number(l.rate) || 0);
+    var img = fin && /^data:image\//.test(String(l.photo || "")) ? ' style="background-image:url(' + l.photo + ')"' : '';
+    return '<div class="pz-fc' + (fin ? '' : ' rough') + '"><div class="pz-fimg"' + img + (fin ? ' onclick="pzPhoto(' + x.gi + ')"' : '') + '>' + (img ? '' : (fin ? pzIcon(l.item) : '🧰')) + '<em>' + (fin ? 'tap to add photo' : 'installation material') + '</em></div>' +
+      '<div class="pz-fb"><b>' + esc(l.item) + '</b><div class="pz-mut"' + (fin ? ' onclick="pzSpec(' + x.gi + ')" style="cursor:pointer"' : '') + '>' + (fin ? esc(l.spec || "Brand / model / color") : 'Not shown as a card to customer') + '</div>' +
+      (fin ? '<label class="pz-tg"><input type="checkbox" onchange="pzSupply(' + i + ',' + x.gi + ',this.checked)"> Customer supplies</label><div class="pz-mut">Sani supplies · ' + pzF(cost) + '</div>' +
+        sel(l.finishStatus, "pzLine('materials'," + x.gi + ",'finishStatus',this.value);pzDirty()") : '') +
+      '</div></div>';
+  });
+  /* Customer supplies written by the AI with no price line behind them. */
+  (s.supplied || []).forEach(function (t, j) {
+    if (!String(t).trim() || parkedNames.indexOf(scopeNorm(t)) !== -1) return;
+    cards.push('<div class="pz-fc"><div class="pz-fimg">' + pzIcon(t) + '<em>customer item</em></div><div class="pz-fb"><b>' + esc(t) + '</b><div class="pz-mut">Customer buys it, we install it</div>' +
+      '<label class="pz-tg"><input type="checkbox" checked onchange="pzDropSupplied(' + i + ',' + j + ')"> Customer supplies</label><div class="pz-mut">Material $0 · labor kept</div></div></div>');
+  });
+  return '<div class="pz-fgrid">' + cards.join("") + '</div><button type="button" class="pz-btn pz-ghost pz-sm" style="margin-top:8px" onclick="pzLibrary(' + i + ')">+ Add from my product library</button>';
+}
+/* The service's lines in their place: a material the customer supplies stays
+   where it was in the list (struck through), as in the design. */
+function pzOrdered(nm) {
+  var ls = pzLinesOf(nm), pk = pzParkedOf(nm).slice().sort(function (a, b) { return (Number(a.p.idx) || 0) - (Number(b.p.idx) || 0); });
+  var out = ls.filter(function (x) { return x.kind === "labor"; });
+  var k = 0;
+  ls.filter(function (x) { return x.kind === "materials"; }).forEach(function (x) {
+    /* x.gi is its index now; before the parked lines left it sat k places later. */
+    while (k < pk.length && (Number(pk[k].p.idx) || 0) <= x.gi + k) { out.push({ parked: pk[k] }); k++; }
+    out.push(x);
+  });
+  while (k < pk.length) { out.push({ parked: pk[k] }); k++; }
   return out;
 }
-function wsAddNeed(kind) {
-  var inp = document.getElementById("f-needs-in");
-  if (!inp) return;
-  if (kind === "coi") inp.value = "Send our insurance certificate (COI) request to your building management";
-  else {
-    var st = document.getElementById("f-start"), d = st && st.value ? new Date(st.value + "T12:00:00") : null;
-    if (d) d.setDate(d.getDate() - 1);
-    inp.value = "Have your items on site " + (d ? "by " + wsDay(d) : "before we start");
-  }
-  wsListAdd("f-needs");
+function pzStepsHtml(i, nm) {
+  var steps = pzStepsOf(nm, i === 0);
+  return '<ol>' + steps.map(function (x) {
+    var cure = pzCure(x.st);
+    return '<li><b>' + esc(x.st.title || "") + '</b>' + (x.st.text ? ' — ' + esc(x.st.text) : '') + ' ' + (cure ? '<span class="pz-pill pz-wa">+' + cure + ' day cure</span>' : '') + ' <button type="button" class="pz-x" onclick="pzStepDel(' + x.i + ')">✕</button></li>';
+  }).join("") + '</ol><div class="pz-edl"><input id="pz-st' + i + '" placeholder="New step" onkeydown="if(event.key===\'Enter\')pzStepAdd(' + i + ')"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzStepAdd(' + i + ')">Add</button></div>';
 }
-function wsSideHtml(r, t, sch, total) {
-  var checks = wsChecks(r), okN = checks.filter(function (x) { return x[0]; }).length;
-  var profit = t.grand - t.sub, pct = t.grand > 0 ? Math.round(profit / t.grand * 100) : 0;
-  var days = sch && sch.workDays ? sch.workDays : 0;
-  return '<div class="ws-box"><div class="ws-ey">Ready to send</div><ul class="ws-chk">' + checks.map(function (x) {
-      return '<li><span class="ws-dot" style="background:' + (x[0] ? '#1f8a4c' : '#b86e00') + '">' + (x[0] ? '✓' : '!') + '</span><span>' + esc(x[1]) +
-        (!x[0] && x[2] ? ' <a href="#" onclick="wsAddNeed(\'' + x[2] + '\');return false">add</a>' : '') + '</span></li>';
-    }).join("") + '</ul></div>' +
-    '<div class="ws-box"><div class="ws-ey">Money (you only)</div>' +
-      '<div class="ws-row"><span>Labor cost</span><b>' + fmt(t.labor) + '</b></div>' +
-      '<div class="ws-row"><span>Material cost</span><b>' + fmt(t.mat) + '</b></div>' +
-      '<div class="ws-row"><span>Profit</span><b>' + fmt(profit) + ' (' + pct + '%)</b></div>' +
-      (days ? '<div class="ws-row"><span>Profit per work day</span><b>' + fmt(profit / days) + '</b></div>' : '') +
-      (Math.abs(total - t.grand) >= 0.01 ? '<div class="v4-hint" style="margin-top:6px">The customer sees ' + fmt(total) + ' (your view settings or a set total).</div>' : '') +
-    '</div>' +
-    '<div class="ws-box"><div class="ws-ey">Quick actions</div><div class="ws-qa">' +
-      '<button type="button" class="ws-btn ws-sm" onclick="askCheck()">Check before sending</button>' +
-      '<button type="button" class="ws-btn ws-sm" onclick="copyScopeLink()">Scope only (no prices)</button>' +
-      '<button type="button" class="ws-btn ws-sm" onclick="downloadEstimatePdf(\'customer\')">Customer PDF</button>' +
-      '<button type="button" class="ws-btn ws-sm" onclick="downloadEstimatePdf(\'internal\')">Internal PDF</button>' +
-      '<button type="button" class="ws-btn ws-sm" onclick="var a=document.querySelector(\'#edit-card .ask-panel\');if(a)a.scrollIntoView({behavior:\'smooth\',block:\'center\'})">AI chat</button>' +
-      '<button type="button" class="ws-btn ws-sm" onclick="openSetTotalModal()">Set total to a number</button>' +
-      (r && !r.parentRef ? '<button type="button" class="ws-btn ws-sm" onclick="addonCreate()">Add additional work</button>' : '') +
-    '</div></div>';
+function pzListHtml(i, key, items) {
+  return '<ul class="pz-list">' + items.map(function (x, j) { return '<li>' + esc(String(x)) + ' <button type="button" class="pz-x" onclick="pzItemDel(' + i + ',\'' + key + '\',' + j + ')">✕</button></li>'; }).join("") + '</ul>' +
+    '<div class="pz-edl"><input id="pz-li' + i + key + '" placeholder="Add line" onkeydown="if(event.key===\'Enter\')pzItemAdd(' + i + ',\'' + key + '\')"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzItemAdd(' + i + ',\'' + key + '\')">Add</button><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzRewrite(' + i + ',\'' + key + '\')">↻ AI rewrite</button></div>';
 }
-/* Refresh the head, the side, the timeline bar and the payment table from
-   what is on screen. Cheap: it writes text, never an input he is typing in. */
-function wsRefresh() {
-  var r = typeof currentRecord !== "undefined" ? currentRecord : null;
-  if (!r || !document.getElementById("ws-head")) return;
-  var e = r.estimate || {};
-  var t = calcTotal(e), total = wsCustomerTotal(r);
-  var n = function (id) { var el = document.getElementById(id); var v = el ? el.value.trim() : ""; return v === "" ? undefined : Number(v); };
-  var probe = Object.assign({}, e, { scheduleEdit: { crew: n("f-crew"), dailyHours: n("f-dayhours"), workDays: n("f-workdays"), waitDays: n("f-waitdays") } });
-  var sch = wsScheduleOf(probe);
-  var profit = t.grand - t.sub, pct = t.grand > 0 ? Math.round(profit / t.grand * 100) : 0;
+/* Numbers only: the head, the side, the timeline bar, the payment rows. */
+function pzRefresh() {
+  var r = currentRecord; if (!r || !document.getElementById("pz-main")) return;
+  var e = pzEst(), t = calcTotal(e), tot = pzTotal(), pro = t.grand - t.sub, pct = t.grand > 0 ? Math.round(pro / t.grand * 100) : 0;
+  var sch = pzScheduleOf(e), wd = sch ? sch.workDays : 0;
   var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
-  set("ws-tot", fmt(total));
-  set("ws-sub", "Cost " + fmt(t.sub) + " · Profit " + fmt(profit) + " (" + pct + "%)" + (sch ? " · " + sch.workDays + " work day" + (sch.workDays === 1 ? "" : "s") : ""));
-  var checks = wsChecks(r), okN = checks.filter(function (x) { return x[0]; }).length;
-  var pill = document.getElementById("ws-ready");
-  if (pill) { pill.textContent = "Ready " + okN + "/" + checks.length; pill.className = "ws-pill " + (okN === checks.length ? "ok" : "wa"); }
-  var side = document.getElementById("ws-side");
-  if (side && !side.contains(document.activeElement)) side.innerHTML = wsSideHtml(r, t, sch, total);
+  set("pz-tot", pzF(tot));
+  set("pz-sub", "Cost " + pzF(t.sub) + " · Profit " + pzF(pro) + " (" + pct + "%)" + (wd ? " · " + wd + " work days" : ""));
+  set("pz-mlab", pzF(t.labor)); set("pz-mmat", pzF(t.mat)); set("pz-mpro", pzF(pro)); set("pz-mday", wd ? pzF(pro / wd) : "—");
+  var mai = document.getElementById("pz-mai");
+  if (mai) { var low = wd && pro / wd < 400; mai.style.display = low ? "" : "none"; mai.textContent = low ? "Profit per crew day is low. Raise markup or check hours." : ""; }
+  var C = pzChecks(), okN = C.filter(function (x) { return x[0]; }).length;
+  var chk = document.getElementById("pz-chk");
+  if (chk) chk.innerHTML = C.map(function (x) {
+    return '<li><span class="pz-dot" style="background:' + (x[0] ? '#1f8a4c' : '#b86e00') + '">' + (x[0] ? '✓' : '!') + '</span><span>' + esc(x[1]) + (!x[0] && x[2] ? ' <a href="#" onclick="pzFix(\'' + x[2] + '\');return false">add</a>' : '') + '</span></li>';
+  }).join("");
+  var pill = document.getElementById("pz-ready");
+  var hp = document.getElementById("pz-hready");
+  if (hp) { hp.textContent = "Ready " + okN + "/" + C.length; hp.className = "pz-pill " + (okN === C.length ? "pz-ok" : "pz-wa"); }
+  var prog = document.getElementById("pz-prog");
+  if (prog) prog.innerHTML = ["Request", "Scope & Price", "Timeline", "Terms", "Review & Send"].map(function (x, k) {
+    return '<button type="button" class="' + (k < 4 && okN >= k * 2 ? 'done' : '') + ' ' + (k === 4 ? 'on' : '') + '" onclick="pzGo(' + k + ')">' + (k + 1) + ' ' + esc(x) + '</button>';
+  }).join("");
   /* timeline */
-  var tl = document.getElementById("ws-tl"), tx = document.getElementById("ws-tl-txt");
+  var tl = document.getElementById("pz-tl"), tx = document.getElementById("pz-tltxt");
   if (tl && tx) {
-    if (!sch) { tl.innerHTML = ""; tx.textContent = "Add labor lines, or type the working days, and the timeline is counted."; }
+    if (!sch) { tl.innerHTML = ""; tx.textContent = "Add labor lines and the timeline is counted from their hours."; }
     else {
       var cols = ["#5d6878", "#18305a", "#1f8a4c", "#7a5a12", "#2c5aa0"], segs = [];
       (sch.sections || []).forEach(function (x, i) { var share = sch.laborHours > 0 ? x.hours / sch.laborHours * sch.workDays : 0; if (share > 0) segs.push('<div style="flex:' + share + ';background:' + cols[i % 5] + '">' + esc(x.name) + '</div>'); });
-      if (!segs.length) segs.push('<div style="flex:' + sch.workDays + ';background:#18305a">Work</div>');
-      if (sch.waitDays > 0) segs.push('<div style="flex:' + sch.waitDays + ';background:#c9a24a;color:#1b1404">Drying</div>');
+      if (sch.waitDays > 0) segs.splice(Math.min(1, segs.length), 0, '<div style="flex:' + sch.waitDays + ';background:#c9a24a;color:#1b1404">cure</div>');
       tl.innerHTML = segs.join("");
-      var st = document.getElementById("f-start"), fin = st ? wsFinish(st.value, sch.totalDays) : null;
-      tx.textContent = (sch.laborHours ? sch.laborHours + " labor hours ÷ " + sch.crew + " " + (sch.crew === 1 ? "person" : "people") + " × " + sch.dailyHours + " h = " : "") +
-        sch.workDays + " work day" + (sch.workDays === 1 ? "" : "s") + (sch.waitDays > 0 ? " + " + sch.waitDays + " drying day" + (sch.waitDays === 1 ? "" : "s") : "") +
-        (fin ? ". Start " + wsDay(new Date(st.value + "T12:00:00")) + " → finish about " + wsDay(fin) + " (Mon–Fri)." : ".");
+      var ed = e.scheduleEdit || {}, fin = pzFinish(ed.start, sch.totalDays);
+      tx.textContent = Math.round(sch.laborHours) + " labor hours ÷ " + sch.crew + " people × " + sch.dailyHours + " h = " + sch.workDays + " work days + " + sch.waitDays + " cure day(s)." +
+        (fin ? " Start " + pzDay(new Date(ed.start + "T12:00:00")) + " → finish about " + pzDay(fin) + "." : "");
     }
   }
-  /* payment */
-  var pay = document.getElementById("ws-pay");
-  if (pay) {
-    var plan = wsPayPlan(total, r);
-    pay.innerHTML = plan.map(function (p) { return '<tr><td>' + esc(p.label) + '</td><td class="n">' + p.pct + '%</td><td class="n"><b>' + fmt(p.amount) + '</b></td></tr>'; }).join("");
-    set("ws-pay-src", plan.length && plan[0].contract ? "from this job's contract" : "your contract terms");
-  }
-  var mk = document.getElementById("ws-mk"), box = document.getElementById("f-markup");
-  if (mk && box && document.activeElement !== mk) { mk.value = box.value; set("ws-mk-l", box.value + "%"); }
+  var pay = document.getElementById("pz-pay");
+  if (pay) pay.innerHTML = pzPayPlan(tot, pzTerms().payment).map(function (p) { return '<tr><td>' + esc(p.label) + '</td><td class="n">' + p.pct + '%</td><td class="n"><b>' + pzF(p.amount) + '</b></td></tr>'; }).join("");
 }
-/* Last wrapper on renderEdit: put the panels other parts of the page append
-   (contract, follow-up emails) into their numbered sections, then fill the
-   head and the side. */
-(function () {
-  if (typeof renderEdit !== "function") return;
-  var _orig = renderEdit;
-  renderEdit = function () {
-    var out = _orig.apply(this, arguments);
-    try {
-      var card = document.getElementById("edit-card");
-      var terms = document.getElementById("ws-terms");
-      var totals = card && card.querySelector(".totals-box");
-      var ct = document.getElementById("sbc-contract-panel");
-      if (ct && totals && totals.parentNode) totals.parentNode.insertBefore(ct, totals.nextSibling);
-      var fu = document.getElementById("fu-box"), acts = card && card.querySelector(".modal-actions");
-      if (fu && acts && acts.parentNode) acts.parentNode.insertBefore(fu, acts);
-      var foot = document.getElementById("ws-foot");
-      if (foot && card) card.appendChild(foot);
-      wsRefresh();
-    } catch (e) { console.error("layout", e); }
-    return out;
+function pzGo(k) {
+  var id = ["pz-s1", "pz-s2", "pz-s3", "pz-s4", "pz-ready"][k];
+  var el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ── edits ── everything writes to currentRecord.estimate, then saves itself */
+function pzSyncOld() {
+  /* The hidden tools keep the same lines and markup, so nothing there can
+     write an old copy back over an edit made here. */
+  try { var e = pzEst(); renderLines("labor", e.labor || []); renderLines("materials", e.materials || []); attachLineListeners(); } catch (x) {}
+  var m = document.getElementById("f-markup"); if (m) m.value = pzMk();
+}
+function pzLine(kind, gi, field, val) {
+  var l = (pzEst()[kind] || [])[gi]; if (!l) return;
+  l[field] = (field === "qty" || field === "rate") ? (parseFloat(val) || 0) : val;
+  if (field === "qty" || field === "rate") { var td = document.querySelector('[data-pzt="' + kind + gi + '"]'); if (td) td.textContent = pzF((Number(l.qty) || 0) * (Number(l.rate) || 0)); }
+  pzSyncOld(); pzRefresh();
+}
+function pzAddLine(i, kind) {
+  var s = pzSvcs()[i]; if (!s) return;
+  var e = pzEst(); e[kind] = e[kind] || [];
+  e[kind].push(kind === "labor" ? { item: "New labor", qty: 1, unit: "hrs", rate: 90, section: String(s.name).trim() } : { item: "New material", qty: 1, unit: "ea", rate: 50, section: String(s.name).trim() });
+  pzSyncOld(); pzRender(); pzDirty();
+}
+function pzDelLine(kind, gi) { var e = pzEst(); (e[kind] || []).splice(gi, 1); pzSyncOld(); pzRender(); pzDirty(); }
+function pzDelParked(pi) {
+  var e = pzEst(), p = (e.parkedLines || [])[pi]; if (!p) return;
+  e.parkedLines.splice(pi, 1);
+  pzSvcs().forEach(function (s) { if (scopeNorm(s.name) === scopeNorm(p.service)) s.supplied = (s.supplied || []).filter(function (x) { return scopeNorm(x) !== scopeNorm(p.ownerText); }); });
+  PZ.scopeTouched = true; pzRender(); pzDirty();
+}
+/* Customer supplies: the material comes off the price, the labor stays, and
+   the same line comes back on untick (it waits on parkedLines). */
+function pzSupply(i, gi, on) {
+  if (!on) return;
+  var e = pzEst(), s = pzSvcs()[i], l = (e.materials || [])[gi];
+  if (!s || !l) return;
+  var nm = String(s.name || "").trim(), item = String(l.item || "").trim();
+  e.parkedLines = e.parkedLines || [];
+  e.parkedLines.push({ kind: "materials", ownerText: item, service: nm, idx: gi, line: l, custSupplied: true });
+  e.materials.splice(gi, 1);
+  s.supplied = s.supplied || [];
+  if (!s.supplied.some(function (x) { return scopeNorm(x) === scopeNorm(item); })) s.supplied.push(item);
+  PZ.scopeTouched = true; pzSyncOld(); pzRender(); pzDirty();
+}
+function pzUnsupply(i, pi) {
+  var e = pzEst(), s = pzSvcs()[i], p = (e.parkedLines || [])[pi];
+  if (!s || !p) return;
+  var item = String(p.ownerText || "");
+  scopeUnparkFor(String(s.name || "").trim(), item);
+  s.supplied = (s.supplied || []).filter(function (x) { return scopeNorm(x) !== scopeNorm(item); });
+  PZ.scopeTouched = true; pzSyncOld(); pzRender(); pzDirty();
+}
+function pzDropSupplied(i, j) { var s = pzSvcs()[i]; if (!s) return; (s.supplied || []).splice(j, 1); PZ.scopeTouched = true; pzRender(); pzDirty(); }
+function pzParkedStatus(pi, v) { var p = (pzEst().parkedLines || [])[pi]; if (p && p.line) { p.line.finishStatus = v; pzDirty(); } }
+function pzSpec(gi) {
+  var l = (pzEst().materials || [])[gi]; if (!l) return;
+  var v = prompt("Brand / model / color for " + l.item + ":", l.spec || "");
+  if (v === null) return; l.spec = v.trim(); pzRender(); pzDirty();
+}
+function pzPhoto(gi) {
+  var inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
+  inp.onchange = function () {
+    var f = inp.files && inp.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function (ev) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.width, h = img.height; if (w > 600) { h = Math.round(h * 600 / w); w = 600; }
+        var cv = document.createElement("canvas"); cv.width = w; cv.height = h; cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        var l = (pzEst().materials || [])[gi]; if (l) { l.photo = cv.toDataURL("image/jpeg", 0.72); pzRender(); pzDirty(); }
+      };
+      img.src = ev.target.result;
+    };
+    rd.readAsDataURL(f);
   };
-  /* The step you are reading lights up in the bar, as in the Perplexity layout. */
-  var modal = document.getElementById("edit-modal");
-  if (modal) modal.addEventListener("scroll", function () {
-    var bars = document.querySelectorAll("#edit-card .step-bar"), btns = document.querySelectorAll("#ws-head .ws-prog button");
-    if (!bars.length || !btns.length) return;
-    var cur = 0;
-    bars.forEach(function (b, i) { if (b.getBoundingClientRect().top < 200) cur = i; });
-    if (modal.scrollTop + modal.clientHeight >= modal.scrollHeight - 4) cur = bars.length - 1;
-    btns.forEach(function (b, i) { b.classList.toggle("on", i === cur); });
-  }, { passive: true });
+  inp.click();
+}
+function pzToggleSvc(i) { var s = pzSvcs()[i]; if (!s) return; var nm = String(s.name).trim(); PZ.open[nm] = PZ.open[nm] === false; pzRender(); }
+function pzAddService() {
+  var name = prompt("Service name (e.g. Bathroom, Flooring, Painting):", "");
+  if (!name || !name.trim()) return;
+  scopeDraft().services.push({ name: name.trim(), manual: true, included: [], supplied: [], excluded: [] });
+  PZ.scopeTouched = true; pzRender(); pzDirty();
+}
+function pzItemAdd(i, key) {
+  var inp = document.getElementById("pz-li" + i + key), s = pzSvcs()[i];
+  if (!inp || !s || !inp.value.trim()) return;
+  (s[key] = s[key] || []).push(inp.value.trim());
+  PZ.scopeTouched = true; pzRender(); pzDirty();
+}
+function pzItemDel(i, key, j) {
+  var s = pzSvcs()[i]; if (!s) return;
+  var txt = (s[key] || [])[j];
+  (s[key] || []).splice(j, 1);
+  /* An exclusion that held money back gives it back (the parked-lines rule). */
+  if (key === "excluded") scopeUnparkFor(String(s.name || "").trim(), txt);
+  PZ.scopeTouched = true; pzSyncOld(); pzRender(); pzDirty();
+}
+function pzStepAdd(i) {
+  var inp = document.getElementById("pz-st" + i), s = pzSvcs()[i];
+  if (!inp || !s || !inp.value.trim()) return;
+  var e = pzEst(); e.workSteps = e.workSteps || [];
+  e.workSteps.push({ title: inp.value.trim(), text: "", service: String(s.name).trim() });
+  if (e.docVersion !== 4 && (e.overview || e.workSteps.length)) e.docVersion = 4;
+  pzRender(); pzDirty();
+}
+function pzStepDel(idx) { var e = pzEst(); (e.workSteps || []).splice(idx, 1); pzRender(); pzDirty(); }
+function pzNeedAdd() {
+  var inp = document.getElementById("pz-need"); if (!inp || !inp.value.trim()) return;
+  var e = pzEst(); (e.customerNeeds = e.customerNeeds || []).push(inp.value.trim()); pzRender(); pzDirty();
+}
+function pzNeedDel(j) { var e = pzEst(); (e.customerNeeds || []).splice(j, 1); pzRender(); pzDirty(); }
+function pzFix(kind) {
+  var e = pzEst(); e.customerNeeds = e.customerNeeds || [];
+  if (kind === "coi") e.customerNeeds.push("Building approval and our insurance certificate (COI) request");
+  else {
+    var st = (e.scheduleEdit || {}).start, d = st ? new Date(st + "T12:00:00") : null; if (d) d.setDate(d.getDate() - 1);
+    var sup = []; pzSvcs().forEach(function (s) { sup = sup.concat(s.supplied || []); });
+    e.customerNeeds.push((sup[0] ? String(sup[0]).split(/[,(]/)[0].trim() : "Your items") + " on site " + (d ? "by " + pzDay(d) : "before we start"));
+  }
+  pzRender(); pzDirty();
+}
+function pzSched(k, v) {
+  var e = pzEst(); e.scheduleEdit = e.scheduleEdit && typeof e.scheduleEdit === "object" ? e.scheduleEdit : {};
+  if (k === "start") { if (/^\d{4}-\d{2}-\d{2}$/.test(v)) e.scheduleEdit.start = v; else delete e.scheduleEdit.start; }
+  else e.scheduleEdit[k] = Number(v);
+  pzRefresh(); pzDirty();
+}
+function pzMarkup(v) { pzEst().markupPct = Number(v) || 0; var l = document.getElementById("pz-mkl"); if (l) l.textContent = v + "%"; pzSyncOld(); pzRefresh(); }
+function pzTerm(k, v) { pzTerms()[k] = v; pzRefresh(); pzDirty(); }
+
+/* ── save: every change saves itself (the customer keeps the version you sent until you Send) ── */
+function pzDirty() {
+  clearTimeout(PZ.saveT);
+  var s = document.getElementById("pz-saved"); if (s) s.textContent = "Saving…";
+  PZ.saveT = setTimeout(pzSaveNow, 1200);
+}
+function pzPrepare() {
+  var e = pzEst();
+  if (PZ.scopeTouched || e.customerScopePublished === true) {
+    var clean = scopeCleanCopy();
+    e.manualCustomerScopeDraft = clean;
+    e.publishedCustomerScope = clean;
+    e.customerScopePublished = true;
+  }
+  try { scopeStampBreakdown(); } catch (x) {}
+  try { var sch = pzScheduleOf(e); if (sch) e.schedule = sch; } catch (x) {}
+}
+function pzGather() { pzPrepare(); return JSON.parse(JSON.stringify(pzEst())); }
+async function pzSaveNow() {
+  if (!currentRecord || PZ.saving) { if (PZ.saving) pzDirty(); return; }
+  PZ.saving = true;
+  var s = document.getElementById("pz-saved");
+  try {
+    var body = Object.assign({ ref: currentRecord.ref, estimate: pzGather(), status: currentRecord.status === "new" ? "drafted" : currentRecord.status },
+      currentRecord.customerFinalTotal != null ? { customerFinalTotal: currentRecord.customerFinalTotal } : {});
+    var r = await sbcFetch("/.netlify/functions/save-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    if (currentRecord.status === "new") currentRecord.status = "drafted";
+    if (s) s.textContent = "Saved ✓";
+  } catch (err) {
+    if (s) s.textContent = "Not saved";
+    toast("Not saved: " + ((err && err.message) || "network") + ". Try again.", true);
+  } finally { PZ.saving = false; }
+}
+
+/* ── actions ── */
+function pzSend() { clearTimeout(PZ.saveT); pzPrepare(); sendToCustomer(); }
+function pzPreview() {
+  clearTimeout(PZ.saveT);
+  var est = pzGather();
+  var dr = document.getElementById("pz-prev");
+  dr.querySelector(".pz-pan").innerHTML = '<div style="padding:8px;text-align:right;height:52px"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzClose(\'pz-prev\')">Close ✕</button></div><iframe title="Customer view" src="/quote.html?ref=' + encodeURIComponent(currentRecord.ref) + '&preview=1"></iframe>';
+  dr.classList.add("on");
+  var frame = dr.querySelector("iframe");
+  var record = { ref: currentRecord.ref, status: currentRecord.status, customer: currentRecord.customer, request: currentRecord.request, estimate: est,
+    customerFinalTotal: currentRecord.customerFinalTotal, customerOptionSelections: currentRecord.customerOptionSelections, thread: currentRecord.thread,
+    contract: currentRecord.contract, includeContractForCustomer: (window.__sbcIncludeContract === true) };
+  var onMsg = function (ev) {
+    if (ev.origin !== location.origin || !ev.data || ev.data.type !== "sbc-preview-listening") return;
+    window.removeEventListener("message", onMsg);
+    frame.contentWindow.postMessage({ type: "sbc-preview-record", record: record }, location.origin);
+  };
+  window.addEventListener("message", onMsg);
+  pzSaveNow();
+}
+function pzClose(id) { var d = document.getElementById(id); if (d) d.classList.remove("on"); if (id === "pz-tools") pzRender(); }
+function pzTools(where) {
+  var d = document.getElementById("pz-tools"); if (!d) return;
+  d.classList.add("on");
+  var pan = d.querySelector(".pz-pan");
+  setTimeout(function () {
+    var target = where === "ask" ? document.querySelector("#pz-tools-body .ask-panel") : where === "cnv" ? document.getElementById("cnv-section") : null;
+    if (target) target.scrollIntoView({ block: "start" }); else if (pan) pan.scrollTop = 0;
+  }, 30);
+}
+function pzAskCustomer() {
+  var e = pzEst(), qs = e.clarificationQuestions || [];
+  var q0 = qs.length ? String(typeof qs[0] === "string" ? qs[0] : (qs[0] && (qs[0].question || qs[0].text)) || "") : "";
+  pzTools("cnv");
+  var box = document.getElementById("cnv-text"); if (box && q0) { box.value = q0; box.focus(); }
+}
+function pzRewrite(i, key) {
+  var s = pzSvcs()[i]; if (!s) return;
+  pzTools("ask");
+  var box = document.getElementById("ask-text");
+  if (box) { box.value = "Rewrite the " + (key === "included" ? "Included" : "Not included") + " lines of " + s.name + " in plain, clear customer language. Same meaning, same items, no prices."; if (typeof askSend === "function") askSend(); }
+}
+function pzGenerate() {
+  if (typeof generateAI !== "function") return;
+  generateAI();
+  clearInterval(PZ.genT);
+  PZ.genT = setInterval(function () {
+    var b = document.getElementById("gen-btn"), out = document.getElementById("pz-gen");
+    if (!out) { clearInterval(PZ.genT); return; }
+    out.textContent = b ? b.textContent : "";
+  }, 700);
+}
+async function pzBook() {
+  try { var r = await sbcFetch("/.netlify/functions/price-book"); if (r.ok) { PZ.book = await r.json(); pzRender(); } } catch (e) {}
+}
+function pzPick(names, what) {
+  if (names.length === 1) return 0;
+  var a = prompt(what + "\n\n" + names.map(function (n, k) { return (k + 1) + ". " + n; }).join("\n") + "\n\nType the number:", "1");
+  var k = parseInt(a, 10) - 1;
+  return k >= 0 && k < names.length ? k : -1;
+}
+async function pzSaveTemplate() {
+  var svcs = pzSvcs(); if (!svcs.length) { toast("Add a service first", true); return; }
+  var i = pzPick(svcs.map(function (s) { return s.name; }), "Which service do you want to save as a template?"); if (i < 0) return;
+  var s = svcs[i], nm = String(s.name).trim();
+  var name = prompt("Template name:", nm); if (!name || !name.trim()) return;
+  var t = { name: name.trim(), lines: pzLinesOf(nm).map(function (x) { return { kind: x.kind, item: x.l.item, qty: x.l.qty, unit: x.l.unit, rate: x.l.rate }; }),
+    included: s.included || [], excluded: s.excluded || [], steps: pzStepsOf(nm, i === 0).map(function (x) { return { title: x.st.title, text: x.st.text }; }) };
+  try {
+    var r = await sbcFetch("/.netlify/functions/price-book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ template: t }) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    PZ.book = await r.json(); pzRender(); toast("Saved as template: " + t.name);
+  } catch (e) { toast("Template not saved: " + e.message, true); }
+}
+function pzLoadTemplate(ti) {
+  var t = PZ.book && PZ.book.templates && PZ.book.templates[ti]; if (!t) return;
+  var e = pzEst(), names = pzSvcs().map(function (s) { return String(s.name).toLowerCase(); });
+  var nm = t.name, n = 2; while (names.indexOf(nm.toLowerCase()) !== -1) nm = t.name + " " + (n++);
+  (t.lines || []).forEach(function (l) { var k = l.kind === "materials" ? "materials" : "labor"; e[k] = e[k] || []; e[k].push({ item: l.item, qty: l.qty, unit: l.unit, rate: l.rate, section: nm }); });
+  scopeDraft().services.push({ name: nm, manual: true, included: (t.included || []).slice(), supplied: [], excluded: (t.excluded || []).slice() });
+  e.workSteps = e.workSteps || []; (t.steps || []).forEach(function (st) { e.workSteps.push({ title: st.title, text: st.text || "", service: nm }); });
+  e.priceBookServices = (e.priceBookServices || []).concat([nm]);
+  PZ.scopeTouched = true; pzSyncOld(); pzRender(); pzDirty(); toast("Template added: " + t.name);
+}
+async function pzLibrary(i) {
+  var s = pzSvcs()[i]; if (!s) return;
+  if (!PZ.book) await pzBook();
+  var prods = (PZ.book && PZ.book.products) || [];
+  var names = prods.map(function (p) { return p.name + (p.spec ? " (" + p.spec + ")" : "") + " $" + p.rate; }).concat(["+ New product (saved to your library)"]);
+  var k = pzPick(names, "Your product library:"); if (k < 0) return;
+  var p;
+  if (k === prods.length) {
+    var nm = prompt("Product name (e.g. Toilet, elongated 2-piece):", ""); if (!nm || !nm.trim()) return;
+    var spec = prompt("Brand / model / color:", "") || "";
+    var rate = parseFloat(prompt("Your price for one ($):", "") || "0") || 0;
+    p = { name: nm.trim(), spec: spec.trim(), unit: "ea", rate: rate };
+    try { var r = await sbcFetch("/.netlify/functions/price-book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product: p }) }); if (r.ok) PZ.book = await r.json(); } catch (e) {}
+  } else p = prods[k];
+  var e = pzEst(); e.materials = e.materials || [];
+  e.materials.push({ item: p.name, spec: p.spec || "", qty: 1, unit: p.unit || "ea", rate: Number(p.rate) || 0, section: String(s.name).trim(), finish: true, photo: p.photo || undefined });
+  pzSyncOld(); pzRender(); pzDirty();
+}
+async function pzDuplicate() {
+  var c = (currentRecord && currentRecord.customer) || {};
+  var name = prompt("Copy this estimate for which customer? Name:", c.name || ""); if (!name || !name.trim()) return;
+  var email = prompt("Their email:", name.trim() === c.name ? c.email || "" : ""); if (!email || !email.trim()) return;
+  try {
+    var r = await sbcFetch("/.netlify/functions/create-estimate", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customer: { name: name.trim(), email: email.trim(), phone: name.trim() === c.name ? c.phone : "", address: name.trim() === c.name ? c.address : "" }, service: (currentRecord.request || {}).service, description: (currentRecord.request || {}).description, projectTitle: pzEst().projectTitle }) });
+    var j = await r.json(); if (!r.ok || !j.ref) throw new Error(j.error || "HTTP " + r.status);
+    var copy = pzGather();
+    ["contract", "sentVersion", "sentVersionInfo", "customerResponse", "acceptedAt", "approvedAt"].forEach(function (k) { delete copy[k]; });
+    var r2 = await sbcFetch("/.netlify/functions/save-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: j.ref, estimate: copy, status: "drafted" }) });
+    if (!r2.ok) throw new Error("copy saved without its lines (HTTP " + r2.status + ")");
+    toast("Copied as a new draft: " + j.ref);
+    try { await loadEstimates(); } catch (x) {}
+    openEdit(j.ref);
+  } catch (err) { toast("Not copied: " + err.message, true); }
+}
+
+/* ── mount: the old screen becomes the hidden "More tools", the design is the screen ── */
+function pzMount() {
+  var card = document.getElementById("edit-card"), modal = document.getElementById("edit-modal");
+  if (!card || !currentRecord) return;
+  var tools = document.createElement("div"); tools.id = "pz-tools-body";
+  while (card.firstChild) tools.appendChild(card.firstChild);
+  modal.classList.add("pz-on"); card.classList.add("pz-card");
+  var c = currentRecord.customer || {}, q = currentRecord.request || {};
+  var who = [currentRecord.ref, c.name, c.address, q.propertyType].filter(function (x) { return x && String(x).trim(); }).map(function (x) { return esc(String(x).trim()); }).join(" · ");
+  card.innerHTML = '<div class="pz-top"><div class="pz-in"><div><div class="pz-who">' + who + '<span class="pz-saved" id="pz-saved"></span></div><div class="pz-tot" id="pz-tot">$0</div><div class="pz-sub" id="pz-sub"></div></div>' +
+      '<div style="display:flex;gap:8px;align-items:center"><span class="pz-pill" id="pz-hready"></span><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzPreview()">Preview</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()">Send</button><button type="button" class="pz-close" title="Close" onclick="closeEdit()">×</button></div></div>' +
+      '<div class="pz-prog" id="pz-prog"></div></div>' +
+    '<div class="pz-wrap"><main id="pz-main"></main><aside id="pz-side"></aside></div>' +
+    '<div class="pz-foot"><button type="button" class="pz-btn pz-ghost" onclick="pzPreview()">Preview customer view</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()">Send estimate</button></div>' +
+    '<div class="pz-drawer" id="pz-prev" onclick="if(event.target===this)pzClose(\'pz-prev\')"><div class="pz-pan"></div></div>' +
+    '<div class="pz-drawer wide" id="pz-tools" onclick="if(event.target===this)pzClose(\'pz-tools\')"><div class="pz-pan"><div style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e3e6ec;position:sticky;top:0;background:#fff;z-index:2"><b>More tools</b><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzClose(\'pz-tools\')">Close ✕</button></div></div></div>';
+  card.querySelector("#pz-tools .pz-pan").appendChild(tools);
+  pzRender();
+  if (!PZ.book) pzBook();
+}
+(function () {
+  if (typeof renderEdit === "function") {
+    var _orig = renderEdit;
+    renderEdit = function () {
+      var out = _orig.apply(this, arguments);
+      try { pzMount(); } catch (e) { console.error("estimate screen", e); }
+      return out;
+    };
+  }
+  /* One estimate object: in this screen the save reads it straight, never an old box. */
+  if (typeof gatherForm === "function") {
+    var _g = gatherForm;
+    gatherForm = function () { return document.getElementById("pz-main") ? pzGather() : _g.apply(this, arguments); };
+  }
   if (typeof recalc === "function") {
     var _rc = recalc;
-    recalc = function () { var o = _rc.apply(this, arguments); try { wsRefresh(); } catch (e) {} return o; };
+    recalc = function () { var o = _rc.apply(this, arguments); try { pzRefresh(); } catch (e) {} return o; };
   }
 })();
 </script>
