@@ -28,9 +28,19 @@ function issuedAt(record) {
   return Number.isFinite(t) ? new Date(t) : null;
 }
 
+/* The days the price holds: his choice in the dashboard's Terms (14, 30 or
+   60), read from the version the customer was sent; otherwise 30. */
+function validDays(record) {
+  const r = record || {};
+  const sent = r.sentVersion && typeof r.sentVersion === "object" && r.sentVersion.estimate ? r.sentVersion.estimate : null;
+  const t = ((sent || r.estimate || {}).terms) || {};
+  const d = Number(t.validDays);
+  return [14, 30, 60].indexOf(d) !== -1 ? d : VALID_DAYS;
+}
+
 function validUntil(record) {
   const d = issuedAt(record);
-  return d ? new Date(d.getTime() + VALID_DAYS * DAY_MS) : null;
+  return d ? new Date(d.getTime() + validDays(record) * DAY_MS) : null;
 }
 
 function isApproved(record) {
@@ -50,4 +60,4 @@ function expiredMessage(record) {
   return "This estimate expired" + (day ? " on " + day : "") + ". Please ask us for an updated estimate - we will send you a new one.";
 }
 
-module.exports = { VALID_DAYS, issuedAt, validUntil, isExpired, isApproved, expiredMessage };
+module.exports = { VALID_DAYS, validDays, issuedAt, validUntil, isExpired, isApproved, expiredMessage };

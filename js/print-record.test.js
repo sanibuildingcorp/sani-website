@@ -94,7 +94,7 @@ console.log('\nan in-app browser (the Gmail app) ignores print() silently - the 
   ok('...saying to tap Allow if Safari asked, or open the page in Safari or Chrome and use Share → Print / Save as PDF', /tap <b>Allow<\/b>/.test(inserted) && /Open in browser/.test(inserted) && /Share → Print/.test(inserted) && /Save as PDF/.test(inserted));
   ok('a print event arriving late (Allow tapped) takes the note away', /const seen=\(\)=>\{printSeen=true;const h=document\.getElementById\('printhelp'\);if\(h&&h\.parentNode\)h\.parentNode\.removeChild\(h\)\}/.test(Q));
   ok('...with a button to copy the page link to paste there', /onclick="copyPageLink\(this\)"/.test(inserted) && /Copy page link/.test(inserted));
-  ok('both print buttons hand themselves over, so the note lands next to the one pressed', (Q.match(/onclick="printQuote\(this\)"/g) || []).length === 2);
+  ok('every print button hands itself over, so the note lands next to the one pressed (three since the Perplexity page)', (Q.match(/onclick="printQuote\(this\)"/g) || []).length === 3 && !/printQuote\(\)/.test(Q));
 }
 ok('the functions are reachable from the onclick', /window\.printQuote=printQuote;window\.copyPageLink=copyPageLink;/.test(Q));
 

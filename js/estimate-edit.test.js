@@ -45,9 +45,9 @@ vm.runInContext(Q.slice(Q.indexOf("const SCH_HOUR="), Q.indexOf("function dayWor
 const cases = [withEdit({}), withEdit({ crew: 1 }), withEdit({ dailyHours: 10 }), withEdit({ workDays: 4, waitDays: 0 }), { labor: [], scheduleEdit: { workDays: 2, waitDays: 1 } }];
 ok("quote.html counts every edit the same way as the server", cases.every((e) => JSON.stringify(vm.runInContext("scheduleOf(" + JSON.stringify(e) + ")", ctx)) === JSON.stringify(scheduleOf(e))));
 ok("the customer page shows typed days even where the prices were taken out", !!vm.runInContext("schOf(" + JSON.stringify({ labor: [], scheduleEdit: { workDays: 2 } }) + ")", ctx));
-const card = Q.slice(Q.indexOf("function scheduleCard("), Q.indexOf("\n", Q.indexOf("function scheduleCard(")));
+const card = Q.slice(Q.indexOf("function renderPZ("), Q.indexOf("window.qzOpen=", Q.indexOf("function renderPZ(")));
 ok("drying typed with no drying step named reads \"for drying and curing\", never \"while .\"", /'for drying and curing'/.test(card));
-ok("a 1-day job with drying days typed is not shown as \"1 day\"", /function schSmall\(sch\)\{return sch\.workDays<=1&&!\(sch\.waitDays>0\)\}/.test(Q) && /const small=schSmall\(sch\)/.test(card));
+ok("a 1-day job with drying days typed is not shown as \"1 day\"", /function qzDays\(sch\)\{if\(sch\.workDays<=1&&!\(sch\.waitDays>0\)\)return'1 day'/.test(Q));
 
 console.log("\n2. His numbers survive a regenerate\n");
 /* The dashboard boxes themselves are the Perplexity estimate screen now

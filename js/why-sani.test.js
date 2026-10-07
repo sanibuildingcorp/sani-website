@@ -18,7 +18,7 @@ function ext(name) { const s = Q.search(new RegExp('function ' + name + '\\s*\\(
 const E = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const ctx = { E, encodeURIComponent, Date, Math, isFinite, ref: 'SBC-260806-YX1G', rec: { sentAt: '2026-09-24T01:51:00Z' }, messageBox: () => '<MSGBOX>' };
 vm.createContext(ctx);
-vm.runInContext('const VALID_DAYS=30;const WARRANTY_YEARS=3;' + ['issuedAt', 'validUntil', 'dayText', 'printRow', 'whyHtml', 'actionHtml'].map(ext).join('\n'), ctx);
+vm.runInContext('const VALID_DAYS=30;const WARRANTY_YEARS=3;' + ['issuedAt', 'validDays', 'validUntil', 'dayText', 'printRow', 'whyHtml', 'actionHtml'].map(ext).join('\n'), ctx);
 
 console.log('\n1. The box, right where they decide\n');
 {

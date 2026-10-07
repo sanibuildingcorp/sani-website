@@ -308,6 +308,65 @@ button{border-radius:4px}
   .top,.wrap{border:0;box-shadow:none;margin:0;padding-left:0;padding-right:0}
   .pr.total,.head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+/* ═══════════ THE CUSTOMER PAGE — PERPLEXITY'S DESIGN, 1:1 (new estimates) ═══════════
+   "Rebuild exactly one in one ... customer page 1:1". Colours, sizes, spacing
+   and wording from Perplexity's customer-page-layout.html, every class q-
+   prefixed and scoped to body.pzq, so older estimates keep their page. */
+body.pzq{margin:0;background:#f3f4f7;color:#16202e;font:16px/1.55 -apple-system,"Segoe UI",Inter,Arial,sans-serif}
+body.pzq .top,body.pzq .footer{display:none}
+body.pzq #app{max-width:none;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+.pzq *{box-sizing:border-box}
+.pzq .qhero{background:#0f1f3a;color:#fff;padding:22px 18px 70px}
+.pzq .qin{max-width:760px;margin:0 auto}
+.pzq .qbrand{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#c8d0dd}.pzq .qbrand b{color:#c9a24a;font-size:17px;letter-spacing:.06em}
+.pzq .qhero h1{font-size:28px;line-height:1.2;margin:18px 0 6px;color:#fff;font-weight:700}.pzq .qhero p{margin:0;color:#c8d0dd;font-size:14px}
+.pzq .qmeta{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.pzq .qmeta span{background:#ffffff14;border-radius:999px;padding:4px 11px;font-size:12px}
+.pzq .qmain{max-width:760px;margin:-52px auto 0;padding:0 12px 110px}
+.pzq .qcard{background:#fff;border:1px solid #e3e6ec;border-radius:14px;padding:18px;margin-bottom:12px}
+.pzq .qey{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#5d6878;font-weight:700;margin-bottom:4px}
+.pzq h2.qh{font-size:19px;margin:0 0 10px;color:#0f1f3a;font-weight:700;letter-spacing:0}
+.pzq .qprice{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.pzq .qbig{font-size:38px;font-weight:800;line-height:1}.pzq .qmut{color:#5d6878;font-size:14px}
+.pzq .qsvc{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e3e6ec}.pzq .qsvc:last-child{border:0}
+.pzq .qphotos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}.pzq .qphotos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;cursor:zoom-in}
+.pzq .qsteps{list-style:none;margin:0;padding:0;counter-reset:qs}
+.pzq .qsteps li{position:relative;padding:0 0 18px 46px;border:0;font-size:16px;line-height:1.55;color:#16202e}.pzq .qsteps li:last-child{padding-bottom:0}
+.pzq .qsteps li:before{counter-increment:qs;content:counter(qs);position:absolute;left:0;top:0;width:32px;height:32px;border-radius:50%;background:#0f1f3a;color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px}
+.pzq .qsteps li:after{content:"";position:absolute;left:15px;top:34px;bottom:2px;width:2px;background:#e3e6ec}.pzq .qsteps li:last-child:after{display:none}
+.pzq .qsteps b{display:block}.pzq .qday{font-size:12px;font-weight:700;color:#c9a24a;text-transform:uppercase;letter-spacing:.05em}
+.pzq .qtl{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:10px 0 6px}.pzq .qtl div{color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;overflow:hidden;white-space:nowrap;min-width:0}
+.pzq .qlegend{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}.pzq .qlegend div{background:#f6f7fa;border-radius:8px;padding:8px 10px;font-size:13px}.pzq .qlegend b{display:block;font-size:17px}
+.pzq .qtwo{display:grid;grid-template-columns:1fr;gap:10px}@media(min-width:620px){.pzq .qtwo{grid-template-columns:1fr 1fr}}
+.pzq .qbox{border-radius:10px;padding:14px;border:1px solid #e3e6ec}.pzq .qbox.s{background:#f2f5fa}.pzq .qbox.c{background:#fbf6ea;border-color:#ecdcb4}
+.pzq .qbox h3{margin:0 0 6px;font-size:15px}
+.pzq ul.qck{list-style:none;padding:0;margin:0}
+.pzq ul.qck li{padding:5px 0 5px 24px;position:relative;font-size:15px;line-height:1.55;border:0;color:#16202e}
+.pzq ul.qck li:before{content:"✓";position:absolute;left:0;top:5px;color:#1f8a4c;font-weight:800}
+.pzq ul.qno li:before{content:"–";color:#b0392b}
+.pzq .qdue{display:inline-block;background:#c9a24a;color:#1b1404;font-size:11px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px}
+.pzq details.qd{border-top:1px solid #e3e6ec;padding:10px 0;margin:0}.pzq details.qd:first-of-type{border-top:0}
+.pzq details.qd summary{font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;font-size:16px;color:#16202e}
+.pzq details.qd summary::-webkit-details-marker{display:none}
+.pzq details.qd summary:after{content:"+";color:#5d6878}.pzq details.qd[open] summary:after{content:"–"}
+.pzq .qtag{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}.pzq .qt-ok{background:#e4f4ea;color:#1f8a4c}.pzq .qt-p{background:#fff3dc;color:#a35f00}
+.pzq table.qtab{width:100%;border-collapse:collapse}.pzq table.qtab td{padding:10px 0;border-bottom:1px solid #e3e6ec}.pzq table.qtab td.n{text-align:right;font-weight:700}.pzq table.qtab tr:last-child td{border:0}
+.pzq .qtrust{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:12px;color:#5d6878}.pzq .qtrust b{display:block;font-size:15px;color:#0f1f3a}
+.pzq .qbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e3e6ec;padding:10px 12px;box-shadow:0 -4px 14px #0001;z-index:20}
+.pzq .qbar .qin{display:flex;gap:8px;align-items:center}.pzq .qbar .qt{flex:1;font-size:12px;color:#5d6878}.pzq .qbar .qt b{display:block;font-size:20px;color:#16202e}
+.pzq .qbtn{border:0;border-radius:10px;padding:13px 18px;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit}.pzq .qgold{background:#c9a24a;color:#1b1404}.pzq .qghost{background:#fff;border:1px solid #e3e6ec;color:#16202e}
+.pzq .qmodal{position:fixed;inset:0;background:#0008;display:none;place-items:center;z-index:30;padding:14px}.pzq .qmodal.on{display:grid}.pzq .qmodal .qcard{max-width:440px;width:100%}
+.pzq .qmodal input[type=text]{width:100%;padding:11px;border:1px solid #e3e6ec;border-radius:8px;font:inherit;margin:6px 0}
+.pzq .qsig{height:90px;border:1px dashed #5d6878;border-radius:8px;display:grid;place-items:center;color:#5d6878;font-family:cursive;font-size:24px}
+.pzq .qcontact{display:flex;gap:8px;flex-wrap:wrap}.pzq .qcontact a{flex:1;text-align:center;text-decoration:none;color:#0f1f3a;border:1px solid #e3e6ec;border-radius:10px;padding:10px;font-weight:700;font-size:14px}
+.pzq .qpgrid{display:grid;gap:10px;grid-template-columns:1fr}@media(min-width:620px){.pzq .qpgrid{grid-template-columns:1fr 1fr}}
+.pzq .qpc{border:1px solid #e3e6ec;border-radius:12px;overflow:hidden;background:#fff;color:inherit;text-decoration:none;display:block}
+.pzq .qpimg{height:130px;display:grid;place-items:center;position:relative;background-size:cover;background-position:center}.pzq .qpimg span{font-size:44px}.pzq .qpimg em{position:absolute;bottom:6px;right:8px;font-size:10px;color:#0007;font-style:normal}
+.pzq .qpb{padding:10px 12px}.pzq .qrow2{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.pzq .qkv2{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13px;margin-top:6px}.pzq .qkv2 span:nth-child(odd){color:#5d6878}
+.pzq .qlnk{display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:#18305a;text-decoration:none}
+.pzq .qprint{background:none;border:0;padding:0;margin-top:10px;font-size:13px;color:#5d6878;text-decoration:underline;cursor:pointer;font-family:inherit}
+.pzq .qmain .panel{display:none}.pzq .qmain .panel.open{display:block}
+@media print{.pzq .qbar,.pzq .qmodal{display:none!important}.pzq .qmain{margin-top:0}}
 </style>
 </head>
 <body>
@@ -750,7 +809,10 @@ function statusCell(hasPrice,approved,e){
    Issued the day it was sent (today in a preview), valid thirty days. */
 const VALID_DAYS=30;
 function issuedAt(r){const t=Date.parse((r&&r.sentVersionInfo&&r.sentVersionInfo.at)||(r&&r.sentAt)||'');return isFinite(t)?new Date(t):new Date()}
-function validUntil(r){return new Date(issuedAt(r).getTime()+VALID_DAYS*86400000)}
+/* The days the price holds: his choice in the dashboard (14, 30 or 60), else 30.
+   lib/estimate-validity.js reads the same, so the page and the server agree. */
+function validDays(r){const d=Number(r&&r.estimate&&r.estimate.terms&&r.estimate.terms.validDays);return [14,30,60].indexOf(d)!==-1?d:VALID_DAYS}
+function validUntil(r){return new Date(issuedAt(r).getTime()+validDays(r)*86400000)}
 function dayText(d){return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'America/New_York'})}
 /* ONE PROJECT, SHARED WORK ONCE: protection, cleanup, debris, coordination -
    said once, above the services, instead of on every card. */
@@ -1247,19 +1309,11 @@ function scheduleOf(est,settings){const e=est||{},ed=schEdit(e),s=Object.assign(
 function isV4(e){return !!(e&&e.docVersion===4&&(C(e.overview)||A(e.workSteps).length))}
 function schOf(e){return (A(e.labor).some(l=>Number(l&&l.rate)>0)||schEdit(e).workDays!=null?scheduleOf(e):null)||(e&&e.schedule&&e.schedule.workDays?e.schedule:null)}
 function dayWord(n){return n===1?'1 day':(n%1?n.toFixed(1).replace(/\.0$/,''):n)+' days'}
-function schSmall(sch){return sch.workDays<=1&&!(sch.waitDays>0)}
-function schShort(sch){if(!sch)return'';return schSmall(sch)?'1 day':'About '+dayWord(sch.totalDays)}
-function overviewCard(e){const t=C(e.overview);if(!t)return'';return`<section class="card"><div class="ey">Your project</div><h2 class="t">What we will do</h2><p style="margin:0">${EB(t)}</p></section>`}
-function stepsCard(e){const st=A(e.workSteps).filter(x=>x&&C(x.title));if(!st.length)return'';return`<section class="card"><div class="ey">Step by step</div><h2 class="t">How the work will go</h2><ol class="steps">${st.map(x=>`<li><b>${E(x.title)}</b>${EB(C(x.text))}</li>`).join('')}</ol></section>`}
 /* The start date he set in the dashboard, and the finish it gives counting
    Monday to Friday. Shown only when he set one. */
-function schStartCells(e,sch){const st=C(e&&e.scheduleEdit&&e.scheduleEdit.start);if(!/^\d{4}-\d{2}-\d{2}$/.test(st)||!sch)return'';const d0=new Date(st+'T12:00:00');if(!isFinite(d0.getTime()))return'';const d=new Date(d0);let left=Math.ceil(sch.totalDays||sch.workDays||1)-1;while(left>0){d.setDate(d.getDate()+1);if(d.getDay()%6)left--}const f=x=>x.toLocaleDateString('en-US',{month:'short',day:'numeric'});return`<div>Start<b>${E(f(d0))}</b></div><div>Expected finish<b>${E(f(d))}</b></div>`}
-function scheduleCard(e){const sch=schOf(e);if(!sch)return timelineCard(e);const cols=['#5b6b7f','#18305a','#2c5aa0','#1f7a52','#0a1628'];const parts=[];const tot=Math.max(.5,sch.workDays+sch.waitDays);A(sch.sections).forEach((x,i)=>{const share=sch.laborHours>0?x.hours/sch.laborHours*sch.workDays:0;if(share>0)parts.push(`<div style="flex:${share};background:${cols[i%cols.length]}" title="${E(x.name)}">${E(x.name)}</div>`)});if(sch.waitDays>0)parts.push(`<div style="flex:${sch.waitDays};background:#c8860a;color:#1b1404" title="Drying and curing">Drying</div>`);const small=schSmall(sch);const head=small?'1 day':'About '+dayWord(sch.totalDays);const note=small?(sch.laborHours>0?`About ${E(String(sch.laborHours))} hours of work${A(sch.waits).length?', with drying time between the steps':''}.`:''):(sch.waitDays>0?`Includes ${dayWord(sch.waitDays)} of waiting ${A(sch.waits).length?'while '+A(sch.waits).map(w=>w.label.toLowerCase()).join(', '):'for drying and curing'}.`:'');const tl=C(e.timelineText);return`<section class="card"><div class="ey">Timeline</div><h2 class="t">${head}</h2>${parts.length&&!small?`<div class="tlbar">${parts.join('')}</div>`:''}<div class="tlgrid"><div>Working days<b>${E(String(sch.workDays))}</b></div>${sch.waitDays>0?`<div>Drying and curing<b>${dayWord(sch.waitDays)}</b></div>`:''}<div>Total<b>${small?'1 day':dayWord(sch.totalDays)}</b></div>${schStartCells(e,sch)}</div>${note?`<p class="muted" style="margin:10px 0 0">${note}</p>`:''}${tl&&tl.length>TL_SHORT?`<p class="muted" style="margin:8px 0 0">${E(tl)}</p>`:''}</section>`}
-function whoCard(e,sv){const sani=U(A(e.saniSupplies));const yours=[];sv.forEach(s=>U(A(s.customerSupplies)).forEach(x=>{const t=typeof x==='string'?x:(x&&(x.item||x.text))||'';if(t&&!yours.some(y=>N(y)===N(t)))yours.push(t)}));if(!sani.length&&!yours.length)return'';return`<section class="card"><div class="ey">Materials</div><h2 class="t">Who supplies what</h2><div class="who">${sani.length?`<div class="ws"><h3>Sani supplies</h3><ul class="inlist">${sani.map(x=>`<li>${EB(x)}</li>`).join('')}</ul></div>`:''}${yours.length?`<div class="wc"><h3>You supply</h3><ul class="suplist">${yours.map(x=>`<li>${EB(x)}</li>`).join('')}</ul><p class="muted" style="margin:8px 0 0">Please have your items on site before we start. Installing them is included in the price.</p></div>`:''}</div></section>`}
 /* WHAT WILL BE INSTALLED: each finish he set up in the dashboard (Finishing
    Options) as a product card - photo, the product, where it goes, who
    supplies it, chosen or to choose by a date, and the product link. */
-function productsCard(e){const okLink=u=>/^https?:\/\/[^\s"'<>]+$/i.test(C(u)),okImg=u=>/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(C(u))||/^https:\/\/[^\s"'<>]+$/i.test(C(u));const rows=A(e&&e.finishGroups).map(g=>{const os=A(g&&g.options).filter(o=>o&&C(o.name));const o=os.find(x=>x.isDefault)||os[0];return o?{g,o}:null}).filter(Boolean);if(!rows.length)return'';const sup={sani:'Sani supplies',customer:'You supply'};return`<section class="card finishes"><div class="ey">Your finishes &amp; fixtures</div><h2 class="t">What will be installed</h2><div class="prods">${rows.map(({g,o})=>{const link=okLink(o.link)?C(o.link):'',img=okImg(o.photo)?C(o.photo):'',st=C(g.status),by=C(g.by),name=C(g.name)||C(o.name);const badge=st==='chosen'?'<span class="badge ok">Chosen</span>':st==='choose'?`<span class="badge wait">To choose${by?' by '+E(by):''}</span>`:st==='deliver'?`<span class="badge wait">On site${by?' by '+E(by):''}</span>`:'';const dl=(C(g.where)?`<dt>Where</dt><dd>${E(g.where)}</dd>`:'')+(sup[C(g.supplier)]?`<dt>Supplied by</dt><dd>${sup[C(g.supplier)]}</dd>`:'');const inner=`${img?`<img class="pi" src="${E(img)}" alt="${E(o.name)}" loading="lazy">`:'<div class="pi">Photo<br>soon</div>'}<div class="pb"><div class="pg"><b>${E(name)}</b>${badge}</div>${C(g.name)&&N(g.name)!==N(o.name)?`<div class="pn">${E(o.name)}</div>`:''}${C(o.spec)?`<div class="ps">${E(o.spec)}</div>`:''}${dl?`<dl>${dl}</dl>`:''}${link?`<span class="pl">View product${C(o.store)?' at '+E(o.store):''} &rsaquo;</span>`:''}</div>`;return link?`<a class="prod" href="${E(link)}" target="_blank" rel="noopener nofollow">${inner}</a>`:`<div class="prod">${inner}</div>`}).join('')}</div></section>`}
 /* PAYMENT: his own terms, the ones the contract is written with
    (generate-contract-background.js): under $1,000 paid in full on completion;
    $1,000 to $5,000 half to start and half on completion; over $5,000 40% to
@@ -1267,11 +1321,114 @@ function productsCard(e){const okLink=u=>/^https?:\/\/[^\s"'<>]+$/i.test(C(u)),o
    for this job wins when it adds up to this total. */
 const PAY_SMALL=[['Payment in full, on completion',1]],PAY_MID=[['Deposit, when you sign',.5],['On completion and walkthrough',.5]],PAY_BIG=[['Deposit, when you sign',.4],['Midway, when the main work is done',.4],['On completion and walkthrough',.2]];
 function payPlan(r,total){if(!(total>0))return[];const cs=A(r&&r.contract&&r.contract.sections&&r.contract.sections.paymentSchedule).filter(p=>p&&C(p.label)&&Number(p.amount)>0);if(cs.length&&Math.abs(cs.reduce((t,p)=>t+Number(p.amount),0)-total)<=1)return cs.map(p=>({label:C(p.label),amount:Number(p.amount),pct:Math.round(Number(p.amount)/total*100)}));const rule=total<1000?PAY_SMALL:total<=5000?PAY_MID:PAY_BIG;let left=total;return rule.map(([label,f],i)=>{const amt=i===rule.length-1?Math.round(left*100)/100:Math.round(total*f*100)/100;left-=amt;return{label,amount:amt,pct:Math.round(f*100)}})}
-function payCard(r,total){const pl=payPlan(r,total);if(!pl.length)return'';return`<section class="card pay"><div class="ey">Payment</div><h2 class="t">Payment schedule</h2>${pl.map(p=>`<div class="prow"><span>${E(p.label)}<small>${p.pct}%</small></span><b>${M(p.amount)}</b></div>`).join('')}<p class="muted" style="margin:8px 0 0">${pl.length===1?'Nothing is paid before the work is done.':'Nothing is paid today. The deposit is due when you sign.'}</p></section>`}
-function talkCard(){const s=encodeURIComponent('Estimate '+(typeof ref!=='undefined'?ref:''));return`<section class="card"><div class="ey">Questions?</div><h2 class="t">Talk to us</h2><div class="talk"><a href="tel:+13322770990">Call</a><a href="sms:+13322770990">Text</a><a href="mailto:contact@sanibuildingcorp.com?subject=${s}">Email</a></div><p class="muted" style="margin:8px 0 0">(332) 277-0990 · contact@sanibuildingcorp.com</p></section>`}
-function needsCard(e){const l=U(A(e.customerNeeds));if(!l.length)return'';return`<section class="card"><div class="ey">Before we start</div><h2 class="t">What we need from you</h2>${list('','in',l)}</section>`}
-function basisCard(e){const l=U(A(e.priceBasis));if(!l.length)return'';return`<section class="card"><div class="ey">This price is based on</div>${list('','in',l)}</section>`}
-function renderV8(r){rec=r;let e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),hasPrice=priced(r),rows=sv.map(x=>`<div class="pr"><b>${E(x.title)}</b><b>${M(x.subtotal+chosenFor(x.title).reduce((t,o)=>t+o.price,0))}</b></div>`).join(''),addedRows=chosenIds().map(k=>chosen[k]).map(o=>`<div class="pr added"><b>${E(o.label)}</b><b>+${M(o.price)}</b></div>`).join(''),shown=shownTotal(ct),sch=schOf(e);app.innerHTML=`<section class="hero"><div class="ey">${SOW?'Scope of Work':'Estimate'} ${E(ref)}</div><h1>${E(e.projectTitle||rq.service||'Renovation Estimate')}</h1><p>${E(c.address||'NYC Metro')}</p><div class="meta"><div><small>Prepared for</small>${E(c.name)}</div>${statusCell(hasPrice,approved,e)}<div><small>Timeline</small>${E(schShort(sch)||timelineShort(e.timelineText)||'TBD')}</div>${hasPrice?`<div><small>Total</small>${M(shown)}</div>`:''}</div>${heroPhoto(r)}</section>${addonHtml(r)}${hasPrice?`<section class="card prices"><div class="ey" style="padding:0 0 8px">${e.showSectionSubtotals!==false?'Price by service':'Your price'}</div>${e.showSectionSubtotals!==false?rows:''}${costRows(e,ct)}${addedRows}<div class="pr total"><span>Your estimate</span><span>${M(shown)}</span></div></section>`:''}${overviewCard(e)||(E(e.summary)?`<section class="card"><div class="ey">Project summary</div><p>${E(e.summary)}</p></section>`:'')}${stepsCard(e)}${scheduleCard(e)}${whoCard(e,sv)}${productsCard(e)}${projectCard(e)}${sv.map((s,i)=>`<section class="svc"><div class="head"><div><div class="ey">Service ${i+1}</div><h2>${E(s.title)}</h2></div>${e.showSectionSubtotals!==false?`<b>${M(s.subtotal+chosenFor(s.title).reduce((t,o)=>t+o.price,0))}</b>`:''}</div><div class="body">${list('Included in this service','in',withChosen(s))}${list('Not included','out',withoutChosen(s))}${optsHtml(s)}${details(e,s)}</div></section>`).join('')}${needsCard(e)}${basisCard(e)}${SOW?'':(hasPrice?payCard(r,shown):'')+talkCard()}${SOW?sowFoot():contractHtml(r,contractRequired(r),approved)+(hasPrice?termsHtml(r,approved)+actionHtml(c,approved,contractRequired(r),hasPrice)+threadHtml(r):threadHtml(r)+actionHtml(c,approved,contractRequired(r),hasPrice))}`;track()}
+/* ══ THE CUSTOMER PAGE — PERPLEXITY'S DESIGN, 1:1 (docVersion 4) ═══════════
+   "Merge it and go to customer page 1:1". Perplexity's customer-page-layout,
+   section for section, wired to the estimate: your price and price by
+   service, what we will do (with the job's photos), how the work will go, the
+   counted timeline, who supplies what, what will be installed (product
+   cards), what is included per service, not included, what we need from you,
+   what the price is based on, the payment schedule, our promise, talk to us,
+   and the bar at the bottom: total, Change, Approve (name + signature).
+   Approve, Change and the messages are the page's own (S, P, threadHtml):
+   nothing new is sent anywhere. Older estimates keep renderV7 / renderLegacy. */
+const QZ_FIN=/vanity|toilet|faucet|sink|tile|paint|cabinet|counter|light|fixture|\bfan\b|mirror|door|hardware|appliance|\btub\b|shower (valve|trim|door|base|glass)|backsplash|vinyl|laminate|hardwood|flooring|baseboard|molding|medicine|shelf|towel|grab bar|bench/i;
+const QZ_ROUGH=/\bkit\b|supplies|supply line|wax|fitting|screw|tape|primer|patch|sealant|caulk|adhesive|thinset|mortar|membrane|cement board|protection|plastic|drop cloth|debris|dumpster|joint compound|spackle|sandpaper/i;
+const QZ_BG=['#efe9df','#f4f4f1','#9a9a96','#d9dde3','#e9e4da'];
+function qzFinish(l){if(l&&typeof l.finish==='boolean')return l.finish;const t=C(l&&l.item);return QZ_FIN.test(t)&&!QZ_ROUGH.test(t)}
+function qzIcon(t){return /vanity|sink|faucet/i.test(t)?'🚰':/toilet/i.test(t)?'🚽':/paint|primer/i.test(t)?'🎨':/seal|caulk|silicone/i.test(t)?'💧':'▦'}
+function qzDays(sch){if(sch.workDays<=1&&!(sch.waitDays>0))return'1 day';const d=sch.totalDays;if(d<5)return'About '+dayWord(d);const w=Math.round(d/5);return'About '+w+(w===1?' week':' weeks')}
+function qzM(n){const v=Math.round((Number(n)||0)*100)/100;return SOW?'':'$'+v.toLocaleString('en-US',v%1?{minimumFractionDigits:2,maximumFractionDigits:2}:{maximumFractionDigits:0})}
+function qzShort(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+function qzFinishDay(st,days){const d=new Date(st+'T12:00:00');let left=Math.ceil(days||1)-1;while(left>0){d.setDate(d.getDate()+1);if(d.getDay()%6)left--}return d}
+function qzWarranty(e){const w=C(e&&e.terms&&e.terms.warranty)||WARRANTY_YEARS+'-year workmanship';const m=w.match(/^(\d+)-(year|day)/i);return m?{n:m[1],u:m[2].toLowerCase()}:{n:String(WARRANTY_YEARS),u:'year'}}
+/* His payment choice (dashboard, Terms). "contract" or none: the terms the
+   contract is written with (payPlan). */
+function qzPay(r,e,total){const ch=C(e&&e.terms&&e.terms.payment);const p=ch&&ch!=='contract'?ch.split(',').map(Number).filter(x=>x>0):[];if(!p.length||Math.abs(p.reduce((a,b)=>a+b,0)-100)>.01)return payPlan(r,total);const L={1:['On completion and walkthrough'],2:['Deposit to reserve your start date','On completion and walkthrough'],3:['Deposit to reserve your start date','Midway, after the main installation','On completion and walkthrough'],4:['Deposit to reserve your start date','Start of work','Midway','On completion and walkthrough']}[p.length]||[];let left=total;return p.map((x,i)=>{const amt=i===p.length-1?Math.round(left*100)/100:Math.round(total*x)/100;left-=amt;return{label:L[i]||'Payment '+(i+1),pct:x,amount:amt}})}
+/* "Vanity on site by Oct 14" in What we need -> the ON SITE BY pill. */
+function qzDue(item,needs){const w=N(item).split(/[\s,(]+/)[0];if(!w)return'';for(const n of needs){const t=C(n);if(N(t).indexOf(w)===-1)continue;const m=t.match(/\b(?:on site|deliver(?:ed)?)\b[^.]*?\bby\s+((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}|day\s*\d+)/i);if(m)return m[1].toUpperCase()}return''}
+function qzCards(e,sv){const out=[],names=sv.map(s=>s.title);const okL=u=>/^https?:\/\/[^\s"'<>]+$/i.test(C(u)),okI=u=>/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(C(u))||/^https:\/\/[^\s"'<>]+$/i.test(C(u));
+ const tag=s=>{const t=C(s);return/^choose|to choose/i.test(t)?'<span class="qtag qt-p">To choose</span>':/deliver/i.test(t)?'<span class="qtag qt-p">You deliver</span>':'<span class="qtag qt-ok">Chosen</span>'};
+ const pk=A(e.parkedLines).filter(p=>p&&p.custSupplied===true).sort((a,b)=>(Number(a.idx)||0)-(Number(b.idx)||0));let k=0;
+ const park=p=>{const l=p.line||{};out.push({name:C(l.item||p.ownerText),spec:C(l.spec),where:C(p.service),by:'You supply',tag:tag(l.finishStatus),link:okL(l.link)?C(l.link):'',photo:okI(l.photo)?C(l.photo):''})};
+ A(e.materials).forEach((l,gi)=>{while(k<pk.length&&(Number(pk[k].idx)||0)<=gi+k)park(pk[k++]);if(!l||!C(l.item)||!qzFinish(l))return;out.push({name:C(l.item),spec:C(l.spec),where:C(l.section)||names[0]||'',by:'Sani supplies',tag:tag(l.finishStatus),link:okL(l.link)?C(l.link):'',photo:okI(l.photo)?C(l.photo):''})});
+ while(k<pk.length)park(pk[k++]);
+ const sup={sani:'Sani supplies',customer:'You supply'};
+ A(e.finishGroups).forEach(g=>{const os=A(g&&g.options).filter(o=>o&&C(o.name));const o=os.find(x=>x.isDefault)||os[0];if(!o)return;const st=C(g.status),by=C(g.by);out.push({name:C(g.name)||C(o.name),spec:[C(g.name)&&N(g.name)!==N(o.name)?C(o.name):'',C(o.spec)].filter(Boolean).join(' · '),where:C(g.where),by:sup[C(g.supplier)]||'',tag:st==='chosen'?'<span class="qtag qt-ok">Chosen</span>':st==='choose'?`<span class="qtag qt-p">To choose${by?' by '+E(by):''}</span>`:st==='deliver'?`<span class="qtag qt-p">On site${by?' by '+E(by):''}</span>`:'',link:okL(o.link)?C(o.link):'',photo:okI(o.photo)?C(o.photo):'',store:C(o.store)})});
+ return out}
+function qzCardHtml(p,i){const img=p.photo?` style="background-image:url('${E(p.photo)}')"`:` style="background:${QZ_BG[i%QZ_BG.length]}"`;const inner=`<div class="qpimg"${img}>${p.photo?'':`<span>${qzIcon(p.name)}</span><em>Product photo</em>`}</div><div class="qpb"><div class="qrow2"><b>${E(p.name)}</b>${p.tag}</div>${p.spec?`<div class="qmut">${E(p.spec)}</div>`:''}${p.where||p.by?`<div class="qkv2">${p.where?`<span>Where</span><span>${E(p.where)}</span>`:''}${p.by?`<span>Supplied by</span><span>${p.by}</span>`:''}</div>`:''}${p.link?`<span class="qlnk">View product${p.store?' at '+E(p.store):''} ›</span>`:''}</div>`;return p.link?`<a class="qpc" href="${E(p.link)}" target="_blank" rel="noopener nofollow">${inner}</a>`:`<div class="qpc">${inner}</div>`}
+function renderPZ(r){rec=r;document.body.classList.add('pzq');
+ const e=r.estimate||{},c=r.customer||{},rq=r.request||{},sv=build(e),ct=calc(e),approved=isApproved(r),hasPrice=priced(r),shown=shownTotal(ct),sch=schOf(e),needsContract=contractRequired(r);
+ const showSvc=e.showSectionSubtotals!==false,svcPrice=s=>s.subtotal+chosenFor(s.title).reduce((t,o)=>t+o.price,0);
+ const needs=U(A(e.customerNeeds)),where=[c.address].filter(x=>C(x)).join('');
+ const expired=!approved&&(r.sentVersionInfo||r.sentAt)&&Date.now()>validUntil(r).getTime();
+ let h=`<div class="qhero"><div class="qin"><div class="qbrand"><b>SANI BUILDING CORP</b><span>Fully insured · NYC Metro</span></div><h1>${E(e.projectTitle||rq.service||'Your estimate')}</h1><p>Prepared for ${E(c.name||'you')}${where?' · '+E(where):''}</p><div class="qmeta"><span>${SOW?'Scope of work':'Estimate'} ${E(ref)}</span><span>${E(qzShort(issuedAt(r)))+', '+issuedAt(r).getFullYear()}</span>${SOW?'':`<span>Valid until ${E(qzShort(validUntil(r)))+', '+validUntil(r).getFullYear()}</span>`}</div></div></div><div class="qmain">`;
+ /* Your price */
+ if(hasPrice){const sl=e.showLaborCost===true,sm=e.showMaterialsCost===true;const what=sl&&!sm?'Labor only. Materials are not part of this price.':sm&&!sl?'Materials only. Labor is not part of this price.':'Labor and Sani materials included';
+  h+=`<section class="qcard"><div class="qey">Your price</div><div class="qprice"><div class="qbig">${qzM(shown)}</div><div class="qmut">${what}</div></div>${showSvc&&sv.length?`<div style="margin-top:12px">${sv.map(s=>`<div class="qsvc"><span>${E(s.title)}</span><b>${qzM(svcPrice(s))}</b></div>`).join('')}</div>`:''}</section>`}
+ h+=addonHtml(r);
+ /* What we will do */
+ const off=A(e.hiddenQuotePhotos),doc=x=>x&&(x.kind==='file'||/\.pdf(?:[?#]|$)/i.test(String(x.data))||/^data:application\/pdf/i.test(String(x.data)));
+ const ph=[...A(rq.photos).filter(x=>x&&off.indexOf(x.data)===-1),...A(e.quotePhotos)].filter(x=>x&&x.data&&!doc(x)).slice(0,6);
+ const ov=C(e.overview)||C(e.summary);
+ if(ov||ph.length)h+=`<section class="qcard"><div class="qey">Your project</div><h2 class="qh">What we will do</h2>${ov?`<p style="margin:0">${EB(ov)}</p>`:''}${ph.length?`<div class="qphotos">${ph.map((p,i)=>`<img alt="Project photo ${i+1}" src="${E(p.data)}" onclick="zoomPhoto(this)">`).join('')}</div>`:''}</section>`;
+ /* How the work will go */
+ const st=A(e.workSteps).filter(x=>x&&C(x.title));
+ if(st.length)h+=`<section class="qcard"><div class="qey">Step by step</div><h2 class="qh">How the work will go</h2><ol class="qsteps">${st.map(x=>`<li>${C(x.day)?`<span class="qday">${E(x.day)}</span>`:''}<b>${E(x.title)}</b>${EB(C(x.text))}</li>`).join('')}</ol></section>`;
+ /* Timeline */
+ if(sch){const cols=['#5d6878','#18305a','#2c5aa0','#1f8a4c','#0f1f3a'],segs=[];A(sch.sections).forEach((x,i)=>{const share=sch.laborHours>0?x.hours/sch.laborHours*sch.workDays:0;if(share>0)segs.push(`<div style="flex:${share};background:${cols[i%cols.length]}">${E(x.name)}</div>`)});if(sch.waitDays>0)segs.splice(Math.min(1,segs.length),0,`<div style="flex:${sch.waitDays};background:#c9a24a;color:#1b1404">Cure</div>`);
+  const sd=C(e.scheduleEdit&&e.scheduleEdit.start),hasStart=/^\d{4}-\d{2}-\d{2}$/.test(sd);
+  const note=sch.waitDays>0?`Includes ${dayWord(sch.waitDays)} of waiting ${A(sch.waits).length?'while '+A(sch.waits).map(w=>w.label.toLowerCase()).join(', '):'for drying and curing'}.`:'';
+  h+=`<section class="qcard"><div class="qey">Timeline</div><h2 class="qh">${qzDays(sch)}</h2>${segs.length>1||sch.workDays>1?`<div class="qtl">${segs.join('')}</div>`:''}<div class="qlegend"><div>Working days<b>${E(String(sch.workDays))}</b></div>${hasStart?`<div>Earliest start<b>${E(qzShort(new Date(sd+'T12:00:00')))}</b></div><div>Expected finish<b>${E(qzShort(qzFinishDay(sd,sch.totalDays)))}</b></div>`:''}<div>Work hours<b>${E(String(sch.dailyHours||8))} a day</b></div></div>${note?`<p class="qmut" style="margin:10px 0 0">${note}</p>`:''}</section>`}
+ else if(C(e.timelineText))h+=`<section class="qcard"><div class="qey">Timeline</div><p style="margin:0">${E(e.timelineText)}</p></section>`;
+ /* Who supplies what */
+ const sani=U(A(e.saniSupplies)),yours=[];sv.forEach(s=>U(A(s.customerSupplies)).forEach(x=>{const t=typeof x==='string'?x:(x&&(x.item||x.text))||'';if(t&&!yours.some(y=>N(y)===N(t)))yours.push(t)}));
+ if(sani.length||yours.length)h+=`<section class="qcard"><div class="qey">Materials</div><h2 class="qh">Who supplies what</h2><div class="qtwo">${sani.length?`<div class="qbox s"><h3>Sani supplies</h3><ul class="qck">${sani.map(x=>`<li>${EB(x)}</li>`).join('')}</ul></div>`:''}${yours.length?`<div class="qbox c"><h3>You supply</h3><ul class="qck">${yours.map(x=>{const d=qzDue(x,needs);return`<li>${EB(x)}${d?` <span class="qdue">ON SITE BY ${E(d)}</span>`:''}</li>`}).join('')}</ul><p class="qmut" style="margin:8px 0 0">Installation of your items is included in the price. Please keep the box and manual for us.</p></div>`:''}</div></section>`;
+ /* What will be installed */
+ const cards=qzCards(e,sv);
+ if(cards.length)h+=`<section class="qcard"><div class="qey">Your finishes &amp; fixtures</div><h2 class="qh">What will be installed</h2><p class="qmut" style="margin-top:-4px">Tap a product to see photos, size and details.</p><div class="qpgrid">${cards.map(qzCardHtml).join('')}</div></section>`;
+ /* What is included */
+ const proj=A(e.projectIncluded).map(x=>typeof x==='string'?x:(x&&(x.text||x.item))||'').filter(Boolean);
+ const inc=sv.filter(s=>U(s.included).length);
+ if(inc.length||proj.length)h+=`<section class="qcard"><div class="qey">Scope of work</div><h2 class="qh">What is included</h2>${inc.map((s,i)=>`<details class="qd" open><summary>${E(s.title)}${hasPrice&&showSvc?' — '+qzM(svcPrice(s)):''}</summary><ul class="qck">${U(withChosen(s)).map(x=>`<li>${EB(x)}</li>`).join('')}</ul></details>`).join('')}${proj.length?`<details class="qd" open><summary>Whole project</summary><ul class="qck">${proj.map(x=>`<li>${EB(x)}</li>`).join('')}</ul></details>`:''}</section>`;
+ /* Not included */
+ const out=U([].concat(...sv.map(s=>withoutChosen(s))));
+ if(out.length)h+=`<section class="qcard"><div class="qey">Not in this price</div><h2 class="qh">Not included</h2><ul class="qck qno">${out.map(x=>`<li>${EB(x)}</li>`).join('')}</ul></section>`;
+ if(needs.length)h+=`<section class="qcard"><div class="qey">Before we start</div><h2 class="qh">What we need from you</h2><ul class="qck">${needs.map(x=>`<li>${EB(x)}</li>`).join('')}</ul></section>`;
+ const basis=U(A(e.priceBasis));
+ if(basis.length)h+=`<section class="qcard"><div class="qey">This price is based on</div><ul class="qck">${basis.map(x=>`<li>${EB(x)}</li>`).join('')}</ul></section>`;
+ /* Payment */
+ if(hasPrice){const pl=qzPay(r,e,shown);if(pl.length)h+=`<section class="qcard"><div class="qey">Payment</div><h2 class="qh">Payment schedule</h2><table class="qtab">${pl.map(p=>`<tr><td>${E(p.label)}<br><span class="qmut">${p.pct}%</span></td><td class="n">${qzM(p.amount)}</td></tr>`).join('')}</table></section>`}
+ /* Our promise */
+ const wr=qzWarranty(e);
+ h+=`<section class="qcard"><div class="qey">Our promise</div><div class="qtrust"><div><b>${E(wr.n)} ${wr.u}${wr.n==='1'?'':'s'}</b>workmanship warranty</div><div><b>Fully</b>insured</div><div><b>Written</b>price for any change</div></div><details class="qd" open style="margin-top:10px"><summary>Warranty &amp; changes</summary><p class="qmut">We fix any problem caused by our work for ${E(wr.n)} ${wr.u}${wr.n==='1'?'':'s'} at no charge. Products carry their manufacturer's warranty. If you want to add or change anything, we give you a written price first and only do the work after you approve it.</p></details></section>`;
+ if(!SOW)h+=contractHtml(r,needsContract,approved);
+ /* Talk to us */
+ const subj=encodeURIComponent('Estimate '+ref);
+ h+=`<section class="qcard"><div class="qey">Questions?</div><h2 class="qh">Talk to us</h2><div class="qcontact"><a href="tel:+13322770990">Call</a><a href="sms:+13322770990">Text</a><a href="mailto:contact@sanibuildingcorp.com?subject=${subj}">Email</a></div>${SOW?'':'<button type="button" class="qprint" onclick="printQuote(this)">Print / save as PDF</button>'}</section>`;
+ if(SOW)h+=sowFoot();
+ else{
+  if(approved)h+=`<div class="approved">✓ Thank you, we have your go-ahead! The Sani Building Corp team will contact you within one business day to confirm the details and the schedule.</div>`;
+  h+=messageBox(!hasPrice)+threadHtml(r);
+ }
+ h+='</div>';
+ /* The bar and the approve box */
+ if(!SOW){
+  const right=approved?'<span class="qbtn qghost" style="cursor:default">Approved ✓</span>':!hasPrice?`<button class="qbtn qgold" onclick="qzChange()">Reply</button>`:expired?`<button class="qbtn qghost" onclick="qzChange()">Change</button><button class="qbtn qgold" onclick="RU();qzScrollMsg()">Request update</button>`:needsContract?`<button class="qbtn qghost" onclick="qzChange()">Change</button><a class="qbtn qgold" href="/contract.html?ref=${encodeURIComponent(ref)}">Approve</a>`:`<button class="qbtn qghost" onclick="qzChange()">Change</button><button class="qbtn qgold" onclick="qzOpen()">Approve</button>`;
+  h+=`<div class="qbar"><div class="qin"><div class="qt">${hasPrice?`Total<b>${qzM(shown)}</b>`:'Questions about your project'}</div>${right}</div></div>`;
+  if(hasPrice&&!approved&&!expired&&!needsContract){const pl=qzPay(r,e,shown),first=pl[0];
+   h+=`<div class="qmodal" id="qz-m" onclick="if(event.target===this)this.classList.remove('on')"><div class="qcard"><h2 class="qh">Approve your estimate</h2><p class="qmut" style="margin-top:0">${E(e.projectTitle||rq.service||'Your estimate')} · ${qzM(shown)}</p><input type="text" id="sig" placeholder="Full name" value="${E(c.name||'')}" oninput="document.getElementById('qz-sig').textContent=this.value"><div class="qsig" id="qz-sig">${E(c.name||'')}</div><label class="qmut" style="display:flex;gap:8px;margin:10px 0"><input type="checkbox" id="qz-agree" style="width:auto;margin:3px 0 0">I agree to the scope, price and payment schedule above.</label><button class="qbtn qgold" style="width:100%" id="qz-go" onclick="qzApprove()">Approve &amp; sign</button><p class="qmut" id="qz-note" style="text-align:center;margin:8px 0 0">${first&&pl.length>1?`Next: we call you to confirm the details. The ${qzM(first.amount)} deposit is due when you sign.`:'Next: we call you to confirm the details and the start date.'}</p></div></div>`}
+ }
+ app.innerHTML=h;track()}
+window.qzOpen=()=>{const m=document.getElementById('qz-m');if(m)m.classList.add('on')};
+window.qzScrollMsg=()=>{const q=document.getElementById('q');if(q&&q.scrollIntoView)q.scrollIntoView({behavior:'smooth',block:'center'})};
+window.qzChange=()=>{P('q');qzScrollMsg();setTimeout(()=>{const m=document.getElementById('msg');if(m)m.focus()},350)};
+window.qzApprove=async()=>{const n=document.getElementById('qz-note'),a=document.getElementById('qz-agree'),s=document.getElementById('sig'),b=document.getElementById('qz-go');
+ if(!s||!C(s.value)){if(n)n.textContent='Please type your full name.';return}
+ if(!a||!a.checked){if(n)n.textContent='Please tick the box to agree.';return}
+ if(b){b.disabled=true;b.textContent='Sending…'}
+ await S('accept');
+ const st=document.getElementById('st');if(n&&st&&st.textContent)n.textContent=st.textContent;
+ if(b&&!/thank you/i.test(n?n.textContent:'')){b.disabled=false;b.textContent='Approve & sign'}};
 /* Seed the picker from the record before the first paint. A customer who added
    two options and approved must see those two options still added when they open
    their link again — the selection is on the record, and this page is the only
@@ -1310,7 +1467,7 @@ function replyFromHash(){
 function threadScrollBottom(){
  const el=document.querySelector('#thread-wrap .thr');
  if(el)el.scrollTop=el.scrollHeight}
-function render(r){seedChosen(r);if(r&&r.scopeOnly===true)SOW=true;sowBanner();let e=(r&&r.estimate)||{};if(isV7(e)&&isV4(e))renderV8(r);else if(isV7(e))renderV7(r);else renderLegacy(r);threadScrollBottom();replyFromHash()}
+function render(r){seedChosen(r);if(r&&r.scopeOnly===true)SOW=true;sowBanner();let e=(r&&r.estimate)||{};if(isV7(e)&&isV4(e))renderPZ(r);else if(isV7(e))renderV7(r);else renderLegacy(r);threadScrollBottom();replyFromHash()}
 function track(){
  /* A building manager reading the scope is not the customer opening the quote. */
  if(SOW)return;
