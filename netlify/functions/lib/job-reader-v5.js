@@ -38,6 +38,8 @@ RULES
 8. "questions": at most 3, only when the answer changes the price by real money. If the job is clear, return [].
 9. "facts": every fact you used from the conversation/answers, each with what it changes ("effect").
 10. Service names = the customer's selected services (e.g. "Bathroom", "Painting"). Never "General".
+11. LOOK AT THE PHOTOS. Pick the item that matches what is really there: a toilet with an exposed metal flush pipe / flush valve from the wall (Sloan, Zurn, commercial style) is toilet_flushometer, not toilet. Say what you saw in "facts".
+12. "site": read the building answers. "walk-up" / "no elevator" means elevator:false and walkup:true; put the floor number if given. Never ask again about floor or walk-up when the answers already say it.
 ${previous ? `\nTHIS IS A CHAT UPDATE. Previous reading below. Change ONLY what the new messages change. Keep every other item and quantity exactly the same.\nPREVIOUS READING:\n${JSON.stringify(previous)}\n` : ''}
 REQUEST:
 ${JSON.stringify(input)}
@@ -45,7 +47,7 @@ ${JSON.stringify(input)}
 Return JSON only:
 {"projectTitle":"","summary":"2-3 plain sentences for the customer: what we will do and the result",
  "services":[{"name":"","items":[{"id":"","qty":0,"note":""}],"custom":[{"name":"","qty":1,"unit":"job","note":""}],"exclusions":[]}],
- "customerSupplies":[],"site":{"floor":0,"elevator":null,"coi":false,"buildingType":""},
+ "customerSupplies":[],"site":{"floor":0,"elevator":null,"walkup":false,"coi":false,"buildingType":""},
  "facts":[{"text":"","effect":""}],"questions":[],"status":"READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED"}`;
 }
 
@@ -74,7 +76,7 @@ function validate(raw, input) {
   const keys = new Set(BOOK.ITEMS.flatMap((i) => (i.mat || []).map((m) => m[4]).filter(Boolean)));
   out.customerSupplies = (raw && raw.customerSupplies || []).map(s).filter((k) => keys.has(k));
   const st = (raw && raw.site) || {};
-  out.site = { floor: Number(st.floor) || 0, elevator: st.elevator === true ? true : st.elevator === false ? false : null, coi: !!st.coi, buildingType: s(st.buildingType).slice(0, 40) };
+  out.site = { floor: Number(st.floor) || 0, elevator: st.elevator === true ? true : st.elevator === false ? false : null, walkup: st.walkup === true || st.elevator === false, coi: !!st.coi, buildingType: s(st.buildingType).slice(0, 40) };
   out.facts = (raw && raw.facts || []).filter((f) => f && s(f.text)).slice(0, 12).map((f, i) => ({ id: 'f' + (i + 1), text: s(f.text).slice(0, 160), effect: s(f.effect).slice(0, 120), on: true }));
   out.questions = (raw && raw.questions || []).map((q) => s(typeof q === 'string' ? q : q && q.question)).filter((q) => q && !BAN.test(q) && !/brand|color|colour|sheen|finish type|budget|high.end/i.test(q)).slice(0, 3);
   const okStatus = ['READY', 'PRELIMINARY', 'NEEDS_CLARIFICATION', 'SITE_VISIT_REQUIRED'];

@@ -102,3 +102,11 @@ console.log('toilet', toilet.totals, '\ngut', gut.totals, gut.timelineText, '\nv
   as.strictEqual(u.materials.length, n); as.ok(u.materials.some((x) => x.item === 'Kohler toilet'));
   console.log('ok - a renamed material is still one line after Update');
 }
+{
+  const R2 = require('../netlify/functions/lib/job-reader-v5'), E6 = require('../netlify/functions/lib/estimate-engine-v5'), as = require('assert');
+  const rd = R2.validate({ services: [{ name: 'Bathroom', items: [{ id: 'toilet_flushometer', qty: 1 }] }], site: { elevator: false, walkup: true } }, {});
+  const e = E6.build(rd);
+  as.ok(e.labor.some((l) => /Walk-up carrying/.test(l.item)), 'walk-up adds carrying');
+  as.ok(/flush/i.test(R2.prompt({}, null)) && /toilet_flushometer/.test(R2.prompt({}, null)));
+  console.log('ok - walk-up with no floor adds one floor of carrying; reader told to look for flush valves');
+}

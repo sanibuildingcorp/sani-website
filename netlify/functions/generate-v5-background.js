@@ -64,9 +64,13 @@ function inputFrom(record, offFacts) {
 /* The customer's photos and the pictures in messages, as image blocks (max 8). */
 function photoBlocks(record) {
   const rq = record.request || {};
-  const urls = [].concat(A(rq.photos).map((p) => (typeof p === 'string' ? p : p && p.url)),
+  /* Form photos are stored as { data, slot } - data is the link (or a data: URL). */
+  const urls = [].concat(A(rq.photos).map((p) => (typeof p === 'string' ? p : p && (p.data || p.url))),
     threadOf(record).flatMap((m) => A(m.attachments).filter((a) => a && a.kind === 'image').map((a) => a.url)));
-  return urls.filter((u) => /^https:\/\//.test(s(u))).slice(-8).map((url) => ({ type: 'image', source: { type: 'url', url } }));
+  return urls.map(s).filter((u) => /^https:\/\//.test(u) || /^data:image\/(jpeg|png|gif|webp);base64,/.test(u)).slice(-8).map((u) => {
+    const m = u.match(/^data:(image\/[a-z]+);base64,(.*)$/);
+    return m ? { type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } } : { type: 'image', source: { type: 'url', url: u } };
+  });
 }
 
 async function readJob(input, previous, blocks) {

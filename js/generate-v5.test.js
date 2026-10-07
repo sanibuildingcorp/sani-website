@@ -25,7 +25,7 @@ let n = 0; const ok = (name, c) => { assert.ok(c, name); n++; console.log('PASS 
 
 (async () => {
   reply = { projectTitle: 'Toilet replacement', summary: 'Replace the toilet.', services: [{ name: 'General', items: [{ id: 'toilet', qty: 1 }] }], status: 'READY' };
-  db['SBC-1'] = { ref: 'SBC-1', status: 'new', request: { service: 'Bathroom', description: 'replace toilet', photos: ['https://x/p.jpg'] }, thread: [{ id: 'm1', from: 'customer', text: 'hi', at: '2026-10-01' }], customer: { name: 'A' } };
+  db['SBC-1'] = { ref: 'SBC-1', status: 'new', request: { service: 'Bathroom', description: 'replace toilet', photos: [{ data: 'https://x/p.jpg', slot: 'wide' }] }, thread: [{ id: 'm1', from: 'customer', text: 'hi', at: '2026-10-01' }], customer: { name: 'A' } };
 
   const no = await post(gen, { ref: 'SBC-1', jobId: 'j0', mode: 'new' }, {});
   ok('no dashboard key -> refused', no.statusCode === 401 || no.statusCode === 403);
@@ -33,6 +33,7 @@ let n = 0; const ok = (name, c) => { assert.ok(c, name); n++; console.log('PASS 
   await post(gen, { ref: 'SBC-1', jobId: 'j1', mode: 'new' });
   let r = db['SBC-1'];
   ok('new draft is made, never "General"', r.aiStatus === 'done' && r.estimate.totals.total > 0 && r.estimate.manualCustomerScopeDraft.services[0].name === 'Bathroom');
+  ok('the form photo reaches the AI as a picture', JSON.stringify(sent.messages).includes('https://x/p.jpg'));
   ok('no temperature sent; room for the answer', !('temperature' in sent) && sent.max_tokens >= 8000);
 
   // he types the toilet price by hand + a customer message lands during the next run
