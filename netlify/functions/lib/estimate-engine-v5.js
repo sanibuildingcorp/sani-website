@@ -139,6 +139,14 @@ function build(reading, opts) {
     materials: materials.map((l) => Object.assign(l, { rate: r2(l.rate) })),
     markupPct, customerSupplied, finishes,
     workSteps: steps, customerNeeds: uniq(needs).slice(0, 6),
+    /* Customer-page fields. Always written, so an old estimate's stale lists
+       (old overview, old 'Sani supplies', old 'based on') never show again. */
+    overview: clean(R.summary),
+    saniSupplies: uniq(materials.map((m) => clean(m.item))).slice(0, 12),
+    priceBasis: uniq([].concat(
+      (R.facts || []).map((f) => clean(f && f.text)).filter((x) => x && x.length < 140),
+      site.elevator === false ? [floor ? `Floor ${floor}, walk-up: materials and debris carried by hand` : 'Walk-up building: materials and debris carried by hand'] : []
+    )).slice(0, 6),
     exclusions: projectWide,
     manualCustomerScopeDraft: { services },
     schedule: { workDays, cureDays, calendarDays, hours: r2(hours), crew: BOOK.CREW, workHours: BOOK.WORK_HOURS_TEXT },
@@ -174,7 +182,7 @@ function update(prevEstimate, newReading, opts) {
     });
   });
   // keep hand-edited text
-  if (prev.summaryByHand) { next.summary = prev.summary; next.summaryByHand = true; }
+  if (prev.summaryByHand) { next.summary = prev.summary; next.overview = prev.overview || prev.summary; next.summaryByHand = true; }
   retotal(next);
   const changes = diff(prev, next);
   return { estimate: next, changes };
