@@ -43,7 +43,7 @@ RULES
 15. CONTRACTOR'S OLD LINES (input.contractorLines, if present) are his own priced judgment for this job. Never drop work he priced. For each old line: use a book id when it covers the same work, otherwise put it in "custom" with "old": its n. If the book item is clearly cheaper than his old line for the same work, prefer "custom" with "old": n - his number wins.
 11. LOOK AT THE PHOTOS. Pick the item that matches what is really there: a toilet with an exposed metal flush pipe / flush valve from the wall (Sloan, Zurn, commercial style) is toilet_flushometer, not toilet. Say what you saw in "facts".
 12. "site": read the building answers. "walk-up" / "no elevator" means elevator:false and walkup:true; put the floor number if given. Never ask again about floor or walk-up when the answers already say it.
-${input && input.preflight ? `\nBEFORE PRICING - QUESTIONS FOR THE CONTRACTOR. The contractor (Sani's owner, not the customer) wants to talk with you BEFORE you price. Read everything. In "summary" write 2-3 plain sentences: what you understood the job is, and what is missing. In "questions" ask him up to 6 short, concrete questions whose answers change the price (size, how much is torn out, what stays, who supplies what, floor/elevator/COI, special conditions). Skip anything the request, the answers or his notes already say. If the request is almost empty, ask for the basics. Still return the JSON below; services may be empty.\n` : ''}${previous ? `\nTHIS IS A CHAT UPDATE. Previous reading below. Change ONLY what the new messages change. Keep every other item and quantity exactly the same.\nPREVIOUS READING:\n${JSON.stringify(previous)}\n` : ''}
+${input && input.preflight ? `\nBEFORE PRICING - QUESTIONS FOR THE CONTRACTOR. The contractor (Sani's owner, not the customer) wants to talk with you BEFORE you price. Read everything. In "summary" write 2-3 plain sentences: what you understood the job is, and what is missing. In "questions" ask him ${input.quick ? 'up to 4 (QUICK MODE: only the biggest price drivers - size, how much is torn out, who supplies materials, building access)' : 'up to 6'} short, concrete questions whose answers change the price (size, how much is torn out, what stays, who supplies what, floor/elevator/COI, special conditions). Keep the summary to 2 short sentences. Each question is an object {"question":"under 12 words","choices":["2-4 short tap answers, 1-4 words each"]}; use [] choices only when the answer must be typed (like a size). Skip anything the request, the answers or his notes already say. If the request is almost empty, ask for the basics. Still return the JSON below; services may be empty.\n` : ''}${previous ? `\nTHIS IS A CHAT UPDATE. Previous reading below. Change ONLY what the new messages change. Keep every other item and quantity exactly the same.\nPREVIOUS READING:\n${JSON.stringify(previous)}\n` : ''}
 REQUEST:
 ${JSON.stringify(input)}
 
@@ -92,7 +92,12 @@ function validate(raw, input) {
   const st = (raw && raw.site) || {};
   out.site = { floor: Number(st.floor) || 0, elevator: st.elevator === true ? true : st.elevator === false ? false : null, walkup: st.walkup === true || st.elevator === false, coi: !!st.coi, buildingType: s(st.buildingType).slice(0, 40) };
   out.facts = (raw && raw.facts || []).filter((f) => f && s(f.text)).slice(0, 12).map((f, i) => ({ id: 'f' + (i + 1), text: s(f.text).slice(0, 160), effect: s(f.effect).slice(0, 120), on: true }));
-  out.questions = (raw && raw.questions || []).map((q) => s(typeof q === 'string' ? q : q && q.question)).filter((q) => q && !BAN.test(q) && !/brand|color|colour|sheen|finish type|budget|high.end/i.test(q)).slice(0, input && input.preflight ? 6 : 3);
+  const qOk = (q) => q && !BAN.test(q) && !/brand|color|colour|sheen|finish type|budget|high.end/i.test(q);
+  const qMax = input && input.preflight ? (input.quick ? 4 : 6) : 3;
+  const qRaw = (raw && raw.questions || []).filter((q) => qOk(s(typeof q === 'string' ? q : q && q.question))).slice(0, qMax);
+  out.questions = qRaw.map((q) => s(typeof q === 'string' ? q : q.question));
+  /* Tap answers for the mobile Talk card; same order as questions. */
+  out.questionChoices = qRaw.map((q) => (q && typeof q === 'object' && Array.isArray(q.choices) ? q.choices : []).map((c) => s(c).slice(0, 40)).filter((c) => c && !BAN.test(c)).slice(0, 4));
   const okStatus = ['READY', 'PRELIMINARY', 'NEEDS_CLARIFICATION', 'SITE_VISIT_REQUIRED'];
   out.status = okStatus.includes(s(raw && raw.status)) ? s(raw.status) : 'PRELIMINARY';
   return out;

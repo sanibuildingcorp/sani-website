@@ -79,7 +79,9 @@ function attachOld(reading, e) {
 function photoBlocks(record) {
   const rq = record.request || {};
   /* Form photos are stored as { data, slot } - data is the link (or a data: URL). */
-  const urls = [].concat(A(rq.photos).map((p) => (typeof p === 'string' ? p : p && (p.data || p.url))),
+  /* sitePhotos = internal photos the owner snaps from the Talk card (never shown to the customer). */
+  const site = A(record.estimate && record.estimate.sitePhotos).map((p) => p && p.data);
+  const urls = [].concat(A(rq.photos).map((p) => (typeof p === 'string' ? p : p && (p.data || p.url))), site,
     threadOf(record).flatMap((m) => A(m.attachments).filter((a) => a && a.kind === 'image').map((a) => a.url)));
   return urls.map(s).filter((u) => /^https:\/\//.test(u) || /^data:image\/(jpeg|png|gif|webp);base64,/.test(u)).slice(-8).map((u) => {
     const m = u.match(/^data:(image\/[a-z]+);base64,(.*)$/);
@@ -141,8 +143,8 @@ exports.handler = async (event) => {
     const previous = record.estimate && typeof record.estimate === 'object' ? record.estimate : null;
     /* ask = "Talk to the estimator first": questions for HIM, no prices, nothing on the estimate moves. */
     if (b.mode === 'ask') {
-      const rd = await readJob(Object.assign(inputFrom(record, b.offFacts), { preflight: true }), null, photoBlocks(record));
-      await save({ aiStatus: 'done', aiStage: '', aiError: '', aiJobId: s(b.jobId), aiFinishedAt: now(), v5Ask: { at: now(), jobId: s(b.jobId), summary: rd.summary, questions: rd.questions } });
+      const rd = await readJob(Object.assign(inputFrom(record, b.offFacts), { preflight: true, quick: !!b.quick }), null, photoBlocks(record));
+      await save({ aiStatus: 'done', aiStage: '', aiError: '', aiJobId: s(b.jobId), aiFinishedAt: now(), v5Ask: { at: now(), jobId: s(b.jobId), summary: rd.summary, questions: rd.questions, choices: rd.questionChoices || [], quick: !!b.quick } });
       return res(202, { ok: true });
     }
     /* redo = "Regenerate": read the whole job again from scratch, but like chat it
