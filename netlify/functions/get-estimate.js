@@ -99,6 +99,9 @@ exports.handler = async function (event) {
          read in the chat (chat-facts-background.js). */
       delete view.threadRate;
       delete view.chatFacts;
+      /* His private talk with the estimator never reaches the customer. */
+      delete view.v5Ask;
+      if (view.estimate) delete view.estimate.ownerNotes;
       /* The raw frozen version is already applied above; sending it as well
          would hand the customer every alternative the gate just removed. */
       delete view.sentVersion;
@@ -131,6 +134,8 @@ function scopeView(data) {
   delete view.threadRate;
   delete view.sentVersion;
   delete view.chatFacts;
+  delete view.v5Ask;
+  if (view.estimate) delete view.estimate.ownerNotes;
   return scopeOnlyView(view);
 }
 exports.scopeView = scopeView;

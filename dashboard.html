@@ -6637,7 +6637,7 @@ var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   "manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished",
   "customerViewPublishedVersion",
   // Customer View Mode choices
-  "showLaborCost", "showMaterialsCost", "displayByHand", "showSectionSubtotals",
+  "showLaborCost", "showMaterialsCost", "displayByHand", "ownerNotes", "showSectionSubtotals",
   "showLaborLines", "showMaterialLines",
   "showLaborLinePrices", "showMaterialLinePrices",
   // Manually set money + hand-built extras
@@ -13549,6 +13549,57 @@ function pzChecks() {
 function pzOn() { var m = document.getElementById("edit-modal"); return !!(m && m.classList.contains("pz-on")); }
 /* Set my own total: the same Set Total tool as the old screen (exact to the cent,
    all / labor only / materials only), then the new screen redraws and saves. */
+/* ── Talk to the estimator (him only, before pricing) ──────────────────────
+   "in my old system has ask to AI, i was discussed directly to the estimate
+    brain for better information swap and then generation". He asks, the brain
+   lists what it understood and what it needs; he answers; then Generate.
+   Everything lands in estimate.ownerNotes, which the brain obeys over the
+   customer's text and which the customer never sees. */
+function pzTalkHtml(r, hasLines) {
+  var e = (r && r.estimate) || {}, a = r && r.v5Ask, qs = (a && a.questions) || [];
+  var notes = String(e.ownerNotes || "");
+  return '<div class="pz-c" id="pz-talk"><div class="pz-row"><h2 style="margin:0">🧠 Talk to the estimator</h2><span class="pz-mut">only you see this</span></div>' +
+    '<div class="pz-mut" style="margin:4px 0 10px">' + (hasLines ? "Tell it what to change, then tap Regenerate." : "Tap Ask me questions. Answer what you know, then Generate.") + '</div>' +
+    (a && a.summary ? '<div class="pz-ai" style="margin-bottom:8px"><b>It understood:</b> ' + esc(a.summary) + '</div>' : "") +
+    qs.map(function (x, i) { return '<label style="display:block;margin:8px 0 2px;font-weight:600">' + esc(x) + '</label><input class="pz-talkq" data-q="' + esc(x) + '" type="text" placeholder="Your answer" style="width:100%;box-sizing:border-box;font-size:16px;border:1px solid #d5d9e0;border-radius:8px;padding:9px">'; }).join("") +
+    '<label style="display:block;margin:12px 0 2px;font-weight:600">Your notes for the estimator</label>' +
+    '<textarea id="pz-onotes" rows="4" placeholder="e.g. Full gut 5x8, tub to walk-in shower, customer buys tile and vanity, 4th floor walk-up" oninput="pzEst().ownerNotes=this.value;pzDirty()" style="width:100%;box-sizing:border-box;font-size:16px;border:1px solid #d5d9e0;border-radius:8px;padding:9px">' + esc(notes) + '</textarea>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">' +
+      '<button type="button" class="pz-btn pz-ghost" id="pz-askbtn" onclick="pzAskEstimator()">' + (qs.length ? "Ask again" : "Ask me questions") + '</button>' +
+      (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzTalkCommit();pzRegenerate()">↻ Regenerate</button>'
+                : '<button type="button" class="pz-btn pz-gold" onclick="pzTalkCommit();pzSaveNow().then(function(){pzGenerate()})">Generate estimate</button>') +
+    '</div><span id="pz-gen" class="pz-mut"></span></div>';
+}
+/* Answers go into his notes as "Q: … A: …" lines, so they are saved and read every time. */
+function pzTalkCommit() {
+  var e = pzEst(), add = [];
+  document.querySelectorAll(".pz-talkq").forEach(function (i) { var v = i.value.trim(); if (v) add.push("Q: " + i.getAttribute("data-q") + " A: " + v); });
+  if (add.length) { e.ownerNotes = [String(e.ownerNotes || "").trim()].concat(add).filter(Boolean).join("\n"); if (currentRecord.v5Ask) currentRecord.v5Ask.questions = []; }
+  clearTimeout(PZ.saveT);
+}
+async function pzAskEstimator() {
+  var r = currentRecord, ref = r && r.ref; if (!ref || PZ.busy) return;
+  pzTalkCommit(); await pzSaveNow();
+  var jobId = "v5a-" + Date.now().toString(36);
+  pzBusy(true, "Reading the job");
+  try {
+    var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jobId, mode: "ask" }) });
+    if (k.status !== 202 && !k.ok) throw new Error("HTTP " + k.status);
+    var j = null;
+    for (var n = 0; n < 60; n++) {
+      await new Promise(function (ok) { setTimeout(ok, 3000); });
+      var g = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+      j = await g.json().catch(function () { return null; });
+      if (j && j.aiJobId === jobId && (j.aiStatus === "done" || j.aiStatus === "error")) break;
+    }
+    if (!j || j.aiJobId !== jobId) throw new Error("No answer yet - try again in a minute");
+    if (j.aiStatus === "error") throw new Error(j.aiError || "The estimator reported an error");
+    r.v5Ask = j.v5Ask || null;
+    pzBusy(false); pzRender();
+    var el = document.getElementById("pz-talk"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!(r.v5Ask && r.v5Ask.questions && r.v5Ask.questions.length)) toast("No questions - you can generate now");
+  } catch (e) { pzBusy(false); toast("Ask: " + e.message, true); }
+}
 function pzSetTotal() { if (!currentRecord) return; clearTimeout(PZ.saveT); openSetTotalModal(); }
 function pzRender() {
   var card = document.getElementById("edit-card");
@@ -13570,12 +13621,13 @@ function pzRender() {
     ? '<div class="pz-ai"><b>AI read:</b> ' + undo + ' ' + esc(STATUS[pr.status] || "Priced.") + (asm.length ? " Assumed " + esc(asm.join("; ").replace(/\.$/, "")) + "." : "") +
       (q0 ? ' <a href="#" onclick="pzAskCustomer();return false">Ask customer: ' + esc(q0.length > 60 ? q0.slice(0, 57) + "…" : q0) + '</a>' : "") +
       (SBC_V5 ? '<div id="pz-regen" style="margin-top:8px"><button type="button" class="pz-btn pz-gold pz-sm" onclick="pzRegenerate()">↻ Regenerate estimate</button> <span class="pz-mut">reads the whole job again; you see the changes first</span></div>' : "") + '</div>'
-    : SBC_V5 ? '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>'
+    : SBC_V5 ? '<div class="pz-ai"><b>AI read:</b> no estimate yet. Talk to the estimator below first, then generate.</div>'
     : '<div class="pz-ai">No prices yet. Add a service and your lines below, or tap one of your price book packages.</div>';
 
   var html = pzCustomerHtml(r) + '<div class="pz-c" id="pz-s1"><div class="pz-row"><h2>1 · Request</h2><span class="pz-mut">' + photos + ' photo' + (photos === 1 ? '' : 's') + ' · ' + msgs + ' email' + (msgs === 1 ? '' : 's') + '</span></div>' +
     '<p style="margin:0 0 8px">' + esc(q.description ? '"' + q.description + '"' : (q.service || "")) + '</p>' + pzReqPhotos() + aiRead + '</div>' +
     pzChatHtml(r);
+  if (SBC_V5) html += pzTalkHtml(r, lines);
 
   /* 2 · Scope & Price */
   var book = (PZ.book && PZ.book.templates) || [];
