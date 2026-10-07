@@ -53,8 +53,6 @@ console.log("\n2. His numbers survive a regenerate\n");
 /* The dashboard boxes themselves are the Perplexity estimate screen now
    (crew, hours a day, start date): js/dashboard-layout.test.js. */
 ok("his timeline numbers survive a regenerate (server and dashboard lists)", OWNED.CONTRACTOR_OWNED_ESTIMATE_FIELDS.indexOf("scheduleEdit") !== -1 && /"scheduleEdit"\n\];/.test(D));
-const gen = fs.readFileSync(path.join(ROOT, "netlify", "functions", "generate-estimate-background.js"), "utf8");
-ok("...and the regenerated timeline is counted with them", gen.indexOf("if (estimate.scheduleEdit)") > gen.indexOf("preserveContractorFields(carry.previous, estimate)"));
 
 console.log("\n" + pass + " passed, " + fail + " failed\n");
 process.exit(fail ? 1 : 0);

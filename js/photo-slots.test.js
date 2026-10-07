@@ -149,37 +149,6 @@ ok('a missing photo-slots.js leaves the contact form working rather than taking 
 /* ══ THE ESTIMATOR IS TOLD WHICH SHOT IS WHICH ════════════════════════════
    The whole point: "this is the whole room from the doorway" is evidence about
    size. The same picture unlabelled is just another image. */
-console.log('\nthe estimator is told what it is looking at\n');
-const GEN = fs.readFileSync(path.join(__dirname, '..', 'netlify', 'functions', 'generate-estimate-background.js'), 'utf8');
-ok('the shots reach the estimator input', /photoShots: photoShots\(request\),/.test(GEN));
-/* They used to be switched off together with the retired "AI photo analysis"
-   toggle - which was off by default, so by default the estimator was never told
-   which shots it had. The toggle is gone; the shot list always travels now. */
-ok('...and are always sent — no toggle switches them off any more',
-  !/usePhotoAnalysis/.test(GEN));
-ok('THE PIN IS NOT DISTURBED — framing is not a change of job, and a new key there would stale every record',
-  !/photoShots/.test(fs.readFileSync(path.join(__dirname, '..', 'netlify', 'functions', 'lib', 'scope-pin.js'), 'utf8')));
-{
-  /* Run the real helper out of the file. */
-  const src = GEN.slice(GEN.indexOf('const SHOT_LABELS'), GEN.indexOf('\n}', GEN.indexOf('function photoShots')) + 2);
-  const c = {}; vm.createContext(c); vm.runInContext(src, c);
-  const run = (photos) => vm.runInContext('photoShots(' + JSON.stringify({ photos: photos }) + ')', c);
-  ok('a wide shot is described in words the analyst can use',
-    /whole room/.test(run([{ slot: 'wide' }])[0]), JSON.stringify(run([{ slot: 'wide' }])));
-  ok('several shots are all described', run([{ slot: 'wide' }, { slot: 'close' }, { slot: 'scale' }]).length === 3);
-  {
-    const r = run([{ slot: 'close' }, { slot: 'other' }]);
-    ok('ALL CLOSE-UPS IS SAID OUT LOUD, with the instruction not to guess dimensions',
-      r.length === 2 && /do not infer room dimensions/.test(r[1]), JSON.stringify(r));
-  }
-  ok('no photos at all says nothing — there is nothing to warn about', run([]).length === 0);
-  ok('unlabelled photos from before the slots existed get the warning, not a crash',
-    run([{ name: 'a.jpg' }]).length === 1 && /do not infer/.test(run([{ name: 'a.jpg' }])[0]));
-  ok('an unrecognised slot is skipped rather than shown raw to the AI',
-    run([{ slot: 'sideways' }]).every(function (s) { return s.indexOf('sideways') === -1; }));
-  ok('junk does not throw',
-    (function () { try { run(null); run([null]); vm.runInContext('photoShots(null)', c); return true; } catch (e) { return 'threw: ' + e.message; } })() === true);
-}
 
 /* ══ THE DASHBOARD SHOWS THE LABEL ════════════════════════════════════════ */
 console.log('\nthe contractor can see which shot is which\n');

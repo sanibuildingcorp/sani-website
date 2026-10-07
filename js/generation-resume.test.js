@@ -316,7 +316,7 @@ const FINISHED = { aiJobId: 'ai-1', aiStatus: 'done', status: 'drafted', estimat
   h.run('watchGeneration("A","ai-1", Date.now() - ' + (MAX + 5000) + ').then(function(d){out.d=d},function(e){out.e=e.message})');
   await h.flush(6);
   ok('a run that truly never finishes gives up after 15 minutes', /15 minutes/.test(h.ctx.out.e || ''), JSON.stringify(h.ctx.out));
-  ok('...pointing at the function log that would say why', /generate-estimate-background/.test(h.ctx.out.e || ''));
+  ok('...pointing at the function log that would say why', /generate-v5-background/.test(h.ctx.out.e || ''));
   ok('...and clears the note', h.run('aiJobFor("A")') === null);
 }
 {
@@ -359,7 +359,7 @@ ok('the old 8-minute tick-counting loop is gone', !/Timed out after 8 minutes/.t
 ok('the browser now waits as long as the background function is allowed to run',
   /var AI_JOB_MAX_MS = 15 \* 60 \* 1000;/.test(HTML));
 ok('the generation still starts through the background function',
-  /\/\.netlify\/functions\/generate-estimate-background/.test(HTML));
+  /\/\.netlify\/functions\/generate-v5-background/.test(HTML));
 ok('a resumed run still restores the contractor-owned fields',
   /CONTRACTOR_OWNED_ESTIMATE_FIELDS\.forEach/.test(ext('applyGeneratedEstimate')));
 

@@ -28,7 +28,6 @@ process.env.DASHBOARD_KEY = "k";
 process.env.ANTHROPIC_API_KEY = "test";
 delete process.env.RESEND_API_KEY;
 const { keepHandPrices } = require("../netlify/functions/lib/hand-prices");
-const pin = require("../netlify/functions/lib/scope-pin");
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true ? "PASS  " : "FAIL  ") + n + (d ? "\n        " + d : "")); };
 const fn = (src, name) => {
@@ -56,7 +55,7 @@ ok("\"Ask customer\" in the AI read goes to this card", /pzJump\("pz-chat"\)/.te
 
 console.log("\n2. Bubbles, status, what the AI learned\n");
 const ctx = { console, Object, Array, String, Number, Date, isFinite, JSON };
-ctx.SBC_AI_GENERATOR = true; vm.createContext(ctx);
+ctx.SBC_V5 = true; vm.createContext(ctx);
 vm.runInContext("function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;')}\nvar PZ={factsAsked:{},factsReading:'',factsChanged:''};\n" +
   "var PZ_VIA = { quote: \"quote page\", gmail: \"email\", dashboard: \"email\" };\n" +
   ["threadOf", "threadNeedsReply", "threadWaiting", "cnvAttachmentsHtml"].map((n) => fn(D, n)).join("\n") + "\n" +
@@ -108,17 +107,6 @@ ok("a line he did not touch takes the new numbers", next.labor[1].qty === 3 && n
 ok("a line he added himself that the new estimate lacks is kept", out.added === 1 && next.materials.length === 2 && next.materials[1].rate === 640);
 ok("same name in another service is not his line", (() => { const n = { labor: [{ section: "Kitchen", item: "Paint hallway walls", qty: 9, rate: 9 }] }; keepHandPrices({ labor: [prev.labor[0]] }, n); return n.labor[0].qty === 9 && n.labor.length === 2; })());
 ok("nothing typed by hand: nothing changes", JSON.stringify(keepHandPrices({ labor: [{ item: "a", qty: 1, rate: 1 }] }, { labor: [{ item: "a", qty: 2, rate: 2 }] }).estimate) === '{"labor":[{"item":"a","qty":2,"rate":2}]}');
-const gen = fs.readFileSync(path.join(ROOT, "netlify", "functions", "generate-estimate-background.js"), "utf8");
-const hk = gen.indexOf("keepHandPrices(previousEstimate, estimate)");
-ok("the generator puts them back after live prices, before the service totals are built, never when adding a service", hk > gen.indexOf("priceMaterialsLive(estimate") && hk < gen.indexOf("estimate = finalizeCustomerPresentation(estimate, projectAnalysis, input);") && /if \(!addSvc && previousEstimate\) \{\s*const hand = keepHandPrices/.test(gen));
-
-console.log("\n4. The ticks reach the estimator\n");
-const cff = new Function("cleanText", fn(gen, "chatFactsFor") + "; return chatFactsFor;")((v) => String(v == null ? "" : v).replace(/\s+/g, " ").trim());
-const facts = cff(rec);
-ok("ticked facts go as use, switched-off ones as ignore", JSON.stringify(facts) === JSON.stringify({ use: ["Hallway ~15 ft long -> painting qty 120 sf"], ignore: ["Ceiling not included -> added to Not included"] }) && cff({}) === null);
-ok("the analysis and the pricing prompts are told not to use an ignored fact", /contractor\.chatFacts, when present[^\n]*"ignore" was switched off by the contractor - do not use it/.test(gen) && /input\.contractor\.chatFacts\.ignore lists facts from the customer chat he switched off: do not use them/.test(gen) && /if \(facts\) input\.contractor\.chatFacts = facts;/.test(gen));
-const base = { customer: { address: "x" }, request: { description: "Paint", conversation: [] }, contractor: {} };
-ok("a switched-off fact reads the job again; without one every fingerprint stays as it was", pin.scopeFingerprint(Object.assign({}, base, { contractor: { chatFacts: { use: ["a"], ignore: [] } } })) === pin.scopeFingerprint(base) && pin.scopeFingerprint(Object.assign({}, base, { contractor: { chatFacts: { use: [], ignore: ["a"] } } })) !== pin.scopeFingerprint(base));
 const ge = fs.readFileSync(path.join(ROOT, "netlify", "functions", "get-estimate.js"), "utf8");
 ok("the customer's page never gets what the AI read (quote view and scope link)", (ge.match(/delete view\.chatFacts;/g) || []).length === 2);
 

@@ -152,7 +152,9 @@ function update(prevEstimate, newReading, opts) {
       /* A book line he edited REPLACES the rebuilt book line (never charged twice). */
       /* Same item name AND (same book item or same service) - never section alone,
          because every material of one book item shares bookId and section. */
-      const i = next[k].findIndex((l) => !l.byHand && norm(l.item) === norm(h.item) && ((h.bookId && l.bookId === h.bookId) || norm(l.section) === norm(h.section)));
+      let i = next[k].findIndex((l) => !l.byHand && norm(l.item) === norm(h.item) && ((h.bookId && l.bookId === h.bookId) || norm(l.section) === norm(h.section)));
+      /* Renamed ("Toilet" -> "Kohler toilet"): a book item has ONE labor line per service, so the bookId finds it. */
+      if (i < 0 && k === 'labor' && h.bookId) i = next[k].findIndex((l) => !l.byHand && l.bookId === h.bookId && norm(l.section) === norm(h.section));
       /* byHand (he typed the line) keeps his whole line; rateByHand keeps only his rate. */
       if (i >= 0) next[k][i] = h.byHand ? Object.assign({}, h) : Object.assign(next[k][i], { rate: h.rate, rateByHand: true });
       else next[k].push(Object.assign({}, h));

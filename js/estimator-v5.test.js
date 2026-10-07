@@ -84,3 +84,12 @@ console.log('toilet', toilet.totals, '\ngut', gut.totals, gut.timelineText, '\nv
   as.ok(!u.changes.some((c) => c.type === 'remove'), 'nothing removed');
   console.log('ok - typed price on one material keeps the other materials (no wipe, no double)');
 }
+{
+  const E4 = require('../netlify/functions/lib/estimate-engine-v5'), as = require('assert');
+  const rd = { services: [{ name: 'Bathroom', items: [{ id: 'toilet', qty: 1 }] }] };
+  const a = E4.build(rd); const l = a.labor.find((x) => x.bookId === 'toilet'); l.item = 'Kohler toilet install'; l.byHand = true;
+  const u = E4.update(a, rd).estimate;
+  as.strictEqual(u.labor.filter((x) => x.bookId === 'toilet').length, 1);
+  as.ok(u.labor.some((x) => x.item === 'Kohler toilet install'));
+  console.log('ok - a renamed labor line is still one line after Update');
+}

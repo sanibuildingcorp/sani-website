@@ -102,3 +102,6 @@ request + chat + photos ──► READER (AI, 1 call) ──► reading (ids + q
 - Customer-supplied items: no $0 material row; shown in the card's "You supply" list, labor kept.
 - `finishStatus` uses the dashboard values. "range hood" is no longer banned. `ea` limit 200.
 - Testing: the deploy preview uses LIVE data — test only on a dummy estimate.
+
+## One brain (old generator deleted)
+Deleted: generate-estimate-background.js, generate-estimate.js, lib/generator-switch.js, lib/auto-draft.js, and the libs only the old brain used (scope-pin, scope-writer, job-size, join-lines, main-material, market-research, material-prices) with their tests. Generate, Update from chat, the assistant and the ChatGPT tool all use generate-v5-background. "Add a service" now means: write it in the chat, then Update from chat. No AI draft runs by itself when a request arrives. Switch: SBC_V5 in dashboard.html, V5_GENERATOR=off in Netlify.

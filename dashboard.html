@@ -4577,7 +4577,7 @@ async function aiExec(a, log, render) {
     return "Added to " + dref + "'s customer description. Open it and press Re-read the job from scratch to price it.";
   }
   if (t === "addservice") {
-    if (!SBC_AI_GENERATOR) return SBC_AI_OFF;
+    return "Write the extra work in the estimate chat, then tap Update estimate from chat. The estimate brain adds it from your price book and shows the changes first."; if (!SBC_V5) return SBC_AI_OFF;
     /* ── THE BRIEF COMES FROM THE ASSISTANT ──────────────────────────────
          "I talked already to the my ask AI and he knows what i want ... can
           i put description from my AI?"
@@ -4695,7 +4695,7 @@ async function aiExec(a, log, render) {
     /* "regenerate with everything I told you": the generator reads this
        chat (generate-estimate-background, chatInstructions). generateAI asks
        him to confirm, as the buttons do. */
-    if (!SBC_AI_GENERATOR && !SBC_V5) return SBC_AI_OFF;
+    if (!SBC_V5) return SBC_AI_OFF;
     var gref = String(a.ref || "");
     if (!currentRecord || currentRecord.ref !== gref) return "Open " + gref + " first, then ask me again.";
     var reread = /read|scratch|analy/i.test(String(a.how || ""));
@@ -6406,7 +6406,7 @@ async function watchGeneration(ref, jobId, startedAt, label) {
     if (v.state === "error") { aiJobClear(ref); throw new Error(v.message); }
     if (v.state === "timeout") {
       aiJobClear(ref);
-      throw new Error("Still running after 15 minutes — check Netlify → Logs → Functions → generate-estimate-background");
+      throw new Error("Still running after 15 minutes — check Netlify → Logs → Functions → generate-v5-background");
     }
     await sleepUntilVisibleOr(3000);
   }
@@ -6508,63 +6508,19 @@ async function resumeGenerationIfRunning(ref) {
    services are not regenerated: not a line, not a bullet, not a price. The
    customer keeps seeing the frozen sent version until he sends again. */
 async function addServiceAI(prefill, service, alreadyConfirmed) {
-  if (!SBC_AI_GENERATOR) { toast(SBC_AI_OFF, true); return false; }
-  var r = currentRecord;
-  if (!r || !r.ref) return false;
-  if (!(r.estimate && (r.estimate.labor || []).length)) { toast("Generate and price the estimate first, then add a service to it", true); return false; }
-  var what;
-  if (typeof prefill === "string" && prefill.trim()) {
-    /* the assistant wrote the brief: show it whole, ask once (unless the
-       caller - a redo - already asked with the whole story) */
-    what = prefill.trim();
-    if (alreadyConfirmed !== true && !confirm("Add this as its own section of " + r.ref + "?\n\n" + (service ? service + "\n" : "") + what + "\n\nIt is priced on its own. Everything already in this estimate stays exactly as it is.")) return false;
-  } else {
-    what = prompt("What is the additional service? Say what and where, in one or two lines (for example: paint walls, ceiling, baseboard and doors in the bathroom; colors from her email). It is priced on its own and added as its own section. Everything already in this estimate stays exactly as it is.", "");
-    if (what === null) return false;
-    what = String(what).trim();
-    if (!what) { toast("Say what the additional service is first", true); return false; }
-  }
-  var btn = document.getElementById("gen-btn");
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="ai-spin"></span> Adding the service…'; }
-  try {
-    var ref = r.ref;
-    var jobId = "ai-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
-    var startedAt = Date.now();
-    var kick = await fetch("/.netlify/functions/generate-estimate-background", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: ref, jobId: jobId, addService: { text: what, service: String(service || "") }, houseRules: (function () { var b = document.getElementById("house-rules-text"); return b && b.value.trim() ? b.value : SBC_HOUSE_RULES; })() }),
-    });
-    if (kick.status !== 202 && !kick.ok) throw new Error("Could not start the estimator (" + kick.status + ")");
-    aiJobStart(ref, jobId, startedAt, { addService: true });
-    var data = await watchGeneration(ref, jobId, startedAt, "Adding the service… (the rest stays as it is)");
-    applyGeneratedEstimate(data, true);
-    var adds = (currentRecord.estimate && currentRecord.estimate.addedServices) || [];
-    var last = adds[adds.length - 1];
-    toast("✓ " + (last && last.titles ? last.titles.join(", ") : "The service") + " added as its own section" + (last && last.subtotal ? " · " + fmt(last.subtotal) : "") + ". The earlier services are untouched. Review it, then Send to Customer.");
-    return true;
-  } catch (e) {
-    console.error(e);
-    if (btn) { btn.disabled = false; btn.textContent = "Re-price this job"; }
-    toast("Could not add the service: " + e.message, true);
-    return false;
-  }
+  /* One estimate brain (v5): extra work goes in the chat, then Update estimate
+     from chat adds it from the price book and shows the changes first. */
+  toast("Write the extra work in the chat, then tap Update estimate from chat.");
+  return false;
 }
 
-/* ══ THE AI ESTIMATE GENERATOR IS SWITCHED OFF ═══════════════════════════
-     "Look what he did after i clicked regenerate from customer conversation!
-      It's stupid! Remove whole generation"
-   Every way in (Generate, Re-price, Re-read, Add a service, Update estimate
-   from chat, the assistant's regenerate) stops here with one message. The
-   code stays; the server has the same switch (lib/generator-switch.js,
-   AI_GENERATOR=on). Turn both on together to bring it back. */
-var SBC_AI_GENERATOR = false;
 /* THE NEW BRAIN (v5, netlify/functions/generate-v5-background.js). The AI only
    reads the job and picks price-book items + quantities; code prices it.
    Server switch: V5_GENERATOR=off turns it off. */
 var SBC_V5 = true;
-var SBC_AI_OFF = "The AI estimate generator is switched off. Price the job with your own lines and price book.";
+var SBC_AI_OFF = "The estimate brain is switched off (SBC_V5). Price the job with your own lines and price book.";
 async function generateAI(isRegenerate, reanalyze) {
-  if (!SBC_AI_GENERATOR && !SBC_V5) { toast(SBC_AI_OFF, true); return; }
+  if (!SBC_V5) { toast(SBC_AI_OFF, true); return; }
   if (isRegenerate) {
     var warn = regenerateWarning(currentRecord, reanalyze);
     if (warn) { if (!confirm(warn)) return; }
@@ -6608,7 +6564,7 @@ async function generateAI(isRegenerate, reanalyze) {
       })()
     });
 
-    const kick = await (SBC_V5 ? sbcFetch : fetch)(SBC_V5 ? "/.netlify/functions/generate-v5-background" : "/.netlify/functions/generate-estimate-background", {
+    const kick = await sbcFetch("/.netlify/functions/generate-v5-background", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: payload,
@@ -13593,7 +13549,7 @@ function pzRender() {
   var aiRead = lines
     ? '<div class="pz-ai"><b>AI read:</b> ' + undo + ' ' + esc(STATUS[pr.status] || "Priced.") + (asm.length ? " Assumed " + esc(asm.join("; ").replace(/\.$/, "")) + "." : "") +
       (q0 ? ' <a href="#" onclick="pzAskCustomer();return false">Ask customer: ' + esc(q0.length > 60 ? q0.slice(0, 57) + "…" : q0) + '</a>' : "") + '</div>'
-    : (SBC_AI_GENERATOR || SBC_V5) ? '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>'
+    : SBC_V5 ? '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>'
     : '<div class="pz-ai">No prices yet. Add a service and your lines below, or tap one of your price book packages.</div>';
 
   var html = pzCustomerHtml(r) + '<div class="pz-c" id="pz-s1"><div class="pz-row"><h2>1 · Request</h2><span class="pz-mut">' + photos + ' photo' + (photos === 1 ? '' : 's') + ' · ' + msgs + ' email' + (msgs === 1 ? '' : 's') + '</span></div>' +
@@ -14165,7 +14121,7 @@ function pzChatStatus(r) {
 }
 function pzLearnHtml(r) {
   /* The facts feed the generator; with it switched off they change nothing. */
-  if ((!SBC_AI_GENERATOR && !SBC_V5) || !pzLastCust(r)) return "";
+  if (!SBC_V5 || !pzLastCust(r)) return "";
   var cf = r.chatFacts || {}, facts = Array.isArray(cf.facts) ? cf.facts : [], reading = PZ.factsReading === r.ref;
   var list = facts.length ? facts.map(function (f) {
     return '<label class="pz-fact"><input type="checkbox" data-f="' + esc(String(f.id)) + '"' + (f.on !== false ? ' checked' : '') + ' onchange="pzFactTick()"><span>' + esc(f.text) + (f.effect ? ' → ' + esc(f.effect) : '') + '</span></label>';

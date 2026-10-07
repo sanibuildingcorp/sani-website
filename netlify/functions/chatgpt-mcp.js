@@ -244,9 +244,9 @@ async function houseRules() {
 
 function kickEstimator(body) {
   return new Promise(function (resolve, reject) {
-    const u = new URL(siteBase() + "/.netlify/functions/generate-estimate-background");
+    const u = new URL(siteBase() + "/.netlify/functions/generate-v5-background");  // the one estimate brain (v5)
     const data = JSON.stringify(body);
-    const req = https.request({ hostname: u.hostname, path: u.pathname, method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } }, function (res) {
+    const req = https.request({ hostname: u.hostname, path: u.pathname, method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data), "x-sbc-key": process.env.DASHBOARD_KEY || "" } }, function (res) {
       res.resume();
       res.on("end", function () { resolve(res.statusCode); });
     });
@@ -419,8 +419,7 @@ const TOOLS = [
     run: async function (a) {
       const rec = await loadRecord(a.ref);
       const id = jobId();
-      if (!require("./lib/generator-switch").on()) return require("./lib/generator-switch").OFF_MESSAGE;
-      const code = await kickEstimator({ ref: rec.ref, jobId: id, reanalyze: a.reanalyze === true, useDescription: true, useAnswers: true, extraRequest: str(a.extraRequest).slice(0, 2000), houseRules: await houseRules() });
+      const code = await kickEstimator({ ref: rec.ref, jobId: id, mode: "new" });
       if (code !== 202 && !(code >= 200 && code < 300)) throw new Error("The estimator refused (" + code + ")");
       return "Started on " + rec.ref + (a.reanalyze === true ? " (re-reading the job from scratch)" : " (re-pricing)") + ". It takes a few minutes; read the estimate again after that.";
     },
@@ -433,10 +432,7 @@ const TOOLS = [
     run: async function (a) {
       const rec = await loadRecord(a.ref);
       if (!str(a.text)) throw new Error("Describe the work to add");
-      if (!require("./lib/generator-switch").on()) return require("./lib/generator-switch").OFF_MESSAGE;
-      const code = await kickEstimator({ ref: rec.ref, jobId: jobId(), addService: { text: str(a.text).slice(0, 2000), service: str(a.service) }, houseRules: await houseRules() });
-      if (code !== 202 && !(code >= 200 && code < 300)) throw new Error("The estimator refused (" + code + ")");
-      return "Started: pricing \"" + str(a.text).slice(0, 80) + "\" on " + rec.ref + ". It takes a few minutes; read the estimate again after that.";
+      return "Write the extra work in " + rec.ref + "'s chat in the dashboard, then tap Update estimate from chat. The estimate brain adds it from the price book and shows the changes before anything is applied.";
     },
   },
   {
