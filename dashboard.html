@@ -13305,7 +13305,10 @@ try {
 .pz-tk-mic.on{background:#fde8e6;border-color:#c0392b}.pz-tk-skip{display:inline-block;margin-top:8px;font-size:13px}
 .pz-tk-notes{margin-top:10px}.pz-tk-notes summary{font-size:14px;font-weight:600;padding:6px 0;cursor:pointer}.pz-tk-notes textarea{width:100%;box-sizing:border-box;font-size:16px;border:1px solid #d5d9e0;border-radius:8px;padding:9px}
 .pz-tk-bar{position:sticky;bottom:62px;z-index:15;display:flex;gap:6px;background:#fff;padding:8px 0 2px;margin-top:8px;border-top:1px solid #eef0f4}
-.pz-tk{min-width:0;overflow:hidden}.pz-tk *{box-sizing:border-box}.pz-tk-bar .pz-btn{min-height:46px;padding:8px 9px;font-size:14px;white-space:nowrap;min-width:0;flex:0 1 auto}.pz-tk-bar .pz-gold{flex:1 1 auto;font-weight:800}.pz-tk-ph{position:relative;display:flex;align-items:center}.pz-tk-ph small{position:absolute;top:2px;right:3px;font-size:10px;background:#c9a24a;color:#fff;border-radius:999px;padding:0 4px}
+.pz-tk{min-width:0;overflow-x:clip}.pz-tk *{box-sizing:border-box}.pz-tk-bar .pz-btn{min-height:46px;padding:8px 9px;font-size:14px;white-space:nowrap;min-width:0;flex:0 1 auto}.pz-tk-bar .pz-gold{flex:1 1 auto;font-weight:800}.pz-tk-ph{position:relative;display:flex;align-items:center}.pz-tk-ph small{position:absolute;top:2px;right:3px;font-size:10px;background:#c9a24a;color:#fff;border-radius:999px;padding:0 4px}
+/* Phone and narrow screens: Price & terms is the last card on the page,
+   right after "Ready to send" (Quick actions move above them). */
+@media(max-width:979px){#pz-side{display:flex;flex-direction:column}#pz-side .pz-quick{order:-1}}
 .pz-c{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:14px 16px;margin-bottom:12px}
 .pz-ey{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5d6878;font-weight:700}
 #edit-card.pz-card h2{font-size:17px;margin:2px 0 8px;font-family:inherit;letter-spacing:0;color:#16202e}
@@ -13783,11 +13786,14 @@ function pzRender() {
     (ed.workDays > 0 ? '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzSched(\'workDays\',\'\');pzRender()">Back to auto (' + esc(String(sch && sch.auto ? sch.auto.workDays : "")) + ')</button>' : '<span class="pz-mut">auto · type your own</span>') + '</div>' +
     '<div class="pz-tl" id="pz-tl"></div><div id="pz-tltxt" class="pz-mut"></div></div>';
 
-  /* 4 · Terms */
+  /* 5 · Price & terms. "bring payment card under the everything, it's need
+     to be last after i check everything": built here, shown in the side
+     column right under "Ready to send" - on the phone that is the very end
+     of the page, after the checklist. */
   var tm = pzTerms();
   /* Price and terms in ONE card: read the money, move the markup, set your own
      total, check payment - all in one place before Send. Only you see the money rows. */
-  html += '<div class="pz-c" id="pz-s4"><h2>4 · Price &amp; terms</h2>' +
+  var priceHtml = '<div class="pz-c" id="pz-s4"><h2>5 · Price &amp; terms</h2>' +
     '<div class="pz-ey" style="margin-top:4px">Money (you only)</div>' +
     '<button type="button" class="pz-btn pz-gold pz-sm" style="width:100%;margin:6px 0 8px" onclick="pzSetTotal()">🎯 Set my own total</button>' +
     '<div class="pz-row"><span>Customer price</span><b id="pz-mcus"></b></div>' +
@@ -13799,8 +13805,8 @@ function pzRender() {
     '<div class="pz-row" style="margin-top:8px"><span>Warranty</span><select onchange="pzTerm(\'warranty\',this.value)">' + ["3-year workmanship", "1-year workmanship", "2-year workmanship", "90-day workmanship"].map(function (v) { return '<option' + ((tm.warranty || "3-year workmanship") === v ? ' selected' : '') + '>' + v + '</option>'; }).join("") + '</select></div>' +
     '<div class="pz-row" style="margin-top:8px"><span>Valid for</span><select onchange="pzTerm(\'validDays\',Number(this.value))">' + [14, 30, 60].map(function (v) { return '<option' + (Number(tm.validDays || 30) === v ? ' selected' : '') + '>' + v + '</option>'; }).join("") + '</select> days</div></div>';
 
-  /* 5 · What we need from the customer */
-  html += '<div class="pz-c" id="pz-s5"><h2>5 · What we need from the customer</h2><ul class="pz-list">' +
+  /* 4 · What we need from the customer */
+  html += '<div class="pz-c" id="pz-s5"><h2>4 · What we need from the customer</h2><ul class="pz-list">' +
     (e.customerNeeds || []).map(function (x, j) { return '<li>' + esc(String(typeof x === "string" ? x : (x && x.text) || "")) + ' <button type="button" class="pz-x" onclick="pzNeedDel(' + j + ')">✕</button></li>'; }).join("") + '</ul>' +
     '<div class="pz-edl"><input id="pz-need" placeholder="Add (e.g. Remove items from vanity)" onkeydown="if(event.key===\'Enter\')pzNeedAdd()"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzNeedAdd()">Add</button></div></div>';
   var draft = document.getElementById("cnv-text"), draftVal = draft ? draft.value : "";
@@ -13812,8 +13818,8 @@ function pzRender() {
 
   /* the side */
   var side = document.getElementById("pz-side");
-  if (side) side.innerHTML = '<div class="pz-c" id="pz-ready"><div class="pz-ey">Ready to send</div><ul class="pz-chk" id="pz-chk"></ul></div>' +
-    '<div class="pz-c"><div class="pz-ey">Quick actions</div><div style="display:grid;gap:6px;margin-top:6px">' +
+  if (side) side.innerHTML = '<div class="pz-c" id="pz-ready"><div class="pz-ey">Ready to send</div><ul class="pz-chk" id="pz-chk"></ul></div>' + priceHtml +
+    '<div class="pz-c pz-quick"><div class="pz-ey">Quick actions</div><div style="display:grid;gap:6px;margin-top:6px">' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzDuplicate()">Duplicate estimate</button>' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzSaveTemplate()">Save as my template</button>' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="copyScopeLink()">Scope only (no prices)</button>' +
