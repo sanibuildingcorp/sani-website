@@ -14360,6 +14360,8 @@ function pzV5Changes(ref, ch, full) {
   box.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:18px">' +
     '<h3 style="margin:0 0 6px">' + (PZ.v5mode === "redo" ? "Changes from Regenerate" : "Changes from the chat") + '</h3>' +
     (full ? '<div class="pz-pill pz-wa" style="margin-bottom:8px">This estimate was made before the new brain, so the new brain rebuilt it from your price book. Tick <b>Keep</b> on any old line you want to keep (your own lines). Unticked old lines go; Undo brings them back.</div>' : '') +
+    (function () { var e0 = (currentRecord && currentRecord.estimate) || {}, c0 = [].concat(e0.labor || [], e0.materials || []).reduce(function (s, l) { return s + (Number(l.qty) || 0) * (Number(l.rate) || 0); }, 0);
+      return c0 > 0 && tot < -0.2 * c0 ? '<div style="background:#fdecea;color:#9b1c1c;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-weight:700">Warning: the new cost is ' + Math.round(-tot / c0 * 100) + '% lower than this estimate now. Check that no work was dropped before you apply. Tick Keep on any line you want to keep.</div>' : ''; })() +
     (ch.length ? '<div class="pz-mut" style="margin-bottom:10px">Your own lines and prices stay as they are. Cost change before markup: <b>' + money(tot) + '</b></div><table style="width:100%;border-collapse:collapse;font-size:14px">' + rows + '</table>'
       : '<div class="pz-mut">Nothing in the chat changes the estimate.</div>') +
     '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button type="button" class="pz-btn pz-ghost" onclick="pzV5Done(\'' + esc(ref) + '\',false)">Cancel</button>' +

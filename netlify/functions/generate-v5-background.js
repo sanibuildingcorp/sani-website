@@ -57,8 +57,22 @@ function inputFrom(record, offFacts) {
     conversation: msgs,
     contractorNotes: [].concat(s(e.extraRequest) || [], A(record.contractorNotes)).filter(Boolean),
   };
-  const off = A(offFacts).length ? offFacts : A(record.chatFacts && record.chatFacts.facts).filter((f) => f && f.on === false).map((f) => f.text);
-  return reader.withoutFacts(input, off);
+  /* Old (pre-v5) estimate: show the reader his priced lines so no work is lost. */
+  const old = oldLines(e);
+  if (old.length) input.contractorLines = old.map((l, n) => ({ n, kind: l.kind, item: l.item, qty: l.qty, unit: l.unit, price: Math.round(l.qty * l.rate) }));
+  return reader.withoutFacts(input, (A(offFacts).length ? offFacts : A(record.chatFacts && record.chatFacts.facts).filter((f) => f && f.on === false).map((f) => f.text)));
+}
+function oldLines(e) {
+  if (!e || e.v5Reading) return [];
+  const out = [];
+  ['labor', 'materials'].forEach((kind) => A(e[kind]).forEach((l) => { if (l && s(l.item) && Number(l.rate) > 0) out.push({ kind, item: s(l.item).slice(0, 140), qty: Number(l.qty) || 1, unit: s(l.unit) || 'ea', rate: Number(l.rate), hours: Number(l.hours) || 0 }); }));
+  return out.slice(0, 60);
+}
+/* custom {old:n} -> the exact old line. */
+function attachOld(reading, e) {
+  const old = oldLines(e);
+  A(reading && reading.services).forEach((sv) => A(sv.custom).forEach((c) => { if (c && c.old != null && old[c.old]) c.oldLine = old[c.old]; }));
+  return reading;
 }
 
 /* The customer's photos and the pictures in messages, as image blocks (max 8). */
@@ -130,7 +144,7 @@ exports.handler = async (event) => {
     const redo = b.mode === 'redo';
     const chat = b.mode === 'chat' || redo;
     const prevReading = redo ? null : previous && previous.v5Reading;
-    const reading = await readJob(inputFrom(record, b.offFacts), chat && prevReading ? prevReading : null, photoBlocks(record));
+    const reading = attachOld(await readJob(inputFrom(record, b.offFacts), chat && prevReading ? prevReading : null, photoBlocks(record)), previous);
     let est, changes = [];
     if (chat && prevReading) {
       const u = engine.update(previous, reading); est = u.estimate;

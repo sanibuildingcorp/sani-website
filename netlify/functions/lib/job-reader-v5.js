@@ -38,6 +38,9 @@ RULES
 8. "questions": at most 3, only when the answer changes the price by real money. If the job is clear, return [].
 9. "facts": every fact you used from the conversation/answers, each with what it changes ("effect").
 10. Service names = the customer's selected services (e.g. "Bathroom", "Painting"). Never "General".
+13. HARD CONDITIONS: if the request makes an item slower than normal (hand removal over a heated mat, very small room with many cuts, two-color pattern, old mud bed, delicate finishes), give that item "factor" 1.2-2.5 and "why" in plain words. The factor multiplies labor only.
+14. Use the right item: tile floor takeout is tile_floor_demo (not floor_remove, which is vinyl/laminate). A floor-only tile job also needs toilet_pull_reset when a toilet sits on that floor, saddle at the door, floor_prep_patch, and heat_mat_care when there is an existing heated floor. coi_admin when the building needs a COI.
+15. CONTRACTOR'S OLD LINES (input.contractorLines, if present) are his own priced judgment for this job. Never drop work he priced. For each old line: use a book id when it covers the same work, otherwise put it in "custom" with "old": its n. If the book item is clearly cheaper than his old line for the same work, prefer "custom" with "old": n - his number wins.
 11. LOOK AT THE PHOTOS. Pick the item that matches what is really there: a toilet with an exposed metal flush pipe / flush valve from the wall (Sloan, Zurn, commercial style) is toilet_flushometer, not toilet. Say what you saw in "facts".
 12. "site": read the building answers. "walk-up" / "no elevator" means elevator:false and walkup:true; put the floor number if given. Never ask again about floor or walk-up when the answers already say it.
 ${previous ? `\nTHIS IS A CHAT UPDATE. Previous reading below. Change ONLY what the new messages change. Keep every other item and quantity exactly the same.\nPREVIOUS READING:\n${JSON.stringify(previous)}\n` : ''}
@@ -46,7 +49,7 @@ ${JSON.stringify(input)}
 
 Return JSON only:
 {"projectTitle":"","summary":"2-3 plain sentences for the customer: what we will do and the result",
- "services":[{"name":"","items":[{"id":"","qty":0,"note":""}],"custom":[{"name":"","qty":1,"unit":"job","note":""}],"exclusions":[]}],
+ "services":[{"name":"","items":[{"id":"","qty":0,"note":"","factor":1,"why":""}],"custom":[{"name":"","qty":1,"unit":"job","note":"","old":null}],"exclusions":[]}],
  "customerSupplies":[],"site":{"floor":0,"elevator":null,"walkup":false,"coi":false,"buildingType":""},
  "facts":[{"text":"","effect":""}],"questions":[],"status":"READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED"}`;
 }
@@ -67,9 +70,9 @@ function validate(raw, input) {
       if (!b || b.trade === 'Whole Project') { out.dropped.push(s(it && it.id)); return; }
       let q = Number(it.qty); if (!Number.isFinite(q) || q <= 0) q = b.min || 1;
       q = Math.min(q, MAXQ[b.unit] || 100);
-      const same = items.find((x) => x.id === b.id); if (same) same.qty += q; else items.push({ id: b.id, qty: Math.round(q * 10) / 10, note: s(it.note).slice(0, 140) });
+      const same = items.find((x) => x.id === b.id); if (same) same.qty += q; else items.push(Object.assign({ id: b.id, qty: Math.round(q * 10) / 10, note: s(it.note).slice(0, 140) }, (() => { const f = Math.min(2.5, Math.max(1, Number(it.factor) || 1)); return f > 1 && s(it.why) ? { factor: Math.round(f * 100) / 100, why: s(it.why).slice(0, 120) } : {}; })()));
     });
-    const custom = (sv.custom || []).filter((c) => s(c && c.name) && !BAN.test(c.name)).slice(0, 5).map((c) => ({ name: s(c.name).slice(0, 90), qty: Number(c.qty) > 0 ? Number(c.qty) : 1, unit: s(c.unit) || 'job', note: s(c.note).slice(0, 140) }));
+    const custom = (sv.custom || []).filter((c) => s(c && c.name) && !BAN.test(c.name)).slice(0, 40).map((c) => ({ name: s(c.name).slice(0, 90), qty: Number(c.qty) > 0 ? Number(c.qty) : 1, unit: s(c.unit) || 'job', note: s(c.note).slice(0, 140), old: Number.isInteger(Number(c.old)) && c.old !== null && c.old !== '' ? Number(c.old) : null }));
     const exclusions = (sv.exclusions || []).map(s).filter(Boolean).slice(0, 5);
     /* No padding: handyman hours only when they ARE the job, never on top of priced work. */
     /* Handyman hours on top of priced work are never padding and never silently

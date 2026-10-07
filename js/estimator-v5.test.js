@@ -134,3 +134,15 @@ console.log('toilet', toilet.totals, '\ngut', gut.totals, gut.timelineText, '\nv
   as.ok(e.priceBasis.some((x) => /walk-up/i.test(x)) && e.priceBasis.includes('One toilet in one bathroom'));
   console.log('ok - customer page fields (overview, Sani supplies, based on) come from the new estimate');
 }
+{
+  const R6 = require('../netlify/functions/lib/job-reader-v5'), E10 = require('../netlify/functions/lib/estimate-engine-v5'), as = require('assert');
+  const rd = R6.validate({ services: [{ name: 'Bathroom', items: [{ id: 'tile_floor_demo', qty: 34.5, factor: 2, why: 'hand removal over a live heating mat' }, { id: 'floor_tile', qty: 34.5 }, { id: 'toilet_pull_reset', qty: 1 }, { id: 'heat_mat_care', qty: 1 }], custom: [{ name: 'old line', old: 0 }] }], customerSupplies: ['floor_tile'] }, {});
+  rd.services[0].custom[0].oldLine = { kind: 'labor', item: 'Seal marble saddle', qty: 1, unit: 'job', rate: 80 };
+  const e = E10.build(rd);
+  const demo = e.labor.find((l) => l.bookId === 'tile_floor_demo'); as.ok(demo.factor === 2 && demo.rate === 28, 'factor x2 on labor');
+  as.strictEqual(e.labor.find((l) => l.bookId === 'floor_tile').factor, 1.5, 'small floor gets x1.5');
+  as.ok(e.labor.some((l) => l.item === 'Seal marble saddle' && l.rate === 80 && l.byHand), 'his old line kept at his price');
+  as.ok(!e.materials.some((m) => m.item === 'Floor tile'), 'customer tile: no material');
+  as.ok(e.totals.cost > 2500, 'floor-only heated-mat job is not cut to installation only: $' + e.totals.cost);
+  console.log('ok - hard floor job: factors, small-room x1.5, toilet pull/reset, heat mat, old lines kept ($' + e.totals.cost + ' cost)');
+}
