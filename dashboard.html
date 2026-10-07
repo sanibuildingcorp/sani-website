@@ -13672,8 +13672,15 @@ function pzRender() {
 
   /* 4 · Terms */
   var tm = pzTerms();
-  html += '<div class="pz-c" id="pz-s4"><h2>4 · Terms (saved defaults)</h2>' +
-    '<div class="pz-row"><span>Markup</span><b id="pz-mkl">' + mk + '%</b></div><input type="range" min="0" max="60" value="' + esc(String(mk)) + '" style="width:100%" oninput="pzMarkup(this.value)" onchange="pzDirty()">' +
+  /* Price and terms in ONE card: read the money, move the markup, set your own
+     total, check payment - all in one place before Send. Only you see the money rows. */
+  html += '<div class="pz-c" id="pz-s4"><h2>4 · Price &amp; terms</h2>' +
+    '<div class="pz-ey" style="margin-top:4px">Money (you only)</div>' +
+    '<button type="button" class="pz-btn pz-gold pz-sm" style="width:100%;margin:6px 0 8px" onclick="pzSetTotal()">🎯 Set my own total</button>' +
+    '<div class="pz-row"><span>Customer price</span><b id="pz-mcus"></b></div>' +
+    '<div class="pz-row"><span>Labor cost</span><b id="pz-mlab"></b></div><div class="pz-row"><span>Material cost</span><b id="pz-mmat"></b></div>' +
+    '<div class="pz-row"><span>Our profit</span><b id="pz-mprof"></b></div><div class="pz-row"><span>Work days</span><b id="pz-mday"></b></div>' +
+    '<div class="pz-row" style="margin-top:10px"><span>Markup</span><b id="pz-mkl">' + mk + '%</b></div><input type="range" min="0" max="60" value="' + esc(String(mk)) + '" style="width:100%" oninput="pzMarkup(this.value)" onchange="pzDirty()">' +
     '<div class="pz-row" style="margin-top:8px"><span>Payment</span><select onchange="pzTerm(\'payment\',this.value)">' + Object.keys(PZ_PAY).map(function (v) { return '<option value="' + v + '"' + ((tm.payment || "contract") === v ? ' selected' : '') + '>' + PZ_PAY[v] + '</option>'; }).join("") + '</select></div>' +
     '<table class="pz-t" id="pz-pay" style="margin-top:6px"></table>' +
     '<div class="pz-row" style="margin-top:8px"><span>Warranty</span><select onchange="pzTerm(\'warranty\',this.value)">' + ["3-year workmanship", "1-year workmanship", "2-year workmanship", "90-day workmanship"].map(function (v) { return '<option' + ((tm.warranty || "3-year workmanship") === v ? ' selected' : '') + '>' + v + '</option>'; }).join("") + '</select></div>' +
@@ -13693,12 +13700,6 @@ function pzRender() {
   /* the side */
   var side = document.getElementById("pz-side");
   if (side) side.innerHTML = '<div class="pz-c" id="pz-ready"><div class="pz-ey">Ready to send</div><ul class="pz-chk" id="pz-chk"></ul></div>' +
-    '<div class="pz-c"><div class="pz-ey">Money (you only)</div>' +
-      '<button type="button" class="pz-btn pz-gold pz-sm" style="width:100%;margin:6px 0 8px" onclick="pzSetTotal()">🎯 Set my own total</button>' +
-      '<div class="pz-row"><span>Customer price</span><b id="pz-mcus"></b></div>' +
-      '<div class="pz-row"><span>Labor cost</span><b id="pz-mlab"></b></div><div class="pz-row"><span>Material cost</span><b id="pz-mmat"></b></div>' +
-      '<div class="pz-row"><span>Our profit</span><b id="pz-mprof"></b></div><div class="pz-row"><span>Work days</span><b id="pz-mday"></b></div>' +
-      '</div>' +
     '<div class="pz-c"><div class="pz-ey">Quick actions</div><div style="display:grid;gap:6px;margin-top:6px">' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzDuplicate()">Duplicate estimate</button>' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzSaveTemplate()">Save as my template</button>' +
