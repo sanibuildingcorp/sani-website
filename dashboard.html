@@ -13337,7 +13337,8 @@ ul.pz-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;
 .pz-sec summary{font-weight:700;cursor:pointer;padding:4px 0;color:#0f1f3a}
 .pz-pb{background:#eef2f9;color:#18305a;font-size:11px}
 .pz-fgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
-.pz-fc{border:1px solid #e3e6ec;border-radius:10px;overflow:hidden}.pz-fc.rough{opacity:.75}
+.pz-fc{border:1px solid #e3e6ec;border-radius:10px;overflow:hidden;position:relative}
+.pz-fdel{position:absolute;top:6px;right:6px;z-index:2;width:30px;height:30px;border-radius:50%;border:0;background:#fffe;color:#16202e;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 1px 4px #0003}.pz-fc.rough{opacity:.75}
 .pz-fimg{height:80px;background:#eef0f4 center/cover no-repeat;display:grid;place-items:center;font-size:32px;position:relative;cursor:pointer}
 .pz-fimg em{position:absolute;bottom:3px;right:6px;font-size:10px;font-style:normal;color:#5d6878}
 .pz-fb{padding:8px 10px;font-size:13px}.pz-tg{display:flex;gap:6px;align-items:center;margin-top:6px;font-weight:600}
@@ -13695,6 +13696,11 @@ function pzPricesHtml(i, nm) {
   return '<table class="pz-t"><tr><th></th><th>Line</th><th class="n">Qty</th><th>Unit</th><th class="n">Rate</th><th class="n">Total</th><th></th></tr>' + rows + '</table>' +
     '<div class="pz-row" style="margin-top:6px"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzAddLine(' + i + ',\'labor\')">+ Labor</button><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzAddLine(' + i + ',\'materials\')">+ Material</button><span class="pz-mut">Labor ' + pzF(pzSum(nm, "labor")) + ' · Material ' + pzF(pzSum(nm, "materials")) + '</span></div>';
 }
+/* ✕ on every finish card: "i added toilet but i can't delete". Asks first;
+   the line comes off the price the same way as ✕ in Prices. */
+function pzFDel(call, name) {
+  return '<button type="button" class="pz-fdel" title="Remove" onclick="event.stopPropagation();if(confirm(' + esc(JSON.stringify("Remove " + String(name || "this item") + "?")).replace(/'/g, "&#39;") + '))' + call + '">✕</button>';
+}
 function pzFinishesHtml(i, nm, s) {
   var STATUS = ["Chosen", "To choose by date", "Customer delivers by date"];
   var sel = function (cur, onch) { return '<select class="pz-st" onchange="' + onch + '">' + STATUS.map(function (o) { return '<option' + ((cur || "Chosen") === o ? ' selected' : '') + '>' + o + '</option>'; }).join("") + '</select>'; };
@@ -13703,13 +13709,13 @@ function pzFinishesHtml(i, nm, s) {
     if (x.parked) {
       var pl = x.parked.p.line || {};
       parkedNames.push(scopeNorm(x.parked.p.ownerText));
-      return '<div class="pz-fc"><div class="pz-fimg">' + pzIcon(pl.item || "") + '<em>tap to add photo</em></div><div class="pz-fb"><b>' + esc(pl.item || x.parked.p.ownerText) + '</b><div class="pz-mut">' + esc(pl.spec || "Brand / model / color") + '</div>' +
+      return '<div class="pz-fc">' + pzFDel("pzDelParked(" + x.parked.pi + ")", pl.item || x.parked.p.ownerText) + '<div class="pz-fimg">' + pzIcon(pl.item || "") + '<em>tap to add photo</em></div><div class="pz-fb"><b>' + esc(pl.item || x.parked.p.ownerText) + '</b><div class="pz-mut">' + esc(pl.spec || "Brand / model / color") + '</div>' +
         '<label class="pz-tg"><input type="checkbox" checked onchange="pzUnsupply(' + i + ',' + x.parked.pi + ')"> Customer supplies</label><div class="pz-mut">Material $0 · labor kept</div>' +
         sel(pl.finishStatus, "pzParkedStatus(" + x.parked.pi + ",this.value)") + '</div></div>';
     }
     var l = x.l, fin = pzIsFinish(l), cost = (Number(l.qty) || 0) * (Number(l.rate) || 0);
     var img = fin && /^data:image\//.test(String(l.photo || "")) ? ' style="background-image:url(' + l.photo + ')"' : '';
-    return '<div class="pz-fc' + (fin ? '' : ' rough') + '"><div class="pz-fimg"' + img + (fin ? ' onclick="pzPhoto(' + x.gi + ')"' : '') + '>' + (img ? '' : (fin ? pzIcon(l.item) : '🧰')) + '<em>' + (fin ? 'tap to add photo' : 'installation material') + '</em></div>' +
+    return '<div class="pz-fc' + (fin ? '' : ' rough') + '">' + pzFDel("pzDelLine('materials'," + x.gi + ")", l.item) + '<div class="pz-fimg"' + img + (fin ? ' onclick="pzPhoto(' + x.gi + ')"' : '') + '>' + (img ? '' : (fin ? pzIcon(l.item) : '🧰')) + '<em>' + (fin ? 'tap to add photo' : 'installation material') + '</em></div>' +
       '<div class="pz-fb"><b>' + esc(l.item) + '</b><div class="pz-mut"' + (fin ? ' onclick="pzSpec(' + x.gi + ')" style="cursor:pointer"' : '') + '>' + (fin ? esc(l.spec || "Brand / model / color") : 'Not shown as a card to customer') + '</div>' +
       (fin ? '<label class="pz-tg"><input type="checkbox" onchange="pzSupply(' + i + ',' + x.gi + ',this.checked)"> Customer supplies</label><div class="pz-mut">Sani supplies · ' + pzF(cost) + '</div>' +
         sel(l.finishStatus, "pzLine('materials'," + x.gi + ",'finishStatus',this.value);pzDirty()") : '') +
@@ -13718,7 +13724,7 @@ function pzFinishesHtml(i, nm, s) {
   /* Customer supplies written by the AI with no price line behind them. */
   (s.supplied || []).forEach(function (t, j) {
     if (!String(t).trim() || parkedNames.indexOf(scopeNorm(t)) !== -1) return;
-    cards.push('<div class="pz-fc"><div class="pz-fimg">' + pzIcon(t) + '<em>customer item</em></div><div class="pz-fb"><b>' + esc(t) + '</b><div class="pz-mut">Customer buys it, we install it</div>' +
+    cards.push('<div class="pz-fc">' + pzFDel("pzDropSupplied(" + i + "," + j + ")", t) + '<div class="pz-fimg">' + pzIcon(t) + '<em>customer item</em></div><div class="pz-fb"><b>' + esc(t) + '</b><div class="pz-mut">Customer buys it, we install it</div>' +
       '<label class="pz-tg"><input type="checkbox" checked onchange="pzDropSupplied(' + i + ',' + j + ')"> Customer supplies</label><div class="pz-mut">Material $0 · labor kept</div></div></div>');
   });
   return '<div class="pz-fgrid">' + cards.join("") + '</div><button type="button" class="pz-btn pz-ghost pz-sm" style="margin-top:8px" onclick="pzLibrary(' + i + ')">+ Add from my product library</button>';
