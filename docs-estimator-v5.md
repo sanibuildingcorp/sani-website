@@ -70,7 +70,7 @@ request + chat + photos ──► READER (AI, 1 call) ──► reading (ids + q
 | regrout | Bathroom | Remove old grout, regrout & seal | sf | $12 | Grout, sealer & caulk kit $85/kit (customer can supply) |
 | recaulk | Bathroom | Remove & replace silicone caulk | lf | $4 | Silicone caulk $12/tube |
 | toilet | Bathroom | Remove old toilet, install new, connect & test | ea | $220 | Toilet, elongated 2-piece with seat $199/ea (customer can supply); Wax ring, bolts & supply line $35/kit |
-| toilet_flushometer | Bathroom | Flushometer toilet (no tank) replace | ea | $380 | Wall-hung/flushometer bowl $320/ea (customer can supply); Flush valve kit $190/ea (customer can supply) |
+| toilet_flushometer | Bathroom | Toilet replacement, flush-valve type (no tank) | ea | $380 | Toilet: floor-mount bowl for flush valve, with seat $320/ea (customer can supply); Toilet flush valve (Sloan type), 1.6 gal $190/ea (customer can supply) |
 | vanity | Bathroom | Remove old vanity, install new, connect & test | ea | $300 | Vanity with top, 30 in $489/ea (customer can supply); Faucet $129/ea (customer can supply); Drain, trap & supply kit $55/kit |
 | shower_glass | Bathroom | Glass shower door install | ea | $350 | Glass shower door $900/ea (customer can supply) |
 | bath_accessories | Bathroom | Install accessories (bar, hooks, paper holder, mirror) | ea | $45 | Bathroom accessory $35/ea (customer can supply) |
