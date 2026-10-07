@@ -68,5 +68,10 @@ let n = 0; const ok = (name, c) => { assert.ok(c, name); n++; console.log('PASS 
   await post(app, { ref: 'SBC-2', action: 'cancel' });
   ok('cancel drops the pending draft', !db['SBC-2'].estimateV5Pending && JSON.stringify(db['SBC-2'].estimate) === old);
 
+  // Regenerate (mode redo): reads from scratch (no previous reading sent), goes to pending only
+  db['SBC-4'] = JSON.parse(JSON.stringify(db['SBC-1'])); db['SBC-4'].ref = 'SBC-4'; delete db['SBC-4'].estimateV5Pending;
+  const live4 = JSON.stringify(db['SBC-4'].estimate);
+  await post(gen, { ref: 'SBC-4', jobId: 'j4', mode: 'redo' });
+  ok('Regenerate reads the job from scratch and waits for Apply', JSON.stringify(db['SBC-4'].estimate) === live4 && db['SBC-4'].estimateV5Pending && db['SBC-4'].estimateV5Pending.redo === true && !/PREVIOUS READING/i.test(JSON.stringify(sent.messages)));
   console.log('\n' + n + ' passed');
 })().catch((e) => { console.error('FAIL', e.message); process.exit(1); });

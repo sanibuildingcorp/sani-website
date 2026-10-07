@@ -121,8 +121,11 @@ exports.handler = async (event) => {
   try {
     if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set');
     const previous = record.estimate && typeof record.estimate === 'object' ? record.estimate : null;
-    const chat = b.mode === 'chat';
-    const prevReading = previous && previous.v5Reading;
+    /* redo = "Regenerate": read the whole job again from scratch, but like chat it
+       only goes to pending with a change list; nothing changes before Apply. */
+    const redo = b.mode === 'redo';
+    const chat = b.mode === 'chat' || redo;
+    const prevReading = redo ? null : previous && previous.v5Reading;
     const reading = await readJob(inputFrom(record, b.offFacts), chat && prevReading ? prevReading : null, photoBlocks(record));
     let est, changes = [];
     if (chat && prevReading) {
@@ -141,7 +144,7 @@ exports.handler = async (event) => {
     out = { aiStatus: 'done', aiStage: '', aiError: '', aiJobId: s(b.jobId), aiFinishedAt: now(), updatedAt: now(), v5Status: { ok: true, at: now(), warnings: est.warnings, changes: changes.length } };
     if (chat && previous) {
       /* "Update from chat" NEVER writes record.estimate. It waits for Apply. */
-      out.estimateV5Pending = { at: now(), jobId: s(b.jobId), estimate: Object.assign({}, previous, est), changes, fullRebuild: !prevReading };
+      out.estimateV5Pending = { at: now(), jobId: s(b.jobId), estimate: Object.assign({}, previous, est), changes, fullRebuild: !(previous && previous.v5Reading), redo };
       /* Old-generator estimate: the change list lets him tick old lines to KEEP. */
     } else {
       out.estimateHistory = A(record.estimateHistory).concat(previous ? [{ at: now(), why: 'before new AI draft', estimate: previous }] : []).slice(-10);
