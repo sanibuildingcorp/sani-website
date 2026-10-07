@@ -44,7 +44,7 @@ const CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   "manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished",
   "customerViewPublishedVersion",
   // Customer View Mode choices
-  "showLaborCost", "showMaterialsCost", "displayByHand", "showSectionSubtotals",
+  "showLaborCost", "showMaterialsCost", "displayByHand", "ownerNotes", "showSectionSubtotals",
   "showLaborLines", "showMaterialLines",
   "showLaborLinePrices", "showMaterialLinePrices",
   // Manually set money + hand-built extras

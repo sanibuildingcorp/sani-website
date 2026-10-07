@@ -55,7 +55,7 @@ function inputFrom(record, offFacts) {
       emails: A(rq.emails).slice(-6).map((m) => ({ from: m.from, text: s(m.text || m.body).slice(0, 1500) })),
     },
     conversation: msgs,
-    contractorNotes: [].concat(s(e.extraRequest) || [], A(record.contractorNotes)).filter(Boolean),
+    contractorNotes: [].concat(s(e.ownerNotes) || [], s(e.extraRequest) || [], A(record.contractorNotes)).filter(Boolean),
   };
   /* Old (pre-v5) estimate: show the reader his priced lines so no work is lost. */
   const old = oldLines(e);
@@ -139,6 +139,12 @@ exports.handler = async (event) => {
   try {
     if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set');
     const previous = record.estimate && typeof record.estimate === 'object' ? record.estimate : null;
+    /* ask = "Talk to the estimator first": questions for HIM, no prices, nothing on the estimate moves. */
+    if (b.mode === 'ask') {
+      const rd = await readJob(Object.assign(inputFrom(record, b.offFacts), { preflight: true }), null, photoBlocks(record));
+      await save({ aiStatus: 'done', aiStage: '', aiError: '', aiJobId: s(b.jobId), aiFinishedAt: now(), v5Ask: { at: now(), jobId: s(b.jobId), summary: rd.summary, questions: rd.questions } });
+      return res(202, { ok: true });
+    }
     /* redo = "Regenerate": read the whole job again from scratch, but like chat it
        only goes to pending with a change list; nothing changes before Apply. */
     const redo = b.mode === 'redo';

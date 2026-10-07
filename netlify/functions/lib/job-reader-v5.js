@@ -33,7 +33,7 @@ RULES
 3. A SMALL JOB STAYS SMALL. A repair is priced as a repair. Never add handyman hours as extra time on top of priced items. If there is real extra work with no price-book id (e.g. hang 4 shelves), put it in "custom". Never add demolition, rough plumbing, waterproofing or new tile unless the customer asked for that work.
 4. Customer-supplied items: put the supply key in customerSupplies. Labor stays; only the material is removed.
 5. Customer exclusions ("walls only", "no baseboards") go in that service's "exclusions", close to their own words.
-6. Newest message wins. A contractor note beats the customer. Never ask again for something already answered.
+6. Newest message wins. A contractor note beats the customer. input.contractorNotes are the owner's own answers and instructions: follow them exactly, they beat everything else. Never ask again for something already answered.
 7. Never offer options or alternatives. Never mention TV mounting. Never set, install or connect an oven, range, cooktop or any gas appliance. Never use the word "licensed".
 8. "questions": at most 3, only when the answer changes the price by real money. If the job is clear, return [].
 9. "facts": every fact you used from the conversation/answers, each with what it changes ("effect").
@@ -43,7 +43,7 @@ RULES
 15. CONTRACTOR'S OLD LINES (input.contractorLines, if present) are his own priced judgment for this job. Never drop work he priced. For each old line: use a book id when it covers the same work, otherwise put it in "custom" with "old": its n. If the book item is clearly cheaper than his old line for the same work, prefer "custom" with "old": n - his number wins.
 11. LOOK AT THE PHOTOS. Pick the item that matches what is really there: a toilet with an exposed metal flush pipe / flush valve from the wall (Sloan, Zurn, commercial style) is toilet_flushometer, not toilet. Say what you saw in "facts".
 12. "site": read the building answers. "walk-up" / "no elevator" means elevator:false and walkup:true; put the floor number if given. Never ask again about floor or walk-up when the answers already say it.
-${previous ? `\nTHIS IS A CHAT UPDATE. Previous reading below. Change ONLY what the new messages change. Keep every other item and quantity exactly the same.\nPREVIOUS READING:\n${JSON.stringify(previous)}\n` : ''}
+${input && input.preflight ? `\nBEFORE PRICING - QUESTIONS FOR THE CONTRACTOR. The contractor (Sani's owner, not the customer) wants to talk with you BEFORE you price. Read everything. In "summary" write 2-3 plain sentences: what you understood the job is, and what is missing. In "questions" ask him up to 6 short, concrete questions whose answers change the price (size, how much is torn out, what stays, who supplies what, floor/elevator/COI, special conditions). Skip anything the request, the answers or his notes already say. If the request is almost empty, ask for the basics. Still return the JSON below; services may be empty.\n` : ''}${previous ? `\nTHIS IS A CHAT UPDATE. Previous reading below. Change ONLY what the new messages change. Keep every other item and quantity exactly the same.\nPREVIOUS READING:\n${JSON.stringify(previous)}\n` : ''}
 REQUEST:
 ${JSON.stringify(input)}
 
@@ -92,7 +92,7 @@ function validate(raw, input) {
   const st = (raw && raw.site) || {};
   out.site = { floor: Number(st.floor) || 0, elevator: st.elevator === true ? true : st.elevator === false ? false : null, walkup: st.walkup === true || st.elevator === false, coi: !!st.coi, buildingType: s(st.buildingType).slice(0, 40) };
   out.facts = (raw && raw.facts || []).filter((f) => f && s(f.text)).slice(0, 12).map((f, i) => ({ id: 'f' + (i + 1), text: s(f.text).slice(0, 160), effect: s(f.effect).slice(0, 120), on: true }));
-  out.questions = (raw && raw.questions || []).map((q) => s(typeof q === 'string' ? q : q && q.question)).filter((q) => q && !BAN.test(q) && !/brand|color|colour|sheen|finish type|budget|high.end/i.test(q)).slice(0, 3);
+  out.questions = (raw && raw.questions || []).map((q) => s(typeof q === 'string' ? q : q && q.question)).filter((q) => q && !BAN.test(q) && !/brand|color|colour|sheen|finish type|budget|high.end/i.test(q)).slice(0, input && input.preflight ? 6 : 3);
   const okStatus = ['READY', 'PRELIMINARY', 'NEEDS_CLARIFICATION', 'SITE_VISIT_REQUIRED'];
   out.status = okStatus.includes(s(raw && raw.status)) ? s(raw.status) : 'PRELIMINARY';
   return out;
