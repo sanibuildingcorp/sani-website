@@ -13548,7 +13548,8 @@ function pzRender() {
     ? ' <a href="#" onclick="pzV5Act(currentRecord.ref,\'undo\');return false">↶ Undo last AI change</a>' : "";
   var aiRead = lines
     ? '<div class="pz-ai"><b>AI read:</b> ' + undo + ' ' + esc(STATUS[pr.status] || "Priced.") + (asm.length ? " Assumed " + esc(asm.join("; ").replace(/\.$/, "")) + "." : "") +
-      (q0 ? ' <a href="#" onclick="pzAskCustomer();return false">Ask customer: ' + esc(q0.length > 60 ? q0.slice(0, 57) + "…" : q0) + '</a>' : "") + '</div>'
+      (q0 ? ' <a href="#" onclick="pzAskCustomer();return false">Ask customer: ' + esc(q0.length > 60 ? q0.slice(0, 57) + "…" : q0) + '</a>' : "") +
+      (SBC_V5 ? '<div id="pz-regen" style="margin-top:8px"><button type="button" class="pz-btn pz-gold pz-sm" onclick="pzRegenerate()">↻ Regenerate estimate</button> <span class="pz-mut">reads the whole job again; you see the changes first</span></div>' : "") + '</div>'
     : SBC_V5 ? '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>'
     : '<div class="pz-ai">No prices yet. Add a service and your lines below, or tap one of your price book packages.</div>';
 
@@ -14202,10 +14203,17 @@ function pzFactTick() {
 }
 /* Re-price from the chat. His saved lines go first: the ones he typed are
    marked byHand and the generator keeps them (lib/hand-prices.js). */
-async function pzChatUpdate() {
+/* ↻ Regenerate: the new brain reads the whole job again from scratch. Same
+   safety as Update from chat: a change list with Apply / Cancel, Undo after. */
+function pzRegenerate() {
+  if (!confirm("Regenerate: the AI reads the whole job again from scratch. You will see every change before anything is applied. Continue?")) return;
+  return pzChatUpdate("redo");
+}
+async function pzChatUpdate(mode) {
   clearTimeout(PZ.saveT);
   await pzSaveNow();
   PZ.factsChanged = "";
+  mode = mode === "redo" ? "redo" : "chat";
   if (!SBC_V5) { pzGenerate(true); return; }
   /* v5: a SMALL update. The server reads only what the chat changed, keeps
      every line and price he typed, and parks the result as a list of changes.
@@ -14213,10 +14221,10 @@ async function pzChatUpdate() {
   var r = currentRecord, ref = r && r.ref; if (!ref) return;
   var off = ((r.chatFacts && r.chatFacts.facts) || []).filter(function (f) { return f.on === false; }).map(function (f) { return f.text; });
   var jobId = "v5c-" + Date.now().toString(36);
-  var out = document.getElementById("pz-learn");
-  if (out) out.insertAdjacentHTML("beforeend", '<div class="pz-mut" id="pz-v5w">Reading the chat for changes…</div>');
+  var out = (mode === "redo" && document.getElementById("pz-regen")) || document.getElementById("pz-learn");
+  if (out) out.insertAdjacentHTML("beforeend", '<div class="pz-mut" id="pz-v5w">' + (mode === "redo" ? "Regenerating - reading the whole job again…" : "Reading the chat for changes…") + '</div>');
   try {
-    var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jobId, mode: "chat", offFacts: off }) });
+    var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jobId, mode: mode, offFacts: off }) });
     if (k.status !== 202 && !k.ok) throw new Error("HTTP " + k.status);
     var j = null;
     for (var n = 0; n < 60; n++) {
@@ -14228,6 +14236,7 @@ async function pzChatUpdate() {
     if (!j || j.aiJobId !== jobId) throw new Error("No answer yet - try again in a minute");
     if (j.aiStatus === "error") throw new Error(j.aiError || "The estimator reported an error");
     var pend = j.estimateV5Pending || {};
+    PZ.v5mode = mode;
     pzV5Changes(ref, pend.changes || [], pend.fullRebuild === true);
   } catch (e) { toast("Update from chat: " + e.message, true); }
   var w = document.getElementById("pz-v5w"); if (w) w.remove();
@@ -14247,7 +14256,7 @@ function pzV5Changes(ref, ch, full) {
   box.id = "pz-v5box";
   box.style.cssText = "position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
   box.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:18px">' +
-    '<h3 style="margin:0 0 6px">Changes from the chat</h3>' +
+    '<h3 style="margin:0 0 6px">' + (PZ.v5mode === "redo" ? "Changes from Regenerate" : "Changes from the chat") + '</h3>' +
     (full ? '<div class="pz-pill pz-wa" style="margin-bottom:8px">This estimate was made before the new brain, so the new brain rebuilt it from your price book. Tick <b>Keep</b> on any old line you want to keep (your own lines). Unticked old lines go; Undo brings them back.</div>' : '') +
     (ch.length ? '<div class="pz-mut" style="margin-bottom:10px">Your own lines and prices stay as they are. Cost change before markup: <b>' + money(tot) + '</b></div><table style="width:100%;border-collapse:collapse;font-size:14px">' + rows + '</table>'
       : '<div class="pz-mut">Nothing in the chat changes the estimate.</div>') +
