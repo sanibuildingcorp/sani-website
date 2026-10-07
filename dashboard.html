@@ -4577,6 +4577,7 @@ async function aiExec(a, log, render) {
     return "Added to " + dref + "'s customer description. Open it and press Re-read the job from scratch to price it.";
   }
   if (t === "addservice") {
+    if (!SBC_AI_GENERATOR) return SBC_AI_OFF;
     /* ── THE BRIEF COMES FROM THE ASSISTANT ──────────────────────────────
          "I talked already to the my ask AI and he knows what i want ... can
           i put description from my AI?"
@@ -4694,6 +4695,7 @@ async function aiExec(a, log, render) {
     /* "regenerate with everything I told you": the generator reads this
        chat (generate-estimate-background, chatInstructions). generateAI asks
        him to confirm, as the buttons do. */
+    if (!SBC_AI_GENERATOR) return SBC_AI_OFF;
     var gref = String(a.ref || "");
     if (!currentRecord || currentRecord.ref !== gref) return "Open " + gref + " first, then ask me again.";
     var reread = /read|scratch|analy/i.test(String(a.how || ""));
@@ -6506,6 +6508,7 @@ async function resumeGenerationIfRunning(ref) {
    services are not regenerated: not a line, not a bullet, not a price. The
    customer keeps seeing the frozen sent version until he sends again. */
 async function addServiceAI(prefill, service, alreadyConfirmed) {
+  if (!SBC_AI_GENERATOR) { toast(SBC_AI_OFF, true); return false; }
   var r = currentRecord;
   if (!r || !r.ref) return false;
   if (!(r.estimate && (r.estimate.labor || []).length)) { toast("Generate and price the estimate first, then add a service to it", true); return false; }
@@ -6547,7 +6550,17 @@ async function addServiceAI(prefill, service, alreadyConfirmed) {
   }
 }
 
+/* ══ THE AI ESTIMATE GENERATOR IS SWITCHED OFF ═══════════════════════════
+     "Look what he did after i clicked regenerate from customer conversation!
+      It's stupid! Remove whole generation"
+   Every way in (Generate, Re-price, Re-read, Add a service, Update estimate
+   from chat, the assistant's regenerate) stops here with one message. The
+   code stays; the server has the same switch (lib/generator-switch.js,
+   AI_GENERATOR=on). Turn both on together to bring it back. */
+var SBC_AI_GENERATOR = false;
+var SBC_AI_OFF = "The AI estimate generator is switched off. Price the job with your own lines and price book.";
 async function generateAI(isRegenerate, reanalyze) {
+  if (!SBC_AI_GENERATOR) { toast(SBC_AI_OFF, true); return; }
   if (isRegenerate) {
     var warn = regenerateWarning(currentRecord, reanalyze);
     if (warn) { if (!confirm(warn)) return; }
@@ -13574,7 +13587,8 @@ function pzRender() {
   var aiRead = lines
     ? '<div class="pz-ai"><b>AI read:</b> ' + esc(STATUS[pr.status] || "Priced.") + (asm.length ? " Assumed " + esc(asm.join("; ").replace(/\.$/, "")) + "." : "") +
       (q0 ? ' <a href="#" onclick="pzAskCustomer();return false">Ask customer: ' + esc(q0.length > 60 ? q0.slice(0, 57) + "…" : q0) + '</a>' : "") + '</div>'
-    : '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>';
+    : SBC_AI_GENERATOR ? '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>'
+    : '<div class="pz-ai">No prices yet. Add a service and your lines below, or tap one of your price book packages.</div>';
 
   var html = pzCustomerHtml(r) + '<div class="pz-c" id="pz-s1"><div class="pz-row"><h2>1 · Request</h2><span class="pz-mut">' + photos + ' photo' + (photos === 1 ? '' : 's') + ' · ' + msgs + ' email' + (msgs === 1 ? '' : 's') + '</span></div>' +
     '<p style="margin:0 0 8px">' + esc(q.description ? '"' + q.description + '"' : (q.service || "")) + '</p>' + aiRead + '</div>' +
@@ -14144,7 +14158,8 @@ function pzChatStatus(r) {
   return threadOf(r).length ? '<button type="button" class="pz-lnk" onclick="pzWaiting(true)">Mark waiting for customer</button>' : '';
 }
 function pzLearnHtml(r) {
-  if (!pzLastCust(r)) return "";
+  /* The facts feed the generator; with it switched off they change nothing. */
+  if (!SBC_AI_GENERATOR || !pzLastCust(r)) return "";
   var cf = r.chatFacts || {}, facts = Array.isArray(cf.facts) ? cf.facts : [], reading = PZ.factsReading === r.ref;
   var list = facts.length ? facts.map(function (f) {
     return '<label class="pz-fact"><input type="checkbox" data-f="' + esc(String(f.id)) + '"' + (f.on !== false ? ' checked' : '') + ' onchange="pzFactTick()"><span>' + esc(f.text) + (f.effect ? ' → ' + esc(f.effect) : '') + '</span></label>';

@@ -48,6 +48,7 @@ const { addServiceRequest, mergeAddedService } = require("./lib/add-service");
 const history = require("./lib/history");
 const voice = require("./lib/customer-voice");
 const jobSize = require("./lib/job-size");
+const generatorSwitch = require("./lib/generator-switch");
 
 /* Claude Opus 5. Thinking is ON BY DEFAULT on this model and shares the max_tokens
    budget with the response text, which is why every call site below was raised.
@@ -97,6 +98,8 @@ exports.handler = async function handler(event) {
     const body = safeJsonParse(event.body, {});
     const ref = String(body.ref || "").trim();
     if (!ref) return jsonResponse(400, { error: "Missing ref" });
+    /* Switched off (lib/generator-switch.js): nothing is read or written. */
+    if (!generatorSwitch.on()) return jsonResponse(403, { error: generatorSwitch.OFF_MESSAGE });
 
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;

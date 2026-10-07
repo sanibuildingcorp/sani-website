@@ -10,6 +10,8 @@
  * update keeps the prices he typed by hand.
  */
 "use strict";
+/* These checks run the generator as it works when switched ON (lib/generator-switch.js); js/generator-off.test.js holds the switch itself. */
+process.env.AI_GENERATOR = "on";
 const fs = require("fs"), path = require("path"), vm = require("vm");
 const ROOT = path.join(__dirname, "..");
 const D = fs.readFileSync(path.join(ROOT, "dashboard.html"), "utf8");
@@ -54,7 +56,7 @@ ok("\"Ask customer\" in the AI read goes to this card", /pzJump\("pz-chat"\)/.te
 
 console.log("\n2. Bubbles, status, what the AI learned\n");
 const ctx = { console, Object, Array, String, Number, Date, isFinite, JSON };
-vm.createContext(ctx);
+ctx.SBC_AI_GENERATOR = true; vm.createContext(ctx);
 vm.runInContext("function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;')}\nvar PZ={factsAsked:{},factsReading:'',factsChanged:''};\n" +
   "var PZ_VIA = { quote: \"quote page\", gmail: \"email\", dashboard: \"email\" };\n" +
   ["threadOf", "threadNeedsReply", "threadWaiting", "cnvAttachmentsHtml"].map((n) => fn(D, n)).join("\n") + "\n" +

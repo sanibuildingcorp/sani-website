@@ -34,7 +34,8 @@ function worthDrafting(record) {
   return words >= 6 || answers >= 2 || photos >= 1;
 }
 
-function enabled() { return str(process.env.AUTO_DRAFT).toLowerCase() !== "off"; }
+/* Off with the generator itself (lib/generator-switch.js), or AUTO_DRAFT=off. */
+function enabled() { return require("./generator-switch").on() && str(process.env.AUTO_DRAFT).toLowerCase() !== "off"; }
 
 function jobId() { return "auto-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8); }
 

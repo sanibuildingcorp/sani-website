@@ -26,6 +26,8 @@ exports.handler = async function handler(event) {
   if (event.httpMethod !== "POST") {
     return jsonResponse(405, { error: "Method Not Allowed" });
   }
+  /* Switched off (lib/generator-switch.js). */
+  if (!require("./lib/generator-switch").on()) return jsonResponse(403, { error: require("./lib/generator-switch").OFF_MESSAGE });
 
   try {
     const body = safeJsonParse(event.body, {});

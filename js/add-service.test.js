@@ -1,3 +1,5 @@
+/* These checks run the generator as it works when switched ON (lib/generator-switch.js); js/generator-off.test.js holds the switch itself. */
+process.env.AI_GENERATOR = "on";
 /* add-service.test.js — run: node js/add-service.test.js
  *
  *   "i need freeze current previous generated estimate for bathroom but i
@@ -169,7 +171,7 @@ const FRESH = {
       watchGeneration: async () => ({ estimate: { labor: [{ item: 'x', qty: 1, rate: 1 }, { item: 'paint', qty: 2, rate: 55, section: 'Painting' }], publishedCustomerScope: { services: [{ name: 'Bathroom' }, { name: 'Painting' }] }, quotePhotos: ['old.jpg'], addedServices: [{ titles: ['Painting'], subtotal: 1830 }] }, status: 'accepted', customerFinalTotal: 14527.7 }),
       normalizeDisplayFlags() {}, renderEdit() { calls.push({ render: true }); }, CONTRACTOR_OWNED_ESTIMATE_FIELDS: ['publishedCustomerScope', 'quotePhotos'],
     };
-    vm.createContext(ctx);
+    ctx.SBC_AI_GENERATOR = true; vm.createContext(ctx);
     vm.runInContext([ext(DASH, 'addServiceAI'), ext(DASH, 'applyGeneratedEstimate')].join('\n'), ctx);
     await vm.runInContext('addServiceAI()', ctx);
     const kick = calls.find((c) => c.url);
@@ -187,12 +189,12 @@ const FRESH = {
     ok('watchGeneration hands back the stamped total too', /return \{ estimate: rec\.estimate, status: rec\.status, customerFinalTotal: rec\.customerFinalTotal \};/.test(DASH));
     ok('the reconnect path applies an added service the merged way', /applyGeneratedEstimate\(await watchGeneration\(ref, job\.jobId, job\.startedAt, job\.addService === true \? "Adding the service… \(the rest stays as it is\)" : ""\), job\.addService === true\);/.test(DASH) && /map\[ref\] = Object\.assign\(\{ jobId: jobId, startedAt: t \}, extra/.test(DASH));
     const wctx = { String, Number, Array, JSON, CUSTOMER_HAS_SEEN: ['sent', 'accepted'], calcCustomerView: () => ({ customerTotal: 100 }) };
-    vm.createContext(wctx);
+    wctx.SBC_AI_GENERATOR = true; vm.createContext(wctx);
     vm.runInContext('var CUSTOMER_HAS_SEEN = ["sent","accepted"];\n' + ext(DASH, 'regenerateWarning'), wctx);
     const warn = vm.runInContext('regenerateWarning({ status: "drafted", estimate: { addedServices: [{ titles: ["Painting"] }] } }, false)', wctx);
     ok('REGENERATE WARNS when a service was added: every service is rebuilt, use ➕ Add a service instead', /This estimate has 1 added service \(Painting\)\./.test(warn) && /Regenerating rebuilds EVERY service, including the ones already agreed\. To add more work, use ➕ Add a service instead\./.test(warn), warn);
     const hctx = { esc: (s) => String(s), fmt: (n) => '$' + n, Array, String, estimates: [] };
-    vm.createContext(hctx);
+    hctx.SBC_AI_GENERATOR = true; vm.createContext(hctx);
     vm.runInContext(ext(DASH, 'addonLink') + '\n' + ext(DASH, 'addonHeaderHtml'), hctx);
     ok('the record header names the added section and the untouched earlier ones', /➕ Added as own sections: Painting \$1830 \(2026-09-20\) <a [^>]*>↻ redo<\/a> <a [^>]*>✕ remove<\/a> · the earlier services untouched/.test(vm.runInContext('addonHeaderHtml({ ref: "R", estimate: { addedServices: [{ titles: ["Painting"], subtotal: 1830, at: "2026-09-20T15:00:00Z" }] } })', hctx)));
     const A = fs.readFileSync(path.join(ROOT, 'netlify/functions/assistant.js'), 'utf8');
@@ -236,7 +238,7 @@ const FRESH = {
       aiJobStart() {}, watchGeneration: async () => ({ estimate: { labor: [], addedServices: [{ titles: ['Painting'], subtotal: 1830 }] }, status: 'accepted' }),
       normalizeDisplayFlags() {}, renderEdit() {}, CONTRACTOR_OWNED_ESTIMATE_FIELDS: [],
     };
-    vm.createContext(ctx);
+    ctx.SBC_AI_GENERATOR = true; vm.createContext(ctx);
     vm.runInContext([ext(DASH, 'addServiceAI'), ext(DASH, 'applyGeneratedEstimate'), ext(DASH, 'aiExec')].join('\n'), ctx);
     const said = await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", service: "Painting", text: "Paint the bathroom in Honey Badger 920." })', ctx);
     const kick = calls.find((c) => c.url);
@@ -286,7 +288,7 @@ const FRESH = {
       materials: [], serviceBreakdown: [{ title: 'Bathroom', subtotal: 0 }, { title: 'Painting', subtotal: 0 }],
       manualCustomerScopeDraft: { services: [{ name: 'Bathroom' }, { name: 'Painting' }] }, addedServices: [{ titles: ['Painting'], subtotal: 625 }] };
     const ctx = { currentRecord: { estimate: est }, document: { getElementById: () => null }, String, Number, Array, Object, Math, calcTotal: (e) => ({ grand: Math.round(((10 * 60 + 10 * 60 + 2 * 60 + 10 * 50) * 1.25) * 100) / 100 }), scopeDraft: () => est.manualCustomerScopeDraft };
-    vm.createContext(ctx);
+    ctx.SBC_AI_GENERATOR = true; vm.createContext(ctx);
     vm.runInContext(['scopeAddedTitles', 'scopeSectionOf', 'scopeUniqueServices', 'scopeCardNames', 'scopeCardTotals'].map((n) => ext(DASH, n)).join('\n'), ctx);
     const totals = vm.runInContext('scopeCardTotals()', ctx);
     ok('THE LOOSE PLUMBING COST AND THE UNTAGGED "touch-up paint" LINE STAY WITH THE BATHROOM: Painting is exactly its own lines, the bathroom keeps everything else', totals.byCard['Painting'] === 625 && totals.byCard['Bathroom'] === Math.round((600 + 600 + 120) * 1.25 * 100) / 100, JSON.stringify(totals.byCard));
@@ -299,7 +301,7 @@ const FRESH = {
     const rctx = { currentRecord: { ref: 'SBC-260901-ARWQ', estimate: { addedServices: [{ titles: ['Painting (additional)'], subtotal: 8033.12 }] } }, confirm: (m) => { toasts.push('?' + m); return true; }, toast: (m, bad) => toasts.push((bad ? '!' : '') + m), fmt: (n) => '$' + n, JSON, String, Error, Array,
       sbcFetch: async (url, o) => { posted.push({ url, body: JSON.parse(o.body) }); return { ok: true, status: 200, json: async () => ({ success: true, removed: { titles: ['Painting (additional)'], subtotal: 8033.12, stampedTo: 23582.94 } }) }; },
       openEdit: async (ref) => { opened.push(ref); }, loadEstimates: () => { opened.push('list'); } };
-    vm.createContext(rctx);
+    rctx.SBC_AI_GENERATOR = true; vm.createContext(rctx);
     vm.runInContext(ext(DASH, 'addonRemove'), rctx);
     await vm.runInContext('addonRemove(0)', rctx);
     ok('✕ remove ASKS ONCE, posts ref and index with the key, then reloads the record and the list', /Remove "Painting \(additional\)" from SBC-260901-ARWQ\?/.test(toasts[0]) && /This saves straight away/.test(toasts[0]) && posted.length === 1 && /remove-added-service/.test(posted[0].url) && posted[0].body.index === 0 && posted[0].body.ref === 'SBC-260901-ARWQ' && opened.join(',') === 'SBC-260901-ARWQ,list' && toasts.some((m) => /removed · total now \$23582\.94/.test(m)), JSON.stringify({ posted, opened, toasts }));
@@ -321,7 +323,7 @@ const FRESH = {
       aiJobStart() {}, watchGeneration: async () => ({ estimate: { labor: [], addedServices: [{ titles: ['Painting'] }, { titles: ['Painting (additional)'], subtotal: 5000 }] }, status: 'accepted' }),
       normalizeDisplayFlags() {}, renderEdit() {}, CONTRACTOR_OWNED_ESTIMATE_FIELDS: [],
     };
-    vm.createContext(ctx);
+    ctx.SBC_AI_GENERATOR = true; vm.createContext(ctx);
     vm.runInContext([ext(DASH, 'addonIndexOf'), ext(DASH, 'addonRedo'), ext(DASH, 'addServiceAI'), ext(DASH, 'applyGeneratedEstimate'), ext(DASH, 'aiExec')].join('\n'), ctx);
     const said = await vm.runInContext('aiExec({ type: "addservice", ref: "SBC-260901-ARWQ", replace: "painting (additional)", service: "Painting", text: "Paint the living room and both bedrooms only, two coats, Honey Badger 920." })', ctx);
     const rm = posted.find((p) => p.url && /remove-added-service/.test(p.url)), kick = posted.find((p) => p.url && /generate-estimate-background/.test(p.url));
@@ -347,7 +349,7 @@ const FRESH = {
     const calls = [];
     const ctx = { String, Array, Object, JSON, currentRecord: { ref: 'R', estimate: { addedServices: [{ titles: ['Painting (additional)'], subtotal: 8033.12 }], parkedLines: [] } },
       scopeDraft: () => ({ services: [{ name: 'Bathroom' }, { name: 'Painting (additional)' }] }), addonRemove: (i) => { calls.push('remove:' + i); }, confirm: () => { calls.push('confirm'); return true; }, scopeNorm: (s) => String(s || '').toLowerCase(), scopeForgetMerges() {}, scopeLinesRefresh() { calls.push('refresh'); }, scopeUnparkService() {} };
-    vm.createContext(ctx);
+    ctx.SBC_AI_GENERATOR = true; vm.createContext(ctx);
     vm.runInContext(ext(DASH, 'addonIndexOf') + '\n' + ext(DASH, 'scopeDeleteService'), ctx);
     vm.runInContext('scopeDeleteService(1)', ctx);
     ok('REMOVE ON AN ADDED CARD GOES THROUGH THE WHOLE REMOVAL (lines, card, price, saved) - not the card-only path', calls.join(',') === 'remove:0', calls.join(','));
@@ -355,7 +357,7 @@ const FRESH = {
     vm.runInContext('scopeDeleteService(0)', ctx);
     ok('Remove on an ordinary card is the card-only path it always was', calls.join(',') === 'confirm,refresh', calls.join(','));
     const hctx = { esc: (s) => String(s), fmt: (n) => '$' + n, Array, String, estimates: [] };
-    vm.createContext(hctx);
+    hctx.SBC_AI_GENERATOR = true; vm.createContext(hctx);
     vm.runInContext(ext(DASH, 'addonLink') + '\n' + ext(DASH, 'addonHeaderHtml'), hctx);
     const warn = vm.runInContext('addonHeaderHtml({ ref: "R", estimate: { serviceBreakdown: [{ title: "Bathroom" }], addedServices: [{ titles: ["Painting (additional)"], subtotal: 8033.12 }] } })', hctx);
     ok('A SECTION WHOSE CARD IS ALREADY GONE (removed the old way) IS FLAGGED: its lines and price are still counted, press ✕ remove', /⚠ card removed, its lines and price are still in the estimate - press ✕ remove/.test(warn), warn);
