@@ -13389,12 +13389,22 @@ ul.pz-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;
 .pz-sec{border-top:1px solid #e3e6ec;margin:0 -16px;padding:8px 16px}
 .pz-sec summary{font-weight:700;cursor:pointer;padding:4px 0;color:#0f1f3a}
 .pz-pb{background:#eef2f9;color:#18305a;font-size:11px}
+.pz-rough{margin-top:8px;border:1px solid #e3e6ec;border-radius:10px;padding:0 10px}.pz-rough summary{padding:10px 0;font-size:14px;font-weight:600;cursor:pointer}.pz-rough summary .pz-mut{font-weight:400;font-size:12px}
+.pz-rr{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #eef0f4;font-size:14px}.pz-rr span{flex:1;min-width:0}.pz-rr b{font-weight:600;color:#5d6878;white-space:nowrap}.pz-rr .pz-fdel{position:static;box-shadow:none;background:#f2f4f7;flex:0 0 auto}
 .pz-fgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
 .pz-fc{border:1px solid #e3e6ec;border-radius:10px;overflow:hidden;position:relative}
 .pz-fdel{position:absolute;top:6px;right:6px;z-index:2;width:30px;height:30px;border-radius:50%;border:0;background:#fffe;color:#16202e;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 1px 4px #0003}.pz-fc.rough{opacity:.75}
 .pz-fimg{height:80px;background:#eef0f4 center/cover no-repeat;display:grid;place-items:center;font-size:32px;position:relative;cursor:pointer}
 .pz-fimg em{position:absolute;bottom:3px;right:6px;font-size:10px;font-style:normal;color:#5d6878}
 .pz-fb{padding:8px 10px;font-size:13px}.pz-tg{display:flex;gap:6px;align-items:center;margin-top:6px;font-weight:600}
+@media(max-width:640px){
+ .pz-fgrid{grid-template-columns:1fr;gap:6px}
+ .pz-fc{display:grid;grid-template-columns:64px 1fr;align-items:start;min-height:64px}
+ .pz-fimg{height:100%;min-height:64px;font-size:24px}.pz-fimg em{display:none}
+ .pz-fb{padding:8px 40px 8px 10px;font-size:13px}.pz-fb b{display:block;font-size:14px;line-height:1.25}
+ .pz-fb .pz-tg{margin-top:4px;font-size:13px}.pz-fb .pz-st{margin-top:4px;width:100%;font-size:14px;padding:6px}
+ .pz-fdel{top:6px;right:6px;width:28px;height:28px;font-size:13px}
+}
 .pz-st{width:100%;margin-top:6px;border:1px solid #e3e6ec;border-radius:6px;padding:4px}
 .pz-drawer{position:fixed;inset:0;background:#0007;z-index:120;display:none}.pz-drawer.on{display:block}
 .pz-drawer .pz-pan{position:absolute;right:0;top:0;bottom:0;width:min(560px,100%);background:#fff;overflow:auto;-webkit-overflow-scrolling:touch}
@@ -14021,7 +14031,7 @@ function pzFDel(call, name) {
 function pzFinishesHtml(i, nm, s) {
   var STATUS = ["Chosen", "To choose by date", "Customer delivers by date"];
   var sel = function (cur, onch) { return '<select class="pz-st" onchange="' + onch + '">' + STATUS.map(function (o) { return '<option' + ((cur || "Chosen") === o ? ' selected' : '') + '>' + o + '</option>'; }).join("") + '</select>'; };
-  var parkedNames = [];
+  var parkedNames = [], roughRows = [];
   var cards = pzOrdered(nm).filter(function (x) { return x.parked || x.kind === "materials"; }).map(function (x) {
     if (x.parked) {
       var pl = x.parked.p.line || {};
@@ -14031,6 +14041,9 @@ function pzFinishesHtml(i, nm, s) {
         sel(pl.finishStatus, "pzParkedStatus(" + x.parked.pi + ",this.value)") + '</div></div>';
     }
     var l = x.l, fin = pzIsFinish(l), cost = (Number(l.qty) || 0) * (Number(l.rate) || 0);
+    /* Installation materials (screws, board, fittings) are not customer cards:
+       one short row each, folded into one line below the finishes. */
+    if (!fin) { roughRows.push('<div class="pz-rr"><span>' + esc(l.item) + '</span><b>' + pzF(cost) + '</b>' + pzFDel("pzDelLine('materials'," + x.gi + ")", l.item) + '</div>'); return ""; }
     var img = fin && /^data:image\//.test(String(l.photo || "")) ? ' style="background-image:url(' + l.photo + ')"' : '';
     return '<div class="pz-fc' + (fin ? '' : ' rough') + '">' + pzFDel("pzDelLine('materials'," + x.gi + ")", l.item) + '<div class="pz-fimg"' + img + (fin ? ' onclick="pzPhoto(' + x.gi + ')"' : '') + '>' + (img ? '' : (fin ? pzIcon(l.item) : '🧰')) + '<em>' + (fin ? 'tap to add photo' : 'installation material') + '</em></div>' +
       '<div class="pz-fb"><b>' + esc(l.item) + '</b><div class="pz-mut"' + (fin ? ' onclick="pzSpec(' + x.gi + ')" style="cursor:pointer"' : '') + '>' + (fin ? esc(l.spec || "Brand / model / color") : 'Not shown as a card to customer') + '</div>' +
@@ -14044,7 +14057,10 @@ function pzFinishesHtml(i, nm, s) {
     cards.push('<div class="pz-fc">' + pzFDel("pzDropSupplied(" + i + "," + j + ")", t) + '<div class="pz-fimg">' + pzIcon(t) + '<em>customer item</em></div><div class="pz-fb"><b>' + esc(t) + '</b><div class="pz-mut">Customer buys it, we install it</div>' +
       '<label class="pz-tg"><input type="checkbox" checked onchange="pzDropSupplied(' + i + ',' + j + ')"> Customer supplies</label><div class="pz-mut">Material $0 · labor kept</div></div></div>');
   });
-  return '<div class="pz-fgrid">' + cards.join("") + '</div><button type="button" class="pz-btn pz-ghost pz-sm" style="margin-top:8px" onclick="pzLibrary(' + i + ')">+ Add from my product library</button>';
+  cards = cards.filter(Boolean);
+  return (cards.length ? '<div class="pz-fgrid">' + cards.join("") + '</div>' : '<div class="pz-mut" style="font-size:13px">No finishes yet.</div>') +
+    (roughRows.length ? '<details class="pz-rough"><summary>🧰 Installation materials (' + roughRows.length + ') <span class="pz-mut">not shown to customer</span></summary>' + roughRows.join("") + '</details>' : '') +
+    '<button type="button" class="pz-btn pz-ghost pz-sm" style="margin-top:8px" onclick="pzLibrary(' + i + ')">+ Add from my product library</button>';
 }
 /* The service's lines in their place: a material the customer supplies stays
    where it was in the list (struck through), as in the design. */
