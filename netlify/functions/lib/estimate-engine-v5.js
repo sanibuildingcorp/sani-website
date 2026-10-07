@@ -44,8 +44,13 @@ function build(reading, opts) {
     const b = BOOK.byId[it.id]; if (!b) return;
     const qty = Math.max(Number(it.qty) || 0, b.min || 0);
     const section = isProject ? (multi ? 'Whole Project' : svcName) : svcName;
-    labor.push({ section, item: b.name, qty, unit: b.unit, rate: b.labor, bookId: b.id, engine: 'v5' });
-    hours += (b.hours || 0) * qty;
+    /* Hard conditions: the reader's factor (with a reason) multiplies labor only.
+       A tile floor or wall under 50 sf is a small room with many cuts: at least x1.5. */
+    let factor = Number(it.factor) > 1 ? Math.min(2.5, Number(it.factor)) : 1, why = factor > 1 ? clean(it.why) : '';
+    if (/^(floor_tile|wall_tile)$/.test(b.id) && qty < 50 && factor < 1.5) { factor = 1.5; why = why || 'small room, many cuts'; }
+    labor.push(Object.assign({ section, item: b.name, qty, unit: b.unit, rate: b.labor * factor, bookId: b.id, engine: 'v5' }, factor > 1 ? { factor, why } : {}));
+    if (factor > 1) warnings.push(b.name + ': labor x' + factor + ' (' + why + ')');
+    hours += (b.hours || 0) * qty * factor;
     cureDays += b.cure || 0;
     (b.mat || []).forEach(([name, per, unit, cost, key, isFinish], mi) => {
       const q = Math.max(1, Math.ceil(per * qty * 100) / 100);
@@ -74,6 +79,14 @@ function build(reading, opts) {
       (r.b.not || []).forEach((x) => not.push(x));
     });
     (s.custom || []).forEach((c) => {   // things the book does not have: NO price from AI
+      /* His own old line, carried over exactly (price, qty, unit). Marked byHand. */
+      const ol = c.oldLine;
+      if (ol && ol.item) {
+        const kind = ol.kind === 'materials' ? materials : labor;
+        kind.push({ section: name, item: ol.item, qty: Number(ol.qty) || 1, unit: ol.unit || 'job', rate: Number(ol.rate) || 0, byHand: true, fromOld: true, engine: 'v5' });
+        if (ol.kind !== 'materials') { hours += Number(ol.hours) || 0; inc.push(clean(ol.item)); }
+        return;
+      }
       labor.push({ section: name, item: clean(c.name), qty: Number(c.qty) || 1, unit: c.unit || 'job', rate: 0, needsPrice: true, engine: 'v5' });
       inc.push(clean(c.name));
       warnings.push('Needs your price: ' + clean(c.name));
