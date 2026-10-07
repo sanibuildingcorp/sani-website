@@ -2076,9 +2076,13 @@ body {
   font-size: 14px;
   z-index: 200;
   box-shadow: 0 12px 32px rgba(0,0,0,0.4);
-  transition: transform 0.3s;
+  transition: transform 0.3s, opacity 0.3s, visibility 0.3s;
+  /* Hidden = really gone. Only sliding it 80px down left a two-line message
+     sitting over the phone's bottom bar until the page was refreshed. */
+  opacity: 0; visibility: hidden; pointer-events: none;
+  max-width: calc(100vw - 32px);
 }
-.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; visibility: visible; pointer-events: auto; cursor: pointer; }
 .toast.error { border-color: var(--bad); }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -3178,7 +3182,11 @@ function toast(msg, isError) {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.className = "toast show" + (isError ? " error" : "");
-  setTimeout(function() { t.classList.remove("show"); }, 3200);
+  /* One timer at a time: a second message no longer gets cut off by the first
+     one's timer. Shown 3 s (errors 6 s), then gone; tap to close it sooner. */
+  clearTimeout(toast._t);
+  t.onclick = function () { clearTimeout(toast._t); t.classList.remove("show"); };
+  toast._t = setTimeout(function() { t.classList.remove("show"); }, isError ? 6000 : 3000);
 }
 
 function normalizeDisplayFlags(est) {
