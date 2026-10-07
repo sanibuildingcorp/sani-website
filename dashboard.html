@@ -13538,7 +13538,6 @@ function pzChecks() {
     [svcs.length > 0 && svcs.every(function (s) { return (s.excluded || []).length; }), 'Every service has "Not included"'],
     [!sup.length || needs.some(function (x) { return /on site|deliver/i.test(x); }), "Delivery date for customer-supplied " + supName, "deliver"],
     [needs.some(function (x) { return /\bcoi\b|insurance/i.test(x); }), "Building COI mentioned", "coi"],
-    [t.grand > 0 && pro / t.grand >= 0.15, "Profit at least 15%"],
     [!/licens|\bgas (line|hook|pipe|connect|appliance)|option [ab]\b/i.test(text.join("\n")), 'No "licensed", no options, no gas work']
   ];
 }
@@ -13638,9 +13637,10 @@ function pzRender() {
   if (side) side.innerHTML = '<div class="pz-c" id="pz-ready"><div class="pz-ey">Ready to send</div><ul class="pz-chk" id="pz-chk"></ul></div>' +
     '<div class="pz-c"><div class="pz-ey">Money (you only)</div>' +
       '<button type="button" class="pz-btn pz-gold pz-sm" style="width:100%;margin:6px 0 8px" onclick="pzSetTotal()">🎯 Set my own total</button>' +
+      '<div class="pz-row"><span>Customer price</span><b id="pz-mcus"></b></div>' +
       '<div class="pz-row"><span>Labor cost</span><b id="pz-mlab"></b></div><div class="pz-row"><span>Material cost</span><b id="pz-mmat"></b></div>' +
-      '<div class="pz-row"><span>Profit</span><b id="pz-mpro"></b></div><div class="pz-row"><span>Profit per crew day</span><b id="pz-mday"></b></div>' +
-      '<div class="pz-ai" id="pz-mai" style="display:none"></div></div>' +
+      '<div class="pz-row"><span>Our profit</span><b id="pz-mprof"></b></div><div class="pz-row"><span>Work days</span><b id="pz-mday"></b></div>' +
+      '</div>' +
     '<div class="pz-c"><div class="pz-ey">Quick actions</div><div style="display:grid;gap:6px;margin-top:6px">' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzDuplicate()">Duplicate estimate</button>' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzSaveTemplate()">Save as my template</button>' +
@@ -13780,9 +13780,8 @@ function pzRefresh() {
   var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
   set("pz-tot", pzF(tot));
   set("pz-sub", "Cost " + pzF(t.sub) + " · Profit " + pzF(pro) + " (" + pct + "%)" + (wd ? " · " + wd + " work days" : ""));
-  set("pz-mlab", pzF(t.labor)); set("pz-mmat", pzF(t.mat)); set("pz-mpro", pzF(pro)); set("pz-mday", wd ? pzF(pro / wd) : "—");
-  var mai = document.getElementById("pz-mai");
-  if (mai) { var low = wd && pro / wd < 400; mai.style.display = low ? "" : "none"; mai.textContent = low ? "Profit per crew day is low. Raise markup or check hours." : ""; }
+  set("pz-mlab", pzF(t.labor)); set("pz-mmat", pzF(t.mat)); set("pz-mcus", pzF(tot)); set("pz-mprof", pzF(pro) + " (" + pct + "%)"); set("pz-mday", wd ? String(wd) : "—");
+  /* No profit notes: he reads the numbers and decides the markup himself. */
   var C = pzChecks(), okN = C.filter(function (x) { return x[0]; }).length;
   var chk = document.getElementById("pz-chk");
   if (chk) chk.innerHTML = C.map(function (x) {
