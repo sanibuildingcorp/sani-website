@@ -47,7 +47,12 @@ console.log("\n1. The design, part for part\n");
   ["4 · Terms: markup, payment, warranty, valid for", /4 · Terms \(saved defaults\)/.test(pz) && /type="range"/.test(pz) && /Warranty/.test(pz) && /Valid for/.test(pz)],
   ["5 · What we need from the customer", /5 · What we need from the customer/.test(pz)],
   ["Ready to send, Money (you only), Quick actions with the design's five buttons", /Ready to send/.test(pz) && /Money \(you only\)/.test(pz) && ["Duplicate estimate", "Save as my template", "Scope only (no prices)", ">PDF<", "AI chat"].every((k) => pz.indexOf(k) !== -1)],
-  ["the sticky bottom bar: Preview customer view, Send estimate", /class="pz-foot"[\s\S]{0,200}Preview customer view[\s\S]{0,120}Send estimate/.test(pz)],
+  ["the sticky bottom bar: Preview customer view, Send estimate (desktop) / 👁 Preview, ⋯, Send (phone)", /class="pz-foot"[\s\S]{0,200}Preview customer view[\s\S]{0,400}Send estimate/.test(pz) && /👁 Preview<\/span>/.test(pz) && /onclick="pzMenu\(true\)">⋯</.test(pz)],
+  ["phone header: one slim bar (total, profit · % · days, ready chip, ▾) and a 5-part gold line; tap opens and closes it", /class="pz-mtop" id="pz-mtop" onclick="this\.classList\.toggle\(\\'x\\'\)"/.test(pz) && /\.pz-mtop\.x \.pz-mmore\{display:block\}/.test(pz) && /"profit " \+ pzF\(pro\)/.test(pz) && /id="pz-mprog"/.test(pz)],
+  ["...open: customer and phone first, cost / labor / material, jump chips Customer, Request, Price, Timeline, Terms", /\["Customer", "pz-s0"\], \["Request", "pz-s1"\], \["Price", "pz-s2"\], \["Timeline", "pz-s3"\], \["Terms", "pz-s4"\]/.test(pz) && /"Cost " \+ pzF\(t\.sub\) \+ " · Labor "/.test(pz)],
+  ["on phone Preview and Send are only in the bottom bar; desktop keeps the big header", /\.pz-top\{display:none\}/.test(pz) && /@media\(max-width:640px\)\{\n \.pz-top\{display:none\}/.test(pz)],
+  ["the ⋯ menu: Duplicate, Save template, Scope only, PDF, AI chat (and More tools, Close)", ["Duplicate estimate", "Save as my template", "Scope only (no prices)", '["PDF"', '["AI chat"', '["More tools"', '["Close this estimate"'].every((k) => pz.indexOf(k) !== -1)],
+  ["the customer card is first, above Request", /var html = pzCustomerHtml\(r\) \+ '<div class="pz-c" id="pz-s1">/.test(pz)],
   ["phone: the line name on its own row, then tag / qty / unit / rate / total / ✕", /\.pz-sec \.pz-t tr\{display:grid;grid-template-columns:44px 64px 34px 78px 1fr 26px/.test(pz) && /\.pz-sec \.pz-t td:nth-child\(2\)\{grid-column:1\/-1;order:-1\}/.test(pz)],
   ["the old screen is the hidden More tools drawer (every tool still there)", /while \(card\.firstChild\) tools\.appendChild\(card\.firstChild\)/.test(pz) && /<b>More tools<\/b>/.test(pz)],
   ["the screen mounts after every other part of the page has drawn (last renderEdit wrapper)", D.lastIndexOf("try { pzMount(); }") > D.lastIndexOf("var _orig = renderEdit") && D.lastIndexOf("var _orig = renderEdit") > D.indexOf('<style id="pz-styles">')],
@@ -101,6 +106,20 @@ ok("one estimate object: in this screen the save reads it straight, never an old
 ok("the hidden tools are kept in step with every line edit (no old copy can write back)", /renderLines\("labor", e\.labor \|\| \[\]\); renderLines\("materials", e\.materials \|\| \[\]\)/.test(fn(pz, "pzSyncOld")));
 ok("Send prepares the same estimate first, then the usual send (preview, contract, email)", /pzPrepare\(\); sendToCustomer\(\);/.test(fn(pz, "pzSend")));
 ok("Preview shows the real customer page with the unsaved estimate (one renderer)", /quote\.html\?ref=' \+ encodeURIComponent\(currentRecord\.ref\) \+ '&preview=1/.test(fn(pz, "pzPreview")) && /sbc-preview-record/.test(fn(pz, "pzPreview")));
+
+console.log("\n3b. The customer card\n");
+{
+  const cc = { console, Object, Array, String, Number, Date, encodeURIComponent, isFinite }; vm.createContext(cc);
+  vm.runInContext("function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;')}\n" + lit("PZ_STATUS", "{", "}") + "\n" + ["pzDigits", "pzBuilding", "pzCustomerHtml"].map((n) => fn(pz, n)).join("\n"), cc);
+  const card = vm.runInContext("pzCustomerHtml(" + JSON.stringify({ ref: "SBC-261006-4821", status: "new", submittedAt: "2026-10-06T15:00:00Z", customer: { name: "Maria Lopez", phone: "(917) 555-0142", email: "maria.l@email.com", address: "31-xx 30th Ave, Apt 3B, Astoria NY 11102" }, request: { propertyType: "Co-op", timeline: "Within 2 weeks", serviceAnswers: { fl: "3rd floor", el: "Elevator", wall: "Peeling" }, answerLabels: { fl: "What floor is it on?", el: "Elevator or walk-up?", wall: "Wall condition" } } }) + ")", cc);
+  ok("name, status chip New · not sent", /pz-cname">Maria Lopez</.test(card) && /New · not sent/.test(card));
+  ok("Call / Text / Email / Map: tel:, sms:, mailto:, Google Maps", /href="tel:\+19175550142"/.test(card) && /href="sms:\+19175550142"/.test(card) && /href="mailto:maria\.l@email\.com"/.test(card) && /href="https:\/\/maps\.google\.com\/\?q=31-xx%2030th%20Ave%2C%20Apt%203B%2C%20Astoria%20NY%2011102"/.test(card));
+  ok("rows from the real record: phone, email, full address, building, request, wants start", /<span>Address<\/span><span>31-xx 30th Ave, Apt 3B, Astoria NY 11102<\/span>/.test(card) && /<span>Building<\/span><span>Co-op · 3rd floor · Elevator<\/span>/.test(card) && /<span>Request<\/span><span>Oct 6, 2026 · website form · SBC-261006-4821<\/span>/.test(card) && /<span>Wants start<\/span><span>Within 2 weeks<\/span>/.test(card));
+  ok("no Prefers row when nothing was saved; the wall answer is not building info", !/Prefers/.test(card) && !/Peeling/.test(card));
+  ok("Edit details opens the existing customer editor", /onclick="sbcEditCustomer\(\)">Edit details</.test(card));
+  const bare = vm.runInContext("pzCustomerHtml({ref:'R',status:'sent',customer:{name:'X'},request:{}})", cc);
+  ok("no phone or email: those buttons are greyed out, not broken links", /Sent/.test(bare) && /pointer-events:none">📞 Call/.test(bare) && !/href="tel:"/.test(bare));
+}
 
 console.log("\n4. Price book (his own templates and products)\n");
 const t = PB.cleanTemplate({ name: " Bathroom refresh ", lines: [{ kind: "labor", item: "Protect floors", qty: 3, unit: "h", rate: 70 }, { kind: "materials", item: "Toilet", qty: 1, unit: "ea", rate: 199 }, { item: "" }], included: ["a", ""], excluded: ["b"], steps: [{ title: "Protect", text: "x" }] });

@@ -13348,6 +13348,27 @@ ul.pz-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;
 #pz-tools-body{padding:12px 14px 40px}
 #pz-tools-body .step-bar,#pz-tools-body #scope-control-wrap,#pz-tools-body .ws-more{display:none}
 .pz-saved{font-size:11px;color:#9fb0c6;margin-left:6px}
+/* Phone header (Perplexity, images 00a-00c): one slim bar - total, profit,
+   ready chip, arrow - and a 5-part gold line; tap it to open the details. */
+.pz-mtop,.pz-ml{display:none}
+.pz-cname{font-size:20px;font-weight:800;margin:6px 0}
+.pz-cact{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.pz-cact a{text-align:center;text-decoration:none;color:#0f1f3a;border:1px solid #e3e6ec;border-radius:9px;padding:8px 2px;font-weight:700;font-size:13px}
+.pz-ckv{display:grid;grid-template-columns:90px 1fr;gap:5px 10px;font-size:14px}.pz-ckv span:nth-child(odd){color:#5d6878}
+.pz-menu{position:fixed;inset:0;z-index:40;display:none;background:#0005}.pz-menu.on{display:block}
+.pz-menu .pz-sheet{position:absolute;left:10px;right:10px;bottom:70px;background:#fff;border-radius:14px;padding:8px;box-shadow:0 8px 30px #0004;display:grid;gap:4px}
+.pz-menu .pz-sheet button{background:none;border:0;text-align:left;padding:12px;border-radius:9px;font-size:15px;font-weight:600;cursor:pointer}
+.pz-menu .pz-sheet button:active{background:#f2f5fa}
+@media(max-width:640px){
+ .pz-top{display:none}.pz-ml{display:inline}.pz-dl{display:none}
+ .pz-mtop{display:block;position:sticky;top:0;z-index:20;background:#0f1f3a;color:#fff;padding:8px 14px 6px;box-shadow:0 2px 6px #0003;cursor:pointer}
+ .pz-mrow{display:flex;align-items:center;gap:10px}.pz-mtot{flex:1;display:flex;align-items:baseline;gap:8px;min-width:0}.pz-mtot b{font-size:22px;font-weight:800}.pz-mtot span{font-size:12px;color:#c8d0dd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .pz-mchev{color:#c8d0dd;font-size:14px;transition:transform .2s}.pz-mtop.x .pz-mchev{transform:rotate(180deg)}
+ .pz-mprog{display:flex;gap:3px;margin-top:6px}.pz-mprog i{flex:1;height:4px;border-radius:2px;background:#ffffff33}.pz-mprog i.d{background:#c9a24a}
+ .pz-mmore{display:none;font-size:12px;color:#c8d0dd;padding-top:8px}.pz-mtop.x .pz-mmore{display:block}
+ .pz-mjump{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.pz-mjump button{background:#ffffff1a;border:0;color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer}
+ .pz-foot{padding:8px 10px;gap:6px}.pz-foot .pz-btn{padding:10px 12px;font-size:14px}.pz-foot .pz-gold{flex:1}.pz-foot .pz-mx{width:44px}
+}
 @media(max-width:640px){
  .pz-sec .pz-t tr:first-child{display:none}
  .pz-sec .pz-t tr{display:grid;grid-template-columns:44px 64px 34px 78px 1fr 26px;align-items:center;border-bottom:1px solid #e3e6ec;padding:4px 0}
@@ -13529,7 +13550,7 @@ function pzRender() {
       (q0 ? ' <a href="#" onclick="pzAskCustomer();return false">Ask customer: ' + esc(q0.length > 60 ? q0.slice(0, 57) + "…" : q0) + '</a>' : "") + '</div>'
     : '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>';
 
-  var html = '<div class="pz-c" id="pz-s1"><div class="pz-row"><h2>1 · Request</h2><span class="pz-mut">' + photos + ' photo' + (photos === 1 ? '' : 's') + ' · ' + msgs + ' email' + (msgs === 1 ? '' : 's') + '</span></div>' +
+  var html = pzCustomerHtml(r) + '<div class="pz-c" id="pz-s1"><div class="pz-row"><h2>1 · Request</h2><span class="pz-mut">' + photos + ' photo' + (photos === 1 ? '' : 's') + ' · ' + msgs + ' email' + (msgs === 1 ? '' : 's') + '</span></div>' +
     '<p style="margin:0 0 8px">' + esc(q.description ? '"' + q.description + '"' : (q.service || "")) + '</p>' + aiRead + '</div>';
 
   /* 2 · Scope & Price */
@@ -13598,6 +13619,37 @@ function pzRender() {
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzTools()">More tools</button></div></div>';
   pzRefresh();
 }
+/* THE CUSTOMER CARD (image 00d), first on the page: name and status, Call /
+   Text / Email / Map, and the details the request record holds. A row with
+   nothing behind it is left out. */
+var PZ_STATUS = { "new": ["New · not sent", "pz-wa"], drafted: ["Draft · not sent", "pz-wa"], sent: ["Sent", "pz-pb"], opened: ["Viewed", "pz-pb"], viewed: ["Viewed", "pz-pb"], review_requested: ["Changes asked", "pz-wa"], accepted: ["Approved", "pz-ok"], invoiced: ["Approved · invoiced", "pz-ok"], paid: ["Paid", "pz-ok"], completed: ["Completed", "pz-ok"], declined: ["Declined", "pz-ba"], cancelled: ["Cancelled", "pz-ba"] };
+function pzDigits(p) { var d = String(p || "").replace(/[^\d+]/g, ""); if (/^\d{10}$/.test(d)) d = "+1" + d; else if (/^1\d{10}$/.test(d)) d = "+" + d; return d; }
+function pzBuilding(r) {
+  var q = (r && r.request) || {}, a = q.serviceAnswers || {}, lb = q.answerLabels || {}, out = [];
+  if (String(q.propertyType || "").trim()) out.push(String(q.propertyType).trim());
+  Object.keys(a).forEach(function (k) {
+    var lab = String(lb[k] || k), v = String(a[k] || "").trim();
+    if (v && /floor|elevator|walk-?up|stairs|building|co-?op|condo|coi|insurance cert|doorman|management/i.test(lab + " " + k) && out.indexOf(v) === -1 && v.length <= 60) out.push(v);
+  });
+  return out.join(" · ");
+}
+function pzCustomerHtml(r) {
+  var c = r.customer || {}, q = r.request || {}, st = PZ_STATUS[String(r.status || "new").toLowerCase()] || [String(r.status || "New"), "pz-wa"];
+  var tel = pzDigits(c.phone), addr = String(c.address || "").trim();
+  var when = r.submittedAt ? new Date(r.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+  var src = { manual: "added by you", addon: "additional work", bid: "bid", email: "email" }[String(r.source || "").toLowerCase()] || "website form";
+  var prefers = String(c.prefers || c.contactPreference || q.contactPreference || q.prefers || "").trim();
+  var rows = [["Phone", c.phone], ["Email", c.email], ["Address", addr], ["Building", pzBuilding(r)], ["Prefers", prefers], ["Request", [when, src, r.ref].filter(Boolean).join(" · ")], ["Wants start", q.timeline]]
+    .filter(function (x) { return String(x[1] || "").trim(); });
+  var btn = function (href, label, ok, blank) { return ok ? '<a href="' + esc(href) + '"' + (blank ? ' target="_blank" rel="noopener"' : '') + '>' + label + '</a>' : '<a style="opacity:.4;pointer-events:none">' + label + '</a>'; };
+  return '<div class="pz-c" id="pz-s0"><div class="pz-row"><h2 style="margin:0">Customer</h2><span class="pz-pill ' + st[1] + '">' + esc(st[0]) + '</span></div>' +
+    '<div class="pz-cname">' + esc(c.name || "No name yet") + '</div>' +
+    '<div class="pz-cact">' + btn("tel:" + tel, "📞 Call", !!tel) + btn("sms:" + tel, "💬 Text", !!tel) + btn("mailto:" + (c.email || ""), "✉️ Email", !!c.email) + btn("https://maps.google.com/?q=" + encodeURIComponent(addr), "📍 Map", !!addr, true) + '</div>' +
+    '<div class="pz-ckv">' + rows.map(function (x) { return '<span>' + x[0] + '</span><span>' + esc(String(x[1]).trim()) + '</span>'; }).join("") + '</div>' +
+    '<button type="button" class="pz-btn pz-ghost pz-sm" style="margin-top:8px" onclick="sbcEditCustomer()">Edit details</button></div>';
+}
+function pzMenu(on) { var m = document.getElementById("pz-menu"); if (m) m.classList.toggle("on", !!on); }
+function pzJump(id) { var el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); var t = document.getElementById("pz-mtop"); if (t) t.classList.remove("x"); }
 function pzSec(i, key, title, body, extra) {
   var id = i + key, open = PZ.secs[id] !== false;
   return '<details class="pz-sec"' + (open ? ' open' : '') + ' ontoggle="PZ.secs[\'' + id + '\']=this.open"><summary>' + title + (extra || '') + '</summary>' + body + '</details>';
@@ -13695,6 +13747,20 @@ function pzRefresh() {
   var pill = document.getElementById("pz-ready");
   var hp = document.getElementById("pz-hready");
   if (hp) { hp.textContent = "Ready " + okN + "/" + C.length; hp.className = "pz-pill " + (okN === C.length ? "pz-ok" : "pz-wa"); }
+  /* the phone header */
+  set("pz-mtot", pzF(tot));
+  set("pz-mpro", "profit " + pzF(pro) + " · " + pct + "%" + (wd ? " · " + wd + " days" : ""));
+  var mr = document.getElementById("pz-mready");
+  if (mr) { mr.textContent = okN + "/" + C.length; mr.className = "pz-pill " + (okN === C.length ? "pz-ok" : "pz-wa"); }
+  var mp = document.getElementById("pz-mprog");
+  if (mp) mp.innerHTML = [0, 1, 2, 3, 4].map(function (k) { return '<i class="' + (k < Math.round(okN / C.length * 5) ? 'd' : '') + '"></i>'; }).join("");
+  var cu = r.customer || {}, rq = r.request || {};
+  var mw = document.getElementById("pz-mwho");
+  /* name and phone first, then the city and the building, short */
+  var city = String(cu.address || "").split(",").pop().replace(/\s+[A-Z]{2}\s*\d{5}(-\d{4})?\s*$/, "").replace(/\s+\d{5}\s*$/, "").trim();
+  var bld = pzBuilding(r).split(" · ").slice(0, 2).join(" ");
+  if (mw) mw.innerHTML = '<b style="color:#fff">' + esc(cu.name || "") + '</b>' + [cu.phone, city, bld].filter(function (x) { return x && String(x).trim(); }).map(function (x) { return " · " + esc(String(x).trim()); }).join("");
+  set("pz-msub", "Cost " + pzF(t.sub) + " · Labor " + pzF(t.labor) + " · Material " + pzF(t.mat));
   var prog = document.getElementById("pz-prog");
   if (prog) prog.innerHTML = ["Request", "Scope & Price", "Timeline", "Terms", "Review & Send"].map(function (x, k) {
     return '<button type="button" class="' + (k < 4 && okN >= k * 2 ? 'done' : '') + ' ' + (k === 4 ? 'on' : '') + '" onclick="pzGo(' + k + ')">' + (k + 1) + ' ' + esc(x) + '</button>';
@@ -14016,8 +14082,14 @@ function pzMount() {
   card.innerHTML = '<div class="pz-top"><div class="pz-in"><div><div class="pz-who">' + who + '<span class="pz-saved" id="pz-saved"></span></div><div class="pz-tot" id="pz-tot">$0</div><div class="pz-sub" id="pz-sub"></div></div>' +
       '<div style="display:flex;gap:8px;align-items:center"><span class="pz-pill" id="pz-hready"></span><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzPreview()">Preview</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()">Send</button><button type="button" class="pz-close" title="Close" onclick="closeEdit()">×</button></div></div>' +
       '<div class="pz-prog" id="pz-prog"></div></div>' +
+    '<div class="pz-mtop" id="pz-mtop" onclick="this.classList.toggle(\'x\')"><div class="pz-mrow"><div class="pz-mtot"><b id="pz-mtot">$0</b><span id="pz-mpro"></span></div><span class="pz-pill" id="pz-mready"></span><span class="pz-mchev">▾</span></div>' +
+      '<div class="pz-mprog" id="pz-mprog"></div>' +
+      '<div class="pz-mmore"><div id="pz-mwho"></div><div id="pz-msub"></div><div class="pz-mjump">' + [["Customer", "pz-s0"], ["Request", "pz-s1"], ["Price", "pz-s2"], ["Timeline", "pz-s3"], ["Terms", "pz-s4"]].map(function (x) { return '<button type="button" onclick="event.stopPropagation();pzJump(\'' + x[1] + '\')">' + x[0] + '</button>'; }).join("") + '</div></div></div>' +
     '<div class="pz-wrap"><main id="pz-main"></main><aside id="pz-side"></aside></div>' +
-    '<div class="pz-foot"><button type="button" class="pz-btn pz-ghost" onclick="pzPreview()">Preview customer view</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()">Send estimate</button></div>' +
+    '<div class="pz-foot"><button type="button" class="pz-btn pz-ghost" onclick="pzPreview()"><span class="pz-dl">Preview customer view</span><span class="pz-ml">👁 Preview</span></button><button type="button" class="pz-btn pz-ghost pz-ml pz-mx" onclick="pzMenu(true)">⋯</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()"><span class="pz-dl">Send estimate</span><span class="pz-ml">Send</span></button></div>' +
+    '<div class="pz-menu" id="pz-menu" onclick="if(event.target===this)pzMenu(false)"><div class="pz-sheet">' +
+      [["Duplicate estimate", "pzDuplicate()"], ["Save as my template", "pzSaveTemplate()"], ["Scope only (no prices)", "copyScopeLink()"], ["PDF", "downloadEstimatePdf(\'customer\')"], ["AI chat", "pzTools(\'ask\')"], ["More tools", "pzTools()"], ["Close this estimate", "closeEdit()"]].map(function (x) { return '<button type="button" onclick="pzMenu(false);' + x[1] + '">' + x[0] + '</button>'; }).join("") +
+    '</div></div>' +
     '<div class="pz-drawer" id="pz-prev" onclick="if(event.target===this)pzClose(\'pz-prev\')"><div class="pz-pan"></div></div>' +
     '<div class="pz-drawer wide" id="pz-tools" onclick="if(event.target===this)pzClose(\'pz-tools\')"><div class="pz-pan"><div style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e3e6ec;position:sticky;top:0;background:#fff;z-index:2"><b>More tools</b><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzClose(\'pz-tools\')">Close ✕</button></div></div></div>';
   card.querySelector("#pz-tools .pz-pan").appendChild(tools);
