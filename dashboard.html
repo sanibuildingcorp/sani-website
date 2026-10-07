@@ -14286,6 +14286,7 @@ function pzFactTick() {
 /* ↻ Regenerate: the new brain reads the whole job again from scratch. Same
    safety as Update from chat: a change list with Apply / Cancel, Undo after. */
 function pzRegenerate() {
+  if (PZ.busy) return;
   if (!confirm("Regenerate: the AI reads the whole job again from scratch. You will see every change before anything is applied. Continue?")) return;
   return pzChatUpdate("redo");
 }
@@ -14294,6 +14295,7 @@ async function pzChatUpdate(mode) {
   await pzSaveNow();
   PZ.factsChanged = "";
   mode = mode === "redo" ? "redo" : "chat";
+  if (PZ.busy) return;
   if (!SBC_V5) { pzGenerate(true); return; }
   /* v5: a SMALL update. The server reads only what the chat changed, keeps
      every line and price he typed, and parks the result as a list of changes.
@@ -14303,6 +14305,7 @@ async function pzChatUpdate(mode) {
   var jobId = "v5c-" + Date.now().toString(36);
   var out = (mode === "redo" && document.getElementById("pz-regen")) || document.getElementById("pz-learn");
   if (out) out.insertAdjacentHTML("beforeend", '<div class="pz-mut" id="pz-v5w">' + (mode === "redo" ? "Regenerating - reading the whole job again…" : "Reading the chat for changes…") + '</div>');
+  pzBusy(true, mode === "redo" ? "Regenerating estimate" : "Reading the chat for changes");
   try {
     var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jobId, mode: mode, offFacts: off }) });
     if (k.status !== 202 && !k.ok) throw new Error("HTTP " + k.status);
@@ -14320,6 +14323,25 @@ async function pzChatUpdate(mode) {
     pzV5Changes(ref, pend.changes || [], pend.fullRebuild === true);
   } catch (e) { toast("Update from chat: " + e.message, true); }
   var w = document.getElementById("pz-v5w"); if (w) w.remove();
+  pzBusy(false);
+}
+/* A clear "working" bar while the AI runs (it takes 30-90 s): spinner, what it is
+   doing, seconds so far. The Regenerate / Update buttons are locked meanwhile. */
+function pzBusy(on, label) {
+  var id = "pz-busy", el = document.getElementById(id);
+  clearInterval(PZ.busyT);
+  PZ.busy = !!on;
+  document.querySelectorAll('#pz-regen button, button[onclick*="pzChatUpdate"], button[onclick*="pzRegenerate"]').forEach(function (x) { x.disabled = !!on; x.style.opacity = on ? ".5" : ""; });
+  if (!on) { if (el) el.remove(); return; }
+  if (!document.getElementById("pz-busy-css")) document.head.insertAdjacentHTML("beforeend", '<style id="pz-busy-css">#pz-busy{position:fixed;left:12px;right:12px;bottom:96px;z-index:9999;background:#13254a;color:#fff;border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 6px 24px rgba(0,0,0,.25);font-size:15px}#pz-busy i{width:20px;height:20px;border:3px solid #ffffff44;border-top-color:#c9a24a;border-radius:50%;animation:pzspin .8s linear infinite;flex:0 0 auto}#pz-busy small{display:block;color:#c8d0dd;font-size:12px;margin-top:2px}@keyframes pzspin{to{transform:rotate(360deg)}}@media(min-width:900px){#pz-busy{left:auto;width:380px}}</style>');
+  if (!el) { document.body.insertAdjacentHTML("beforeend", '<div id="pz-busy" role="status" aria-live="polite"><i></i><div><b id="pz-busy-l"></b><small id="pz-busy-s"></small></div></div>'); }
+  var t0 = Date.now(), steps = [[0, "Reading the request, photos and chat"], [12, "Choosing items from your price book"], [30, "Building the lines and totals"], [60, "Almost done"]];
+  var tick = function () {
+    var s = Math.round((Date.now() - t0) / 1000), st = steps.filter(function (x) { return s >= x[0]; }).pop()[1];
+    var l = document.getElementById("pz-busy-l"), m = document.getElementById("pz-busy-s");
+    if (l) l.textContent = label + "…"; if (m) m.textContent = st + " · " + s + " s (usually under a minute)";
+  };
+  tick(); PZ.busyT = setInterval(tick, 1000);
 }
 /* The change list: what moves, by how much. Apply or Cancel. */
 function pzV5Changes(ref, ch, full) {
