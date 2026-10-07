@@ -13667,7 +13667,7 @@ function pzCustomerHtml(r) {
    later in a message are in the Conversation card, inside that message. */
 function pzReqPhotos() {
   var h = typeof reqPhotosHtml === "function" ? reqPhotosHtml() : "";
-  return h ? '<div class="cust-photos pz-photos" id="pz-photos">' + h + '</div>' : "";
+  return h ? '<div class="cust-photos pz-photos" id="pz-reqfiles">' + h + '</div>' : "";
 }
 function pzMenu(on) { var m = document.getElementById("pz-menu"); if (m) m.classList.toggle("on", !!on); }
 function pzJump(id) { var el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); var t = document.getElementById("pz-mtop"); if (t) t.classList.remove("x"); }

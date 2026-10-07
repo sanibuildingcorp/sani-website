@@ -139,6 +139,7 @@ console.log("\n3b3. The customer's photos and files are on the Request card\n");
     "\nvar currentRecord={request:{photos:[{data:'https://x/p1.jpg',slot:'wide'},{data:'https://x/plan.pdf',name:'Plan.pdf',kind:'file'}]}};", c5);
   const h = vm.runInContext("pzReqPhotos()", c5);
   ok("\"photos or files uploaded by customer doesn't show\": the photo shows and opens large, the PDF opens", /<img src="https:\/\/x\/p1\.jpg"[^>]*openLightbox/.test(h) && /openReqFile\(1\)[\s\S]*Plan\.pdf/.test(h));
+  ok("its own id: never the \"Photos on the estimate\" card's (pz-photos), so neither redraws over the other", /id="pz-reqfiles"/.test(h) && (pz.match(/id="pz-photos"/g) || []).length === 1);
   ok("...on the Request card, above the AI read; nothing when there are none", /'<\/p>' \+ pzReqPhotos\(\) \+ aiRead/.test(fn(pz, "pzRender")) && vm.runInContext("currentRecord={request:{}};pzReqPhotos()", c5) === "");
 }
 
