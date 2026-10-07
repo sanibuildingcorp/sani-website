@@ -419,6 +419,7 @@ const TOOLS = [
     run: async function (a) {
       const rec = await loadRecord(a.ref);
       const id = jobId();
+      if (!require("./lib/generator-switch").on()) return require("./lib/generator-switch").OFF_MESSAGE;
       const code = await kickEstimator({ ref: rec.ref, jobId: id, reanalyze: a.reanalyze === true, useDescription: true, useAnswers: true, extraRequest: str(a.extraRequest).slice(0, 2000), houseRules: await houseRules() });
       if (code !== 202 && !(code >= 200 && code < 300)) throw new Error("The estimator refused (" + code + ")");
       return "Started on " + rec.ref + (a.reanalyze === true ? " (re-reading the job from scratch)" : " (re-pricing)") + ". It takes a few minutes; read the estimate again after that.";
@@ -432,6 +433,7 @@ const TOOLS = [
     run: async function (a) {
       const rec = await loadRecord(a.ref);
       if (!str(a.text)) throw new Error("Describe the work to add");
+      if (!require("./lib/generator-switch").on()) return require("./lib/generator-switch").OFF_MESSAGE;
       const code = await kickEstimator({ ref: rec.ref, jobId: jobId(), addService: { text: str(a.text).slice(0, 2000), service: str(a.service) }, houseRules: await houseRules() });
       if (code !== 202 && !(code >= 200 && code < 300)) throw new Error("The estimator refused (" + code + ")");
       return "Started: pricing \"" + str(a.text).slice(0, 80) + "\" on " + rec.ref + ". It takes a few minutes; read the estimate again after that.";

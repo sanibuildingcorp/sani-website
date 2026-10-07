@@ -1,3 +1,5 @@
+/* These checks run the generator as it works when switched ON (lib/generator-switch.js); js/generator-off.test.js holds the switch itself. */
+process.env.AI_GENERATOR = "on";
 /* chatgpt-mcp.test.js — run: node js/chatgpt-mcp.test.js
  *
  *   "i want AI which can add texts in estimate, i want AI which can learn
