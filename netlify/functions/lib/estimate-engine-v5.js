@@ -47,12 +47,12 @@ function build(reading, opts) {
     labor.push({ section, item: b.name, qty, unit: b.unit, rate: b.labor, bookId: b.id, engine: 'v5' });
     hours += (b.hours || 0) * qty;
     cureDays += b.cure || 0;
-    (b.mat || []).forEach(([name, per, unit, cost, key, isFinish]) => {
+    (b.mat || []).forEach(([name, per, unit, cost, key, isFinish], mi) => {
       const q = Math.max(1, Math.ceil(per * qty * 100) / 100);
       const mq = unit === 'sf' || unit === 'lf' ? Math.ceil(per * qty) : Math.ceil(per * qty);
       const byOwner = key && supplied.has(key);
       /* Customer supplies it: no material line at all (no $0 rows); the labor stays. */
-      if (!byOwner) materials.push({ section, item: name, qty: Math.max(1, mq || q), unit, rate: cost, bookId: b.id, supplyKey: key || null, engine: 'v5' });
+      if (!byOwner) materials.push({ section, item: name, qty: Math.max(1, mq || q), unit, rate: cost, bookId: b.id, matKey: b.id + ':' + mi, supplyKey: key || null, engine: 'v5' });
       if (isFinish) {
         const f = { section, item: name, key, supplier: byOwner ? 'customer' : 'sani', status: byOwner ? 'Customer delivers by date' : 'To choose by date', where: section };
         finishes.push(f);
@@ -152,7 +152,9 @@ function update(prevEstimate, newReading, opts) {
       /* A book line he edited REPLACES the rebuilt book line (never charged twice). */
       /* Same item name AND (same book item or same service) - never section alone,
          because every material of one book item shares bookId and section. */
-      let i = next[k].findIndex((l) => !l.byHand && norm(l.item) === norm(h.item) && ((h.bookId && l.bookId === h.bookId) || norm(l.section) === norm(h.section)));
+      /* Same book material (stable key), even if he renamed it ("Toilet" -> "Kohler toilet"). */
+      let i = h.matKey ? next[k].findIndex((l) => !l.byHand && l.matKey === h.matKey && norm(l.section) === norm(h.section)) : -1;
+      if (i < 0) i = next[k].findIndex((l) => !l.byHand && norm(l.item) === norm(h.item) && ((h.bookId && l.bookId === h.bookId) || norm(l.section) === norm(h.section)));
       /* Renamed ("Toilet" -> "Kohler toilet"): a book item has ONE labor line per service, so the bookId finds it. */
       if (i < 0 && k === 'labor' && h.bookId) i = next[k].findIndex((l) => !l.byHand && l.bookId === h.bookId && norm(l.section) === norm(h.section));
       /* byHand (he typed the line) keeps his whole line; rateByHand keeps only his rate. */

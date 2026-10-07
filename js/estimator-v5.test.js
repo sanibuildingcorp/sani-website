@@ -93,3 +93,12 @@ console.log('toilet', toilet.totals, '\ngut', gut.totals, gut.timelineText, '\nv
   as.ok(u.labor.some((x) => x.item === 'Kohler toilet install'));
   console.log('ok - a renamed labor line is still one line after Update');
 }
+{
+  const E5 = require('../netlify/functions/lib/estimate-engine-v5'), as = require('assert');
+  const rd = { services: [{ name: 'Bathroom', items: [{ id: 'toilet', qty: 1 }] }] };
+  const a = E5.build(rd); const m = a.materials.find((x) => x.bookId === 'toilet'); const n = a.materials.length;
+  m.item = 'Kohler toilet'; m.byHand = true;
+  const u = E5.update(a, rd).estimate;
+  as.strictEqual(u.materials.length, n); as.ok(u.materials.some((x) => x.item === 'Kohler toilet'));
+  console.log('ok - a renamed material is still one line after Update');
+}
