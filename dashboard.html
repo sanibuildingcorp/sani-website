@@ -13641,7 +13641,7 @@ function pzRender() {
       '<div class="pz-row"><span>Customer price</span><b id="pz-mcus"></b></div>' +
       '<div class="pz-row"><span>Labor cost</span><b id="pz-mlab"></b></div><div class="pz-row"><span>Material cost</span><b id="pz-mmat"></b></div>' +
       '<div class="pz-row"><span>Our profit</span><b id="pz-mprof"></b></div><div class="pz-row"><span>Work days</span><b id="pz-mday"></b></div>' +
-      '<div class="pz-ai" id="pz-mai" style="display:none"></div></div>' +
+      '</div>' +
     '<div class="pz-c"><div class="pz-ey">Quick actions</div><div style="display:grid;gap:6px;margin-top:6px">' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzDuplicate()">Duplicate estimate</button>' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzSaveTemplate()">Save as my template</button>' +
@@ -13782,9 +13782,7 @@ function pzRefresh() {
   set("pz-tot", pzF(tot));
   set("pz-sub", "Cost " + pzF(t.sub) + " · Profit " + pzF(pro) + " (" + pct + "%)" + (wd ? " · " + wd + " work days" : ""));
   set("pz-mlab", pzF(t.labor)); set("pz-mmat", pzF(t.mat)); set("pz-mcus", pzF(tot)); set("pz-mprof", pzF(pro) + " (" + pct + "%)"); set("pz-mday", wd ? String(wd) : "—");
-  /* One plain line, only when profit is under 15% - no "crew day" math on screen. */
-  var mai = document.getElementById("pz-mai");
-  if (mai) { var low = t.grand > 0 && pct < 15; mai.style.display = low ? "" : "none"; mai.textContent = low ? "Profit is under 15%. Raise the markup or use Set my own total." : ""; }
+  /* No profit notes: he reads the numbers and decides the markup himself. */
   var C = pzChecks(), okN = C.filter(function (x) { return x[0]; }).length;
   var chk = document.getElementById("pz-chk");
   if (chk) chk.innerHTML = C.map(function (x) {
