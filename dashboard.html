@@ -13556,25 +13556,32 @@ function pzOn() { var m = document.getElementById("edit-modal"); return !!(m && 
    Everything lands in estimate.ownerNotes, which the brain obeys over the
    customer's text and which the customer never sees. */
 function pzTalkHtml(r, hasLines) {
-  var e = (r && r.estimate) || {}, a = r && r.v5Ask, qs = (a && a.questions) || [];
-  var notes = String(e.ownerNotes || "");
-  return '<div class="pz-c" id="pz-talk"><div class="pz-row"><h2 style="margin:0">🧠 Talk to the estimator</h2><span class="pz-mut">only you see this</span></div>' +
-    '<div class="pz-mut" style="margin:4px 0 10px">' + (hasLines ? "Tell it what to change, then tap Regenerate." : "Tap Ask me questions. Answer what you know, then Generate.") + '</div>' +
-    (a && a.summary ? '<div class="pz-ai" style="margin-bottom:8px"><b>It understood:</b> ' + esc(a.summary) + '</div>' : "") +
-    qs.map(function (x, i) { return '<label style="display:block;margin:8px 0 2px;font-weight:600">' + esc(x) + '</label><input class="pz-talkq" data-q="' + esc(x) + '" type="text" placeholder="Your answer" style="width:100%;box-sizing:border-box;font-size:16px;border:1px solid #d5d9e0;border-radius:8px;padding:9px">'; }).join("") +
-    '<label style="display:block;margin:12px 0 2px;font-weight:600">Your notes for the estimator</label>' +
-    '<textarea id="pz-onotes" rows="4" placeholder="e.g. Full gut 5x8, tub to walk-in shower, customer buys tile and vanity, 4th floor walk-up" oninput="pzEst().ownerNotes=this.value;pzDirty()" style="width:100%;box-sizing:border-box;font-size:16px;border:1px solid #d5d9e0;border-radius:8px;padding:9px">' + esc(notes) + '</textarea>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">' +
-      '<button type="button" class="pz-btn pz-ghost" id="pz-askbtn" onclick="pzAskEstimator()">' + (qs.length ? "Ask again" : "Ask me questions") + '</button>' +
-      (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzTalkCommit();pzRegenerate()">↻ Regenerate</button>'
-                : '<button type="button" class="pz-btn pz-gold" onclick="pzTalkCommit();pzSaveNow().then(function(){pzGenerate()})">Generate estimate</button>') +
-    '</div><span id="pz-gen" class="pz-mut"></span></div>';
+  /* Phone first: only what still needs him is open. Answered questions disappear
+     (his answers live in his notes); the notes and the summary fold away. */
+  var e = (r && r.estimate) || {}, a = r && r.v5Ask, notes = String(e.ownerNotes || "");
+  var qs = ((a && a.questions) || []).filter(function (x) { return notes.indexOf("Q: " + x) === -1; });
+  var nA = (notes.match(/^Q: /gm) || []).length, nL = notes.split("\n").filter(function (x) { return x.trim(); }).length;
+  var open = qs.length > 0 || !hasLines || PZ.talkOpen;
+  var head = '<div class="pz-row" onclick="PZ.talkOpen=!PZ.talkOpen;pzRender()" style="cursor:pointer"><h2 style="margin:0">🧠 Talk to the estimator</h2><span class="pz-mut">' +
+    (qs.length ? qs.length + " question" + (qs.length > 1 ? "s" : "") : nL ? nL + " note" + (nL > 1 ? "s" : "") + " saved" : "") + " " + (open ? "▴" : "▾") + '</span></div>';
+  var btns = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">' +
+    '<button type="button" class="pz-btn pz-ghost" id="pz-askbtn" onclick="pzAskEstimator()">' + (a ? "Ask again" : "Ask me questions") + '</button>' +
+    (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzTalkCommit();pzRegenerate()">↻ Regenerate</button>'
+              : '<button type="button" class="pz-btn pz-gold" onclick="pzTalkCommit();pzSaveNow().then(function(){pzGenerate()})">Generate estimate</button>') + '</div>';
+  if (!open) return '<div class="pz-c" id="pz-talk">' + head + btns + '<span id="pz-gen" class="pz-mut"></span></div>';
+  return '<div class="pz-c" id="pz-talk">' + head +
+    (qs.length && a.summary ? '<details style="margin:8px 0"><summary class="pz-mut">What it understood</summary><div class="pz-ai" style="margin-top:6px">' + esc(a.summary) + '</div></details>' : "") +
+    qs.map(function (x) { return '<label style="display:block;margin:10px 0 3px;font-weight:600;font-size:15px">' + esc(x) + '</label><input class="pz-talkq" data-q="' + esc(x) + '" type="text" enterkeyhint="next" onchange="pzTalkCommit();pzDirty()" placeholder="Answer (or leave empty)" style="width:100%;box-sizing:border-box;font-size:16px;border:1px solid #d5d9e0;border-radius:8px;padding:9px">'; }).join("") +
+    '<details style="margin-top:12px"' + (!hasLines && !qs.length ? " open" : "") + '><summary style="font-weight:600">Your notes' + (nL ? " (" + nL + ")" : "") + '</summary>' +
+    '<textarea id="pz-onotes" rows="5" placeholder="e.g. Full gut 5x7, tub to walk-in shower, customer buys tile, 4th floor walk-up" oninput="pzEst().ownerNotes=this.value;pzDirty()" style="width:100%;box-sizing:border-box;font-size:16px;border:1px solid #d5d9e0;border-radius:8px;padding:9px;margin-top:6px">' + esc(notes) + '</textarea></details>' +
+    btns + '<span id="pz-gen" class="pz-mut"></span></div>';
 }
 /* Answers go into his notes as "Q: … A: …" lines, so they are saved and read every time. */
 function pzTalkCommit() {
   var e = pzEst(), add = [];
-  document.querySelectorAll(".pz-talkq").forEach(function (i) { var v = i.value.trim(); if (v) add.push("Q: " + i.getAttribute("data-q") + " A: " + v); });
-  if (add.length) { e.ownerNotes = [String(e.ownerNotes || "").trim()].concat(add).filter(Boolean).join("\n"); if (currentRecord.v5Ask) currentRecord.v5Ask.questions = []; }
+  document.querySelectorAll(".pz-talkq").forEach(function (i) { var v = i.value.trim(), q = i.getAttribute("data-q"); if (v && String(e.ownerNotes || "").indexOf("Q: " + q) === -1) add.push("Q: " + q + " A: " + v); });
+  if (add.length) e.ownerNotes = [String(e.ownerNotes || "").trim()].concat(add).filter(Boolean).join("\n");
+  PZ.talkOpen = false;
   clearTimeout(PZ.saveT);
 }
 async function pzAskEstimator() {
