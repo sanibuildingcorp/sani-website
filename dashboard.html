@@ -5689,6 +5689,8 @@ function attachLineListeners() {
   });
 }
 function syncLines() {
+  /* New screen: the lines live in the estimate itself; the hidden old tables can be stale. */
+  if (typeof pzOn === "function" && pzOn()) return;
   /* Only item / qty / unit / rate exist as inputs on screen. Rebuilding the array
      from the DOM alone silently deleted every OTHER field the estimator wrote -
      above all `section`, which is what tells the customer quote which service a
@@ -6172,6 +6174,7 @@ function applySetTotal(){
   attachLineListeners();
   recalc();
   closeSetTotalModal();
+  if (typeof pzOn === "function" && pzOn()) { currentRecord.estimate.totalSetByHand = Math.round(target * 100) / 100; pzRender(); pzDirty(); }
   toast("✓ Total set to " + fmt(_stCurrentTotal()));
 }
 
@@ -13533,6 +13536,10 @@ function pzChecks() {
 }
 
 /* ── render ── */
+function pzOn() { var m = document.getElementById("edit-modal"); return !!(m && m.classList.contains("pz-on")); }
+/* Set my own total: the same Set Total tool as the old screen (exact to the cent,
+   all / labor only / materials only), then the new screen redraws and saves. */
+function pzSetTotal() { if (!currentRecord) return; clearTimeout(PZ.saveT); openSetTotalModal(); }
 function pzRender() {
   var card = document.getElementById("edit-card");
   if (!card || !currentRecord) return;
@@ -13622,6 +13629,7 @@ function pzRender() {
   var side = document.getElementById("pz-side");
   if (side) side.innerHTML = '<div class="pz-c" id="pz-ready"><div class="pz-ey">Ready to send</div><ul class="pz-chk" id="pz-chk"></ul></div>' +
     '<div class="pz-c"><div class="pz-ey">Money (you only)</div>' +
+      '<button type="button" class="pz-btn pz-gold pz-sm" style="width:100%;margin:6px 0 8px" onclick="pzSetTotal()">🎯 Set my own total</button>' +
       '<div class="pz-row"><span>Labor cost</span><b id="pz-mlab"></b></div><div class="pz-row"><span>Material cost</span><b id="pz-mmat"></b></div>' +
       '<div class="pz-row"><span>Profit</span><b id="pz-mpro"></b></div><div class="pz-row"><span>Profit per crew day</span><b id="pz-mday"></b></div>' +
       '<div class="pz-ai" id="pz-mai" style="display:none"></div></div>' +
@@ -14361,7 +14369,8 @@ function pzV5Changes(ref, ch, full) {
     '<h3 style="margin:0 0 6px">' + (PZ.v5mode === "redo" ? "Changes from Regenerate" : "Changes from the chat") + '</h3>' +
     (full ? '<div class="pz-pill pz-wa" style="margin-bottom:8px">This estimate was made before the new brain, so the new brain rebuilt it from your price book. Tick <b>Keep</b> on any old line you want to keep (your own lines). Unticked old lines go; Undo brings them back.</div>' : '') +
     (function () { var e0 = (currentRecord && currentRecord.estimate) || {}, c0 = [].concat(e0.labor || [], e0.materials || []).reduce(function (s, l) { return s + (Number(l.qty) || 0) * (Number(l.rate) || 0); }, 0);
-      return c0 > 0 && tot < -0.2 * c0 ? '<div style="background:#fdecea;color:#9b1c1c;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-weight:700">Warning: the new cost is ' + Math.round(-tot / c0 * 100) + '% lower than this estimate now. Check that no work was dropped before you apply. Tick Keep on any line you want to keep.</div>' : ''; })() +
+      var own = Number(e0.totalSetByHand) > 0 ? '<div style="background:#fff6df;color:#7a5a00;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-weight:700">You set your own total (' + fmt(Number(e0.totalSetByHand)) + '). After Apply the lines may total differently - tap Set my own total again if you want it back.</div>' : '';
+      return own + (c0 > 0 && tot < -0.2 * c0 ? '<div style="background:#fdecea;color:#9b1c1c;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-weight:700">Warning: the new cost is ' + Math.round(-tot / c0 * 100) + '% lower than this estimate now. Check that no work was dropped before you apply. Tick Keep on any line you want to keep.</div>' : ''); })() +
     (ch.length ? '<div class="pz-mut" style="margin-bottom:10px">Your own lines and prices stay as they are. Cost change before markup: <b>' + money(tot) + '</b></div><table style="width:100%;border-collapse:collapse;font-size:14px">' + rows + '</table>'
       : '<div class="pz-mut">Nothing in the chat changes the estimate.</div>') +
     '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button type="button" class="pz-btn pz-ghost" onclick="pzV5Done(\'' + esc(ref) + '\',false)">Cancel</button>' +
@@ -14458,7 +14467,7 @@ function pzMount() {
     '<div class="pz-wrap"><main id="pz-main"></main><aside id="pz-side"></aside></div>' +
     '<div class="pz-foot"><button type="button" class="pz-btn pz-ghost" onclick="pzPreview()"><span class="pz-dl">Preview customer view</span><span class="pz-ml">👁 Preview</span></button><button type="button" class="pz-btn pz-ghost pz-ml pz-mx" onclick="pzMenu(true)">⋯</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()"><span class="pz-dl">Send estimate</span><span class="pz-ml">Send</span></button></div>' +
     '<div class="pz-menu" id="pz-menu" onclick="if(event.target===this)pzMenu(false)"><div class="pz-sheet">' +
-      [["Duplicate estimate", "pzDuplicate()"], ["Save as my template", "pzSaveTemplate()"], ["Scope only (no prices)", "copyScopeLink()"], ["PDF", "downloadEstimatePdf(\'customer\')"], ["AI chat", "pzTools(\'ask\')"], ["More tools", "pzTools()"], ["Close this estimate", "closeEdit()"]].map(function (x) { return '<button type="button" onclick="pzMenu(false);' + x[1] + '">' + x[0] + '</button>'; }).join("") +
+      [["Set my own total", "pzSetTotal()"], ["Duplicate estimate", "pzDuplicate()"], ["Save as my template", "pzSaveTemplate()"], ["Scope only (no prices)", "copyScopeLink()"], ["PDF", "downloadEstimatePdf(\'customer\')"], ["AI chat", "pzTools(\'ask\')"], ["More tools", "pzTools()"], ["Close this estimate", "closeEdit()"]].map(function (x) { return '<button type="button" onclick="pzMenu(false);' + x[1] + '">' + x[0] + '</button>'; }).join("") +
     '</div></div>' +
     '<div class="pz-drawer" id="pz-prev" onclick="if(event.target===this)pzClose(\'pz-prev\')"><div class="pz-pan"></div></div>' +
     '<div class="pz-drawer wide" id="pz-tools" onclick="if(event.target===this)pzClose(\'pz-tools\')"><div class="pz-pan"><div style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e3e6ec;position:sticky;top:0;background:#fff;z-index:2"><b>More tools</b><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzClose(\'pz-tools\')">Close ✕</button></div></div></div>';
