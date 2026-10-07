@@ -13423,9 +13423,20 @@ function pzF(n) { return "$" + Math.round(Number(n) || 0).toLocaleString("en-US"
 function pzEst() { return (currentRecord && currentRecord.estimate) || {}; }
 function pzMk() { var m = Number(pzEst().markupPct); return isFinite(m) ? m : 25; }
 function pzSvcs() { try { return scopeDraft().services || []; } catch (e) { return []; } }
+/* WHICH CARD A LINE IS ON. "In dashboard finishes is empty but in preview
+   shows toilet": a line filed under a section that has no card of its own
+   ("Toilet Replacement", "Plumbing" on a one-card job - a loose line, priced
+   on the cards all the same) was on no card here, so he could not see it and
+   added the toilet a second time. Now it shows on the first card, and a
+   section is matched to its card whatever the capitals. */
+function pzOwner(l) {
+  var sec = scopeSectionOf(l), k = scopeNorm(sec), names = pzSvcs().map(function (s) { return String(s.name || "").trim(); });
+  for (var j = 0; j < names.length; j++) if (scopeNorm(names[j]) === k) return names[j];
+  return names.length ? names[0] : sec;
+}
 function pzLinesOf(nm) {
   var e = pzEst(), out = [];
-  ["labor", "materials"].forEach(function (k) { (e[k] || []).forEach(function (l, gi) { if (scopeSectionOf(l) === nm) out.push({ kind: k, gi: gi, l: l }); }); });
+  ["labor", "materials"].forEach(function (k) { (e[k] || []).forEach(function (l, gi) { if (pzOwner(l) === nm) out.push({ kind: k, gi: gi, l: l }); }); });
   return out;
 }
 function pzParkedOf(nm) {

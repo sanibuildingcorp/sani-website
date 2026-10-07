@@ -88,7 +88,7 @@ console.log("\n3. Edits that move money, and saving\n");
 {
   const c3 = { console, Object, Array, String, Number, isFinite, Math, JSON };
   vm.createContext(c3);
-  vm.runInContext(["pzEst", "pzSvcs", "pzSupply", "pzUnsupply", "pzLinesOf", "pzSum", "pzMk"].map((n) => fn(pz, n)).concat([fn(D, "scopeNorm"), fn(D, "scopeUnparkFor")]).join("\n") +
+  vm.runInContext(["pzEst", "pzSvcs", "pzSupply", "pzUnsupply", "pzOwner", "pzLinesOf", "pzSum", "pzMk"].map((n) => fn(pz, n)).concat([fn(D, "scopeNorm"), fn(D, "scopeUnparkFor")]).join("\n") +
     "\nvar PZ={scopeTouched:false};var dirty=0;function pzDirty(){dirty++}function pzSyncOld(){}function pzRender(){}function toast(){}function fmt(n){return '$'+n}function scopeLineValue(l){return l.qty*l.rate}" +
     "\nfunction scopeSectionOf(l){return l.section}var SVC={name:'Bathroom',supplied:[]};function scopeDraft(){return {services:[SVC]}}" +
     "\nvar currentRecord={estimate:{markupPct:25,labor:[{item:'Install vanity',qty:4,rate:120,section:'Bathroom'}],materials:[{item:'Grout kit',qty:1,rate:85,section:'Bathroom'},{item:'Vanity with top, 30 in',qty:1,rate:489,section:'Bathroom'}]}};", c3);
@@ -119,6 +119,17 @@ console.log("\n3b. The customer card\n");
   ok("Edit details opens the existing customer editor", /onclick="sbcEditCustomer\(\)">Edit details</.test(card));
   const bare = vm.runInContext("pzCustomerHtml({ref:'R',status:'sent',customer:{name:'X'},request:{}})", cc);
   ok("no phone or email: those buttons are greyed out, not broken links", /Sent/.test(bare) && /pointer-events:none">📞 Call/.test(bare) && !/href="tel:"/.test(bare));
+}
+
+console.log("\n3b2. Every priced line is on a card\n");
+{
+  const c4 = { console, Object, Array, String, Number }; vm.createContext(c4);
+  vm.runInContext(["pzEst", "pzSvcs", "pzOwner", "pzLinesOf", "pzSum"].map((n) => fn(pz, n)).concat([fn(D, "scopeNorm")]).join("\n") +
+    "\nvar SV=[{name:'General'}];function scopeDraft(){return {services:SV}}function scopeSectionOf(l){return l.section}" +
+    "\nvar currentRecord={estimate:{labor:[{item:'Remove old toilet',qty:2,rate:90,section:'Toilet Replacement'}],materials:[{item:'White two-piece toilet',qty:1,rate:250,section:'Toilet Replacement'}]}};", c4);
+  ok("\"finishes is empty but in preview shows toilet\": a line under a section with no card shows on the card", vm.runInContext("pzLinesOf('General').length", c4) === 2 && vm.runInContext("pzSum('General')", c4) === 430);
+  vm.runInContext("SV=[{name:'Bathroom'},{name:'Painting'}];currentRecord.estimate.labor.push({item:'Paint',qty:1,rate:100,section:'painting'})", c4);
+  ok("...a section matches its own card whatever the capitals; loose lines go on the first card; each line on one card only", vm.runInContext("pzLinesOf('Painting').length", c4) === 1 && vm.runInContext("pzLinesOf('Bathroom').length", c4) === 2);
 }
 
 console.log("\n3c. ✕ on every finish card\n");
