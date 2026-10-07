@@ -146,6 +146,9 @@ function build(reading, opts) {
 
   return {
     docVersion: 4, engine: BOOK.VERSION,
+    /* The customer is quoted ONE total for the whole job: labor + materials.
+       (With no flags the old screens fall back to labor-only and drop materials.) */
+    showLaborCost: false, showMaterialsCost: false, displayMode: 'total',
     projectTitle: clean(R.projectTitle) || services.map((s) => s.name).filter((n) => n !== 'Whole Project').join(' & '),
     summary: clean(R.summary),
     labor: labor.map((l) => Object.assign(l, { rate: r2(l.rate) })),
