@@ -49,7 +49,7 @@ console.log('\ngenerateAI still posts a valid payload\n');
     document: { getElementById: (id) => id === 'gen-btn' ? { disabled: false, innerHTML: '' } : null },
     fetch: async (url, o) => { posted = { url, body: JSON.parse(o.body) }; throw new Error('stop here'); },
   };
-  ctx.SBC_AI_GENERATOR = true; vm.createContext(ctx);
+  ctx.SBC_AI_GENERATOR = true; ctx.SBC_V5 = false; vm.createContext(ctx);
   vm.runInContext(src, ctx);
   (async () => {
     try { await vm.runInContext('generateAI()', ctx); } catch (e) { /* the test fetch stops the run on purpose */ }

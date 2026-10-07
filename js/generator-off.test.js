@@ -38,7 +38,7 @@ ok("the old sync generator refuses too", /if \(!require\("\.\/lib\/generator-swi
 
 console.log("\nThe estimate screen\n");
 ok("dashboard switch is off", /\nvar SBC_AI_GENERATOR = false;\n/.test(D));
-const ctx = { console, toasts: [], SBC_AI_OFF: "off-msg", SBC_AI_GENERATOR: false, fetch: () => { throw new Error("fetched"); } };
+const ctx = { console, toasts: [], SBC_AI_OFF: "off-msg", SBC_AI_GENERATOR: false, SBC_V5: false, fetch: () => { throw new Error("fetched"); } };
 ctx.toast = (m) => ctx.toasts.push(m);
 vm.createContext(ctx);
 vm.runInContext(["async " + fn(D, "generateAI"), "async " + fn(D, "addServiceAI")].join("\n"), ctx);
@@ -49,8 +49,8 @@ vm.runInContext(["async " + fn(D, "generateAI"), "async " + fn(D, "addServiceAI"
   const exec = fn(D, "aiExec");
   ok("the assistant's regenerate and add-a-service say it is off", /if \(t === "regenerate"\) \{[\s\S]{0,400}if \(!SBC_AI_GENERATOR\) return SBC_AI_OFF;/.test(exec) && /if \(t === "addservice"\) \{\s*if \(!SBC_AI_GENERATOR\) return SBC_AI_OFF;/.test(exec));
   const pz = D.slice(D.indexOf('<style id="pz-styles">'));
-  ok("no Generate estimate button on an empty estimate; it says to add lines or a price book package", /: SBC_AI_GENERATOR \? '<div class="pz-ai"><b>AI read:<\/b> no estimate yet\. <button/.test(pz) && /No prices yet\. Add a service and your lines below, or tap one of your price book packages\./.test(pz));
-  ok("no \"AI learned\" box and no Update estimate from chat", /if \(!SBC_AI_GENERATOR \|\| !pzLastCust\(r\)\) return "";/.test(fn(pz, "pzLearnHtml")));
+  ok("no Generate estimate button on an empty estimate; it says to add lines or a price book package", /: \(SBC_AI_GENERATOR \|\| SBC_V5\) \? '<div class="pz-ai"><b>AI read:<\/b> no estimate yet\. <button/.test(pz) && /No prices yet\. Add a service and your lines below, or tap one of your price book packages\./.test(pz));
+  ok("no \"AI learned\" box and no Update estimate from chat", /if \(\(!SBC_AI_GENERATOR && !SBC_V5\) \|\| !pzLastCust\(r\)\) return "";/.test(fn(pz, "pzLearnHtml")));
 
   console.log("\nThe server\n");
   process.env.ANTHROPIC_API_KEY = "sk";
