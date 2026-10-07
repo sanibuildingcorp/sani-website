@@ -209,6 +209,8 @@ body {
 
 /* ============ LIST ============ */
 .list-section { padding: 24px; }
+.sbc-trash-b{display:flex;gap:8px;margin-top:8px}.sbc-trash-b button{padding:8px 12px;border-radius:8px;border:1px solid var(--line-soft,#d5d9e0);background:var(--card,#fff);color:inherit;font-weight:600;cursor:pointer}.sbc-trash-b button.d{color:#c0392b;border-color:#e8b4ae}
+.sbc-trash-x{border:0;background:none;color:var(--gold,#b8930a);font-weight:700;cursor:pointer;font-size:14px}.sbc-trash-card{cursor:default}
 .sbc-search{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;margin:0 0 10px;background:var(--bg,#f3f5f8);padding:6px 0}
 .sbc-search input{flex:1;min-width:0;font-size:16px;padding:11px 14px;border:1px solid var(--line-soft,#d5d9e0);border-radius:12px;background:var(--card,#fff);color:inherit}
 .sbc-search button{width:40px;height:40px;border:0;border-radius:10px;background:var(--card-2,#eef0f4);font-size:20px;cursor:pointer;color:inherit}
@@ -2836,7 +2838,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
   <div class="tabs-row" id="tabs-row"></div>
 
   <div class="list-section">
-    <div class="sbc-search"><input id="sbc-q" type="search" inputmode="search" autocomplete="off" placeholder="🔍 Search name, phone, address, project…" oninput="sbcQ=this.value;renderList()"><button type="button" id="sbc-qx" aria-label="Clear" onclick="var i=document.getElementById('sbc-q');i.value='';sbcQ='';renderList();i.focus()">×</button></div>
+    <div class="sbc-search"><input id="sbc-q" type="search" inputmode="search" autocomplete="off" placeholder="🔍 Search name, phone, address, project…" oninput="sbcQ=this.value;if(window.sbcTrash)sbcTrash.on=false;renderList()"><button type="button" id="sbc-qx" aria-label="Clear" onclick="var i=document.getElementById('sbc-q');i.value='';sbcQ='';renderList();i.focus()">×</button><button type="button" class="sbc-trash-btn" aria-label="Trash" title="Trash" onclick="sbcTrashOpen(true)">🗑</button></div>
     <div id="list-host"></div>
   </div>
 </div>
@@ -3443,6 +3445,7 @@ async function deleteVisit(id){
 var sbcQ = "";
 function renderList() {
   const host = document.getElementById("list-host");
+  if (typeof sbcTrash !== "undefined" && sbcTrash.on) { host.innerHTML = sbcTrashHtml(); return; }
   /* Search: "i need add search bar for easy found project". Typing searches
      EVERY project (all tabs, completed too) by name, phone, email, address,
      project title, service, ref or notes. */
@@ -9066,39 +9069,56 @@ async function sendToCustomer() {
   }
 }
 
+/* Delete = move to Trash (30 days, restorable). See delete-estimate.js. */
 async function deleteEstimateByRef(ref) {
   if (!ref) return;
-  if (!confirm("Delete estimate " + ref + "? This cannot be undone.")) return;
+  if (!confirm("Delete project " + ref + "?\n\nIt moves to Trash. You can restore it for 30 days. Its customer link stops working until you restore it.")) return;
   try {
-    const r = await fetch("/.netlify/functions/delete-estimate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: ref }),
-    });
-    if (!r.ok) throw new Error("Delete failed");
-    toast("Deleted " + ref);
+    const r = await sbcFetch("/.netlify/functions/delete-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref }) });
+    const j = await r.json().catch(function () { return {}; });
+    if (!r.ok) throw new Error(j.error || ("HTTP " + r.status));
+    if (typeof pzMenu === "function") pzMenu(false);
+    toast("Moved to Trash - restore it from 🗑 Trash");
     closeEdit();
     await loadEstimates();
-  } catch (e) {
-    toast("Delete failed: " + e.message, true);
-  }
+  } catch (e) { toast("Delete failed: " + e.message, true); }
 }
-
-async function deleteEstimate() {
-  if (!confirm("Delete estimate " + currentRecord.ref + "? This cannot be undone.")) return;
+async function deleteEstimate() { return deleteEstimateByRef(currentRecord && currentRecord.ref); }
+var sbcTrash = { on: false, items: null };
+async function sbcTrashOpen(on) {
+  sbcTrash.on = on !== false; sbcTrash.items = null;
+  if (sbcTrash.on) { var i = document.getElementById("sbc-q"); if (i) i.value = ""; sbcQ = ""; }
+  renderList();
+  if (!sbcTrash.on) return;
   try {
-    const r = await fetch("/.netlify/functions/delete-estimate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: currentRecord.ref }),
-    });
-    if (!r.ok) throw new Error("Delete failed");
-    toast("Deleted");
-    closeEdit();
-    await loadEstimates();
-  } catch (e) {
-    toast("Delete failed: " + e.message, true);
-  }
+    const r = await sbcFetch("/.netlify/functions/delete-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "list" }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status);
+    sbcTrash.items = j.items || [];
+  } catch (e) { sbcTrash.items = []; toast("Trash: " + e.message, true); }
+  renderList();
+}
+async function sbcTrashAct(ref, action) {
+  if (action === "purge" && !confirm("Delete " + ref + " forever? This cannot be undone.")) return;
+  try {
+    const r = await sbcFetch("/.netlify/functions/delete-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, action: action }) });
+    const j = await r.json().catch(function () { return {}; }); if (!r.ok) throw new Error(j.error || ("HTTP " + r.status));
+    toast(action === "restore" ? "Restored " + ref : "Deleted forever");
+    if (action === "restore") await loadEstimates();
+    sbcTrashOpen(true);
+  } catch (e) { toast(e.message, true); }
+}
+function sbcTrashHtml() {
+  var it = sbcTrash.items;
+  var h = '<div class="list-header"><div class="list-count">🗑 Trash' + (it ? " · " + it.length : "") + ' · kept 30 days</div><button type="button" class="sbc-trash-x" onclick="sbcTrashOpen(false)">← Back</button></div>';
+  if (!it) return h + '<div class="empty"><p>Loading…</p></div>';
+  if (!it.length) return h + '<div class="empty"><div class="empty-icon">🗑</div><h3>Trash is empty</h3></div>';
+  return h + it.map(function (x) {
+    var left = Math.max(0, 30 - Math.floor((Date.now() - Date.parse(x.deletedAt)) / 864e5));
+    return '<div class="est-card sbc-trash-card"><div class="est-main"><div class="est-title">' + esc(x.title || "Untitled") + '</div>' +
+      '<div class="est-meta"><span class="customer">' + esc(x.customer.name || "—") + '</span><span>•</span><span>' + esc(x.ref) + '</span><span>•</span><span>' + left + ' days left</span></div>' +
+      '<div class="sbc-trash-b"><button type="button" onclick="sbcTrashAct(\'' + esc(x.ref) + '\',\'restore\')">↩ Restore</button><button type="button" class="d" onclick="sbcTrashAct(\'' + esc(x.ref) + '\',\'purge\')">Delete forever</button></div></div>' +
+      '<div class="est-right"><div class="est-total">' + fmt(x.total || 0) + '</div></div></div>';
+  }).join("");
 }
 
 /* ===== INVOICE MODAL ===== */
@@ -14754,7 +14774,7 @@ function pzMount() {
     '<div class="pz-wrap"><main id="pz-main"></main><aside id="pz-side"></aside></div>' +
     '<div class="pz-foot"><button type="button" class="pz-btn pz-ghost" onclick="pzPreview()"><span class="pz-dl">Preview customer view</span><span class="pz-ml">👁 Preview</span></button><button type="button" class="pz-btn pz-ghost pz-ml pz-mx" onclick="pzMenu(true)">⋯</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()"><span class="pz-dl">Send estimate</span><span class="pz-ml">Send</span></button></div>' +
     '<div class="pz-menu" id="pz-menu" onclick="if(event.target===this)pzMenu(false)"><div class="pz-sheet">' +
-      [["Set my own total", "pzSetTotal()"], ["Duplicate estimate", "pzDuplicate()"], ["Save as my template", "pzSaveTemplate()"], ["Scope only (no prices)", "copyScopeLink()"], ["PDF", "downloadEstimatePdf(\'customer\')"], ["AI chat", "pzTools(\'ask\')"], ["More tools", "pzTools()"], ["Close this estimate", "closeEdit()"]].map(function (x) { return '<button type="button" onclick="pzMenu(false);' + x[1] + '">' + x[0] + '</button>'; }).join("") +
+      [["Set my own total", "pzSetTotal()"], ["Duplicate estimate", "pzDuplicate()"], ["Save as my template", "pzSaveTemplate()"], ["Scope only (no prices)", "copyScopeLink()"], ["PDF", "downloadEstimatePdf(\'customer\')"], ["AI chat", "pzTools(\'ask\')"], ["More tools", "pzTools()"], ["🗑 Delete project", "deleteEstimate()"], ["Close this estimate", "closeEdit()"]].map(function (x) { return '<button type="button" onclick="pzMenu(false);' + x[1] + '">' + x[0] + '</button>'; }).join("") +
     '</div></div>' +
     '<div class="pz-drawer" id="pz-prev" onclick="if(event.target===this)pzClose(\'pz-prev\')"><div class="pz-pan"></div></div>' +
     '<div class="pz-drawer wide" id="pz-tools" onclick="if(event.target===this)pzClose(\'pz-tools\')"><div class="pz-pan"><div style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e3e6ec;position:sticky;top:0;background:#fff;z-index:2"><b>More tools</b><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzClose(\'pz-tools\')">Close ✕</button></div></div></div>';
