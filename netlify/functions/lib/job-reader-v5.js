@@ -49,8 +49,8 @@ Return JSON only:
  "facts":[{"text":"","effect":""}],"questions":[],"status":"READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED"}`;
 }
 
-const MAXQ = { sf: 3000, lf: 1500, ea: 60, room: 20, hr: 80, job: 3 };
-const BAN = /\blicen[cs]ed?\b|\btv\b|\boven\b|\brange\b|\bcooktop\b|\bgas\b|\boption [ab]\b|\balternative\b/i;
+const MAXQ = { sf: 3000, lf: 1500, ea: 200, room: 20, hr: 80, job: 3 };
+const BAN = /\blicen[cs]ed?\b|\btv\b|\boven\b|\brange\b(?!\s*hood)|\bcooktop\b|\bgas\b|\boption [ab]\b|\balternative\b/i;
 const s = (v) => (v == null ? '' : String(v)).trim();
 
 function validate(raw, input) {

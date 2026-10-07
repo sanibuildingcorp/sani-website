@@ -1,17 +1,67 @@
-/* generate-v5-background: new draft, chat update parked as changes, apply keeps his hand price + photos. Runs offline (fake AI, fake Blobs). */
-const Module=require('module');const db={};const real=Module._load;Module._load=function(r,...a){if(r==='@netlify/blobs')return{db,getStore:()=>({get:async k=>db[k]?JSON.parse(JSON.stringify(db[k])):null,setJSON:async(k,v)=>{db[k]=JSON.parse(JSON.stringify(v))}})};return real.call(this,r,...a)};const B={db};
-process.env.ANTHROPIC_API_KEY='x';const assert=require('assert');
-const fn=require(__dirname+'/../netlify/functions/generate-v5-background.js');
-let reply={projectTitle:'Toilet replacement',summary:'Replace the toilet. We are licensed.',services:[{name:'General',items:[{id:'toilet',qty:1}]}],facts:[{text:'Toilet is in hall bath'}],questions:['What color?','Is the shutoff valve working?'],status:'READY'};
-global.fetch=async(u,o)=>({ok:true,json:async()=>({content:[{text:JSON.stringify(reply)}]})});
-B.db['SBC-1']={ref:'SBC-1',status:'new',request:{service:'Bathroom',description:'replace toilet',photos:['https://x/p.jpg']},thread:[{from:'customer',text:'hi',at:'2026-10-01'}],customer:{name:'A'}};
-(async()=>{
- await fn.handler({httpMethod:'POST',body:JSON.stringify({ref:'SBC-1',jobId:'j1',mode:'new'})});
- let r=B.db['SBC-1'];console.log(r.aiStatus,r.aiError||'',r.estimate.totals,r.estimate.manualCustomerScopeDraft.services.map(s=>s.name),r.estimate.summary,r.estimate.clarificationQuestions);
- r.estimate.labor[0].rate=999;r.estimate.labor[0].rateByHand=true;r.estimate.quotePhotos=['keep'];B.db['SBC-1']=r;
- reply.services[0].items.push({id:Object.keys(require(__dirname+'/../netlify/functions/lib/price-book-v5').byId).find(k=>/vanity/.test(k)),qty:1});
- await fn.handler({httpMethod:'POST',body:JSON.stringify({ref:'SBC-1',jobId:'j2',mode:'chat'})});
- r=B.db['SBC-1'];assert.strictEqual(r.estimate.totals.total,880.26,'live estimate must not move before Apply');console.log('pending',r.aiStatus,r.aiError||'',r.estimateV5Pending&&r.estimateV5Pending.changes.slice(0,4),'live total',r.estimate.totals.total);
- await fn.handler({httpMethod:'POST',body:JSON.stringify({ref:'SBC-1',apply:true})});
- r=B.db['SBC-1'];assert.strictEqual(r.estimate.labor[0].rate,999);assert.deepStrictEqual(r.estimate.quotePhotos,['keep']);assert.strictEqual(r.estimateHistory.length,1);assert.ok(!r.estimateV5Pending);console.log('PASS  generate-v5 new / chat / apply');
-})();
+/* generate-v5-background + estimate-v5-apply, offline (fake AI, fake Blobs).
+   Covers Claude's review of PR #251: no temperature, key required, chat never
+   writes record.estimate, hand price not doubled, messages during a run kept,
+   apply/cancel/undo answer after the write. */
+'use strict';
+const assert = require('assert');
+const Module = require('module');
+const db = {}; let duringRun = null;
+const realLoad = Module._load;
+Module._load = function (r, ...a) {
+  if (r === '@netlify/blobs') return { getStore: () => ({
+    get: async (k) => (db[k] ? JSON.parse(JSON.stringify(db[k])) : null),
+    setJSON: async (k, v) => { db[k] = JSON.parse(JSON.stringify(v)); } }) };
+  return realLoad.call(this, r, ...a);
+};
+process.env.ANTHROPIC_API_KEY = 'x'; process.env.DASHBOARD_KEY = 'k';
+const gen = require(__dirname + '/../netlify/functions/generate-v5-background.js');
+const app = require(__dirname + '/../netlify/functions/estimate-v5-apply.js');
+let reply, sent;
+global.fetch = async (u, o) => { sent = JSON.parse(o.body); if (duringRun) { duringRun(); duringRun = null; }
+  return { ok: true, json: async () => ({ content: [{ text: JSON.stringify(reply) }] }) }; };
+const H = { 'x-sbc-key': 'k' };
+const post = (fn, body, headers) => fn.handler({ httpMethod: 'POST', headers: headers || H, body: JSON.stringify(body) });
+let n = 0; const ok = (name, c) => { assert.ok(c, name); n++; console.log('PASS  ' + name); };
+
+(async () => {
+  reply = { projectTitle: 'Toilet replacement', summary: 'Replace the toilet.', services: [{ name: 'General', items: [{ id: 'toilet', qty: 1 }] }], status: 'READY' };
+  db['SBC-1'] = { ref: 'SBC-1', status: 'new', request: { service: 'Bathroom', description: 'replace toilet', photos: ['https://x/p.jpg'] }, thread: [{ id: 'm1', from: 'customer', text: 'hi', at: '2026-10-01' }], customer: { name: 'A' } };
+
+  const no = await post(gen, { ref: 'SBC-1', jobId: 'j0', mode: 'new' }, {});
+  ok('no dashboard key -> refused', no.statusCode === 401 || no.statusCode === 403);
+
+  await post(gen, { ref: 'SBC-1', jobId: 'j1', mode: 'new' });
+  let r = db['SBC-1'];
+  ok('new draft is made, never "General"', r.aiStatus === 'done' && r.estimate.totals.total > 0 && r.estimate.manualCustomerScopeDraft.services[0].name === 'Bathroom');
+  ok('no temperature sent; room for the answer', !('temperature' in sent) && sent.max_tokens >= 8000);
+
+  // he types the toilet price by hand + a customer message lands during the next run
+  const tl = r.estimate.labor.find((l) => l.bookId === 'toilet'); tl.rate = 250; tl.byHand = true; r.estimate.quotePhotos = ['keep']; db['SBC-1'] = r;
+  const before = JSON.stringify(r.estimate);
+  reply.services[0].items.push({ id: 'vanity', qty: 1 });
+  duringRun = () => { db['SBC-1'].thread.push({ id: 'm2', from: 'customer', text: 'also the vanity', at: '2026-10-02' }); };
+  await post(gen, { ref: 'SBC-1', jobId: 'j2', mode: 'chat' });
+  r = db['SBC-1'];
+  ok('chat update does not touch the live estimate', JSON.stringify(r.estimate) === before && r.estimateV5Pending && r.estimateV5Pending.changes.length > 0);
+  ok('a message that arrived during the run is kept', r.thread.some((m) => m.id === 'm2'));
+  const pl = r.estimateV5Pending.estimate.labor.filter((l) => l.bookId === 'toilet');
+  ok('hand price on a book line is charged once', pl.length === 1 && pl[0].rate === 250);
+
+  const ap = await post(app, { ref: 'SBC-1', action: 'apply' });
+  const aj = JSON.parse(ap.body);
+  ok('apply answers 200 with the saved estimate', ap.statusCode === 200 && aj.estimate.labor.some((l) => /vanity/i.test(l.item)) && !db['SBC-1'].estimateV5Pending);
+  ok('his photos survive', JSON.stringify(db['SBC-1'].estimate.quotePhotos) === '["keep"]');
+  const un = JSON.parse((await post(app, { ref: 'SBC-1', action: 'undo' })).body);
+  ok('undo brings back the version before', JSON.stringify(un.estimate) === before);
+
+  // an estimate made by the OLD generator (no v5Reading): chat -> pending only, marked full rebuild
+  db['SBC-2'] = { ref: 'SBC-2', request: { service: 'Bathroom', description: 'toilet' }, thread: [], estimate: { markupPct: 25, labor: [{ section: 'Bathroom', item: 'My own toilet line', qty: 1, unit: 'job', rate: 400 }], materials: [] } };
+  const old = JSON.stringify(db['SBC-2'].estimate);
+  await post(gen, { ref: 'SBC-2', jobId: 'j3', mode: 'chat' });
+  ok('old estimate + Update from chat -> only a pending draft, estimate untouched', JSON.stringify(db['SBC-2'].estimate) === old && db['SBC-2'].estimateV5Pending.fullRebuild === true);
+  ok('his markup is kept on a rebuild', db['SBC-2'].estimateV5Pending.estimate.markupPct === 25);
+  await post(app, { ref: 'SBC-2', action: 'cancel' });
+  ok('cancel drops the pending draft', !db['SBC-2'].estimateV5Pending && JSON.stringify(db['SBC-2'].estimate) === old);
+
+  console.log('\n' + n + ' passed');
+})().catch((e) => { console.error('FAIL', e.message); process.exit(1); });

@@ -15,7 +15,7 @@ t('toilet job is small and never General', () => {
 // 2. Customer supplies vanity: material $0, labor kept
 const van = E.build(R.validate({ services: [{ name: 'Bathroom', items: [{ id: 'vanity', qty: 1 }] }], customerSupplies: ['vanity'] }, {}));
 t('customer-supplied vanity: material 0, labor kept', () => {
-  const m = van.materials.find((x) => x.supplyKey === 'vanity'); assert(m.rate === 0 && m.byOwner);
+  assert(!van.materials.some((x) => x.supplyKey === 'vanity')); assert(van.customerSupplied.some((c) => /vanity/i.test(c.item)));
   assert(van.labor.some((l) => l.bookId === 'vanity' && l.rate > 0));
   assert(van.customerSupplied.length === 1);
 });
@@ -60,3 +60,14 @@ t('markup curve: more cost -> higher price', () => { let p = 0; for (let c = 100
 
 console.log('\n' + pass + ' passed');
 console.log('toilet', toilet.totals, '\ngut', gut.totals, gut.timelineText, '\nvanity', van.totals);
+/* Claude review #3: a hand price on a book line is never charged twice. */
+{
+  const E2 = require('../netlify/functions/lib/estimate-engine-v5');
+  const rd = { services: [{ name: 'Bathroom', items: [{ id: 'toilet', qty: 1 }] }] };
+  const a = E2.build(rd); const l = a.labor.find((x) => x.bookId === 'toilet'); l.rate = 250; l.byHand = true;
+  const u = E2.update(a, rd).estimate;
+  const tl = u.labor.filter((x) => x.bookId === 'toilet');
+  require('assert').ok(tl.length === 1 && tl[0].rate === 250, 'toilet hand price charged once');
+  require('assert').strictEqual(u.markupPct, a.markupPct);
+  console.log('ok - hand price on a book line replaces it (no double charge), markup kept');
+}

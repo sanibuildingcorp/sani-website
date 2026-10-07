@@ -89,3 +89,16 @@ request + chat + photos ──► READER (AI, 1 call) ──► reading (ids + q
 | lvp | Flooring | Install vinyl plank / laminate | sf | $2.8 | Vinyl plank flooring $2.9/sf (customer can supply); Underlayment & transitions $60/kit |
 | cabinet_box | Kitchen | Install kitchen cabinet (per box) | ea | $95 | Shims, screws & fillers $40/kit |
 | backsplash | Kitchen | Backsplash tile installation | sf | $16 | Backsplash tile $6/sf (customer can supply); Thinset & grout kit $60/kit |
+
+## Fixes after Claude's review (PR #251)
+1. No `temperature`; `max_tokens` 12000.
+2. "Update from chat" never writes `record.estimate`: always a pending draft with Apply/Cancel. An old-generator estimate gets a full draft marked "Check every line".
+3. A hand price on a book line replaces that line (never charged twice).
+4. Record is re-read before saving; only this run's fields are written (messages, autosaves, chatFacts kept).
+5. Apply / Cancel / Undo moved to `estimate-v5-apply.js` (normal function, answers after the write with the saved estimate).
+6. Dashboard key (`x-sbc-key`) on both functions; dashboard uses `sbcFetch`.
+7. "↶ Undo last AI change" link next to AI read.
+8. No price floor. His markup is kept on every rebuild/update; the curve is used only for a brand-new estimate.
+- Customer-supplied items: no $0 material row; shown in the card's "You supply" list, labor kept.
+- `finishStatus` uses the dashboard values. "range hood" is no longer banned. `ea` limit 200.
+- Testing: the deploy preview uses LIVE data — test only on a dummy estimate.

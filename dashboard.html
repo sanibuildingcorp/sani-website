@@ -6608,7 +6608,7 @@ async function generateAI(isRegenerate, reanalyze) {
       })()
     });
 
-    const kick = await fetch(SBC_V5 ? "/.netlify/functions/generate-v5-background" : "/.netlify/functions/generate-estimate-background", {
+    const kick = await (SBC_V5 ? sbcFetch : fetch)(SBC_V5 ? "/.netlify/functions/generate-v5-background" : "/.netlify/functions/generate-estimate-background", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: payload,
@@ -13588,8 +13588,10 @@ function pzRender() {
   var STATUS = { READY_TO_ESTIMATE: "Ready to price.", PRELIMINARY_ESTIMATE_WITH_ASSUMPTIONS: "Priced on assumptions.", NEEDS_CUSTOMER_QUESTIONS: "Needs answers first.", SITE_VISIT_REQUIRED: "Site visit needed." };
   var q0 = qs.length ? String(typeof qs[0] === "string" ? qs[0] : (qs[0] && (qs[0].question || qs[0].text)) || "") : "";
   var lines = (e.labor || []).length + (e.materials || []).length;
+  var undo = SBC_V5 && (currentRecord && Array.isArray(currentRecord.estimateHistory) && currentRecord.estimateHistory.length)
+    ? ' <a href="#" onclick="pzV5Act(currentRecord.ref,\'undo\');return false">↶ Undo last AI change</a>' : "";
   var aiRead = lines
-    ? '<div class="pz-ai"><b>AI read:</b> ' + esc(STATUS[pr.status] || "Priced.") + (asm.length ? " Assumed " + esc(asm.join("; ").replace(/\.$/, "")) + "." : "") +
+    ? '<div class="pz-ai"><b>AI read:</b> ' + undo + ' ' + esc(STATUS[pr.status] || "Priced.") + (asm.length ? " Assumed " + esc(asm.join("; ").replace(/\.$/, "")) + "." : "") +
       (q0 ? ' <a href="#" onclick="pzAskCustomer();return false">Ask customer: ' + esc(q0.length > 60 ? q0.slice(0, 57) + "…" : q0) + '</a>' : "") + '</div>'
     : (SBC_AI_GENERATOR || SBC_V5) ? '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>'
     : '<div class="pz-ai">No prices yet. Add a service and your lines below, or tap one of your price book packages.</div>';
@@ -14269,12 +14271,13 @@ async function pzChatUpdate() {
     }
     if (!j || j.aiJobId !== jobId) throw new Error("No answer yet - try again in a minute");
     if (j.aiStatus === "error") throw new Error(j.aiError || "The estimator reported an error");
-    pzV5Changes(ref, (j.estimateV5Pending && j.estimateV5Pending.changes) || []);
+    var pend = j.estimateV5Pending || {};
+    pzV5Changes(ref, pend.changes || [], pend.fullRebuild === true);
   } catch (e) { toast("Update from chat: " + e.message, true); }
   var w = document.getElementById("pz-v5w"); if (w) w.remove();
 }
 /* The change list: what moves, by how much. Apply or Cancel. */
-function pzV5Changes(ref, ch) {
+function pzV5Changes(ref, ch, full) {
   var money = function (v) { return (v < 0 ? "-$" : "+$") + Math.abs(Math.round(v)).toLocaleString(); };
   var rows = ch.map(function (c) {
     var what = esc(c.what || "") + (c.section ? ' <span class="pz-mut">(' + esc(c.section) + ')</span>' : "");
@@ -14287,24 +14290,31 @@ function pzV5Changes(ref, ch) {
   box.style.cssText = "position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
   box.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:18px">' +
     '<h3 style="margin:0 0 6px">Changes from the chat</h3>' +
+    (full ? '<div class="pz-pill pz-wa" style="margin-bottom:8px">This estimate was made before the new brain, so this is a full new draft. Check every line.</div>' : '') +
     (ch.length ? '<div class="pz-mut" style="margin-bottom:10px">Your own lines and prices stay as they are. Cost change before markup: <b>' + money(tot) + '</b></div><table style="width:100%;border-collapse:collapse;font-size:14px">' + rows + '</table>'
       : '<div class="pz-mut">Nothing in the chat changes the estimate.</div>') +
     '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button type="button" class="pz-btn pz-ghost" onclick="pzV5Done(\'' + esc(ref) + '\',false)">Cancel</button>' +
     (ch.length ? '<button type="button" class="pz-btn pz-gold" onclick="pzV5Done(\'' + esc(ref) + '\',true)">Apply changes</button>' : '') + '</div></div>';
   document.body.appendChild(box);
 }
-async function pzV5Done(ref, apply) {
+async function pzV5Done(ref, apply) { return pzV5Act(ref, apply ? "apply" : "cancel"); }
+/* Apply / Cancel / Undo answer only after the save, with the saved estimate,
+   so the screen (and the next autosave) always holds the new one. */
+async function pzV5Act(ref, action) {
   var box = document.getElementById("pz-v5box"); if (box) box.remove();
+  if (action === "undo" && !confirm("Go back to the version before the last AI change?")) return;
+  clearTimeout(PZ.saveT);
   try {
-    var x = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(apply ? { ref: ref, apply: true } : { ref: ref, cancel: true }) });
-    if (!x.ok) throw new Error("HTTP " + x.status);
-    if (apply) {
-      var g = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
-      var j = await g.json();
-      if (currentRecord && currentRecord.ref === ref && j && j.estimate) { currentRecord.estimate = j.estimate; currentRecord.estimateHistory = j.estimateHistory; pzRender(); }
-      toast("Estimate updated. The old version is saved.");
+    var x = await sbcFetch("/.netlify/functions/estimate-v5-apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, action: action }) });
+    var j = await x.json().catch(function () { return null; });
+    if (!x.ok || !j) throw new Error((j && j.error) || "HTTP " + x.status);
+    if (currentRecord && currentRecord.ref === ref) {
+      currentRecord.estimateV5Pending = undefined;
+      if (action !== "cancel") { currentRecord.estimate = j.estimate; currentRecord.estimateHistory = j.estimateHistory; pzRender(); }
     }
-  } catch (e) { toast((apply ? "Apply" : "Cancel") + " failed: " + e.message, true); }
+    if (action === "apply") toast("Estimate updated. Undo is next to AI read.");
+    if (action === "undo") toast("Back to the earlier version.");
+  } catch (e) { toast(action + " failed: " + e.message, true); }
 }
 /* 📎 files go straight to storage (customer-upload-url), the link rides on
    the message (thread-reply attachments). */

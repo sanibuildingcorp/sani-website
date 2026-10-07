@@ -51,9 +51,10 @@ function build(reading, opts) {
       const q = Math.max(1, Math.ceil(per * qty * 100) / 100);
       const mq = unit === 'sf' || unit === 'lf' ? Math.ceil(per * qty) : Math.ceil(per * qty);
       const byOwner = key && supplied.has(key);
-      materials.push({ section, item: name, qty: Math.max(1, mq || q), unit, rate: byOwner ? 0 : cost, bookId: b.id, supplyKey: key || null, byOwner: !!byOwner, engine: 'v5' });
+      /* Customer supplies it: no material line at all (no $0 rows); the labor stays. */
+      if (!byOwner) materials.push({ section, item: name, qty: Math.max(1, mq || q), unit, rate: cost, bookId: b.id, supplyKey: key || null, engine: 'v5' });
       if (isFinish) {
-        const f = { section, item: name, key, supplier: byOwner ? 'customer' : 'sani', status: byOwner ? 'deliver' : 'choose', where: section };
+        const f = { section, item: name, key, supplier: byOwner ? 'customer' : 'sani', status: byOwner ? 'Customer delivers by date' : 'To choose by date', where: section };
         finishes.push(f);
         if (byOwner) customerSupplied.push({ section, item: name, note: 'Purchase price excluded; installation included' });
       }
@@ -96,6 +97,7 @@ function build(reading, opts) {
   needs.push('Clear the work area of personal items before we start');
   finishes.filter((f) => f.supplier === 'customer').forEach((f) => needs.push(f.item + ' on site before we start'));
 
+  services.forEach((sv) => { sv.supplied = uniq(customerSupplied.filter((c) => c.section === sv.name).map((c) => c.item)); });
   // Sort steps: whole-project protect first, cleanup last
   const first = workSteps.filter((s) => s.bookId === 'protect'), last = workSteps.filter((s) => s.bookId === 'cleanup' || s.bookId === 'setup_small');
   const mid = workSteps.filter((s) => !['protect', 'cleanup', 'setup_small'].includes(s.bookId));
@@ -106,7 +108,7 @@ function build(reading, opts) {
   const cost = lab + mat;
   const markupPct = opts.markupPct != null ? Number(opts.markupPct) : Math.round(markupFor(cost) * 1000) / 10;
   let total = cost * (1 + markupPct / 100);
-  if (total > 0 && total < BOOK.MIN_JOB_PRICE) total = BOOK.MIN_JOB_PRICE;
+  /* No price floor or ceiling (his rule). */
 
   // Timeline (code, not AI)
   const workDays = Math.max(0.5, Math.ceil((hours / (BOOK.CREW * BOOK.DAY_HOURS)) * 2) / 2);
@@ -141,20 +143,27 @@ function build(reading, opts) {
    Returns the list of changes so the dashboard can show Apply / Cancel. */
 function update(prevEstimate, newReading, opts) {
   const prev = prevEstimate || {};
-  const next = build(newReading, Object.assign({ markupPct: prev.markupPctByHand ? prev.markupPct : undefined }, opts));
-  // keep hand lines
+  /* His markup stays his: an estimate that already has a markup keeps it. */
+  const hasMarkup = prev.markupPct != null && ((prev.labor || []).length || (prev.materials || []).length);
+  const next = build(newReading, Object.assign({ markupPct: hasMarkup ? prev.markupPct : undefined }, opts));
   ['labor', 'materials'].forEach((k) => {
-    const hand = (prev[k] || []).filter((l) => l.byHand);
-    // a hand-typed rate on a book line wins
-    next[k].forEach((l) => { const p = (prev[k] || []).find((x) => x.bookId === l.bookId && x.item === l.item && x.rateByHand); if (p) { l.rate = p.rate; l.rateByHand = true; } });
-    next[k] = next[k].concat(hand);
+    const hand = (prev[k] || []).filter((l) => l && (l.byHand || l.rateByHand));
+    hand.forEach((h) => {
+      /* A book line he edited REPLACES the rebuilt book line (never charged twice). */
+      const i = next[k].findIndex((l) => !l.byHand && ((h.bookId && l.bookId === h.bookId && (l.item === h.item || l.section === h.section)) || (norm(l.item) === norm(h.item) && norm(l.section) === norm(h.section))));
+      /* byHand (he typed the line) keeps his whole line; rateByHand keeps only his rate. */
+      if (i >= 0) next[k][i] = h.byHand ? Object.assign({}, h) : Object.assign(next[k][i], { rate: h.rate, rateByHand: true });
+      else next[k].push(Object.assign({}, h));
+    });
   });
   // keep hand-edited text
   if (prev.summaryByHand) { next.summary = prev.summary; next.summaryByHand = true; }
+  retotal(next);
   const changes = diff(prev, next);
   return { estimate: next, changes };
 }
 
+function norm(v) { return String(v == null ? '' : v).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
 function key(l) { return (l.section || '') + '|' + (l.item || ''); }
 function diff(a, b) {
   const out = [];
@@ -171,4 +180,11 @@ function diff(a, b) {
   return out;
 }
 
-module.exports = { build, update, diff, markupFor };
+function retotal(e) {
+  const lab = (e.labor || []).reduce((a, l) => a + (Number(l.qty) || 0) * (Number(l.rate) || 0), 0);
+  const mat = (e.materials || []).reduce((a, l) => a + (Number(l.qty) || 0) * (Number(l.rate) || 0), 0);
+  const cost = lab + mat, total = cost * (1 + (Number(e.markupPct) || 0) / 100);
+  e.totals = { labor: r2(lab), materials: r2(mat), cost: r2(cost), total: r2(total), profit: r2(total - cost) };
+  return e;
+}
+module.exports = { retotal, build, update, diff, markupFor };

@@ -132,8 +132,6 @@ const ACCESS = {
 
 /* Markup curve — anchored on Sani actuals (PRICING-CALIBRATION.md §4.2). */
 const MARKUP = [[0, 0.65], [2250, 0.71], [9690, 0.496], [30000, 0.485]];
-const MIN_JOB_PRICE = 350;   // small-job minimum — DRAFT, confirm
 const CREW = 2, DAY_HOURS = 8, WORK_HOURS_TEXT = '8am–5pm, Mon–Fri';
 
-module.exports = { VERSION, ITEMS, ACCESS, MARKUP, MIN_JOB_PRICE, CREW, DAY_HOURS, WORK_HOURS_TEXT,
   byId: Object.fromEntries(ITEMS.map((i) => [i.id, i])) };
