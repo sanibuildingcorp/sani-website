@@ -30,7 +30,7 @@ ${catalog()}
 RULES
 1. Use only ids from the list. If the job needs something not in the list, put it in "custom" with a name, quantity and unit — no price.
 2. Quantities must come from the request, the answers, the conversation or the photos' obvious counts (1 toilet, 1 vanity). Areas: use measurements given. If none: bathroom floor 5x8=40 sf, shower walls 75 sf, a room's walls 350 sf, and write the assumption in "facts".
-3. A SMALL JOB STAYS SMALL. A repair is priced as a repair. Never add demolition, rough plumbing, waterproofing or new tile unless the customer asked for that work.
+3. A SMALL JOB STAYS SMALL. A repair is priced as a repair. Never add handyman hours as extra time on top of priced items. If there is real extra work with no price-book id (e.g. hang 4 shelves), put it in "custom". Never add demolition, rough plumbing, waterproofing or new tile unless the customer asked for that work.
 4. Customer-supplied items: put the supply key in customerSupplies. Labor stays; only the material is removed.
 5. Customer exclusions ("walls only", "no baseboards") go in that service's "exclusions", close to their own words.
 6. Newest message wins. A contractor note beats the customer. Never ask again for something already answered.
@@ -71,6 +71,17 @@ function validate(raw, input) {
     });
     const custom = (sv.custom || []).filter((c) => s(c && c.name) && !BAN.test(c.name)).slice(0, 5).map((c) => ({ name: s(c.name).slice(0, 90), qty: Number(c.qty) > 0 ? Number(c.qty) : 1, unit: s(c.unit) || 'job', note: s(c.note).slice(0, 140) }));
     const exclusions = (sv.exclusions || []).map(s).filter(Boolean).slice(0, 5);
+    /* No padding: handyman hours only when they ARE the job, never on top of priced work. */
+    /* Handyman hours on top of priced work are never padding and never silently
+       deleted: real extra work ("hang 4 shelves") becomes a "Needs your price" line. */
+    if (items.some((x) => x.id !== 'handyman_hour')) {
+      const h = items.findIndex((x) => x.id === 'handyman_hour');
+      if (h >= 0) {
+        const hh = items.splice(h, 1)[0], what = s(hh.note).replace(/\bhandyman( labor| hours?)?\b/ig, '').replace(/^[\s:,-]+/, '').trim();
+        if (what.length > 3) custom.push({ name: what.slice(0, 90), qty: 1, unit: 'job', note: 'AI suggested ' + hh.qty + ' hr' });
+        else out.dropped.push('handyman_hour');
+      }
+    }
     if (items.length || custom.length) out.services.push({ name, items, custom, exclusions });
   });
   const keys = new Set(BOOK.ITEMS.flatMap((i) => (i.mat || []).map((m) => m[4]).filter(Boolean)));
