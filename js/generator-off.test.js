@@ -47,7 +47,7 @@ vm.runInContext(["async " + fn(D, "generateAI"), "async " + fn(D, "addServiceAI"
   const added = await vm.runInContext("addServiceAI('paint', 'Painting', true)", ctx);
   ok("Generate / Re-price / Update from chat / Add a service: one message, nothing is sent", ctx.toasts.length === 2 && ctx.toasts[0] === "off-msg" && added === false);
   const exec = fn(D, "aiExec");
-  ok("the assistant's regenerate and add-a-service say it is off", /if \(t === "regenerate"\) \{[\s\S]{0,400}if \(!SBC_AI_GENERATOR\) return SBC_AI_OFF;/.test(exec) && /if \(t === "addservice"\) \{\s*if \(!SBC_AI_GENERATOR\) return SBC_AI_OFF;/.test(exec));
+  ok("the assistant's regenerate and add-a-service say it is off", /if \(t === "regenerate"\) \{[\s\S]{0,400}if \(!SBC_AI_GENERATOR && !SBC_V5\) return SBC_AI_OFF;/.test(exec) && /if \(t === "addservice"\) \{\s*if \(!SBC_AI_GENERATOR\) return SBC_AI_OFF;/.test(exec));
   const pz = D.slice(D.indexOf('<style id="pz-styles">'));
   ok("no Generate estimate button on an empty estimate; it says to add lines or a price book package", /: \(SBC_AI_GENERATOR \|\| SBC_V5\) \? '<div class="pz-ai"><b>AI read:<\/b> no estimate yet\. <button/.test(pz) && /No prices yet\. Add a service and your lines below, or tap one of your price book packages\./.test(pz));
   ok("no \"AI learned\" box and no Update estimate from chat", /if \(\(!SBC_AI_GENERATOR && !SBC_V5\) \|\| !pzLastCust\(r\)\) return "";/.test(fn(pz, "pzLearnHtml")));

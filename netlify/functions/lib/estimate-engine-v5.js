@@ -150,7 +150,9 @@ function update(prevEstimate, newReading, opts) {
     const hand = (prev[k] || []).filter((l) => l && (l.byHand || l.rateByHand));
     hand.forEach((h) => {
       /* A book line he edited REPLACES the rebuilt book line (never charged twice). */
-      const i = next[k].findIndex((l) => !l.byHand && ((h.bookId && l.bookId === h.bookId && (l.item === h.item || l.section === h.section)) || (norm(l.item) === norm(h.item) && norm(l.section) === norm(h.section))));
+      /* Same item name AND (same book item or same service) - never section alone,
+         because every material of one book item shares bookId and section. */
+      const i = next[k].findIndex((l) => !l.byHand && norm(l.item) === norm(h.item) && ((h.bookId && l.bookId === h.bookId) || norm(l.section) === norm(h.section)));
       /* byHand (he typed the line) keeps his whole line; rateByHand keeps only his rate. */
       if (i >= 0) next[k][i] = h.byHand ? Object.assign({}, h) : Object.assign(next[k][i], { rate: h.rate, rateByHand: true });
       else next[k].push(Object.assign({}, h));

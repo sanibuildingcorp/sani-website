@@ -71,3 +71,16 @@ console.log('toilet', toilet.totals, '\ngut', gut.totals, gut.timelineText, '\nv
   require('assert').strictEqual(u.markupPct, a.markupPct);
   console.log('ok - hand price on a book line replaces it (no double charge), markup kept');
 }
+/* Claude re-check: a typed price on one material never wipes another material of the same book item. */
+{
+  const E3 = require('../netlify/functions/lib/estimate-engine-v5'), as = require('assert');
+  const rd = { services: [{ name: 'Bathroom', items: [{ id: 'vanity', qty: 1 }, { id: 'toilet', qty: 1 }] }] };
+  const a = E3.build(rd); const mats = a.materials.filter((m) => m.bookId === 'vanity');
+  as.ok(mats.length >= 2, 'vanity has several materials');
+  const f = mats[mats.length - 1]; f.rate = 150; f.byHand = true;
+  const u = E3.update(a, rd);
+  mats.forEach((m) => as.strictEqual(u.estimate.materials.filter((x) => x.item === m.item).length, 1, m.item + ' once'));
+  as.strictEqual(u.estimate.materials.find((x) => x.item === f.item).rate, 150);
+  as.ok(!u.changes.some((c) => c.type === 'remove'), 'nothing removed');
+  console.log('ok - typed price on one material keeps the other materials (no wipe, no double)');
+}

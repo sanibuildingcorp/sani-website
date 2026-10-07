@@ -95,7 +95,7 @@ function withBreakdown(est) {
   est.pricingReadiness = { status: est.estimateStatus };
   est.assumptions = A(est.v5Reading && est.v5Reading.facts).filter((f) => /assum/i.test(f.text)).map((f) => f.text);
   // finish cards the dashboard already understands
-  ['materials'].forEach((k) => A(est[k]).forEach((l) => { const f = A(est.finishes).find((x) => x.item === l.item && x.section === l.section); if (f) { l.finish = true; l.finishStatus = f.supplier === 'customer' ? 'deliver' : 'choose'; } }));
+  ['materials'].forEach((k) => A(est[k]).forEach((l) => { const f = A(est.finishes).find((x) => x.item === l.item && x.section === l.section); if (f) { l.finish = true; l.finishStatus = f.status; } }));
   return est;
 }
 

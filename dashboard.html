@@ -4695,7 +4695,7 @@ async function aiExec(a, log, render) {
     /* "regenerate with everything I told you": the generator reads this
        chat (generate-estimate-background, chatInstructions). generateAI asks
        him to confirm, as the buttons do. */
-    if (!SBC_AI_GENERATOR) return SBC_AI_OFF;
+    if (!SBC_AI_GENERATOR && !SBC_V5) return SBC_AI_OFF;
     var gref = String(a.ref || "");
     if (!currentRecord || currentRecord.ref !== gref) return "Open " + gref + " first, then ask me again.";
     var reread = /read|scratch|analy/i.test(String(a.how || ""));
