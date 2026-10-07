@@ -3671,6 +3671,8 @@ async function openEdit(ref) {
   }
 }
 function closeEdit() {
+  /* A change still waiting for autosave is saved before the screen closes. */
+  if (typeof PZ !== "undefined" && PZ.saveT && currentRecord) { clearTimeout(PZ.saveT); PZ.saveT = null; try { pzSaveNow(); } catch (e) {} }
   document.getElementById("edit-modal").classList.remove("show");
   document.body.style.overflow = "";
   currentRecord = null;
@@ -13351,7 +13353,7 @@ ul.pz-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;
 @media(max-width:640px){
  .pz-top{display:none}.pz-ml{display:inline}.pz-dl{display:none}
  .pz-mtop{display:block;position:sticky;top:0;z-index:20;background:#0f1f3a;color:#fff;padding:8px 14px 6px;box-shadow:0 2px 6px #0003;cursor:pointer}
- .pz-mrow{display:flex;align-items:center;gap:10px}.pz-mtot{flex:1;display:flex;align-items:baseline;gap:8px;min-width:0}.pz-mtot b{font-size:22px;font-weight:800}.pz-mtot span{font-size:12px;color:#c8d0dd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .pz-mrow{display:flex;align-items:center;gap:10px}.pz-mclose{flex:0 0 auto;width:34px;height:34px;font-size:20px;line-height:1;padding:0}.pz-mtot{flex:1;display:flex;align-items:baseline;gap:8px;min-width:0}.pz-mtot b{font-size:22px;font-weight:800}.pz-mtot span{font-size:12px;color:#c8d0dd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  .pz-mchev{color:#c8d0dd;font-size:14px;transition:transform .2s}.pz-mtop.x .pz-mchev{transform:rotate(180deg)}
  .pz-mprog{display:flex;gap:3px;margin-top:6px}.pz-mprog i{flex:1;height:4px;border-radius:2px;background:#ffffff33}.pz-mprog i.d{background:#c9a24a}
  .pz-mmore{display:none;font-size:12px;color:#c8d0dd;padding-top:8px}.pz-mtop.x .pz-mmore{display:block}
@@ -14426,7 +14428,7 @@ function pzMount() {
   card.innerHTML = '<div class="pz-top"><div class="pz-in"><div><div class="pz-who">' + who + '<span class="pz-saved" id="pz-saved"></span></div><div class="pz-tot" id="pz-tot">$0</div><div class="pz-sub" id="pz-sub"></div></div>' +
       '<div style="display:flex;gap:8px;align-items:center"><span class="pz-pill pz-chp" id="pz-hchat" onclick="pzJump(\'pz-chat\')"></span><span class="pz-pill" id="pz-hready"></span><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzPreview()">Preview</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()">Send</button><button type="button" class="pz-close" title="Close" onclick="closeEdit()">×</button></div></div>' +
       '<div class="pz-prog" id="pz-prog"></div></div>' +
-    '<div class="pz-mtop" id="pz-mtop" onclick="this.classList.toggle(\'x\')"><div class="pz-mrow"><div class="pz-mtot"><b id="pz-mtot">$0</b><span id="pz-mpro"></span></div><span class="pz-pill pz-chp" id="pz-mchat" onclick="event.stopPropagation();pzJump(\'pz-chat\')"></span><span class="pz-pill" id="pz-mready"></span><span class="pz-mchev">▾</span></div>' +
+    '<div class="pz-mtop" id="pz-mtop" onclick="this.classList.toggle(\'x\')"><div class="pz-mrow"><div class="pz-mtot"><b id="pz-mtot">$0</b><span id="pz-mpro"></span></div><span class="pz-pill pz-chp" id="pz-mchat" onclick="event.stopPropagation();pzJump(\'pz-chat\')"></span><span class="pz-pill" id="pz-mready"></span><span class="pz-mchev">▾</span><button type="button" class="pz-close pz-mclose" title="Close" aria-label="Close this customer" onclick="event.stopPropagation();closeEdit()">×</button></div>' +
       '<div class="pz-mprog" id="pz-mprog"></div>' +
       '<div class="pz-mmore"><div id="pz-mwho"></div><div id="pz-msub"></div><div class="pz-mjump">' + [["Customer", "pz-s0"], ["Request", "pz-s1"], ["Chat", "pz-chat"], ["Price", "pz-s2"], ["Timeline", "pz-s3"], ["Terms", "pz-s4"]].map(function (x) { return '<button type="button" onclick="event.stopPropagation();pzJump(\'' + x[1] + '\')">' + x[0] + '</button>'; }).join("") + '</div></div></div>' +
     '<div class="pz-wrap"><main id="pz-main"></main><aside id="pz-side"></aside></div>' +
