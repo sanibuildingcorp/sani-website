@@ -142,6 +142,7 @@ exports.handler = async (event) => {
     if (chat && previous) {
       /* "Update from chat" NEVER writes record.estimate. It waits for Apply. */
       out.estimateV5Pending = { at: now(), jobId: s(b.jobId), estimate: Object.assign({}, previous, est), changes, fullRebuild: !prevReading };
+      /* Old-generator estimate: the change list lets him tick old lines to KEEP. */
     } else {
       out.estimateHistory = A(record.estimateHistory).concat(previous ? [{ at: now(), why: 'before new AI draft', estimate: previous }] : []).slice(-10);
       out.estimate = est;

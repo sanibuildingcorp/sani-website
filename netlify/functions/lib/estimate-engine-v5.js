@@ -174,7 +174,7 @@ function diff(a, b) {
     B.forEach((l, id) => { const o = A.get(id);
       if (!o) out.push({ type: 'add', what: l.item, section: l.section, to: l.qty + ' ' + l.unit, money: r2(l.qty * l.rate) });
       else if (o.qty !== l.qty || o.rate !== l.rate) out.push({ type: 'change', what: l.item, section: l.section, from: o.qty + ' ' + o.unit, to: l.qty + ' ' + l.unit, money: r2(l.qty * l.rate - o.qty * o.rate) }); });
-    A.forEach((l, id) => { if (!B.has(id)) out.push({ type: 'remove', what: l.item, section: l.section, money: r2(-l.qty * l.rate) }); });
+    A.forEach((l, id) => { if (!B.has(id)) out.push({ type: 'remove', kind: k, what: l.item, section: l.section, money: r2(-l.qty * l.rate) }); });
   });
   const ex = (s) => new Set(((s.manualCustomerScopeDraft || {}).services || []).flatMap((x) => x.excluded || []));
   const ea = ex(a), eb = ex(b);

@@ -24,7 +24,16 @@ exports.handler = async (event) => {
     const p = record.estimateV5Pending;
     if (!p || !p.estimate) return res(409, { error: 'Nothing waiting to apply' });
     record.estimateHistory = A(record.estimateHistory).concat([{ at: now, why: 'before chat update', estimate: record.estimate }]).slice(-10);
-    record.estimate = p.estimate;
+    /* Old estimates (made before v5): lines he ticked "Keep" in the change list
+       come across exactly as they were, marked byHand so v5 never touches them again. */
+    const keep = A(b.keep), est = p.estimate;
+    keep.forEach((kk) => {
+      const kind = kk && kk.kind === 'materials' ? 'materials' : 'labor';
+      const line = A(record.estimate && record.estimate[kind]).find((l) => l && l.item === kk.item && (l.section || '') === (kk.section || ''));
+      if (line && !A(est[kind]).some((l) => l.item === line.item && l.section === line.section)) { est[kind] = A(est[kind]).concat([Object.assign({}, line, { byHand: true })]); }
+    });
+    if (keep.length) require('./lib/estimate-engine-v5').retotal(est);
+    record.estimate = est;
     delete record.estimateV5Pending;
   } else if (action === 'cancel') {
     delete record.estimateV5Pending;

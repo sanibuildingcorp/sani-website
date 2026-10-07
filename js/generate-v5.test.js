@@ -60,6 +60,11 @@ let n = 0; const ok = (name, c) => { assert.ok(c, name); n++; console.log('PASS 
   await post(gen, { ref: 'SBC-2', jobId: 'j3', mode: 'chat' });
   ok('old estimate + Update from chat -> only a pending draft, estimate untouched', JSON.stringify(db['SBC-2'].estimate) === old && db['SBC-2'].estimateV5Pending.fullRebuild === true);
   ok('his markup is kept on a rebuild', db['SBC-2'].estimateV5Pending.estimate.markupPct === 25);
+  const rm = db['SBC-2'].estimateV5Pending.changes.find((c) => c.type === 'remove' && c.what === 'My own toilet line');
+  ok('old line shows as a remove he can keep', rm && rm.kind === 'labor');
+  db['SBC-3'] = JSON.parse(JSON.stringify(db['SBC-2'])); db['SBC-3'].ref = 'SBC-3';
+  const kj = JSON.parse((await post(app, { ref: 'SBC-3', action: 'apply', keep: [{ kind: 'labor', item: 'My own toilet line', section: 'Bathroom' }] })).body);
+  ok('ticked Keep: his old line survives Apply, once, and counts in the total', kj.estimate.labor.filter((l) => l.item === 'My own toilet line').length === 1 && kj.estimate.labor.some((l) => l.bookId === 'toilet') && kj.estimate.totals.labor >= 400);
   await post(app, { ref: 'SBC-2', action: 'cancel' });
   ok('cancel drops the pending draft', !db['SBC-2'].estimateV5Pending && JSON.stringify(db['SBC-2'].estimate) === old);
 
