@@ -21,7 +21,6 @@ Module._resolveFilename = function (request, ...rest) { if (request === '@netlif
 require.cache['@netlify/blobs'] = { id: '@netlify/blobs', filename: '@netlify/blobs', loaded: true, exports: { getStore: (o) => { const m = STORES[o.name] || (STORES[o.name] = new Map()); return { get: async (k) => (m.has(k) ? JSON.parse(m.get(k)) : null), setJSON: async (k, v) => { m.set(k, JSON.stringify(v)); } }; } } };
 process.env.DASHBOARD_KEY = 'k';
 const fn = require(path.join(ROOT, 'netlify/functions/update-customer.js'));
-const pin = require(path.join(ROOT, 'netlify/functions/lib/scope-pin.js'));
 const post = async (body) => { const r = await fn.handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'k' }, body: JSON.stringify(body) }); return { code: r.statusCode, body: JSON.parse(r.body) }; };
 const REC = { ref: 'SBC-260901-WOWP', customer: { name: 'May Chen', email: 'rmchen882@gmail.com', phone: '908-655-1715', address: '100 Riverside Boulevard' }, request: { service: 'Bathroom, Water Damage', services: ['Bathroom', 'Water Damage'], selectedServices: ['Bathroom', 'Water Damage'], description: 'Upgrades in bathroom.', serviceAnswers: { size: '70-100 sq ft' } }, estimate: { labor: [] } };
 
@@ -39,9 +38,7 @@ const REC = { ref: 'SBC-260901-WOWP', customer: { name: 'May Chen', email: 'rmch
     ok('an empty service is refused - a job with no trade cannot be priced', r3.code === 400 && /at least one service/.test(r3.body.error) && JSON.parse(STORES.estimates.get(REC.ref)).request.service === 'Bathroom, Painting, Doors');
     const r4 = await post({ ref: REC.ref, customer: REC.customer, description: 'still here' });
     ok('a save that does not mention the service leaves it alone (the older callers)', r4.code === 200 && JSON.parse(STORES.estimates.get(REC.ref)).request.service === 'Bathroom, Painting, Doors');
-    const before = pin.scopeFingerprint({ request: { service: 'Bathroom, Water Damage', selectedServices: ['Bathroom', 'Water Damage'], description: 'x' } });
-    const after = pin.scopeFingerprint({ request: { service: 'Bathroom', selectedServices: ['Bathroom'], description: 'x' } });
-    ok('THE SCOPE PIN CHANGES WITH THE SERVICE, so the next Re-price reads the job again with the corrected trades', before !== after);
+    // (scope pin removed with the old generator)
   }
 
   console.log('\n2. The Edit panel: the field, the payload, the record on screen\n');

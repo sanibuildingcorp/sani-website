@@ -142,13 +142,7 @@ ok('the planner still gets the photos themselves',
 /* ══ THE ESTIMATOR ════════════════════════════════════════════════════════ */
 console.log('\nthe estimator is handed the same thing it always used - minus a field that was off\n');
 {
-  const BG = read('netlify/functions/generate-estimate-background.js');
-  ok('the estimator no longer takes photoAnalysis', !/photoAnalysis:/.test(BG.replace(/\/\*[\s\S]*?\*\//g, '')));
-  ok('WHICH SHOTS WERE SENT now always reaches it, no longer switched off with the analysis',
-    /photoShots: photoShots\(request\),/.test(BG) && !/usePhotoAnalysis/.test(BG));
   ok('the request intake no longer stores the field', !/photoAnalysis/.test(read('netlify/functions/estimate-request.js')));
-  ok('the scope pin still fingerprints old records the same way, so no stored pin goes stale',
-    /photoAnalysis: req\.photoAnalysis/.test(read('netlify/functions/lib/scope-pin.js')));
 }
 
 /* ══ SECRETS THAT NO LONGER NEED TO EXIST ═════════════════════════════════ */

@@ -146,29 +146,6 @@ const call = async (body) => { const r = await fn.handler({ httpMethod: 'POST', 
     const A = read('netlify/functions/assistant.js');
     ok('the assistant is told which files were attached to each message', /\[attached: " \+ files\.join\(", "\) \+ "\]/.test(A));
 
-    const G = read('netlify/functions/generate-estimate-background.js');
-    const ctx = { console, String, Number, Array, Object, JSON, RegExp, Buffer,
-      thread: thread, MAX_CONVERSATION_MESSAGES: 30, MAX_CONVERSATION_CHARS: 6000,
-      cleanText: (v) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim() };
-    vm.createContext(ctx);
-    const extConst = (name) => { const s = G.indexOf('const ' + name + ' ='); const e = G.indexOf('\n};', s); return G.slice(s, e + 3); };
-    vm.runInContext(extConst('SHOT_LABELS'), ctx);
-    vm.runInContext(G.split('\n').find(l => l.startsWith('const MAX_PHOTOS_TO_READ')), ctx);
-    vm.runInContext(ext(G, 'buildConversationForEstimator'), ctx);
-    vm.runInContext(ext(G, 'photoBlocksForClaude'), ctx);
-    const rec = { request: { photos: [{ data: 'https://x/wide.jpg', slot: 'wide' }] },
-      thread: [{ id: 'm1', from: 'customer', text: 'This is the tile I bought', at: '2026-09-16T10:00:00Z', attachments: [{ name: 'tile.jpg', url: IMG, kind: 'image' }, { name: 'plan.pdf', url: PDF, kind: 'file' }] }] };
-    ctx.REC = rec;
-    const conv = vm.runInContext('buildConversationForEstimator(REC, {})', ctx);
-    ok('the conversation the estimator reads names the files', conv.length === 1 && /\[attached: tile\.jpg, plan\.pdf\]/.test(conv[0].said), JSON.stringify(conv));
-    const blocks = vm.runInContext('photoBlocksForClaude(REC.request, REC)', ctx);
-    ok('THE PICTURE FROM THE MESSAGE REACHES THE READER AS A PICTURE, after the form photos',
-      blocks.length === 4 && blocks[3].type === 'image' && blocks[3].source.url === IMG, JSON.stringify(blocks).slice(0, 300));
-    /* Guarded: when the plant removed the thread pictures this line threw on
-       blocks[2] and the suite crashed instead of reporting the second failure. */
-    ok('...labelled as sent later in a message, with its name', !!blocks[2] && /Photo 2 .*sent later in a message \(tile\.jpg\)/.test(blocks[2].text), blocks[2] && blocks[2].text);
-    ok('...the PDF is not sent as an image', !blocks.some(b => b.type === 'image' && /plan\.pdf/.test(b.source.url)));
-    ok('the reader is called with the record, so it can see the thread', /photoBlocksForClaude\(sourceRecord\.request, sourceRecord\)/.test(G));
   }
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

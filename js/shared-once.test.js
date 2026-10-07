@@ -138,15 +138,11 @@ console.log('\n3. Regenerate still sees a cleaned draft as the AI\'s wording\n')
   ok('...a real edit is still kept', C.forRegenerate(prev).kept === true);
 }
 
-const GEN = fs.readFileSync(path.join(ROOT, 'netlify/functions/generate-estimate-background.js'), 'utf8');
-const WRITER = fs.readFileSync(path.join(ROOT, 'netlify/functions/lib/scope-writer.js'), 'utf8');
 console.log('\n4. The draft the page tidied, the generator, the writer\n');
 {
   const cards = ASTORIA_TIDY();
   const prev = { serviceBreakdown: clone(cards), projectIncluded: PROJECT, manualCustomerScopeDraft: { services: L.tidyCards(PROJECT, clone(cards), { sup: 'customerSupplies', exc: 'notIncluded' }).map((c) => ({ name: c.title, included: c.included, supplied: c.customerSupplies, excluded: c.notIncluded })) } };
   ok('a draft the dashboard tidied still mirrors the untidied AI cards (Regenerate still gives new wording)', C.scopeMirrorsAi(prev) === true);
-  ok('THE GENERATOR tidies and orders the cards after the writer, then rebuilds the scope box', /timing\.scopeMs = Date\.now\(\) - scopeStarted;[\s\S]{0,400}bySize\(tidyCards\(estimate\.projectIncluded, estimate\.serviceBreakdown, \{ sup: "customerSupplies", exc: "notIncluded" \}, pricedNames\(estimate\)\)\);\s*syncScopeText\(estimate\);/.test(GEN));
-  ok('THE WRITER is told: never restate customer supplies, say each limit once', /Never restate what the customer supplies - that list is shown right beside this one\./.test(WRITER) && /Say each limit once\. Two bullets that mean the same thing in different words is one bullet\./.test(WRITER));
   ok('THE DASHBOARD orders biggest first when the draft is built, on Rebuild and on Save - not while typing', /est\.manualCustomerScopeDraft = buildScopeDraftFromAI\(\);\s*scopeSortBySize\(est\.manualCustomerScopeDraft\);/.test(DASH) && /buildScopeDraftFromAI\(true\);\s*scopeSortBySize\(currentRecord\.estimate\.manualCustomerScopeDraft\);/.test(DASH) && /scopeSortBySize\(scopeDraft\(\)\);\s*var clean = scopeCleanCopy\(\);/.test(DASH) && (DASH.match(/scopeSortBySize\(/g) || []).length === 4);
   const dd = { JSON, Object, Array, String, Number, Set, Math };
   vm.createContext(dd);
@@ -205,7 +201,7 @@ console.log('\n5. Priced shared work is never silent ("the customer question is 
   const lib = (p, c) => { const pp = p === undefined ? undefined : clone(p); const out = L.tidyCards(pp, clone(c), K, L.pricedNames(may())); return JSON.stringify([out]); };
   const same = [[[], cards()], [['We cover the hallway.'], [{ title: 'A', subtotal: 1, included: ['x'] }, { title: 'B', subtotal: 2, included: ['y'] }]], [undefined, [{ title: 'A', subtotal: 5, included: ['x'] }, { title: 'B', subtotal: 2, included: ['y'] }]]].every(([p, c]) => { const a = lib(p, c); return a === call(q, p, c) && a === call(d, p, c); });
   ok('THE THREE COPIES AGREE (lib, customer page, dashboard)', same);
-  ok('...the customer page, the dashboard draft, the scope PDF and the generator all pass the priced lines', /,pricedNames\(e\)\)\);/.test(QUOTE) && /tidyCards\(est\.projectIncluded, est\.manualCustomerScopeDraft\.services, \{ sup: "supplied", exc: "excluded" \}, pricedNames\(est\)\);/.test(DASH) && /pricedNames\(e\)\)\);/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/lib/scope-pdf.js'), 'utf8')) && /pricedNames\(estimate\)\)\);/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/generate-estimate-background.js'), 'utf8')));
+  ok('...the customer page, the dashboard draft, and the scope PDF all pass the priced lines', /,pricedNames\(e\)\)\);/.test(QUOTE) && /tidyCards\(est\.projectIncluded, est\.manualCustomerScopeDraft\.services, \{ sup: "supplied", exc: "excluded" \}, pricedNames\(est\)\);/.test(DASH) && /pricedNames\(e\)\)\);/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/lib/scope-pdf.js'), 'utf8')));
 }
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

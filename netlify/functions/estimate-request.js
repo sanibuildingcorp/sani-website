@@ -6,7 +6,6 @@
 const https = require("https");
 const { getStore } = require("@netlify/blobs");
 const ADDR = require("./lib/addresses");
-const autoDraft = require("./lib/auto-draft");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -125,11 +124,6 @@ exports.handler = async function (event) {
       );
     }
 
-    /* A draft is waiting when he opens it (lib/auto-draft.js): only for a
-       request this call created, never one that already existed. */
-    if (savedNew) {
-      tasks.push(autoDraft.kick(savedNew).then(function (r) { console.log("auto draft", ref, JSON.stringify(r)); }));
-    }
 
     await Promise.all(tasks);
 

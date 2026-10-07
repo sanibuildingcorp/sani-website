@@ -1,5 +1,5 @@
-/* These checks run the generator as it works when switched ON (lib/generator-switch.js); js/generator-off.test.js holds the switch itself. */
-process.env.AI_GENERATOR = "on";
+/* The phone tools reach the one estimate brain (generate-v5-background). */
+process.env.DASHBOARD_KEY = process.env.DASHBOARD_KEY || "k";
 /* chatgpt-mcp.test.js — run: node js/chatgpt-mcp.test.js
  *
  *   "i want AI which can add texts in estimate, i want AI which can learn
@@ -179,12 +179,12 @@ const saved = () => JSON.parse(STORES.estimates.get('SBC-260921-WNGN'));
   {
     seed();
     let t = await tool('regenerate', { ref: 'SBC-260921-WNGN', reanalyze: true, extraRequest: 'it is a repair' });
-    ok('REGENERATE kicks the background estimator with the ref, a job id, reanalyze, the extra request and the stored house rules', kicked.length === 1 && /generate-estimate-background$/.test(kicked[0].path) && kicked[0].body.ref === 'SBC-260921-WNGN' && /^ai-/.test(kicked[0].body.jobId) && kicked[0].body.reanalyze === true && kicked[0].body.extraRequest === 'it is a repair' && kicked[0].body.houseRules === 'Tile labor $16/SF' && kicked[0].body.useDescription === true, JSON.stringify(kicked[0]));
+    ok('REGENERATE kicks the estimate brain (v5) with the ref, a job id and mode new', kicked.length === 1 && /generate-v5-background$/.test(kicked[0].path) && kicked[0].body.ref === 'SBC-260921-WNGN' && /^ai-/.test(kicked[0].body.jobId) && kicked[0].body.mode === 'new', JSON.stringify(kicked[0]));
     ok('...and says it takes a few minutes', /Started on SBC-260921-WNGN \(re-reading the job from scratch\)/.test(t.text));
     t = await tool('add_service', { ref: 'SBC-260921-WNGN', text: 'paint the hallway ceiling', service: 'Painting' });
-    ok('ADD SERVICE kicks the estimator with addService', kicked.length === 2 && kicked[1].body.addService.text === 'paint the hallway ceiling' && kicked[1].body.addService.service === 'Painting' && kicked[1].body.houseRules === 'Tile labor $16/SF' && /Started: pricing/.test(t.text));
+    ok('ADD SERVICE points him to the chat + Update estimate from chat (nothing is kicked)', kicked.length === 1 && /Update estimate from chat/.test(t.text));
     t = await tool('regenerate', { ref: 'SBC-000000-ZZZZ' });
-    ok('an unknown ref never reaches the estimator', kicked.length === 2 && t.res.isError === true);
+    ok('an unknown ref never reaches the estimator', kicked.length === 1 && t.res.isError === true);
     t = await tool('ask_estimate_ai', { ref: 'SBC-260921-WNGN', question: 'what is the bathroom price?' });
     ok('ASK THE ESTIMATE\'S OWN AI: same ref, the estimate\'s own chat, the question marked as from ChatGPT; its proposed changes are reported, not done', asked.ref === 'SBC-260921-WNGN' && asked.chat === 'SBC-260921-WNGN' && asked.messages[0].text === '(from ChatGPT) what is the bathroom price?' && /The bathroom card is \$4,500\.01\./.test(t.text) && /proposed 1 change/.test(t.text), t.text);
   }

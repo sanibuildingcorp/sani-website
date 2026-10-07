@@ -153,25 +153,19 @@ t("...and is empty for a first generation", () => {
 /* ══ THE WIRING ═══════════════════════════════════════════════════════════════
    A perfect library the generator does not call protects nothing. */
 console.log("\nthe generator actually uses it\n");
-const GEN = fs.readFileSync(path.join(__dirname, "..", "generate-estimate-background.js"), "utf8");
+const GEN = fs.readFileSync(path.join(__dirname, "..", "generate-v5-background.js"), "utf8");
 
-t("the generator imports it", () => {
+t("the estimate brain (v5) imports it", () => {
   assert.ok(/require\(["']\.\/lib\/contractor-owned-fields["']\)/.test(GEN));
 });
-t("it snapshots the previous estimate BEFORE the run starts", () => {
-  const snapAt = GEN.indexOf("const previousEstimate =");
-  const runAt = GEN.indexOf('record.aiStatus = "running"');
-  assert.ok(snapAt > 0, "no snapshot taken");
-  assert.ok(snapAt < runAt, "the snapshot must be taken before anything downstream can touch record.estimate");
+t("it takes the previous estimate from the record it read", () => {
+  assert.ok(GEN.indexOf("const previous =") > 0);
 });
-t("it preserves BEFORE the wholesale overwrite, not after", () => {
-  const preserveAt = GEN.indexOf("preserveContractorFields(carry.previous, estimate)");
-  const writeAt = GEN.indexOf("record.estimate = estimate;");
+t("it preserves BEFORE the save, not after", () => {
+  const preserveAt = GEN.indexOf("preserveContractorFields(forRegenerate(previous).previous, est)");
+  const writeAt = GEN.indexOf("out.estimate = est;");
   assert.ok(preserveAt > 0, "preserveContractorFields is never called");
   assert.ok(preserveAt < writeAt, "preserving after the write would be too late");
-});
-t("what it carried is recorded on the estimate", () => {
-  assert.ok(/estimate\.preservedContractorFields = preservedFieldNames\(carry\.previous\)/.test(GEN));
 });
 
 console.log("\n" + pass + " passed, " + fail + " failed\n");
