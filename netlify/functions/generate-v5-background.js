@@ -157,6 +157,11 @@ exports.handler = async (event) => {
     /* His photos, contract, final total, view choices, timeline numbers and any
        scope text he edited by hand come across untouched (same latch as before). */
     preserveContractorFields(forRegenerate(previous).previous, est);
+    /* He set his own total by hand: the AI never overrides it silently. */
+    if (previous && Number(previous.totalSetByHand) > 0) {
+      est.totalSetByHand = Number(previous.totalSetByHand);
+      est.warnings = A(est.warnings).concat(['You set your own total ($' + est.totalSetByHand.toLocaleString('en-US') + ') by hand. The new lines may total differently - tap Set my own total again after Apply if you want it back.']);
+    }
     withBreakdown(est);
     changes = previous ? engine.diff(previous, est) : [];
     out = { aiStatus: 'done', aiStage: '', aiError: '', aiJobId: s(b.jobId), aiFinishedAt: now(), updatedAt: now(), v5Status: { ok: true, at: now(), warnings: est.warnings, changes: changes.length } };
