@@ -55,7 +55,9 @@ function inputFrom(record, offFacts) {
       emails: A(rq.emails).slice(-6).map((m) => ({ from: m.from, text: s(m.text || m.body).slice(0, 1500) })),
     },
     conversation: msgs,
-    contractorNotes: [].concat(s(e.ownerNotes) || [], s(e.extraRequest) || [], A(record.contractorNotes)).filter(Boolean),
+    contractorNotes: [].concat(s(e.ownerNotes) || [], s(e.extraRequest) || [], A(record.contractorNotes),
+      /* What he told the estimator in the private chat (his words only; newest wins). */
+      A(record.ownerChat).filter((m) => m && m.from === 'owner' && s(m.text)).slice(-30).map((m) => 'Owner said: ' + s(m.text).slice(0, 1500))).filter(Boolean),
   };
   /* Old (pre-v5) estimate: show the reader his priced lines so no work is lost. */
   const old = oldLines(e);
@@ -136,6 +138,22 @@ exports.handler = async (event) => {
     await store.setJSON(ref, fresh);
     return fresh;
   };
+  /* talk = private chat with the estimator. A reply only; nothing on the estimate moves.
+     Own talkJob fields, so it never disturbs a running Generate. */
+  if (b.mode === 'talk') {
+    const msg = s(b.message).slice(0, 2000), jid = s(b.jobId);
+    let reply, err = '';
+    try {
+      if (!msg) throw new Error('Empty message');
+      if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set');
+      reply = await talkReply(record, msg);
+    } catch (e) { err = e.message || 'error'; }
+    const fresh = (await store.get(ref, { type: 'json' })) || record;
+    if (!err) fresh.ownerChat = A(fresh.ownerChat).concat([{ from: 'owner', text: msg, at: now() }, { from: 'ai', text: reply.reply, chips: reply.chips, at: now() }]).slice(-80);
+    fresh.talkJob = { id: jid, done: true, error: err, at: now() };
+    await store.setJSON(ref, fresh);
+    return res(202, { ok: true });
+  }
   await save({ aiStatus: 'running', aiJobId: s(b.jobId), aiError: '', aiStage: 'Reading the job…', aiStartedAt: now() });
   let out;
   try {
@@ -147,7 +165,7 @@ exports.handler = async (event) => {
       await save({ aiStatus: 'done', aiStage: '', aiError: '', aiJobId: s(b.jobId), aiFinishedAt: now(), v5Ask: { at: now(), jobId: s(b.jobId), summary: rd.summary, questions: rd.questions, choices: rd.questionChoices || [], quick: !!b.quick } });
       return res(202, { ok: true });
     }
-    /* redo = "Regenerate": read the whole job again from scratch, but like chat it
+    /* redo = "Regenerate\": read the whole job again from scratch, but like chat it
        only goes to pending with a change list; nothing changes before Apply. */
     const redo = b.mode === 'redo';
     const chat = b.mode === 'chat' || redo;
@@ -188,6 +206,48 @@ exports.handler = async (event) => {
   await save(out);
   return res(202, { ok: true });
 };
+
+/* Private chat with the estimator: plain talk, short answers, no JSON estimate. */
+async function talkReply(record, msg) {
+  const e = record.estimate || {};
+  const lines = [].concat(A(e.labor).map((l) => Object.assign({ kind: 'labor' }, l)), A(e.materials).map((l) => Object.assign({ kind: 'material' }, l)))
+    .slice(0, 80).map((l) => ({ kind: l.kind, section: l.section, item: s(l.item).slice(0, 120), qty: Number(l.qty) || 0, unit: l.unit, rate: Number(l.rate) || 0, hours: Number(l.hours) || undefined }));
+  const sub = lines.reduce((a, l) => a + l.qty * l.rate, 0), mk = Number(e.markupPct) || 0;
+  const job = inputFrom(record);
+  const history = A(record.ownerChat).slice(-20).map((m) => (m.from === 'owner' ? 'OWNER: ' : 'YOU: ') + s(m.text).slice(0, 1200)).join('\n');
+  const prompt = `You are the estimating brain inside Sani Building Corp's dashboard (renovation contractor, NYC / Long Island). You are talking privately with the owner, an experienced contractor, often on his phone at a job site. The customer never sees this chat.
+
+How to talk:
+- Plain, direct contractor talk. 1-3 short sentences. No lists unless he asks. No markdown.
+- If he tells you facts or changes ("customer buys tile", "make wall tile $18/sf", "3rd floor walk-up"), confirm in one line what you will change on the next Generate / Regenerate. You cannot change the estimate yourself; he taps Generate or Regenerate.
+- If he asks why a number is what it is, explain from the current lines below (qty x rate). Do not invent numbers that are not there.
+- Ask at most ONE follow-up question, only if its answer really changes the price.
+- Never say "licensed". No gas work.
+
+Return JSON only: {"reply":"...","chips":["0-3 short tap replies he might send next, 1-5 words each"]}
+
+JOB (customer request, customer messages, his notes):
+${JSON.stringify(job).slice(0, 14000)}
+
+CURRENT ESTIMATE: ${lines.length ? `subtotal $${Math.round(sub)}, markup ${mk}%, total about $${Math.round(sub * (1 + mk / 100))}. Lines: ${JSON.stringify(lines).slice(0, 12000)}` : 'none yet (not generated).'}
+
+CHAT SO FAR:
+${history || '(new chat)'}
+OWNER: ${msg}`;
+  const call = async (withPhotos) => {
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: MODEL, max_tokens: 4000, messages: [{ role: 'user', content: [].concat(withPhotos ? photoBlocks(record) : [], [{ type: 'text', text: prompt }]) }] }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((j.error && j.error.message) || 'AI ' + r.status);
+    return (j.content || []).map((b) => b.text || '').join('');
+  };
+  let text; try { text = await call(true); } catch (_) { text = await call(false); }
+  let o = null; try { const m = text.match(/\{[\s\S]*\}/); o = m && JSON.parse(m[0]); } catch (_) {}
+  const reply = s(o && o.reply ? o.reply : text).replace(/\blicen[cs]ed?\b/gi, 'fully insured').slice(0, 1500) || 'Got it.';
+  const chips = A(o && o.chips).map((c) => s(c).slice(0, 40)).filter(Boolean).slice(0, 3);
+  return { reply, chips };
+}
 
 async function openRecord(ref) {
   let store = null, record = null;
