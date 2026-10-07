@@ -87,6 +87,11 @@ function scopeInputs(input) {
      again. Only when there are some, so every job without emails keeps the
      fingerprint it had before emails were read at all. */
   if (Array.isArray(req.emails) && req.emails.length) out.emails = req.emails.map(function (e) { return String((e && e.id) || ""); });
+  /* A chat fact he switched off (chat-facts-background.js) reads the job
+     again without it. Only when there is one, so every other job keeps the
+     fingerprint it had. */
+  const off = con.chatFacts && Array.isArray(con.chatFacts.ignore) ? con.chatFacts.ignore : [];
+  if (off.length) out.chatFactsOff = off.map(String);
   return out;
 }
 

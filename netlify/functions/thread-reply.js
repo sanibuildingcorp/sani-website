@@ -2,7 +2,9 @@
 //
 // CONTRACTOR -> CUSTOMER, on the estimate's own thread.
 //
-// POST { ref, text }   header  x-sbc-key: <DASHBOARD_KEY>
+// POST { ref, text, attachments? }   header  x-sbc-key: <DASHBOARD_KEY>
+// attachments: [{name, url, kind}] - links he uploaded with 📎 (lib/thread.js
+// keeps https links only); the email lists them under the message.
 //
 // The dashboard reply box posts here. This is the PRIMARY path: it is the only
 // one that is synchronous, that is guaranteed to land in the thread, and that
@@ -50,7 +52,7 @@ exports.handler = async function (event) {
   if (!record) return json(404, { error: "Estimate " + ref + " not found" });
 
   const previous = lastMessage(record);
-  const result = thread.appendMessage(record, { from: "contractor", text: text, via: "dashboard" });
+  const result = thread.appendMessage(record, { from: "contractor", text: text, via: "dashboard", attachments: body.attachments });
   if (!result.added) {
     return json(409, { error: "Message not added (" + result.reason + ")", thread: result.thread });
   }
