@@ -13295,6 +13295,17 @@ try {
 .pz-ok{background:#e4f4ea;color:#1f8a4c}.pz-wa{background:#fff3dc;color:#b86e00}.pz-ba{background:#fbe7e5;color:#c0392b}
 .pz-wrap{max-width:1200px;margin:0 auto;padding:16px 12px 90px;display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
 @media(min-width:980px){.pz-wrap{grid-template-columns:minmax(0,1fr) 340px}}
+.pz-tk .pz-tk-q{font-size:13px;display:flex;gap:5px;align-items:center;color:#5d6878}
+.pz-tk-sum{margin:6px 0}.pz-tk-prog{font-size:12px;margin:8px 0 4px}
+.pz-tk-done{display:grid;gap:4px}.pz-tk-line{display:flex;justify-content:space-between;gap:8px;width:100%;background:#f6f8fb;border:0;border-radius:8px;padding:8px 10px;font-size:13px;text-align:left;color:#16202e}
+.pz-tk-line span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#5d6878}.pz-tk-line span{min-width:0}.pz-tk-line b{white-space:nowrap;flex:0 0 auto;color:#1c6547}.pz-tk-line b.sk{color:#8a93a3;font-weight:500}
+.pz-tk-card{border:1px solid #c9a24a;border-radius:10px;padding:10px;margin-top:6px}.pz-tk-n{font-size:11px;color:#8a6d22;font-weight:700;text-transform:uppercase}
+.pz-tk-qq{font-weight:700;font-size:16px;margin:4px 0 8px}.pz-tk-ch{display:grid;gap:6px;margin-bottom:8px}.pz-tk-ch .pz-btn{width:100%;min-height:46px;font-size:15px}.pz-tk-ch .pz-btn.on{border-color:#c9a24a;background:#fbf5e6}
+.pz-tk-in{display:flex;gap:6px}.pz-tk-in input{flex:1;min-width:0;font-size:16px;border:1px solid #d5d9e0;border-radius:8px;padding:10px}.pz-tk-in .pz-btn{min-width:46px;min-height:46px}
+.pz-tk-mic.on{background:#fde8e6;border-color:#c0392b}.pz-tk-skip{display:inline-block;margin-top:8px;font-size:13px}
+.pz-tk-notes{margin-top:10px}.pz-tk-notes summary{font-size:14px;font-weight:600;padding:6px 0;cursor:pointer}.pz-tk-notes textarea{width:100%;box-sizing:border-box;font-size:16px;border:1px solid #d5d9e0;border-radius:8px;padding:9px}
+.pz-tk-bar{position:sticky;bottom:62px;z-index:15;display:flex;gap:6px;background:#fff;padding:8px 0 2px;margin-top:8px;border-top:1px solid #eef0f4}
+.pz-tk{min-width:0;overflow:hidden}.pz-tk *{box-sizing:border-box}.pz-tk-bar .pz-btn{min-height:46px;padding:8px 9px;font-size:14px;white-space:nowrap;min-width:0;flex:0 1 auto}.pz-tk-bar .pz-gold{flex:1 1 auto;font-weight:800}.pz-tk-ph{position:relative;display:flex;align-items:center}.pz-tk-ph small{position:absolute;top:2px;right:3px;font-size:10px;background:#c9a24a;color:#fff;border-radius:999px;padding:0 4px}
 .pz-c{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:14px 16px;margin-bottom:12px}
 .pz-ey{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5d6878;font-weight:700}
 #edit-card.pz-card h2{font-size:17px;margin:2px 0 8px;font-family:inherit;letter-spacing:0;color:#16202e}
@@ -13556,6 +13567,7 @@ function pzOn() { var m = document.getElementById("edit-modal"); return !!(m && 
    Everything lands in estimate.ownerNotes, which the brain obeys over the
    customer's text and which the customer never sees. */
 function pzTalkHtml(r, hasLines) {
+  if (pzIsPhone()) return pzTalkMobileHtml(r, hasLines);
   var e = (r && r.estimate) || {}, a = r && r.v5Ask, qs = (a && a.questions) || [];
   var notes = String(e.ownerNotes || "");
   return '<div class="pz-c" id="pz-talk"><div class="pz-row"><h2 style="margin:0">🧠 Talk to the estimator</h2><span class="pz-mut">only you see this</span></div>' +
@@ -13574,6 +13586,12 @@ function pzTalkHtml(r, hasLines) {
 function pzTalkCommit() {
   var e = pzEst(), add = [];
   document.querySelectorAll(".pz-talkq").forEach(function (i) { var v = i.value.trim(); if (v) add.push("Q: " + i.getAttribute("data-q") + " A: " + v); });
+  var T = PZ.talk; if (T && T.ref === (currentRecord && currentRecord.ref)) {
+    var mq = (currentRecord.v5Ask && currentRecord.v5Ask.questions) || [];
+    mq.forEach(function (q, i) { var v = String(T.ans[i] || "").trim(); if (v) add.push("Q: " + q + " A: " + v); });
+    if (T.defaults && mq.some(function (q, i) { return !String(T.ans[i] || "").trim(); })) add.push("For anything not answered: use my House Rules and normal assumptions, do not ask again.");
+    PZ.talk = null;
+  }
   if (add.length) { e.ownerNotes = [String(e.ownerNotes || "").trim()].concat(add).filter(Boolean).join("\n"); if (currentRecord.v5Ask) currentRecord.v5Ask.questions = []; }
   clearTimeout(PZ.saveT);
 }
@@ -13583,7 +13601,7 @@ async function pzAskEstimator() {
   var jobId = "v5a-" + Date.now().toString(36);
   pzBusy(true, "Reading the job");
   try {
-    var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jobId, mode: "ask" }) });
+    var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jobId, mode: "ask", quick: pzIsPhone() && pzQuick() }) });
     if (k.status !== 202 && !k.ok) throw new Error("HTTP " + k.status);
     var j = null;
     for (var n = 0; n < 60; n++) {
@@ -13595,10 +13613,105 @@ async function pzAskEstimator() {
     if (!j || j.aiJobId !== jobId) throw new Error("No answer yet - try again in a minute");
     if (j.aiStatus === "error") throw new Error(j.aiError || "The estimator reported an error");
     r.v5Ask = j.v5Ask || null;
+    PZ.talk = null;
     pzBusy(false); pzRender();
     var el = document.getElementById("pz-talk"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     if (!(r.v5Ask && r.v5Ask.questions && r.v5Ask.questions.length)) toast("No questions - you can generate now");
   } catch (e) { pzBusy(false); toast("Ask: " + e.message, true); }
+}
+/* ── Phone version of Talk to the estimator ───────────────────────────────
+   "it's getting long card ... i need mobile friendly for quick generate when
+    i'm outside". One open question at a time, answered ones shrink to a line,
+   tap answers, mic, site photo, Quick mode, Generate pinned at the bottom.
+   Desktop keeps the old card. */
+function pzIsPhone() { return !!(window.matchMedia && window.matchMedia("(max-width:640px)").matches); }
+function pzQuick() { try { return localStorage.getItem("pzQuick") !== "0"; } catch (e) { return true; } }
+function pzTalkState() {
+  var r = currentRecord, ref = r && r.ref;
+  if (!PZ.talk || PZ.talk.ref !== ref) PZ.talk = { ref: ref, ans: {}, seen: {}, cur: 0, more: false, notes: false, defaults: false };
+  return PZ.talk;
+}
+function pzTalkMobileHtml(r, hasLines) {
+  var e = (r && r.estimate) || {}, a = r && r.v5Ask, qs = (a && a.questions) || [], ch = (a && a.choices) || [];
+  var T = pzTalkState(), notes = String(e.ownerNotes || ""), nLines = notes.split("\n").filter(function (x) { return x.trim(); }).length;
+  var cur = Math.min(T.cur, qs.length), done = qs.filter(function (q, i) { return String(T.ans[i] || "").trim(); }).length;
+  var sum = String((a && a.summary) || ""), first = (sum.match(/^[^.!?]*[.!?]/) || [sum])[0];
+  var sitePh = Array.isArray(e.sitePhotos) ? e.sitePhotos.length : 0;
+  var mic = (window.SpeechRecognition || window.webkitSpeechRecognition) ? '<button type="button" class="pz-btn pz-ghost pz-tk-mic" onclick="pzTalkMic()" aria-label="Talk">🎤</button>' : "";
+  var h = '<div class="pz-c pz-tk" id="pz-talk"><div class="pz-row"><h2 style="margin:0;font-size:17px">🧠 Estimator</h2>' +
+    '<label class="pz-tk-q"><input type="checkbox" ' + (pzQuick() ? "checked" : "") + ' onchange="try{localStorage.setItem(\'pzQuick\',this.checked?\'1\':\'0\')}catch(e){};toast(this.checked?\'Quick mode: 3-4 key questions\':\'Full mode: up to 6 questions\')"> Quick</label></div>';
+  if (sum) h += '<div class="pz-ai pz-tk-sum">' + esc(T.more ? sum : first) + (sum.length > first.length ? ' <a href="#" onclick="PZ.talk.more=!PZ.talk.more;pzRender();return false">' + (T.more ? "Less" : "More") + '</a>' : "") + '</div>';
+  if (qs.length) {
+    h += '<div class="pz-mut pz-tk-prog">' + done + ' of ' + qs.length + ' answered</div><div class="pz-tk-done">';
+    qs.forEach(function (q, i) {
+      var v = String(T.ans[i] || "").trim(); if (i === cur || !T.seen[i]) return;
+      h += '<button type="button" class="pz-tk-line" onclick="PZ.talk.cur=' + i + ';pzRender()"><span>' + esc(q.length > 34 ? q.slice(0, 32) + "…" : q) + '</span>' + (v ? '<b>' + esc(v.length > 22 ? v.slice(0, 20) + "…" : v) + ' ✓</b>' : '<b class="sk">skipped</b>') + '</button>';
+    });
+    h += '</div>';
+    if (cur < qs.length) {
+      var c = ch[cur] || [];
+      h += '<div class="pz-tk-card"><div class="pz-tk-n">Question ' + (cur + 1) + ' of ' + qs.length + '</div><div class="pz-tk-qq">' + esc(qs[cur]) + '</div>' +
+        (c.length ? '<div class="pz-tk-ch">' + c.map(function (x) { return '<button type="button" class="pz-btn pz-ghost' + (T.ans[cur] === x ? " on" : "") + '" onclick="pzTalkAns(' + cur + ',this.textContent)">' + esc(x) + '</button>'; }).join("") + '</div>' : "") +
+        '<div class="pz-tk-in"><input id="pz-tk-txt" type="text" enterkeyhint="next" placeholder="' + (c.length ? "Or type it" : "Your answer") + '" value="' + esc(T.ans[cur] && c.indexOf(T.ans[cur]) < 0 ? T.ans[cur] : "") + '" onkeydown="if(event.key===\'Enter\'){event.preventDefault();pzTalkAns(' + cur + ',this.value)}">' + mic +
+        '<button type="button" class="pz-btn pz-gold" onclick="pzTalkAns(' + cur + ',document.getElementById(\'pz-tk-txt\').value)">→</button></div>' +
+        '<a href="#" class="pz-mut pz-tk-skip" onclick="pzTalkAns(' + cur + ',\'\');return false">Skip</a></div>';
+    } else h += '<div class="pz-ai pz-tk-ready">All set. Tap Generate.</div>';
+  } else if (!hasLines) h += '<div class="pz-mut" style="margin:6px 0">Tap Ask to get ' + (pzQuick() ? "3-4 quick" : "a few") + ' questions, or just Generate.</div>';
+  h += '<details class="pz-tk-notes"' + (T.notes ? " open" : "") + ' ontoggle="PZ.talk.notes=this.open"><summary>📝 Your notes' + (nLines ? " (" + nLines + ")" : "") + '</summary>' +
+    '<textarea id="pz-onotes" rows="4" placeholder="e.g. Full gut 5x8, tub to walk-in, customer buys tile" oninput="pzEst().ownerNotes=this.value;pzDirty()">' + esc(notes) + '</textarea></details>';
+  h += '<div class="pz-tk-bar">' +
+    '<label class="pz-btn pz-ghost pz-tk-ph" aria-label="Add site photo">📷' + (sitePh ? '<small>' + sitePh + '</small>' : "") + '<input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="pzTalkPhoto(this)"></label>' +
+    '<button type="button" class="pz-btn pz-ghost" id="pz-askbtn" onclick="pzAskEstimator()">' + (qs.length ? "Ask again" : "Ask") + '</button>' +
+    (qs.length && done < qs.length ? '<button type="button" class="pz-btn pz-ghost pz-tk-def" onclick="PZ.talk.defaults=true;' + (hasLines ? "pzTalkCommit();pzRegenerate()" : "pzTalkCommit();pzSaveNow().then(function(){pzGenerate()})") + '">Defaults</button>' : "") +
+    (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzTalkCommit();pzRegenerate()">↻ Regenerate</button>'
+              : '<button type="button" class="pz-btn pz-gold" onclick="pzTalkCommit();pzSaveNow().then(function(){pzGenerate()})">Generate</button>') +
+    '</div><span id="pz-gen" class="pz-mut"></span></div>';
+  return h;
+}
+function pzTalkAns(i, v) {
+  var T = pzTalkState(), qs = (currentRecord.v5Ask && currentRecord.v5Ask.questions) || [];
+  T.ans[i] = String(v || "").trim(); T.seen[i] = true;
+  var nx = qs.length; for (var j = i + 1; j < qs.length; j++) if (!T.seen[j]) { nx = j; break; }
+  T.cur = nx; pzRender();
+  var el = document.getElementById("pz-tk-txt"); if (el && !((currentRecord.v5Ask.choices || [])[nx] || []).length) el.focus({ preventScroll: true });
+}
+function pzTalkMic() {
+  var S = window.SpeechRecognition || window.webkitSpeechRecognition, inp = document.getElementById("pz-tk-txt");
+  if (!S || !inp) return;
+  var rec = new S(); rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
+  var b = document.querySelector(".pz-tk-mic"); if (b) b.classList.add("on");
+  rec.onresult = function (ev) { inp.value = (inp.value ? inp.value + " " : "") + ev.results[0][0].transcript; };
+  rec.onerror = function (ev) { toast("Mic: " + (ev.error || "not available"), true); };
+  rec.onend = function () { if (b) b.classList.remove("on"); };
+  try { rec.start(); } catch (e) { toast("Mic not available", true); }
+}
+/* Site photos: internal only (estimate.sitePhotos), read by the estimator, never shown to the customer. */
+async function pzTalkPhoto(inp) {
+  var r = currentRecord; if (!r) return;
+  r.estimate = r.estimate || {};
+  var mine = Array.isArray(r.estimate.sitePhotos) ? r.estimate.sitePhotos : [];
+  var files = Array.prototype.slice.call((inp && inp.files) || []).slice(0, Math.max(0, 6 - mine.length));
+  if (!files.length) { toast("Max 6 site photos", true); return; }
+  for (var i = 0; i < files.length; i++) {
+    try {
+      var data = await new Promise(function (ok, bad) {
+        var fr = new FileReader(); fr.onerror = bad;
+        fr.onload = function (ev) {
+          var img = new Image(); img.onerror = bad;
+          img.onload = function () {
+            var w = img.width, h = img.height; if (w > 1200) { h = Math.round(h * 1200 / w); w = 1200; }
+            var c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h);
+            ok(c.toDataURL("image/jpeg", 0.8));
+          };
+          img.src = ev.target.result;
+        };
+        fr.readAsDataURL(files[i]);
+      });
+      mine.push({ name: files[i].name, data: data, at: new Date().toISOString() });
+    } catch (e) { toast("Could not add " + files[i].name, true); }
+  }
+  r.estimate.sitePhotos = mine; if (inp) inp.value = "";
+  pzDirty(); pzRender(); toast(mine.length + " site photo" + (mine.length > 1 ? "s" : "") + " - the estimator will look at them");
 }
 function pzSetTotal() { if (!currentRecord) return; clearTimeout(PZ.saveT); openSetTotalModal(); }
 function pzRender() {
