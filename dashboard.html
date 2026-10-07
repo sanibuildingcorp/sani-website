@@ -209,6 +209,9 @@ body {
 
 /* ============ LIST ============ */
 .list-section { padding: 24px; }
+.sbc-search{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;margin:0 0 10px;background:var(--bg,#f3f5f8);padding:6px 0}
+.sbc-search input{flex:1;min-width:0;font-size:16px;padding:11px 14px;border:1px solid var(--line-soft,#d5d9e0);border-radius:12px;background:var(--card,#fff);color:inherit}
+.sbc-search button{width:40px;height:40px;border:0;border-radius:10px;background:var(--card-2,#eef0f4);font-size:20px;cursor:pointer;color:inherit}
 .list-header {
   display: flex;
   align-items: center;
@@ -2833,6 +2836,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
   <div class="tabs-row" id="tabs-row"></div>
 
   <div class="list-section">
+    <div class="sbc-search"><input id="sbc-q" type="search" inputmode="search" autocomplete="off" placeholder="🔍 Search name, phone, address, project…" oninput="sbcQ=this.value;renderList()"><button type="button" id="sbc-qx" aria-label="Clear" onclick="var i=document.getElementById('sbc-q');i.value='';sbcQ='';renderList();i.focus()">×</button></div>
     <div id="list-host"></div>
   </div>
 </div>
@@ -3436,8 +3440,25 @@ async function deleteVisit(id){
   renderTabs(); renderVisitsTab();
 }
 
+var sbcQ = "";
 function renderList() {
   const host = document.getElementById("list-host");
+  /* Search: "i need add search bar for easy found project". Typing searches
+     EVERY project (all tabs, completed too) by name, phone, email, address,
+     project title, service, ref or notes. */
+  var qx = document.getElementById("sbc-qx"); if (qx) qx.style.display = sbcQ.trim() ? "" : "none";
+  if (sbcQ.trim()) {
+    var words = sbcQ.toLowerCase().trim().split(/\s+/), qd = sbcQ.replace(/\D/g, "");
+    var hits = estimates.filter(function (e) {
+      var c = e.customer || {}, q = e.request || {}, es = e.estimate || {};
+      var hay = [c.name, c.email, c.phone, c.address, q.address, q.service, (q.selectedServices || []).join(" "), q.description, es.projectTitle, e.ref, e.status].join(" ").toLowerCase();
+      var digits = String(c.phone || "").replace(/\D/g, "");
+      return words.every(function (w) { return hay.indexOf(w) >= 0; }) || (qd.length >= 3 && digits.indexOf(qd) >= 0);
+    });
+    if (!hits.length) { host.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><h3>No project matches “' + esc(sbcQ.trim()) + '”</h3><p>Try a last name, street or the last 4 of the phone.</p></div>'; return; }
+    host.innerHTML = '<div class="list-header"><div class="list-count">' + hits.length + ' found · all tabs</div></div>' + hits.map(sbcCardHtml).join("");
+    sbcWireCards(host); return;
+  }
 
   if (activeTab === "visits") {
     renderVisitsTab();
@@ -3483,7 +3504,10 @@ function renderList() {
     '<div class="list-header">' +
       '<div class="list-count">' + filtered.length + ' ' + (filtered.length === 1 ? "estimate" : "estimates") + '</div>' +
     '</div>' +
-    filtered.map(function(e) {
+    filtered.map(sbcCardHtml).join("");
+  sbcWireCards(host);
+}
+function sbcCardHtml(e) {
       const title = (e.estimate && e.estimate.projectTitle) || (e.request && e.request.service) || "Untitled";
       const cust = (e.customer && e.customer.name) || "—";
       return '<div class="est-card" data-ref="' + esc(e.ref) + '">' +
@@ -3515,9 +3539,9 @@ function renderList() {
           '<div class="est-total">' + fmt((e.estimate && e.estimate.grandTotal) || 0) + '</div>' +
         '</div>' +
       '</div>';
-    }).join("");
-
-  document.querySelectorAll(".est-card").forEach(function(card) {
+}
+function sbcWireCards(host) {
+  host.querySelectorAll(".est-card").forEach(function(card) {
     card.addEventListener("click", function() { openEdit(card.dataset.ref); });
   });
 }
