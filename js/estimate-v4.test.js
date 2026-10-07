@@ -58,10 +58,10 @@ const old = est(); W.applyScopeToEstimate(old, { services: [{ service: "Bathroom
 ok("a writer answer without the new parts leaves docVersion unset", old.docVersion === undefined && old.overview === undefined);
 
 console.log("\n3. Every page shows it\n");
-ok("render: docVersion 4 -> renderV8, otherwise exactly as before", /if\(isV7\(e\)&&isV4\(e\)\)renderV8\(r\);else if\(isV7\(e\)\)renderV7\(r\);else renderLegacy\(r\);/.test(Q));
-const v8 = Q.slice(Q.indexOf("function renderV8("), Q.indexOf("\n", Q.indexOf("function renderV8(")));
-ok("the new page order: price, what we will do, steps, timeline, who supplies, finishes, included, what we need, price basis, then approve", ["${overviewCard(e)", "${stepsCard(e)}", "${scheduleCard(e)}", "${whoCard(e,sv)}", "${productsCard(e)}", "${projectCard(e)}", "${needsCard(e)}", "${basisCard(e)}", "actionHtml("].reduce((p, k) => { const i = v8.indexOf(k); return p !== -1 && i > p ? i : -1; }, 0) > 0 && v8.indexOf('class="card prices"') < v8.indexOf("${overviewCard(e)"));
-ok("customer supplies are shown once, in Who supplies what (not again on each card)", v8.indexOf("'Customer supplies','sup'") === -1);
+ok("render: docVersion 4 -> the Perplexity customer page (renderPZ), otherwise exactly as before", /if\(isV7\(e\)&&isV4\(e\)\)renderPZ\(r\);else if\(isV7\(e\)\)renderV7\(r\);else renderLegacy\(r\);/.test(Q));
+const v8 = Q.slice(Q.indexOf("function renderPZ("), Q.indexOf("window.qzOpen=", Q.indexOf("function renderPZ(")));
+ok("the page order (the design): price, what we will do, steps, timeline, who supplies, what will be installed, included, not included, what we need, price basis, payment, promise, talk to us", ["Your price", "What we will do", "How the work will go", ">Timeline<", "Who supplies what", "What will be installed", "What is included", ">Not included<", "What we need from you", "This price is based on", "Payment schedule", "Our promise", "Talk to us"].reduce((p, k) => { const i = v8.indexOf(k); return p !== -1 && i > p ? i : -1; }, 0) > 0);
+ok("customer supplies are shown once, in Who supplies what (not again per service)", v8.indexOf("customerSupplies,'sup'") === -1 && v8.indexOf("'Customer supplies'") === -1);
 const sow = scopeOnlyView({ estimate: Object.assign(est(), { docVersion: 4, overview: "We will refresh your bathroom.", workSteps: [{ title: "A", text: "B." }], saniSupplies: ["Toilet"], customerNeeds: ["Clear the room."], priceBasis: ["5x8 ft"], schedule: scheduleOf(bath) }) });
 ok("the no-price page keeps overview, steps, Sani supplies, what we need and the timeline - and no money", sow.estimate.docVersion === 4 && sow.estimate.workSteps.length === 1 && sow.estimate.saniSupplies.length === 1 && sow.estimate.schedule.workDays === 2.5 && findMoney(sow.estimate).length === 0);
 const { buildScopePdf } = require("../netlify/functions/lib/scope-pdf");
