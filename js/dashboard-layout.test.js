@@ -121,6 +121,17 @@ console.log("\n3b. The customer card\n");
   ok("no phone or email: those buttons are greyed out, not broken links", /Sent/.test(bare) && /pointer-events:none">📞 Call/.test(bare) && !/href="tel:"/.test(bare));
 }
 
+console.log("\n3c. ✕ on every finish card\n");
+{
+  const fc = { console, JSON, String }; vm.createContext(fc);
+  vm.runInContext("function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;')}\n" + fn(pz, "pzFDel"), fc);
+  const x = vm.runInContext("pzFDel(\"pzDelLine('materials',3)\", \"Toilet\")", fc);
+  ok("\"i added toilet but i can't delete\": ✕ asks, then removes the line", /class="pz-fdel"/.test(x) && /confirm\(&quot;Remove Toilet\?&quot;\)\)pzDelLine\('materials',3\)/.test(x));
+  const fin = fn(pz, "pzFinishesHtml");
+  ok("...on Sani-supplied, customer-supplied and AI-listed customer items alike", /pzFDel\("pzDelLine\('materials',"/.test(fin) && /pzFDel\("pzDelParked\("/.test(fin) && /pzFDel\("pzDropSupplied\("/.test(fin));
+  ok("a name with a quote cannot break the button", /Remove Kid&#39;s sink/.test(vm.runInContext("pzFDel('x()', \"Kid's sink\")", fc)));
+}
+
 console.log("\n4. Price book (his own templates and products)\n");
 const t = PB.cleanTemplate({ name: " Bathroom refresh ", lines: [{ kind: "labor", item: "Protect floors", qty: 3, unit: "h", rate: 70 }, { kind: "materials", item: "Toilet", qty: 1, unit: "ea", rate: 199 }, { item: "" }], included: ["a", ""], excluded: ["b"], steps: [{ title: "Protect", text: "x" }] });
 ok("a template keeps his lines, wording and steps, nothing else", t.name === "Bathroom refresh" && t.lines.length === 2 && t.lines[1].kind === "materials" && t.included.length === 1 && t.steps.length === 1);
