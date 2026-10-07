@@ -75,7 +75,13 @@ function customerTotals(estimate, record) {
      fallback is labor-only, which is what normalizeDisplayFlags() in
      dashboard.html also picks - the two must not disagree. */
   let showLabor, showMaterials;
-  if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
+  if (/^v5/.test(String(est.engine || "")) && !est.displayByHand) {
+    /* v5 estimates: ONE total for the whole job (labor + materials). New records
+       are created with labor-only flags, which silently dropped the materials
+       from the customer's price. Only his own tick (displayByHand) changes this. */
+    showLabor = false;
+    showMaterials = false;
+  } else if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
     showLabor = est.showLaborCost !== false;
     showMaterials = est.showMaterialsCost === true;
   } else if (est.displayMode === "total") {

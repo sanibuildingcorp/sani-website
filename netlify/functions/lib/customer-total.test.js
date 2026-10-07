@@ -142,3 +142,11 @@ if (failures) {
   console.log("\n  The pages and netlify/functions/lib/customer-total.js have DRIFTED.");
   process.exit(1);
 }
+
+/* v5 estimates with no display flags: the customer pays labor + materials, not labor only. */
+{
+  const { customerTotals: ct } = require('./customer-total');
+  const r = ct({ engine: 'v5.0-draft-2026-10-06', markupPct: 50, labor: [{ qty: 1, rate: 100 }], materials: [{ qty: 1, rate: 100 }] }, {});
+  require('assert').strictEqual(r.customerTotal, 300);
+  console.log('ok - v5 estimate: customer total includes materials');
+}

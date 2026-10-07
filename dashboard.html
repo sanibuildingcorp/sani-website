@@ -3137,7 +3137,9 @@ function calcTotal(est) {
 function calcCustomerView(est) {
   const t = calcTotal(est);
   let showLabor, showMaterials;
-  if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
+  if (/^v5/.test(String(est.engine || "")) && !est.displayByHand) {
+    showLabor = false; showMaterials = false;   /* v5: one total, labor + materials */
+  } else if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
     showLabor = est.showLaborCost !== false;
     showMaterials = est.showMaterialsCost === true;
   } else if (est.displayMode === "total") {
@@ -5574,6 +5576,7 @@ function copyMaterialsList() {
 /* ===== CHECKBOX TOGGLE ===== */
 function toggleCv(kind) {
   if (!currentRecord || !currentRecord.estimate) return;
+  if (kind === "labor" || kind === "materials") currentRecord.estimate.displayByHand = true;
   if (kind === "labor") {
     currentRecord.estimate.showLaborCost = !(currentRecord.estimate.showLaborCost !== false);
   } else if (kind === "materials") {
@@ -6470,7 +6473,7 @@ function applyGeneratedEstimate(data, serverMerged) {
      ("ones generate keeps all check box unchecked"): do not put the old
      boxes back. */
   if (data.estimate && data.estimate.viewReset === true) {
-    ["showLaborCost", "showMaterialsCost", "showSectionSubtotals", "showLaborLines", "showMaterialLines", "showLaborLinePrices", "showMaterialLinePrices"].forEach(function (k) { delete keepFields[k]; });
+    ["showLaborCost", "showMaterialsCost", "displayByHand", "showSectionSubtotals", "showLaborLines", "showMaterialLines", "showLaborLinePrices", "showMaterialLinePrices"].forEach(function (k) { delete keepFields[k]; });
   }
   Object.keys(keepFields).forEach(function (k) {
     currentRecord.estimate[k] = keepFields[k];
@@ -6634,7 +6637,7 @@ var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   "manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished",
   "customerViewPublishedVersion",
   // Customer View Mode choices
-  "showLaborCost", "showMaterialsCost", "showSectionSubtotals",
+  "showLaborCost", "showMaterialsCost", "displayByHand", "showSectionSubtotals",
   "showLaborLines", "showMaterialLines",
   "showLaborLinePrices", "showMaterialLinePrices",
   // Manually set money + hand-built extras
