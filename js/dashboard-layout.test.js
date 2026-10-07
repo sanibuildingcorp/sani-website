@@ -132,6 +132,16 @@ console.log("\n3b2. Every priced line is on a card\n");
   ok("...a section matches its own card whatever the capitals; loose lines go on the first card; each line on one card only", vm.runInContext("pzLinesOf('Painting').length", c4) === 1 && vm.runInContext("pzLinesOf('Bathroom').length", c4) === 2);
 }
 
+console.log("\n3b3. The customer's photos and files are on the Request card\n");
+{
+  const c5 = { console, String }; vm.createContext(c5);
+  vm.runInContext("function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;')}\n" + ["reqFileUrl", "reqIsDoc", "reqDocTile", "reqPhotosHtml"].map((n) => fn(D, n)).join("\n") + "\n" + fn(pz, "pzReqPhotos") +
+    "\nvar currentRecord={request:{photos:[{data:'https://x/p1.jpg',slot:'wide'},{data:'https://x/plan.pdf',name:'Plan.pdf',kind:'file'}]}};", c5);
+  const h = vm.runInContext("pzReqPhotos()", c5);
+  ok("\"photos or files uploaded by customer doesn't show\": the photo shows and opens large, the PDF opens", /<img src="https:\/\/x\/p1\.jpg"[^>]*openLightbox/.test(h) && /openReqFile\(1\)[\s\S]*Plan\.pdf/.test(h));
+  ok("...on the Request card, above the AI read; nothing when there are none", /'<\/p>' \+ pzReqPhotos\(\) \+ aiRead/.test(fn(pz, "pzRender")) && vm.runInContext("currentRecord={request:{}};pzReqPhotos()", c5) === "");
+}
+
 console.log("\n3c. ✕ on every finish card\n");
 {
   const fc = { console, JSON, String }; vm.createContext(fc);

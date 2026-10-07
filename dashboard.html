@@ -13342,6 +13342,7 @@ ul.pz-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;
 .pz-navy{background:#0f1f3a;color:#fff}.pz-chp{background:#ece6f7;color:#5b3f99;cursor:pointer}
 .pz-lnk{background:none;border:0;color:#5d6878;font-size:12px;text-decoration:underline;cursor:pointer;padding:0 2px}
 #pz-chat .cnv-note{font-size:13px;color:#5d6878}#pz-chat .cnv-note.bad{color:#c0392b}#pz-chat .cnv-note.good{color:#1c6547}
+#edit-card .pz-photos{margin:0 0 8px;display:flex;gap:8px}#edit-card .pz-photos img{width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid #e3e6ec;cursor:pointer}
 .pz-att{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.pz-att span{background:#eef2f9;border-radius:999px;padding:3px 9px;font-size:12px}
 .pz-menu{position:fixed;inset:0;z-index:40;display:none;background:#0005}.pz-menu.on{display:block}
 .pz-menu .pz-sheet{position:absolute;left:10px;right:10px;bottom:70px;background:#fff;border-radius:14px;padding:8px;box-shadow:0 8px 30px #0004;display:grid;gap:4px}
@@ -13554,7 +13555,7 @@ function pzRender() {
     : '<div class="pz-ai">No prices yet. Add a service and your lines below, or tap one of your price book packages.</div>';
 
   var html = pzCustomerHtml(r) + '<div class="pz-c" id="pz-s1"><div class="pz-row"><h2>1 · Request</h2><span class="pz-mut">' + photos + ' photo' + (photos === 1 ? '' : 's') + ' · ' + msgs + ' email' + (msgs === 1 ? '' : 's') + '</span></div>' +
-    '<p style="margin:0 0 8px">' + esc(q.description ? '"' + q.description + '"' : (q.service || "")) + '</p>' + aiRead + '</div>' +
+    '<p style="margin:0 0 8px">' + esc(q.description ? '"' + q.description + '"' : (q.service || "")) + '</p>' + pzReqPhotos() + aiRead + '</div>' +
     pzChatHtml(r);
 
   /* 2 · Scope & Price */
@@ -13656,6 +13657,14 @@ function pzCustomerHtml(r) {
     '<div class="pz-cact">' + btn("tel:" + tel, "📞 Call", !!tel) + btn("sms:" + tel, "💬 Text", !!tel) + btn("mailto:" + (c.email || ""), "✉️ Email", !!c.email) + btn("https://maps.google.com/?q=" + encodeURIComponent(addr), "📍 Map", !!addr, true) + '</div>' +
     '<div class="pz-ckv">' + rows.map(function (x) { return '<span>' + x[0] + '</span><span>' + esc(String(x[1]).trim()) + '</span>'; }).join("") + '</div>' +
     '<button type="button" class="pz-btn pz-ghost pz-sm" style="margin-top:8px" onclick="sbcEditCustomer()">Edit details</button></div>';
+}
+/* "the photos or files uploaded by customer doesn't shows in my dashboard":
+   the card counted them but showed none. The same tiles as the old screen
+   (reqPhotosHtml): a photo opens large, a PDF opens in a new tab. Files sent
+   later in a message are in the Conversation card, inside that message. */
+function pzReqPhotos() {
+  var h = typeof reqPhotosHtml === "function" ? reqPhotosHtml() : "";
+  return h ? '<div class="cust-photos pz-photos" id="pz-photos">' + h + '</div>' : "";
 }
 function pzMenu(on) { var m = document.getElementById("pz-menu"); if (m) m.classList.toggle("on", !!on); }
 function pzJump(id) { var el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); var t = document.getElementById("pz-mtop"); if (t) t.classList.remove("x"); }
