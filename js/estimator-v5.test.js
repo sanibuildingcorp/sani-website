@@ -126,3 +126,11 @@ console.log('toilet', toilet.totals, '\ngut', gut.totals, gut.timelineText, '\nv
   as.ok(e.warnings.some((w) => /Needs your price: Hang 4 shelves/.test(w)));
   console.log('ok - extra handyman work becomes a "Needs your price" line, not deleted');
 }
+{
+  const R5 = require('../netlify/functions/lib/job-reader-v5'), E9 = require('../netlify/functions/lib/estimate-engine-v5'), as = require('assert');
+  const e = E9.build(R5.validate({ summary: 'We replace the toilet.', services: [{ name: 'Bathroom', items: [{ id: 'toilet_flushometer', qty: 1 }] }], site: { elevator: false, walkup: true }, facts: [{ text: 'One toilet in one bathroom', effect: 'qty' }] }, {}));
+  as.strictEqual(e.overview, 'We replace the toilet.');
+  as.ok(e.saniSupplies.length >= 2 && e.saniSupplies.some((x) => /bowl/i.test(x)));
+  as.ok(e.priceBasis.some((x) => /walk-up/i.test(x)) && e.priceBasis.includes('One toilet in one bathroom'));
+  console.log('ok - customer page fields (overview, Sani supplies, based on) come from the new estimate');
+}
