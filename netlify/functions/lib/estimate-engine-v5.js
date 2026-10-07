@@ -82,7 +82,13 @@ function build(reading, opts) {
     services.push({ name, included: uniq(inc), supplied: [], excluded: uniq(not).slice(0, 5) });
   });
 
-  const smallWork = hours < 6;   // under ~6 crew-hours: one light setup line, not full protection + cleanup
+  /* A SMALL JOB STAYS SMALL. Full protection + daily cleanup only when the job has
+     real renovation work (demo, tile, plumbing rough-in, flooring, big paint, cabinets)
+     or runs past ~2 crew-days. A toilet, vanity, fan or repair gets one light setup line. */
+  const MAJOR = new Set(['bath_demo_gut', 'bath_rough_plumb', 'bath_backer', 'waterproof', 'wall_tile', 'floor_tile', 'floor_heat', 'skim', 'floor_remove', 'lvp', 'cabinet_box', 'backsplash']);
+  const allIds = svcList.flatMap((s) => (s.items || []).map((i) => i.id));
+  const bigPaint = svcList.some((s) => (s.items || []).some((i) => /^paint_(walls|ceiling)$/.test(i.id) && Number(i.qty) > 400));
+  const smallWork = !allIds.some((id) => MAJOR.has(id)) && !bigPaint && hours < 32;
   if (svcList.length) (smallWork ? [{ id: 'setup_small', qty: 1 }] : projectLines).forEach((p) => addItem(services[0].name, p, true));
   if (multi) services.push({ name: 'Whole Project', included: ['Protection of floors, hallway and elevator', 'Daily cleanup, debris removal and final cleaning'], supplied: [], excluded: [] });
 

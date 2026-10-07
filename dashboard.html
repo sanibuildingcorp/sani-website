@@ -13583,6 +13583,9 @@ function pzRender() {
   });
   html += '<div class="pz-c" style="text-align:center"><button type="button" class="pz-btn pz-ghost" onclick="pzAddService()">+ Add service</button></div>';
 
+  /* 📸 Photos the customer sees on the estimate page (quote.html shows up to 6:
+     the customer's own photos he did not hide, then the ones he added here). */
+  html += pzPhotosHtml(r);
   /* 3 · Timeline */
   var ed = e.scheduleEdit || {}, sch = pzScheduleOf(e);
   var crewNow = ed.crew || (sch ? sch.crew : 2), dayNow = ed.dailyHours || (sch ? sch.dailyHours : 8);
@@ -13942,6 +13945,72 @@ function pzMarkup(v) { pzEst().markupPct = Number(v) || 0; var l = document.getE
 function pzTerm(k, v) { pzTerms()[k] = v; pzRefresh(); pzDirty(); }
 
 /* ── save: every change saves itself (the customer keeps the version you sent until you Send) ── */
+function pzPhotosHtml(r) {
+  var e = (r && r.estimate) || {}, rq = (r && r.request) || {};
+  var off = Array.isArray(e.hiddenQuotePhotos) ? e.hiddenQuotePhotos : [];
+  var isDoc = function (x) { return x && (x.kind === "file" || /\.pdf(?:[?#]|$)/i.test(String(x.data)) || /^data:application\/pdf/i.test(String(x.data))); };
+  var cust = (Array.isArray(rq.photos) ? rq.photos : []).filter(function (x) { return x && x.data && !isDoc(x); });
+  var mine = Array.isArray(e.quotePhotos) ? e.quotePhotos : [];
+  var shown = cust.filter(function (x) { return off.indexOf(x.data) === -1; }).length + mine.length;
+  var tile = function (src, inner) { return '<div style="position:relative;width:84px;height:84px;border-radius:8px;overflow:hidden;border:1px solid var(--line,#ddd);flex:0 0 auto"><img src="' + esc(src) + '" style="width:100%;height:100%;object-fit:cover" alt="">' + inner + '</div>'; };
+  var custTiles = cust.map(function (x, i) {
+    var hid = off.indexOf(x.data) !== -1;
+    return tile(x.data, '<button type="button" onclick="pzPhotoHide(' + i + ')" style="position:absolute;left:0;right:0;bottom:0;border:0;padding:3px 0;font-size:11px;background:' + (hid ? 'rgba(120,120,120,.85)' : 'rgba(20,40,80,.85)') + ';color:#fff">' + (hid ? 'Hidden' : 'Shown') + '</button>' + (hid ? '<div style="position:absolute;inset:0;background:rgba(255,255,255,.55)"></div>' : ''));
+  }).join("");
+  var myTiles = mine.map(function (x, i) {
+    return tile(x.data, '<button type="button" onclick="pzPhotoDel(' + i + ')" title="Remove" style="position:absolute;top:2px;right:2px;border:0;border-radius:50%;width:22px;height:22px;background:rgba(0,0,0,.6);color:#fff;font-size:13px;line-height:22px;padding:0">✕</button>');
+  }).join("");
+  return '<div class="pz-c" id="pz-photos"><div class="pz-row"><h2 style="margin:0">📸 Photos on the estimate</h2><span class="pz-mut">' + shown + ' shown' + (shown > 6 ? ' (customer page shows 6)' : '') + '</span></div>' +
+    '<div class="pz-mut" style="margin:2px 0 8px">The customer sees these on the estimate page. Add your own (samples, finishes, the finished look) or hide one of theirs.</div>' +
+    (cust.length ? '<div class="pz-ey">Customer\'s photos · tap to show or hide</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px">' + custTiles + '</div>' : '') +
+    '<div class="pz-ey">Your photos</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px">' + myTiles +
+    (mine.length < 6 ? '<label style="width:84px;height:84px;flex:0 0 auto;border:2px dashed var(--line,#ccc);border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;cursor:pointer" class="pz-mut">+ Add<br>photos<input type="file" accept="image/*" multiple style="display:none" onchange="pzPhotoAdd(this)"></label>' : '') +
+    '</div></div>';
+}
+/* Same compression as the old screen (1200px JPEG), so the record stays small. */
+async function pzPhotoAdd(inp) {
+  var r = currentRecord; if (!r) return;
+  r.estimate = r.estimate || {};
+  var mine = Array.isArray(r.estimate.quotePhotos) ? r.estimate.quotePhotos : [];
+  var files = Array.prototype.slice.call((inp && inp.files) || []).slice(0, 6 - mine.length);
+  for (var i = 0; i < files.length; i++) {
+    try {
+      var data = await new Promise(function (ok, bad) {
+        var fr = new FileReader(); fr.onerror = bad;
+        fr.onload = function (ev) {
+          var img = new Image(); img.onerror = bad;
+          img.onload = function () {
+            var w = img.width, h = img.height; if (w > 1200) { h = Math.round(h * 1200 / w); w = 1200; }
+            var c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h);
+            ok(c.toDataURL("image/jpeg", 0.82));
+          };
+          img.src = ev.target.result;
+        };
+        fr.readAsDataURL(files[i]);
+      });
+      mine.push({ name: files[i].name, data: data });
+    } catch (e) { toast("Could not add " + files[i].name, true); }
+  }
+  r.estimate.quotePhotos = mine;
+  if (inp) inp.value = "";
+  pzPhotosRefresh();
+}
+function pzPhotoDel(i) {
+  var e = currentRecord && currentRecord.estimate; if (!e || !Array.isArray(e.quotePhotos)) return;
+  e.quotePhotos.splice(i, 1); pzPhotosRefresh();
+}
+function pzPhotoHide(i) {
+  var r = currentRecord, ph = ((r && r.request && r.request.photos) || []).filter(function (x) { return x && x.data && x.kind !== "file" && !/\.pdf(?:[?#]|$)/i.test(String(x.data)) && !/^data:application\/pdf/i.test(String(x.data)); })[i];
+  if (!ph) return; r.estimate = r.estimate || {};
+  var off = Array.isArray(r.estimate.hiddenQuotePhotos) ? r.estimate.hiddenQuotePhotos : [];
+  var k = off.indexOf(ph.data); if (k === -1) off.push(ph.data); else off.splice(k, 1);
+  r.estimate.hiddenQuotePhotos = off; pzPhotosRefresh();
+}
+function pzPhotosRefresh() {
+  var el = document.getElementById("pz-photos");
+  if (el) el.outerHTML = pzPhotosHtml(currentRecord);
+  pzDirty();
+}
 function pzDirty() {
   clearTimeout(PZ.saveT);
   var s = document.getElementById("pz-saved"); if (s) s.textContent = "Saving…";

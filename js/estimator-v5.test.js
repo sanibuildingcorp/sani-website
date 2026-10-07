@@ -110,3 +110,19 @@ console.log('toilet', toilet.totals, '\ngut', gut.totals, gut.timelineText, '\nv
   as.ok(/flush/i.test(R2.prompt({}, null)) && /toilet_flushometer/.test(R2.prompt({}, null)));
   console.log('ok - walk-up with no floor adds one floor of carrying; reader told to look for flush valves');
 }
+{
+  const R3 = require('../netlify/functions/lib/job-reader-v5'), E7 = require('../netlify/functions/lib/estimate-engine-v5'), as = require('assert');
+  const rd = R3.validate({ services: [{ name: 'Bathroom', items: [{ id: 'toilet_flushometer', qty: 1 }, { id: 'handyman_hour', qty: 2 }] }], site: { elevator: false, walkup: true } }, {});
+  as.ok(!rd.services[0].items.some((i) => i.id === 'handyman_hour'), 'no padding hours');
+  const e = E7.build(rd);
+  as.ok(e.labor.some((l) => l.bookId === 'setup_small') && !e.labor.some((l) => l.bookId === 'protect' || l.bookId === 'cleanup'), 'flush-valve toilet stays a small job');
+  console.log('ok - flush-valve toilet on a walk-up stays small: no padding hours, no full protection/cleanup ($' + e.totals.cost + ' cost)');
+}
+{
+  const R4 = require('../netlify/functions/lib/job-reader-v5'), E8 = require('../netlify/functions/lib/estimate-engine-v5'), as = require('assert');
+  const rd = R4.validate({ services: [{ name: 'Painting', items: [{ id: 'paint_walls', qty: 350 }, { id: 'handyman_hour', qty: 2, note: 'Hang 4 shelves' }] }] }, {});
+  const e = E8.build(rd);
+  as.ok(e.labor.some((l) => l.item === 'Hang 4 shelves' && l.needsPrice && l.rate === 0), 'extra work kept as Needs your price');
+  as.ok(e.warnings.some((w) => /Needs your price: Hang 4 shelves/.test(w)));
+  console.log('ok - extra handyman work becomes a "Needs your price" line, not deleted');
+}
