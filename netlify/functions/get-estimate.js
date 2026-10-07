@@ -95,8 +95,10 @@ exports.handler = async function (event) {
       if (!isDraftPreview && !everSent(data)) hideUnsentEstimate(view);
       /* Only what was said after the send - see lib/thread.js customerThread. */
       view.thread = thread.customerThread(data);
-      /* Rate-limiter bookkeeping is ours, not theirs. */
+      /* Rate-limiter bookkeeping is ours, not theirs; so is what the AI
+         read in the chat (chat-facts-background.js). */
       delete view.threadRate;
+      delete view.chatFacts;
       /* The raw frozen version is already applied above; sending it as well
          would hand the customer every alternative the gate just removed. */
       delete view.sentVersion;
@@ -128,6 +130,7 @@ function scopeView(data) {
   });
   delete view.threadRate;
   delete view.sentVersion;
+  delete view.chatFacts;
   return scopeOnlyView(view);
 }
 exports.scopeView = scopeView;

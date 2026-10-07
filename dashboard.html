@@ -4050,7 +4050,7 @@ function askCopyToCustomer(i) {
   var box = document.getElementById("cnv-text");
   if (!box) { toast("Open the Conversation section first", true); return; }
   box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + aiPlain(m.text);
-  var sec = document.getElementById("cnv-section");
+  var sec = document.getElementById("pz-chat") || document.getElementById("cnv-section");
   if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "center" });
   box.focus();
   toast("Copied into the customer message — read it, then press Send reply");
@@ -4149,7 +4149,7 @@ function aiCopyToCustomer(i) {
   if (!box) { toast("Open an estimate first", true); return; }
   box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + aiPlain(m.text);
   aiClose();
-  var sec = document.getElementById("cnv-section");
+  var sec = document.getElementById("pz-chat") || document.getElementById("cnv-section");
   if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "center" });
   box.focus();
   toast("Copied into the customer message — read it, then press Send reply");
@@ -4737,7 +4737,7 @@ async function aiExec(a, log, render) {
     if (!box) return "Open the estimate first, then ask me for the draft again.";
     box.value = (box.value ? box.value.replace(/\s*$/, "") + "\n\n" : "") + String(a.text || "");
     aiClose();
-    var sec = document.getElementById("cnv-section");
+    var sec = document.getElementById("pz-chat") || document.getElementById("cnv-section");
     if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "center" });
     box.focus();
     toast("The draft is in the customer message — read it, then press Send reply");
@@ -4802,7 +4802,7 @@ async function sendThreadReply() {
     const res = await fetch("/.netlify/functions/thread-reply", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-sbc-key": key },
-      body: JSON.stringify({ ref: currentRecord.ref, text: text }),
+      body: JSON.stringify({ ref: currentRecord.ref, text: text, attachments: (typeof cnvAttachments !== "undefined" && cnvAttachments.length) ? cnvAttachments : undefined }),
     });
     const data = await res.json();
     if (res.status === 401) {
@@ -4816,6 +4816,7 @@ async function sendThreadReply() {
     if (keyRow) keyRow.style.display = "none";
     if (Array.isArray(data.thread)) currentRecord.thread = data.thread;
     if (box) box.value = "";
+    if (typeof cnvAttachments !== "undefined") cnvAttachments.length = 0;
     cnvRefresh();
     renderList();
     if (data.notified) { note.className = "cnv-note good"; note.textContent = "✓ Sent — it is on their quote page and in their inbox."; }
@@ -13355,6 +13356,19 @@ ul.pz-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;
 .pz-cact{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
 .pz-cact a{text-align:center;text-decoration:none;color:#0f1f3a;border:1px solid #e3e6ec;border-radius:9px;padding:8px 2px;font-weight:700;font-size:13px}
 .pz-ckv{display:grid;grid-template-columns:90px 1fr;gap:5px 10px;font-size:14px}.pz-ckv span:nth-child(odd){color:#5d6878}
+/* The conversation card (images 00e, 00f). */
+.pz-chat{background:#f6f7fa;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;max-height:300px;overflow:auto}
+.pz-msg{max-width:85%;border-radius:12px;padding:8px 11px;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}.pz-msg.them{background:#fff;border:1px solid #e3e6ec;align-self:flex-start}.pz-msg.me{background:#0f1f3a;color:#fff;align-self:flex-end}
+.pz-mh{font-size:11px;font-weight:700;letter-spacing:.03em;color:#5d6878;margin-bottom:2px;white-space:normal}.pz-msg.me .pz-mh{color:#c9a24a}
+.pz-msg .cnv-att{margin-top:6px}.pz-msg.me .cnv-file{color:#fff}
+.pz-learn{margin-top:10px;border:1px solid #d9e2f1;background:#f2f5fa;border-radius:10px;padding:10px 12px}.pz-fact{display:flex;gap:8px;font-size:14px;padding:4px 0;align-items:flex-start;cursor:pointer}.pz-fact input{margin-top:4px}
+.pz-sugg{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.pz-sugg button{border:1px solid #e3e6ec;background:#fff;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer;text-align:left}
+#edit-card .pz-rep{width:100%;border:1px solid #e3e6ec;border-radius:8px;padding:8px;min-height:70px;margin-top:8px;display:block}
+.pz-rt{display:flex;gap:6px;flex-wrap:wrap}.pz-rt label{display:inline-block}
+.pz-navy{background:#0f1f3a;color:#fff}.pz-chp{background:#ece6f7;color:#5b3f99;cursor:pointer}
+.pz-lnk{background:none;border:0;color:#5d6878;font-size:12px;text-decoration:underline;cursor:pointer;padding:0 2px}
+#pz-chat .cnv-note{font-size:13px;color:#5d6878}#pz-chat .cnv-note.bad{color:#c0392b}#pz-chat .cnv-note.good{color:#1c6547}
+.pz-att{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.pz-att span{background:#eef2f9;border-radius:999px;padding:3px 9px;font-size:12px}
 .pz-menu{position:fixed;inset:0;z-index:40;display:none;background:#0005}.pz-menu.on{display:block}
 .pz-menu .pz-sheet{position:absolute;left:10px;right:10px;bottom:70px;background:#fff;border-radius:14px;padding:8px;box-shadow:0 8px 30px #0004;display:grid;gap:4px}
 .pz-menu .pz-sheet button{background:none;border:0;text-align:left;padding:12px;border-radius:9px;font-size:15px;font-weight:600;cursor:pointer}
@@ -13392,7 +13406,7 @@ ul.pz-chk li{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #e3e6ec;
    conversation, photos, what prices show, contract, invoice, delete) open from
    Quick actions: "AI chat" and "More tools". The estimate itself is one
    object, currentRecord.estimate; this screen edits it directly. */
-var PZ = { open: {}, secs: {}, book: null, saveT: null, saving: false, scopeTouched: false, genT: null };
+var PZ = { factsAsked: {}, factsReading: "", factsChanged: "", open: {}, secs: {}, book: null, saveT: null, saving: false, scopeTouched: false, genT: null };
 var PZ_HOUR = /^(h|hr|hrs|hour|hours|man-?hours?)$/i;
 var PZ_WAITS = [
   { re: /waterproof|membrane|redgard|kerdi/i, days: 1, label: "Waterproofing cures" },
@@ -13551,7 +13565,8 @@ function pzRender() {
     : '<div class="pz-ai"><b>AI read:</b> no estimate yet. <button type="button" class="pz-btn pz-gold pz-sm" onclick="pzGenerate()">Generate estimate</button> <span id="pz-gen" class="pz-mut"></span></div>';
 
   var html = pzCustomerHtml(r) + '<div class="pz-c" id="pz-s1"><div class="pz-row"><h2>1 · Request</h2><span class="pz-mut">' + photos + ' photo' + (photos === 1 ? '' : 's') + ' · ' + msgs + ' email' + (msgs === 1 ? '' : 's') + '</span></div>' +
-    '<p style="margin:0 0 8px">' + esc(q.description ? '"' + q.description + '"' : (q.service || "")) + '</p>' + aiRead + '</div>';
+    '<p style="margin:0 0 8px">' + esc(q.description ? '"' + q.description + '"' : (q.service || "")) + '</p>' + aiRead + '</div>' +
+    pzChatHtml(r);
 
   /* 2 · Scope & Price */
   var book = (PZ.book && PZ.book.templates) || [];
@@ -13601,7 +13616,12 @@ function pzRender() {
   html += '<div class="pz-c" id="pz-s5"><h2>5 · What we need from the customer</h2><ul class="pz-list">' +
     (e.customerNeeds || []).map(function (x, j) { return '<li>' + esc(String(typeof x === "string" ? x : (x && x.text) || "")) + ' <button type="button" class="pz-x" onclick="pzNeedDel(' + j + ')">✕</button></li>'; }).join("") + '</ul>' +
     '<div class="pz-edl"><input id="pz-need" placeholder="Add (e.g. Remove items from vanity)" onkeydown="if(event.key===\'Enter\')pzNeedAdd()"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzNeedAdd()">Add</button></div></div>';
+  var draft = document.getElementById("cnv-text"), draftVal = draft ? draft.value : "";
   main.innerHTML = html;
+  if (draftVal) { var nb = document.getElementById("cnv-text"); if (nb) nb.value = draftVal; }
+  var cb = document.getElementById("cnv-body"); if (cb) cb.scrollTop = cb.scrollHeight;
+  pzAttShow();
+  pzFactsRead(false);
 
   /* the side */
   var side = document.getElementById("pz-side");
@@ -13749,6 +13769,7 @@ function pzRefresh() {
   if (hp) { hp.textContent = "Ready " + okN + "/" + C.length; hp.className = "pz-pill " + (okN === C.length ? "pz-ok" : "pz-wa"); }
   /* the phone header */
   set("pz-mtot", pzF(tot));
+  set("pz-mchat", "💬 " + threadOf(r).length); set("pz-hchat", "💬 " + threadOf(r).length);
   set("pz-mpro", "profit " + pzF(pro) + " · " + pct + "%" + (wd ? " · " + wd + " days" : ""));
   var mr = document.getElementById("pz-mready");
   if (mr) { mr.textContent = okN + "/" + C.length; mr.className = "pz-pill " + (okN === C.length ? "pz-ok" : "pz-wa"); }
@@ -13798,13 +13819,15 @@ function pzSyncOld() {
 function pzLine(kind, gi, field, val) {
   var l = (pzEst()[kind] || [])[gi]; if (!l) return;
   l[field] = (field === "qty" || field === "rate") ? (parseFloat(val) || 0) : val;
+  /* Typed by him: an "Update estimate from chat" keeps it (lib/hand-prices.js). */
+  if (field === "qty" || field === "rate" || field === "item" || field === "unit") l.byHand = true;
   if (field === "qty" || field === "rate") { var td = document.querySelector('[data-pzt="' + kind + gi + '"]'); if (td) td.textContent = pzF((Number(l.qty) || 0) * (Number(l.rate) || 0)); }
   pzSyncOld(); pzRefresh();
 }
 function pzAddLine(i, kind) {
   var s = pzSvcs()[i]; if (!s) return;
   var e = pzEst(); e[kind] = e[kind] || [];
-  e[kind].push(kind === "labor" ? { item: "New labor", qty: 1, unit: "hrs", rate: 90, section: String(s.name).trim() } : { item: "New material", qty: 1, unit: "ea", rate: 50, section: String(s.name).trim() });
+  e[kind].push(kind === "labor" ? { item: "New labor", qty: 1, unit: "hrs", rate: 90, section: String(s.name).trim(), byHand: true } : { item: "New material", qty: 1, unit: "ea", rate: 50, section: String(s.name).trim(), byHand: true });
   pzSyncOld(); pzRender(); pzDirty();
 }
 function pzDelLine(kind, gi) { var e = pzEst(); (e[kind] || []).splice(gi, 1); pzSyncOld(); pzRender(); pzDirty(); }
@@ -13983,8 +14006,8 @@ function pzTools(where) {
 function pzAskCustomer() {
   var e = pzEst(), qs = e.clarificationQuestions || [];
   var q0 = qs.length ? String(typeof qs[0] === "string" ? qs[0] : (qs[0] && (qs[0].question || qs[0].text)) || "") : "";
-  pzTools("cnv");
-  var box = document.getElementById("cnv-text"); if (box && q0) { box.value = q0; box.focus(); }
+  pzJump("pz-chat");
+  var box = document.getElementById("cnv-text"); if (box && q0) { box.value = q0; box.focus({ preventScroll: true }); }
 }
 function pzRewrite(i, key) {
   var s = pzSvcs()[i]; if (!s) return;
@@ -13992,9 +14015,9 @@ function pzRewrite(i, key) {
   var box = document.getElementById("ask-text");
   if (box) { box.value = "Rewrite the " + (key === "included" ? "Included" : "Not included") + " lines of " + s.name + " in plain, clear customer language. Same meaning, same items, no prices."; if (typeof askSend === "function") askSend(); }
 }
-function pzGenerate() {
+function pzGenerate(again) {
   if (typeof generateAI !== "function") return;
-  generateAI();
+  generateAI(again === true, false);
   clearInterval(PZ.genT);
   PZ.genT = setInterval(function () {
     var b = document.getElementById("gen-btn"), out = document.getElementById("pz-gen");
@@ -14028,7 +14051,7 @@ function pzLoadTemplate(ti) {
   var t = PZ.book && PZ.book.templates && PZ.book.templates[ti]; if (!t) return;
   var e = pzEst(), names = pzSvcs().map(function (s) { return String(s.name).toLowerCase(); });
   var nm = t.name, n = 2; while (names.indexOf(nm.toLowerCase()) !== -1) nm = t.name + " " + (n++);
-  (t.lines || []).forEach(function (l) { var k = l.kind === "materials" ? "materials" : "labor"; e[k] = e[k] || []; e[k].push({ item: l.item, qty: l.qty, unit: l.unit, rate: l.rate, section: nm }); });
+  (t.lines || []).forEach(function (l) { var k = l.kind === "materials" ? "materials" : "labor"; e[k] = e[k] || []; e[k].push({ item: l.item, qty: l.qty, unit: l.unit, rate: l.rate, section: nm, byHand: true }); });
   scopeDraft().services.push({ name: nm, manual: true, included: (t.included || []).slice(), supplied: [], excluded: (t.excluded || []).slice() });
   e.workSteps = e.workSteps || []; (t.steps || []).forEach(function (st) { e.workSteps.push({ title: st.title, text: st.text || "", service: nm }); });
   e.priceBookServices = (e.priceBookServices || []).concat([nm]);
@@ -14049,7 +14072,7 @@ async function pzLibrary(i) {
     try { var r = await sbcFetch("/.netlify/functions/price-book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product: p }) }); if (r.ok) PZ.book = await r.json(); } catch (e) {}
   } else p = prods[k];
   var e = pzEst(); e.materials = e.materials || [];
-  e.materials.push({ item: p.name, spec: p.spec || "", qty: 1, unit: p.unit || "ea", rate: Number(p.rate) || 0, section: String(s.name).trim(), finish: true, photo: p.photo || undefined });
+  e.materials.push({ item: p.name, spec: p.spec || "", qty: 1, unit: p.unit || "ea", rate: Number(p.rate) || 0, section: String(s.name).trim(), finish: true, photo: p.photo || undefined, byHand: true });
   pzSyncOld(); pzRender(); pzDirty();
 }
 async function pzDuplicate() {
@@ -14070,6 +14093,172 @@ async function pzDuplicate() {
   } catch (err) { toast("Not copied: " + err.message, true); }
 }
 
+/* ── 💬 CONVERSATION (images 00e, 00f) ─────────────────────────────────────
+   "keep my existing per-customer conversation and its AI reading; only move
+    and redesign it". The same thread (threadOf), the same Send
+   (sendThreadReply -> thread-reply: saved on the record, emailed with the
+   project header), the same waiting mark. New: what the AI took from the
+   messages (chat-facts-background.js) with a tick per fact, "Update estimate
+   from chat" when a customer message is newer than the estimate, questions
+   to ask, 📎 files, 📷 ask for photos, ✨ polish. */
+var PZ_VIA = { quote: "quote page", gmail: "email", dashboard: "email" };
+function pzWhen(iso) {
+  var d = new Date(iso); if (!isFinite(d.getTime())) return "";
+  return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+}
+function pzMsgsHtml(r) {
+  var t = threadOf(r), nm = String((r.customer && r.customer.name) || "Customer").trim().split(/\s+/)[0];
+  if (!t.length) return '<div class="pz-mut">No messages yet. What you send here goes to their quote page and their inbox.</div>';
+  return t.map(function (m) {
+    var me = m.from === "contractor", via = PZ_VIA[String(m.via || "")] || (me ? "email" : String(m.via || ""));
+    return '<div class="pz-msg ' + (me ? "me" : "them") + '"><div class="pz-mh">' + [me ? "You" : esc(nm), esc(pzWhen(m.at)), esc(via)].filter(Boolean).join(" · ") + '</div>' + esc(m.text) + cnvAttachmentsHtml(m.attachments) + '</div>';
+  }).join("");
+}
+function pzLastCust(r) { var t = threadOf(r).filter(function (m) { return m.from !== "contractor"; }); return t.length ? t[t.length - 1] : null; }
+/* The newest customer message came after the AI last priced the job. */
+function pzChatStale(r) {
+  var lc = pzLastCust(r), e = (r && r.estimate) || {}, ai = Date.parse((r && r.aiFinishedAt) || "");
+  if (!lc || !ai || !((e.labor || []).length + (e.materials || []).length)) return false;
+  return Date.parse(lc.at || "") > ai;
+}
+function pzChatStatus(r) {
+  if (threadNeedsReply(r)) return '<span class="pz-pill pz-ok">💬 Customer replied</span>';
+  if (threadWaiting(r)) return '<span class="pz-pill pz-chp" title="Tap to clear waiting" onclick="if(confirm(\'Clear waiting for customer?\'))pzWaiting(false)">⏳ Waiting for customer</span>';
+  return threadOf(r).length ? '<button type="button" class="pz-lnk" onclick="pzWaiting(true)">Mark waiting for customer</button>' : '';
+}
+function pzLearnHtml(r) {
+  if (!pzLastCust(r)) return "";
+  var cf = r.chatFacts || {}, facts = Array.isArray(cf.facts) ? cf.facts : [], reading = PZ.factsReading === r.ref;
+  var list = facts.length ? facts.map(function (f) {
+    return '<label class="pz-fact"><input type="checkbox" data-f="' + esc(String(f.id)) + '"' + (f.on !== false ? ' checked' : '') + ' onchange="pzFactTick()"><span>' + esc(f.text) + (f.effect ? ' → ' + esc(f.effect) : '') + '</span></label>';
+  }).join("") : '<div class="pz-mut" style="padding:4px 0">' + (reading ? 'Reading the chat…' : cf.error ? esc(cf.error) + '. <a href="#" onclick="pzFactsRead(true);return false">Try again</a>' : cf.at ? 'Nothing in the chat changes the estimate.' : 'Not read yet.') + '</div>';
+  var stale = pzChatStale(r), ticked = PZ.factsChanged === r.ref;
+  return '<div class="pz-learn"><div class="pz-row"><b>🧠 AI learned from this chat</b><span class="pz-mut">' + (reading && facts.length ? 'reading the new message…' : 'used in the estimate') + '</span></div>' + list +
+    (stale || ticked ? '<div class="pz-row" style="margin-top:8px;justify-content:flex-start"><span class="pz-pill pz-wa">' + (stale ? 'Estimate is older than the last message' : 'You switched a fact') + '</span><button type="button" class="pz-btn pz-gold pz-sm" onclick="pzChatUpdate()">↻ Update estimate from chat</button><span id="pz-gen" class="pz-mut"></span></div>' : '') + '</div>';
+}
+function pzAsks(r) {
+  var cf = (r && r.chatFacts) || {}, e = (r && r.estimate) || {};
+  var a = Array.isArray(cf.ask) && cf.ask.length ? cf.ask : (Array.isArray(e.clarificationQuestions) ? e.clarificationQuestions : []);
+  return a.map(function (x) { return String(typeof x === "string" ? x : (x && (x.question || x.text)) || "").trim(); }).filter(Boolean).slice(0, 3);
+}
+function pzSuggHtml(r) {
+  var a = pzAsks(r);
+  return a.length ? '<div class="pz-ey" style="margin-top:12px">AI suggests asking</div><div class="pz-sugg">' + a.map(function (q, i) { return '<button type="button" onclick="pzSugg(' + i + ')">' + esc(q) + '</button>'; }).join("") + '</div>' : '';
+}
+function pzChatHtml(r) {
+  return '<div class="pz-c" id="pz-chat"><div class="pz-row"><h2 style="margin:0">💬 Conversation</h2><span id="pz-chst">' + pzChatStatus(r) + '</span></div>' +
+    '<div class="pz-mut" style="margin:2px 0 10px">Every message here is read by the AI when it prices and writes the scope. Newest message wins.</div>' +
+    '<div class="pz-chat" id="cnv-body">' + pzMsgsHtml(r) + '</div>' +
+    '<div id="pz-learn">' + pzLearnHtml(r) + '</div>' +
+    '<div id="pz-sugg">' + pzSuggHtml(r) + '</div>' +
+    '<textarea id="cnv-text" class="pz-rep" maxlength="4000" placeholder="Write a reply…"></textarea>' +
+    '<div class="pz-att" id="pz-att"></div>' +
+    '<div class="pz-row" style="margin-top:6px"><div class="pz-rt"><label class="pz-btn pz-ghost pz-sm" title="Attach a photo or file">📎<input type="file" multiple accept="image/*,application/pdf,.pdf,.doc,.docx" style="display:none" onchange="pzAttach(this)"></label>' +
+      '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzAskPhotos()">📷 Ask photos</button><button type="button" class="pz-btn pz-ghost pz-sm" id="pz-pol" onclick="pzPolish()">✨ Polish</button></div>' +
+      '<button type="button" class="pz-btn pz-navy pz-sm" id="cnv-btn" onclick="sendThreadReply()">Send reply</button></div>' +
+    '<div class="cnv-note" id="cnv-note" style="margin-top:4px">Sends by email with the project header. Customer replies come back here.</div>' +
+    '<div class="pz-edl" id="cnv-key-row" style="display:none"><input id="cnv-key" placeholder="Send key"></div></div>';
+}
+/* After a send, a waiting mark, or the AI reading the chat: the parts that
+   change, never the reply box he is typing in. */
+function pzChatRefresh() {
+  var r = currentRecord; if (!r || !document.getElementById("pz-chat")) return;
+  var put = function (id, h) { var el = document.getElementById(id); if (el) el.innerHTML = h; };
+  put("pz-chst", pzChatStatus(r)); put("cnv-body", pzMsgsHtml(r)); put("pz-learn", pzLearnHtml(r)); put("pz-sugg", pzSuggHtml(r));
+  var b = document.getElementById("cnv-body"); if (b) b.scrollTop = b.scrollHeight;
+  pzAttShow(); pzRefresh();
+}
+function pzWaiting(on) { markWaiting(currentRecord.ref, on).then(pzChatRefresh).catch(function (e) { toast(e.message, true); }); }
+function pzSugg(i) {
+  var q = pzAsks(currentRecord)[i], box = document.getElementById("cnv-text"); if (!q || !box) return;
+  box.value = (box.value.trim() ? box.value.replace(/\s*$/, "") + "\n" : "") + q; box.focus();
+}
+/* The AI reads the chat when a customer message is newer than what it read
+   last (once per message per visit), then the card shows what it took. */
+async function pzFactsRead(force) {
+  var r = currentRecord, lc = r && pzLastCust(r); if (!lc) return;
+  var cf = r.chatFacts || {}, ref = r.ref, k = ref + "|" + lc.at;
+  if (!force && (PZ.factsAsked[k] || (cf.at && Date.parse(cf.basedOn || "") >= Date.parse(lc.at || "")))) return;
+  PZ.factsAsked[k] = 1; PZ.factsReading = ref; pzChatRefresh();
+  var before = cf.at || "";
+  try {
+    var res = await sbcFetch("/.netlify/functions/chat-facts-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref }) });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    for (var n = 0; n < 30; n++) {
+      await new Promise(function (ok) { setTimeout(ok, 4000); });
+      if (!currentRecord || currentRecord.ref !== ref) return;
+      var g = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+      var j = await g.json().catch(function () { return null; });
+      if (j && j.chatFacts && j.chatFacts.at && j.chatFacts.at !== before) { currentRecord.chatFacts = j.chatFacts; break; }
+    }
+  } catch (e) { if (currentRecord && currentRecord.ref === ref) currentRecord.chatFacts = Object.assign({}, cf, { error: "Could not read the chat just now" }); }
+  if (PZ.factsReading === ref) PZ.factsReading = "";
+  pzChatRefresh();
+}
+/* A fact switched off goes to the estimator as "do not use". */
+function pzFactTick() {
+  var r = currentRecord, cf = r && r.chatFacts; if (!cf || !Array.isArray(cf.facts)) return;
+  var off = [];
+  document.querySelectorAll("#pz-learn input[data-f]").forEach(function (x) { if (!x.checked) off.push(x.getAttribute("data-f")); });
+  cf.facts.forEach(function (f) { f.on = off.indexOf(String(f.id)) === -1; });
+  PZ.factsChanged = r.ref;
+  sbcFetch("/.netlify/functions/chat-facts-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: r.ref, off: off }) })
+    .then(function (x) { if (!x.ok) throw new Error("HTTP " + x.status); }).catch(function (e) { toast("Tick not saved: " + e.message, true); });
+  pzChatRefresh();
+}
+/* Re-price from the chat. His saved lines go first: the ones he typed are
+   marked byHand and the generator keeps them (lib/hand-prices.js). */
+async function pzChatUpdate() {
+  clearTimeout(PZ.saveT);
+  await pzSaveNow();
+  PZ.factsChanged = "";
+  pzGenerate(true);
+}
+/* 📎 files go straight to storage (customer-upload-url), the link rides on
+   the message (thread-reply attachments). */
+var cnvAttachments = [];
+function pzAttShow() {
+  var el = document.getElementById("pz-att"); if (!el) return;
+  el.innerHTML = cnvAttachments.map(function (a, i) { return '<span>' + (a.kind === "image" ? "🖼 " : "📄 ") + esc(a.name) + ' <button type="button" class="pz-x" style="font-size:12px" onclick="cnvAttachments.splice(' + i + ',1);pzAttShow()">✕</button></span>'; }).join("");
+}
+async function pzAttach(inp) {
+  var files = Array.prototype.slice.call((inp && inp.files) || []), ref = currentRecord && currentRecord.ref;
+  if (!files.length || !ref) return;
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    try {
+      var r = await fetch("/.netlify/functions/customer-upload-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, fileName: f.name, contentType: f.type, size: f.size }) });
+      var j = await r.json().catch(function () { return null; });
+      if (!r.ok || !j || !j.signedUrl) throw new Error((j && j.error) || "HTTP " + r.status);
+      var put = await fetch(j.signedUrl, { method: "PUT", headers: { "Content-Type": f.type, "x-upsert": "true" }, body: f });
+      if (!put.ok) throw new Error("storage " + put.status);
+      cnvAttachments.push({ name: f.name || "file", url: j.publicUrl, kind: /^image\//.test(f.type) ? "image" : "file" });
+      pzAttShow();
+    } catch (e) { toast("Not attached: " + (f.name || "file") + " (" + e.message + ")", true); }
+  }
+  inp.value = "";
+}
+/* 📷 Their own estimate page takes photos ("Add photos or files"). */
+function pzAskPhotos() {
+  var box = document.getElementById("cnv-text"); if (!box || !currentRecord) return;
+  var link = "https://www.sanibuildingcorp.com/quote.html?ref=" + encodeURIComponent(currentRecord.ref);
+  box.value = (box.value.trim() ? box.value.replace(/\s*$/, "") + "\n\n" : "") + "Could you send me a few photos? Open your estimate here: " + link + " and tap \"Add photos or files\" at the bottom. Thank you!";
+  box.focus();
+}
+/* ✨ The words come back into the box; nothing is sent. */
+async function pzPolish() {
+  var box = document.getElementById("cnv-text"), b = document.getElementById("pz-pol");
+  if (!box || !box.value.trim()) { toast("Write the reply first", true); return; }
+  if (b) { b.disabled = true; b.textContent = "✨ Polishing…"; }
+  try {
+    var r = await sbcFetch("/.netlify/functions/polish-reply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: currentRecord.ref, text: box.value }) });
+    var j = await r.json().catch(function () { return {}; });
+    if (!r.ok || !j.text) throw new Error(j.error || "HTTP " + r.status);
+    box.value = j.text;
+  } catch (e) { toast(e.message, true); }
+  if (b) { b.disabled = false; b.textContent = "✨ Polish"; }
+}
+
 /* ── mount: the old screen becomes the hidden "More tools", the design is the screen ── */
 function pzMount() {
   var card = document.getElementById("edit-card"), modal = document.getElementById("edit-modal");
@@ -14080,11 +14269,11 @@ function pzMount() {
   var c = currentRecord.customer || {}, q = currentRecord.request || {};
   var who = [currentRecord.ref, c.name, c.address, q.propertyType].filter(function (x) { return x && String(x).trim(); }).map(function (x) { return esc(String(x).trim()); }).join(" · ");
   card.innerHTML = '<div class="pz-top"><div class="pz-in"><div><div class="pz-who">' + who + '<span class="pz-saved" id="pz-saved"></span></div><div class="pz-tot" id="pz-tot">$0</div><div class="pz-sub" id="pz-sub"></div></div>' +
-      '<div style="display:flex;gap:8px;align-items:center"><span class="pz-pill" id="pz-hready"></span><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzPreview()">Preview</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()">Send</button><button type="button" class="pz-close" title="Close" onclick="closeEdit()">×</button></div></div>' +
+      '<div style="display:flex;gap:8px;align-items:center"><span class="pz-pill pz-chp" id="pz-hchat" onclick="pzJump(\'pz-chat\')"></span><span class="pz-pill" id="pz-hready"></span><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzPreview()">Preview</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()">Send</button><button type="button" class="pz-close" title="Close" onclick="closeEdit()">×</button></div></div>' +
       '<div class="pz-prog" id="pz-prog"></div></div>' +
-    '<div class="pz-mtop" id="pz-mtop" onclick="this.classList.toggle(\'x\')"><div class="pz-mrow"><div class="pz-mtot"><b id="pz-mtot">$0</b><span id="pz-mpro"></span></div><span class="pz-pill" id="pz-mready"></span><span class="pz-mchev">▾</span></div>' +
+    '<div class="pz-mtop" id="pz-mtop" onclick="this.classList.toggle(\'x\')"><div class="pz-mrow"><div class="pz-mtot"><b id="pz-mtot">$0</b><span id="pz-mpro"></span></div><span class="pz-pill pz-chp" id="pz-mchat" onclick="event.stopPropagation();pzJump(\'pz-chat\')"></span><span class="pz-pill" id="pz-mready"></span><span class="pz-mchev">▾</span></div>' +
       '<div class="pz-mprog" id="pz-mprog"></div>' +
-      '<div class="pz-mmore"><div id="pz-mwho"></div><div id="pz-msub"></div><div class="pz-mjump">' + [["Customer", "pz-s0"], ["Request", "pz-s1"], ["Price", "pz-s2"], ["Timeline", "pz-s3"], ["Terms", "pz-s4"]].map(function (x) { return '<button type="button" onclick="event.stopPropagation();pzJump(\'' + x[1] + '\')">' + x[0] + '</button>'; }).join("") + '</div></div></div>' +
+      '<div class="pz-mmore"><div id="pz-mwho"></div><div id="pz-msub"></div><div class="pz-mjump">' + [["Customer", "pz-s0"], ["Request", "pz-s1"], ["Chat", "pz-chat"], ["Price", "pz-s2"], ["Timeline", "pz-s3"], ["Terms", "pz-s4"]].map(function (x) { return '<button type="button" onclick="event.stopPropagation();pzJump(\'' + x[1] + '\')">' + x[0] + '</button>'; }).join("") + '</div></div></div>' +
     '<div class="pz-wrap"><main id="pz-main"></main><aside id="pz-side"></aside></div>' +
     '<div class="pz-foot"><button type="button" class="pz-btn pz-ghost" onclick="pzPreview()"><span class="pz-dl">Preview customer view</span><span class="pz-ml">👁 Preview</span></button><button type="button" class="pz-btn pz-ghost pz-ml pz-mx" onclick="pzMenu(true)">⋯</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()"><span class="pz-dl">Send estimate</span><span class="pz-ml">Send</span></button></div>' +
     '<div class="pz-menu" id="pz-menu" onclick="if(event.target===this)pzMenu(false)"><div class="pz-sheet">' +
@@ -14093,6 +14282,10 @@ function pzMount() {
     '<div class="pz-drawer" id="pz-prev" onclick="if(event.target===this)pzClose(\'pz-prev\')"><div class="pz-pan"></div></div>' +
     '<div class="pz-drawer wide" id="pz-tools" onclick="if(event.target===this)pzClose(\'pz-tools\')"><div class="pz-pan"><div style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e3e6ec;position:sticky;top:0;background:#fff;z-index:2"><b>More tools</b><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzClose(\'pz-tools\')">Close ✕</button></div></div></div>';
   card.querySelector("#pz-tools .pz-pan").appendChild(tools);
+  /* "keep my existing per-customer conversation ... only move and redesign
+     it": the same thread, reply box and Send (sendThreadReply) are the
+     Conversation card now, so the old copy leaves the drawer - one reply box. */
+  var oldCnv = tools.querySelector("#cnv-section"); if (oldCnv) oldCnv.parentNode.removeChild(oldCnv);
   pzRender();
   if (!PZ.book) pzBook();
 }
@@ -14109,6 +14302,11 @@ function pzMount() {
   if (typeof gatherForm === "function") {
     var _g = gatherForm;
     gatherForm = function () { return document.getElementById("pz-main") ? pzGather() : _g.apply(this, arguments); };
+  }
+  /* The thread redraws in the Conversation card when it is on screen. */
+  if (typeof cnvRefresh === "function") {
+    var _cr = cnvRefresh;
+    cnvRefresh = function () { if (document.getElementById("pz-chat")) return pzChatRefresh(); return _cr.apply(this, arguments); };
   }
   if (typeof recalc === "function") {
     var _rc = recalc;
