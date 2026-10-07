@@ -13538,7 +13538,6 @@ function pzChecks() {
     [svcs.length > 0 && svcs.every(function (s) { return (s.excluded || []).length; }), 'Every service has "Not included"'],
     [!sup.length || needs.some(function (x) { return /on site|deliver/i.test(x); }), "Delivery date for customer-supplied " + supName, "deliver"],
     [needs.some(function (x) { return /\bcoi\b|insurance/i.test(x); }), "Building COI mentioned", "coi"],
-    [t.grand > 0 && pro / t.grand >= 0.15, "Profit at least 15%"],
     [!/licens|\bgas (line|hook|pipe|connect|appliance)|option [ab]\b/i.test(text.join("\n")), 'No "licensed", no options, no gas work']
   ];
 }
