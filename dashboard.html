@@ -13295,6 +13295,12 @@ try {
 .pz-ok{background:#e4f4ea;color:#1f8a4c}.pz-wa{background:#fff3dc;color:#b86e00}.pz-ba{background:#fbe7e5;color:#c0392b}
 .pz-wrap{max-width:1200px;margin:0 auto;padding:16px 12px 90px;display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
 @media(min-width:980px){.pz-wrap{grid-template-columns:minmax(0,1fr) 340px}}
+.pz-tc{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:52vh;overflow-y:auto}.pz-tc-hi{font-size:13px;line-height:1.4}
+.pz-tc-m{max-width:86%;padding:8px 11px;border-radius:14px;font-size:15px;line-height:1.35;word-wrap:break-word}.pz-tc-m.me{align-self:flex-end;background:#18305a;color:#fff;border-bottom-right-radius:4px}.pz-tc-m.ai{align-self:flex-start;background:#eef2f9;color:#16202e;border-bottom-left-radius:4px}
+.pz-tc-more{font-size:12px;align-self:center}.pz-tc-dots i{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:#8a93a3;animation:pzdot 1s infinite}.pz-tc-dots i:nth-child(2){animation-delay:.2s}.pz-tc-dots i:nth-child(3){animation-delay:.4s}
+@keyframes pzdot{0%,80%,100%{opacity:.3}40%{opacity:1}}
+.pz-tc-chips{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px}.pz-tc-chips button{flex:0 0 auto;border:1px solid #c9a24a;background:#fbf5e6;color:#5b4410;border-radius:999px;padding:8px 12px;font-size:14px;font-weight:600;white-space:nowrap}
+.pz-tk-in textarea{flex:1;min-width:0;font-size:16px;border:1px solid #d5d9e0;border-radius:18px;padding:10px 12px;resize:none;font-family:inherit;line-height:1.3;max-height:140px}
 .pz-tk .pz-tk-q{font-size:13px;display:flex;gap:5px;align-items:center;color:#5d6878}
 .pz-tk-sum{margin:6px 0}.pz-tk-prog{font-size:12px;margin:8px 0 4px}
 .pz-tk-done{display:grid;gap:4px}.pz-tk-line{display:flex;justify-content:space-between;gap:8px;width:100%;background:#f6f8fb;border:0;border-radius:8px;padding:8px 10px;font-size:13px;text-align:left;color:#16202e}
@@ -13570,6 +13576,7 @@ function pzOn() { var m = document.getElementById("edit-modal"); return !!(m && 
    Everything lands in estimate.ownerNotes, which the brain obeys over the
    customer's text and which the customer never sees. */
 function pzTalkHtml(r, hasLines) {
+  if (SBC_V5) return pzTalkChatHtml(r, hasLines);
   if (pzIsPhone()) return pzTalkMobileHtml(r, hasLines);
   var e = (r && r.estimate) || {}, a = r && r.v5Ask, qs = (a && a.questions) || [];
   var notes = String(e.ownerNotes || "");
@@ -13671,6 +13678,76 @@ function pzTalkMobileHtml(r, hasLines) {
     '</div><span id="pz-gen" class="pz-mut"></span></div>';
   return h;
 }
+/* ── Estimator chat ────────────────────────────────────────────────────────
+   "in talk to the generation brain let me talk as i talk to you, at this
+    moment there is only answer questions". Free talk, private to him. Every
+   thing he says is saved on record.ownerChat; Generate / Regenerate reads his
+   lines as his notes (newest wins). The customer never gets ownerChat. */
+function pzTalkChatHtml(r, hasLines) {
+  var e = (r && r.estimate) || {}, msgs = Array.isArray(r && r.ownerChat) ? r.ownerChat : [];
+  var notes = String(e.ownerNotes || ""), nLines = notes.split("\n").filter(function (x) { return x.trim(); }).length;
+  var T = PZ.tchat || (PZ.tchat = {}), all = T.ref === r.ref && T.all, pend = T.ref === r.ref ? T.pending : null;
+  var show = all ? msgs : msgs.slice(-4), sitePh = Array.isArray(e.sitePhotos) ? e.sitePhotos.length : 0;
+  var last = msgs.length ? msgs[msgs.length - 1] : null;
+  var chips = pend ? [] : (last && last.from === "ai" && Array.isArray(last.chips) && last.chips.length ? last.chips
+    : !msgs.length ? (hasLines ? ["Why this price?", "What did you assume?", "What's missing?"] : ["What do you need from me?", "Full gut bathroom", "Customer buys materials"]) : []);
+  var mic = (window.SpeechRecognition || window.webkitSpeechRecognition) ? '<button type="button" class="pz-btn pz-ghost pz-tk-mic" onclick="pzTalkMic()" aria-label="Speak">🎤</button>' : "";
+  var h = '<div class="pz-c pz-tk" id="pz-talk"><div class="pz-row"><h2 style="margin:0;font-size:17px">🧠 Estimator</h2><span class="pz-mut" style="font-size:12px">only you</span></div>';
+  h += '<div class="pz-tc">';
+  if (!msgs.length && !pend) h += '<div class="pz-mut pz-tc-hi">Talk to it like a person: tell it the job, ask why a number is what it is, or tell it what to change. Then tap ' + (hasLines ? "Regenerate" : "Generate") + '.</div>';
+  if (!all && msgs.length > 4) h += '<a href="#" class="pz-tc-more" onclick="PZ.tchat.all=true;PZ.tchat.ref=currentRecord.ref;pzTalkRefresh();return false">Show earlier (' + (msgs.length - 4) + ')</a>';
+  show.forEach(function (m) { h += '<div class="pz-tc-m ' + (m.from === "owner" ? "me" : "ai") + '">' + esc(String(m.text || "")).replace(/\n/g, "<br>") + '</div>'; });
+  if (pend) h += '<div class="pz-tc-m me">' + esc(pend) + '</div><div class="pz-tc-m ai pz-tc-dots"><i></i><i></i><i></i></div>';
+  h += '</div>';
+  if (chips.length) h += '<div class="pz-tc-chips">' + chips.map(function (c) { return '<button type="button" onclick="pzTalkSend(this.textContent)">' + esc(c) + '</button>'; }).join("") + '</div>';
+  h += '<div class="pz-tk-in" style="margin-top:8px"><textarea id="pz-tk-txt" rows="1" placeholder="Talk to the estimator…" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,140)+\'px\'"' + (pend ? " disabled" : "") + '></textarea>' + mic +
+    '<button type="button" class="pz-btn pz-gold" aria-label="Send" onclick="pzTalkSend(document.getElementById(\'pz-tk-txt\').value)"' + (pend ? " disabled" : "") + '>↑</button></div>';
+  h += '<details class="pz-tk-notes"><summary>📝 Your notes' + (nLines ? " (" + nLines + ")" : "") + '</summary>' +
+    '<textarea id="pz-onotes" rows="4" placeholder="Anything you always want it to follow on this job" oninput="pzEst().ownerNotes=this.value;pzDirty()">' + esc(notes) + '</textarea></details>';
+  h += '<div class="pz-tk-bar">' +
+    '<label class="pz-btn pz-ghost pz-tk-ph" aria-label="Add site photo">📷' + (sitePh ? '<small>' + sitePh + '</small>' : "") + '<input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="pzTalkPhoto(this)"></label>' +
+    (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzRegenerate()">↻ Regenerate</button>'
+              : '<button type="button" class="pz-btn pz-gold" onclick="pzSaveNow().then(function(){pzGenerate()})">Generate estimate</button>') +
+    '</div><span id="pz-gen" class="pz-mut"></span></div>';
+  setTimeout(function () { var b = document.querySelector("#pz-talk .pz-tc"); if (b) b.scrollTop = b.scrollHeight; }, 0);
+  return h;
+}
+function pzTalkRefresh() {
+  var el = document.getElementById("pz-talk"), r = currentRecord; if (!el || !r) return;
+  var lines = ((r.estimate || {}).labor || []).length + ((r.estimate || {}).materials || []).length;
+  var keep = document.getElementById("pz-tk-txt"), typed = keep ? keep.value : "";
+  el.outerHTML = pzTalkChatHtml(r, lines);
+  var nt = document.getElementById("pz-tk-txt"); if (nt && typed && !(PZ.tchat && PZ.tchat.pending)) nt.value = typed;
+  var box = document.querySelector("#pz-talk .pz-tc"); if (box) box.scrollTop = box.scrollHeight;
+}
+async function pzTalkSend(text) {
+  var r = currentRecord, ref = r && r.ref, msg = String(text || "").trim();
+  if (!ref || !msg) return;
+  if (PZ.tchat && PZ.tchat.pending) return;
+  PZ.tchat = { ref: ref, all: PZ.tchat && PZ.tchat.ref === ref && PZ.tchat.all, pending: msg };
+  pzTalkRefresh();
+  var jid = "v5t-" + Date.now().toString(36), err = "";
+  try {
+    if (PZ.saveT) { clearTimeout(PZ.saveT); await pzSaveNow(); } /* his photos / notes reach the brain */
+    var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jid, mode: "talk", message: msg }) });
+    if (k.status !== 202 && !k.ok) throw new Error("HTTP " + k.status);
+    var j = null;
+    for (var n = 0; n < 60; n++) {
+      await new Promise(function (ok) { setTimeout(ok, n < 5 ? 1500 : 2500); });
+      var g = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+      j = await g.json().catch(function () { return null; });
+      if (j && j.talkJob && j.talkJob.id === jid) break;
+    }
+    if (!j || !j.talkJob || j.talkJob.id !== jid) throw new Error("No answer yet - try again in a minute");
+    if (j.talkJob.error) throw new Error(j.talkJob.error);
+    if (currentRecord && currentRecord.ref === ref) currentRecord.ownerChat = j.ownerChat || [];
+  } catch (e) { err = e.message; }
+  if (PZ.tchat) PZ.tchat.pending = null;
+  if (currentRecord && currentRecord.ref === ref) {
+    pzTalkRefresh();
+    if (err) { toast("Estimator: " + err, true); var t2 = document.getElementById("pz-tk-txt"); if (t2) t2.value = msg; }
+  }
+}
 function pzTalkAns(i, v) {
   var T = pzTalkState(), qs = (currentRecord.v5Ask && currentRecord.v5Ask.questions) || [];
   T.ans[i] = String(v || "").trim(); T.seen[i] = true;
@@ -13736,7 +13813,7 @@ function pzRender() {
   var aiRead = lines
     ? '<div class="pz-ai"><b>AI read:</b> ' + undo + ' ' + esc(STATUS[pr.status] || "Priced.") + (asm.length ? " Assumed " + esc(asm.join("; ").replace(/\.$/, "")) + "." : "") +
       (q0 ? ' <a href="#" onclick="pzAskCustomer();return false">Ask customer: ' + esc(q0.length > 60 ? q0.slice(0, 57) + "…" : q0) + '</a>' : "") +
-      (SBC_V5 ? '<div id="pz-regen" style="margin-top:8px"><button type="button" class="pz-btn pz-gold pz-sm" onclick="pzRegenerate()">↻ Regenerate estimate</button> <span class="pz-mut">reads the whole job again; you see the changes first</span></div>' : "") + '</div>'
+      (SBC_V5 ? '<div id="pz-regen" class="pz-mut" style="margin-top:6px">Talk to the estimator below, then tap Regenerate there.</div>' : "") + '</div>'
     : SBC_V5 ? '<div class="pz-ai"><b>AI read:</b> no estimate yet. Talk to the estimator below first, then generate.</div>'
     : '<div class="pz-ai">No prices yet. Add a service and your lines below, or tap one of your price book packages.</div>';
 
@@ -14415,7 +14492,7 @@ function pzSuggHtml(r) {
   return a.length ? '<div class="pz-ey" style="margin-top:12px">AI suggests asking</div><div class="pz-sugg">' + a.map(function (q, i) { return '<button type="button" onclick="pzSugg(' + i + ')">' + esc(q) + '</button>'; }).join("") + '</div>' : '';
 }
 function pzChatHtml(r) {
-  return '<div class="pz-c" id="pz-chat"><div class="pz-row"><h2 style="margin:0">💬 Conversation</h2><span id="pz-chst">' + pzChatStatus(r) + '</span></div>' +
+  return '<div class="pz-c" id="pz-chat"><div class="pz-row"><h2 style="margin:0">💬 Customer messages</h2><span class="pz-mut" style="font-size:12px">they see this</span><span id="pz-chst">' + pzChatStatus(r) + '</span></div>' +
     '<div class="pz-mut" style="margin:2px 0 10px">Every message here is read by the AI when it prices and writes the scope. Newest message wins.</div>' +
     '<div class="pz-chat" id="cnv-body">' + pzMsgsHtml(r) + '</div>' +
     '<div id="pz-learn">' + pzLearnHtml(r) + '</div>' +
