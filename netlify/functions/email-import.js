@@ -95,11 +95,9 @@ exports.handler = async function (event) {
       if (!src || !id) return json(400, { error: "Missing email" });
       const jobId = "imp-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       await s.setJSON(jobId, { status: "working", at: new Date().toISOString() });
-      const base = (process.env.URL || "https://www.sanibuildingcorp.com").replace(/\/$/, "");
-      const host = event.headers && (event.headers.host || event.headers.Host);
-      const url = (host ? "https://" + host : base) + "/.netlify/functions/email-import-background";
-      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-sbc-key": process.env.DASHBOARD_KEY || "" }, body: JSON.stringify({ jobId: jobId, src: src, id: id }) });
-      if (r.status !== 202 && !r.ok) return json(502, { error: "Could not start reading (" + r.status + ")" });
+      /* The dashboard starts email-import-background itself with this jobId
+         (like Generate). A server-to-server call through the public domain is
+         stopped by Cloudflare: "The string did not match the expected pattern". */
       return json(200, { jobId: jobId });
     }
     if (b.action === "status") {
