@@ -663,7 +663,7 @@ function render() {
   document.getElementById("invoice-tag").textContent = typeLabel.toUpperCase();
   document.getElementById("invoice-type-label").textContent = typeLabel.toUpperCase();
   document.getElementById("invoice-number").textContent = invoice.number || "—";
-  document.getElementById("invoice-project").textContent = est.projectTitle || reqData.service || "Your Project";
+  document.getElementById("invoice-project").textContent = invoice.title || est.projectTitle || reqData.service || "Your Project";
   document.getElementById("invoice-customer").textContent = customer.name || "—";
   document.getElementById("invoice-ref").textContent = record.ref || "—";
   var jobAddr = invoice.projectAddress || record.projectAddress || "";
@@ -747,6 +747,17 @@ function render() {
    (invoice.workPerformed, one line per item). No fallback to line
    items — if nothing was typed, no checklist is shown at all. */
 function renderItems(est) {
+  /* Billed by lines: each line with its amount, then the total */
+  var its = Array.isArray(invoice.items) ? invoice.items.filter(function (x) { return x && x.text; }) : [];
+  if (its.length) {
+    var tb = document.getElementById("items-table");
+    tb.innerHTML = '<tr><th>What this invoice covers</th><th style="text-align:right">Amount</th></tr>' +
+      its.map(function (x) { return '<tr><td class="work-item">' + escHtml(x.text) + '</td><td style="text-align:right;white-space:nowrap;font-weight:700;padding-right:16px">' + fmt(x.amount) + '</td></tr>'; }).join("") +
+      '<tr><td style="font-weight:800;padding:12px 16px">Total</td><td style="text-align:right;white-space:nowrap;font-weight:800;padding-right:16px">' + fmt(invoice.amount) + '</td></tr>';
+    var nt = document.getElementById("items-note"); nt.textContent = "All work and materials above are included in the total shown."; nt.style.display = "block";
+    document.getElementById("items-wrap").style.display = "block";
+    return;
+  }
   var manual = (invoice.workPerformed || "").split("\n")
     .map(function(l){ return l.trim(); })
     .filter(function(l){ return l.length; });
