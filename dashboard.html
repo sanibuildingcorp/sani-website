@@ -13339,6 +13339,9 @@ try {
 .pz-ok{background:#e4f4ea;color:#1f8a4c}.pz-wa{background:#fff3dc;color:#b86e00}.pz-ba{background:#fbe7e5;color:#c0392b}
 .pz-wrap{max-width:1200px;margin:0 auto;padding:16px 12px 90px;display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
 @media(min-width:980px){.pz-wrap{grid-template-columns:minmax(0,1fr) 340px}}
+.pz-tap{cursor:text;border-bottom:1px dashed #c9cfd8}.pz-tap:active{background:#fff6dc}
+.pz-tapbox textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid #c9a24a;border-radius:10px;margin:2px 0 6px;resize:none;overflow:hidden}
+.pz-tapbox .pz-row{justify-content:flex-end;gap:8px}
 .pz-tc-att{display:flex;gap:6px;margin-top:8px;overflow-x:auto}.pz-tc-att span{position:relative;flex:0 0 64px;height:64px;border-radius:10px;background:#eef0f4 center/cover no-repeat}
 .pz-tc-att button{position:absolute;top:-4px;right:-4px;width:22px;height:22px;border-radius:50%;border:0;background:#16202e;color:#fff;font-size:11px;line-height:22px;padding:0}
 .pz-tc-ph{display:flex;gap:4px;flex-wrap:wrap;margin:-2px -4px 6px}.pz-tc-ph img{width:86px;height:86px;object-fit:cover;border-radius:10px}
@@ -14104,11 +14107,11 @@ function pzStepsHtml(i, nm) {
   var steps = pzStepsOf(nm, i === 0);
   return '<ol>' + steps.map(function (x) {
     var cure = pzCure(x.st);
-    return '<li><b>' + esc(x.st.title || "") + '</b>' + (x.st.text ? ' — ' + esc(x.st.text) : '') + ' ' + (cure ? '<span class="pz-pill pz-wa">+' + cure + ' day cure</span>' : '') + ' <button type="button" class="pz-x" onclick="pzStepDel(' + x.i + ')">✕</button></li>';
+    return '<li><span class="pz-tap" onclick="pzStepEdit(this,' + x.i + ')"><b>' + esc(x.st.title || "") + '</b>' + (x.st.text ? ' — ' + esc(x.st.text) : '') + '</span> ' + (cure ? '<span class="pz-pill pz-wa">+' + cure + ' day cure</span>' : '') + ' <button type="button" class="pz-x" onclick="pzStepDel(' + x.i + ')">✕</button></li>';
   }).join("") + '</ol><div class="pz-edl"><input id="pz-st' + i + '" placeholder="New step" onkeydown="if(event.key===\'Enter\')pzStepAdd(' + i + ')"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzStepAdd(' + i + ')">Add</button></div>';
 }
 function pzListHtml(i, key, items) {
-  return '<ul class="pz-list">' + items.map(function (x, j) { return '<li>' + esc(String(x)) + ' <button type="button" class="pz-x" onclick="pzItemDel(' + i + ',\'' + key + '\',' + j + ')">✕</button></li>'; }).join("") + '</ul>' +
+  return '<ul class="pz-list">' + items.map(function (x, j) { return '<li><span class="pz-tap" onclick="pzItemEdit(this,' + i + ',\'' + key + '\',' + j + ')">' + esc(String(x)) + '</span> <button type="button" class="pz-x" onclick="pzItemDel(' + i + ',\'' + key + '\',' + j + ')">✕</button></li>'; }).join("") + '</ul>' +
     '<div class="pz-edl"><input id="pz-li' + i + key + '" placeholder="Add line" onkeydown="if(event.key===\'Enter\')pzItemAdd(' + i + ',\'' + key + '\')"><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzItemAdd(' + i + ',\'' + key + '\')">Add</button><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzRewrite(' + i + ',\'' + key + '\')">↻ AI rewrite</button></div>';
 }
 /* Numbers only: the head, the side, the timeline bar, the payment rows. */
@@ -14347,6 +14350,38 @@ function pzAddService() {
   if (!name || !name.trim()) return;
   scopeDraft().services.push({ name: name.trim(), manual: true, included: [], supplied: [], excluded: [] });
   PZ.scopeTouched = true; pzRender(); pzDirty();
+}
+/* Tap any line to write it yourself: the text opens in a box right where it is.
+   Done (or tapping away) saves; Cancel leaves it as it was. */
+function pzTapBox(el, fields, save) {
+  var li = el.closest("li"); if (!li || li.querySelector(".pz-tapbox")) return;
+  var box = document.createElement("div"); box.className = "pz-tapbox";
+  box.innerHTML = fields.map(function (f, n) { return '<textarea rows="' + (f.rows || 2) + '" placeholder="' + esc(f.ph || "") + '">' + esc(f.v || "") + '</textarea>'; }).join("") +
+    '<div class="pz-row"><button type="button" class="pz-btn pz-ghost pz-sm" data-x>Cancel</button><button type="button" class="pz-btn pz-gold pz-sm" data-ok>Done</button></div>';
+  li.style.display = "block"; Array.prototype.forEach.call(li.children, function (c) { c.style.display = "none"; });
+  li.appendChild(box);
+  var tas = box.querySelectorAll("textarea"), done = false;
+  var grow = function (ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; };
+  Array.prototype.forEach.call(tas, function (ta) { grow(ta); ta.addEventListener("input", function () { grow(ta); }); });
+  var finish = function (ok) { if (done) return; done = true; if (ok) save(Array.prototype.map.call(tas, function (ta) { return ta.value.replace(/\s+/g, " ").trim(); })); pzRender(); };
+  box.querySelector("[data-x]").onclick = function () { finish(false); };
+  box.querySelector("[data-ok]").onclick = function () { finish(true); };
+  box.addEventListener("focusout", function () { setTimeout(function () { if (!box.contains(document.activeElement)) finish(true); }, 250); });
+  var last = tas[tas.length - 1]; last.focus(); try { last.setSelectionRange(last.value.length, last.value.length); } catch (_) {}
+}
+function pzItemEdit(el, i, key, j) {
+  var s = pzSvcs()[i]; if (!s || !s[key]) return;
+  pzTapBox(el, [{ v: String(s[key][j] || ""), rows: 2 }], function (v) {
+    if (!v[0]) return; if (v[0] === String(s[key][j])) return;
+    s[key][j] = v[0]; PZ.scopeTouched = true; pzSyncOld(); pzDirty();
+  });
+}
+function pzStepEdit(el, idx) {
+  var st = (pzEst().workSteps || [])[idx]; if (!st) return;
+  pzTapBox(el, [{ v: st.title, rows: 1, ph: "Step name" }, { v: st.text, rows: 3, ph: "What we do" }], function (v) {
+    if (!v[0] && !v[1]) return; if (v[0] === String(st.title || "") && v[1] === String(st.text || "")) return;
+    st.title = v[0]; st.text = v[1]; st.edited = true; pzDirty();
+  });
 }
 function pzItemAdd(i, key) {
   var inp = document.getElementById("pz-li" + i + key), s = pzSvcs()[i];
