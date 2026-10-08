@@ -88,6 +88,19 @@ exports.handler = async function (event) {
 
     /* Checked after the resend has supplied its figures, or a resend would have
        to repeat the amount back to the server to get past this. */
+    /* Billed by lines ("Replace faucet - $350"): the total is the sum of the
+       lines, computed here, never trusted from the form. separate = other work,
+       not part of this estimate's total or payment schedule. */
+    let items = resendTarget ? resendTarget.items : body.items;
+    items = Array.isArray(items) ? items.slice(0, 40).map(function (x) {
+      return { text: String((x && x.text) || "").trim().slice(0, 300), amount: Math.round((Number(x && x.amount) || 0) * 100) / 100 };
+    }).filter(function (x) { return x.text && x.amount > 0; }) : [];
+    const separate = resendTarget ? !!resendTarget.separate : !!body.separate;
+    const invTitle = String((resendTarget ? resendTarget.title : body.title) || "").trim().slice(0, 120);
+    if (items.length) {
+      amount = Math.round(items.reduce(function (s, x) { return s + x.amount; }, 0) * 100) / 100;
+      if (!String(workPerformed || "").trim()) workPerformed = items.map(function (x) { return x.text; }).join("\n");
+    }
     if (!amount || Number(amount) <= 0) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Invalid amount" }) };
     }
@@ -158,8 +171,13 @@ exports.handler = async function (event) {
     }
 
     let workRowsHtml = "";
+    if (items.length) {
+      workRowsHtml = items.map(function (x) {
+        return `<tr><td style="${itemCell}">${checkSpan}${escapeHtml(x.text)}</td><td style="${itemCell};text-align:right;white-space:nowrap;font-weight:700">${escapeHtml(fmt(x.amount))}</td></tr>`;
+      }).join("") + `<tr><td style="${itemCell};font-weight:700">Total</td><td style="${itemCell};text-align:right;white-space:nowrap;font-weight:800">${escapeHtml(fmt(amount))}</td></tr>`;
+    }
     const manualList = (workPerformed || "").split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
-    if (manualList.length) {
+    if (manualList.length && !items.length) {
       // ONLY what the contractor typed — no line-item fallback
       workRowsHtml = manualList.map(lineRow).join("");
     }
@@ -219,7 +237,7 @@ exports.handler = async function (event) {
   <div style="background:#ffffff;border:1px solid #e8e2d9;border-top:none;border-radius:0 0 14px 14px;padding:30px 28px">
 
     <p style="font-size:15px;color:#1a1a1a;margin:0 0 6px">Hi ${escapeHtml(firstName)},</p>
-    <p style="font-size:14px;color:#555;margin:0 0 22px;line-height:1.6">Please find your ${escapeHtml(typeLabel.toLowerCase())} for <strong>${escapeHtml(est.projectTitle || reqData.service || "your project")}</strong> below.</p>
+    <p style="font-size:14px;color:#555;margin:0 0 22px;line-height:1.6">Please find your ${escapeHtml(typeLabel.toLowerCase())} for <strong>${escapeHtml(invTitle || est.projectTitle || reqData.service || "your project")}</strong> below.</p>
 
     <!-- INVOICE INFO -->
     <div style="border:1px solid #e8e2d9;border-radius:10px;overflow:hidden">
@@ -229,7 +247,7 @@ exports.handler = async function (event) {
       <table style="width:100%;border-collapse:collapse">
         <tr>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555;width:140px">Project</td>
-          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(est.projectTitle || reqData.service || "Your Project")}</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#1a1a1a;font-weight:600">${escapeHtml(invTitle || est.projectTitle || reqData.service || "Your Project")}</td>
         </tr>
         <tr>
           <td style="padding:12px 18px;border-bottom:1px solid #e8e2d9;font-size:13px;color:#555">Billed To</td>
@@ -306,6 +324,9 @@ exports.handler = async function (event) {
       workDate: finalWorkDate,
       memo: memo || "",
       workPerformed: workPerformed || "",
+      items: items.length ? items : undefined,
+      separate: separate || undefined,
+      title: invTitle || undefined,
       projectAddress: jobAddress || "",
       paymentMethod: paymentMethod || "none",
       paymentDetails: paymentDetails || "",
