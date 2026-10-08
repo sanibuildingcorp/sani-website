@@ -183,6 +183,7 @@ exports.handler = async (event) => {
     /* His photos, contract, final total, view choices, timeline numbers and any
        scope text he edited by hand come across untouched (same latch as before). */
     preserveContractorFields(forRegenerate(previous).previous, est);
+    syncKeptScopeSupplies(est);
     /* He set his own total by hand: the AI never overrides it silently. */
     if (previous && Number(previous.totalSetByHand) > 0) {
       est.totalSetByHand = Number(previous.totalSetByHand);
@@ -207,6 +208,29 @@ exports.handler = async (event) => {
   return res(202, { ok: true });
 };
 
+/* "I clicked regenerate but it's still shows similar": his edited scope wording
+   is kept on a regenerate (contractor-owned-fields.js), so the old "Tile, toilet,
+   vanity/faucet ... supplied by customer" line stayed in Not included and the
+   Customer supplies list stayed empty, while the prices were already right.
+   His wording stays; only the supplies are brought in line with the estimate:
+   every item the estimate says the customer supplies is listed, and a Not
+   included line that only says "supplied by customer" leaves. */
+const BYCUST = /\b(supplied|provided|purchased|bought|furnished)\s+by\s+(the\s+)?(customer|owner|client|homeowner|you)\b|\b(customer|owner|client|homeowner)\s+(supplies|provides|buys|purchases|furnishes)\b/i;
+function syncKeptScopeSupplies(est) {
+  const cs = A(est && est.customerSupplied); if (!cs.length) return;
+  const n = (v) => s(typeof v === 'string' ? v : v && (v.text || v.item)).toLowerCase().replace(/\s+/g, ' ');
+  ['manualCustomerScopeDraft', 'publishedCustomerScope'].forEach((k) => {
+    const sc = est[k]; if (!sc || !Array.isArray(sc.services)) return;
+    sc.services.forEach((sv) => {
+      const mine = cs.filter((c) => n(c.section) === n(sv.name) || sc.services.length === 1).map((c) => s(c.item)).filter(Boolean);
+      if (!mine.length) return;
+      const sup = A(sv.supplied), have = new Set(sup.map(n));
+      mine.forEach((it) => { if (!have.has(n(it))) { sup.push(it); have.add(n(it)); } });
+      sv.supplied = sup;
+      sv.excluded = A(sv.excluded).filter((x) => !BYCUST.test(s(typeof x === 'string' ? x : x && (x.text || x.item))));
+    });
+  });
+}
 /* Private chat with the estimator: plain talk, short answers, no JSON estimate. */
 async function talkReply(record, msg) {
   const e = record.estimate || {};
