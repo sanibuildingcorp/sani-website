@@ -52,3 +52,50 @@ function setupGATracking(){window.gtag&&(document.querySelectorAll('a[href^="tel
     },true);
   }catch(e){}
 })();
+
+/* ══ WHY US, IN TWO SECONDS ═══════════════════════════════════════════════
+   "All pages i need different and easy to understood for visitors and push
+    them to choose us"
+   Research on contractor pages that convert says the same three things:
+   proof right next to the button, one obvious next step, and the "how does
+   this work" answered before anyone has to ask. So every service page
+   (body.el) gets, under its first banner:
+     1. a trust ribbon - insured, Google rating, reply time, Home Depot Pro;
+     2. "How it works" in three steps with one button.
+   Added beside the page's own words, never instead of them: no heading,
+   paragraph or link of the page is touched (SEO stays exactly as it is). */
+(function(){
+  try{
+    var b=document.body; if(!b||!b.classList.contains("el")) return;
+    var hero=document.querySelector(".page-hero, .hero, header + section, main > section");
+    if(!hero||document.querySelector(".el-why")) return;
+    var form=document.getElementById("quick-estimate");
+    var go=form?"#quick-estimate":"/contact";
+    var star='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.8l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.7l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/></svg>';
+    var w=document.createElement("div"); w.className="el-why";
+    w.innerHTML=
+      '<div class="el-rib" role="list">'+
+        '<span role="listitem"><i class="el-ic">&#10003;</i>Fully insured</span>'+
+        '<a role="listitem" href="https://g.page/r/CXtX_n13XF6aEBE" target="_blank" rel="noopener"><i class="el-st">'+star+star+star+star+star+'</i>4.9 &middot; 68 Google reviews</a>'+
+        '<span role="listitem"><i class="el-ic">&#10003;</i>Estimate within 24 hours</span>'+
+        '<span role="listitem"><i class="el-pro">PRO</i>Home Depot Pro</span>'+
+      '</div>'+
+      (/\/contact/.test(location.pathname)?'':
+      '<div class="el-how"><div class="el-how-in">'+
+        '<div class="el-how-h"><span>How it works</span><b>Three steps to your new space</b></div>'+
+        '<ol>'+
+          '<li><em>1</em><div><b>Tell us or send photos</b><small>Two minutes, from your phone</small></div></li>'+
+          '<li><em>2</em><div><b>Get a clear written estimate</b><small>Scope, timeline and price, within 24 hours</small></div></li>'+
+          '<li><em>3</em><div><b>One crew, start to finish</b><small>Insured, on schedule, clean every day</small></div></li>'+
+        '</ol>'+
+        '<a class="el-go" href="'+go+'">Get my free estimate <span aria-hidden="true">&rarr;</span></a>'+
+      '</div></div>');
+    hero.parentNode.insertBefore(w,hero.nextSibling);
+    /* One soft shine across the main buttons when they first come into view -
+       enough to catch the eye once, never a flashing banner. */
+    if("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches){
+      var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("el-shine");io.unobserve(e.target);}});},{threshold:.8});
+      document.querySelectorAll(".el-go, .btn-primary, .qe-btn, .bc-cta").forEach(function(x){io.observe(x);});
+    }
+  }catch(e){}
+})();
