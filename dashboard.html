@@ -2839,6 +2839,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
 
   <div class="list-section">
     <div class="sbc-search"><input id="sbc-q" type="search" inputmode="search" autocomplete="off" placeholder="🔍 Search name, phone, address, project…" oninput="sbcQ=this.value;if(window.sbcTrash)sbcTrash.on=false;renderList()"><button type="button" id="sbc-qx" aria-label="Clear" onclick="var i=document.getElementById('sbc-q');i.value='';sbcQ='';renderList();i.focus()">×</button><button type="button" class="sbc-trash-btn" aria-label="Trash" title="Trash" onclick="sbcTrashOpen(true)">🗑</button></div>
+    <button type="button" class="ei-open" onclick="eiOpen()">📥 New request from email</button>
     <div id="list-host"></div>
   </div>
 </div>
@@ -11140,6 +11141,7 @@ window.addEventListener('load', function() {
          behaviour; they just live in the menu now instead of on top of the page. -->
     <button id="menu-ai" onclick="sbcCloseDrawer();aiOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">✦ AI Assistant</button>
     <button id="menu-send-link" onclick="sbcCloseDrawer();var o=document.getElementById('send-link-overlay');if(o){o.style.display='flex';document.body.style.overflow='hidden';}" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📤 Send Estimate Link</button>
+    <button onclick="sbcCloseDrawer();eiOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:8px">📥 New request from email</button>
     <button id="menu-new-invoice" onclick="sbcCloseDrawer();sbcOpenNewInv()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">💳 Quick invoice (customer not listed)</button>
     <a id="menu-bids" href="/bid-analyzer.html" style="display:block;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-weight:700;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📐 Bid Analyzer</a>
     <a href="/estimate" target="_blank" style="display:block;padding:12px 14px;background:#eef2f7;border-radius:10px;color:#44536a;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">↗ Customer Form</a>
@@ -15167,6 +15169,106 @@ function pzMount() {
   }
 })();
 </script>
+
+<script>
+/* ════ 📥 NEW REQUEST FROM EMAIL ════════════════════════════════════════
+   "click, open, choose and move to estimate with full customer details":
+   search info@ + the connected Gmail, tap an email, the AI fills a new job
+   (name, email, phone, address, the request in their words, photos), he
+   checks it and taps Save. Nothing is sent to the customer. */
+var EI = { q: "", items: null, busy: false, err: "", job: null, draft: null, photos: [], keep: {}, mail: null, parent: "", reading: 0 };
+function eiEsc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); }
+function eiApi(body) { return sbcFetch("/.netlify/functions/email-import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || ("HTTP " + r.status)); return d; }); }); }
+function eiOpen() {
+  var d = document.getElementById("ei-drawer");
+  if (!d) { document.body.insertAdjacentHTML("beforeend", '<div class="pz-drawer" id="ei-drawer" onclick="if(event.target===this)eiClose()"><div class="pz-pan"></div></div>'); d = document.getElementById("ei-drawer"); }
+  d.classList.add("on"); EI.job = null; EI.draft = null; eiRender(); if (!EI.items) eiSearch();
+}
+function eiClose() { var d = document.getElementById("ei-drawer"); if (d) d.classList.remove("on"); EI.reading++; }
+async function eiSearch(q) {
+  if (q != null) EI.q = q;
+  EI.busy = true; EI.err = ""; eiRender();
+  try { var d = await eiApi({ action: "list", q: EI.q }); EI.items = d.items || []; EI.errs = d.errors || []; EI.accounts = d.accounts || []; }
+  catch (e) { EI.err = e.message; EI.items = EI.items || []; }
+  EI.busy = false; eiRender();
+}
+async function eiPick(i) {
+  var m = EI.items[i]; if (!m) return;
+  if (m.imported) { eiClose(); try { await loadEstimates(); } catch (_) {} openEdit(m.ref); return; }
+  EI.mail = m; EI.draft = null; EI.err = ""; EI.job = "starting"; var my = ++EI.reading; EI.t0 = Date.now(); eiRender();
+  try {
+    var st = await eiApi({ action: "read", src: m.src, id: m.id }); EI.job = st.jobId;
+    for (var n = 0; n < 60 && my === EI.reading; n++) {
+      await new Promise(function (ok) { setTimeout(ok, 3000); }); eiRender();
+      var j = await eiApi({ action: "status", jobId: EI.job });
+      if (j.status === "error") throw new Error(j.error || "Could not read the email");
+      if (j.status === "done") { EI.draft = j.draft; EI.photos = j.photos || []; EI.keep = {}; EI.photos.forEach(function (u) { EI.keep[u] = true; }); EI.full = j.mail; EI.parent = ""; break; }
+    }
+    if (my !== EI.reading) return;
+    if (!EI.draft) throw new Error("Still reading - try again in a minute");
+  } catch (e) { if (my === EI.reading) { EI.err = e.message; EI.job = null; } }
+  eiRender();
+}
+function eiSet(k, v) { if (EI.draft) EI.draft[k] = v; }
+function eiSameCustomer() {
+  var em = String((EI.draft && EI.draft.email) || "").toLowerCase(); if (!em || typeof estimates === "undefined") return [];
+  return (estimates || []).filter(function (x) { var c = (x && x.customer) || {}; return String(c.email || x.email || "").toLowerCase() === em && !x.parentRef; });
+}
+async function eiSave() {
+  var d = EI.draft; if (!d) return;
+  if (!String(d.name || "").trim()) { toast("Add the customer's name", true); return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(d.email || "").trim())) { toast("Add the customer's email", true); return; }
+  var b = document.getElementById("ei-save"); if (b) { b.disabled = true; b.textContent = "Saving…"; }
+  try {
+    var r = await eiApi({ action: "create", jobId: EI.job, draft: d, photos: EI.photos.filter(function (u) { return EI.keep[u]; }), parentRef: EI.parent });
+    toast(r.existed ? "Already in your dashboard: " + r.ref : "✓ Saved as " + r.ref + " - tap Generate when ready");
+    if (EI.mail) EI.mail.imported = true, EI.mail.ref = r.ref;
+    eiClose(); try { await loadEstimates(); } catch (_) {} openEdit(r.ref);
+  } catch (e) { toast("Could not save: " + e.message, true); if (b) { b.disabled = false; b.textContent = "Save to dashboard"; } }
+}
+function eiDate(s) { try { var d = new Date(s); return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + (d.getFullYear() !== new Date().getFullYear() ? " " + d.getFullYear() : ""); } catch (_) { return ""; } }
+function eiRender() {
+  var d = document.getElementById("ei-drawer"); if (!d) return;
+  var top = '<div class="pzi-top"><b>📥 New request from email</b><button type="button" class="pz-btn pz-ghost pz-sm" onclick="eiClose()">Close</button></div><div class="pzi-body">';
+  var h = "";
+  if (EI.draft) {
+    var D = EI.draft, f = function (lab, k, type) { return '<label class="pzi-f"><span>' + lab + '</span><input type="' + (type || "text") + '" value="' + eiEsc(D[k]) + '" oninput="eiSet(\'' + k + '\',this.value)"></label>'; };
+    var same = eiSameCustomer();
+    h += '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="EI.draft=null;EI.job=null;eiRender()">← Back to emails</button>' +
+      '<div class="pz-mut" style="margin:10px 0">From <b>' + eiEsc(EI.mail.name || EI.mail.from) + '</b> · ' + eiEsc(EI.mail.subject) + ' · ' + eiEsc(eiDate(EI.mail.at)) + '<br>Check what the AI filled in, fix anything, then Save.</div>' +
+      '<div class="pz-ey">Customer</div>' + f("Name", "name") + f("Email", "email", "email") + f("Phone", "phone", "tel") + f("Job address", "address") +
+      '<div class="pz-ey" style="margin-top:12px">Request</div>' + f("Project title", "title") + f("Service", "service") +
+      '<label class="pzi-f"><span>Description (used to generate the estimate)</span><textarea rows="12" oninput="eiSet(\'description\',this.value)">' + eiEsc(D.description) + '</textarea></label>' +
+      (EI.photos.length ? '<div class="pz-ey" style="margin-top:12px">Photos from the email (tap to leave one out)</div><div class="ei-ph">' + EI.photos.map(function (u, i) { return '<button type="button" class="' + (EI.keep[u] ? "" : "off") + '" onclick="EI.keep[EI.photos[' + i + ']]=!EI.keep[EI.photos[' + i + ']];eiRender()"><img src="' + eiEsc(u) + '" alt="Photo ' + (i + 1) + '"></button>'; }).join("") + '</div>' : '<div class="pz-mut" style="margin-top:10px">No photos in this email.</div>') +
+      (same.length ? '<div class="pz-ey" style="margin-top:12px">This customer is already in your dashboard</div><label class="pzi-f"><span>Save as</span><select onchange="EI.parent=this.value"><option value="">A new separate job</option>' + same.map(function (x) { return '<option value="' + eiEsc(x.ref) + '"' + (EI.parent === x.ref ? " selected" : "") + '>Additional work on ' + eiEsc(x.ref) + ' · ' + eiEsc((x.estimate && x.estimate.projectTitle) || x.projectTitle || x.service || "") + '</option>'; }).join("") + '</select></label>' : '') +
+      (EI.full && EI.full.text ? '<details style="margin-top:12px"><summary class="pz-mut">Show the original email</summary><div style="white-space:pre-wrap;font-size:14px;background:#f5f6f9;border-radius:10px;padding:10px;margin-top:6px;max-height:320px;overflow:auto">' + eiEsc(EI.full.text) + '</div></details>' : '') +
+      '<div class="pzi-act" style="grid-template-columns:1fr"><button type="button" class="pz-btn" id="ei-save" onclick="eiSave()">Save to dashboard</button></div>';
+  } else if (EI.job) {
+    var s = Math.round((Date.now() - (EI.t0 || Date.now())) / 1000);
+    h += '<div style="padding:30px 6px;text-align:center"><div class="ai-spin" style="margin:0 auto 12px"></div><b>Reading the email…</b><div class="pz-mut" style="margin-top:6px">' + eiEsc(EI.mail && EI.mail.subject) + '<br>Customer details, the request and photos · ' + s + ' s (usually 20-40 s)</div>' +
+      '<button type="button" class="pz-btn pz-ghost pz-sm" style="margin-top:14px" onclick="EI.reading++;EI.job=null;eiRender()">Cancel</button></div>';
+  } else {
+    h += '<form onsubmit="event.preventDefault();eiSearch(this.q.value)" style="display:flex;gap:6px"><input name="q" type="search" enterkeyhint="search" value="' + eiEsc(EI.q) + '" placeholder="Name, email, address, words…" style="flex:1;font-size:16px;padding:10px;border:1px solid #d5d9e2;border-radius:10px;min-width:0"><button class="pz-btn pz-sm" type="submit">Search</button></form>' +
+      '<div class="pz-mut" style="margin:6px 0 10px">' + (EI.q ? 'Results for "' + eiEsc(EI.q) + '" - any date' : 'Last 60 days. Search to go further back.') + '</div>';
+    if (EI.err) h += '<div style="color:#a33;margin:8px 0">' + eiEsc(EI.err) + '</div>';
+    if (EI.busy) h += '<div class="pz-mut" style="padding:20px 0;text-align:center">Searching your email…</div>';
+    else if (EI.items && !EI.items.length) h += '<div class="pz-mut" style="padding:20px 0;text-align:center">No emails found.</div>';
+    else if (EI.items) h += EI.items.map(function (m, i) {
+      return '<button type="button" class="ei-row" onclick="eiPick(' + i + ')"><span class="ei-top"><b>' + eiEsc(m.name || m.from) + '</b><small>' + eiEsc(eiDate(m.at)) + '</small></span><span class="ei-sub">' + eiEsc(m.subject) + '</span>' +
+        (m.snippet ? '<span class="ei-sn">' + eiEsc(m.snippet) + '</span>' : '') + (m.imported ? '<span class="ei-in">✓ In dashboard · ' + eiEsc(m.ref) + ' - tap to open</span>' : '') + '</button>';
+    }).join("");
+    if (EI.errs && EI.errs.length) h += '<div class="pz-mut" style="margin-top:10px">Some mailboxes could not be searched: ' + eiEsc(EI.errs.join("; ")) + '</div>';
+    h += '<div class="pz-mut" style="margin-top:12px">Searching: info@ / contact@' + (EI.accounts && EI.accounts.length ? ' and ' + eiEsc(EI.accounts.join(", ")) : ' only - connect your Gmail under More tools to search it too') + '.</div>';
+  }
+  d.querySelector(".pz-pan").innerHTML = top + h + '</div>';
+}
+</script>
+<style>
+.ei-open{display:block;width:100%;margin:8px 0 4px;padding:12px;border:1px solid #c9a24a;background:#fbf5e6;color:#5b4410;border-radius:10px;font-size:15px;font-weight:700}
+.ei-row{display:block;width:100%;text-align:left;border:1px solid #e3e6ec;background:#fff;border-radius:10px;padding:10px 12px;margin:6px 0;color:#13254a;font-size:15px}
+.ei-top{display:flex;justify-content:space-between;gap:8px}.ei-top small{color:#5d6577;white-space:nowrap}.ei-sub{display:block;margin-top:2px}.ei-sn{display:block;color:#5d6577;font-size:13px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ei-in{display:block;color:#1f7a44;font-size:13px;font-weight:700;margin-top:4px}
+.ei-ph{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.ei-ph button{padding:0;border:2px solid #c9a24a;border-radius:10px;overflow:hidden;background:#fff;aspect-ratio:1}.ei-ph button.off{opacity:.3;border-color:#d5d9e2}.ei-ph img{width:100%;height:100%;object-fit:cover;display:block}
+</style>
 
 </body>
 </html>
