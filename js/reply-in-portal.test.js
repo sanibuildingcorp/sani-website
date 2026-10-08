@@ -51,15 +51,9 @@ console.log('\nthe customer email leads with a place to type\n');
   /* Located by a fragment with no apostrophe - esc() encodes the quote and
      the first version of this line guessed the wrong entity. */
   const msg = h.indexOf('still test email');
-  ok('THERE IS A REPLY CARD', card !== -1);
-  ok('...directly under the message, before the button', msg !== -1 && card > msg && btn > card, 'msg@' + msg + ' card@' + card + ' btn@' + btn);
-  ok('THE CARD IS A LINK — a box that looks tappable and is not would be worse than no box',
-    new RegExp('<a href="' + REPLY_URL.replace(/[.?]/g, '\\$&') + '"[^>]*>\\s*(?:\\S+\\s)?Tap here to type your reply').test(h));
+  ok('ONE QUIET REPLY BUTTON - navy, thin gold edge, no yellow card', /background:#0a1628;border:1px solid #c9a84c/.test(h) && h.indexOf('Tap here to type') === -1 && h.indexOf('#fff8e6') === -1);
+  ok('...under the message, and it opens the page at the reply box', msg !== -1 && h.indexOf('Reply on your project page') > msg && h.indexOf('<a href="' + REPLY_URL + '"') !== -1);
   ok('...and it opens the page at the reply box, not just the page', h.indexOf(REPLY_URL) !== -1);
-  ok('it is styled to be seen — gold border, cream fill, bold dark text, and it says the reply goes to Zurabi',
-    /border:2px solid #c8860a[^>]*color:#0a1628[^>]*font-weight:bold/.test(h) && /Your reply goes straight to our team/.test(h));
-  ok('it is labelled with who they are replying to', /Reply to us/.test(h));
-  ok('the button points at the same place', new RegExp('<a href="' + REPLY_URL.replace(/[.?]/g, '\\$&') + '"[^>]*>Open my project').test(h));
   ok('...and says why: everything stays together', /Or simply reply to this email/.test(h));
   ok('the old wording ("View your project & reply") is gone from the customer copy', h.indexOf('View your project') === -1);
   ok('the plain-text version carries the #reply link too', cust.text.indexOf(REPLY_URL) !== -1);
