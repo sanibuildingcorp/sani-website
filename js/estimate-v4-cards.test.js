@@ -60,7 +60,7 @@ ok("You supply with the ON SITE BY date taken from What we need", /Vanity with t
 console.log("\n2. What will be installed\n");
 const cards = (html.match(/class="qpc"/g) || []).length;
 ok("product cards: the customer's vanity first, then the toilet and the paint; kits are not cards", cards === 3 && html.indexOf("Vanity with top, 30 in") < html.indexOf("Toilet, elongated 2-piece</b>") && html.indexOf("Toilet, elongated 2-piece</b>") < html.indexOf("Interior paint, gallon") && !/Grout, sealant &amp; caulk kit<\/b>/.test(html));
-ok("Supplied by: You supply for the vanity, Sani supplies for the toilet", /Vanity with top, 30 in<\/b>[\s\S]{0,400}<span>Supplied by<\/span><span>You supply<\/span>/.test(html) && /Toilet, elongated 2-piece<\/b>[\s\S]{0,400}<span>Supplied by<\/span><span>Sani supplies<\/span>/.test(html));
+ok("Supplied by: You supply for the vanity, Sani supplies for the toilet", /Vanity with top, 30 in<\/b>[\s\S]{0,400}<span>Supplied by<\/span><span>You supply<\/span>/.test(html) && /Toilet, elongated 2-piece<\/b>[\s\S]{0,400}<span>Supplied by<\/span><span>Sani Building Corp supplies<\/span>/.test(html));
 ok("status tags: Chosen / To choose, and View product when there is a link", /qt-ok">Chosen/.test(html) && /qt-p">To choose/.test(html) && /href="https:\/\/www\.benjaminmoore\.com\/x"/.test(html) && /View product/.test(html));
 ok("no price on a product card", !/qpc[\s\S]{0,600}\$\d/.test(html.slice(html.indexOf("What will be installed"), html.indexOf("What is included"))));
 

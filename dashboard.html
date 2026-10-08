@@ -11666,7 +11666,7 @@ function showSendLinkSuccess(msg) {
       html+='<div class="sbcf-card-fields">'
         +'<input class="sbcf-ospec" type="text" value="'+escAttr(g.where||'')+'" placeholder="Where it goes (e.g. Bathroom, sink wall)" oninput="sbcfEditGroupField(\''+g.id+'\',\'where\',this.value)">'
         +'<div class="sbcf-card-row">'
-          +sel('supplier',[['','Supplied by…'],['sani','Sani supplies'],['customer','Customer supplies']])
+          +sel('supplier',[['','Supplied by…'],['sani','Sani Building Corp supplies'],['customer','Customer supplies']])
           +sel('status',[['','Status…'],['chosen','Chosen'],['choose','To choose by'],['deliver','On site by']])
           +'<input class="sbcf-ospec sbcf-by" type="text" value="'+escAttr(g.by||'')+'" placeholder="Date (e.g. Oct 14, Day 3)" oninput="sbcfEditGroupField(\''+g.id+'\',\'by\',this.value)">'
         +'</div>'
@@ -14074,7 +14074,7 @@ function pzFinishesHtml(i, nm, s) {
     return '<div class="pz-fc' + (fin ? '' : ' rough') + '">' + pzFDel("pzDelLine('materials'," + x.gi + ")", l.item) + '<div class="pz-fimg"' + img + (fin ? ' onclick="pzPhoto(' + x.gi + ')"' : '') + '>' + (img ? '' : (fin ? pzIcon(l.item) : '🧰')) + '<em>' + (fin ? 'tap to add photo' : 'installation material') + '</em></div>' +
       '<div class="pz-fb"><b>' + esc(l.item) + '</b><div class="pz-mut"' + (fin ? ' onclick="pzSpec(' + x.gi + ')" style="cursor:pointer"' : '') + '>' + (fin ? (l.spec ? esc(l.spec) : '🔍 Find product · brand / model / color') : 'Not shown as a card to customer') + '</div>' +
       (fin && l.link ? '<a class="pz-plink" href="' + esc(l.link) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 ' + esc(l.linkStore || "View product") + ' ↗</a>' : '') +
-      (fin ? '<label class="pz-tg"><input type="checkbox" onchange="pzSupply(' + i + ',' + x.gi + ',this.checked)"> Customer supplies</label><div class="pz-mut">Sani supplies · ' + pzF(cost) + '</div>' +
+      (fin ? '<label class="pz-tg"><input type="checkbox" onchange="pzSupply(' + i + ',' + x.gi + ',this.checked)"> Customer supplies</label><div class="pz-mut">Sani Building Corp supplies · ' + pzF(cost) + '</div>' +
         sel(l.finishStatus, "pzLine('materials'," + x.gi + ",'finishStatus',this.value);pzDirty()") : '') +
       '</div></div>';
   });
