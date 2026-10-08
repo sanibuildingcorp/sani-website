@@ -62,6 +62,7 @@ process.env.RESEND_API_KEY = 'test-key';
 process.env.MY_SITE_ID = 'site';
 process.env.MY_BLOBS_TOKEN = 'tok';
 process.env.PUBLIC_SITE_URL = 'https://www.sanibuildingcorp.com';
+process.env.DASHBOARD_KEY = 'dash-test-key';
 
 const { handler } = require(path.join(__dirname, '..', 'netlify', 'functions', 'send-invoice.js'));
 
@@ -79,7 +80,7 @@ function xqnq() {
   };
 }
 const reset = () => { STORE = { 'SBC-260821-XQNQ': xqnq() }; sent = []; };
-const call = (body) => handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify(body) });
+const call = (body) => handler({ httpMethod: 'POST', headers: { 'x-sbc-key': 'dash-test-key' }, body: JSON.stringify(body) });
 const rec = () => STORE['SBC-260821-XQNQ'];
 const inv = (n) => (rec().invoices || []).find((i) => i.number === n);
 

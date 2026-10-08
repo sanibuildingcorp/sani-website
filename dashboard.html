@@ -9181,6 +9181,8 @@ function closeInvoiceModal() {
 /* Re-render the invoice modal (preserves typed invoiceState, refreshes history) */
 function refreshInvoiceHistory() {
   if (!currentRecord) return;
+  var _pi = document.getElementById("pz-inv"); if (_pi && _pi.classList.contains("on")) { try { pzInvRender(); } catch (_) {} }
+  var _m = document.getElementById("invoice-modal"); if (!_m || !_m.classList.contains("show")) return;
   const est = gatherForm();
   const t = calcTotal(est);
   const prior = (currentRecord.invoices || []).reduce(function(s, inv) { return s + (Number(inv.amount) || 0); }, 0);
@@ -9351,7 +9353,7 @@ async function deleteInvoice(invoiceNumber, amount) {
   if (!currentRecord) return;
   if (!confirm("Delete invoice " + invoiceNumber + " (" + fmt(amount) + ")?")) return;
   try {
-    var r = await fetch("/.netlify/functions/delete-invoice", {
+    var r = await sbcFetch("/.netlify/functions/delete-invoice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ref: currentRecord.ref, invoiceNumber: invoiceNumber }),
@@ -9512,7 +9514,7 @@ async function toggleInvoicePaid(invoiceNumber, makePaid) {
   if (!currentRecord) return;
   if (!makePaid && !confirm("Mark invoice " + invoiceNumber + " as UNPAID again?")) return;
   try {
-    const r = await fetch("/.netlify/functions/mark-invoice-paid", {
+    const r = await sbcFetch("/.netlify/functions/mark-invoice-paid", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ref: currentRecord.ref, invoiceNumber: invoiceNumber, paid: makePaid }),
@@ -10009,7 +10011,7 @@ async function submitInvoice() {
   btn.innerHTML = '<span class="ai-spin"></span> Sending…';
 
   try {
-    const r = await fetch("/.netlify/functions/send-invoice", {
+    const r = await sbcFetch("/.netlify/functions/send-invoice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -13363,6 +13365,12 @@ try {
 .pz-tc-m{max-width:86%;padding:8px 11px;border-radius:14px;font-size:15px;line-height:1.35;word-wrap:break-word}.pz-tc-m.me{align-self:flex-end;background:#18305a;color:#fff;border-bottom-right-radius:4px}.pz-tc-m.ai{align-self:flex-start;background:#eef2f9;color:#16202e;border-bottom-left-radius:4px}
 .pz-tc-more{font-size:12px;align-self:center}.pz-tc-dots i{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:#8a93a3;animation:pzdot 1s infinite}.pz-tc-dots i:nth-child(2){animation-delay:.2s}.pz-tc-dots i:nth-child(3){animation-delay:.4s}
 @keyframes pzdot{0%,80%,100%{opacity:.3}40%{opacity:1}}
+.pzi-top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #e3e6ec;position:sticky;top:0;background:#fff;z-index:2;font-size:17px}
+.pzi-body{padding:12px 14px 40px}.pzi-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}.pzi-sum div{background:#f5f6f9;border-radius:10px;padding:8px 10px}.pzi-sum small{display:block;color:#5d6577;font-size:12px}.pzi-sum b{font-size:16px}
+.pzi-chips{display:grid;gap:6px;margin:6px 0 10px}.pzi-chip{display:flex;justify-content:space-between;align-items:center;text-align:left;border:1px solid #d5d9e2;background:#fff;border-radius:10px;padding:11px 12px;font-size:15px;color:#13254a}.pzi-chip small{color:#5d6577;font-size:13px}.pzi-chip.on{border:2px solid #c9a24a;background:#fbf5e6}
+.pzi-f{display:block;margin:8px 0}.pzi-f span{display:block;font-size:13px;color:#5d6577;margin-bottom:3px}.pzi-f input,.pzi-f textarea,.pzi-f select{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border:1px solid #d5d9e2;border-radius:10px;background:#fff;font-family:inherit}
+.pzi-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:420px){.pzi-row{grid-template-columns:1fr}}
+.pzi-act{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:14px;position:sticky;bottom:0;background:#fff;padding:8px 0}
 .pz-tc-chips{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px}.pz-tc-chips button{flex:0 0 auto;border:1px solid #c9a24a;background:#fbf5e6;color:#5b4410;border-radius:999px;padding:8px 12px;font-size:14px;font-weight:600;white-space:nowrap}
 .pz-tk-in textarea{flex:1;min-width:0;font-size:16px;border:1px solid #d5d9e0;border-radius:18px;padding:10px 12px;resize:none;font-family:inherit;line-height:1.3;max-height:140px}
 .pz-tk .pz-tk-q{font-size:13px;display:flex;gap:5px;align-items:center;color:#5d6878}
@@ -13618,6 +13626,121 @@ function pzPayPlan(total, choice) {
   return parts.map(function (x, i) { var amt = i === parts.length - 1 ? Math.round(left * 100) / 100 : Math.round(total * x[1]) / 100; left -= amt; return { label: x[0], pct: x[1], amount: amt }; });
 }
 function pzTerms() { var e = pzEst(); if (!e.terms || typeof e.terms !== "object") e.terms = {}; return e.terms; }
+/* ════ PHONE INVOICE SHEET ("I need send invoice for customer") ════
+   Opens from ⋯ / Quick actions. Amounts follow the payment schedule in
+   5 · Price & terms; shows invoiced / paid / owed; Preview opens the exact
+   customer invoice page (draft stays in this browser); Send emails it. */
+var PZI = null;
+function pzInvMoney(v) { return "$" + (Math.round((Number(v) || 0) * 100) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function pzInvSums() {
+  var invs = (currentRecord && currentRecord.invoices) || [], tot = pzTotal();
+  var inv = invs.reduce(function (s, i) { return s + (Number(i.amount) || 0); }, 0);
+  var paid = invs.filter(function (i) { return i.status === "paid"; }).reduce(function (s, i) { return s + (Number(i.amount) || 0); }, 0);
+  return { total: tot, invoiced: inv, paid: paid, left: Math.max(0, Math.round((tot - inv) * 100) / 100), count: invs.length };
+}
+function pzInvCovers(label) {
+  var e = pzEst(), r = currentRecord || {}, out = [];
+  var title = e.projectTitle || ((r.request || {}).service) || "Renovation project";
+  out.push(label + " - " + title);
+  pzSvcs().forEach(function (s) { var t = s && (s.title || s.name); if (t && out.indexOf(t) < 0 && t !== title) out.push(t); });
+  return out.join("\n");
+}
+function pzInvoice() {
+  if (!currentRecord) return;
+  try { pzMenu(false); } catch (_) {}
+  var c = currentRecord.customer || {}, S = pzInvSums();
+  var plan = pzPayPlan(S.total, pzTerms().payment);
+  /* next step of the schedule not invoiced yet */
+  var step = plan[Math.min(S.count, Math.max(0, plan.length - 1))] || { label: "Payment", amount: S.left };
+  var amt = S.count >= plan.length ? S.left : Math.min(step.amount, S.left || step.amount);
+  var type = S.count === 0 ? (plan.length === 1 ? "full" : "deposit") : (Math.abs(amt - S.left) < 0.01 ? "final" : "custom");
+  PZI = { type: type, label: step.label, amount: Math.round(amt * 100) / 100, dueDate: "", memo: "",
+    covers: pzInvCovers(step.label), name: c.name || "", email: c.email || "", phone: c.phone || "", address: c.address || "",
+    projectAddress: currentRecord.projectAddress || "", method: "zelle",
+    details: "Zelle: sanibuildingcorp@gmail.com\nAccount name: Sani Building Corp", link: "" };
+  var d = document.getElementById("pz-inv");
+  if (!d) { document.body.insertAdjacentHTML("beforeend", '<div class="pz-drawer" id="pz-inv" onclick="if(event.target===this)pzClose(\'pz-inv\')"><div class="pz-pan"></div></div>'); d = document.getElementById("pz-inv"); }
+  pzInvRender();
+  d.classList.add("on");
+}
+function pzInvPick(i) {
+  var S = pzInvSums(), plan = pzPayPlan(S.total, pzTerms().payment);
+  if (i === "left") { PZI.amount = S.left; PZI.type = S.count ? "final" : "full"; PZI.label = S.count ? "Remaining balance" : "Payment in full"; }
+  else if (i === "custom") { PZI.type = "custom"; PZI.label = "Payment"; }
+  else { var p = plan[i]; PZI.amount = p.amount; PZI.label = p.label; PZI.type = i === 0 && plan.length > 1 ? "deposit" : (i === plan.length - 1 ? "final" : "custom"); }
+  PZI.covers = pzInvCovers(PZI.label);
+  pzInvRender();
+}
+function pzInvSet(k, v) { if (k === "amountTxt") { k = "amount"; } PZI[k] = k === "amount" ? (Number(v) || 0) : v; if (k === "amount") { var b = document.getElementById("pzi-sendamt"); if (b) b.textContent = pzInvMoney(PZI.amount); } }
+function pzInvRender() {
+  var d = document.getElementById("pz-inv"); if (!d || !PZI) return;
+  PZI.amountTxt = (Math.round(PZI.amount * 100) / 100).toFixed(2);
+  var S = pzInvSums(), plan = pzPayPlan(S.total, pzTerms().payment), q = function (v) { return esc(v == null ? "" : String(v)); };
+  var f = function (lab, k, type, ph) { return '<label class="pzi-f"><span>' + lab + '</span><input type="' + (type || "text") + '"' + (type === "number" ? ' inputmode="decimal" step="0.01"' : "") + ' value="' + q(PZI[k]) + '" placeholder="' + q(ph || "") + '" oninput="pzInvSet(\'' + k + '\',this.value)"></label>'; };
+  var ta = function (lab, k, rows) { return '<label class="pzi-f"><span>' + lab + '</span><textarea rows="' + rows + '" oninput="pzInvSet(\'' + k + '\',this.value)">' + q(PZI[k]) + '</textarea></label>'; };
+  var chips = plan.map(function (p, i) { return '<button type="button" class="pzi-chip' + (PZI.label === p.label && Math.abs(PZI.amount - p.amount) < 0.01 ? " on" : "") + '" onclick="pzInvPick(' + i + ')"><b>' + q(p.label) + '</b><small>' + p.pct + '% · ' + pzInvMoney(p.amount) + '</small></button>'; }).join("") +
+    (S.count ? '<button type="button" class="pzi-chip' + (PZI.type === "final" && Math.abs(PZI.amount - S.left) < 0.01 ? " on" : "") + '" onclick="pzInvPick(\'left\')"><b>Remaining balance</b><small>' + pzInvMoney(S.left) + '</small></button>' : "") +
+    '<button type="button" class="pzi-chip' + (PZI.type === "custom" && PZI.label === "Payment" ? " on" : "") + '" onclick="pzInvPick(\'custom\')"><b>Custom</b><small>type amount</small></button>';
+  var methods = [["zelle", "Zelle"], ["check", "Check"], ["bank", "Bank transfer"], ["cash", "Cash"], ["link", "Card / online link"]];
+  d.querySelector(".pz-pan").innerHTML =
+    '<div class="pzi-top"><b>💳 Invoice</b><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzClose(\'pz-inv\')">Close</button></div>' +
+    '<div class="pzi-body">' +
+    '<div class="pzi-sum"><div><small>Job total</small><b>' + pzInvMoney(S.total) + '</b></div><div><small>Invoiced</small><b>' + pzInvMoney(S.invoiced) + '</b></div><div><small>Paid</small><b>' + pzInvMoney(S.paid) + '</b></div><div><small>Not invoiced</small><b>' + pzInvMoney(S.left) + '</b></div></div>' +
+    '<div class="pz-ey">What to bill (from your payment schedule)</div><div class="pzi-chips">' + chips + '</div>' +
+    '<div class="pzi-row">' + f("Amount $", "amountTxt", "number") + f("Due date (empty = upon receipt)", "dueDate", "date") + '</div>' +
+    ta("What this invoice covers (one line each)", "covers", 4) +
+    '<div class="pz-ey" style="margin-top:12px">Customer</div>' +
+    f("Name", "name") + f("Email - the invoice goes here", "email", "email", "customer@email.com") + f("Phone", "phone", "tel") + f("Billing address", "address") + f("Job address (only if different)", "projectAddress") +
+    '<div class="pz-ey" style="margin-top:12px">How they pay</div>' +
+    '<label class="pzi-f"><span>Method</span><select onchange="pzInvSet(\'method\',this.value);pzInvRender()">' + methods.map(function (m) { return '<option value="' + m[0] + '"' + (PZI.method === m[0] ? " selected" : "") + '>' + m[1] + '</option>'; }).join("") + '</select></label>' +
+    ta("Payment details shown to the customer", "details", 3) +
+    (PZI.method === "link" ? f("Pay Now link (Square, Stripe, PayPal…)", "link", "url", "https://") : "") +
+    ta("Note to the customer (optional)", "memo", 2) +
+    '<div class="pzi-act"><button type="button" class="pz-btn pz-ghost" onclick="pzInvPreview()">👁 Preview</button><button type="button" class="pz-btn" id="pzi-send" onclick="pzInvSend()">📨 Send <span id="pzi-sendamt">' + pzInvMoney(PZI.amount) + '</span></button></div>' +
+    '<div style="margin-top:14px">' + (detailInvoicesHtml(currentRecord) || '<div class="pz-mut">No invoices on this job yet.</div>') + '</div>' +
+    '</div>';
+}
+function pzInvDraft() {
+  var r = currentRecord || {}, e = pzEst();
+  return { ref: r.ref, invoiceType: PZI.type, amount: Math.round(PZI.amount * 100) / 100, dueDate: PZI.dueDate, memo: PZI.memo, workPerformed: PZI.covers,
+    customerName: PZI.name, customerEmail: PZI.email, customerPhone: PZI.phone, customerAddress: PZI.address, projectAddress: PZI.projectAddress,
+    paymentMethod: PZI.method, paymentDetails: PZI.details, paymentLink: PZI.link, includePaymentLink: PZI.method === "link" && !!String(PZI.link).trim() };
+}
+function pzInvCheck() {
+  if (!(PZI.amount > 0)) { toast("Enter the amount to bill", true); return false; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(PZI.email).trim())) { toast("Add the customer's email - the invoice is sent there", true); return false; }
+  if (PZI.method === "link" && !/^https?:\/\//.test(String(PZI.link).trim())) { toast("Paste the Pay Now link (starts with https://)", true); return false; }
+  return true;
+}
+function pzInvPreview() {
+  var b = pzInvDraft(), r = currentRecord || {}, e = pzEst();
+  var inv = { number: "INV-PREVIEW", type: b.invoiceType, amount: b.amount, dueDate: b.dueDate, memo: b.memo, workPerformed: b.workPerformed, projectAddress: b.projectAddress,
+    paymentMethod: b.paymentMethod, paymentDetails: b.paymentDetails, paymentLink: b.paymentLink, includePaymentLink: b.includePaymentLink, sentAt: new Date().toISOString(), status: "unpaid" };
+  try { localStorage.setItem("sbc-inv-preview", JSON.stringify({ record: { ref: r.ref, customer: { name: b.customerName, email: b.customerEmail, phone: b.customerPhone, address: b.customerAddress }, projectAddress: b.projectAddress, request: { service: (r.request || {}).service }, estimate: { projectTitle: e.projectTitle } }, invoice: inv })); }
+  catch (_) { toast("Preview could not open", true); return; }
+  window.open("/invoice.html?preview=1&t=" + Date.now(), "_blank");
+}
+async function pzInvSend() {
+  if (!pzInvCheck()) return;
+  var b = pzInvDraft();
+  if (!confirm("Send " + (PZI.label || "invoice") + " " + pzInvMoney(b.amount) + " to " + (b.customerName || "the customer") + " at " + b.customerEmail + "?")) return;
+  var btn = document.getElementById("pzi-send"); if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
+  try {
+    var r = await sbcFetch("/.netlify/functions/send-invoice", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) });
+    var data = await r.json().catch(function () { return {}; });
+    if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+    currentRecord.customer = Object.assign({}, currentRecord.customer || {}, { name: b.customerName, email: b.customerEmail, phone: b.customerPhone, address: b.customerAddress });
+    var g = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(currentRecord.ref) + "&t=" + Date.now());
+    var j = await g.json().catch(function () { return null; });
+    if (j && Array.isArray(j.invoices)) { currentRecord.invoices = j.invoices; if (j.status) currentRecord.status = j.status; }
+    toast(data.forwardedToContractor ? "Invoice sent to your inbox to forward" : "Invoice " + (data.invoiceNumber || "") + " sent to " + b.customerEmail);
+    try { loadEstimates(); } catch (_) {}
+    pzInvoice();
+  } catch (e) {
+    toast("Send failed: " + e.message, true);
+    if (btn) { btn.disabled = false; btn.textContent = "📨 Send " + pzInvMoney(b.amount); }
+  }
+}
 function pzTotal() {
   var r = currentRecord || {};
   if (r.customerFinalTotal != null && isFinite(Number(r.customerFinalTotal))) return Number(r.customerFinalTotal);
@@ -13991,6 +14114,7 @@ function pzRender() {
   var side = document.getElementById("pz-side");
   if (side) side.innerHTML = '<div class="pz-c" id="pz-ready"><div class="pz-ey">Ready to send</div><ul class="pz-chk" id="pz-chk"></ul></div>' + priceHtml +
     '<div class="pz-c pz-quick"><div class="pz-ey">Quick actions</div><div style="display:grid;gap:6px;margin-top:6px">' +
+      '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzInvoice()">💳 Invoice</button>' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzDuplicate()">Duplicate estimate</button>' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzSaveTemplate()">Save as my template</button>' +
       '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="copyScopeLink()">Scope only (no prices)</button>' +
@@ -14960,7 +15084,7 @@ function pzMount() {
     '<div class="pz-wrap"><main id="pz-main"></main><aside id="pz-side"></aside></div>' +
     '<div class="pz-foot"><button type="button" class="pz-btn pz-ghost" onclick="pzPreview()"><span class="pz-dl">Preview customer view</span><span class="pz-ml">👁 Preview</span></button><button type="button" class="pz-btn pz-ghost pz-ml pz-mx" onclick="pzMenu(true)">⋯</button><button type="button" class="pz-btn pz-gold" onclick="pzSend()"><span class="pz-dl">Send estimate</span><span class="pz-ml">Send</span></button></div>' +
     '<div class="pz-menu" id="pz-menu" onclick="if(event.target===this)pzMenu(false)"><div class="pz-sheet">' +
-      [["Set my own total", "pzSetTotal()"], ["Duplicate estimate", "pzDuplicate()"], ["Save as my template", "pzSaveTemplate()"], ["Scope only (no prices)", "copyScopeLink()"], ["PDF", "downloadEstimatePdf(\'customer\')"], ["AI chat", "pzTools(\'ask\')"], ["More tools", "pzTools()"], ["🗑 Delete project", "deleteEstimate()"], ["Close this estimate", "closeEdit()"]].map(function (x) { return '<button type="button" onclick="pzMenu(false);' + x[1] + '">' + x[0] + '</button>'; }).join("") +
+      [["💳 Invoice", "pzInvoice()"], ["Set my own total", "pzSetTotal()"], ["Duplicate estimate", "pzDuplicate()"], ["Save as my template", "pzSaveTemplate()"], ["Scope only (no prices)", "copyScopeLink()"], ["PDF", "downloadEstimatePdf(\'customer\')"], ["AI chat", "pzTools(\'ask\')"], ["More tools", "pzTools()"], ["🗑 Delete project", "deleteEstimate()"], ["Close this estimate", "closeEdit()"]].map(function (x) { return '<button type="button" onclick="pzMenu(false);' + x[1] + '">' + x[0] + '</button>'; }).join("") +
     '</div></div>' +
     '<div class="pz-drawer" id="pz-prev" onclick="if(event.target===this)pzClose(\'pz-prev\')"><div class="pz-pan"></div></div>' +
     '<div class="pz-drawer wide" id="pz-tools" onclick="if(event.target===this)pzClose(\'pz-tools\')"><div class="pz-pan"><div style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e3e6ec;position:sticky;top:0;background:#fff;z-index:2"><b>More tools</b><button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzClose(\'pz-tools\')">Close ✕</button></div></div></div>';

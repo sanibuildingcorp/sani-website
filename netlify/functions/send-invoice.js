@@ -9,6 +9,8 @@ const { getStore } = require("@netlify/blobs");
 const ADDR = require("./lib/addresses");
 const history = require("./lib/history");
 
+const { requireDashboardKey } = require("./lib/require-dashboard-key");
+
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers: cors(), body: "" };
@@ -16,6 +18,8 @@ exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
   }
+  /* Contractor only: sends mail from our domain / changes money on the record. */
+  const denied = requireDashboardKey(event, cors()); if (denied) return denied;
 
   try {
     const body = JSON.parse(event.body || "{}");
@@ -409,7 +413,7 @@ function sendResend(apiKey, payload) {
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
   };
