@@ -51,7 +51,7 @@ exports.handler = async function (event) {
       const quoteUrl = siteUrl + "/quote.html?ref=" + encodeURIComponent(ref);
       const m = followUp.message(record, step, quoteUrl);
       try {
-        await sendResend({ from: ADDR.FROM_ZURABI, to: [str(record.customer.email)], reply_to: ADDR.replyTo(), subject: m.subject, html: m.html, text: m.text, headers: threadHeaders(ref) });
+        await sendResend({ from: ADDR.FROM_ZURABI, to: [str(record.customer.email)], reply_to: ADDR.replyTo(), subject: m.subject, html: require("./lib/trust-footer").inject(m.html), text: m.text, headers: threadHeaders(ref) });
         /* Read again just before writing: the customer may have answered while
            this run was sending, and nothing of theirs is overwritten. */
         const fresh = (await store.get(b.key, { type: "json" })) || record;

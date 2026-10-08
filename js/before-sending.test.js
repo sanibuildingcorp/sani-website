@@ -86,9 +86,9 @@ const asDashboard = async (ref) => JSON.parse((await get.handler({ httpMethod: '
   {
     const m = build({ ref: 'SBC-DRAFT', record: DRAFT, message: MSG, audience: 'customer', siteUrl: 'https://www.sanibuildingcorp.com' });
     ok('A MESSAGE ABOUT A NEVER-SENT ESTIMATE SHOWS NO PRICE TO THE CUSTOMER', m.html.indexOf('9,181') === -1 && m.html.indexOf('$') === -1 && m.total === 0, (m.html.match(/\$[\d,]+\.\d\d/) || [''])[0]);
-    ok('THE SUBJECT IS THE PROJECT IN WORDS - no "Re:", no code first', /^Upper East Side Apartment — Molding( · [^—]+)? — message from Zurabi, Sani Building Corp$/.test(m.subject), m.subject);
+    ok('THE SUBJECT IS THE PROJECT IN WORDS - no "Re:", no code first', /^Upper East Side Apartment — Molding( · [^|]+)? \| Sani Building Corp$/.test(m.subject), m.subject);
     ok('the header card still names the estimate, which a Gmail reply quotes back', /Estimate SBC-DRAFT/.test(m.html));
-    ok('THE REPLY CARD IS GOLD, BOLD AND SAYS WHERE THE REPLY GOES', /border:2px solid #c8860a/.test(m.html) && /Tap here to type your reply/.test(m.html) && /Your reply goes straight to Zurabi/.test(m.html));
+    ok('THE REPLY CARD IS GOLD, BOLD AND SAYS WHERE THE REPLY GOES', /border:2px solid #c8860a/.test(m.html) && /Tap here to type your reply/.test(m.html) && /Your reply goes straight to our team/.test(m.html));
     ok('...and it comes before the button', m.html.indexOf('Tap here to type your reply') < m.html.indexOf('Open my project'));
     const c = build({ ref: 'SBC-DRAFT', record: DRAFT, message: MSG, audience: 'contractor', siteUrl: 'https://www.sanibuildingcorp.com' });
     ok('his own copy still shows the live draft total and keeps the ref first in the subject', /\$9,181\.16/.test(c.html) && c.subject.indexOf('SBC-DRAFT') === 0, c.subject);

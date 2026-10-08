@@ -149,7 +149,7 @@ exports.handler = async function (event) {
       to: [recipientEmail],
       reply_to: ADDR.replyTo(),
       subject: `Your estimate for ${escapePlain(projectTitle)} — ${fmt(total)} (#${ref})`,
-      html,
+      html: require("./lib/trust-footer").inject(html),
       text: textBody,
       /* The same thread id every message about this estimate carries, so
          the quote and the messages after it are one conversation in Gmail. */

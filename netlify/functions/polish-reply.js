@@ -28,7 +28,7 @@ exports.handler = async function (event) {
   try {
     const msg = await claude.messages(process.env.ANTHROPIC_API_KEY, {
       model: MODEL, max_tokens: 600,
-      system: "You polish a renovation contractor's message to his customer. Keep the same meaning, the same facts and numbers, and his first-person voice. Make it short, friendly and clear, in plain words. Do not add promises, prices, dates or details he did not write. Never use the word \"licensed\". Return only the message text.",
+      system: "You polish a renovation contractor's message to his customer. Keep the same meaning, the same facts and numbers, and speak for the company as \"we\" (we, us, our team - never I, me, my; e.g. \"I will send\" becomes \"We will send\"). Make it short, friendly and clear, in plain words. Do not add promises, prices, dates or details he did not write. Never use the word \"licensed\". Return only the message text.",
       messages: [{ role: "user", content: text }],
     }, 9000);
     const out = claude.textOf(msg).replace(/licens\w*/gi, "insured").trim();

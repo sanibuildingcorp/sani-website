@@ -110,7 +110,7 @@ exports.handler = async function (event) {
       to: [recipientEmail],
       reply_to: ADDR.replyTo(),
       subject: `Your free estimate from Sani Building Corp, ${firstName}`,
-      html,
+      html: require("./lib/trust-footer").inject(html),
       text: textBody,
     });
 

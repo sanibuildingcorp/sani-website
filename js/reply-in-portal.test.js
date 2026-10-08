@@ -57,8 +57,8 @@ console.log('\nthe customer email leads with a place to type\n');
     new RegExp('<a href="' + REPLY_URL.replace(/[.?]/g, '\\$&') + '"[^>]*>\\s*(?:\\S+\\s)?Tap here to type your reply').test(h));
   ok('...and it opens the page at the reply box, not just the page', h.indexOf(REPLY_URL) !== -1);
   ok('it is styled to be seen — gold border, cream fill, bold dark text, and it says the reply goes to Zurabi',
-    /border:2px solid #c8860a[^>]*color:#0a1628[^>]*font-weight:bold/.test(h) && /Your reply goes straight to Zurabi/.test(h));
-  ok('it is labelled with who they are replying to', /Reply to Zurabi/.test(h));
+    /border:2px solid #c8860a[^>]*color:#0a1628[^>]*font-weight:bold/.test(h) && /Your reply goes straight to our team/.test(h));
+  ok('it is labelled with who they are replying to', /Reply to us/.test(h));
   ok('the button points at the same place', new RegExp('<a href="' + REPLY_URL.replace(/[.?]/g, '\\$&') + '"[^>]*>Open my project').test(h));
   ok('...and says why: everything stays together', /Or simply reply to this email/.test(h));
   ok('the old wording ("View your project & reply") is gone from the customer copy', h.indexOf('View your project') === -1);

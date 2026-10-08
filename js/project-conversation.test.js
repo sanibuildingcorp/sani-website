@@ -6,7 +6,7 @@ const rec = { customer: { name: 'Murphy Smith', address: 'Gould St, Brooklyn' },
 const hist = [1, 2, 3, 4].map((i) => ({ from: i % 2 ? 'customer' : 'contractor', text: 'Old message ' + i, at: '2026-10-0' + i + 'T12:00:00Z' }));
 const m = build({ ref: 'SBC-261008-1TLL', record: rec, message: { from: 'contractor', text: 'How can we help you?', at: '2026-10-08T18:27:00Z' }, history: hist, audience: 'customer' });
 ok('greets the customer by first name', /Hi Murphy,/.test(m.html) && /Hi Murphy,/.test(m.text));
-ok('subject names the project and street, no code', m.subject === 'Bathroom Renovation · Gould St — message from Zurabi, Sani Building Corp', m.subject);
+ok('subject names the project and street, no code', m.subject === 'Bathroom Renovation · Gould St | Sani Building Corp', m.subject);
 ok('the last three earlier messages travel with it, newest first', !/Old message 1/.test(m.html) && m.html.indexOf('Old message 4') < m.html.indexOf('Old message 2'));
 ok('says a plain email reply works', /Or simply reply to this email/.test(m.html));
 ok('the header card still carries the ref for filing an email reply', /Estimate SBC-261008-1TLL/.test(m.html));
@@ -18,4 +18,16 @@ const q = fs.readFileSync(path.join(ROOT, 'quote.html'), 'utf8');
 ok('quote.html tells the server when the viewer is the owner', /'x-sbc-viewer':'owner'/.test(q));
 const d = fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8');
 ok('phone card: quick replies, Seen, milestones, nudge, closed', /cnv-quick/.test(d.slice(d.indexOf('function pzChatHtml'))) && /✓✓ Seen/.test(d) && /function cnvMilestones/.test(d) && /No answer for/.test(d) && /Ask for a Google review/.test(d));
+const trust = require(path.join(ROOT, 'netlify/functions/lib/trust-footer.js'));
+const once = trust.inject(trust.inject('<html><body><p>x</p></body></html>'));
+ok('trust footer goes in once, before </body>', once.split('<!--sbc-trust-->').length === 2 && once.indexOf('<!--sbc-trust-->') < once.indexOf('</body>'));
+ok('trust footer: insured, Google rating, Home Depot Pro, payment marks, never "licensed"', /Fully insured/.test(once) && /4\.9 on Google/.test(once) && /Home Depot Pro/.test(once) && /VISA/.test(once) && /mastercard/.test(once) && /Zelle/.test(once) && !/licensed/i.test(once));
+ok('customer message email carries the trust footer; his alert does not', /sbc-trust/.test(m.html) && !/sbc-trust/.test(c.html));
+const g = build({ ref: 'SBC-1', record: rec, message: { from: 'contractor', text: 'Hi Murphy,\n\nWe would like to visit.', at: '2026-10-08T18:27:00Z' }, audience: 'customer' });
+ok('no second greeting when the message already says Hi', (g.html.match(/Hi Murphy,/g) || []).length === 1 && (g.text.match(/Hi Murphy,/g) || []).length === 1);
+const s = build({ ref: 'SBC-1', record: { customer: { name: 'Z', address: '3855 Shore Pkwy, 1K' }, estimate: { projectTitle: 'Floor Tile — 98 Front St, Apt 4P' } }, message: { from: 'contractor', text: 'x', at: '2026-10-08T18:27:00Z' }, audience: 'customer' });
+ok('a title that already has an address does not get a second one', s.subject === 'Floor Tile — 98 Front St, Apt 4P | Sani Building Corp', s.subject);
+for (const f of ['send-invoice', 'send-quote', 'send-estimate-link', 'send-scope-link', 'send-confirmation', 'handyman-send-confirmation', 'quote-response', 'follow-ups-background', 'lib/approved-email'])
+  ok('customer email ' + f + ' uses the trust footer', /trust-footer"\)\.inject\(/.test(fs.readFileSync(path.join(ROOT, 'netlify/functions/' + f + '.js'), 'utf8')));
+ok('project page and invoice page show the trust strip', ['quote.html', 'invoice.html'].every((f) => /class="sbt"/.test(fs.readFileSync(path.join(ROOT, f), 'utf8'))));
 console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

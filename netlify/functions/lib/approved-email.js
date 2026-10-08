@@ -131,7 +131,7 @@ function buildApprovedEmail(o) {
     "Your project: " + quoteUrl + "\n\n" +
     "Best,\nZurabi\nSani Building Corp · Brooklyn, NY · Fully insured\n(332) 277-0990\n";
 
-  return { subject: subject, html: html, text: text, quoteUrl: quoteUrl, total: total };
+  return { subject: subject, html: require("./trust-footer").inject(html), text: text, quoteUrl: quoteUrl, total: total };
 }
 
 module.exports = buildApprovedEmail;

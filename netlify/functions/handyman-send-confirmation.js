@@ -296,7 +296,7 @@ async function sendCustomerConfirmationEmail({ booking, agreement, displayPrice,
     bcc: [contractorEmail],
     reply_to: ADDR.replyTo(),
     subject: `✍️ Sign Your Service Agreement · ${booking.ref}`,
-    html: html
+    html: require("./lib/trust-footer").inject(html)
   });
 }
 

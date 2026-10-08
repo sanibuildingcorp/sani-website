@@ -4892,17 +4892,17 @@ function cnvQuick(k) {
   var job = (est.projectTitle || req.service || "your project").toLowerCase();
   var addr = String(c.address || req.address || "").split(",")[0];
   var T = {
-    visit: "I would like to come by" + (addr ? " " + addr : "") + " to see the space and take measurements. What day and time work best for you this week?",
-    ready: "Your estimate for the " + job + " is ready. You can see the full scope, the timeline and the price on your project page. Let me know if you have any questions or would like to change anything.",
-    follow: "Just checking in on the " + job + ". Did you have a chance to look at it? I am happy to answer any questions or adjust the scope.",
-    start: "We are confirmed to start the " + job + " on [date]. Our crew will arrive around 8:00 AM. Please let me know if anything changes on your side.",
-    photos: "Could you send me a few photos of the area? A wide shot of the whole space and close-ups of anything damaged help me price it accurately. You can add them on your project page.",
-    invoice: "I have sent your invoice for the " + job + ". You can view and pay it from the link in the email. Thank you.",
-    done: "The " + job + " is finished. Thank you for having us. Please take a look and let me know if anything needs attention.",
+    visit: "We would like to visit" + (addr ? " " + addr : "") + " to see the space and take measurements. What day and time work best for you this week?",
+    ready: "Your estimate for the " + job + " is ready. You can see the full scope, the timeline and the price on your project page. Let us know if you have any questions or would like to change anything.",
+    follow: "We are checking in on the " + job + ". Have you had a chance to review it? We are happy to answer any questions or adjust the scope.",
+    start: "We are confirmed to start the " + job + " on [date]. Our crew will arrive around 8:00 AM. Please let us know if anything changes on your side.",
+    photos: "Could you send us a few photos of the area? A wide shot of the whole space and close-ups of anything damaged help us price it accurately. You can add them on your project page.",
+    invoice: "We have sent your invoice for the " + job + ". You can view and pay it from the link in the email. Thank you.",
+    done: "The " + job + " is finished. Thank you for having us. Please take a look and let us know if anything needs attention.",
     review: "Thank you again for choosing Sani Building Corp. If you were happy with the work, a short Google review would mean a lot to us: https://g.page/r/CXtX_n13XF6aEBE/review",
   };
   var box = document.getElementById("cnv-text"); if (!box) return;
-  box.value = "Hi" + (first ? " " + first : "") + ",\n\n" + T[k] + "\n\nThank you,\nZurabi";
+  box.value = "Hi" + (first ? " " + first : "") + ",\n\n" + T[k];
   box.focus(); try { box.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (_) {}
 }
 function cnvRefresh() {
