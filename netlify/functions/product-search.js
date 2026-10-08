@@ -10,5 +10,5 @@ exports.handler = async function (event) {
   if (!/^[A-Za-z0-9_-]{6,60}$/.test(id)) return { statusCode: 400, headers: h, body: JSON.stringify({ error: "bad job" }) };
   const s = getStore({ name: "product-search", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
   const j = await s.get(id, { type: "json" }).catch(() => null);
-  return { statusCode: 200, headers: h, body: JSON.stringify(j || { status: "running" }) };
+  return { statusCode: 200, headers: h, body: JSON.stringify(j || { status: "missing" }) };
 };

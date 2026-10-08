@@ -26,15 +26,22 @@ exports.handler = async function (event) {
   const id = /^[A-Za-z0-9_-]{6,60}$/.test(str(b.job)) ? str(b.job) : "";
   const query = str(b.query).slice(0, 200);
   if (!id || !query) return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "job and query are required" }) };
-  const jobs = store();
-  await jobs.setJSON(id, { status: "running", query, at: new Date().toISOString() });
+  const started = Date.now();
+  let jobs = null;
+  const put = async (o) => { try { jobs = jobs || store(); await jobs.setJSON(id, Object.assign({ query, startedAt: new Date(started).toISOString(), at: new Date().toISOString() }, o)); } catch (e) { console.error("product-search store:", e && e.message); } };
+  await put({ status: "running", stage: "Searching stores" });
   try {
     if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not set");
-    let items = await findProducts(query, str(b.context).slice(0, 300));
-    items = await Promise.all(items.map(async (p) => Object.assign(p, { photo: p.photo || (await pagePhoto(p.url)) })));
-    await jobs.setJSON(id, { status: "done", query, items, at: new Date().toISOString() });
+    const items = await findProducts(query, str(b.context).slice(0, 300));
+    /* Show the products right away; photos follow (store pages can be slow). */
+    await put({ status: items.length ? "done" : "error", items, error: items.length ? "" : "Nothing found - try other words", photos: "loading" });
+    if (items.length) {
+      await Promise.all(items.map(async (p) => { if (!p.photo) p.photo = await pagePhoto(p.url); }));
+      await put({ status: "done", items, photos: "done" });
+    }
   } catch (e) {
-    await jobs.setJSON(id, { status: "error", query, error: str(e && e.message) || "search failed", at: new Date().toISOString() });
+    console.error("product-search:", e && e.message);
+    await put({ status: "error", error: str(e && e.message) || "search failed" });
   }
   return { statusCode: 202, headers: cors(), body: JSON.stringify({ ok: true }) };
 };
@@ -44,12 +51,19 @@ async function findProducts(query, context) {
 Use web search. Prefer product pages (not category or search pages) from Home Depot, Lowe's, Floor & Decor, Wayfair, Build.com, Ferguson, TileBar, Amazon, or the manufacturer.
 Return up to 6 different products that match the size/material asked for. Return JSON only, no other text:
 {"items":[{"name":"short product name with brand and size","brand":"","store":"Home Depot","price":"$29.98 or empty","url":"https://exact product page","image":"https://direct image URL if you saw one, else empty"}]}`;
-  const payload = JSON.stringify({ model: MODEL, max_tokens: 3000,
-    tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 4 }],
-    messages: [{ role: "user", content: prompt }] });
-  const j = await post("api.anthropic.com", "/v1/messages", payload, { "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" });
-  if (j.error) throw new Error(j.error.message || "AI error");
-  const text = arr(j.content).filter((c) => c && c.type === "text").map((c) => c.text).join("");
+  /* Long web searches can come back as stop_reason "pause_turn": send the turn
+     back to let it finish (max 3 rounds). */
+  const messages = [{ role: "user", content: prompt }];
+  let j = null, text = "";
+  for (let round = 0; round < 3; round++) {
+    const payload = JSON.stringify({ model: MODEL, max_tokens: 2500,
+      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 3 }], messages });
+    j = await post("api.anthropic.com", "/v1/messages", payload, { "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" });
+    if (j.error) throw new Error(j.error.message || "AI error");
+    text += arr(j.content).filter((c) => c && c.type === "text").map((c) => c.text).join("");
+    if (j.stop_reason !== "pause_turn") break;
+    messages.push({ role: "assistant", content: j.content });
+  }
   const m = text.match(/\{[\s\S]*\}/); if (!m) throw new Error("No products found - try other words");
   let o; try { o = JSON.parse(m[0]); } catch (_) { throw new Error("No products found - try other words"); }
   const seen = new Set();
@@ -92,7 +106,7 @@ function post(host, path, payload, headers) {
       const ch = []; res.on("data", (c) => ch.push(c));
       res.on("end", () => { try { resolve(JSON.parse(Buffer.concat(ch).toString("utf8"))); } catch (e) { reject(new Error("AI answered HTTP " + res.statusCode)); } });
     });
-    req.setTimeout(300000, () => req.destroy(new Error("The search took too long")));
+    req.setTimeout(150000, () => req.destroy(new Error("The search took too long - try again")));
     req.on("error", reject); req.write(payload); req.end();
   });
 }
