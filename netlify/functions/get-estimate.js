@@ -55,7 +55,7 @@ exports.handler = async function (event) {
       /* Additional work, linked both ways (create-estimate parentRef): the
          customer's page names it and links to it, never prices it here. */
       await attachAddons(store, data);
-      if (isScopeOnly) { const sv = scopeView(data); if (sv) { delete sv.ownerChat; delete sv.talkJob; delete sv.v5Ask; if (sv.estimate) { delete sv.estimate.sitePhotos; delete sv.estimate.ownerNotes; } } return { statusCode: 200, headers: cors(), body: JSON.stringify(sv) }; }
+      if (isScopeOnly) { const sv = scopeView(data); if (sv) { delete sv.ownerChat; delete sv.talkJob; delete sv.v5Ask; if (sv.estimate) { delete sv.estimate.sitePhotos; delete sv.estimate.ownerNotes; (sv.estimate.customerSupplied || []).forEach(function (c) { if (c) delete c.line; }); } } return { statusCode: 200, headers: cors(), body: JSON.stringify(sv) }; }
       const view = buildCustomerView(data, isDraftPreview);
       /* ══ THE CUSTOMER SEES WHAT WAS SENT ══════════════════════════════════════
          Not what is being edited right now. Everything the contractor authored —
@@ -101,7 +101,7 @@ exports.handler = async function (event) {
       delete view.chatFacts;
       /* His private talk with the estimator never reaches the customer. */
       delete view.v5Ask; delete view.ownerChat; delete view.talkJob;
-      if (view.estimate) { delete view.estimate.ownerNotes; delete view.estimate.sitePhotos; }
+      if (view.estimate) { delete view.estimate.ownerNotes; delete view.estimate.sitePhotos; (view.estimate.customerSupplied || []).forEach(function (c) { if (c) delete c.line; }); }
       /* The raw frozen version is already applied above; sending it as well
          would hand the customer every alternative the gate just removed. */
       delete view.sentVersion;

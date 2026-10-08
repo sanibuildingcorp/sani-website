@@ -61,7 +61,9 @@ function build(reading, opts) {
       if (isFinish) {
         const f = { section, item: name, key, supplier: byOwner ? 'customer' : 'sani', status: byOwner ? 'Customer delivers by date' : 'To choose by date', where: section };
         finishes.push(f);
-        if (byOwner) customerSupplied.push({ section, item: name, note: 'Purchase price excluded; installation included' });
+        if (byOwner) customerSupplied.push({ section, item: name, note: 'Purchase price excluded; installation included',
+          /* the Sani line it replaced, so unchecking "Customer supplies" brings the price back */
+          line: { section, item: name, qty: Math.max(1, mq || q), unit, rate: cost, bookId: b.id, matKey: b.id + ':' + mi, supplyKey: key || null, engine: 'v5' } });
       }
     });
     if (b.step) workSteps.push({ service: section, title: b.step[0], text: clean(fill(b.step[1], qty, b.unit)), bookId: b.id, cure: b.cure || 0 });
