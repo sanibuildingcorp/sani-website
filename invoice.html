@@ -608,6 +608,18 @@ function fmtDateOnly(s) {
 }
 
 async function load() {
+  /* Preview from the dashboard: the draft lives in this browser only, nothing is sent or saved. */
+  if (params.get("preview") === "1") {
+    try {
+      var d = JSON.parse(localStorage.getItem("sbc-inv-preview") || "null");
+      if (d && d.record && d.invoice) {
+        record = d.record; invoice = d.invoice; render();
+        document.body.insertAdjacentHTML("afterbegin", '<div style="position:sticky;top:0;z-index:99;background:#13254a;color:#fff;text-align:center;padding:10px;font:700 14px system-ui">PREVIEW - this is what the customer will see. Not sent yet.</div>');
+        return;
+      }
+    } catch (e) {}
+    showError(); return;
+  }
   if (!ref) { showError(); return; }
   try {
     const r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref));
