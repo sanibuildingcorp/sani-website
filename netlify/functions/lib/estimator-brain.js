@@ -74,6 +74,9 @@ PRICES (all rates are Sani's COST before markup; code adds his markup):
 
 SCOPE OF WORK (what the customer signs):
 - "workSteps": the job step by step in the order it happens, from HIS description and the chat, polished. Only work he described or that his plan clearly needs. A wall, floor or fixture he said stays is in no step.
+- EVERY service (also Painting, Whole Project) gets at least one step (with its "service") and at least one "excluded" line.
+- One protection line and one cleanup/disposal line for the whole job; never a second disposal or bags line inside a service.
+- Plumbing: when the shower drain sits in a different spot than the old tub drain, say so and price moving the drain line; never assume it ties in for free.
 - "services": per service, "included" (short lines the customer reads), "excluded" (his exclusions + honest limits), "supplied" (what the customer provides).
 - "summary": 2-3 sentences for the customer: what we do and the result. "timelineText": realistic, e.g. "About 5 working days".
 - Never write a price in any text. Never say "licensed". No gas work, no TV mounting. No options or alternatives.
@@ -97,7 +100,7 @@ Return JSON only:
 {"reply":"","chips":["0-3 short tap replies he might send next"],
  "change": null | {"projectTitle":"","summary":"","timelineText":"",
    "services":[{"name":"Bathroom","included":[""],"excluded":[""],"supplied":[""]}],
-   "workSteps":[{"title":"2-4 words","text":"1-2 sentences"}],
+   "workSteps":[{"service":"which service this step belongs to","title":"2-4 words","text":"1-2 sentences"}],
    "labor":[{"section":"Bathroom","item":"","qty":1,"unit":"job","rate":0,"bookId":"","priced":"book|his|ai","hours":0}],
    "materials":[{"section":"Bathroom","item":"","qty":1,"unit":"ea","rate":0,"bookId":"","priced":"book|his|ai"}]}}`;
 }
@@ -142,7 +145,7 @@ function validate(change, previous) {
   const list = (a, n) => A(a).map((x) => txt(x, 200)).filter((x) => x && !BAN.test(x)).slice(0, n);
   const services = A(change.services).filter((x) => x && s(x.name)).slice(0, 8).map((x) => ({ name: txt(x.name, 60), included: list(x.included, 20), excluded: list(x.excluded, 8), supplied: list(x.supplied, 10) }));
   const steps = A(change.workSteps).filter((w) => w && s(w.text) && !BAN.test(s(w.title) + ' ' + s(w.text))).slice(0, 16)
-    .map((w) => ({ service: (services[0] && services[0].name) || est.labor[0].section, title: txt(w.title, 40) || 'Step', text: txt(w.text, 360), fromBrain: true, cure: 0 }));
+    .map((w) => ({ service: (services.find((x) => norm(x.name) === norm(w.service)) || services[0] || {}).name || est.labor[0].section, title: txt(w.title, 40) || 'Step', text: txt(w.text, 360), fromBrain: true, cure: 0 }));
   const summary = txt(change.summary, 600);
   Object.assign(est, {
     projectTitle: txt(change.projectTitle, 90) || prev.projectTitle,

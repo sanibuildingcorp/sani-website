@@ -578,7 +578,7 @@ function calc(e){
  const r2=x=>Math.round((Number(x)||0)*100)/100;
  const grand=r2(l+m+(l+m)*((+e.markupPct||0)/100));
  let showLabor,showMat;
- if(/^v5/.test(String(e.engine||''))&&!e.displayByHand){showLabor=false;showMat=false}
+ if(/^(v5|brain)/.test(String(e.engine||''))&&!e.displayByHand){showLabor=false;showMat=false}
  else if(typeof e.showLaborCost==='boolean'||typeof e.showMaterialsCost==='boolean'){
   showLabor=e.showLaborCost!==false;showMat=e.showMaterialsCost===true}
  else if(e.displayMode==='total'){showLabor=false;showMat=false}

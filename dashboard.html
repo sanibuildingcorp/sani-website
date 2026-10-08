@@ -3151,7 +3151,7 @@ function calcTotal(est) {
 function calcCustomerView(est) {
   const t = calcTotal(est);
   let showLabor, showMaterials;
-  if (/^v5/.test(String(est.engine || "")) && !est.displayByHand) {
+  if (/^(v5|brain)/.test(String(est.engine || "")) && !est.displayByHand) {
     showLabor = false; showMaterials = false;   /* v5: one total, labor + materials */
   } else if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
     showLabor = est.showLaborCost !== false;
