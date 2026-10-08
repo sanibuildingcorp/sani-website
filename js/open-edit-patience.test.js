@@ -38,6 +38,7 @@ function harness(script) {
       resolve({ ok: false, status: b, json: async () => ({}) });
     }),
   };
+  ctx.sbcFetch = (u, o) => ctx.fetch(u, o); /* get-estimate goes through sbcFetch (dashboard key) */
   vm.createContext(ctx);
   ['fetchRecordWithPatience', 'openEdit'].forEach((n) => vm.runInContext(ext(n), ctx));
   return { ctx, calls, card, run: () => vm.runInContext('openEdit("A")', ctx) };

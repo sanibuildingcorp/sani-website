@@ -12,5 +12,7 @@ ok('no raw cost appears (amounts are marked up)', x.services[0].labor !== 650);
 ok('nothing to break down -> null', b.build({}, ['A'], 100) === null);
 const q = fs.readFileSync(path.join(__dirname, '..', 'quote.html'), 'utf8');
 const m = q.match(/\/\* COST-BREAKDOWN START \(copy of js\/cost-breakdown\.js\) \*\/\n([\s\S]*?)\/\* COST-BREAKDOWN END \*\//);
+const y = b.build({ labor: [{ item: 'Bathroom demolition to studs + disposal', section: 'A', qty: 1, rate: 1845 }, { item: '10-yard container, delivered', section: 'A', qty: 1, rate: 275 }, { item: 'Daily cleanup, debris removal & final clean', section: 'A', qty: 1, rate: 100 }] }, ['A'], 2220);
+ok('demolition with disposal counts as Labor; container and cleanup go to Other', y.services[0].labor === 1845 && y.services[0].other === 375);
 ok('quote.html carries an identical copy', m && m[1] === fs.readFileSync(path.join(__dirname, 'cost-breakdown.js'), 'utf8'));
 console.log(`\n${pass} passed, ${fail} failed`); if (fail) process.exit(1);

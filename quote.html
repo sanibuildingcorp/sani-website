@@ -386,7 +386,8 @@ body.pzq #app{max-width:none;margin:0;padding:0;border:0;border-radius:0;backgro
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.costBreakdown = factory();
 })(typeof self !== "undefined" ? self : this, function () {
-  var OTHER = /dispos|dumpster|debris|haul|protect|permit|filing|delivery|parking|elevator|clean.?up|travel|insurance|coi\b|fee\b/i;
+  var OTHER = /dispos|dumpster|container|contractor bags|debris|haul|protect|permit|filing|delivery|parking|elevator|clean.?up|travel|insurance|coi\b|fee\b/i;
+  var WORK = /demo|tear.?out|install|tile|plumb|frame|framing|build|drywall|sheetrock|paint|carpent|electric|waterproof|set\b|rough/i;
   var C = function (x) { return String(x == null ? "" : x).trim(); };
   var key = function (x) { return C(x).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); };
   var LT = function (l) { return (Number(l && l.qty) || 0) * (Number(l && l.rate) || 0); };
@@ -400,7 +401,10 @@ body.pzq #app{max-width:none;margin:0;padding:0;border:0;border-radius:0;backgro
       var v = LT(l); if (!(v > 0)) return;
       var sec = C(l.section), hit = names.filter(function (n) { return key(n) === key(sec); })[0];
       var r = row(hit || (names.length === 1 ? names[0] : "Whole project"));
-      r[OTHER.test(C(l.item)) ? "other" : kind] += v;
+      var it = C(l.item);
+      /* "Demolition to studs + disposal" is labor: only lines that are ABOUT
+         disposal, protection, permits... go to Other. */
+      r[OTHER.test(it) && !WORK.test(it) ? "other" : kind] += v;
     };
     (Array.isArray(e.labor) ? e.labor : []).forEach(function (l) { put(l, "labor"); });
     (Array.isArray(e.materials) ? e.materials : []).forEach(function (l) { put(l, "materials"); });
@@ -1355,7 +1359,7 @@ function schEdit(e){const ed=e&&e.scheduleEdit&&typeof e.scheduleEdit==='object'
 function schWith(sch,ed){sch.auto={workDays:sch.workDays,waitDays:sch.waitDays};if(ed.workDays!=null)sch.workDays=ed.workDays;if(ed.waitDays!=null)sch.waitDays=ed.waitDays;if(ed.workDays!=null||ed.waitDays!=null)sch.edited=true;sch.totalDays=Math.ceil(sch.workDays+sch.waitDays);return sch}
 function scheduleOf(est,settings){const e=est||{},ed=schEdit(e),s=Object.assign({crew:2,dailyHours:8},settings||{}),n=v=>{const x=Number(v);return Number.isFinite(x)?x:0};if(ed.crew!=null)s.crew=ed.crew;if(ed.dailyHours!=null)s.dailyHours=ed.dailyHours;const typed=()=>ed.workDays==null?null:schWith({version:1,laborHours:0,crew:Math.max(1,Math.round(n(s.crew))||1),dailyHours:n(s.dailyHours)||8,workDays:ed.workDays,waitDays:0,totalDays:0,waits:[],sections:[]},ed);const labor=A(e.labor).filter(l=>l&&String(l.item||'').trim());if(!labor.length)return typed();const hl=labor.filter(l=>SCH_HOUR.test(String(l.unit||'').trim())&&n(l.rate)>0);const avg=hl.length?hl.reduce((t,l)=>t+n(l.rate),0)/hl.length:SCH_RATE;const by={};let hours=0;labor.forEach(l=>{const h=SCH_HOUR.test(String(l.unit||'').trim())?Math.max(0,n(l.qty)):(n(l.qty)*n(l.rate)>0?n(l.qty)*n(l.rate)/(avg||SCH_RATE):0);hours+=h;const k=String(l.section||'Work').trim()||'Work';by[k]=(by[k]||0)+h});if(!(hours>0))return typed();hours=Math.round(hours*10)/10;const crew=ed.crew!=null?Math.max(1,Math.round(ed.crew)):(hours<=n(s.dailyHours)?1:Math.max(1,Math.round(n(s.crew))||1));const cap=crew*Math.max(1,n(s.dailyHours)||8);const workDays=Math.max(.5,Math.ceil(hours/cap*2)/2);const text=labor.map(l=>String(l.item||'')).join(' | ');const waits=[];SCH_WAITS.forEach(w=>{if(w.re.test(text)&&waits.length<3)waits.push({label:w.label,days:w.days})});const waitDays=workDays<=1?0:waits.reduce((t,w)=>t+w.days,0);const sections=Object.keys(by).map(k=>({name:k,hours:Math.round(by[k]*10)/10})).filter(x=>x.hours>0);return schWith({version:1,laborHours:hours,crew,dailyHours:n(s.dailyHours)||8,workDays,waitDays,totalDays:Math.ceil(workDays+waitDays),waits,sections},ed)}
 function isV4(e){return !!(e&&e.docVersion===4&&(C(e.overview)||A(e.workSteps).length))}
-function schOf(e){return (A(e.labor).some(l=>Number(l&&l.rate)>0)||schEdit(e).workDays!=null?scheduleOf(e):null)||(e&&e.schedule&&e.schedule.workDays?e.schedule:null)}
+function schOf(e){if(e&&e.pricesBaked)return e.schedule&&e.schedule.workDays?e.schedule:null;return (A(e.labor).some(l=>Number(l&&l.rate)>0)||schEdit(e).workDays!=null?scheduleOf(e):null)||(e&&e.schedule&&e.schedule.workDays?e.schedule:null)}
 function dayWord(n){return n===1?'1 day':(n%1?n.toFixed(1).replace(/\.0$/,''):n)+' days'}
 /* The start date he set in the dashboard, and the finish it gives counting
    Monday to Friday. Shown only when he set one. */

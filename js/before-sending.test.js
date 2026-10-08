@@ -61,7 +61,7 @@ const asDashboard = async (ref) => JSON.parse((await get.handler({ httpMethod: '
   }
   {
     const v = await asCustomer('SBC-SENT');
-    ok('A SENT RECORD SHOWS THE FROZEN VERSION, as before', v.estimate.scopeOfWork === 'SENT SCOPE' && v.estimate.labor.length === 1 && v.estimate.labor[0].qty === 200 && v.estimatePending === undefined);
+    ok('A SENT RECORD SHOWS THE FROZEN VERSION, as before', v.estimate.scopeOfWork === 'SENT SCOPE' && v.estimate.labor.length === 1 && v.estimate.labor[0].qty === 1 /* price-safe: one customer amount per line */ && v.estimatePending === undefined);
   }
   {
     const v = await asCustomer('SBC-OLD');

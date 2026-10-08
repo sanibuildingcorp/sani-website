@@ -15,6 +15,14 @@ const thread = require("./lib/thread");
 const { applySentVersion } = require("./lib/sent-version");
 const { stripUnoffered } = require("./lib/offered-options");
 const { scopeOnlyView } = require("./lib/scope-only");
+const { priceSafe } = require("./lib/price-safe");
+
+function hasDashboardKey(event) {
+  const secret = process.env.DASHBOARD_KEY, h = (event && event.headers) || {};
+  const got = String(h["x-sbc-key"] || h["X-Sbc-Key"] || h["X-SBC-KEY"] || "");
+  if (!secret || !got) return false;
+  try { const crypto = require("crypto"); const a = Buffer.from(got), b = Buffer.from(String(secret)); return a.length === b.length && crypto.timingSafeEqual(a, b); } catch (_) { return false; }
+}
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -105,11 +113,19 @@ exports.handler = async function (event) {
       /* The raw frozen version is already applied above; sending it as well
          would hand the customer every alternative the gate just removed. */
       delete view.sentVersion;
+      delete view.estimateHistory; delete view.projectAnalysis;
+      if (view.estimate) priceSafe(view.estimate);
       return { statusCode: 200, headers: cors(), body: JSON.stringify(view) };
     }
 
-    // Dashboard and internal tools receive the exact stored estimate.
+    // Dashboard and internal tools receive the exact stored estimate - WITH the
+    // dashboard key only. Without it (the invoice and contract pages, or anyone
+    // who types the URL) the record goes out with the private parts removed and
+    // the price lines made customer-safe (lib/price-safe.js).
     data.thread = thread.normalizeThread(data);
+    if (hasDashboardKey(event)) return { statusCode: 200, headers: cors(), body: JSON.stringify(data) };
+    ["ownerChat", "talkJob", "v5Ask", "chatFacts", "threadRate", "estimateHistory", "aiError", "aiJobId", "aiStage", "projectAnalysis"].forEach(function (k) { delete data[k]; });
+    if (data.estimate) { priceSafe(data.estimate); (data.estimate.customerSupplied || []).forEach(function (c) { if (c) delete c.line; }); }
     return { statusCode: 200, headers: cors(), body: JSON.stringify(data) };
   } catch (err) {
     console.error("get-estimate error:", err.message);
@@ -388,7 +404,7 @@ function uniq(values) {
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Content-Type": "application/json",
   };

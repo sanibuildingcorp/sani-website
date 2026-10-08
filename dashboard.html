@@ -3667,7 +3667,7 @@ async function fetchRecordWithPatience(ref) {
     var ctl = typeof AbortController === "function" ? new AbortController() : null;
     var timer = ctl ? setTimeout(function () { ctl.abort(); }, OPEN_TIMEOUT_MS) : null;
     try {
-      var r = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + (attempt ? "&t=" + Date.now() : ""), ctl ? { signal: ctl.signal } : undefined);
+      var r = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + (attempt ? "&t=" + Date.now() : ""), ctl ? { signal: ctl.signal } : undefined);
       if (r.status >= 500 && attempt === 0) { lastErr = new Error("Load failed (" + r.status + ")"); continue; }
       return r;
     } catch (e) {
@@ -4603,7 +4603,7 @@ async function aiExec(a, log, render) {
     var cust = (rec && rec.customer) || (row && row.customer) || {};
     var oldDesc = String((rec && rec.request && rec.request.description) || "");
     if (!rec) {
-      try { var rr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(dref)); var rj = await rr.json(); if (rr.ok && rj) { cust = rj.customer || cust; oldDesc = String((rj.request && rj.request.description) || ""); } } catch (e0) { /* the fact still goes on */ }
+      try { var rr = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(dref)); var rj = await rr.json(); if (rr.ok && rj) { cust = rj.customer || cust; oldDesc = String((rj.request && rj.request.description) || ""); } } catch (e0) { /* the fact still goes on */ }
     }
     if (!(await ask(log, render, "Add this to the customer description of " + dref + " (" + (cust.name || "") + ")?\n\n" + fact + "\n\nThen press Re-read the job to price it.", "Add it", "Not now"))) return "Cancelled - not added to the description. Ask me again when you want it in.";
     var stamp = "[From email, " + new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }) + "] ";
@@ -6439,7 +6439,7 @@ async function watchGeneration(ref, jobId, startedAt, label) {
     }
     var rec = null;
     try {
-      var pr = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+      var pr = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       if (pr.ok) rec = await pr.json();
     } catch (_) { rec = null; }
     if (rec && rec.aiJobId === jobId && rec.aiStatus === "running") stage = String(rec.aiStage || "");
@@ -12776,7 +12776,7 @@ document.getElementById('sbc-newinv-modal').addEventListener('click',function(e)
     var iv = setInterval(function(){
       tries++;
       if (btn) btn.textContent = '✨ Generating… ' + Math.round((Date.now()-started)/1000) + 's';
-      fetch('/.netlify/functions/get-estimate?ref=' + encodeURIComponent(theRef))
+      sbcFetch('/.netlify/functions/get-estimate?ref=' + encodeURIComponent(theRef))
         .then(function(r){ return r.json(); })
         .then(function(rec){
           if (!currentRecord || currentRecord.ref !== theRef){ clearInterval(iv); return; }
@@ -13686,7 +13686,7 @@ async function pzAskEstimator() {
     var j = null;
     for (var n = 0; n < 60; n++) {
       await new Promise(function (ok) { setTimeout(ok, 3000); });
-      var g = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+      var g = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       j = await g.json().catch(function () { return null; });
       if (j && j.aiJobId === jobId && (j.aiStatus === "done" || j.aiStatus === "error")) break;
     }
@@ -13808,7 +13808,7 @@ async function pzTalkSend(text) {
     var j = null;
     for (var n = 0; n < 60; n++) {
       await new Promise(function (ok) { setTimeout(ok, n < 5 ? 1500 : 2500); });
-      var g = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+      var g = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       j = await g.json().catch(function () { return null; });
       if (j && j.talkJob && j.talkJob.id === jid) break;
     }
@@ -14748,7 +14748,7 @@ async function pzFactsRead(force) {
     for (var n = 0; n < 30; n++) {
       await new Promise(function (ok) { setTimeout(ok, 4000); });
       if (!currentRecord || currentRecord.ref !== ref) return;
-      var g = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+      var g = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       var j = await g.json().catch(function () { return null; });
       if (j && j.chatFacts && j.chatFacts.at && j.chatFacts.at !== before) { currentRecord.chatFacts = j.chatFacts; break; }
     }
@@ -14798,7 +14798,7 @@ async function pzChatUpdate(mode) {
     var j = null;
     for (var n = 0; n < 60; n++) {
       await new Promise(function (ok) { setTimeout(ok, 3000); });
-      var g = await fetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
+      var g = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       j = await g.json().catch(function () { return null; });
       if (j && j.aiJobId === jobId && (j.aiStatus === "done" || j.aiStatus === "error")) break;
     }
