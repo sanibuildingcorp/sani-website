@@ -60,12 +60,12 @@ console.log('\nthe customer email leads with a place to type\n');
     /border:2px solid #c8860a[^>]*color:#0a1628[^>]*font-weight:bold/.test(h) && /Your reply goes straight to Zurabi/.test(h));
   ok('it is labelled with who they are replying to', /Reply to Zurabi/.test(h));
   ok('the button points at the same place', new RegExp('<a href="' + REPLY_URL.replace(/[.?]/g, '\\$&') + '"[^>]*>Open my project').test(h));
-  ok('...and says why: everything stays together', /keeps your estimate, your photos and every message together/.test(h));
+  ok('...and says why: everything stays together', /Or simply reply to this email/.test(h));
   ok('the old wording ("View your project & reply") is gone from the customer copy', h.indexOf('View your project') === -1);
   ok('the plain-text version carries the #reply link too', cust.text.indexOf(REPLY_URL) !== -1);
   /* The subject used to carry the ref for inbox-sync. It reads the ref out
      of the quoted header card now, and matches by address without one. */
-  ok('THE SUBJECT IS THE PROJECT IN WORDS, no code first', cust.subject === 'About your project: Full Gut Renovation — 5 ft x 7 ft Bathroom', cust.subject);
+  ok('THE SUBJECT IS THE PROJECT IN WORDS, no code first', cust.subject.indexOf('Full Gut Renovation — 5 ft x 7 ft Bathroom') === 0 && !/SBC-/.test(cust.subject), cust.subject);
   ok('...and the ref is still in the header card, which a Gmail reply quotes back for inbox-sync', h.indexOf('Estimate SBC-260915-UYE6') !== -1);
 }
 console.log('\nthe contractor copy is unchanged - he replies from the dashboard\n');

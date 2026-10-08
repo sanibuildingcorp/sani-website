@@ -1,0 +1,21 @@
+// Project conversation: greeting, recent history, subject, Seen, quick replies, milestones.
+const fs = require('fs'), path = require('path'); const ROOT = path.join(__dirname, '..');
+let pass = 0, fail = 0; const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true ? 'PASS  ' : 'FAIL  ') + n + (d ? '\n        ' + d : '')); };
+const build = require(path.join(ROOT, 'netlify/functions/lib/message-email.js'));
+const rec = { customer: { name: 'Murphy Smith', address: 'Gould St, Brooklyn' }, estimate: { projectTitle: 'Bathroom Renovation' } };
+const hist = [1, 2, 3, 4].map((i) => ({ from: i % 2 ? 'customer' : 'contractor', text: 'Old message ' + i, at: '2026-10-0' + i + 'T12:00:00Z' }));
+const m = build({ ref: 'SBC-261008-1TLL', record: rec, message: { from: 'contractor', text: 'How can we help you?', at: '2026-10-08T18:27:00Z' }, history: hist, audience: 'customer' });
+ok('greets the customer by first name', /Hi Murphy,/.test(m.html) && /Hi Murphy,/.test(m.text));
+ok('subject names the project and street, no code', m.subject === 'Bathroom Renovation · Gould St — message from Zurabi, Sani Building Corp', m.subject);
+ok('the last three earlier messages travel with it, newest first', !/Old message 1/.test(m.html) && m.html.indexOf('Old message 4') < m.html.indexOf('Old message 2'));
+ok('says a plain email reply works', /Or simply reply to this email/.test(m.html));
+ok('the header card still carries the ref for filing an email reply', /Estimate SBC-261008-1TLL/.test(m.html));
+const c = build({ ref: 'SBC-261008-1TLL', record: rec, message: { from: 'customer', text: 'x', at: '2026-10-08T18:27:00Z' }, audience: 'contractor' });
+ok('his alert keeps the ref first and has no greeting', c.subject.indexOf('SBC-261008-1TLL') === 0 && !/Hi Murphy/.test(c.html));
+const ge = fs.readFileSync(path.join(ROOT, 'netlify/functions/get-estimate.js'), 'utf8');
+ok('the project page marks Seen, but not for his own look or a preview', /customerSeenAt = new Date\(\)\.toISOString\(\)/.test(ge) && /x-sbc-viewer/.test(ge) && /!isDraftPreview && !isScopeOnly && !ownerView/.test(ge));
+const q = fs.readFileSync(path.join(ROOT, 'quote.html'), 'utf8');
+ok('quote.html tells the server when the viewer is the owner', /'x-sbc-viewer':'owner'/.test(q));
+const d = fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8');
+ok('phone card: quick replies, Seen, milestones, nudge, closed', /cnv-quick/.test(d.slice(d.indexOf('function pzChatHtml'))) && /✓✓ Seen/.test(d) && /function cnvMilestones/.test(d) && /No answer for/.test(d) && /Ask for a Google review/.test(d));
+console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

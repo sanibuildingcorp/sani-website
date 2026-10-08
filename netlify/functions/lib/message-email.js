@@ -115,7 +115,7 @@ function buildMessageEmail(o) {
      his alert, and he searches by it. */
   const subject = (audience === "contractor")
     ? ref + " — new message from " + (customer.name || "your customer")
-    : "About your project: " + projectTitle;
+    : projectTitle + (address ? " · " + address.split(",")[0].trim() : "") + " — message from Zurabi, Sani Building Corp";
 
   const heading = audience === "contractor"
     ? esc(customer.name || "Your customer") + " sent you a message"
@@ -124,7 +124,7 @@ function buildMessageEmail(o) {
   const signOff = audience === "contractor"
     ? '<p style="margin:22px 0 0;font-size:14px;color:#555">Reply from the dashboard, or just reply to this email — either way it lands in the same conversation.</p>'
     : '<p style="margin:22px 0 2px;font-size:15px;color:#0a1628">Best,<br><strong>Zurabi</strong><br>' +
-      '<span style="font-size:13px;color:#777">Sani Building Corp · Brooklyn, NY · Fully insured</span></p>';
+      '<span style="font-size:13px;color:#777">Sani Building Corp · Brooklyn, NY · Fully insured<br><a href="tel:+13322770990" style="color:#777">(332) 277-0990</a> · <a href="https://www.sanibuildingcorp.com" style="color:#777">sanibuildingcorp.com</a></span></p>';
 
   /* THE EARLIER MESSAGE. It used to sit ABOVE the new one, in light grey,
      up to 600 characters: on a phone a long earlier message filled the
@@ -132,7 +132,15 @@ function buildMessageEmail(o) {
      unimportant". The new message now comes first, in the dark box; the
      earlier one follows, shorter, labelled, in a grey that is still easy
      to read. */
-  const prevText = previous && previous.text ? String(previous.text) : "";
+  /* THE LAST FEW MESSAGES, not just one: "show the last two or three messages
+     under the new one". o.history (oldest first, without the new message)
+     wins; o.previous alone still works for older callers. */
+  const hist = (Array.isArray(o && o.history) ? o.history : (previous ? [previous] : []))
+    .filter(function (h) { return h && h.text; }).slice(-3).reverse();
+  const first = String(customer.name || "").trim().split(/\s+/)[0] || "";
+  const greeting = audience === "customer"
+    ? '<p style="font-size:16px;margin:0 0 12px;color:#0a1628">Hi' + (first ? " " + esc(first) : "") + ",</p>" : "";
+  const prevText = "";
   const prevBlock = prevText
     ? '<div style="border-left:3px solid #d9cfbd;padding:2px 0 2px 14px;margin:18px 0 0;color:#444444;font-size:14px;line-height:1.6">' +
         '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin-bottom:5px">Earlier &middot; ' +
@@ -141,6 +149,14 @@ function buildMessageEmail(o) {
         "</div>" +
         '<div style="white-space:pre-wrap">' + esc(prevText.slice(0, 320)) + (prevText.length > 320 ? "…" : "") + "</div>" +
       "</div>"
+    : "";
+  const histBlock = hist.length
+    ? '<div style="margin:22px 0 0"><div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin:0 0 8px">Earlier in this conversation</div>' +
+        hist.map(function (h) {
+          return '<div style="border-left:3px solid ' + (h.from === "contractor" ? "#c8860a" : "#d9cfbd") + ';padding:2px 0 2px 12px;margin:0 0 12px;color:#444;font-size:14px;line-height:1.55">' +
+            '<div style="font-size:12px;color:#8a8a8a;margin-bottom:3px"><strong style="color:#555">' + (h.from === "contractor" ? "Zurabi" : esc(customer.name || "Customer")) + "</strong>" + (when(h.at) ? " · " + esc(when(h.at)) : "") + "</div>" +
+            '<div style="white-space:pre-wrap">' + esc(String(h.text).slice(0, 280)) + (String(h.text).length > 280 ? "…" : "") + "</div></div>";
+        }).join("") + "</div>"
     : "";
 
   const html = '<!DOCTYPE html>\n<html lang="en">\n' +
@@ -167,6 +183,7 @@ function buildMessageEmail(o) {
       "</div>" +
 
       '<div style="background:#ffffff;border-radius:0 0 14px 14px;padding:26px 28px">' +
+        greeting +
         '<p style="font-size:16px;margin:0 0 18px;color:#0a1628"><strong>' + heading + "</strong>" +
           (when(message.at) ? '<span style="font-weight:normal;font-size:13px;color:#888"> · ' + esc(when(message.at)) + "</span>" : "") +
         "</p>" +
@@ -174,7 +191,7 @@ function buildMessageEmail(o) {
           esc(String(message.text || "")) +
         "</div>" +
         attachmentsHtml(message.attachments) +
-        prevBlock +
+        prevBlock + histBlock +
         /* THE REPLY CARD. A customer reading this on a phone sees a message and,
            at the bottom of the screen, Gmail's own Reply button. Pressing that
            sends their answer as a fresh email to the contractor's inbox, outside
@@ -198,7 +215,7 @@ function buildMessageEmail(o) {
               '<div style="text-align:center;margin:14px 0 4px">' +
                 '<a href="' + quoteUrl + '#reply" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">Open my project &amp; reply &rarr;</a>' +
               "</div>" +
-              '<p style="font-size:13px;color:#888;text-align:center;margin:6px 0 0">Replying there keeps your estimate, your photos and every message together in one place.</p>' +
+              '<p style="font-size:13px;color:#888;text-align:center;margin:6px 0 0">Or simply reply to this email &mdash; it goes into the same project conversation.</p>' +
             "</div>"
           : '<div style="text-align:center;margin:24px 0 4px">' +
               '<a href="' + quoteUrl + '" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">Open the estimate &rarr;</a>' +
@@ -225,13 +242,13 @@ function buildMessageEmail(o) {
       ? "--- " + (previous.from === "contractor" ? "Sani Building Corp" : (customer.name || "Customer")) + " wrote ---\n" +
         String(previous.text).slice(0, 600) + "\n\n"
       : "") +
-    (audience === "contractor" ? (customer.name || "Your customer") + " wrote:" : "A message about your project:") + "\n\n" +
+    (audience === "contractor" ? (customer.name || "Your customer") + " wrote:" : "Hi" + (first ? " " + first : "") + ",") + "\n\n" +
     String(message.text || "") + "\n" +
     attachmentsText(message.attachments) + "\n" +
     (audience === "contractor"
       ? "Everything about this job stays at this one link:\n" + quoteUrl + "\n\n" +
         "Reply from the dashboard, or just reply to this email.\n"
-      : "Reply here - it keeps your estimate, photos and every message together:\n" + quoteUrl + "#reply\n\n" +
+      : "Reply to this email, or open your project to reply and send photos:\n" + quoteUrl + "#reply\n\n" +
         "Best,\nZurabi\nSani Building Corp · Brooklyn, NY · Fully insured\n(332) 277-0990\n");
 
   return { subject: subject, html: html, text: text, quoteUrl: quoteUrl, total: total };
