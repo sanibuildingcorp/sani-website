@@ -14038,7 +14038,7 @@ function pzTalkChatHtml(r, hasLines) {
   var mic = (window.SpeechRecognition || window.webkitSpeechRecognition) ? '<button type="button" class="pz-btn pz-ghost pz-tk-mic" onclick="pzTalkMic()" aria-label="Speak">🎤</button>' : "";
   var h = '<div class="pz-c pz-tk" id="pz-talk"><div class="pz-row"><h2 style="margin:0;font-size:17px">🧠 Estimator</h2><span class="pz-mut" style="font-size:12px">only you</span></div>';
   h += '<div class="pz-tc">';
-  if (!msgs.length && !pend) h += '<div class="pz-mut pz-tc-hi">Talk to it like a person: tell it the job, ask why a number is what it is, or tell it what to change. Then tap ' + (hasLines ? "Regenerate" : "Generate") + '.</div>';
+  if (!msgs.length && !pend) h += '<div class="pz-mut pz-tc-hi">This is the estimator itself. Tell it the job in your own words, correct it, ask why a number is what it is. When you say build, update or change, it rewrites the estimate and the scope of work and shows you the changes to Apply.</div>';
   if (!all && msgs.length > 4) h += '<a href="#" class="pz-tc-more" onclick="PZ.tchat.all=true;PZ.tchat.ref=currentRecord.ref;pzTalkRefresh();return false">Show earlier (' + (msgs.length - 4) + ')</a>';
   var phs = function (list) { var sp2 = Array.isArray(e.sitePhotos) ? e.sitePhotos : []; list = (list || []).filter(function (ix) { return sp2[ix]; }); return list.length ? '<div class="pz-tc-ph">' + list.map(function (ix) { return '<img src="' + esc(sp2[ix].data) + '" alt="">'; }).join("") + '</div>' : ''; };
   show.forEach(function (m) { h += '<div class="pz-tc-m ' + (m.from === "owner" ? "me" : "ai") + '">' + (m.from === "owner" ? phs(m.photos) : '') + esc(String(m.text || "")).replace(/\n/g, "<br>") + '</div>'; });
@@ -14052,11 +14052,17 @@ function pzTalkChatHtml(r, hasLines) {
   h += '<details class="pz-tk-notes"><summary>📝 Your notes' + (nLines ? " (" + nLines + ")" : "") + '</summary>' +
     '<textarea id="pz-onotes" rows="4" placeholder="Anything you always want it to follow on this job" oninput="pzEst().ownerNotes=this.value;pzDirty()">' + esc(notes) + '</textarea></details>';
   h += '<div class="pz-tk-bar">' +
-    (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzRegenerate()">↻ Regenerate</button>'
-              : '<button type="button" class="pz-btn pz-gold" onclick="pzSaveNow().then(function(){pzGenerate()})">Generate estimate</button>') +
+    (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzBrainBuild()">↻ Rebuild from our chat</button>'
+              : '<button type="button" class="pz-btn pz-gold" onclick="pzBrainBuild()">Build the estimate</button>') +
     '</div><span id="pz-gen" class="pz-mut"></span></div>';
   setTimeout(function () { var b = document.querySelector("#pz-talk .pz-tc"); if (b) b.scrollTop = b.scrollHeight; }, 0);
   return h;
+}
+/* The button just asks the same brain to build - one brain, no second generator. */
+function pzBrainBuild() {
+  var has = (((currentRecord || {}).estimate || {}).labor || []).length;
+  return pzTalkSend(has ? "Rebuild the complete estimate and the scope of work from everything we discussed. Check my plan for mistakes and missing pieces first."
+                        : "Build the complete estimate and the scope of work for this job. Check the request for mistakes and missing pieces first.");
 }
 function pzTalkRefresh() {
   var el = document.getElementById("pz-talk"), r = currentRecord; if (!el || !r) return;
@@ -14080,7 +14086,7 @@ async function pzTalkSend(text) {
     var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jid, mode: "talk", message: msg, photos: att }) });
     if (k.status !== 202 && !k.ok) throw new Error("HTTP " + k.status);
     var j = null;
-    for (var n = 0; n < 60; n++) {
+    for (var n = 0; n < 100; n++) {
       await new Promise(function (ok) { setTimeout(ok, n < 5 ? 1500 : 2500); });
       var g = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       j = await g.json().catch(function () { return null; });
@@ -14089,10 +14095,13 @@ async function pzTalkSend(text) {
     if (!j || !j.talkJob || j.talkJob.id !== jid) throw new Error("No answer yet - try again in a minute");
     if (j.talkJob.error) throw new Error(j.talkJob.error);
     if (currentRecord && currentRecord.ref === ref) currentRecord.ownerChat = j.ownerChat || [];
+    /* ONE brain: when it wrote the estimate, show the change list right away (Apply / Cancel). */
+    var built = j.talkJob.built && j.estimateV5Pending && j.estimateV5Pending.jobId === jid ? j.estimateV5Pending : null;
   } catch (e) { err = e.message; }
   if (PZ.tchat) PZ.tchat.pending = null;
   if (currentRecord && currentRecord.ref === ref) {
     pzTalkRefresh();
+    if (!err && built) { PZ.v5mode = "brain"; try { pzV5Changes(ref, built.changes || [], false); } catch (_) {} }
     if (err) { toast("Estimator: " + err, true); if (PZ.tchat) PZ.tchat.att = att; pzTalkRefresh(); var t2 = document.getElementById("pz-tk-txt"); if (t2) t2.value = msg; }
   }
 }
@@ -15056,6 +15065,8 @@ function pzFactTick() {
    safety as Update from chat: a change list with Apply / Cancel, Undo after. */
 function pzRegenerate() {
   if (PZ.busy) return;
+  /* ONE brain: Regenerate anywhere = ask the estimator to rebuild (it sees the whole chat). */
+  if (SBC_V5 && document.getElementById("pz-talk")) return pzBrainBuild();
   if (!confirm("Regenerate: the AI reads the whole job again from scratch. You will see every change before anything is applied. Continue?")) return;
   return pzChatUpdate("redo");
 }
@@ -15129,7 +15140,7 @@ function pzV5Changes(ref, ch, full) {
   box.id = "pz-v5box";
   box.style.cssText = "position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
   box.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:18px">' +
-    '<h3 style="margin:0 0 6px">' + (PZ.v5mode === "redo" ? "Changes from Regenerate" : "Changes from the chat") + '</h3>' +
+    '<h3 style="margin:0 0 6px">' + (PZ.v5mode === "brain" ? "The estimator's changes" : PZ.v5mode === "redo" ? "Changes from Regenerate" : "Changes from the chat") + '</h3>' +
     (full ? '<div class="pz-pill pz-wa" style="margin-bottom:8px">This estimate was made before the new brain, so the new brain rebuilt it from your price book. Tick <b>Keep</b> on any old line you want to keep (your own lines). Unticked old lines go; Undo brings them back.</div>' : '') +
     (function () { var e0 = (currentRecord && currentRecord.estimate) || {}, c0 = [].concat(e0.labor || [], e0.materials || []).reduce(function (s, l) { return s + (Number(l.qty) || 0) * (Number(l.rate) || 0); }, 0);
       var own = Number(e0.totalSetByHand) > 0 ? '<div style="background:#fff6df;color:#7a5a00;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-weight:700">You set your own total (' + fmt(Number(e0.totalSetByHand)) + '). After Apply the lines may total differently - tap Set my own total again if you want it back.</div>' : '';
