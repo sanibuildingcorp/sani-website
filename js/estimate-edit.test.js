@@ -36,7 +36,10 @@ ok("10 hours a day: fewer working days", ten.workDays < auto.workDays && ten.dai
 const typed = scheduleOf(withEdit({ workDays: 4, waitDays: 0 }));
 ok("typed working days and drying days replace the count, total follows", typed.workDays === 4 && typed.waitDays === 0 && typed.totalDays === 4 && typed.edited === true && typed.auto.workDays === auto.workDays && typed.auto.waitDays === auto.waitDays);
 const noLabor = scheduleOf({ labor: [], scheduleEdit: { workDays: 2, waitDays: 1 } });
-ok("no labor lines but days typed: the typed timeline shows", noLabor && noLabor.workDays === 2 && noLabor.waitDays === 1 && noLabor.totalDays === 3 && noLabor.laborHours === 0);
+ok("no labor lines but days typed: the typed timeline shows, curing counted INSIDE his days", noLabor && noLabor.workDays === 2 && noLabor.waitDays === 1 && noLabor.totalDays === 2 && noLabor.waitInside === true && noLabor.laborHours === 0);
+const typed12 = scheduleOf(withEdit({ workDays: 12 }));
+ok("he types 12 days: the job is 12 days start to finish, cure days are not added on top", typed12.totalDays === 12 && typed12.waitInside === true);
+ok("auto count (nothing typed): cure days still add to the work days", auto.totalDays === Math.ceil(auto.workDays + auto.waitDays) && !auto.waitInside);
 ok("junk in the boxes is ignored", JSON.stringify(scheduleOf(withEdit({ crew: "", workDays: -2, waitDays: "x" }))) === JSON.stringify(auto));
 
 const ctx = { console }; vm.createContext(ctx);
@@ -47,7 +50,7 @@ ok("quote.html counts every edit the same way as the server", cases.every((e) =>
 ok("the customer page shows typed days even where the prices were taken out", !!vm.runInContext("schOf(" + JSON.stringify({ labor: [], scheduleEdit: { workDays: 2 } }) + ")", ctx));
 const card = Q.slice(Q.indexOf("function renderPZ("), Q.indexOf("window.qzOpen=", Q.indexOf("function renderPZ(")));
 ok("drying typed with no drying step named reads \"for drying and curing\", never \"while .\"", /'for drying and curing'/.test(card));
-ok("a 1-day job with drying days typed is not shown as \"1 day\"", /function qzDays\(sch\)\{if\(sch\.workDays<=1&&!\(sch\.waitDays>0\)\)return'1 day'/.test(Q));
+ok("the customer headline is the start-to-finish days, not weeks", /function qzDays\(sch\)\{if\(sch\.totalDays<=1\)return'1 day';const d=sch\.totalDays;return\(sch\.waitInside\?'':'About '\)\+d\+' working days'\}/.test(Q));
 
 console.log("\n2. His numbers survive a regenerate\n");
 /* The dashboard boxes themselves are the Perplexity estimate screen now
