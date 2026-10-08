@@ -1653,7 +1653,7 @@ if(q.get('preview')==='1'){
  }
  return;
 }
-if(!ref){app.textContent='Estimate link is incomplete.';return}fetch('/.netlify/functions/get-estimate?ref='+encodeURIComponent(ref)+(SOW?'&sow=1':''),{cache:'no-store'}).then(r=>r.json()).then(j=>render(j.record||j.estimateRecord||j.data||j)).catch(e=>app.textContent='Could not load estimate: '+e.message)
+if(!ref){app.textContent='Estimate link is incomplete.';return}fetch('/.netlify/functions/get-estimate?ref='+encodeURIComponent(ref)+(SOW?'&sow=1':''),{cache:'no-store',headers:(function(){try{return (localStorage.getItem('sbcKey')||sessionStorage.getItem('sbcKey'))?{'x-sbc-viewer':'owner'}:{}}catch(_){return {}}})()}).then(r=>r.json()).then(j=>render(j.record||j.estimateRecord||j.data||j)).catch(e=>app.textContent='Could not load estimate: '+e.message)
 })();
 </script>
 </body>

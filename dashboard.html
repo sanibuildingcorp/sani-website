@@ -2752,6 +2752,13 @@ body {
 .cnv-att .cnv-file{font-size:12.5px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.85);border:1px solid #dfe4ea;color:#152235;text-decoration:none}
 .cnv-note.bad{color:#c0392b;font-weight:700}
 .cnv-note.good{color:#1c6547;font-weight:700}
+.cnv-ev{text-align:center;font-size:12px;color:#6b7280;margin:10px auto;padding:4px 10px;background:#f1f3f6;border-radius:999px;width:fit-content;max-width:92%}
+.cnv-seen{font-size:11px;color:#8a95a5;text-align:right;margin-top:4px}
+.cnv-nudge,.cnv-closed{margin:12px 0 4px;padding:10px 12px;border-radius:10px;font-size:14px;background:#fff8e6;border:1px solid #f0d58a;color:#5a4410}
+.cnv-closed{background:#f1f3f6;border-color:#d5d9e2;color:#334}
+.cnv-nudge button,.cnv-closed button{margin-left:6px;border:0;background:#c8860a;color:#fff;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:700}
+.cnv-quick{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;-webkit-overflow-scrolling:touch}
+.cnv-quick button{flex:0 0 auto;border:1px solid #d5d9e2;background:#fff;color:#13254a;border-radius:999px;padding:8px 11px;font-size:13px}
 .badge.needs-reply{background:#c0392b;color:#fff}
 .badge.waiting-customer{background:#6b5b95;color:#fff}
 @media(max-width:600px){.cnv-msg{max-width:93%}.cnv-body{max-height:300px}}
@@ -3791,9 +3798,64 @@ function cnvWhen(iso) {
   if (!isFinite(dt.getTime())) return "";
   return dt.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
+/* ══ ONE PROJECT HISTORY ══════════════════════════════════════════════════
+   "keep conversation each project in them own conversation box for
+    understanding what was dialog between me and customers"
+   The messages, plus the project's own milestones read from the record
+   (estimate sent, approved, invoices, payments) as small centred lines in
+   the same timeline, so the box reads as the whole story of the job. */
+function cnvMilestones(r) {
+  var out = [], money = function (n) { return n ? " · $" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 }) : ""; };
+  if (r.sentAt) out.push({ at: r.sentAt, t: "📨 Estimate sent" });
+  if (r.acceptedAt) out.push({ at: r.acceptedAt, t: "✅ Estimate approved by the customer" });
+  if (r.declinedAt) out.push({ at: r.declinedAt, t: "✖ Estimate declined" });
+  (Array.isArray(r.invoices) ? r.invoices : []).forEach(function (iv) {
+    if (!iv) return;
+    var amt = iv.amount || iv.total || 0, nm = iv.title || iv.number || iv.id || "Invoice";
+    if (iv.sentAt) out.push({ at: iv.sentAt, t: "💳 " + nm + " sent" + money(amt) });
+    if (iv.paidAt) out.push({ at: iv.paidAt, t: "💰 " + nm + " paid" + money(amt) });
+  });
+  return out.filter(function (x) { return isFinite(Date.parse(x.at)); });
+}
+var CNV_CLOSED = /^(paid|completed|declined|cancelled)$/i;
 function cnvMessagesHtml(r) {
   const t = threadOf(r);
-  if (!t.length) return '<div class="cnv-note">No messages yet. Anything you send here also lands on the customer\'s quote page and in their inbox.</div>';
+  const ms = cnvMilestones(r);
+  if (!t.length && !ms.length) return '<div class="cnv-note">No messages yet. Anything you send here also lands on the customer\'s project page and in their inbox. They can answer there or simply reply to the email.</div>';
+  /* Seen: the customer opened their project page after your last message. */
+  var lastMine = -1; t.forEach(function (m, i) { if (m.from === "contractor") lastMine = i; });
+  var seen = r.customerSeenAt && lastMine >= 0 && Date.parse(r.customerSeenAt) > Date.parse(t[lastMine].at);
+  var items = t.map(function (m, i) { return { at: m.at, m: m, i: i }; }).concat(ms.map(function (x) { return { at: x.at, ev: x.t }; }))
+    .sort(function (a, b) { return Date.parse(a.at) - Date.parse(b.at); });
+  var html = items.map(function (it) {
+    if (it.ev) return '<div class="cnv-ev">' + esc(it.ev) + (cnvWhen(it.at) ? " · " + esc(cnvWhen(it.at)) : "") + "</div>";
+    var m = it.m;
+    const mine = m.from === "contractor";
+    return '<div class="cnv-msg ' + (mine ? "me" : "them") + '">' +
+      '<div class="cnv-meta">' + (mine ? "You" : esc((r.customer && r.customer.name) || "Customer")) +
+        (cnvWhen(m.at) ? " · " + esc(cnvWhen(m.at)) : "") +
+        (m.via === "gmail" ? " · replied by email" : (!mine ? " · from project page" : "")) +
+      "</div>" + esc(m.text) + cnvAttachmentsHtml(m.attachments) +
+      (it.i === lastMine ? '<div class="cnv-seen">' + (seen ? "✓✓ Seen " + esc(cnvWhen(r.customerSeenAt)) : "✓ Delivered") + "</div>" : "") +
+      "</div>";
+  }).join("");
+  html += cnvTail(r, t);
+  return html;
+}
+/* After the messages: the follow-up nudge, or the closed-project note. */
+function cnvTail(r, t) {
+  var html = "", last = t[t.length - 1];
+  if (last && last.from === "contractor" && !CNV_CLOSED.test(r.status || "") && Date.now() - Date.parse(last.at) > 3 * 864e5) {
+    html += '<div class="cnv-nudge">⏰ No answer for ' + Math.floor((Date.now() - Date.parse(last.at)) / 864e5) + ' days. <button type="button" onclick="cnvQuick(\'follow\')">Write a polite follow-up</button></div>';
+  }
+  if (CNV_CLOSED.test(r.status || "")) {
+    html += '<div class="cnv-closed">🔒 Project ' + esc(String(r.status).toLowerCase()) + ' - this conversation stays as the record.' +
+      (/^(paid|completed)$/i.test(r.status) ? ' <button type="button" onclick="cnvQuick(\'review\')">⭐ Ask for a Google review</button>' : "") + "</div>";
+  }
+  return html;
+}
+function cnvMessagesHtmlOld(r) {
+  const t = threadOf(r);
   return t.map(function (m) {
     const mine = m.from === "contractor";
     return '<div class="cnv-msg ' + (mine ? "me" : "them") + '">' +
@@ -4805,6 +4867,7 @@ function cnvPanelHtml(r) {
     '</div>' +
     '<div class="cnv-body" id="cnv-body">' + cnvMessagesHtml(r) + '</div>' +
     '<div class="cnv-send">' +
+      '<div class="cnv-quick">' + CNV_QUICK.map(function (q) { return '<button type="button" onclick="cnvQuick(\'' + q.k + '\')">' + q.l + "</button>"; }).join("") + "</div>" +
       '<textarea id="cnv-text" maxlength="4000" placeholder="Reply to ' + esc((cust.name || "your customer").split(" ")[0]) + '…"></textarea>' +
       '<div class="cnv-row">' +
         '<button class="btn-primary" id="cnv-btn" onclick="sendThreadReply()">Send reply</button>' +
@@ -4814,6 +4877,33 @@ function cnvPanelHtml(r) {
         '<input id="cnv-key" placeholder="Send key" style="flex:1;min-width:160px;padding:9px 11px;border:1px solid #ccd3dc;border-radius:9px">' +
       '</div>' +
     '</div>';
+}
+/* ══ QUICK REPLIES ══ one tap fills the box with a ready message, first name
+   in; he reads it, edits it or presses ✨ Polish, then Send. Nothing is sent
+   on the tap. */
+var CNV_QUICK = [
+  { k: "visit", l: "📅 Site visit" }, { k: "ready", l: "📄 Estimate ready" }, { k: "follow", l: "🔁 Follow up" },
+  { k: "start", l: "🛠 Start date" }, { k: "photos", l: "📷 Ask for photos" }, { k: "invoice", l: "💳 Invoice sent" },
+  { k: "done", l: "🏁 Work finished" }, { k: "review", l: "⭐ Review" },
+];
+function cnvQuick(k) {
+  var r = currentRecord || {}, c = r.customer || {}, est = r.estimate || {}, req = r.request || {};
+  var first = String(c.name || "").trim().split(/\s+/)[0];
+  var job = (est.projectTitle || req.service || "your project").toLowerCase();
+  var addr = String(c.address || req.address || "").split(",")[0];
+  var T = {
+    visit: "I would like to come by" + (addr ? " " + addr : "") + " to see the space and take measurements. What day and time work best for you this week?",
+    ready: "Your estimate for the " + job + " is ready. You can see the full scope, the timeline and the price on your project page. Let me know if you have any questions or would like to change anything.",
+    follow: "Just checking in on the " + job + ". Did you have a chance to look at it? I am happy to answer any questions or adjust the scope.",
+    start: "We are confirmed to start the " + job + " on [date]. Our crew will arrive around 8:00 AM. Please let me know if anything changes on your side.",
+    photos: "Could you send me a few photos of the area? A wide shot of the whole space and close-ups of anything damaged help me price it accurately. You can add them on your project page.",
+    invoice: "I have sent your invoice for the " + job + ". You can view and pay it from the link in the email. Thank you.",
+    done: "The " + job + " is finished. Thank you for having us. Please take a look and let me know if anything needs attention.",
+    review: "Thank you again for choosing Sani Building Corp. If you were happy with the work, a short Google review would mean a lot to us: https://g.page/r/CXtX_n13XF6aEBE/review",
+  };
+  var box = document.getElementById("cnv-text"); if (!box) return;
+  box.value = "Hi" + (first ? " " + first : "") + ",\n\n" + T[k] + "\n\nThank you,\nZurabi";
+  box.focus(); try { box.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (_) {}
 }
 function cnvRefresh() {
   const body = document.getElementById("cnv-body");
@@ -14853,11 +14943,18 @@ function pzWhen(iso) {
 }
 function pzMsgsHtml(r) {
   var t = threadOf(r), nm = String((r.customer && r.customer.name) || "Customer").trim().split(/\s+/)[0];
-  if (!t.length) return '<div class="pz-mut">No messages yet. What you send here goes to their quote page and their inbox.</div>';
-  return t.map(function (m) {
-    var me = m.from === "contractor", via = PZ_VIA[String(m.via || "")] || (me ? "email" : String(m.via || ""));
-    return '<div class="pz-msg ' + (me ? "me" : "them") + '"><div class="pz-mh">' + [me ? "You" : esc(nm), esc(pzWhen(m.at)), esc(via)].filter(Boolean).join(" · ") + '</div>' + esc(m.text) + cnvAttachmentsHtml(m.attachments) + '</div>';
-  }).join("");
+  var ms = cnvMilestones(r);
+  if (!t.length && !ms.length) return '<div class="pz-mut">No messages yet. What you send here goes to their project page and their inbox. They can answer there or simply reply to the email.</div>';
+  var lastMine = -1; t.forEach(function (m, i) { if (m.from === "contractor") lastMine = i; });
+  var seen = r.customerSeenAt && lastMine >= 0 && Date.parse(r.customerSeenAt) > Date.parse(t[lastMine].at);
+  var items = t.map(function (m, i) { return { at: m.at, m: m, i: i }; }).concat(ms.map(function (x) { return { at: x.at, ev: x.t }; }))
+    .sort(function (a, b) { return Date.parse(a.at) - Date.parse(b.at); });
+  return items.map(function (it) {
+    if (it.ev) return '<div class="cnv-ev">' + esc(it.ev) + (pzWhen(it.at) ? " · " + esc(pzWhen(it.at)) : "") + "</div>";
+    var m = it.m, me = m.from === "contractor", via = me ? (PZ_VIA[String(m.via || "")] || "email") : (m.via === "gmail" ? "replied by email" : (PZ_VIA[String(m.via || "")] || "from project page"));
+    return '<div class="pz-msg ' + (me ? "me" : "them") + '"><div class="pz-mh">' + [me ? "You" : esc(nm), esc(pzWhen(m.at)), esc(via)].filter(Boolean).join(" · ") + '</div>' + esc(m.text) + cnvAttachmentsHtml(m.attachments) +
+      (it.i === lastMine ? '<div class="cnv-seen">' + (seen ? "✓✓ Seen " + esc(pzWhen(r.customerSeenAt)) : "✓ Delivered") + "</div>" : "") + '</div>';
+  }).join("") + cnvTail(r, t);
 }
 function pzLastCust(r) { var t = threadOf(r).filter(function (m) { return m.from !== "contractor"; }); return t.length ? t[t.length - 1] : null; }
 /* The newest customer message came after the AI last priced the job. */
@@ -14897,6 +14994,7 @@ function pzChatHtml(r) {
     '<div class="pz-chat" id="cnv-body">' + pzMsgsHtml(r) + '</div>' +
     '<div id="pz-learn">' + pzLearnHtml(r) + '</div>' +
     '<div id="pz-sugg">' + pzSuggHtml(r) + '</div>' +
+    '<div class="cnv-quick">' + CNV_QUICK.map(function (q) { return '<button type="button" onclick="cnvQuick(\'' + q.k + '\')">' + q.l + "</button>"; }).join("") + "</div>" +
     '<textarea id="cnv-text" class="pz-rep" maxlength="4000" placeholder="Write a reply…"></textarea>' +
     '<div class="pz-att" id="pz-att"></div>' +
     '<div class="pz-row" style="margin-top:6px"><div class="pz-rt"><label class="pz-btn pz-ghost pz-sm" title="Attach a photo or file">📎<input type="file" multiple accept="image/*,application/pdf,.pdf,.doc,.docx" style="display:none" onchange="pzAttach(this)"></label>' +

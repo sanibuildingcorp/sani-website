@@ -78,6 +78,8 @@ exports.handler = async function (event) {
   } else {
     const mail = buildMessageEmail({
       ref: ref, record: record, message: result.message, previous: previous, audience: "customer",
+      /* The last three earlier messages travel with the new one. */
+      history: (Array.isArray(record.thread) ? record.thread : []).filter(function (m) { return m && m.id !== (result.message && result.message.id); }).slice(-3),
     });
     try {
       await sendResend(process.env.RESEND_API_KEY, {

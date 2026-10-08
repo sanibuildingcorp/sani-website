@@ -80,6 +80,18 @@ exports.handler = async function (event) {
          customer's page names it and links to it, never prices it here. */
       await attachAddons(store, data);
       if (isScopeOnly) { const sv = scopeView(data); if (sv) { delete sv.ownerChat; delete sv.talkJob; delete sv.v5Ask; if (sv.estimate) { delete sv.estimate.sitePhotos; delete sv.estimate.ownerNotes; (sv.estimate.customerSupplied || []).forEach(function (c) { if (c) delete c.line; }); } } return { statusCode: 200, headers: cors(), body: JSON.stringify(sv) }; }
+      /* ══ SEEN ══════════════════════════════════════════════════════════════
+           The customer opened their project page: the dashboard shows "Seen"
+           under his last message. Not for his own look (quote.html says so
+           when this browser holds the dashboard key), not for a draft preview
+           or the scope link, and written at most every 5 minutes. */
+      const ownerView = String((event.headers && (event.headers["x-sbc-viewer"] || event.headers["X-Sbc-Viewer"])) || "") === "owner";
+      if (!isDraftPreview && !isScopeOnly && !ownerView) {
+        const lastSeen = Date.parse(data.customerSeenAt || 0) || 0;
+        if (Date.now() - lastSeen > 5 * 60 * 1000) {
+          try { const fresh = (await store.get(ref, { type: "json" })) || data; fresh.customerSeenAt = new Date().toISOString(); await store.setJSON(ref, fresh); data.customerSeenAt = fresh.customerSeenAt; } catch (_) {}
+        }
+      }
       const view = buildCustomerView(data, isDraftPreview);
       /* ══ THE CUSTOMER SEES WHAT WAS SENT ══════════════════════════════════════
          Not what is being edited right now. Everything the contractor authored —
@@ -442,7 +454,7 @@ function uniq(values) {
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key, x-sbc-viewer",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Content-Type": "application/json",
   };

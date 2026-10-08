@@ -24,10 +24,10 @@ console.log('\nthe new message first, the earlier one below and readable\n');
   const iNew = h.indexOf('Again test message'), iOld = h.indexOf('Yes — found it.'), iCard = h.indexOf('Tap here to type your reply');
   ok('THE NEW MESSAGE COMES FIRST, the earlier one after it, then the reply card', iNew !== -1 && iOld !== -1 && iNew < iOld && iOld < iCard, iNew + ' ' + iOld + ' ' + iCard);
   ok('the new message is in dark text', /padding:16px 18px;white-space:pre-wrap;font-size:15px;line-height:1\.65;color:#0a1628/.test(h));
-  ok('THE EARLIER MESSAGE IS READABLE GREY, NOT LIGHT, and labelled "Earlier"', /color:#444444/.test(h) && /Earlier &middot; Sani Building Corp/.test(h) && !/color:#7a7a7a/.test(h));
+  ok('THE EARLIER MESSAGE IS READABLE GREY, NOT LIGHT, and labelled "Earlier"', /color:#444/.test(h) && /Earlier in this conversation/.test(h) && /<strong style="color:#555">Zurabi<\/strong>/.test(h) && !/color:#7a7a7a/.test(h));
   ok('...and cut short, so it cannot push the new message off the screen', h.indexOf('A long earlier message about travertine tile prices. '.repeat(7)) === -1 && /…<\/div>/.test(h));
   const none = build({ ref: REC.ref, record: REC, message: { from: 'contractor', text: 'First one', at: '2026-09-19T20:36:00Z' }, audience: 'customer', siteUrl: 'https://www.sanibuildingcorp.com' });
-  ok('no earlier message, no block', none.html.indexOf('Earlier &middot;') === -1);
+  ok('no earlier message, no block', none.html.indexOf('Earlier in this conversation') === -1);
 }
 
 console.log('\none conversation per estimate in the customer\'s Gmail\n');
