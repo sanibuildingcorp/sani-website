@@ -43,6 +43,11 @@ exports.handler = async function (event) {
     if (!ref) {
       return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing ref" }) };
     }
+    /* A customer-safe copy (lib/price-safe.js) must never be saved over the real
+       lines: it has no hours, rates or markup. */
+    if (estimate && estimate.pricesBaked === true) {
+      return { statusCode: 409, headers: cors(), body: JSON.stringify({ error: "This copy has no real prices - reload the dashboard and log in again" }) };
+    }
 
     const store = getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN });
     const existing = await store.get(ref, { type: "json" });

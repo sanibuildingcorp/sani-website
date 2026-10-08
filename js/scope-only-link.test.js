@@ -70,8 +70,11 @@ console.log('\nthe server sends the scope link nothing it could print as a price
   const noRef = await call('SBC-SOW1', {}, { sow: '1' });
   ok('the flag on the fetch is enough on its own - a browser that drops the referer gets the scope, never the dashboard copy', noRef.scopeOnly === true && SO.findMoney(noRef).length === 0 && noRef.estimate.notes === undefined);
   const cust = await call('SBC-SOW1', REF_HDR('SBC-SOW1'));
-  ok('the ordinary quote link is untouched: priced, with the contract and the thread', cust.customerFinalTotal === 4406.25 && cust.estimate.labor[0].rate === 6.5 && cust.thread.length === 1 && cust.includeContractForCustomer === true && cust.scopeOnly === undefined);
-  const dash = await call('SBC-SOW1', {});
+  ok('the ordinary quote link is untouched: priced, with the contract and the thread', cust.customerFinalTotal === 4406.25 && cust.estimate.labor.length > 0 && cust.estimate.markupPct === 0 /* price-safe */ && cust.thread.length === 1 && cust.includeContractForCustomer === true && cust.scopeOnly === undefined);
+  process.env.DASHBOARD_KEY = process.env.DASHBOARD_KEY || 'test-key';
+  const dash = await call('SBC-SOW1', { 'x-sbc-key': process.env.DASHBOARD_KEY });
+  const anon = await call('SBC-SOW1', {});
+  ok('without the key nobody gets the private copy', anon.estimate.notes === undefined && anon.estimate.markupPct === 0);
   ok('the dashboard still gets everything', dash.estimate.notes === 'INTERNAL: he haggles' && dash.estimate.markupPct === 25);
   const unsentCust = await call('SBC-SOW2', REF_HDR('SBC-SOW2'));
   ok('and a never-sent record on the ordinary quote link still shows nothing', unsentCust.estimatePending === true && !unsentCust.estimate.serviceBreakdown);

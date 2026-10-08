@@ -15,6 +15,30 @@ const thread = require("./lib/thread");
 const { applySentVersion } = require("./lib/sent-version");
 const { stripUnoffered } = require("./lib/offered-options");
 const { scopeOnlyView } = require("./lib/scope-only");
+const { priceSafe } = require("./lib/price-safe");
+
+async function moveSitePhotos(store, ref, data) {
+  const e = data && data.estimate, list = e && Array.isArray(e.sitePhotos) ? e.sitePhotos : [];
+  const todo = list.filter(function (p) { return p && typeof p.data === "string" && p.data.indexOf("data:image/") === 0; });
+  if (!todo.length) return;
+  let up; try { up = require("./upload-photo").uploadDataUri; } catch (_) { return; }
+  let moved = 0;
+  await Promise.all(todo.map(async function (p) {
+    try { const url = await up(p.data, ref + "-site"); if (url) { p.data = url; moved++; } } catch (err) { console.error("site photo move:", err.message); }
+  }));
+  if (!moved) return;
+  try {
+    const fresh = await store.get(ref, { type: "json" });
+    if (fresh && fresh.estimate) { fresh.estimate.sitePhotos = list; if (fresh.sentVersion && fresh.sentVersion.estimate) delete fresh.sentVersion.estimate.sitePhotos; await store.setJSON(ref, fresh); }
+  } catch (err) { console.error("site photo save:", err.message); }
+}
+
+function hasDashboardKey(event) {
+  const secret = process.env.DASHBOARD_KEY, h = (event && event.headers) || {};
+  const got = String(h["x-sbc-key"] || h["X-Sbc-Key"] || h["X-SBC-KEY"] || "");
+  if (!secret || !got) return false;
+  try { const crypto = require("crypto"); const a = Buffer.from(got), b = Buffer.from(String(secret)); return a.length === b.length && crypto.timingSafeEqual(a, b); } catch (_) { return false; }
+}
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -105,11 +129,41 @@ exports.handler = async function (event) {
       /* The raw frozen version is already applied above; sending it as well
          would hand the customer every alternative the gate just removed. */
       delete view.sentVersion;
+      delete view.estimateHistory; delete view.projectAnalysis;
+      if (view.estimate) priceSafe(view.estimate);
       return { statusCode: 200, headers: cors(), body: JSON.stringify(view) };
     }
 
-    // Dashboard and internal tools receive the exact stored estimate.
+    // Dashboard and internal tools receive the exact stored estimate - WITH the
+    // dashboard key only. Without it (the invoice and contract pages, or anyone
+    // who types the URL) the record goes out with the private parts removed and
+    // the price lines made customer-safe (lib/price-safe.js).
     data.thread = thread.normalizeThread(data);
+    /* Records sent before snapshots dropped the site photos still carry a copy
+       of them in sentVersion: the dashboard does not need it twice. */
+    if (data.sentVersion && data.sentVersion.estimate) { delete data.sentVersion.estimate.sitePhotos; delete data.sentVersion.estimate.ownerNotes; }
+    if (hasDashboardKey(event)) {
+      /* Site photos used to be stored INSIDE the record as text (about 450 KB
+         each), and 7 of them made one job too big to open. The first time the
+         dashboard opens such a job they move to photo storage as links, and the
+         record is saved back small. Nothing is lost: a photo that fails to
+         upload stays as it was. */
+      await moveSitePhotos(store, ref, data);
+      /* Netlify refuses any answer over 6 MB (the "Load failed (502)" card).
+         Older saved copies go first: photos inside estimateHistory, then the
+         oldest history entries. The job's own lines and photos are never cut. */
+      let body = JSON.stringify(data);
+      const LIMIT = 5.5 * 1024 * 1024;
+      if (body.length > LIMIT && Array.isArray(data.estimateHistory)) {
+        data.estimateHistory.forEach(function (h) { const e = h && (h.estimate || h); if (e && typeof e === "object") { delete e.sitePhotos; delete e.quotePhotos; } });
+        body = JSON.stringify(data);
+        while (body.length > LIMIT && data.estimateHistory.length) { data.estimateHistory.shift(); body = JSON.stringify(data); }
+      }
+      if (body.length > LIMIT) console.error("get-estimate: " + ref + " is still " + body.length + " bytes");
+      return { statusCode: 200, headers: cors(), body: body };
+    }
+    ["ownerChat", "talkJob", "v5Ask", "chatFacts", "threadRate", "estimateHistory", "aiError", "aiJobId", "aiStage", "projectAnalysis", "sentVersion"].forEach(function (k) { delete data[k]; });
+    if (data.estimate) { priceSafe(data.estimate); (data.estimate.customerSupplied || []).forEach(function (c) { if (c) delete c.line; }); }
     return { statusCode: 200, headers: cors(), body: JSON.stringify(data) };
   } catch (err) {
     console.error("get-estimate error:", err.message);
@@ -388,7 +442,7 @@ function uniq(values) {
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-sbc-key",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Content-Type": "application/json",
   };

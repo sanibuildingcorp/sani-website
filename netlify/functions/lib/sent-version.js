@@ -45,6 +45,9 @@ function snapshotEstimate(estimate) {
      the checkbox existed carry no key, and those are read as "all", because
      that is what those customers were actually sent. */
   if (!Array.isArray(copy.offeredOptions)) copy.offeredOptions = [];
+  /* His own site photos and notes are never sent, so they are not part of what
+     was sent: 7 photos made one job too big to open (over 6 MB). */
+  delete copy.sitePhotos; delete copy.ownerNotes;
   return copy;
 }
 

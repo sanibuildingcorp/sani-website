@@ -87,6 +87,7 @@ function mkctx(opts) {
   ctx.removeEventListener = off(listeners.window);
 
   ctx.fetch = opts.fetch || function () { return Promise.reject(new Error('no fetch stub')); };
+  ctx.sbcFetch = function (u, o) { return ctx.fetch(u, o); }; /* get-estimate goes through sbcFetch (dashboard key) */
 
   vm.createContext(ctx);
   [extVar('AI_JOB_KEY'), extVar('AI_JOB_MAX_MS')].forEach(function (s) { vm.runInContext(s, ctx); });

@@ -8,7 +8,8 @@
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.costBreakdown = factory();
 })(typeof self !== "undefined" ? self : this, function () {
-  var OTHER = /dispos|dumpster|debris|haul|protect|permit|filing|delivery|parking|elevator|clean.?up|travel|insurance|coi\b|fee\b/i;
+  var OTHER = /dispos|dumpster|container|contractor bags|debris|haul|protect|permit|filing|delivery|parking|elevator|clean.?up|travel|insurance|coi\b|fee\b/i;
+  var WORK = /demo|tear.?out|install|tile|plumb|frame|framing|build|drywall|sheetrock|paint|carpent|electric|waterproof|set\b|rough/i;
   var C = function (x) { return String(x == null ? "" : x).trim(); };
   var key = function (x) { return C(x).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); };
   var LT = function (l) { return (Number(l && l.qty) || 0) * (Number(l && l.rate) || 0); };
@@ -22,7 +23,10 @@
       var v = LT(l); if (!(v > 0)) return;
       var sec = C(l.section), hit = names.filter(function (n) { return key(n) === key(sec); })[0];
       var r = row(hit || (names.length === 1 ? names[0] : "Whole project"));
-      r[OTHER.test(C(l.item)) ? "other" : kind] += v;
+      var it = C(l.item);
+      /* "Demolition to studs + disposal" is labor: only lines that are ABOUT
+         disposal, protection, permits... go to Other. */
+      r[OTHER.test(it) && !WORK.test(it) ? "other" : kind] += v;
     };
     (Array.isArray(e.labor) ? e.labor : []).forEach(function (l) { put(l, "labor"); });
     (Array.isArray(e.materials) ? e.materials : []).forEach(function (l) { put(l, "materials"); });
