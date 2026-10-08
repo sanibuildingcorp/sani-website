@@ -56,8 +56,10 @@ function inputFrom(record, offFacts) {
     },
     conversation: msgs,
     contractorNotes: [].concat(s(e.ownerNotes) || [], s(e.extraRequest) || [], A(record.contractorNotes),
-      /* What he told the estimator in the private chat (his words only; newest wins). */
-      A(record.ownerChat).filter((m) => m && m.from === 'owner' && s(m.text)).slice(-30).map((m) => 'Owner said: ' + s(m.text).slice(0, 1500))).filter(Boolean),
+      /* What he told the estimator in the private chat: each answer WITH the
+         question it answers ("4 lights, existing wiring" means nothing alone),
+         then the plan the estimator summed up last. Newest wins. */
+      chatNotes(record.ownerChat)).filter(Boolean),
   };
   /* Old (pre-v5) estimate: show the reader his priced lines so no work is lost. */
   const old = oldLines(e);
@@ -134,7 +136,9 @@ exports.handler = async (event) => {
   /* Only these fields are ever written by this function. */
   const save = async (fields) => {
     const fresh = (await store.get(ref, { type: 'json' })) || record;
+    const note = fields && fields.__chatNote; if (fields) delete fields.__chatNote;
     Object.assign(fresh, fields);
+    if (note) fresh.ownerChat = A(fresh.ownerChat).concat([{ from: 'ai', text: note, at: now(), report: true }]).slice(-80);
     await store.setJSON(ref, fresh);
     return fresh;
   };
@@ -194,6 +198,7 @@ exports.handler = async (event) => {
     withBreakdown(est);
     changes = previous ? engine.diff(previous, est) : [];
     out = { aiStatus: 'done', aiStage: '', aiError: '', aiJobId: s(b.jobId), aiFinishedAt: now(), updatedAt: now(), v5Status: { ok: true, at: now(), warnings: est.warnings, changes: changes.length } };
+    try { out.__chatNote = regenReport(previous, est, changes, record.ownerChat); } catch (_) {}
     if (chat && previous) {
       /* "Update from chat" NEVER writes record.estimate. It waits for Apply. */
       out.estimateV5Pending = { at: now(), jobId: s(b.jobId), estimate: Object.assign({}, previous, est), changes, fullRebuild: !(previous && previous.v5Reading), redo };
@@ -209,6 +214,45 @@ exports.handler = async (event) => {
   await save(out);
   return res(202, { ok: true });
 };
+
+/* The private estimator chat as instructions for the generator. */
+function chatNotes(chat) {
+  const list = A(chat).filter((m) => m && s(m.text)).slice(-40), out = [];
+  list.forEach((m, i) => {
+    if (m.from !== 'owner') return;
+    const prev = list[i - 1], q = prev && prev.from === 'ai' && /\?/.test(s(prev.text)) ? s(prev.text).slice(0, 600) : '';
+    if (/^\s*(re)?generate( both| it| now)?\s*[.!]*\s*$/i.test(s(m.text))) return; /* a button press, not an instruction */
+    out.push((q ? 'Owner answered the estimator (question: "' + q + '"): ' : 'Owner said: ') + s(m.text).slice(0, 1500));
+  });
+  const plan = list.slice().reverse().find((m) => m.from === 'ai' && !m.report && s(m.text).length > 60);
+  if (plan) out.push('PLAN AGREED IN THE CHAT (the estimator\'s last summary of what the owner wants; build exactly this unless an owner line above says otherwise): ' + s(plan.text).slice(0, 2000));
+  return out;
+}
+
+/* After a Regenerate: what changed, and anything the chat plan names that is
+   not in the new lines. Posted in the estimator chat. */
+const PLAN_WORDS = ['toilet', 'vanity', 'faucet', 'glass', 'bench', 'grab bar', 'niche', 'recessed', 'light', 'ceiling', 'valve', 'rain', 'handheld', 'exhaust fan', 'mirror', 'medicine cabinet', 'waterproof', 'cement board', 'sheetrock', 'drywall', 'floor tile', 'wall tile', 'mosaic', 'drain', 'curbless', 'window', 'paint', 'door', 'tub', 'heated floor', 'outlet', 'switch', 'shelf', 'towel'];
+function regenReport(previous, est, changes, chat) {
+  const tot = (e) => Math.round(A(e && e.labor).concat(A(e && e.materials)).reduce((x, l) => x + (Number(l.qty) || 0) * (Number(l.rate) || 0), 0) * (1 + (Number(e && e.markupPct) || 0) / 100));
+  const $ = (v) => '$' + Math.round(v).toLocaleString('en-US');
+  const add = changes.filter((c) => c.type === 'add' && !/^Not included/.test(c.what)), rem = changes.filter((c) => c.type === 'remove'), chg = changes.filter((c) => c.type === 'change');
+  const lines = [];
+  lines.push('Regenerated: ' + (previous ? $(tot(previous)) + ' → ' : '') + $(tot(est)) + '.');
+  if (add.length) lines.push('Added: ' + add.slice(0, 8).map((c) => c.what).join('; ') + (add.length > 8 ? ' and ' + (add.length - 8) + ' more' : '') + '.');
+  if (rem.length) lines.push('Removed: ' + rem.slice(0, 8).map((c) => c.what).join('; ') + (rem.length > 8 ? ' and ' + (rem.length - 8) + ' more' : '') + '.');
+  if (chg.length) lines.push('Changed quantity/price: ' + chg.length + ' line' + (chg.length > 1 ? 's' : '') + '.');
+  const plan = A(chat).slice().reverse().find((m) => m && m.from === 'ai' && !m.report && s(m.text).length > 60);
+  if (plan) {
+    const hay = norm(A(est.labor).concat(A(est.materials)).map((l) => l.item + ' ' + (l.spec || '')).join(' ') + ' ' + A(est.serviceBreakdown).map((x) => A(x.included).join(' ')).join(' '));
+    const want = PLAN_WORDS.filter((w) => norm(plan.text).indexOf(norm(w)) >= 0);
+    const miss = want.filter((w) => hay.indexOf(norm(w)) < 0);
+    if (miss.length) lines.push('Check: the plan mentions ' + miss.join(', ') + ' but I do not see ' + (miss.length > 1 ? 'them' : 'it') + ' in the new lines. Tell me and I will add ' + (miss.length > 1 ? 'them' : 'it') + '.');
+    else if (want.length) lines.push('Everything the plan names is in the new lines.');
+  }
+  lines.push('Review the change list and tap Apply to use it.');
+  return lines.join('\n');
+}
+function norm(x) { return s(x).toLowerCase().replace(/[^a-z0-9]+/g, ' '); }
 
 /* "I clicked regenerate but it's still shows similar": his edited scope wording
    is kept on a regenerate (contractor-owned-fields.js), so the old "Tile, toilet,
@@ -254,6 +298,7 @@ async function talkReply(record, msg, att) {
 
 How to talk:
 - Plain, direct contractor talk. 1-3 short sentences. No lists unless he asks. No markdown.
+- When the plan is complete, end with ONE full summary of everything to build (every fixture, quantity and choice he gave, e.g. "4 recessed lights on existing wiring"). Regenerate builds exactly your last summary plus his messages, so never leave out something he asked for and never write a summary for something he did not ask for.
 - If he tells you facts or changes ("customer buys tile", "make wall tile $18/sf", "3rd floor walk-up"), confirm in one line what you will change on the next Generate / Regenerate. You cannot change the estimate yourself; he taps Generate or Regenerate.
 - If he asks why a number is what it is, explain from the current lines below (qty x rate). Do not invent numbers that are not there.
 - Ask at most ONE follow-up question, only if its answer really changes the price.
