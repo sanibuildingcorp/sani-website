@@ -145,10 +145,10 @@ function buildScopePdf(view, opts) {
   if (v4) {
     const sani = uniq(e.saniSupplies);
     const yours = uniq([].concat.apply([], A(e.serviceBreakdown).map(function (s) { return A(s && s.customerSupplies).map(function (x) { return typeof x === "string" ? x : C(x && (x.item || x.text)); }); })));
-    if (sani.length) { head("Sani supplies"); bullets(sani); }
+    if (sani.length) { head("Sani Building Corp supplies"); bullets(sani); }
     if (yours.length) { head("You supply"); bullets(yours.concat(["Please have your items on site before we start. Installing them is included."]).slice(0, 40)); }
     /* What will be installed: the finishes he set up, as on the page. */
-    const SUP = { sani: "Sani supplies", customer: "You supply" };
+    const SUP = { sani: "Sani Building Corp supplies", customer: "You supply" };
     const prods = A(e.finishGroups).map(function (g) {
       const os = A(g && g.options).filter(function (o) { return o && C(o.name); });
       const o = os.find(function (x) { return x.isDefault; }) || os[0];
