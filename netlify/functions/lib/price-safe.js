@@ -48,7 +48,7 @@ function priceSafe(e) {
   if (e.markupPct !== undefined) e.markupPct = 0;
   A(e.parkedLines).forEach((p) => { if (p && p.line) { const o = {}; ["item", "spec", "unit", "finish", "finishStatus", "link", "photo", "store", "section"].forEach((x) => { if (p.line[x] !== undefined) o[x] = p.line[x]; }); p.line = o; } });
   if (e.totals && typeof e.totals === "object") e.totals = { total: e.totals.total };
-  ["markupRecommendation", "mergeHistory", "lastMerge", "v5Reading", "pricingReadiness", "warnings", "ownerNotes", "sitePhotos", "savedMaterials", "notes", "projectAnalysis", "validation", "internalScopeChecklist", "repairReport"].forEach((x) => { delete e[x]; });
+  ["markupRecommendation", "mergeHistory", "lastMerge", "v5Reading", "pricingReadiness", "warnings", "ownerNotes", "sitePhotos", "savedMaterials", "notes", "projectAnalysis", "validation", "internalScopeChecklist", "repairReport", "deterministicPricing", "estimateHealth"].forEach((x) => { delete e[x]; });
   e.pricesBaked = true;
   return e;
 }

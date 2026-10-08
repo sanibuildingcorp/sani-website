@@ -123,8 +123,11 @@ exports.handler = async function (event) {
     // who types the URL) the record goes out with the private parts removed and
     // the price lines made customer-safe (lib/price-safe.js).
     data.thread = thread.normalizeThread(data);
+    /* Records sent before snapshots dropped the site photos still carry a copy
+       of them in sentVersion: the dashboard does not need it twice. */
+    if (data.sentVersion && data.sentVersion.estimate) { delete data.sentVersion.estimate.sitePhotos; delete data.sentVersion.estimate.ownerNotes; }
     if (hasDashboardKey(event)) return { statusCode: 200, headers: cors(), body: JSON.stringify(data) };
-    ["ownerChat", "talkJob", "v5Ask", "chatFacts", "threadRate", "estimateHistory", "aiError", "aiJobId", "aiStage", "projectAnalysis"].forEach(function (k) { delete data[k]; });
+    ["ownerChat", "talkJob", "v5Ask", "chatFacts", "threadRate", "estimateHistory", "aiError", "aiJobId", "aiStage", "projectAnalysis", "sentVersion"].forEach(function (k) { delete data[k]; });
     if (data.estimate) { priceSafe(data.estimate); (data.estimate.customerSupplied || []).forEach(function (c) { if (c) delete c.line; }); }
     return { statusCode: 200, headers: cors(), body: JSON.stringify(data) };
   } catch (err) {
