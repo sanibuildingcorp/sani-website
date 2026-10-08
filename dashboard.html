@@ -14055,7 +14055,7 @@ function pzFinishesHtml(i, nm, s) {
   (s.supplied || []).forEach(function (t, j) {
     if (!String(t).trim() || parkedNames.indexOf(scopeNorm(t)) !== -1) return;
     cards.push('<div class="pz-fc">' + pzFDel("pzDropSupplied(" + i + "," + j + ")", t) + '<div class="pz-fimg">' + pzIcon(t) + '<em>customer item</em></div><div class="pz-fb"><b>' + esc(t) + '</b><div class="pz-mut">Customer buys it, we install it</div>' +
-      '<label class="pz-tg"><input type="checkbox" checked onchange="pzDropSupplied(' + i + ',' + j + ')"> Customer supplies</label><div class="pz-mut">Material $0 · labor kept</div></div></div>');
+      '<label class="pz-tg"><input type="checkbox" checked onchange="pzSaniSupplies(' + i + ',' + j + ',this)"> Customer supplies</label><div class="pz-mut">Material $0 · labor kept</div></div></div>');
   });
   cards = cards.filter(Boolean);
   return (cards.length ? '<div class="pz-fgrid">' + cards.join("") + '</div>' : '<div class="pz-mut" style="font-size:13px">No finishes yet.</div>') +
@@ -14196,6 +14196,29 @@ function pzUnsupply(i, pi) {
   scopeUnparkFor(String(s.name || "").trim(), item);
   s.supplied = (s.supplied || []).filter(function (x) { return scopeNorm(x) !== scopeNorm(item); });
   PZ.scopeTouched = true; pzSyncOld(); pzRender(); pzDirty();
+}
+/* "i tap finger for unchecked but it's whole part gone, if i need uncheck for
+   Sani supply, i can't". Unchecking a customer item now makes it a Sani
+   material line again: the estimator's own line when it kept one, otherwise
+   he types the price once. The labor stays as it was. */
+function pzSaniSupplies(i, j, box) {
+  var e = pzEst(), s = pzSvcs()[i]; if (!s) return;
+  var item = String((s.supplied || [])[j] || "").trim(); if (!item) return;
+  var nm = String(s.name || "").trim();
+  var cs = Array.isArray(e.customerSupplied) ? e.customerSupplied : [];
+  var k = cs.findIndex(function (c) { return c && scopeNorm(c.item) === scopeNorm(item); });
+  var line = k >= 0 && cs[k].line ? Object.assign({}, cs[k].line) : null;
+  if (!line) {
+    var v = prompt("Sani supplies " + item + ".\nMaterial price ($):", "");
+    if (v === null || !(Number(String(v).replace(/[^0-9.]/g, "")) > 0)) { if (box) box.checked = true; return; }
+    line = { section: nm, item: item, qty: 1, unit: "ea", rate: Number(String(v).replace(/[^0-9.]/g, "")) };
+  }
+  line.section = nm;
+  e.materials = e.materials || []; e.materials.push(line);
+  if (k >= 0) cs.splice(k, 1);
+  s.supplied.splice(j, 1);
+  PZ.scopeTouched = true; if (typeof pzSyncOld === "function") pzSyncOld(); pzRender(); pzDirty();
+  toast(item + ": Sani supplies · " + pzF((Number(line.qty) || 1) * (Number(line.rate) || 0)));
 }
 function pzDropSupplied(i, j) { var s = pzSvcs()[i]; if (!s) return; (s.supplied || []).splice(j, 1); PZ.scopeTouched = true; pzRender(); pzDirty(); }
 function pzParkedStatus(pi, v) { var p = (pzEst().parkedLines || [])[pi]; if (p && p.line) { p.line.finishStatus = v; pzDirty(); } }
