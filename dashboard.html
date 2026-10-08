@@ -13783,7 +13783,7 @@ function pzTalkChatHtml(r, hasLines) {
   show.forEach(function (m) { h += '<div class="pz-tc-m ' + (m.from === "owner" ? "me" : "ai") + '">' + (m.from === "owner" ? phs(m.photos) : '') + esc(String(m.text || "")).replace(/\n/g, "<br>") + '</div>'; });
   if (pend) h += '<div class="pz-tc-m me">' + phs(T.pendPh) + esc(pend) + '</div><div class="pz-tc-m ai pz-tc-dots"><i></i><i></i><i></i></div>';
   h += '</div>';
-  if (chips.length) h += '<div class="pz-tc-chips">' + chips.map(function (c) { return '<button type="button" onclick="pzTalkSend(this.textContent)">' + esc(c) + '</button>'; }).join("") + '</div>';
+  if (chips.length) h += '<div class="pz-tc-chips">' + chips.map(function (c) { return /^\s*(re)?generate\b/i.test(c) ? '<button type="button" onclick="pzRegenerate()">↻ ' + esc(c) + '</button>' : '<button type="button" onclick="pzTalkSend(this.textContent)">' + esc(c) + '</button>'; }).join("") + '</div>';
   var att = (T.ref === r.ref && Array.isArray(T.att)) ? T.att : [], sp = Array.isArray(e.sitePhotos) ? e.sitePhotos : [];
   if (att.length && !pend) h += '<div class="pz-tc-att">' + att.map(function (ix, n) { var ph = sp[ix]; return ph ? '<span style="background-image:url(\'' + esc(ph.data) + '\')"><button type="button" aria-label="Remove" onclick="PZ.tchat.att.splice(' + n + ',1);pzTalkRefresh()">✕</button></span>' : ''; }).join("") + '</div>';
   h += '<div class="pz-tk-in" style="margin-top:8px"><label class="pz-btn pz-ghost pz-tk-ph" aria-label="Add photos">📷<input type="file" accept="image/*" multiple style="display:none" onchange="pzTalkPhoto(this,true)"></label><textarea id="pz-tk-txt" rows="1" placeholder="Talk to the estimator…" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,140)+\'px\'"' + (pend ? " disabled" : "") + '></textarea>' + mic +
@@ -14818,6 +14818,8 @@ async function pzChatUpdate(mode) {
     if (!j || j.aiJobId !== jobId) throw new Error("No answer yet - try again in a minute");
     if (j.aiStatus === "error") throw new Error(j.aiError || "The estimator reported an error");
     var pend = j.estimateV5Pending || {};
+    /* the estimator's report on what changed lands in the chat */
+    if (Array.isArray(j.ownerChat) && currentRecord && currentRecord.ref === ref) { currentRecord.ownerChat = j.ownerChat; try { pzTalkRefresh(); } catch (_) {} }
     PZ.v5mode = mode;
     pzV5Changes(ref, pend.changes || [], pend.fullRebuild === true);
   } catch (e) { toast("Update from chat: " + e.message, true); }
