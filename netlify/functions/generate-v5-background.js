@@ -142,14 +142,16 @@ exports.handler = async (event) => {
      Own talkJob fields, so it never disturbs a running Generate. */
   if (b.mode === 'talk') {
     const msg = s(b.message).slice(0, 2000), jid = s(b.jobId);
+    const sp = A(record.estimate && record.estimate.sitePhotos);
+    const att = A(b.photos).map(Number).filter((i) => Number.isInteger(i) && sp[i] && sp[i].data).slice(0, 6);
     let reply, err = '';
     try {
       if (!msg) throw new Error('Empty message');
       if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set');
-      reply = await talkReply(record, msg);
+      reply = await talkReply(record, msg, att);
     } catch (e) { err = e.message || 'error'; }
     const fresh = (await store.get(ref, { type: 'json' })) || record;
-    if (!err) fresh.ownerChat = A(fresh.ownerChat).concat([{ from: 'owner', text: msg, at: now() }, { from: 'ai', text: reply.reply, chips: reply.chips, at: now() }]).slice(-80);
+    if (!err) fresh.ownerChat = A(fresh.ownerChat).concat([Object.assign({ from: 'owner', text: msg, at: now() }, att.length ? { photos: att } : {}), { from: 'ai', text: reply.reply, chips: reply.chips, at: now() }]).slice(-80);
     fresh.talkJob = { id: jid, done: true, error: err, at: now() };
     await store.setJSON(ref, fresh);
     return res(202, { ok: true });
@@ -231,8 +233,17 @@ function syncKeptScopeSupplies(est) {
     });
   });
 }
+/* The photos he just attached first, then the job's other photos (max 8 total). */
+function talkBlocks(record, att) {
+  const sp = A(record.estimate && record.estimate.sitePhotos);
+  const mine = A(att).map((i) => sp[i] && sp[i].data).filter(Boolean);
+  const toBlock = (u) => { const m = s(u).match(/^data:(image\/(?:jpeg|png|gif|webp));base64,(.*)$/); return m ? { type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } } : /^https:\/\//.test(s(u)) ? { type: 'image', source: { type: 'url', url: s(u) } } : null; };
+  const first = mine.map(toBlock).filter(Boolean);
+  const rest = photoBlocks(record).filter((bk) => !(bk.source && bk.source.data && mine.some((u) => u.indexOf(bk.source.data.slice(0, 200)) >= 0)));
+  return first.concat(rest).slice(0, 8);
+}
 /* Private chat with the estimator: plain talk, short answers, no JSON estimate. */
-async function talkReply(record, msg) {
+async function talkReply(record, msg, att) {
   const e = record.estimate || {};
   const lines = [].concat(A(e.labor).map((l) => Object.assign({ kind: 'labor' }, l)), A(e.materials).map((l) => Object.assign({ kind: 'material' }, l)))
     .slice(0, 80).map((l) => ({ kind: l.kind, section: l.section, item: s(l.item).slice(0, 120), qty: Number(l.qty) || 0, unit: l.unit, rate: Number(l.rate) || 0, hours: Number(l.hours) || undefined }));
@@ -257,11 +268,11 @@ CURRENT ESTIMATE: ${lines.length ? `subtotal $${Math.round(sub)}, markup ${mk}%,
 
 CHAT SO FAR:
 ${history || '(new chat)'}
-OWNER: ${msg}`;
+OWNER: ${msg}${A(att).length ? `\n[He attached ${att.length} new photo${att.length > 1 ? 's' : ''} with this message: the FIRST ${att.length} image${att.length > 1 ? 's' : ''} above. Look at them closely and answer about what you see.]` : ''}`;
   const call = async (withPhotos) => {
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: MODEL, max_tokens: 4000, messages: [{ role: 'user', content: [].concat(withPhotos ? photoBlocks(record) : [], [{ type: 'text', text: prompt }]) }] }) });
+      body: JSON.stringify({ model: MODEL, max_tokens: 4000, messages: [{ role: 'user', content: [].concat(withPhotos ? talkBlocks(record, att) : [], [{ type: 'text', text: prompt }]) }] }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error((j.error && j.error.message) || 'AI ' + r.status);
     return (j.content || []).map((b) => b.text || '').join('');

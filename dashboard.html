@@ -13339,6 +13339,10 @@ try {
 .pz-ok{background:#e4f4ea;color:#1f8a4c}.pz-wa{background:#fff3dc;color:#b86e00}.pz-ba{background:#fbe7e5;color:#c0392b}
 .pz-wrap{max-width:1200px;margin:0 auto;padding:16px 12px 90px;display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
 @media(min-width:980px){.pz-wrap{grid-template-columns:minmax(0,1fr) 340px}}
+.pz-tc-att{display:flex;gap:6px;margin-top:8px;overflow-x:auto}.pz-tc-att span{position:relative;flex:0 0 64px;height:64px;border-radius:10px;background:#eef0f4 center/cover no-repeat}
+.pz-tc-att button{position:absolute;top:-4px;right:-4px;width:22px;height:22px;border-radius:50%;border:0;background:#16202e;color:#fff;font-size:11px;line-height:22px;padding:0}
+.pz-tc-ph{display:flex;gap:4px;flex-wrap:wrap;margin:-2px -4px 6px}.pz-tc-ph img{width:86px;height:86px;object-fit:cover;border-radius:10px}
+.pz-tk-in .pz-tk-ph{min-width:46px;min-height:46px;display:flex;align-items:center;justify-content:center}
 .pz-tc{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:52vh;overflow-y:auto}.pz-tc-hi{font-size:13px;line-height:1.4}
 .pz-tc-m{max-width:86%;padding:8px 11px;border-radius:14px;font-size:15px;line-height:1.35;word-wrap:break-word}.pz-tc-m.me{align-self:flex-end;background:#18305a;color:#fff;border-bottom-right-radius:4px}.pz-tc-m.ai{align-self:flex-start;background:#eef2f9;color:#16202e;border-bottom-left-radius:4px}
 .pz-tc-more{font-size:12px;align-self:center}.pz-tc-dots i{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:#8a93a3;animation:pzdot 1s infinite}.pz-tc-dots i:nth-child(2){animation-delay:.2s}.pz-tc-dots i:nth-child(3){animation-delay:.4s}
@@ -13759,16 +13763,18 @@ function pzTalkChatHtml(r, hasLines) {
   h += '<div class="pz-tc">';
   if (!msgs.length && !pend) h += '<div class="pz-mut pz-tc-hi">Talk to it like a person: tell it the job, ask why a number is what it is, or tell it what to change. Then tap ' + (hasLines ? "Regenerate" : "Generate") + '.</div>';
   if (!all && msgs.length > 4) h += '<a href="#" class="pz-tc-more" onclick="PZ.tchat.all=true;PZ.tchat.ref=currentRecord.ref;pzTalkRefresh();return false">Show earlier (' + (msgs.length - 4) + ')</a>';
-  show.forEach(function (m) { h += '<div class="pz-tc-m ' + (m.from === "owner" ? "me" : "ai") + '">' + esc(String(m.text || "")).replace(/\n/g, "<br>") + '</div>'; });
-  if (pend) h += '<div class="pz-tc-m me">' + esc(pend) + '</div><div class="pz-tc-m ai pz-tc-dots"><i></i><i></i><i></i></div>';
+  var phs = function (list) { var sp2 = Array.isArray(e.sitePhotos) ? e.sitePhotos : []; list = (list || []).filter(function (ix) { return sp2[ix]; }); return list.length ? '<div class="pz-tc-ph">' + list.map(function (ix) { return '<img src="' + esc(sp2[ix].data) + '" alt="">'; }).join("") + '</div>' : ''; };
+  show.forEach(function (m) { h += '<div class="pz-tc-m ' + (m.from === "owner" ? "me" : "ai") + '">' + (m.from === "owner" ? phs(m.photos) : '') + esc(String(m.text || "")).replace(/\n/g, "<br>") + '</div>'; });
+  if (pend) h += '<div class="pz-tc-m me">' + phs(T.pendPh) + esc(pend) + '</div><div class="pz-tc-m ai pz-tc-dots"><i></i><i></i><i></i></div>';
   h += '</div>';
   if (chips.length) h += '<div class="pz-tc-chips">' + chips.map(function (c) { return '<button type="button" onclick="pzTalkSend(this.textContent)">' + esc(c) + '</button>'; }).join("") + '</div>';
-  h += '<div class="pz-tk-in" style="margin-top:8px"><textarea id="pz-tk-txt" rows="1" placeholder="Talk to the estimator…" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,140)+\'px\'"' + (pend ? " disabled" : "") + '></textarea>' + mic +
+  var att = (T.ref === r.ref && Array.isArray(T.att)) ? T.att : [], sp = Array.isArray(e.sitePhotos) ? e.sitePhotos : [];
+  if (att.length && !pend) h += '<div class="pz-tc-att">' + att.map(function (ix, n) { var ph = sp[ix]; return ph ? '<span style="background-image:url(\'' + esc(ph.data) + '\')"><button type="button" aria-label="Remove" onclick="PZ.tchat.att.splice(' + n + ',1);pzTalkRefresh()">✕</button></span>' : ''; }).join("") + '</div>';
+  h += '<div class="pz-tk-in" style="margin-top:8px"><label class="pz-btn pz-ghost pz-tk-ph" aria-label="Add photos">📷<input type="file" accept="image/*" multiple style="display:none" onchange="pzTalkPhoto(this,true)"></label><textarea id="pz-tk-txt" rows="1" placeholder="Talk to the estimator…" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,140)+\'px\'"' + (pend ? " disabled" : "") + '></textarea>' + mic +
     '<button type="button" class="pz-btn pz-gold" aria-label="Send" onclick="pzTalkSend(document.getElementById(\'pz-tk-txt\').value)"' + (pend ? " disabled" : "") + '>↑</button></div>';
   h += '<details class="pz-tk-notes"><summary>📝 Your notes' + (nLines ? " (" + nLines + ")" : "") + '</summary>' +
     '<textarea id="pz-onotes" rows="4" placeholder="Anything you always want it to follow on this job" oninput="pzEst().ownerNotes=this.value;pzDirty()">' + esc(notes) + '</textarea></details>';
   h += '<div class="pz-tk-bar">' +
-    '<label class="pz-btn pz-ghost pz-tk-ph" aria-label="Add site photo">📷' + (sitePh ? '<small>' + sitePh + '</small>' : "") + '<input type="file" accept="image/*" multiple style="display:none" onchange="pzTalkPhoto(this)"></label>' +
     (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzRegenerate()">↻ Regenerate</button>'
               : '<button type="button" class="pz-btn pz-gold" onclick="pzSaveNow().then(function(){pzGenerate()})">Generate estimate</button>') +
     '</div><span id="pz-gen" class="pz-mut"></span></div>';
@@ -13785,14 +13791,16 @@ function pzTalkRefresh() {
 }
 async function pzTalkSend(text) {
   var r = currentRecord, ref = r && r.ref, msg = String(text || "").trim();
+  var att = PZ.tchat && PZ.tchat.ref === ref && Array.isArray(PZ.tchat.att) ? PZ.tchat.att.slice() : [];
+  if (!msg && att.length) msg = "What do you see in " + (att.length > 1 ? "these photos" : "this photo") + "?";
   if (!ref || !msg) return;
   if (PZ.tchat && PZ.tchat.pending) return;
-  PZ.tchat = { ref: ref, all: PZ.tchat && PZ.tchat.ref === ref && PZ.tchat.all, pending: msg };
+  PZ.tchat = { ref: ref, all: PZ.tchat && PZ.tchat.ref === ref && PZ.tchat.all, pending: msg, pendPh: att, att: [] };
   pzTalkRefresh();
   var jid = "v5t-" + Date.now().toString(36), err = "";
   try {
     if (PZ.saveT) { clearTimeout(PZ.saveT); await pzSaveNow(); } /* his photos / notes reach the brain */
-    var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jid, mode: "talk", message: msg }) });
+    var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jid, mode: "talk", message: msg, photos: att }) });
     if (k.status !== 202 && !k.ok) throw new Error("HTTP " + k.status);
     var j = null;
     for (var n = 0; n < 60; n++) {
@@ -13808,7 +13816,7 @@ async function pzTalkSend(text) {
   if (PZ.tchat) PZ.tchat.pending = null;
   if (currentRecord && currentRecord.ref === ref) {
     pzTalkRefresh();
-    if (err) { toast("Estimator: " + err, true); var t2 = document.getElementById("pz-tk-txt"); if (t2) t2.value = msg; }
+    if (err) { toast("Estimator: " + err, true); if (PZ.tchat) PZ.tchat.att = att; pzTalkRefresh(); var t2 = document.getElementById("pz-tk-txt"); if (t2) t2.value = msg; }
   }
 }
 function pzTalkAns(i, v) {
@@ -13829,12 +13837,12 @@ function pzTalkMic() {
   try { rec.start(); } catch (e) { toast("Mic not available", true); }
 }
 /* Site photos: internal only (estimate.sitePhotos), read by the estimator, never shown to the customer. */
-async function pzTalkPhoto(inp) {
+async function pzTalkPhoto(inp, toChat) {
   var r = currentRecord; if (!r) return;
   r.estimate = r.estimate || {};
-  var mine = Array.isArray(r.estimate.sitePhotos) ? r.estimate.sitePhotos : [];
-  var files = Array.prototype.slice.call((inp && inp.files) || []).slice(0, Math.max(0, 6 - mine.length));
-  if (!files.length) { toast("Max 6 site photos", true); return; }
+  var mine = Array.isArray(r.estimate.sitePhotos) ? r.estimate.sitePhotos : [], start = mine.length;
+  var files = Array.prototype.slice.call((inp && inp.files) || []).slice(0, Math.max(0, 12 - mine.length));
+  if (!files.length) { toast("Max 12 site photos on one job", true); return; }
   for (var i = 0; i < files.length; i++) {
     try {
       var data = await new Promise(function (ok, bad) {
@@ -13853,7 +13861,13 @@ async function pzTalkPhoto(inp) {
       mine.push({ name: files[i].name, data: data, at: new Date().toISOString() });
     } catch (e) { toast("Could not add " + files[i].name, true); }
   }
+  var before = start;
   r.estimate.sitePhotos = mine; if (inp) inp.value = "";
+  if (toChat) {
+    if (!PZ.tchat || PZ.tchat.ref !== r.ref) PZ.tchat = { ref: r.ref };
+    PZ.tchat.att = (PZ.tchat.att || []); for (var ai = before; ai < mine.length; ai++) PZ.tchat.att.push(ai);
+    pzDirty(); pzTalkRefresh(); var tt = document.getElementById("pz-tk-txt"); if (tt) tt.focus({ preventScroll: true }); return;
+  }
   pzDirty(); pzRender(); toast(mine.length + " site photo" + (mine.length > 1 ? "s" : "") + " - the estimator will look at them");
 }
 function pzSetTotal() { if (!currentRecord) return; clearTimeout(PZ.saveT); openSetTotalModal(); }
