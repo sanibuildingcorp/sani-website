@@ -31,7 +31,7 @@ RULES
 1. Use only ids from the list. If the job needs something not in the list, put it in "custom" with a name, quantity and unit — no price.
 2. Quantities must come from the request, the answers, the conversation or the photos' obvious counts (1 toilet, 1 vanity). Areas: use measurements given. If none: bathroom floor 5x8=40 sf, shower walls 75 sf, a room's walls 350 sf, and write the assumption in "facts".
 3. A SMALL JOB STAYS SMALL. A repair is priced as a repair. Never add handyman hours as extra time on top of priced items. If there is real extra work with no price-book id (e.g. hang 4 shelves), put it in "custom". Never add demolition, rough plumbing, waterproofing or new tile unless the customer asked for that work.
-4. Customer-supplied items: put the supply key in customerSupplies. Labor stays; only the material is removed.
+4. Customer-supplied items: put the supply key in customerSupplies. Labor stays; only the material is removed. Supply keys: wall_tile, floor_tile, floor_heat, thermostat, grout, saddle, toilet, flush_valve, vanity, faucet, shower_glass, accessories, fan, paint, ceiling_paint, door, door_hardware, trim, flooring, backsplash. NEVER write customer-supplied items into "exclusions" - the installation is included, only the material is theirs.
 5. Customer exclusions ("walls only", "no baseboards") go in that service's "exclusions", close to their own words.
 6. Newest message wins. A contractor note beats the customer. input.contractorNotes are the owner's own answers and instructions: follow them exactly, they beat everything else. Never ask again for something already answered.
 7. Never offer options or alternatives. Never mention TV mounting. Never set, install or connect an oven, range, cooktop or any gas appliance. Never use the word "licensed".
@@ -58,6 +58,21 @@ const MAXQ = { sf: 3000, lf: 1500, ea: 200, room: 20, hr: 80, job: 3 };
 const BAN = /\blicen[cs]ed?\b|\btv\b|\boven\b|\brange\b(?!\s*hood)|\bcooktop\b|\bgas\b|\boption [ab]\b|\balternative\b/i;
 const s = (v) => (v == null ? '' : String(v)).trim();
 
+/* Plain words -> price-book supply keys ("Tile, toilet, vanity/faucet" -> wall_tile, floor_tile, toilet, vanity, faucet). */
+const SUPPLY_WORDS = [[/\bwall tile\b/i, ['wall_tile']], [/\bfloor tile\b/i, ['floor_tile']], [/\btiles?\b(?!\s*(labor|install))/i, ['wall_tile', 'floor_tile']],
+  [/\bheat(ed|ing)? (floor|mat)\b|\bfloor heat/i, ['floor_heat']], [/\bthermostat/i, ['thermostat']], [/\bgrout\b/i, ['grout']], [/\bsaddle|threshold/i, ['saddle']],
+  [/\btoilet/i, ['toilet']], [/\bflush ?valve|flushometer/i, ['flush_valve']], [/\bvanit(y|ies)/i, ['vanity']], [/\bfaucet/i, ['faucet']],
+  [/\b(shower )?glass\b|shower door|enclosure/i, ['shower_glass']], [/\baccessor/i, ['accessories']], [/\b(exhaust )?fan\b/i, ['fan']],
+  [/\bceiling paint/i, ['ceiling_paint']], [/\bpaint\b/i, ['paint']], [/\bdoor hardware|knobs?|hinges?/i, ['door_hardware']], [/\bdoors?\b/i, ['door']],
+  [/\btrim\b|baseboard|molding|moulding/i, ['trim']], [/\bflooring|vinyl|laminate|hardwood/i, ['flooring']], [/\bbacksplash/i, ['backsplash']]];
+function supplyKeysIn(text) {
+  const t = s(text), out = new Set();
+  SUPPLY_WORDS.forEach(([re, ks]) => { if (re.test(t)) ks.forEach((k) => out.add(k)); });
+  if (out.has('wall_tile') && /\bfloor tile\b/i.test(t) && !/\bwall tile\b/i.test(t) && !/\btiles?\b(?!\s*(labor|install))/i.test(t.replace(/floor tile/ig, ''))) out.delete('wall_tile');
+  if (out.has('ceiling_paint') && !/\bpaint\b/i.test(t.replace(/ceiling paint/ig, ''))) out.delete('paint');
+  if (out.has('door_hardware') && !/\bdoors?\b(?!\s*hardware)/i.test(t)) out.delete('door');
+  return [...out];
+}
 function validate(raw, input) {
   const out = { projectTitle: s(raw && raw.projectTitle).slice(0, 90), summary: s(raw && raw.summary).replace(/\blicen[cs]ed?\b/gi, 'fully insured').replace(/\$\s?\d[\d,]*/g, '').slice(0, 600),
     services: [], customerSupplies: [], site: {}, facts: [], questions: [], status: 'READY', dropped: [] };
@@ -88,7 +103,21 @@ function validate(raw, input) {
     if (items.length || custom.length) out.services.push({ name, items, custom, exclusions });
   });
   const keys = new Set(BOOK.ITEMS.flatMap((i) => (i.mat || []).map((m) => m[4]).filter(Boolean)));
-  out.customerSupplies = (raw && raw.customerSupplies || []).map(s).filter((k) => keys.has(k));
+  /* "There is no customer supply, all fixtures like toilet, vanity ... is in not
+     including": the AI wrote "Tile, toilet, vanity/faucet supplied by customer"
+     as an exclusion and kept pricing them. Free words and such exclusion lines
+     become supply keys, and the exclusion line goes. */
+  const sup = new Set();
+  (raw && raw.customerSupplies || []).map(s).forEach((k) => { if (keys.has(k)) sup.add(k); else supplyKeysIn(k).forEach((x) => sup.add(x)); });
+  const BYCUST = /\b(supplied|provided|purchased|bought|furnished)\s+by\s+(the\s+)?(customer|owner|client|homeowner|you)\b|\b(customer|owner|client|homeowner)\s+(supplies|provides|buys|purchases|furnishes|to supply|to provide)\b|\bby (the )?(customer|owner)\b/i;
+  out.services.forEach((sv) => {
+    sv.exclusions = sv.exclusions.filter((x) => {
+      if (!BYCUST.test(x)) return true;
+      const ks = supplyKeysIn(x); ks.forEach((k) => sup.add(k));
+      return ks.length === 0; // nothing recognised: keep his words
+    });
+  });
+  out.customerSupplies = [...sup].filter((k) => keys.has(k));
   const st = (raw && raw.site) || {};
   out.site = { floor: Number(st.floor) || 0, elevator: st.elevator === true ? true : st.elevator === false ? false : null, walkup: st.walkup === true || st.elevator === false, coi: !!st.coi, buildingType: s(st.buildingType).slice(0, 40) };
   out.facts = (raw && raw.facts || []).filter((f) => f && s(f.text)).slice(0, 12).map((f, i) => ({ id: 'f' + (i + 1), text: s(f.text).slice(0, 160), effect: s(f.effect).slice(0, 120), on: true }));
