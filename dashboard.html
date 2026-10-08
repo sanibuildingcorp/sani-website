@@ -15178,7 +15178,16 @@ function pzMount() {
    checks it and taps Save. Nothing is sent to the customer. */
 var EI = { q: "", items: null, busy: false, err: "", job: null, draft: null, photos: [], keep: {}, mail: null, parent: "", reading: 0 };
 function eiEsc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); }
-function eiApi(body) { return sbcFetch("/.netlify/functions/email-import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || ("HTTP " + r.status)); return d; }); }); }
+function eiApi(body, fn) {
+  return sbcFetch("/.netlify/functions/" + (fn || "email-import"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function (r) {
+    return r.text().then(function (t) {
+      var d = null; try { d = t ? JSON.parse(t) : {}; } catch (_) { d = null; }
+      if (!d) throw new Error("The server did not answer properly (HTTP " + r.status + ") - try again");
+      if (!r.ok && r.status !== 202) throw new Error(d.error || ("HTTP " + r.status));
+      return d;
+    });
+  });
+}
 function eiOpen() {
   var d = document.getElementById("ei-drawer");
   if (!d) { document.body.insertAdjacentHTML("beforeend", '<div class="pz-drawer" id="ei-drawer" onclick="if(event.target===this)eiClose()"><div class="pz-pan"></div></div>'); d = document.getElementById("ei-drawer"); }
@@ -15206,6 +15215,7 @@ async function eiPick(i) {
   EI.mail = m; EI.draft = null; EI.err = ""; EI.job = "starting"; var my = ++EI.reading; EI.t0 = Date.now(); eiRender();
   try {
     var st = await eiApi({ action: "read", src: m.src, id: m.id }); EI.job = st.jobId;
+    await eiApi({ jobId: st.jobId, src: m.src, id: m.id }, "email-import-background");
     for (var n = 0; n < 60 && my === EI.reading; n++) {
       await new Promise(function (ok) { setTimeout(ok, 3000); }); eiRender();
       var j = await eiApi({ action: "status", jobId: EI.job });
