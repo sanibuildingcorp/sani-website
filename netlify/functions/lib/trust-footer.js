@@ -33,8 +33,6 @@ const FACTS = {
   yelp: "https://www.yelp.com/biz/sani-building-brooklyn-9",
 };
 
-const REVIEWS = '<div style="margin:0 0 10px;font-size:13px;line-height:1.5;color:#3a352d;font-style:italic">&ldquo;Very professional and detail oriented service! Handled everything end to end.&rdquo;<div style="font-style:normal;font-size:11px;color:#9a9284;margin-top:2px"><span style="color:#fbbc04">&#9733;&#9733;&#9733;&#9733;&#9733;</span> Frank H. &middot; Google review</div></div><div style="margin:0 0 10px;font-size:13px;line-height:1.5;color:#3a352d;font-style:italic">&ldquo;Incredibly prompt service. Professional, incredibly kind, and a pleasure to work with.&rdquo;<div style="font-style:normal;font-size:11px;color:#9a9284;margin-top:2px"><span style="color:#fbbc04">&#9733;&#9733;&#9733;&#9733;&#9733;</span> Amanda S. &middot; Google review</div></div>';
-
 /* Payment acceptance marks, drawn in the brands' own colours as text. */
 function payChip(label, style) {
   return '<td style="padding:3px"><span style="display:inline-block;min-width:54px;text-align:center;border:1px solid #e1ddd5;border-radius:6px;background:#ffffff;padding:6px 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:14px;' + style + '">' + label + "</span></td>";
@@ -70,10 +68,7 @@ function emailHtml() {
         badge('<span style="color:#fbbc04;letter-spacing:1px">&#9733;&#9733;&#9733;&#9733;&#9733;</span>', f.rating + " on Google", f.reviews + " reviews", f.googleUrl) +
         badge('<span style="display:inline-block;background:#f96302;color:#fff;font-weight:900;font-size:10px;line-height:12px;padding:3px 5px;border-radius:3px">PRO</span>', "Home Depot Pro", "trade supplier") +
       "</tr></table>" +
-      '<div style="border-top:1px solid #efe9df;margin:12px 0 12px"></div>' +
-      /* Real Google reviews, quoted word for word (shortened), first name and initial. */
-      '<div style="padding:0 6px">' + REVIEWS + "</div>" +
-      '<div style="border-top:1px solid #efe9df;margin:4px 0 10px"></div>' +
+      '<div style="border-top:1px solid #efe9df;margin:12px 0 10px"></div>' +
       '<div style="text-align:center;font-size:10px;letter-spacing:2px;color:#9a9284;text-transform:uppercase;margin:0 0 6px">We accept</div>' +
       payRow() +
       '<div style="border-top:1px solid #efe9df;margin:12px 0 10px"></div>' +
