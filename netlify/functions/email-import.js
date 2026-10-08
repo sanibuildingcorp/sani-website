@@ -27,7 +27,7 @@ function within(p, ms) { return new Promise(function (ok, no) { const t = setTim
 function estimates() { return getStore({ name: "estimates", siteID: process.env.MY_SITE_ID, token: process.env.MY_BLOBS_TOKEN }); }
 
 /* info@ over IMAP: the newest matches of a Gmail search. */
-async function imapList(q) {
+async function imapList(q, page) {
   const user = process.env.GMAIL_USER, pass = process.env.GMAIL_APP_PASSWORD;
   if (!user || !pass) return [];
   const { ImapFlow } = require("imapflow");
@@ -38,7 +38,11 @@ async function imapList(q) {
     const lock = await client.getMailboxLock("INBOX");
     try {
       let uids = await client.search({ gmailRaw: imp.queryFor(q) }, { uid: true });
-      uids = arr(uids).slice(-20);
+      /* newest first, 120 emails per page (most are filtered out below) */
+      uids = arr(uids).sort(function (a, b) { return a - b; });
+      const p = Math.max(0, Number(page) || 0), end = uids.length - p * 120;
+      imapList.more = end - 120 > 0;
+      uids = uids.slice(Math.max(0, end - 120), Math.max(0, end));
       if (uids.length) for await (const m of client.fetch(uids, { envelope: true, internalDate: true }, { uid: true })) {
         const e = m.envelope || {}, f = arr(e.from)[0] || {};
         out.push({ src: "imap", id: String(m.uid), from: str(f.address).toLowerCase(), name: str(f.name), subject: str(e.subject) || "(no subject)", at: new Date(m.internalDate || e.date || Date.now()).toISOString(), messageId: str(e.messageId), box: user });
@@ -76,15 +80,15 @@ exports.handler = async function (event) {
     if (b.action === "list") {
       const errors = [], items = [];
       let accounts = []; try { accounts = await gmail.listAccounts(); } catch (_) {}
-      const jobs = [within(imapList(b.q), 8000).catch(function (e) { errors.push("info@: " + e.message); return []; })]
+      imapList.more = false;
+      const jobs = [within(imapList(b.q, b.page), 9000).catch(function (e) { errors.push("info@: " + e.message); return []; })]
         .concat(arr(accounts).map(function (a) { return within(gmailList(a, b.q), 8000).catch(function (e) { errors.push(str(e.message).slice(0, 120)); return []; }); }));
       (await Promise.all(jobs)).forEach(function (l) { items.push.apply(items, l); });
       /* one row per email (the same mail can sit in two boxes) */
-      const seen = new Set(), list = items.filter(function (m) { const k = m.messageId || m.src + m.id; if (seen.has(k)) return false; seen.add(k); return true; })
-        .sort(function (a, c) { return Date.parse(c.at) - Date.parse(a.at); }).slice(0, 30);
+      const seen = new Set(), list = imp.tidy(items.filter(function (m) { const k = m.messageId || m.src + m.id; if (seen.has(k)) return false; seen.add(k); return true; })).slice(0, 60);
       const est = estimates();
       await Promise.all(list.map(async function (m) { m.ref = lead.refForMail(m.messageId, m.at); m.imported = !!(await est.get(m.ref, { type: "json" }).catch(function () { return null; })); }));
-      return json(200, { items: list, errors: errors, accounts: arr(accounts).map(function (a) { return a.email; }), gmailReady: gmail.configured() });
+      return json(200, { items: list, more: !!imapList.more, box: process.env.GMAIL_USER || "", errors: errors, accounts: arr(accounts).map(function (a) { return a.email; }), gmailReady: gmail.configured() });
     }
     if (b.action === "read") {
       const src = str(b.src), id = str(b.id);

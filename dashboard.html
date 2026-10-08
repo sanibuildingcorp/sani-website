@@ -15185,13 +15185,21 @@ function eiOpen() {
   d.classList.add("on"); EI.job = null; EI.draft = null; eiRender(); if (!EI.items) eiSearch();
 }
 function eiClose() { var d = document.getElementById("ei-drawer"); if (d) d.classList.remove("on"); EI.reading++; }
-async function eiSearch(q) {
+async function eiSearch(q, more) {
   if (q != null) EI.q = q;
+  EI.page = more ? (EI.page || 0) + 1 : 0;
   EI.busy = true; EI.err = ""; eiRender();
-  try { var d = await eiApi({ action: "list", q: EI.q }); EI.items = d.items || []; EI.errs = d.errors || []; EI.accounts = d.accounts || []; }
-  catch (e) { EI.err = e.message; EI.items = EI.items || []; }
+  try {
+    var d = await eiApi({ action: "list", q: EI.q, page: EI.page });
+    var got = d.items || [];
+    if (more) { var have = {}; (EI.items || []).forEach(function (m) { have[m.messageId || m.id] = 1; }); EI.items = (EI.items || []).concat(got.filter(function (m) { return !have[m.messageId || m.id]; })); }
+    else EI.items = got;
+    EI.more = !!d.more; EI.errs = d.errors || []; EI.accounts = d.accounts || []; EI.box = d.box || "";
+  } catch (e) { EI.err = e.message; EI.items = EI.items || []; }
   EI.busy = false; eiRender();
 }
+/* quick filters: the Gmail "Customers" label he already uses, or only what is not in the dashboard yet */
+function eiFilter(k) { EI.only = k === "new"; if (k === "label") eiSearch("label:customers"); else if (k === "all") eiSearch(""); else eiRender(); }
 async function eiPick(i) {
   var m = EI.items[i]; if (!m) return;
   if (m.imported) { eiClose(); try { await loadEstimates(); } catch (_) {} openEdit(m.ref); return; }
@@ -15249,16 +15257,19 @@ function eiRender() {
       '<button type="button" class="pz-btn pz-ghost pz-sm" style="margin-top:14px" onclick="EI.reading++;EI.job=null;eiRender()">Cancel</button></div>';
   } else {
     h += '<form onsubmit="event.preventDefault();eiSearch(this.q.value)" style="display:flex;gap:6px"><input name="q" type="search" enterkeyhint="search" value="' + eiEsc(EI.q) + '" placeholder="Name, email, address, words…" style="flex:1;font-size:16px;padding:10px;border:1px solid #d5d9e2;border-radius:10px;min-width:0"><button class="pz-btn pz-sm" type="submit">Search</button></form>' +
-      '<div class="pz-mut" style="margin:6px 0 10px">' + (EI.q ? 'Results for "' + eiEsc(EI.q) + '" - any date' : 'Last 60 days. Search to go further back.') + '</div>';
+      '<div class="ei-chips"><button type="button" class="' + (!EI.q && !EI.only ? "on" : "") + '" onclick="eiFilter(\'all\')">All emails</button><button type="button" class="' + (EI.q === "label:customers" ? "on" : "") + '" onclick="eiFilter(\'label\')">👤 Customers label</button><button type="button" class="' + (EI.only ? "on" : "") + '" onclick="eiFilter(EI.only ? \'show\' : \'new\')">Not in dashboard yet</button></div>' +
+      '<div class="pz-mut" style="margin:6px 0 10px">' + (EI.q && EI.q !== "label:customers" ? 'Results for "' + eiEsc(EI.q) + '" - any date.' : 'Newest first, last 60 days. Your own emails and system notices are hidden; replies are grouped.') + '</div>';
     if (EI.err) h += '<div style="color:#a33;margin:8px 0">' + eiEsc(EI.err) + '</div>';
     if (EI.busy) h += '<div class="pz-mut" style="padding:20px 0;text-align:center">Searching your email…</div>';
     else if (EI.items && !EI.items.length) h += '<div class="pz-mut" style="padding:20px 0;text-align:center">No emails found.</div>';
     else if (EI.items) h += EI.items.map(function (m, i) {
+      if (EI.only && m.imported) return "";
       return '<button type="button" class="ei-row" onclick="eiPick(' + i + ')"><span class="ei-top"><b>' + eiEsc(m.name || m.from) + '</b><small>' + eiEsc(eiDate(m.at)) + '</small></span><span class="ei-sub">' + eiEsc(m.subject) + '</span>' +
-        (m.snippet ? '<span class="ei-sn">' + eiEsc(m.snippet) + '</span>' : '') + (m.imported ? '<span class="ei-in">✓ In dashboard · ' + eiEsc(m.ref) + ' - tap to open</span>' : '') + '</button>';
+        (m.count > 1 ? '<span class="ei-sn">' + m.count + ' emails in this conversation</span>' : '') + (m.snippet ? '<span class="ei-sn">' + eiEsc(m.snippet) + '</span>' : '') + (m.imported ? '<span class="ei-in">✓ In dashboard · ' + eiEsc(m.ref) + ' - tap to open</span>' : '') + '</button>';
     }).join("");
+    if (EI.items && EI.more && !EI.busy) h += '<button type="button" class="pz-btn pz-ghost" style="width:100%;margin-top:8px" onclick="eiSearch(null,true)">Load older emails</button>';
     if (EI.errs && EI.errs.length) h += '<div class="pz-mut" style="margin-top:10px">Some mailboxes could not be searched: ' + eiEsc(EI.errs.join("; ")) + '</div>';
-    h += '<div class="pz-mut" style="margin-top:12px">Searching: info@ / contact@' + (EI.accounts && EI.accounts.length ? ' and ' + eiEsc(EI.accounts.join(", ")) : ' only - connect your Gmail under More tools to search it too') + '.</div>';
+    h += '<div class="pz-mut" style="margin-top:12px">Searching your mailbox ' + eiEsc(EI.box || "info@sanibuildingcorp.com") + ' - it holds contact@, info@ and sanibuildingcorp@gmail.com mail' + (EI.accounts && EI.accounts.length ? ', plus ' + eiEsc(EI.accounts.join(", ")) : '') + '.</div>';
   }
   d.querySelector(".pz-pan").innerHTML = top + h + '</div>';
 }
@@ -15267,6 +15278,7 @@ function eiRender() {
 .ei-open{display:block;width:100%;margin:8px 0 4px;padding:12px;border:1px solid #c9a24a;background:#fbf5e6;color:#5b4410;border-radius:10px;font-size:15px;font-weight:700}
 .ei-row{display:block;width:100%;text-align:left;border:1px solid #e3e6ec;background:#fff;border-radius:10px;padding:10px 12px;margin:6px 0;color:#13254a;font-size:15px}
 .ei-top{display:flex;justify-content:space-between;gap:8px}.ei-top small{color:#5d6577;white-space:nowrap}.ei-sub{display:block;margin-top:2px}.ei-sn{display:block;color:#5d6577;font-size:13px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ei-in{display:block;color:#1f7a44;font-size:13px;font-weight:700;margin-top:4px}
+.ei-chips{display:flex;gap:6px;overflow-x:auto;margin-top:8px}.ei-chips button{flex:0 0 auto;border:1px solid #d5d9e2;background:#fff;color:#13254a;border-radius:999px;padding:8px 12px;font-size:14px}.ei-chips button.on{border-color:#c9a24a;background:#fbf5e6;font-weight:700}
 .ei-ph{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.ei-ph button{padding:0;border:2px solid #c9a24a;border-radius:10px;overflow:hidden;background:#fff;aspect-ratio:1}.ei-ph button.off{opacity:.3;border-color:#d5d9e2}.ei-ph img{width:100%;height:100%;object-fit:cover;display:block}
 </style>
 
