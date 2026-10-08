@@ -24,6 +24,7 @@
 
 "use strict";
 
+const costBreakdown = require("../../../js/cost-breakdown.js");
 const { Doc, CONTENT_W } = require("./pdf-writer");
 const { scopeCards } = require("./scope-pdf");
 const { customerTotals } = require("./customer-total");
@@ -139,7 +140,14 @@ function buildCustomerPdf(view, opts) {
     }
     chosen.forEach((o) => doc.row([{ text: "Added: " + o.label, w: W1 }, { text: "+" + money(o.price), w: W2, align: "right" }], { size: 10.5 }));
     doc.space(3);
-    doc.row([{ text: "Your estimate", w: W1, bold: true }, { text: money(shown), w: W2, align: "right", bold: true }], { size: 12.5, fill: PALE, after: 12 });
+    doc.row([{ text: "Your estimate", w: W1, bold: true }, { text: money(shown), w: W2, align: "right", bold: true }], { size: 12.5, fill: PALE, after: 12 });    const cb = e.showCostBreakdown === true ? costBreakdown.build(e, cards.map((c) => c.title), shown) : null;
+    if (cb) {
+      doc.text("Cost breakdown", { size: 12, bold: true, color: NAVY, after: 4 });
+      const line = (k, v) => { if (v) doc.row([{ text: "    " + k, w: W1, color: GREY }, { text: money(v), w: W2, align: "right", color: GREY }], { size: 10.5 }); };
+      cb.services.forEach((s) => { doc.row([{ text: s.title, w: W1 }, { text: money(s.total), w: W2, align: "right" }], { size: 11 }); line("Labor", s.labor); line("Materials", s.materials); line("Other (disposal, protection, permits)", s.other); });
+      doc.space(3);
+      doc.row([{ text: "All services: labor " + money(cb.totals.labor) + " · materials " + money(cb.totals.materials) + (cb.totals.other ? " · other " + money(cb.totals.other) : ""), w: W1 + W2 }], { size: 10.5, fill: PALE, after: 12 });
+    }
   }
 
   cards.forEach(function (c, i) {

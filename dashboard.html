@@ -6664,7 +6664,7 @@ var CONTRACTOR_OWNED_ESTIMATE_FIELDS = [
   "manualCustomerScopeDraft", "publishedCustomerScope", "customerScopePublished",
   "customerViewPublishedVersion",
   // Customer View Mode choices
-  "showLaborCost", "showMaterialsCost", "displayByHand", "ownerNotes", "showSectionSubtotals",
+  "showLaborCost", "showMaterialsCost", "displayByHand", "ownerNotes", "showSectionSubtotals", "showCostBreakdown",
   "showLaborLines", "showMaterialLines",
   "showLaborLinePrices", "showMaterialLinePrices",
   // Manually set money + hand-built extras
@@ -13954,6 +13954,7 @@ function pzRender() {
     '<div class="pz-ey" style="margin-top:4px">Money (you only)</div>' +
     '<button type="button" class="pz-btn pz-gold pz-sm" style="width:100%;margin:6px 0 8px" onclick="pzSetTotal()">🎯 Set my own total</button>' +
     '<div class="pz-row"><span>Customer price</span><b id="pz-mcus"></b></div>' +
+    '<label class="pz-tg" style="display:flex;gap:10px;align-items:flex-start;margin:8px 0;padding:10px;border:1px solid #e3e6ec;border-radius:10px"><input type="checkbox" style="width:22px;height:22px;flex:0 0 22px"' + (pzEst().showCostBreakdown === true ? ' checked' : '') + ' onchange="pzEst().showCostBreakdown=this.checked;pzDirty();toast(this.checked?\'Customer sees labor / materials / other\':\'Cost breakdown hidden\')"><span><b>Show cost breakdown to customer</b><br><span class="pz-mut" style="font-size:13px">Labor, materials and other per service. Your markup is inside each amount; costs and profit stay private.</span></span></label>' +
     '<div class="pz-row"><span>Labor cost</span><b id="pz-mlab"></b></div><div class="pz-row"><span>Material cost</span><b id="pz-mmat"></b></div>' +
     '<div class="pz-row"><span>Our profit</span><b id="pz-mprof"></b></div><div class="pz-row"><span>Work days</span><b id="pz-mday"></b></div>' +
     '<div class="pz-row" style="margin-top:10px"><span>Markup</span><b id="pz-mkl">' + mk + '%</b></div><input type="range" min="0" max="60" value="' + esc(String(mk)) + '" style="width:100%" oninput="pzMarkup(this.value)" onchange="pzDirty()">' +
