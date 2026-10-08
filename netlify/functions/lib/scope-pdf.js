@@ -137,6 +137,7 @@ function buildScopePdf(view, opts) {
     const days = function (n) { return n === 1 ? "1 day" : n + " days"; };
     const waiting = A(sch.waits).length ? "while " + A(sch.waits).map(function (w) { return String(w.label || "").toLowerCase(); }).join(", ") : "for drying and curing";
     doc.text(small ? (sch.laborHours > 0 ? "1 day - about " + sch.laborHours + " hours of work" + (A(sch.waits).length ? ", with drying time between the steps." : ".") : "1 day.")
+      : sch.waitInside ? days(sch.totalDays) + " start to finish" + (sch.waitDays > 0 ? ", including " + days(sch.waitDays) + " of waiting " + waiting : "") + "."
       : "About " + days(sch.totalDays) + ": " + days(sch.workDays) + " of work" + (sch.waitDays > 0 ? " and " + days(sch.waitDays) + " of waiting " + waiting : "") + ".", { size: 11, after: 10 });
   } else if (C(e.timelineText)) {
     head("Timeline");

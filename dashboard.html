@@ -13585,7 +13585,9 @@ function pzScheduleOf(e) {
     if (ed.workDays != null) sch.workDays = ed.workDays;
     if (ed.waitDays != null) sch.waitDays = ed.waitDays;
     if (ed.workDays != null || ed.waitDays != null) sch.edited = true;
-    sch.totalDays = Math.ceil(sch.workDays + sch.waitDays);
+    /* his typed days = the whole job, curing inside them */
+    sch.waitInside = ed.workDays != null;
+    sch.totalDays = sch.waitInside ? Math.ceil(sch.workDays) : Math.ceil(sch.workDays + sch.waitDays);
     return sch;
   };
   var typedOnly = function () {
@@ -14339,11 +14341,11 @@ function pzRefresh() {
     if (!sch) { tl.innerHTML = ""; tx.textContent = "Add labor lines and the timeline is counted from their hours."; }
     else {
       var cols = ["#5d6878", "#18305a", "#1f8a4c", "#7a5a12", "#2c5aa0"], segs = [];
-      (sch.sections || []).forEach(function (x, i) { var share = sch.laborHours > 0 ? x.hours / sch.laborHours * sch.workDays : 0; if (share > 0) segs.push('<div style="flex:' + share + ';background:' + cols[i % 5] + '">' + esc(x.name) + '</div>'); });
+      (sch.sections || []).forEach(function (x, i) { var share = sch.laborHours > 0 ? x.hours / sch.laborHours * (sch.waitInside ? Math.max(0, sch.workDays - sch.waitDays) : sch.workDays) : 0; if (share > 0) segs.push('<div style="flex:' + share + ';background:' + cols[i % 5] + '">' + esc(x.name) + '</div>'); });
       if (sch.waitDays > 0) segs.splice(Math.min(1, segs.length), 0, '<div style="flex:' + sch.waitDays + ';background:#c9a24a;color:#1b1404">cure</div>');
       tl.innerHTML = segs.join("");
       var ed = e.scheduleEdit || {}, fin = pzFinish(ed.start, sch.totalDays);
-      tx.textContent = Math.round(sch.laborHours) + " labor hours ÷ " + sch.crew + " people × " + sch.dailyHours + " h = " + sch.workDays + " work days + " + sch.waitDays + " cure day(s)." +
+      tx.textContent = (sch.waitInside ? sch.totalDays + " working days start to finish (your number)" + (sch.waitDays > 0 ? ", " + sch.waitDays + " cure day(s) included" : "") + ". Auto count was " + (sch.auto ? sch.auto.workDays : "?") + " work + " + (sch.auto ? sch.auto.waitDays : 0) + " cure." : Math.round(sch.laborHours) + " labor hours ÷ " + sch.crew + " people × " + sch.dailyHours + " h = " + sch.workDays + " work days + " + sch.waitDays + " cure day(s) = " + sch.totalDays + " days.") +
         (fin ? " Start " + pzDay(new Date(ed.start + "T12:00:00")) + " → finish about " + pzDay(fin) + "." : "");
     }
   }

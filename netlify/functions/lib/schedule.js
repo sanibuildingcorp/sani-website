@@ -54,7 +54,10 @@ function withEdit(sch, ed) {
   if (ed.workDays != null) sch.workDays = ed.workDays;
   if (ed.waitDays != null) sch.waitDays = ed.waitDays;
   if (ed.workDays != null || ed.waitDays != null) sch.edited = true;
-  sch.totalDays = Math.ceil(sch.workDays + sch.waitDays);
+  /* "all it's together working process ... start to finish": the days he
+     types are the whole job, curing counted INSIDE them, not added on top. */
+  sch.waitInside = ed.workDays != null;
+  sch.totalDays = sch.waitInside ? Math.ceil(sch.workDays) : Math.ceil(sch.workDays + sch.waitDays);
   return sch;
 }
 
