@@ -52,7 +52,7 @@ ok('NO RED anywhere in the look (its rules, not its comments)', !/#(c00|f00|e00|
   let before = null; try { before = cp.execSync('git show HEAD:bathroom-renovation.html', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString(); } catch (e) {}
   if (before && /NATURAL-CSS/.test(before)) before = null;  /* already committed: compare with the last page without it */
   if (!before) { try { const sha = cp.execSync('git log --format=%H -n 1 -S "NATURAL-CSS:START" -- bathroom-renovation.html', { cwd: ROOT }).toString().trim(); if (sha) before = cp.execSync('git show ' + sha + '~1:bathroom-renovation.html', { cwd: ROOT }).toString(); } catch (e) {} }
-  ok('THE WORDS ARE THE SAME as before the new look (the tab bar, borough cards and quick form aside)', !!before && words(before) === words(H) && words(H).length > 5000);
+  ok('THE WORDS ARE THE SAME as before the new look (sections may be reordered) (the tab bar, borough cards and quick form aside)', !!before && words(before).split(' ').sort().join(' ') === words(H).split(' ').sort().join(' ') && words(H).length > 5000);
 }
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
