@@ -107,7 +107,7 @@ exports.handler = async function (event) {
       to: recipients,
       reply_to: ADDR.replyTo(),
       subject: "Scope of work — " + projectTitle.replace(/[<>]/g, "") + where.replace(/[<>]/g, ""),
-      html: html,
+      html: require("./lib/trust-footer").inject(html),
       text: text,
       /* Its own thread: this is not the estimate conversation. */
       headers: { "X-Entity-Ref-ID": ref + "-sow" },

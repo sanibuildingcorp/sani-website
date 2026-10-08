@@ -225,7 +225,7 @@ async function sendConfirmation(o) {
     bcc: [contractorEmail],
     reply_to: ADDR.replyTo(),
     subject: "Request Received - Sani Building Corp",
-    html: html,
+    html: require("./lib/trust-footer").inject(html),
     text: text,
   });
 }

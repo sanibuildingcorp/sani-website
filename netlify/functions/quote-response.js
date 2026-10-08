@@ -285,7 +285,7 @@ exports.handler = async function (event) {
           to: [record.customer.email],
           reply_to: ADDR.replyTo(),
           subject: receipt.subject,
-          html: receipt.html,
+          html: require("./lib/trust-footer").inject(receipt.html),
           text: receipt.text,
           headers: buildMessageEmail.threadHeaders(ref),
         });

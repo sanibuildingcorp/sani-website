@@ -21,6 +21,7 @@
 "use strict";
 
 const customerTotals = require("./customer-total");
+const trust = require("./trust-footer");
 
 function esc(t) {
   if (t == null) return "";
@@ -115,7 +116,9 @@ function buildMessageEmail(o) {
      his alert, and he searches by it. */
   const subject = (audience === "contractor")
     ? ref + " — new message from " + (customer.name || "your customer")
-    : projectTitle + (address ? " · " + address.split(",")[0].trim() : "") + " — message from Zurabi, Sani Building Corp";
+    /* Short and calm: the project, the street only when the title does not
+       already carry an address, then the company. */
+    : projectTitle + (address && !/\d+\s+\w+/.test(projectTitle) ? " · " + address.split(",")[0].trim() : "") + " | Sani Building Corp";
 
   const heading = audience === "contractor"
     ? esc(customer.name || "Your customer") + " sent you a message"
@@ -123,8 +126,8 @@ function buildMessageEmail(o) {
 
   const signOff = audience === "contractor"
     ? '<p style="margin:22px 0 0;font-size:14px;color:#555">Reply from the dashboard, or just reply to this email — either way it lands in the same conversation.</p>'
-    : '<p style="margin:22px 0 2px;font-size:15px;color:#0a1628">Best,<br><strong>Zurabi</strong><br>' +
-      '<span style="font-size:13px;color:#777">Sani Building Corp · Brooklyn, NY · Fully insured<br><a href="tel:+13322770990" style="color:#777">(332) 277-0990</a> · <a href="https://www.sanibuildingcorp.com" style="color:#777">sanibuildingcorp.com</a></span></p>';
+    : '<p style="margin:22px 0 2px;font-size:15px;color:#0a1628">Best regards,<br><strong>Zurabi</strong><br>' +
+      '<span style="font-size:13px;color:#777">Sani Building Corp &middot; <a href="tel:+13322770990" style="color:#777">(332) 277-0990</a></span></p>';
 
   /* THE EARLIER MESSAGE. It used to sit ABOVE the new one, in light grey,
      up to 600 characters: on a phone a long earlier message filled the
@@ -138,7 +141,9 @@ function buildMessageEmail(o) {
   const hist = (Array.isArray(o && o.history) ? o.history : (previous ? [previous] : []))
     .filter(function (h) { return h && h.text; }).slice(-3).reverse();
   const first = String(customer.name || "").trim().split(/\s+/)[0] || "";
-  const greeting = audience === "customer"
+  /* No second "Hi Murphy," when the message already opens with a greeting. */
+  const greets = /^\s*(hi|hello|hey|dear|good (morning|afternoon|evening))\b/i.test(String(message.text || ""));
+  const greeting = audience === "customer" && !greets
     ? '<p style="font-size:16px;margin:0 0 12px;color:#0a1628">Hi' + (first ? " " + esc(first) : "") + ",</p>" : "";
   const prevText = "";
   const prevBlock = prevText
@@ -165,7 +170,9 @@ function buildMessageEmail(o) {
     '<div style="max-width:600px;margin:0 auto;padding:24px 16px">' +
 
       '<div style="background:#0a1628;border-radius:14px 14px 0 0;padding:28px 28px 24px;text-align:center">' +
-        '<div style="font-size:22px;font-weight:bold;letter-spacing:4px;color:#e0b84e">SANI BUILDING CORP</div>' +
+        '<img src="https://www.sanibuildingcorp.com/images/pwa-icon-192.png" width="52" height="52" alt="Sani Building Corp logo" style="width:52px;height:52px;border-radius:50%;border:2px solid #e0b84e;display:block;margin:0 auto 10px">' +
+        '<div style="font-size:20px;font-weight:bold;letter-spacing:4px;color:#e0b84e">SANI BUILDING CORP</div>' +
+        '<div style="font-size:11px;letter-spacing:2px;color:#8fa3b5;margin-top:4px">RENOVATION &middot; CONSTRUCTION &middot; NYC</div>' +
       "</div>" +
 
       /* THE PROJECT HEADER. Identical to the one at the top of the portal, so a
@@ -205,12 +212,12 @@ function buildMessageEmail(o) {
            plain button; he replies from the dashboard. */
         (audience === "customer"
           ? '<div style="margin:22px 0 0">' +
-              '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin:0 0 6px">Reply to Zurabi</div>' +
+              '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin:0 0 6px">Reply to us</div>' +
               /* Gold and unmissable, above the button: "make it more visible
                  for eyes catch and push customers for type in there". */
               '<a href="' + quoteUrl + '#reply" style="display:block;background:#fff8e6;border:2px solid #c8860a;border-radius:12px;padding:18px 18px;text-decoration:none;color:#0a1628;font-size:17px;font-weight:bold;line-height:1.4">' +
                 '\u270D\uFE0F Tap here to type your reply' +
-                '<div style="font-size:13px;font-weight:normal;color:#6b5a2a;margin-top:6px">Opens your project page. Your reply goes straight to Zurabi.</div>' +
+                '<div style="font-size:13px;font-weight:normal;color:#6b5a2a;margin-top:6px">Opens your project page. Your reply goes straight to our team.</div>' +
               "</a>" +
               '<div style="text-align:center;margin:14px 0 4px">' +
                 '<a href="' + quoteUrl + '#reply" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">Open my project &amp; reply &rarr;</a>' +
@@ -224,11 +231,6 @@ function buildMessageEmail(o) {
         signOff +
       "</div>" +
 
-      '<div style="text-align:center;padding:20px 16px;font-size:12px;color:#8a8a8a;line-height:1.7">' +
-        '<strong style="color:#555">Sani Building Corp</strong> &middot; Brooklyn, NY<br>' +
-        'Fully insured &middot; <a href="tel:+13322770990" style="color:#8a8a8a">(332) 277-0990</a><br>' +
-        '<a href="https://www.sanibuildingcorp.com" style="color:#8a8a8a">www.sanibuildingcorp.com</a>' +
-      "</div>" +
 
     "</div>\n</body></html>";
 
@@ -242,16 +244,18 @@ function buildMessageEmail(o) {
       ? "--- " + (previous.from === "contractor" ? "Sani Building Corp" : (customer.name || "Customer")) + " wrote ---\n" +
         String(previous.text).slice(0, 600) + "\n\n"
       : "") +
-    (audience === "contractor" ? (customer.name || "Your customer") + " wrote:" : "Hi" + (first ? " " + first : "") + ",") + "\n\n" +
+    (audience === "contractor" ? (customer.name || "Your customer") + " wrote:" : (greets ? "" : "Hi" + (first ? " " + first : "") + ",")) + "\n\n" +
     String(message.text || "") + "\n" +
     attachmentsText(message.attachments) + "\n" +
     (audience === "contractor"
       ? "Everything about this job stays at this one link:\n" + quoteUrl + "\n\n" +
         "Reply from the dashboard, or just reply to this email.\n"
       : "Reply to this email, or open your project to reply and send photos:\n" + quoteUrl + "#reply\n\n" +
-        "Best,\nZurabi\nSani Building Corp · Brooklyn, NY · Fully insured\n(332) 277-0990\n");
+        "Best regards,\nZurabi\nSani Building Corp\n");
 
-  return { subject: subject, html: html, text: text, quoteUrl: quoteUrl, total: total };
+  return audience === "customer"
+    ? { subject: subject, html: trust.inject(html), text: text + trust.emailText(), quoteUrl: quoteUrl, total: total }
+    : { subject: subject, html: html, text: text, quoteUrl: quoteUrl, total: total };
 }
 
 /* Files attached to the message: pictures as thumbnails that open full size,

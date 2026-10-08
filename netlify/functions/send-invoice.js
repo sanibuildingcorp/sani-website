@@ -306,7 +306,7 @@ exports.handler = async function (event) {
       to: [recipientEmail],
       reply_to: ADDR.replyTo(),
       subject: `${typeLabel} ${invoiceNumber} from Sani Building Corp — ${amountFormatted}`,
-      html,
+      html: require("./lib/trust-footer").inject(html),
     };
     // Always keep a copy in the contractor inbox without ugly FORWARD prefixes
     if (sendingToCustomer) {
