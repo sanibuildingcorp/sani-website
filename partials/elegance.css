@@ -1,0 +1,94 @@
+/* partials/elegance.css - the quiet, premium layer for service pages.
+   "I don't need touch words and texts for SEO ... but i need it same
+    elegance, trustworthy, intelligent, interesting, wanted page and
+    structured right"
+   Design only: no text, heading, link or schema is changed. Scoped to
+   body.el so a page opts in with one class. */
+
+body.el{
+  --el-navy:#0a1628; --el-ink:#15181e; --el-gold:#b8893a; --el-gold-soft:#e9dcc3;
+  --el-ivory:#faf8f4; --el-sand:#f3efe7; --el-line:#e6e0d4; --el-muted:#5d6470;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── Rhythm: every section breathes the same ─────────────────────────── */
+body.el main section,body.el > section{scroll-margin-top:72px}
+@media (max-width:760px){
+  body.el .bc-section,body.el .qe,body.el .norem-section,body.el .ba-section,body.el .eyn-section,
+  body.el .compare-section,body.el .process-section,body.el .projects-section,body.el .testi-section,
+  body.el .faq-section,body.el .cta-section{padding-top:56px!important;padding-bottom:56px!important}
+}
+
+/* ── Eyebrows: small, tracked, one gold ──────────────────────────────── */
+body.el .eyebrow,body.el .compare-eyebrow,body.el .process-eyebrow,body.el .faq-eyebrow,body.el .norem-eyebrow,
+body.el .related-service-eyebrow,body.el .cta-eyebrow,body.el [class$="-eyebrow"]{
+  color:var(--el-gold)!important;font-size:11.5px!important;letter-spacing:.22em!important;font-weight:600!important;text-transform:uppercase}
+
+/* ── Headings: tighter, darker, calmer gold accents ──────────────────── */
+body.el h1,body.el h2{letter-spacing:-.015em}
+body.el h1 em,body.el h2 em,body.el .compare-title em{color:var(--el-gold);font-style:normal}
+
+/* ── Buttons: one primary (navy, thin gold edge), one secondary ──────── */
+body.el .btn-primary,body.el .qe-btn,body.el .norem-btn,body.el .related-service-btn,body.el .bc-cta,
+body.el .cta-buttons a:first-child{
+  background:var(--el-navy)!important;color:#fff!important;border:1px solid var(--el-gold)!important;
+  border-radius:10px!important;box-shadow:0 6px 18px rgba(10,22,40,.14)!important;font-weight:600!important;
+  letter-spacing:.02em;transition:transform .15s ease,box-shadow .15s ease}
+body.el .btn-primary:hover,body.el .qe-btn:hover,body.el .norem-btn:hover,body.el .related-service-btn:hover,body.el .bc-cta:hover{
+  transform:translateY(-1px);box-shadow:0 10px 24px rgba(10,22,40,.2)!important}
+body.el .btn-outline,body.el .btn-outline-dark,body.el .bc-call{
+  background:transparent!important;color:var(--el-ink)!important;border:1px solid #c9c2b4!important;border-radius:10px!important;box-shadow:none!important}
+
+/* ── Stats: thin gold rule instead of emoji, numbers in navy ─────────── */
+body.el .stat-icon{font-size:0!important;height:2px;width:28px;margin:0 auto 14px;background:var(--el-gold);border-radius:2px}
+body.el .stat-value{color:var(--el-navy)!important}
+body.el .stat-label{letter-spacing:.14em!important;color:var(--el-ink)}
+body.el .stat-sublabel{color:var(--el-muted)!important}
+body.el .stats-bar{background:var(--el-ivory)!important;border-top:1px solid var(--el-line);border-bottom:1px solid var(--el-line)}
+
+/* ── Service photo cards: no emoji, a gold rule, softer shade ────────── */
+body.el .eyn-feat-icon{font-size:0!important;width:26px;height:2px;background:var(--el-gold);margin:0 0 10px;border-radius:2px}
+body.el .eyn-feat{border-radius:16px!important;overflow:hidden}
+body.el .eyn-feat-title{letter-spacing:.12em!important;font-weight:700!important;text-shadow:none!important}
+body.el .eyn-feat-desc{text-shadow:none!important;opacity:.92}
+body.el .eyn-feat-content{background:linear-gradient(180deg,rgba(10,22,40,0) 0%,rgba(10,22,40,.82) 70%)!important;padding-top:60px!important}
+body.el .eyn-checklist li,body.el .eyn-checklist div{color:var(--el-ink)}
+
+/* ── Cards: one radius, one hairline, one soft shadow ────────────────── */
+body.el .norem-card,body.el .related-service,body.el .bc-card,body.el .faq-item,body.el .process-step,body.el .qe form,body.el .testi-inner{
+  border-radius:16px!important;border:1px solid var(--el-line)!important;box-shadow:0 1px 2px rgba(10,22,40,.04),0 8px 24px rgba(10,22,40,.05)!important}
+body.el .norem-card,body.el .related-service{background:#fff!important}
+body.el .norem-points li::before,body.el .norem-points span{color:var(--el-gold)!important}
+
+/* ── Process: numbered gold circles, no clip-art ─────────────────────── */
+body.el .process-step-icon{display:none!important}
+body.el .process-step-num{background:transparent!important;color:var(--el-gold)!important;border:1px solid var(--el-gold)!important;border-radius:50%!important;
+  width:34px!important;height:34px!important;line-height:32px!important;font-size:14px!important;font-weight:700!important}
+
+/* ── Compare: on a phone, the row name on top, the two answers side by side ── */
+@media (max-width:760px){
+  body.el .compare-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:0!important;border:1px solid var(--el-line);border-radius:16px;overflow:hidden;background:#fff}
+  body.el .compare-grid .cg-cell{padding:12px 14px!important;font-size:14px!important;border:0!important;border-bottom:1px solid var(--el-line)!important;background:#fff!important;color:var(--el-ink)!important}
+  body.el .compare-grid .cg-head.cg-label{display:none!important}
+  body.el .compare-grid .cg-label{grid-column:1/-1;background:var(--el-sand)!important;font-size:11.5px!important;letter-spacing:.14em;text-transform:uppercase;font-weight:700!important;color:var(--el-navy)!important;padding:9px 14px!important}
+  body.el .compare-grid .cg-head{background:var(--el-navy)!important;color:#fff!important;font-weight:700!important;font-size:13.5px!important}
+  body.el .compare-grid .cg-head.cg-b{background:#1c2b42!important;color:var(--el-gold-soft)!important}
+  body.el .compare-grid .cg-b{border-left:1px solid var(--el-line)!important}
+  body.el .compare-grid .cg-cell::before{display:none!important;content:none!important}
+}
+
+/* ── FAQ: clean lines ────────────────────────────────────────────────── */
+body.el .faq-item{background:#fff!important}
+body.el .faq-q{color:var(--el-ink)!important;font-weight:600!important}
+body.el .faq-toggle{color:var(--el-gold)!important}
+
+/* ── Testimonial and stars in one gold ───────────────────────────────── */
+body.el .testi-stars,body.el .bc-stars{color:#d4a017!important}
+body.el .testi-quote-mark{color:var(--el-gold-soft)!important}
+
+/* ── Forms: calm fields ──────────────────────────────────────────────── */
+body.el .qe input,body.el .qe select,body.el .qe textarea{border:1px solid #dcd5c8!important;background:#fff!important;border-radius:10px!important}
+body.el .qe input:focus,body.el .qe select:focus,body.el .qe textarea:focus{outline:none;border-color:var(--el-gold)!important;box-shadow:0 0 0 3px rgba(184,137,58,.15)!important}
+
+/* ── Commercial cards: the clip-art icons become the same gold rule ──── */
+body.el [style*="font-size:28px;margin-bottom:12px"]{font-size:0!important;width:26px;height:2px;background:var(--el-gold);border-radius:2px;margin-bottom:16px!important}
