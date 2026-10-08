@@ -21,7 +21,7 @@ console.log('\nthe new message first, the earlier one below and readable\n');
   const long = 'Yes — found it. ' + 'A long earlier message about travertine tile prices. '.repeat(12);
   const m = build({ ref: REC.ref, record: REC, message: { from: 'contractor', text: 'Again test message', at: '2026-09-19T20:36:00Z' }, previous: { from: 'contractor', text: long, at: '2026-09-19T20:01:00Z' }, audience: 'customer', siteUrl: 'https://www.sanibuildingcorp.com' });
   const h = m.html;
-  const iNew = h.indexOf('Again test message'), iOld = h.indexOf('Yes — found it.'), iCard = h.indexOf('Tap here to type your reply');
+  const iNew = h.indexOf('Again test message'), iOld = h.indexOf('Yes — found it.'), iCard = h.indexOf('Reply on your project page');
   ok('THE NEW MESSAGE COMES FIRST, the earlier one after it, then the reply card', iNew !== -1 && iOld !== -1 && iNew < iOld && iOld < iCard, iNew + ' ' + iOld + ' ' + iCard);
   ok('the new message is in dark text', /padding:16px 18px;white-space:pre-wrap;font-size:15px;line-height:1\.65;color:#0a1628/.test(h));
   ok('THE EARLIER MESSAGE IS READABLE GREY, NOT LIGHT, and labelled "Earlier"', /color:#444/.test(h) && /Earlier in this conversation/.test(h) && /<strong style="color:#555">Zurabi<\/strong>/.test(h) && !/color:#7a7a7a/.test(h));

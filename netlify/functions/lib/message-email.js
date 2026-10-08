@@ -158,7 +158,7 @@ function buildMessageEmail(o) {
   const histBlock = hist.length
     ? '<div style="margin:22px 0 0"><div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin:0 0 8px">Earlier in this conversation</div>' +
         hist.map(function (h) {
-          return '<div style="border-left:3px solid ' + (h.from === "contractor" ? "#c8860a" : "#d9cfbd") + ';padding:2px 0 2px 12px;margin:0 0 12px;color:#444;font-size:14px;line-height:1.55">' +
+          return '<div style="border-left:3px solid ' + "#e3ddd2" + ';padding:2px 0 2px 12px;margin:0 0 12px;color:#444;font-size:14px;line-height:1.55">' +
             '<div style="font-size:12px;color:#8a8a8a;margin-bottom:3px"><strong style="color:#555">' + (h.from === "contractor" ? "Zurabi" : esc(customer.name || "Customer")) + "</strong>" + (when(h.at) ? " · " + esc(when(h.at)) : "") + "</div>" +
             '<div style="white-space:pre-wrap">' + esc(String(h.text).slice(0, 280)) + (String(h.text).length > 280 ? "…" : "") + "</div></div>";
         }).join("") + "</div>"
@@ -212,17 +212,13 @@ function buildMessageEmail(o) {
            plain button; he replies from the dashboard. */
         (audience === "customer"
           ? '<div style="margin:22px 0 0">' +
-              '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a8a8a;margin:0 0 6px">Reply to us</div>' +
-              /* Gold and unmissable, above the button: "make it more visible
-                 for eyes catch and push customers for type in there". */
-              '<a href="' + quoteUrl + '#reply" style="display:block;background:#fff8e6;border:2px solid #c8860a;border-radius:12px;padding:18px 18px;text-decoration:none;color:#0a1628;font-size:17px;font-weight:bold;line-height:1.4">' +
-                '\u270D\uFE0F Tap here to type your reply' +
-                '<div style="font-size:13px;font-weight:normal;color:#6b5a2a;margin-top:6px">Opens your project page. Your reply goes straight to our team.</div>' +
-              "</a>" +
-              '<div style="text-align:center;margin:14px 0 4px">' +
-                '<a href="' + quoteUrl + '#reply" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">Open my project &amp; reply &rarr;</a>' +
-              "</div>" +
-              '<p style="font-size:13px;color:#888;text-align:center;margin:6px 0 0">Or simply reply to this email &mdash; it goes into the same project conversation.</p>' +
+              /* ONE QUIET BUTTON. The yellow "Tap here" card read as a
+                 promotion: "I need something more elegant seriously and
+                 professional". Navy, thin gold edge, plain words. */
+              '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:26px auto 0"><tr><td style="background:#0a1628;border:1px solid #c9a84c;border-radius:8px">' +
+                '<a href="' + quoteUrl + '#reply" style="display:inline-block;padding:13px 30px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:600;letter-spacing:.3px;color:#ffffff;text-decoration:none">Reply on your project page</a>' +
+              "</td></tr></table>" +
+              '<p style="font-size:13px;color:#8a8a8a;text-align:center;margin:10px 0 0">Or simply reply to this email.</p>' +
             "</div>"
           : '<div style="text-align:center;margin:24px 0 4px">' +
               '<a href="' + quoteUrl + '" style="display:inline-block;background:#c8860a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 30px;border-radius:9px">Open the estimate &rarr;</a>' +
