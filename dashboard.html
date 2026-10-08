@@ -14253,7 +14253,7 @@ function pzPickRender() {
   var l = (pzEst().materials || [])[P.gi] || {};
   var m = document.getElementById("pz-pick");
   if (!m) { m = document.createElement("div"); m.id = "pz-pick"; m.className = "pz-pick"; m.onclick = function (ev) { if (ev.target === m) pzPickClose(); }; document.body.appendChild(m); }
-  var res = P.busy ? '<div class="pz-pk-wait"><span class="pz-tc-dots"><i></i><i></i><i></i></span> Searching stores… about 15 seconds</div>'
+  var res = P.busy ? '<div class="pz-pk-wait"><span class="pz-tc-dots"><i></i><i></i><i></i></span> Searching stores… usually 20-40 seconds</div>'
     : P.err ? '<div class="pz-pk-wait">' + esc(P.err) + '</div>'
     : P.items && !P.items.length ? '<div class="pz-pk-wait">Nothing found. Try other words.</div>'
     : (P.items || []).map(function (x, k) {
@@ -14276,16 +14276,24 @@ async function pzPickSearch() {
     var r = currentRecord || {}, ctx = [((r.request || {}).service || ""), ((r.customer || {}).address || "")].filter(Boolean).join(", ");
     var k = await sbcFetch("/.netlify/functions/product-search-background", { method: "POST", body: JSON.stringify({ job: job, query: q, context: ctx }) });
     if (k.status !== 202 && !k.ok) throw new Error("Search failed (HTTP " + k.status + ")");
-    var j = null;
-    for (var n = 0; n < 40; n++) {
+    /* Products show as soon as they are found; photos fill in after. Gives up
+       with a clear message instead of spinning forever. */
+    var j = null, t0 = Date.now(), shown = false;
+    while (Date.now() - t0 < 150000) {
       await new Promise(function (ok) { setTimeout(ok, 2500); });
       if (!PZ.pick || PZ.pick.job !== job) return;
-      j = await (await sbcFetch("/.netlify/functions/product-search?job=" + job)).json().catch(function () { return null; });
-      if (j && (j.status === "done" || j.status === "error")) break;
+      var g = await sbcFetch("/.netlify/functions/product-search?job=" + job).catch(function () { return null; });
+      j = g && g.ok ? await g.json().catch(function () { return null; }) : (g && g.status === 401 ? { status: "error", error: "Dashboard key expired - reload the page" } : null);
+      var sec = Math.round((Date.now() - t0) / 1000);
+      if (j && j.status === "missing" && sec > 20) throw new Error("The search did not start. Try again in a minute.");
+      if (j && j.status === "error") throw new Error(j.error || "Search failed");
+      if (j && j.status === "done") {
+        P.items = j.items || []; P.busy = false; shown = true; pzPickRender();
+        if (j.photos !== "loading") return;
+      } else if (!shown) { var w = document.querySelector("#pz-pick .pz-pk-wait"); if (w) w.innerHTML = '<span class="pz-tc-dots"><i></i><i></i><i></i></span> Searching stores… ' + sec + ' s'; }
     }
-    if (!j || j.status === "running") throw new Error("Still searching - try again");
-    if (j.status === "error") throw new Error(j.error || "Search failed");
-    P.items = j.items || [];
+    if (shown) return;
+    throw new Error("No answer after 2 minutes. Tap Search to try again.");
   } catch (e) { P.err = e.message; }
   if (PZ.pick && PZ.pick.job === job) { P.busy = false; pzPickRender(); }
 }
