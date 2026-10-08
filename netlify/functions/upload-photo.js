@@ -77,6 +77,8 @@ async function uploadDataUri(dataUri, ref) {
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
 
+module.exports.uploadDataUri = uploadDataUri;
+
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",

@@ -239,7 +239,7 @@ function talkBlocks(record, att) {
   const mine = A(att).map((i) => sp[i] && sp[i].data).filter(Boolean);
   const toBlock = (u) => { const m = s(u).match(/^data:(image\/(?:jpeg|png|gif|webp));base64,(.*)$/); return m ? { type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } } : /^https:\/\//.test(s(u)) ? { type: 'image', source: { type: 'url', url: s(u) } } : null; };
   const first = mine.map(toBlock).filter(Boolean);
-  const rest = photoBlocks(record).filter((bk) => !(bk.source && bk.source.data && mine.some((u) => u.indexOf(bk.source.data.slice(0, 200)) >= 0)));
+  const rest = photoBlocks(record).filter((bk) => !(bk.source && ((bk.source.url && mine.indexOf(bk.source.url) >= 0) || (bk.source.data && mine.some((u) => u.indexOf(bk.source.data.slice(0, 200)) >= 0)))));
   return first.concat(rest).slice(0, 8);
 }
 /* Private chat with the estimator: plain talk, short answers, no JSON estimate. */

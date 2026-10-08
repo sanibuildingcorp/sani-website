@@ -11953,6 +11953,19 @@ function showSendLinkSuccess(msg) {
                 }
               }
             }
+            // his site photos (estimator chat 📷): links, not text inside the record
+            if (payload.estimate && Array.isArray(payload.estimate.sitePhotos)) {
+              for (var si = 0; si < payload.estimate.sitePhotos.length; si++) {
+                var sp = payload.estimate.sitePhotos[si];
+                if (sp && typeof sp.data === 'string' && sp.data.indexOf('data:image/') === 0) {
+                  try {
+                    var sr = await _origFetch('/.netlify/functions/upload-photo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base64: sp.data, ref: ref + '-site' }) });
+                    var sj = await sr.json();
+                    if (sj && sj.url) { sp.data = sj.url; var live = currentRecord && currentRecord.ref === ref && currentRecord.estimate && currentRecord.estimate.sitePhotos && currentRecord.estimate.sitePhotos[si]; if (live) live.data = sj.url; }
+                  } catch(e) {}
+                }
+              }
+            }
             // customer photos
             if (payload.request && Array.isArray(payload.request.photos)) {
               for (var j = 0; j < payload.request.photos.length; j++) {

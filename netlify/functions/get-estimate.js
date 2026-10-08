@@ -17,6 +17,22 @@ const { stripUnoffered } = require("./lib/offered-options");
 const { scopeOnlyView } = require("./lib/scope-only");
 const { priceSafe } = require("./lib/price-safe");
 
+async function moveSitePhotos(store, ref, data) {
+  const e = data && data.estimate, list = e && Array.isArray(e.sitePhotos) ? e.sitePhotos : [];
+  const todo = list.filter(function (p) { return p && typeof p.data === "string" && p.data.indexOf("data:image/") === 0; });
+  if (!todo.length) return;
+  let up; try { up = require("./upload-photo").uploadDataUri; } catch (_) { return; }
+  let moved = 0;
+  await Promise.all(todo.map(async function (p) {
+    try { const url = await up(p.data, ref + "-site"); if (url) { p.data = url; moved++; } } catch (err) { console.error("site photo move:", err.message); }
+  }));
+  if (!moved) return;
+  try {
+    const fresh = await store.get(ref, { type: "json" });
+    if (fresh && fresh.estimate) { fresh.estimate.sitePhotos = list; if (fresh.sentVersion && fresh.sentVersion.estimate) delete fresh.sentVersion.estimate.sitePhotos; await store.setJSON(ref, fresh); }
+  } catch (err) { console.error("site photo save:", err.message); }
+}
+
 function hasDashboardKey(event) {
   const secret = process.env.DASHBOARD_KEY, h = (event && event.headers) || {};
   const got = String(h["x-sbc-key"] || h["X-Sbc-Key"] || h["X-SBC-KEY"] || "");
@@ -127,6 +143,12 @@ exports.handler = async function (event) {
        of them in sentVersion: the dashboard does not need it twice. */
     if (data.sentVersion && data.sentVersion.estimate) { delete data.sentVersion.estimate.sitePhotos; delete data.sentVersion.estimate.ownerNotes; }
     if (hasDashboardKey(event)) {
+      /* Site photos used to be stored INSIDE the record as text (about 450 KB
+         each), and 7 of them made one job too big to open. The first time the
+         dashboard opens such a job they move to photo storage as links, and the
+         record is saved back small. Nothing is lost: a photo that fails to
+         upload stays as it was. */
+      await moveSitePhotos(store, ref, data);
       /* Netlify refuses any answer over 6 MB (the "Load failed (502)" card).
          Older saved copies go first: photos inside estimateHistory, then the
          oldest history entries. The job's own lines and photos are never cut. */
