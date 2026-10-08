@@ -69,4 +69,20 @@ function buildRecord(ref, draft, mail, photos, parentRef) {
   return rec;
 }
 
-module.exports = { OWN, isOwn, queryFor, SYSTEM, userPrompt, readDraft, buildRecord };
+/* Rows worth showing: not his own mail, not system mail, one row per
+   conversation (newest), with how many emails it holds. */
+const NOISE_FROM = /no-?reply|do-?not-?reply|notification|newsletter|mailer-daemon|postmaster|@accounts\.|@alerts?\.|@updates?\.|@news\.|@marketing\.|@google\.com|@resend\.|@netlify\.|@cloudflare\.|@stripe|@paypal|@intuit|@amazon|@apple\.com|@facebook|@instagram|@linkedin|@yelp|@angi|@thumbtack|@houzz|@nextdoor/i;
+const NOISE_SUBJECT = /\b(renewal due|receipt|verify your|verification code|security alert|password|webinar|newsletter|payment received|statement is ready|your order|subscription|unsubscribe)\b|^SBC-\d{6}-\w{4} — new message|^Invoice INV-/i;
+function keepRow(m) { const x = m || {}; return !isOwn(x.from) && !NOISE_FROM.test(str(x.from)) && !NOISE_SUBJECT.test(str(x.subject)); }
+function threadKey(m) { return str(m && m.subject).toLowerCase().replace(/^((re|fwd?|fw)\s*:\s*)+/g, "").replace(/\s+/g, " ").trim() + "|" + str(m && m.from).toLowerCase(); }
+function tidy(list) {
+  const by = new Map();
+  arr(list).filter(keepRow).forEach(function (m) {
+    const k = threadKey(m), o = by.get(k);
+    if (!o) by.set(k, Object.assign({}, m, { count: 1 }));
+    else { o.count++; if (Date.parse(m.at) > Date.parse(o.at)) Object.assign(o, m, { count: o.count }); }
+  });
+  return Array.from(by.values()).sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); });
+}
+
+module.exports = { keepRow, threadKey, tidy, OWN, isOwn, queryFor, SYSTEM, userPrompt, readDraft, buildRecord };

@@ -20,4 +20,18 @@ ok("record: dated when the customer wrote", r.submittedAt === mail.at);
 const a = imp.buildRecord("SBC-1", d, mail, [], "sbc-260801-zzzz");
 ok("additional work for an existing customer is linked to the parent job", a.parentRef === "SBC-260801-ZZZZ" && a.addon === true);
 ok("search: typed words search all dates, empty = last 60 days, promotions left out", /^Ingber /.test(imp.queryFor("Ingber")) && !/newer_than/.test(imp.queryFor("Ingber")) && /newer_than:60d/.test(imp.queryFor("")) && /-category:promotions/.test(imp.queryFor("")));
+const rows = [
+  { from: "luke@patton.com", name: "Luke Patton", subject: "Re: Thank You + Apartment Walkthrough", at: "2026-10-08T15:00:00Z" },
+  { from: "luke@patton.com", name: "Luke Patton", subject: "Re: Thank You + Apartment Walkthrough", at: "2026-10-08T12:00:00Z" },
+  { from: "ethan@scda.com", name: "Ethan Chan", subject: "Request for Quote – Existing Kitchenette Relocation", at: "2026-10-08T11:00:00Z" },
+  { from: "renewals@samrenewal.org", name: "Renewal Support", subject: "SAM Renewal due - Sani Building Corp", at: "2026-10-08T10:00:00Z" },
+  { from: "estimates@sanibuildingcorp.com", name: "Zurabi at Sani Building Corp", subject: "Invoice INV-260925-Z1M3-02 from Sani Building Corp — $600.00", at: "2026-10-08T09:00:00Z" },
+  { from: "sanibuildingcorp@gmail.com", name: "Sani Building", subject: "Re: Thank You + Apartment Walkthrough", at: "2026-10-08T08:00:00Z" },
+  { from: "alerts@x.com", name: "Sani Building Corp", subject: "SBC-261006-8VB6 — new message from Vanessa Chang", at: "2026-10-06T08:00:00Z" },
+  { from: "dingber@example.org", name: "Rabbi David Ingber", subject: "Upper West Side entryway built-in", at: "2026-08-25T14:00:00Z" },
+];
+const tl = imp.tidy(rows);
+ok("his own emails, invoices, alerts and renewal notices are hidden", !tl.some((m) => /sanibuildingcorp|alerts@|renewals@/.test(m.from)), JSON.stringify(tl.map((m) => m.name)));
+ok("replies in one conversation are grouped, newest kept, counted", tl.filter((m) => m.name === "Luke Patton").length === 1 && tl[0].count === 2 && tl[0].at === "2026-10-08T15:00:00Z");
+ok("real requests stay, newest first", tl.map((m) => m.name).join(",") === "Luke Patton,Ethan Chan,Rabbi David Ingber", tl.map((m) => m.name).join(","));
 console.log(`\n${pass} passed, ${fail} failed`); if (fail) process.exit(1);
