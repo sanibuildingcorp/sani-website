@@ -13733,7 +13733,7 @@ function pzTalkMobileHtml(r, hasLines) {
   h += '<details class="pz-tk-notes"' + (T.notes ? " open" : "") + ' ontoggle="PZ.talk.notes=this.open"><summary>📝 Your notes' + (nLines ? " (" + nLines + ")" : "") + '</summary>' +
     '<textarea id="pz-onotes" rows="4" placeholder="e.g. Full gut 5x8, tub to walk-in, customer buys tile" oninput="pzEst().ownerNotes=this.value;pzDirty()">' + esc(notes) + '</textarea></details>';
   h += '<div class="pz-tk-bar">' +
-    '<label class="pz-btn pz-ghost pz-tk-ph" aria-label="Add site photo">📷' + (sitePh ? '<small>' + sitePh + '</small>' : "") + '<input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="pzTalkPhoto(this)"></label>' +
+    '<label class="pz-btn pz-ghost pz-tk-ph" aria-label="Add site photo">📷' + (sitePh ? '<small>' + sitePh + '</small>' : "") + '<input type="file" accept="image/*" multiple style="display:none" onchange="pzTalkPhoto(this)"></label>' +
     '<button type="button" class="pz-btn pz-ghost" id="pz-askbtn" onclick="pzAskEstimator()">' + (qs.length ? "Ask again" : "Ask") + '</button>' +
     (qs.length && done < qs.length ? '<button type="button" class="pz-btn pz-ghost pz-tk-def" onclick="PZ.talk.defaults=true;' + (hasLines ? "pzTalkCommit();pzRegenerate()" : "pzTalkCommit();pzSaveNow().then(function(){pzGenerate()})") + '">Defaults</button>' : "") +
     (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzTalkCommit();pzRegenerate()">↻ Regenerate</button>'
@@ -13768,7 +13768,7 @@ function pzTalkChatHtml(r, hasLines) {
   h += '<details class="pz-tk-notes"><summary>📝 Your notes' + (nLines ? " (" + nLines + ")" : "") + '</summary>' +
     '<textarea id="pz-onotes" rows="4" placeholder="Anything you always want it to follow on this job" oninput="pzEst().ownerNotes=this.value;pzDirty()">' + esc(notes) + '</textarea></details>';
   h += '<div class="pz-tk-bar">' +
-    '<label class="pz-btn pz-ghost pz-tk-ph" aria-label="Add site photo">📷' + (sitePh ? '<small>' + sitePh + '</small>' : "") + '<input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="pzTalkPhoto(this)"></label>' +
+    '<label class="pz-btn pz-ghost pz-tk-ph" aria-label="Add site photo">📷' + (sitePh ? '<small>' + sitePh + '</small>' : "") + '<input type="file" accept="image/*" multiple style="display:none" onchange="pzTalkPhoto(this)"></label>' +
     (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzRegenerate()">↻ Regenerate</button>'
               : '<button type="button" class="pz-btn pz-gold" onclick="pzSaveNow().then(function(){pzGenerate()})">Generate estimate</button>') +
     '</div><span id="pz-gen" class="pz-mut"></span></div>';
