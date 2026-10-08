@@ -327,6 +327,7 @@ body.pzq #app{max-width:none;margin:0;padding:0;border:0;border-radius:0;backgro
 .pzq h2.qh{font-size:19px;margin:0 0 10px;color:#0f1f3a;font-weight:700;letter-spacing:0}
 .pzq .qprice{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
 .pzq .qbig{font-size:38px;font-weight:800;line-height:1}.pzq .qmut{color:#5d6878;font-size:14px}
+.pzq .qcbs{padding:4px 0 10px;border-bottom:1px solid #e3e6ec}.pzq .qcbs .qsvc{border:0;padding-bottom:4px}.pzq .qcbr{display:flex;justify-content:space-between;padding:3px 0 3px 14px;color:#5d6878;font-size:15px}.pzq .qcbt{border:0;background:#f3f5f9;border-radius:10px;padding:4px 12px 10px;margin-top:10px}
 .pzq .qsvc{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e3e6ec}.pzq .qsvc:last-child{border:0}
 .pzq .qphotos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}.pzq .qphotos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;cursor:zoom-in}
 .pzq .qsteps{list-style:none;margin:0;padding:0;counter-reset:qs}
@@ -374,6 +375,52 @@ body.pzq #app{max-width:none;margin:0;padding:0;border:0;border-radius:0;backgro
 <main class="wrap" id="app">Loading estimate…</main>
 <footer class="footer">Fully Insured · (332) 277-0990 · contact@sanibuildingcorp.com</footer>
 <script>
+/* COST-BREAKDOWN START (copy of js/cost-breakdown.js) */
+/* Customer cost breakdown (estimate.showCostBreakdown, off by default).
+   Per service: Labor / Materials / Other (disposal, protection, permits...).
+   Every amount is the line's share of the CUSTOMER total: markup, a hand-set
+   total and added options are spread in proportion, so the rows add up to the
+   price to the cent and no cost, rate or profit can be worked back out.
+   Used by quote.html and netlify/functions/lib/estimate-pdf.js. */
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) module.exports = factory();
+  else root.costBreakdown = factory();
+})(typeof self !== "undefined" ? self : this, function () {
+  var OTHER = /dispos|dumpster|debris|haul|protect|permit|filing|delivery|parking|elevator|clean.?up|travel|insurance|coi\b|fee\b/i;
+  var C = function (x) { return String(x == null ? "" : x).trim(); };
+  var key = function (x) { return C(x).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); };
+  var LT = function (l) { return (Number(l && l.qty) || 0) * (Number(l && l.rate) || 0); };
+  function build(e, services, total) {
+    e = e || {}; total = Number(total) || 0;
+    var names = (services || []).map(C).filter(Boolean);
+    var rows = {}; var order = [];
+    var row = function (n) { if (!rows[n]) { rows[n] = { title: n, labor: 0, materials: 0, other: 0 }; order.push(n); } return rows[n]; };
+    names.forEach(row);
+    var put = function (l, kind) {
+      var v = LT(l); if (!(v > 0)) return;
+      var sec = C(l.section), hit = names.filter(function (n) { return key(n) === key(sec); })[0];
+      var r = row(hit || (names.length === 1 ? names[0] : "Whole project"));
+      r[OTHER.test(C(l.item)) ? "other" : kind] += v;
+    };
+    (Array.isArray(e.labor) ? e.labor : []).forEach(function (l) { put(l, "labor"); });
+    (Array.isArray(e.materials) ? e.materials : []).forEach(function (l) { put(l, "materials"); });
+    var raw = 0; order.forEach(function (n) { var r = rows[n]; raw += r.labor + r.materials + r.other; });
+    if (!(raw > 0) || !(total > 0)) return null;
+    var f = total / raw, cells = [];
+    order.forEach(function (n) { var r = rows[n]; ["labor", "materials", "other"].forEach(function (k) { r[k] = Math.round(r[k] * f); if (r[k]) cells.push([r, k]); }); });
+    /* whole dollars, the cents left over go on the biggest cell */
+    var sum = 0; order.forEach(function (n) { var r = rows[n]; sum += r.labor + r.materials + r.other; });
+    var diff = Math.round((total - sum) * 100) / 100;
+    if (diff && cells.length) { cells.sort(function (a, b) { return b[0][b[1]] - a[0][a[1]]; }); cells[0][0][cells[0][1]] = Math.round((cells[0][0][cells[0][1]] + diff) * 100) / 100; }
+    var list = order.map(function (n) { var r = rows[n]; r.total = Math.round((r.labor + r.materials + r.other) * 100) / 100; return r; }).filter(function (r) { return r.total > 0; });
+    var all = { labor: 0, materials: 0, other: 0 };
+    list.forEach(function (r) { all.labor += r.labor; all.materials += r.materials; all.other += r.other; });
+    Object.keys(all).forEach(function (k) { all[k] = Math.round(all[k] * 100) / 100; });
+    return { services: list, totals: all, total: total };
+  }
+  return { build: build };
+});
+/* COST-BREAKDOWN END */
 (()=>{
 const q=new URLSearchParams(location.search),ref=q.get('ref'),app=document.getElementById('app');let rec;
 /* ══ SCOPE OF WORK ONLY (?sow=1) ══════════════════════════════════════════════
@@ -1364,8 +1411,11 @@ function renderPZ(r){rec=r;document.body.classList.add('pzq');
  const expired=!approved&&(r.sentVersionInfo||r.sentAt)&&Date.now()>validUntil(r).getTime();
  let h=`<div class="qhero"><div class="qin"><div class="qbrand"><b>SANI BUILDING CORP</b><span>Fully insured · NYC Metro</span></div><h1>${E(e.projectTitle||rq.service||'Your estimate')}</h1><p>Prepared for ${E(c.name||'you')}${where?' · '+E(where):''}</p><div class="qmeta"><span>${SOW?'Scope of work':'Estimate'} ${E(ref)}</span><span>${E(qzShort(issuedAt(r)))+', '+issuedAt(r).getFullYear()}</span>${SOW?'':`<span>Valid until ${E(qzShort(validUntil(r)))+', '+validUntil(r).getFullYear()}</span>`}</div></div></div><div class="qmain">`;
  /* Your price */
+ const cb=hasPrice&&!SOW&&e.showCostBreakdown===true?costBreakdown.build(e,sv.map(s=>s.title),shown):null;
  if(hasPrice){const sl=e.showLaborCost===true,sm=e.showMaterialsCost===true;const what=sl&&!sm?'Labor only. Materials are not part of this price.':sm&&!sl?'Materials only. Labor is not part of this price.':'Labor and Sani materials included';
-  h+=`<section class="qcard"><div class="qey">Your price</div><div class="qprice"><div class="qbig">${qzM(shown)}</div><div class="qmut">${what}</div></div>${showSvc&&sv.length?`<div style="margin-top:12px">${sv.map(s=>`<div class="qsvc"><span>${E(s.title)}</span><b>${qzM(svcPrice(s))}</b></div>`).join('')}</div>`:''}</section>`}
+  h+=`<section class="qcard"><div class="qey">Your price</div><div class="qprice"><div class="qbig">${qzM(shown)}</div><div class="qmut">${what}</div></div>${showSvc&&sv.length&&!cb?`<div style="margin-top:12px">${sv.map(s=>`<div class="qsvc"><span>${E(s.title)}</span><b>${qzM(svcPrice(s))}</b></div>`).join('')}</div>`:''}</section>`;
+  if(cb){const row=(k,v)=>v?`<div class="qcbr"><span>${k}</span><span>${qzM(v)}</span></div>`:'';
+   h+=`<section class="qcard"><div class="qey">Cost breakdown</div><h2 class="qh">Labor, materials and other costs</h2>${cb.services.map(s=>`<div class="qcbs"><div class="qsvc"><span>${E(s.title)}</span><b>${qzM(s.total)}</b></div>${row('Labor',s.labor)}${row('Materials',s.materials)}${row('Other (disposal, protection, permits)',s.other)}</div>`).join('')}<div class="qcbs qcbt"><div class="qsvc"><span>All services</span><b>${qzM(cb.total)}</b></div>${row('Labor',cb.totals.labor)}${row('Materials',cb.totals.materials)}${row('Other',cb.totals.other)}</div><p class="qmut" style="margin:10px 0 0">Amounts include overhead and insurance. Items you supply yourself are not in these numbers.</p></section>`}}
  h+=addonHtml(r);
  /* What we will do */
  const off=A(e.hiddenQuotePhotos),doc=x=>x&&(x.kind==='file'||/\.pdf(?:[?#]|$)/i.test(String(x.data))||/^data:application\/pdf/i.test(String(x.data)));
