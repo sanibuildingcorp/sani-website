@@ -11,6 +11,7 @@
    ============================================================================ */
 'use strict';
 const BOOK = require('./price-book-v5');
+const { TRADE_SENSE, tubOnly } = require('./trade-sense');
 
 function catalog() {
   return BOOK.ITEMS.filter((i) => i.trade !== 'Whole Project').map((i) => {
@@ -27,15 +28,18 @@ YOUR ONLY JOB: say WHICH price-book items the job needs and HOW MANY, using the 
 PRICE BOOK (use these ids exactly):
 ${catalog()}
 
+${TRADE_SENSE}
+
 RULES
 1. Use only ids from the list. If the job needs something not in the list, put it in "custom" with a name, quantity and unit — no price.
-2. Quantities must come from the request, the answers, the conversation or the photos' obvious counts (1 toilet, 1 vanity). Areas: use measurements given. If none: bathroom floor 5x8=40 sf, shower walls 75 sf, a room's walls 350 sf, and write the assumption in "facts".
+2. Quantities must come from the request, the answers, the conversation or the photos' obvious counts (1 toilet, 1 vanity). Areas: use measurements given. If none: use the STANDARD SIZES above (tub alcove walls 80 sf floor to ceiling, shower floor 13 sf, bathroom floor 5x8=40 sf), a room's walls 350 sf, and write the assumption in "facts".
 3. A SMALL JOB STAYS SMALL. A repair is priced as a repair. Never add handyman hours as extra time on top of priced items. If there is real extra work with no price-book id (e.g. hang 4 shelves), put it in "custom". Never add demolition, rough plumbing, waterproofing or new tile unless the customer asked for that work.
 4. Customer-supplied items: put the supply key in customerSupplies. Labor stays; only the material is removed. Supply keys: wall_tile, floor_tile, floor_heat, thermostat, grout, saddle, toilet, flush_valve, vanity, faucet, shower_glass, accessories, fan, paint, ceiling_paint, door, door_hardware, trim, flooring, backsplash. NEVER write customer-supplied items into "exclusions" - the installation is included, only the material is theirs.
 5. Customer exclusions ("walls only", "no baseboards") go in that service's "exclusions", close to their own words.
 6. Newest message wins. A contractor note beats the customer. input.contractorNotes are the owner's own answers and instructions: follow them exactly, they beat everything else. Never ask again for something already answered.
 7. Never offer options or alternatives. Never mention TV mounting. Never set, install or connect an oven, range, cooktop or any gas appliance. Never use the word "licensed".
 8. "questions": at most 3, only when the answer changes the price by real money. If the job is clear, return [].
+16. "scopeSteps": the work steps in the order they happen, written from the owner's description and chat (rule C). Only the work he described. Leave out protection and final cleanup (code adds them). Return [] only when there is no owner description at all.
 9. "facts": every fact you used from the conversation/answers, each with what it changes ("effect").
 10. Service names = the customer's selected services (e.g. "Bathroom", "Painting"). Never "General".
 13. HARD CONDITIONS: if the request makes an item slower than normal (hand removal over a heated mat, very small room with many cuts, two-color pattern, old mud bed, delicate finishes), give that item "factor" 1.2-2.5 and "why" in plain words. The factor multiplies labor only.
@@ -43,13 +47,14 @@ RULES
 15. CONTRACTOR'S OLD LINES (input.contractorLines, if present) are his own priced judgment for this job. Never drop work he priced. For each old line: use a book id when it covers the same work, otherwise put it in "custom" with "old": its n. If the book item is clearly cheaper than his old line for the same work, prefer "custom" with "old": n - his number wins.
 11. LOOK AT THE PHOTOS. Pick the item that matches what is really there: a toilet with an exposed metal flush pipe / flush valve from the wall (Sloan, Zurn, commercial style) is toilet_flushometer, not toilet. Say what you saw in "facts".
 12. "site": read the building answers. "walk-up" / "no elevator" means elevator:false and walkup:true; put the floor number if given. Never ask again about floor or walk-up when the answers already say it.
-${input && input.preflight ? `\nBEFORE PRICING - QUESTIONS FOR THE CONTRACTOR. The contractor (Sani's owner, not the customer) wants to talk with you BEFORE you price. Read everything. In "summary" write 2-3 plain sentences: what you understood the job is, and what is missing. In "questions" ask him ${input.quick ? 'up to 4 (QUICK MODE: only the biggest price drivers - size, how much is torn out, who supplies materials, building access)' : 'up to 6'} short, concrete questions whose answers change the price (size, how much is torn out, what stays, who supplies what, floor/elevator/COI, special conditions). Keep the summary to 2 short sentences. Each question is an object {"question":"under 12 words","choices":["2-4 short tap answers, 1-4 words each"]}; use [] choices only when the answer must be typed (like a size). Skip anything the request, the answers or his notes already say. If the request is almost empty, ask for the basics. Still return the JSON below; services may be empty.\n` : ''}${previous ? `\nTHIS IS A CHAT UPDATE. Previous reading below. Change ONLY what the new messages change. Keep every other item and quantity exactly the same.\nPREVIOUS READING:\n${JSON.stringify(previous)}\n` : ''}
+${input && input.preflight ? `\nBEFORE PRICING - QUESTIONS FOR THE CONTRACTOR. The contractor (Sani's owner, not the customer) wants to talk with you BEFORE you price. Read everything. In "summary" write 2-3 plain sentences: what you understood the job is, and what is missing. In "questions" ask him ${input.quick ? 'up to 4 (QUICK MODE: only the biggest price drivers - size, how much is torn out, who supplies materials, building access)' : 'up to 6'} short, concrete questions whose answers change the price (size, how much is torn out, what stays, who supplies what, floor/elevator/COI, special conditions). Keep the summary to 2 short sentences. Each question is an object {"question":"under 12 words","choices":["2-4 short tap answers, 1-4 words each"]}; use [] choices only when the answer must be typed (like a size). Skip anything the request, the answers or his notes already say. If the request is almost empty, ask for the basics. Still return the JSON below; services may be empty.\n` : ''}${previous ? `\nTHIS IS A CHAT UPDATE. Previous reading below. Change ONLY what the new messages change. Keep every other item and quantity exactly the same - except when his messages or the chat plan change HOW MUCH is torn out or which walls are touched: then swap the items (e.g. bath_demo_gut -> tub_alcove_demo, bath_backer -> wet_backer) and fix the quantities.\nPREVIOUS READING:\n${JSON.stringify(previous)}\n` : ''}
 REQUEST:
 ${JSON.stringify(input)}
 
 Return JSON only:
 {"projectTitle":"","summary":"2-3 plain sentences for the customer: what we will do and the result",
  "services":[{"name":"","items":[{"id":"","qty":0,"note":"","factor":1,"why":""}],"custom":[{"name":"","qty":1,"unit":"job","note":"","old":null}],"exclusions":[]}],
+ "scopeSteps":[{"title":"2-4 words","text":"one or two sentences the customer reads and signs, in the owner's words and order"}],
  "customerSupplies":[],"site":{"floor":0,"elevator":null,"walkup":false,"coi":false,"buildingType":""},
  "facts":[{"text":"","effect":""}],"questions":[],"status":"READY | PRELIMINARY | NEEDS_CLARIFICATION | SITE_VISIT_REQUIRED"}`;
 }
@@ -127,6 +132,20 @@ function validate(raw, input) {
   out.questions = qRaw.map((q) => s(typeof q === 'string' ? q : q.question));
   /* Tap answers for the mobile Talk card; same order as questions. */
   out.questionChoices = qRaw.map((q) => (q && typeof q === 'object' && Array.isArray(q.choices) ? q.choices : []).map((c) => s(c).slice(0, 40)).filter((c) => c && !BAN.test(c)).slice(0, 4));
+  out.scopeSteps = (Array.isArray(raw && raw.scopeSteps) ? raw.scopeSteps : []).filter((x) => x && s(x.text) && !BAN.test(s(x.title) + ' ' + s(x.text)))
+    .slice(0, 12).map((x) => ({ title: s(x.title).slice(0, 40) || 'Step', text: s(x.text).replace(/\blicen[cs]ed?\b/gi, 'fully insured').replace(/\$\s?\d[\d,]*/g, '').slice(0, 320) }));
+  /* RULE B IN CODE: the owner limited the demo to the tub area -> no gut, no
+     backer on the dry walls, whatever the AI picked. */
+  const ownerText = [].concat((input && input.contractorNotes) || []).join(' \n ');
+  if (tubOnly(ownerText)) {
+    out.tubOnly = true;
+    out.services.forEach((sv) => sv.items.forEach((it) => {
+      if (it.id === 'bath_demo_gut') { it.id = 'tub_alcove_demo'; it.qty = 1; it.note = 'Tub and surround only (owner)'; }
+      if (it.id === 'bath_backer') { it.id = 'wet_backer'; it.qty = Math.min(it.qty, 80) || 80; }
+      if (it.id === 'wall_tile' && it.qty > 90) it.qty = 80;
+    }));
+    out.services.forEach((sv) => { const seen = {}; sv.items = sv.items.filter((it) => { if (seen[it.id]) { seen[it.id].qty = Math.max(seen[it.id].qty, it.qty); return false; } seen[it.id] = it; return true; }); });
+  }
   const okStatus = ['READY', 'PRELIMINARY', 'NEEDS_CLARIFICATION', 'SITE_VISIT_REQUIRED'];
   out.status = okStatus.includes(s(raw && raw.status)) ? s(raw.status) : 'PRELIMINARY';
   return out;
