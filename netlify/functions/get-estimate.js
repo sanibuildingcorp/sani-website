@@ -126,7 +126,20 @@ exports.handler = async function (event) {
     /* Records sent before snapshots dropped the site photos still carry a copy
        of them in sentVersion: the dashboard does not need it twice. */
     if (data.sentVersion && data.sentVersion.estimate) { delete data.sentVersion.estimate.sitePhotos; delete data.sentVersion.estimate.ownerNotes; }
-    if (hasDashboardKey(event)) return { statusCode: 200, headers: cors(), body: JSON.stringify(data) };
+    if (hasDashboardKey(event)) {
+      /* Netlify refuses any answer over 6 MB (the "Load failed (502)" card).
+         Older saved copies go first: photos inside estimateHistory, then the
+         oldest history entries. The job's own lines and photos are never cut. */
+      let body = JSON.stringify(data);
+      const LIMIT = 5.5 * 1024 * 1024;
+      if (body.length > LIMIT && Array.isArray(data.estimateHistory)) {
+        data.estimateHistory.forEach(function (h) { const e = h && (h.estimate || h); if (e && typeof e === "object") { delete e.sitePhotos; delete e.quotePhotos; } });
+        body = JSON.stringify(data);
+        while (body.length > LIMIT && data.estimateHistory.length) { data.estimateHistory.shift(); body = JSON.stringify(data); }
+      }
+      if (body.length > LIMIT) console.error("get-estimate: " + ref + " is still " + body.length + " bytes");
+      return { statusCode: 200, headers: cors(), body: body };
+    }
     ["ownerChat", "talkJob", "v5Ask", "chatFacts", "threadRate", "estimateHistory", "aiError", "aiJobId", "aiStage", "projectAnalysis", "sentVersion"].forEach(function (k) { delete data[k]; });
     if (data.estimate) { priceSafe(data.estimate); (data.estimate.customerSupplied || []).forEach(function (c) { if (c) delete c.line; }); }
     return { statusCode: 200, headers: cors(), body: JSON.stringify(data) };
