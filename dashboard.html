@@ -14835,12 +14835,15 @@ async function pzSaveNow() {
   if (!currentRecord || PZ.saving) { if (PZ.saving) pzDirty(); return; }
   PZ.saving = true;
   var s = document.getElementById("pz-saved");
+  /* Hold on to THIS estimate: Send closes the screen (currentRecord = null)
+     while the save is still on its way, and the save itself had succeeded. */
+  var rec = currentRecord;
   try {
-    var body = Object.assign({ ref: currentRecord.ref, estimate: pzGather(), status: currentRecord.status === "new" ? "drafted" : currentRecord.status },
-      currentRecord.customerFinalTotal != null ? { customerFinalTotal: currentRecord.customerFinalTotal } : {});
+    var body = Object.assign({ ref: rec.ref, estimate: pzGather(), status: rec.status === "new" ? "drafted" : rec.status },
+      rec.customerFinalTotal != null ? { customerFinalTotal: rec.customerFinalTotal } : {});
     var r = await sbcFetch("/.netlify/functions/save-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error("HTTP " + r.status);
-    if (currentRecord.status === "new") currentRecord.status = "drafted";
+    if (rec.status === "new") rec.status = "drafted";
     if (s) s.textContent = "Saved ✓";
   } catch (err) {
     if (s) s.textContent = "Not saved";
