@@ -314,6 +314,15 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
           <div class="option" data-time="flexible">Flexible</div>
         </div>
       </div>
+      <div class="question">
+        <span class="question-label">Anything your building needs? <span class="question-hint">Optional · tap all that apply</span></span>
+        <div class="options-grid" id="bldg-options">
+          <div class="option" data-bldg="Building needs a COI (insurance certificate)">Building needs a COI</div>
+          <div class="option" data-bldg="Elevator must be reserved">Elevator must be reserved</div>
+          <div class="option" data-bldg="Work only on set building hours">Set building hours</div>
+          <div class="option" data-bldg="Street parking only">Street parking only</div>
+        </div>
+      </div>
       <div class="form-err" id="step-5-error"></div>
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="goToStep(4)">← Back</button>
@@ -399,11 +408,37 @@ const state = {
 /* ════════════════════════════════════════════════════════════════════
    NAVIGATION
    ════════════════════════════════════════════════════════════════════ */
+/* Building needs (COI, elevator, hours, parking): the brain flags them. */
+document.addEventListener('click', function (e) {
+  var o = e.target.closest && e.target.closest('#bldg-options .option');
+  if (o) o.classList.toggle('selected');
+});
+function buildingNeeds() {
+  return Array.prototype.map.call(document.querySelectorAll('#bldg-options .option.selected'), function (o) { return o.dataset.bldg; }).join('; ');
+}
+/* Remember name, phone, email and address on this phone (same as the remodel form). */
+function rememberContact() {
+  try { localStorage.setItem('sbc_form_contact', JSON.stringify({ name: document.getElementById('cust-name').value.trim(), phone: document.getElementById('cust-phone').value.trim(), email: document.getElementById('cust-email').value.trim(), address: document.getElementById('cust-address').value.trim() })); } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', function () {
+  try { var c = JSON.parse(localStorage.getItem('sbc_form_contact') || '{}'); ['name', 'phone', 'email', 'address'].forEach(function (k) { var el = document.getElementById('cust-' + k); if (el && c[k] && !el.value) el.value = c[k]; }); } catch (e) {}
+  ['cust-name', 'cust-phone', 'cust-email', 'cust-address'].forEach(function (id) { var el = document.getElementById(id); if (el) el.addEventListener('change', rememberContact); });
+  hmEv('handyman_view', { step_number: 1 });
+});
+/* Google Analytics for this form, so we can see where visitors stop:
+   handyman_view, handyman_step (step_number), handyman_complete. */
+(function () { var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=G-QQF68GFQNX'; document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || []; window.gtag = window.gtag || function () { dataLayer.push(arguments); };
+  gtag('js', new Date()); gtag('config', 'G-QQF68GFQNX', { anonymize_ip: true, cookie_flags: 'SameSite=None;Secure' }); })();
+var HM_SEEN = {};
+function hmEv(name, p) { try { p = p || {}; p.transport_type = 'beacon'; gtag('event', name, p); } catch (e) {} }
+
 function goToStep(n) {
   document.querySelectorAll('.step').forEach(function (s) { s.classList.remove('active'); });
   document.getElementById('step-' + n).classList.add('active');
   state.currentStep = n;
   updateProgress(n);
+  if (n >= 2 && n <= 5 && !HM_SEEN[n]) { HM_SEEN[n] = 1; hmEv('handyman_step', { step_number: n }); }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -815,6 +850,7 @@ function buildAnswers() {
     item: allItems().join(', ')
   };
   Object.keys(state.answers).forEach(function (k) { if (k !== 'description' && !(k in out)) out[k] = state.answers[k]; });
+  var bn = buildingNeeds(); if (bn) out.building_needs = bn;
   return out;
 }
 
@@ -894,6 +930,8 @@ async function submitRequest() {
     document.getElementById('ai-loading-card').style.display = 'none';
     document.getElementById('result-content').style.display = 'block';
     document.getElementById('success-ref').textContent = data.ref || '—';
+    rememberContact();
+    hmEv('handyman_complete', { step_number: 6 });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
     clearInterval(statusInterval);

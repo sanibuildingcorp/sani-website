@@ -2794,6 +2794,12 @@ body {
 .hb-rates{margin-top:12px;font-size:12.5px;color:#666;line-height:2}.hb-rates input{width:58px;border:1px solid #ddd;border-radius:6px;padding:3px 5px;font-size:13px}.hb-rates button{border:1px solid #ccc;background:#fff;border-radius:6px;padding:3px 9px;font-size:12.5px}
 #handyman-card.hb-on .h-alert-bar,#handyman-card.hb-on .h-hero-grid .h-hero-block:nth-child(2),#handyman-card.hb-on .h-action-grid,#handyman-card.hb-on .h-warnings,#handyman-card.hb-on .h-estimate-bar,#handyman-card.hb-on .h-special-order{display:none}
 #handyman-card.hb-on .h-hero-grid{grid-template-columns:1fr}
+
+.hbl-tests{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:12.5px;color:var(--ink-soft)}
+.hbl-sec{margin:0 0 14px}
+.hbl-head{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;background:none;border:0;padding:8px 2px;color:var(--ink);font:inherit;cursor:pointer}
+.hbl-head b{font-size:15px}.hbl-head i{font-style:normal;font-size:12px;font-weight:700;background:#14213d;color:#fff;border-radius:99px;padding:1px 8px;margin-left:6px}
+.hbl-head small{display:block;font-size:12px;color:var(--ink-muted);margin-top:2px}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -3516,6 +3522,7 @@ function renderList() {
 
   if (activeTab === "handyman") {
     renderHandymanList();
+    if (!HB_PRICES._loaded) { HB_PRICES._loaded = true; hbLoadPrices(); }
     return;
   }
 
@@ -10296,71 +10303,89 @@ function handymanSentPanel(b) {
     '</div>';
 }
 
+/* THE HANDYMAN LIST, SORTED BY WHAT HE HAS TO DO NEXT.
+   Was: one long list, everything "NEW", test bookings mixed in, wide AI
+   ranges. Now: Needs your price / Sent / Booked / Follow up / Done, the
+   brain's firm price on each card, and his own test bookings hidden. */
+var HB_PRICES = {}, HB_SHOW_TESTS = false, HB_OPEN = {};
+function hbIsTest(b) {
+  var n = String(b.customer_name || '').toLowerCase(), m = String(b.customer_email || '').toLowerCase();
+  return /sani building|^test\b/.test(n) || /sanibuildingcorp/.test(m);
+}
+function hbGroup(b) {
+  var st = String(b.status || 'new').toLowerCase(), ag = String(b.agreement_status || '').toLowerCase();
+  var age = (Date.now() - new Date(b.submitted_at || 0).getTime()) / 864e5;
+  if (st === 'completed' || st === 'cancelled') return 'done';
+  if (st === 'confirmed' || st === 'in-progress' || ag === 'signed') return 'booked';
+  if (age > 14) return 'follow';
+  if (ag === 'sent' || ag === 'changes_requested') return 'sent';
+  return 'price';
+}
+async function hbLoadPrices() {
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-brain?list=1');
+    if (!r.ok) return;
+    HB_PRICES = Object.assign({ _loaded: true }, (await r.json()).prices || {});
+    if (activeTab === 'handyman') renderHandymanList();
+  } catch (e) {}
+}
+function hbCard(b) {
+  const icon = SERVICE_ICONS[b.service_id] || "🔧";
+  const status = (b.status || "new").toLowerCase();
+  const urgency = (b.urgency || "flexible").toLowerCase();
+  const photoCount = (b.photo_urls || []).length;
+  const bp = HB_PRICES[b.ref];
+  const sent = (b.agreements || [])[0];
+  return '<div class="handyman-card" data-ref="' + esc(b.ref) + '">' +
+    '<div class="h-icon">' + icon + '</div>' +
+    '<div class="h-main">' +
+      '<div class="h-title">' + esc(bp && bp.title ? bp.title : (b.service_name || b.service_id)) + '</div>' +
+      '<div class="h-meta">' +
+        '<span>' + esc(b.customer_name) + '</span><span>·</span><span>' + fmtDate(b.submitted_at) + '</span>' +
+        (photoCount > 0 ? '<span>·</span><span>📷 ' + photoCount + '</span>' : '') +
+        ((b.answers || {}).job_size ? '<span>·</span><span>📏 ' + esc(b.answers.job_size) + '</span>' : '') +
+        ((b.answers || {}).place ? '<span>·</span><span>🏠 ' + esc(b.answers.place) + '</span>' : '') +
+      '</div>' +
+      '<div class="h-badges">' +
+        (status !== 'new' ? '<span class="badge h-' + status + '">' + esc(status.replace('-', ' ')) + '</span>' : '') +
+        handymanSentBadge(b) +
+        (urgency === "today" || urgency === "emergency-today" ? '<span class="badge h-urgency-today">⚡ TODAY</span>' :
+         urgency === "this-week" ? '<span class="badge h-urgency-this-week">📅 This week</span>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="h-right">' +
+      (bp ? '<div class="est-total-label">Brain price</div><div class="h-total">$' + Math.round(bp.total).toLocaleString('en-US') + '</div>' + (bp.visitHours ? '<div class="h-time">' + esc(bp.visitHours) + '</div>' : '')
+          : (hbGroup(b) === 'booked' || hbGroup(b) === 'done' ? '' : '<div class="est-total-label">Not priced</div><div class="h-time">Open to price</div>')) +
+    '</div>' +
+  '</div>';
+}
+function hbToggle(k) { HB_OPEN[k] = !HB_OPEN[k]; renderHandymanList(); }
+function hbTests() { HB_SHOW_TESTS = !HB_SHOW_TESTS; renderHandymanList(); }
 function renderHandymanList() {
   const host = document.getElementById("list-host");
-
   if (handymanBookings.length === 0) {
-    host.innerHTML =
-      '<div class="empty">' +
-        '<div class="empty-icon">🔧</div>' +
-        '<h3>No handyman bookings yet</h3>' +
-        '<p>Customer bookings from handyman-estimate.html will appear here.</p>' +
-      '</div>';
+    host.innerHTML = '<div class="empty"><div class="empty-icon">🔧</div><h3>No handyman bookings yet</h3><p>Customer bookings from handyman-estimate.html will appear here.</p></div>';
     return;
   }
-
-  host.innerHTML =
-    '<div class="list-header">' +
-      '<div class="list-count">' + handymanBookings.length + ' handyman booking' + (handymanBookings.length === 1 ? '' : 's') + '</div>' +
-    '</div>' +
-    handymanBookings.map(function(b) {
-      const icon = SERVICE_ICONS[b.service_id] || "🔧";
-      const conf = (b.confidence_label || "maybe").toLowerCase();
-      const status = (b.status || "new").toLowerCase();
-      const urgency = (b.urgency || "flexible").toLowerCase();
-
-      const totalMin = (b.estimated_labor_min || 0) + (b.estimated_material_min || 0);
-      const totalMax = (b.estimated_labor_max || 0) + (b.estimated_material_max || 0);
-
-      const photoCount = (b.photo_urls || []).length;
-
-      return '<div class="handyman-card" data-ref="' + esc(b.ref) + '">' +
-        '<div class="h-icon">' + icon + '</div>' +
-        '<div class="h-main">' +
-          '<div class="h-title">' + esc(b.service_name || b.service_id) + '</div>' +
-          '<div class="h-meta">' +
-            '<span>' + esc(b.customer_name) + '</span>' +
-            '<span>·</span>' +
-            '<span>' + fmtDate(b.submitted_at) + '</span>' +
-            (photoCount > 0 ? '<span>·</span><span>📷 ' + photoCount + '</span>' : '') +
-            /* the size and the place, so a long list is seen before it is opened */
-            ((b.answers || {}).job_size ? '<span>·</span><span>📏 ' + esc(b.answers.job_size) + '</span>' : '') +
-            ((b.answers || {}).place ? '<span>·</span><span>🏠 ' + esc(b.answers.place) + '</span>' : '') +
-            '<span>·</span>' +
-            '<span style="font-family:monospace;font-size:11px">' + esc(b.ref) + '</span>' +
-          '</div>' +
-          '<div class="h-badges">' +
-            '<span class="badge h-' + status + '">' + esc(status) + '</span>' +
-            /* WHETHER A CONFIRMATION HAS GONE OUT. The booking status (new /
-               confirmed / in-progress) is about the WORK; agreement_status is
-               about whether a price was ever sent to this customer, and it was
-               written on the record all along and shown nowhere. So a booking
-               that had been quoted looked identical to one that had not, and
-               after a day there was no way to remember which was which. */
-            handymanSentBadge(b) +
-            '<span class="badge h-' + conf + '">' + (b.confidence_score || 0) + '% · ' + esc(conf) + '</span>' +
-            (urgency === "today" ? '<span class="badge h-urgency-today">⚡ TODAY</span>' :
-             urgency === "this-week" ? '<span class="badge h-urgency-this-week">📅 This Week</span>' : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="h-right">' +
-          '<div class="est-total-label">Estimate</div>' +
-          '<div class="h-total">$' + totalMin + '-$' + totalMax + '</div>' +
-          '<div class="h-time">' + (b.estimated_time_min || '?') + '-' + (b.estimated_time_max || '?') + ' hrs</div>' +
-        '</div>' +
-      '</div>';
-    }).join("");
-
+  var tests = handymanBookings.filter(hbIsTest);
+  var real = HB_SHOW_TESTS ? handymanBookings : handymanBookings.filter(function (b) { return !hbIsTest(b); });
+  var groups = [
+    ['price', 'Needs your price', 'New requests from the last 14 days', true],
+    ['sent', 'Sent · waiting for the customer', 'Price sent, not signed yet', true],
+    ['booked', 'Booked', 'Signed or confirmed: plan the visit', true],
+    ['follow', 'Follow up', 'Older than 14 days with no answer: call or text, or close them', false],
+    ['done', 'Done & closed', 'Completed or cancelled', false],
+  ];
+  var h = '<div class="list-header"><div class="list-count">' + real.length + ' handyman booking' + (real.length === 1 ? '' : 's') + '</div>' +
+    (tests.length ? '<button class="hbl-tests" onclick="hbTests()">' + (HB_SHOW_TESTS ? 'Hide' : 'Show') + ' my test bookings (' + tests.length + ')</button>' : '') + '</div>';
+  groups.forEach(function (g) {
+    var items = real.filter(function (b) { return hbGroup(b) === g[0]; });
+    if (!items.length) return;
+    var open = HB_OPEN[g[0]] === undefined ? g[3] : HB_OPEN[g[0]];
+    h += '<div class="hbl-sec"><button class="hbl-head" onclick="hbToggle(\'' + g[0] + '\')"><span><b>' + g[1] + '</b> <i>' + items.length + '</i><small>' + g[2] + '</small></span><span>' + (open ? '▾' : '▸') + '</span></button>' +
+      (open ? items.map(hbCard).join('') : '') + '</div>';
+  });
+  host.innerHTML = h;
   document.querySelectorAll(".handyman-card").forEach(function(card) {
     card.addEventListener("click", function() { openHandymanDetail(card.dataset.ref); });
   });
@@ -10436,6 +10461,7 @@ function hbList(title, arr, cls) {
 }
 function hbShow(st) {
   HB.st = st; HB.send = st.send || null;
+  if (st.plan && HB.ref && st.plan.price) HB_PRICES[HB.ref] = { total: st.plan.price.total, title: st.plan.title, visitHours: st.plan.visitHours };
   var box = document.getElementById('hb-box'); if (!box) return;
   var p = st.plan, busy = st.status === 'running', pr = p && p.price, r = st.rates || {};
   /* With a plan, the old AI blocks (wide price ranges, generic lists, the
