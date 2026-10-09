@@ -3294,7 +3294,7 @@ async function loadEstimates() {
       const data = await estimateRes.json();
       estimates = data.estimates || [];
       /* Sent, then a stale save wrote "drafted" back: it was sent. */
-      estimates.forEach(function (r) { if (r && r.status === "drafted" && r.sentAt) r.status = "sent"; });
+      estimates.forEach(function (r) { if (r && r.status === "drafted" && r.sentAt) r.status = "sent"; if (r && r.status === "sent" && r.openedAt) r.status = "opened"; });
     } else {
       let detail = "";
       try { const t = await estimateRes.text(); const j = JSON.parse(t); detail = String(j.error || j.message || ""); } catch (e) {}
@@ -14292,7 +14292,7 @@ function pzBuilding(r) {
   return out.join(" · ");
 }
 function pzCustomerHtml(r) {
-  var c = r.customer || {}, q = r.request || {}, st = PZ_STATUS[String((r.status === "drafted" && r.sentAt) ? "sent" : (r.status || "new")).toLowerCase()] || [String(r.status || "New"), "pz-wa"];
+  var c = r.customer || {}, q = r.request || {}, st = PZ_STATUS[String((r.status === "drafted" || r.status === "sent") && r.sentAt ? (r.openedAt ? "opened" : "sent") : (r.status || "new")).toLowerCase()] || [String(r.status || "New"), "pz-wa"];
   var tel = pzDigits(c.phone), addr = String(c.address || "").trim();
   var when = r.submittedAt ? new Date(r.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
   var src = { manual: "added by you", addon: "additional work", bid: "bid", email: "email" }[String(r.source || "").toLowerCase()] || "website form";
