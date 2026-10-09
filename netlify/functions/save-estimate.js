@@ -73,7 +73,10 @@ exports.handler = async function (event) {
        re-sends "sent" or "drafted"; every deliberate change (completed,
        cancelled, reopened, back from cancelled) still goes through. */
     const CUSTOMER_MOVED = ["opened", "question", "accepted", "review_requested", "declined"];
-    if (status && !((status === "sent" || status === "drafted") && CUSTOMER_MOVED.indexOf(existing.status) !== -1)) existing.status = status;
+    /* A plain save that still carries "drafted" never pulls a sent estimate
+       back to Draft (the page kept "drafted" in memory after Send). */
+    const staleDraft = status === "drafted" && (existing.status === "sent" || !!existing.sentAt);
+    if (status && !staleDraft && !((status === "sent" || status === "drafted") && CUSTOMER_MOVED.indexOf(existing.status) !== -1)) existing.status = status;
     if (projectAnalysis !== undefined) existing.projectAnalysis = projectAnalysis;
     if (aiStatus !== undefined) existing.aiStatus = aiStatus;
     if (aiJobId !== undefined) existing.aiJobId = aiJobId;
