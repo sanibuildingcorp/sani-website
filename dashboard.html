@@ -13913,8 +13913,9 @@ function pzChecks() {
     [svcs.length > 0 && svcs.every(function (s) { return (s.excluded || []).length; }), 'Every service has "Not included"'],
     [!sup.length || needs.some(function (x) { return /on site|deliver/i.test(x); }), "Delivery date for customer-supplied " + supName, "deliver"],
     [needs.some(function (x) { return /\bcoi\b|insurance/i.test(x); }), "Building COI mentioned", "coi"],
-    [!/licens|\bgas (line|hook|pipe|connect|appliance)|option [ab]\b/i.test(text.join("\n")), 'No "licensed", no options, no gas work']
-  ];
+    [!/licens|\bgas (line|hook|pipe|connect|appliance)|option [ab]\b/i.test(text.join("\n")), 'No "licensed", no options, no gas work'],
+    e.choice && e.choice.alt ? [Number(e.choice.alt.price) > 0, "Option 2 has a price"] : null
+  ].filter(Boolean);
 }
 
 /* ── render ── */
@@ -14241,7 +14242,7 @@ function pzRender() {
   var tm = pzTerms();
   /* Price and terms in ONE card: read the money, move the markup, set your own
      total, check payment - all in one place before Send. Only you see the money rows. */
-  var priceHtml = '<div class="pz-c" id="pz-s4"><h2>5 · Price &amp; terms</h2>' +
+  var priceHtml = pzChoiceHtml() + '<div class="pz-c" id="pz-s4"><h2>5 · Price &amp; terms</h2>' +
     '<div class="pz-ey" style="margin-top:4px">Money (you only)</div>' +
     '<button type="button" class="pz-btn pz-gold pz-sm" style="width:100%;margin:6px 0 8px" onclick="pzSetTotal()">🎯 Set my own total</button>' +
     '<div class="pz-row"><span>Customer price</span><b id="pz-mcus"></b></div>' +
@@ -14806,6 +14807,28 @@ function pzPrepare() {
   }
   try { scopeStampBreakdown(); } catch (x) {}
   try { var sch = pzScheduleOf(e); if (sch) e.schedule = sch; } catch (x) {}
+}
+/* Option 2 the customer can choose (estimate.choice): his view of it. */
+function pzChoiceHtml() {
+  var e = (currentRecord && currentRecord.estimate) || {}, ch = e.choice;
+  if (!ch || !ch.alt) return "";
+  var esc2 = function (v) { return String(v == null ? "" : v).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+  var money = function (n) { return "$" + Math.round(Number(n) || 0).toLocaleString("en-US"); };
+  var lines = [].concat(ch.alt.labor || [], ch.alt.materials || []);
+  var cost = lines.reduce(function (a, l) { return a + (Number(l.qty) || 0) * (Number(l.rate) || 0); }, 0);
+  var base = (typeof calcCustomerView === "function") ? calcCustomerView(e).customerTotal : 0;
+  return '<div class="pz-c" id="pz-choice"><div class="pz-ey">Customer chooses one</div>' +
+    '<div style="margin:6px 0 10px"><b>' + esc2(ch.base && ch.base.label) + '</b> · ' + money(base) + '<div class="pz-mut">' + esc2(ch.base && ch.base.description) + '</div></div>' +
+    '<div style="margin:0 0 8px"><b>' + esc2(ch.alt.label) + '</b> · ' + money(base + (Number(ch.alt.price) || 0)) + ' <span class="pz-mut">(+' + money(ch.alt.price) + ')</span><div class="pz-mut">' + esc2(ch.alt.description) + '</div></div>' +
+    '<div class="pz-mut" style="font-size:13px">Extra lines in Option 2 (cost ' + money(cost) + ' before markup):</div><ul style="margin:4px 0 10px;padding-left:18px;font-size:14px">' +
+    lines.map(function (l) { return '<li>' + esc2(l.item) + ' · ' + esc2(l.qty) + ' ' + esc2(l.unit) + ' × ' + money(l.rate) + '</li>'; }).join("") + '</ul>' +
+    '<div class="pz-mut" style="font-size:13px;margin-bottom:8px">To change Option 2, tell the estimator in the chat. Rebuild keeps it.</div>' +
+    '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzChoiceDrop()">Remove Option 2</button></div>';
+}
+async function pzChoiceDrop() {
+  if (!confirm("Remove Option 2 from this estimate?")) return;
+  var e = currentRecord.estimate; e.choice = null; e.options = (e.options || []).filter(function (o) { return o && !o.fromChoice; });
+  await pzSaveNow(); if (typeof openEdit === "function") openEdit(currentRecord.ref);
 }
 function pzGather() { pzPrepare(); return JSON.parse(JSON.stringify(pzEst())); }
 async function pzSaveNow() {
