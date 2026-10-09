@@ -133,6 +133,10 @@ function validate(change, previous) {
   };
   const est = { labor: A(change.labor).map((l) => line(l, 'labor')).filter(Boolean).slice(0, 80), materials: A(change.materials).map((l) => line(l, 'materials')).filter(Boolean).slice(0, 80) };
   if (!est.labor.length && !est.materials.length) return null;
+  /* One disposal line for the whole job: drop any second bags/disposal line. */
+  const isDisp = (l) => /\b(disposal|debris bags|contractor bags|dumpster)\b/i.test(l.item) && !/clean/i.test(l.item);
+  const disp = est.materials.filter(isDisp);
+  if (disp.length > 1) { const keep = disp.find((l) => /whole project/i.test(l.section)) || disp[0]; est.materials = est.materials.filter((l) => !isDisp(l) || l === keep || l.byHand); }
   /* His own lines and rates always come back. */
   ['labor', 'materials'].forEach((k) => {
     A(prev[k]).filter((h) => h && (h.byHand || h.rateByHand)).forEach((h) => {
@@ -159,6 +163,7 @@ function validate(change, previous) {
     customerSupplied: services.flatMap((x) => x.supplied.map((it) => ({ section: x.name, item: it, note: 'Purchase price excluded; installation included' }))),
     priceBasis: list(change.priceBasis, 8).length ? list(change.priceBasis, 8) : A(prev.priceBasis).filter((x) => !/\b(owner|photos show|assumed|answered)\b/i.test(String(x))),
     scheduleEdit: Number(change.workDays) > 0 && Number(change.workDays) <= 60 ? Object.assign({}, prev.scheduleEdit, { workDays: Math.round(Number(change.workDays)) }) : prev.scheduleEdit,
+    showLaborCost: undefined, showMaterialsCost: undefined, displayMode: undefined,
     warnings, brainAt: new Date().toISOString(),
   });
   return est;
