@@ -57,7 +57,7 @@ exports.handler = async (event) => {
        only crowd the story out */
     if (!record.openedAt) history.note(record, "customer", "The customer opened the quote page");
     if (!record.openedAt) record.openedAt = nowIso; // first open
-    if (record.status === "sent") record.status = "opened";
+    if (record.status === "sent" || (record.status === "drafted" && record.sentAt)) record.status = "opened";
     await store.setJSON(ref, record);
 
     // Notify on every open
