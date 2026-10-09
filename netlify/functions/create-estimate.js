@@ -75,7 +75,7 @@ exports.handler = async function (event) {
       submittedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: parent ? "new" : "drafted",
-      source: parent ? "addon" : "manual",
+      source: parent ? "addon" : (body.source === "call" ? "phone-call" : "manual"),
       customer: {
         name: String(customer.name).trim(),
         email: String(customer.email).trim(),
@@ -106,6 +106,8 @@ exports.handler = async function (event) {
         quotePhotos: [],
       },
     };
+    /* A phone call goes to the new estimator: one total, no old switches. */
+    if (body.source === "call" && !parent) { record.estimate.engine = "v5"; delete record.estimate.showLaborCost; delete record.estimate.showMaterialsCost; record.estimate.markupPct = 0; }
     if (parent) {
       record.parentRef = parentRef;
       record.addon = true;

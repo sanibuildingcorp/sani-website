@@ -2846,7 +2846,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
 
   <div class="list-section">
     <div class="sbc-search"><input id="sbc-q" type="search" inputmode="search" autocomplete="off" placeholder="🔍 Search name, phone, address, project…" oninput="sbcQ=this.value;if(window.sbcTrash)sbcTrash.on=false;renderList()"><button type="button" id="sbc-qx" aria-label="Clear" onclick="var i=document.getElementById('sbc-q');i.value='';sbcQ='';renderList();i.focus()">×</button><button type="button" class="sbc-trash-btn" aria-label="Trash" title="Trash" onclick="sbcTrashOpen(true)">🗑</button></div>
-    <button type="button" class="ei-open" onclick="eiOpen()">📥 New request from email</button>
+    <div class="ei-row"><button type="button" class="ei-open" onclick="pcOpen()">📞 New estimate from a call</button><button type="button" class="ei-open" onclick="eiOpen()">📥 New request from email</button></div>
     <div id="list-host"></div>
   </div>
 </div>
@@ -11238,6 +11238,7 @@ window.addEventListener('load', function() {
          behaviour; they just live in the menu now instead of on top of the page. -->
     <button id="menu-ai" onclick="sbcCloseDrawer();aiOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">✦ AI Assistant</button>
     <button id="menu-send-link" onclick="sbcCloseDrawer();var o=document.getElementById('send-link-overlay');if(o){o.style.display='flex';document.body.style.overflow='hidden';}" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📤 Send Estimate Link</button>
+    <button onclick="sbcCloseDrawer();pcOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;margin-bottom:8px">📞 New estimate from a call</button>
     <button onclick="sbcCloseDrawer();eiOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:8px">📥 New request from email</button>
     <button id="menu-new-invoice" onclick="sbcCloseDrawer();sbcOpenNewInv()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">💳 Quick invoice (customer not listed)</button>
     <a id="menu-bids" href="/bid-analyzer.html" style="display:block;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-weight:700;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📐 Bid Analyzer</a>
@@ -15401,6 +15402,14 @@ function eiRender() {
 }
 </script>
 <style>
+.ei-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ei-row .ei-open{font-size:14px;padding:12px 8px}
+#pc-ov{position:fixed;inset:0;background:rgba(13,27,42,.55);z-index:9999;display:none;align-items:flex-end;justify-content:center}
+#pc-ov.show{display:flex}#pc-box{background:#fff;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:18px 16px 22px}
+#pc-box h3{margin:0 0 4px;font-size:19px}#pc-box .pc-mut{color:#6b7280;font-size:13px;margin:0 0 12px}
+#pc-box label{display:block;font-size:12px;font-weight:700;color:#4b5563;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+#pc-box input,#pc-box textarea{width:100%;box-sizing:border-box;font-size:16px;padding:11px 12px;border:1px solid #d6d9e0;border-radius:10px;background:#f8f9fb;font-family:inherit}
+#pc-box textarea{min-height:200px;line-height:1.45}#pc-box .pc-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#pc-box .pc-act{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:16px}#pc-err{color:#b42318;font-size:14px;margin-top:10px;display:none}
 .ei-open{display:block;width:100%;margin:8px 0 4px;padding:12px;border:1px solid #c9a24a;background:#fbf5e6;color:#5b4410;border-radius:10px;font-size:15px;font-weight:700}
 .ei-row{display:block;width:100%;text-align:left;border:1px solid #e3e6ec;background:#fff;border-radius:10px;padding:10px 12px;margin:6px 0;color:#13254a;font-size:15px}
 .ei-top{display:flex;justify-content:space-between;gap:8px}.ei-top small{color:#5d6577;white-space:nowrap}.ei-sub{display:block;margin-top:2px}.ei-sn{display:block;color:#5d6577;font-size:13px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ei-in{display:block;color:#1f7a44;font-size:13px;font-weight:700;margin-top:4px}
@@ -15408,5 +15417,40 @@ function eiRender() {
 .ei-ph{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.ei-ph button{padding:0;border:2px solid #c9a24a;border-radius:10px;overflow:hidden;background:#fff;aspect-ratio:1}.ei-ph button.off{opacity:.3;border-color:#d5d9e2}.ei-ph img{width:100%;height:100%;object-fit:cover;display:block}
 </style>
 
+
+<div id="pc-ov" onclick="if(event.target===this)pcClose()"><div id="pc-box">
+  <h3>📞 New estimate from a call</h3>
+  <p class="pc-mut">Type or dictate everything from the call. The estimator builds the estimate and scope from your notes, then you check and send.</p>
+  <label for="pc-name">Customer name *</label><input id="pc-name" autocomplete="off">
+  <div class="pc-2"><div><label for="pc-phone">Phone</label><input id="pc-phone" type="tel"></div><div><label for="pc-email">Email *</label><input id="pc-email" type="email" autocapitalize="off"></div></div>
+  <label for="pc-addr">Job address</label><input id="pc-addr">
+  <label for="pc-title">Project title *</label><input id="pc-title" placeholder="e.g. Tub to walk-in shower">
+  <label for="pc-notes">Call notes *</label><textarea id="pc-notes" placeholder="Sizes, what we remove, what stays, materials, who supplies what, timeline, building rules, anything the customer said."></textarea>
+  <div id="pc-err"></div>
+  <div class="pc-act"><button type="button" class="pz-btn pz-ghost" onclick="pcClose()">Cancel</button><button type="button" class="pz-btn" id="pc-go" onclick="pcCreate()">Create and build</button></div>
+</div></div>
+<script>
+function pcOpen(){document.getElementById('pc-ov').classList.add('show');document.body.style.overflow='hidden';try{var d=JSON.parse(localStorage.getItem('sbc_pc')||'{}');['name','phone','email','addr','title','notes'].forEach(function(k){var e=document.getElementById('pc-'+k);if(e&&d[k]&&!e.value)e.value=d[k];});}catch(e){}}
+function pcClose(){document.getElementById('pc-ov').classList.remove('show');document.body.style.overflow='';pcKeep();}
+function pcVal(k){return document.getElementById('pc-'+k).value.trim();}
+function pcKeep(){try{var d={};['name','phone','email','addr','title','notes'].forEach(function(k){d[k]=pcVal(k);});localStorage.setItem('sbc_pc',JSON.stringify(d));}catch(e){}}
+async function pcCreate(){
+  var err=document.getElementById('pc-err'),btn=document.getElementById('pc-go');err.style.display='none';pcKeep();
+  var name=pcVal('name'),email=pcVal('email'),title=pcVal('title'),notes=pcVal('notes');
+  var miss=[!name&&'name',!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)&&'a valid email',!title&&'project title',notes.length<10&&'call notes'].filter(Boolean);
+  if(miss.length){err.textContent='Please add '+miss.join(', ')+'.';err.style.display='block';return;}
+  btn.disabled=true;btn.textContent='Creating…';
+  try{
+    var r=await sbcFetch('/.netlify/functions/create-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'call',customer:{name:name,email:email,phone:pcVal('phone'),address:pcVal('addr')},projectTitle:title,service:title,description:'Phone call notes:\n'+notes})});
+    var d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
+    try{localStorage.removeItem('sbc_pc');}catch(e){}
+    ['name','phone','email','addr','title','notes'].forEach(function(k){document.getElementById('pc-'+k).value='';});
+    pcClose();toast('✓ Created '+d.ref+' - building the estimate');
+    await loadEstimates();await openEdit(d.ref);
+    var n=0;(function go(){var t=document.getElementById('pz-talk');if(t&&typeof pzBrainBuild==='function'){pzBrainBuild();return;}if(++n<40)setTimeout(go,250);})();
+  }catch(e){err.textContent='Could not create: '+e.message;err.style.display='block';}
+  btn.disabled=false;btn.textContent='Create and build';
+}
+</script>
 </body>
 </html>
