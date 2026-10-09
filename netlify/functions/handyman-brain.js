@@ -34,6 +34,16 @@ exports.handler = async function (event) {
       return out(200, { rates: r });
     }
     if (q.rates) return out(200, { rates });
+    /* The list view: each booking's brain price and title, one call. */
+    if (q.list) {
+      const st = brainStore(); const prices = {};
+      const { blobs } = await st.list();
+      await Promise.all((blobs || []).slice(0, 300).map(async (x) => {
+        const v = await st.get(x.key, { type: "json" }).catch(() => null);
+        if (v && v.plan) prices[x.key] = { total: brain.priceOf(v.plan, rates).total, title: v.plan.title, confidence: v.plan.confidence, visitHours: v.plan.visitHours };
+      }));
+      return out(200, { prices });
+    }
     const ref = String(q.ref || "");
     if (!/^SBC-H-[A-Z0-9-]+$/i.test(ref)) return out(400, { error: "bad ref" });
     const st = (await brainStore().get(ref, { type: "json" }).catch(() => null)) || { status: "none", chat: [] };

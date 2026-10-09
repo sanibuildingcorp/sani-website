@@ -127,6 +127,15 @@ exports.handler = async function (event) {
     const saved = await supabaseRequest(supabaseUrl, supabaseKey, "POST", "/rest/v1/bookings", booking);
     console.log("✓ Booking saved");
 
+    /* Start the Sani brain now, so the plan and price are ready when he opens
+       the booking. Background function: answers 202 at once. Never fatal. */
+    try {
+      const site = process.env.URL || "https://www.sanibuildingcorp.com";
+      if (process.env.DASHBOARD_KEY) {
+        await fetch(site + "/.netlify/functions/handyman-brain-background", { method: "POST", headers: { "Content-Type": "application/json", "x-sbc-key": process.env.DASHBOARD_KEY }, body: JSON.stringify({ ref: ref }) });
+      }
+    } catch (e) { console.error("brain start failed (continuing):", e.message); }
+
     // 4. Save raw AI response for debugging
     if (aiResult && aiResult.rawResponse) {
       try {
