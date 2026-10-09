@@ -55,7 +55,7 @@ ok('the brief goes first in answers: services, job list, own words, size, place,
 ok('urgency is sent as the dashboard reads it ("this-week", "emergency-today")', /toLowerCase\(\)\.replace\(\/\\s\+\/g, '-'\)/.test(H));
 ok('same endpoints as before', ['handyman-questions', 'handyman-analyze', 'handyman-submit'].every((f) => H.indexOf('/.netlify/functions/' + f) > -1));
 const D = read('dashboard.html');
-ok('DASHBOARD: "Job at a glance" sits above the photos in the booking', /handymanBrief\(b\) \+\s*'<div class="h-hero-grid">'/.test(D));
+ok('DASHBOARD: "Job at a glance" sits above the photos in the booking', /handymanBrief\(b\) \+\s*('<div id="hb-box"[^\n]*\n\s*)?'<div class="h-hero-grid">'/.test(D));
 ok('...and the list shows the size and the place', /esc\(b\.answers\.job_size\)/.test(D) && /esc\(b\.answers\.place\)/.test(D));
 {
   const src = D.slice(D.indexOf('function handymanBrief(b)'), D.indexOf('let currentHandymanBooking'));
