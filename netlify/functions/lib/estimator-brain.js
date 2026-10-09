@@ -77,6 +77,7 @@ SCOPE OF WORK (what the customer signs):
 - EVERY service (also Painting, Whole Project) gets at least one step (with its "service") and at least one "excluded" line.
 - One protection line and one cleanup/disposal line for the whole job; never a second disposal or bags line inside a service.
 - Plumbing: when the shower drain sits in a different spot than the old tub drain, say so and price moving the drain line; never assume it ties in for free.
+- "dayPlan": one line per day for the customer, as many lines as workDays, in work order; put curing overnight with the step it follows (e.g. "Shower base, cement board, waterproofing (cures overnight)").
 - "workDays": the whole job in days, curing included. If he told the customer a number of days, use his number.
 - "priceBasis": 2-5 short lines the CUSTOMER reads under "This price is based on", in we-language (e.g. "Your bathroom is about 5 x 8 ft with an 8 ft ceiling"). Never write "owner", "photos show", "answered" or anything from his private notes.
 - "services": per service, "included" (short lines the customer reads), "excluded" (his exclusions + honest limits), "supplied" (what the customer provides).
@@ -100,7 +101,7 @@ OWNER: ${msg}${nPhotos ? `\n[He attached ${nPhotos} new photo(s) with this messa
 
 Return JSON only:
 {"reply":"","chips":["0-3 short tap replies he might send next"],
- "change": null | {"projectTitle":"","summary":"","timelineText":"","workDays":0,"priceBasis":["we-language line the customer reads"],
+ "change": null | {"projectTitle":"","summary":"","timelineText":"","workDays":0,"dayPlan":[{"day":1,"text":"what we do that day, short"}],"priceBasis":["we-language line the customer reads"],
    "services":[{"name":"Bathroom","included":[""],"excluded":[""],"supplied":[""]}],
    "workSteps":[{"service":"which service this step belongs to","title":"2-4 words","text":"1-2 sentences"}],
    "labor":[{"section":"Bathroom","item":"","qty":1,"unit":"job","rate":0,"bookId":"","priced":"book|his|ai","hours":0}],
@@ -163,6 +164,7 @@ function validate(change, previous) {
     customerSupplied: services.flatMap((x) => x.supplied.map((it) => ({ section: x.name, item: it, note: 'Purchase price excluded; installation included' }))),
     priceBasis: list(change.priceBasis, 8).length ? list(change.priceBasis, 8) : A(prev.priceBasis).filter((x) => !/\b(owner|photos show|assumed|answered)\b/i.test(String(x))),
     scheduleEdit: Number(change.workDays) > 0 && Number(change.workDays) <= 60 ? Object.assign({}, prev.scheduleEdit, { workDays: Math.round(Number(change.workDays)) }) : prev.scheduleEdit,
+    dayPlan: A(change.dayPlan).map((d) => ({ day: Number(d && d.day) || 0, text: txt(d && d.text, 140) })).filter((d) => d.text && !BAN.test(d.text)).slice(0, 30).length ? A(change.dayPlan).map((d) => ({ day: Number(d && d.day) || 0, text: txt(d && d.text, 140) })).filter((d) => d.text && !BAN.test(d.text)).slice(0, 30) : A(prev.dayPlan),
     showLaborCost: undefined, showMaterialsCost: undefined, displayMode: undefined,
     warnings, brainAt: new Date().toISOString(),
   });
