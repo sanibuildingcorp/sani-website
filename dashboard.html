@@ -2763,6 +2763,37 @@ body {
 .badge.waiting-customer{background:#6b5b95;color:#fff}
 @media(max-width:600px){.cnv-msg{max-width:93%}.cnv-body{max-height:300px}}
 
+
+/* Sani brain card (handyman) */
+.hb,.hb *{box-sizing:border-box}.hb{overflow:hidden;width:100%;max-width:100%;overflow-wrap:anywhere}.hb-head>div,.hb-price>div,.hb-task>div:first-child{min-width:0}.hb-say textarea{min-width:0;width:100%}
+.hb{border:1px solid #e3d6b0;background:#fffdf7;border-radius:14px;padding:16px;margin:0 0 16px}
+.hb-k{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#8a7a52;font-weight:700;margin-bottom:4px}
+.hb-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+.hb-title{font-size:17px;font-weight:700;color:#14213d;line-height:1.3}
+.hb-conf{font-size:12px;font-weight:700;padding:5px 10px;border-radius:99px;white-space:nowrap}
+.hb-high{background:#e7f5ec;color:#1e7a45}.hb-medium{background:#fff4dc;color:#8a5a00}.hb-low{background:#fde8e8;color:#a12a2a}
+.hb-price{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid #efe6cc;border-bottom:1px solid #efe6cc}
+.hb-big{font-size:30px;font-weight:800;color:#14213d;line-height:1}
+.hb-sub{font-size:12.5px;color:#6b6b6b;margin-top:5px}
+.hb-use{background:#c4a35a;color:#14213d;border:0;border-radius:10px;padding:11px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+.hb-money{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:#555;margin:10px 0}
+.hb-tasks{display:grid;gap:8px;margin:6px 0 12px}
+.hb-task{display:flex;justify-content:space-between;gap:10px;background:#fff;border:1px solid #eee3c6;border-radius:10px;padding:10px 12px;font-size:14px;color:#222}
+.hb-note{font-size:12.5px;color:#777;margin-top:3px;line-height:1.4}
+.hb-h{font-size:12.5px;color:#14213d;font-weight:700;text-align:right;white-space:nowrap}
+.hb-block{margin:10px 0}.hb-block ul{margin:4px 0 0;padding-left:18px}.hb-block li{font-size:13.5px;line-height:1.45;color:#333;margin:2px 0}
+.hb-warn{background:#fff6e5;border-radius:10px;padding:10px 12px}.hb-ask{background:#eef4ff;border-radius:10px;padding:10px 12px}
+.hb-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.hb-two{grid-template-columns:1fr}}
+.hb-cust{margin:10px 0;border:1px solid #e6e6e6;border-radius:10px;padding:10px 12px;background:#fff}.hb-cust summary{font-weight:700;font-size:14px;color:#14213d}.hb-cust p{font-size:13.5px;line-height:1.5;color:#333}
+.hb-chat{display:grid;gap:6px;margin:12px 0}.hb-m{font-size:13.5px;line-height:1.45;padding:9px 11px;border-radius:12px;max-width:92%}
+.hb-me{background:#14213d;color:#fff;justify-self:end}.hb-ai{background:#f1ede2;color:#222}
+.hb-wait{font-size:13.5px;color:#8a7a52;padding:6px 0}.hb-err{font-size:13.5px;color:#a12a2a}.hb-err button{margin-left:6px}
+.hb-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.hb-chips button{border:1px solid #d9c690;background:#fff;border-radius:99px;padding:6px 11px;font-size:12.5px;color:#14213d}
+.hb-say{display:flex;gap:8px;align-items:flex-end}.hb-say textarea{flex:1;border:1px solid #d9d2bd;border-radius:10px;padding:9px 10px;font:inherit;font-size:14px;resize:vertical}
+.hb-say button{background:#14213d;color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700}
+.hb-rates{margin-top:12px;font-size:12.5px;color:#666;line-height:2}.hb-rates input{width:58px;border:1px solid #ddd;border-radius:6px;padding:3px 5px;font-size:13px}.hb-rates button{border:1px solid #ccc;background:#fff;border-radius:6px;padding:3px 9px;font-size:12.5px}
+#handyman-card.hb-on .h-alert-bar,#handyman-card.hb-on .h-hero-grid .h-hero-block:nth-child(2),#handyman-card.hb-on .h-action-grid,#handyman-card.hb-on .h-warnings,#handyman-card.hb-on .h-estimate-bar,#handyman-card.hb-on .h-special-order{display:none}
+#handyman-card.hb-on .h-hero-grid{grid-template-columns:1fr}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -10342,11 +10373,116 @@ async function openHandymanDetail(ref) {
     const b = await r.json();
     currentHandymanBooking = b;
     renderHandymanModal(b);
+    hbStart(b.ref);
     document.getElementById("handyman-modal").classList.add("show");
     document.body.style.overflow = "hidden";
   } catch (e) {
     toast("Load failed: " + e.message, true);
   }
+}
+
+/* ═══ SANI BRAIN FOR HANDYMAN BOOKINGS ═══════════════════════════════════
+   One strong brain reads the customer's words, answers and photos, and
+   writes the plan: tasks with hours, a firm price from HIS rates, the visit
+   brief (only the tools and materials this job needs, real warnings), what
+   the customer must have ready, and the customer scope. He talks to it to
+   change anything; "Use this price" fills the Send screen. */
+var HB = { ref: null, st: null, send: null, timer: null };
+function hbMoney(n) { return '$' + Math.round(Number(n) || 0).toLocaleString('en-US'); }
+async function hbStart(ref) {
+  HB = { ref: ref, st: null, send: null, timer: null };
+  var st = await hbGet(ref);
+  if (!st) return;
+  if (st.status === 'none') { await hbRun(''); return; }
+  hbShow(st);
+}
+async function hbGet(ref) {
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-brain?ref=' + encodeURIComponent(ref));
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    return j;
+  } catch (e) { var box = document.getElementById('hb-box'); if (box) box.innerHTML = '<div class="hb-wait">Brain unavailable: ' + esc(e.message) + '</div>'; return null; }
+}
+async function hbRun(message) {
+  var ref = HB.ref; if (!ref) return;
+  var st = HB.st || { chat: [] };
+  st.status = 'running';
+  if (message) st.chat = (st.chat || []).concat([{ from: 'owner', text: message }]);
+  hbShow(st);
+  try {
+    await sbcFetch('/.netlify/functions/handyman-brain-background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: ref, message: message || '' }) });
+  } catch (e) { toast('Brain did not start: ' + e.message, true); }
+  hbPoll(ref, Date.now());
+}
+function hbPoll(ref, t0) {
+  clearTimeout(HB.timer);
+  HB.timer = setTimeout(async function () {
+    if (HB.ref !== ref || !currentHandymanBooking) return;
+    var st = await hbGet(ref);
+    if (!st) return;
+    if (st.status === 'running' && Date.now() - t0 < 6 * 60 * 1000) { hbShow(st); hbPoll(ref, t0); return; }
+    hbShow(st);
+  }, 3000);
+}
+function hbSay() {
+  var el = document.getElementById('hb-input'); if (!el) return;
+  var v = el.value.trim(); if (!v) return;
+  el.value = ''; hbRun(v);
+}
+function hbList(title, arr, cls) {
+  if (!arr || !arr.length) return '';
+  return '<div class="hb-block ' + (cls || '') + '"><div class="hb-k">' + title + '</div><ul>' + arr.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+}
+function hbShow(st) {
+  HB.st = st; HB.send = st.send || null;
+  var box = document.getElementById('hb-box'); if (!box) return;
+  var p = st.plan, busy = st.status === 'running', pr = p && p.price, r = st.rates || {};
+  /* With a plan, the old AI blocks (wide price ranges, generic lists, the
+     confidence score) are replaced by the brain's own. */
+  var card = document.getElementById('handyman-card');
+  if (card) card.classList.toggle('hb-on', !!p);
+  var h = '<div class="hb-head"><div><div class="hb-k">Sani brain</div><div class="hb-title">' + esc(p ? p.title : 'Reading the job') + '</div></div>' +
+    (p ? '<div class="hb-conf hb-' + esc(p.confidence) + '">' + esc(p.confidence === 'high' ? 'Ready to send' : p.confidence === 'low' ? 'Ask first' : 'Check it') + '</div>' : '') + '</div>';
+  if (p) {
+    h += '<div class="hb-price"><div><div class="hb-big">' + hbMoney(pr.total) + '</div><div class="hb-sub">' +
+      (pr.flat ? 'Your flat price' : (pr.minimumApplied ? 'Your minimum visit' : pr.laborHours + ' labor hrs × ' + hbMoney(r.hourly) + ' + materials')) +
+      (p.visitHours ? ' · ' + esc(p.visitHours) + ' on site' : '') + '</div></div>' +
+      '<button class="hb-use" onclick="openConfirmationModal()">Use this price</button></div>' +
+      '<div class="hb-money"><span>Labor ' + hbMoney(pr.labor) + '</span><span>Materials ' + hbMoney(pr.materials) + ' (cost ' + hbMoney(pr.materialCost) + ')</span><span>Profit ' + hbMoney(pr.profit) + '</span>' + (p.deposit > 0 ? '<span>Deposit ' + hbMoney(p.deposit) + '</span>' : '') + '</div>' +
+      '<div class="hb-tasks">' + p.tasks.map(function (t) {
+        return '<div class="hb-task"><div><b>' + esc(t.task) + '</b>' + (t.note ? '<div class="hb-note">' + esc(t.note) + '</div>' : '') + '</div><div class="hb-h">' + t.hours + ' h' + (t.workers > 1 ? ' × ' + t.workers : '') + (t.materialCost ? '<br>' + hbMoney(t.materialCost) + ' mat.' : '') + '</div></div>';
+      }).join('') + '</div>' +
+      hbList('Warnings', p.warnings, 'hb-warn') +
+      hbList('Ask the customer', p.askCustomer, 'hb-ask') +
+      '<div class="hb-two">' + hbList('Tools to bring', p.tools) + hbList('Materials to bring', p.materials) + '</div>' +
+      '<details class="hb-cust"><summary>What the customer will see</summary>' +
+        (p.customer.scope ? '<p>' + esc(p.customer.scope) + '</p>' : '') +
+        hbList('What we will do', p.customer.steps) + hbList('Please have ready', p.customer.ready) + hbList('Not included', p.customer.notIncluded) +
+      '</details>';
+  }
+  var chat = (st.chat || []).slice(-6);
+  if (chat.length) h += '<div class="hb-chat">' + chat.map(function (m) { return '<div class="hb-m hb-' + (m.from === 'owner' ? 'me' : 'ai') + '">' + esc(m.text) + '</div>'; }).join('') + '</div>';
+  if (busy) h += '<div class="hb-wait">Thinking… this takes about 30–60 seconds.</div>';
+  if (st.status === 'error') h += '<div class="hb-err">' + esc(st.error || 'Something went wrong') + ' <button onclick="hbRun(\'\')">Try again</button></div>';
+  var last = chat.length ? chat[chat.length - 1] : null;
+  var chips = (last && last.chips) || (p ? ['Make it a flat price', 'Add a second worker', 'Write the customer note shorter'] : []);
+  if (!busy) {
+    h += (chips.length ? '<div class="hb-chips">' + chips.map(function (c) { return '<button onclick="hbRun(this.textContent)">' + esc(c) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="hb-say"><textarea id="hb-input" rows="2" placeholder="Tell the brain… e.g. 2 hours, $350 flat, we bring touch-up paint"></textarea><button onclick="hbSay()">Send</button></div>';
+  }
+  h += '<div class="hb-rates">' + (r.draft ? '<b>Draft rates — set yours:</b> ' : 'Your rates: ') +
+    '$<input id="hb-r-h" type="number" inputmode="decimal" value="' + (r.hourly || '') + '">/hr · min $<input id="hb-r-m" type="number" inputmode="decimal" value="' + (r.minimumCharge != null ? r.minimumCharge : '') + '"> · materials +<input id="hb-r-p" type="number" inputmode="decimal" value="' + (r.materialMarkupPct != null ? r.materialMarkupPct : '') + '">% <button onclick="hbRates()">Save</button></div>';
+  box.innerHTML = h;
+}
+async function hbRates() {
+  var body = { rates: { hourly: document.getElementById('hb-r-h').value, minimumCharge: document.getElementById('hb-r-m').value, materialMarkupPct: document.getElementById('hb-r-p').value } };
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-brain', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    toast('Rates saved');
+    var st = await hbGet(HB.ref); if (st) hbShow(st);
+  } catch (e) { toast('Rates not saved: ' + e.message, true); }
 }
 
 function closeHandymanModal() {
@@ -10402,6 +10538,7 @@ function renderHandymanModal(b) {
       '<div class="h-alert-urgency ' + urgency + '">' + urgencyLabel + '</div>' +
     '</div>' +
     handymanBrief(b) +
+    '<div id="hb-box" class="hb"><div class="hb-wait">Sani brain is reading this job…</div></div>' +
     '<div class="h-hero-grid">' +
       '<div class="h-hero-block">' +
         '<div class="h-hero-block-title">' +
@@ -10666,7 +10803,18 @@ function openConfirmationModal() {
   document.getElementById('confirm-send-btn').disabled = false;
   document.getElementById('confirm-send-btn').innerHTML = '📤 Send to Customer';
 
-  setPricingMode('range');
+  /* The brain's plan fills the Send screen: one firm price, its scope, the
+     "please have ready" list and its deposit. He can still change anything. */
+  if (HB.ref === b.ref && HB.send && HB.send.fixedPrice > 0) {
+    document.getElementById('price-fixed').value = HB.send.fixedPrice;
+    if (HB.send.durationText) document.getElementById('appt-duration').value = HB.send.durationText;
+    if (HB.send.scopeSummary) document.getElementById('scope-summary').value = HB.send.scopeSummary;
+    document.getElementById('special-notes').value = HB.send.specialNotes || '';
+    document.getElementById('deposit-toggle').checked = HB.send.deposit > 0;
+    document.getElementById('deposit-amount').value = HB.send.deposit > 0 ? HB.send.deposit : '';
+    document.getElementById('deposit-fields').style.display = HB.send.deposit > 0 ? 'block' : 'none';
+    setPricingMode('fixed');
+  } else setPricingMode('range');
   validateConfirmForm();
 
   document.getElementById('confirm-overlay').classList.add('active');
