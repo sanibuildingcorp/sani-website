@@ -312,7 +312,7 @@ async function brainReply(record, msg, att) {
   let pending = null;
   const est = o && brain.validate(o.change, previous);
   if (est) {
-    const next = Object.assign({}, previous, est, { engine: 'brain' });
+    const next = Object.assign({}, previous, est, { engine: 'brain', docVersion: 4 });
     const hasMarkup = previous.markupPct != null && (A(previous.labor).length || A(previous.materials).length);
     next.markupPct = hasMarkup ? previous.markupPct : Math.round(engine.markupFor([].concat(est.labor, est.materials).reduce((a, l) => a + l.qty * l.rate, 0)) * 1000) / 10;
     engine.retotal(next);
