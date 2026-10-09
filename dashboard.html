@@ -3205,8 +3205,13 @@ function toast(msg, isError) {
   toast._t = setTimeout(function() { t.classList.remove("show"); }, isError ? 6000 : 3000);
 }
 
+function pzNewEngine() { var e = (currentRecord && currentRecord.estimate) || {}; return /^(v5|brain)/.test(String(e.engine || "")) && !e.displayByHand; }
 function normalizeDisplayFlags(est) {
   if (!est) return;
+  /* New estimator: one total, no old labor/material switches. */
+  if (/^(v5|brain)/.test(String(est.engine || "")) && !est.displayByHand) {
+    delete est.showLaborCost; delete est.showMaterialsCost; delete est.displayMode; return;
+  }
   if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") return;
   if (est.displayMode === "total") {
     est.showLaborCost = false;
@@ -8895,8 +8900,8 @@ function gatherForm() {
        untouched rather than blanking it on every save. */
     notes: String((currentRecord.estimate && currentRecord.estimate.notes) || "").trim(),
     markupPct: parseFloat(document.getElementById("f-markup").value) || 0,
-    showLaborCost: currentRecord.estimate.showLaborCost !== false,
-    showMaterialsCost: currentRecord.estimate.showMaterialsCost === true,
+    showLaborCost: pzNewEngine() ? undefined : currentRecord.estimate.showLaborCost !== false,
+    showMaterialsCost: pzNewEngine() ? undefined : currentRecord.estimate.showMaterialsCost === true,
     showSectionSubtotals: currentRecord.estimate.showSectionSubtotals !== false,
     showLaborLines: currentRecord.estimate.showLaborLines === true,
     showMaterialLines: currentRecord.estimate.showMaterialLines === true,
