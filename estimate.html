@@ -222,6 +222,12 @@ h1.title{font-size:24px}p.subtitle{font-size:13px;margin-bottom:20px}.service-gr
 .no-photos-text{font-size:13px;color:var(--gray);line-height:1.6;max-width:280px;margin:0 auto}
 .no-photos-text strong{color:var(--cream)}
 @media(max-width:640px){.scan-stage{width:200px;height:200px}.scan-photo{inset:24px}.analysis-row{flex-direction:column;gap:4px}.analysis-row-value{text-align:left}.analysis-row-label{min-width:0}}
+.ef-time{text-align:center;font-size:13px;color:#6b7280;margin:14px 0 0;letter-spacing:.02em}
+.ef-hint{font-size:13px;color:#8a6d2b;margin:-6px 0 12px}
+.ef-opt{font-weight:500;color:#9aa0a8;font-size:12px;margin-left:4px;text-transform:none;letter-spacing:0}
+.ef-trust{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:6px;font-size:13px;color:#4b5563}
+.ef-trust li{padding-left:22px;position:relative}.ef-trust li:before{content:"";position:absolute;left:4px;top:4px;width:9px;height:5px;border-left:2px solid #8a6d2b;border-bottom:2px solid #8a6d2b;transform:rotate(-45deg)}
+[data-step="8"] #review-content .review-block{margin:0 0 14px}
 </style>
 <link rel="stylesheet" href="partials/site.css">
 <!-- Loaded AFTER partials/site.css on purpose.
@@ -360,7 +366,7 @@ body.menu-on .topbar{display:none!important}
   <div class="progress">
     <div class="progress-meta">
       <div class="progress-step" id="step-label">What You Need</div>
-      <div class="progress-count"><span id="step-num">1</span> of <span id="step-total">5</span><span id="step-sub"></span></div>
+      <div class="progress-count"><span id="step-num">1</span> of <span id="step-total">4</span><span id="step-sub"></span></div>
     </div>
     <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
   </div>
@@ -371,11 +377,11 @@ body.menu-on .topbar{display:none!important}
       <div class="eyebrow">Step 1</div>
       <h1 class="title">What kind of project?</h1>
       <p class="subtitle">Select all that apply — we'll tailor the rest from there.</p>
-      <div class="multi-hint">You can select more than one</div>
+      <div class="multi-hint">You can select more than one · about 1 minute · free, no obligation</div>
       <div class="service-grid" id="service-grid"></div>
       <div class="step-nav">
         <button class="btn-back" disabled>Back</button>
-        <button class="btn-continue" id="continue-1" disabled onclick="goToStep(8)">Continue →</button>
+        <button class="btn-continue" id="continue-1" disabled onclick="goToStep(5)">Continue →</button>
       </div>
     </div>
 
@@ -404,7 +410,7 @@ body.menu-on .topbar{display:none!important}
       </div>
       <div class="step-nav">
         <button class="btn-back" onclick="goToStep(5)">&larr; Back</button>
-        <button class="btn-continue" id="continue-supplies" onclick="goToStep(9)">Continue &rarr;</button>
+        <button class="btn-continue" id="continue-supplies" onclick="goToStep(8)">Continue &rarr;</button>
       </div>
     </div>
 
@@ -458,9 +464,10 @@ body.menu-on .topbar{display:none!important}
 
     <!-- STEP 5: Photos -->
     <div class="step" data-step="5">
-      <div class="eyebrow">Step 3 of 5</div>
+      <div class="eyebrow">Step 2 of 4</div>
       <h2 class="title">Tell us about the project</h2>
       <p class="subtitle">A short description, plus any photos or drawings you already have.</p>
+      <p class="ef-hint">A sentence is enough, or just add photos.</p>
       <div class="input-group">
         <label class="input-label" for="description-field">In your own words <span class="req">*</span></label>
         <textarea class="textarea-field" id="description-field" oninput="saveDesc();updateStep5()" placeholder="For example: 'Kitchen floor grout is cracked and stained, about 400 sq ft of quarry tile. Restaurant, needs to be done overnight before our next inspection.'"></textarea>
@@ -476,7 +483,7 @@ body.menu-on .topbar{display:none!important}
       <input type="file" id="photo-input" accept="image/*,application/pdf,.pdf,.heic,.heif" multiple onchange="handlePhotos(event)">
       <div class="photo-preview-grid" id="photo-preview"></div>
       <div class="step-nav">
-        <button class="btn-back" onclick="goToStep(8)">← Back</button>
+        <button class="btn-back" onclick="goToStep(1)">← Back</button>
         <button class="btn-continue" id="continue-5" disabled onclick="saveDesc();startStep2()">Continue →</button>
       </div>
     </div>
@@ -504,9 +511,10 @@ body.menu-on .topbar{display:none!important}
 
     <!-- STEP 8: Contact -->
     <div class="step" data-step="8">
-      <div class="eyebrow">Step 2 of 5</div>
+      <div class="eyebrow">Step 4 of 4</div>
       <h2 class="title">Where should we send your estimate?</h2>
       <p class="subtitle">We'll respond within one business day.</p>
+      <div id="review-content"></div>
       <div class="input-group">
         <label class="input-label" for="name-field">Your name <span class="req">*</span></label>
         <input type="text" class="input-field" id="name-field" placeholder="First and last" oninput="updateContact()" autocomplete="name">
@@ -522,13 +530,14 @@ body.menu-on .topbar{display:none!important}
         </div>
       </div>
       <div class="input-group">
-        <label class="input-label" for="address-field">Project address <span class="req">*</span></label>
+        <label class="input-label" for="address-field">Project address or area <span class="ef-opt">optional</span></label>
         <input type="text" class="input-field" id="address-field" placeholder="e.g. Park Slope, Brooklyn" oninput="updateContact()" autocomplete="street-address">
       </div>
       <div class="step-nav">
-        <button class="btn-back" onclick="goToStep(1)">← Back</button>
-        <button class="btn-continue" id="continue-8" disabled onclick="goToStep(5)">Continue →</button>
+        <button class="btn-back" onclick="goToStep(5)">← Back</button>
+        <button class="btn-continue submit" id="submit-btn" disabled onclick="submitForm()">Send my request →</button>
       </div>
+      <ul class="ef-trust"><li>Free estimate, no obligation</li><li>4.9 on Google from 68 reviews</li><li>We never share your number or email</li></ul>
     </div>
 
     <!-- STEP 9: Review -->
@@ -536,10 +545,10 @@ body.menu-on .topbar{display:none!important}
       <div class="eyebrow">Step 5 of 5</div>
       <h2 class="title">Does this look right?</h2>
       <p class="subtitle">When you're ready, send it over.</p>
-      <div id="review-content"></div>
+      <div id="review-content-old"></div>
       <div class="step-nav">
         <button class="btn-back" onclick="goToStep(2)">← Back</button>
-        <button class="btn-continue submit" id="submit-btn" onclick="submitForm()">Send My Project →</button>
+        <button class="btn-continue submit" id="submit-btn-old" onclick="submitForm()">Send My Project →</button>
       </div>
     </div>
 
@@ -598,11 +607,11 @@ let plannedQuestions=[],plannedIndex=0,usingPlan=false;
 /* What the AI understood the job to be, echoed back so the customer can correct
    it here rather than after they get a wrong price. */
 let intakeReadAs='';
-const TOTAL_STEPS=5;
+const TOTAL_STEPS=4;
 // data-step -> number the customer sees. Steps 3 (Property), 4 (old About), 6 (AI analysis)
 // and 7 (Timeline) are retired from the flow - markup kept, never navigated to.
-const DISPLAY_STEP={1:1,8:2,5:3,2:4,9:5};
-const STEP_LABELS={1:'What You Need',8:'Your Contact',5:'Describe & Upload',2:'A Few Follow-Ups',9:'Review & Send'};
+const DISPLAY_STEP={1:1,5:2,2:3,8:4};
+const STEP_LABELS={1:'What You Need',5:'Describe & Upload',2:'A Few Follow-Ups',8:'Your Contact & Send'};
 const SERVICES=[{id:'bathroom',label:'Bathroom'},{id:'painting',label:'Painting'},{id:'flooring',label:'Flooring'},{id:'carpentry',label:'Carpentry'},{id:'water-damage',label:'Water Damage'},{id:'handyman',label:'Handyman'},{id:'deck',label:'Deck'},{id:'stair',label:'Stairs'},{id:'restoration',label:'Restoration'},{id:'general',label:'General Renovation'},{id:'other',label:'Other / Not Listed'}];
 const ICONS={
 'bathroom':'<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-2.5 1V13h17"/><path d="M21 13v4a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-4"/><path d="m6 20-1 2M18 20l1 2"/></svg>',
@@ -644,7 +653,7 @@ async function startStep2(){
   document.getElementById('progress-fill').style.width='80%';
   document.getElementById('step-num').textContent='4';
   document.getElementById('step-label').textContent='A Few Follow-Ups';
-  document.getElementById('step2-eyebrow').textContent='Step 4 of 5';
+  document.getElementById('step2-eyebrow').textContent='Step 3 of 4';
   await planIntakeQuestions();
 }
 /* ── ONE CALL, THE WHOLE SET ────────────────────────────────────────────────
@@ -872,7 +881,8 @@ function updateContact(){
   formData.address=document.getElementById('address-field').value.trim();
   const ve=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
   const vp=formData.phone.replace(/\D/g,'').length>=10;
-  document.getElementById('continue-8').disabled=!(formData.name.length>1&&ve&&vp&&formData.address.length>2);
+  document.getElementById('submit-btn').disabled=!(formData.name.length>1&&ve&&vp);
+  try{localStorage.setItem('sbc_form_contact',JSON.stringify({name:formData.name,phone:formData.phone,email:formData.email,address:formData.address}));}catch(e){}
 }
 async function compressImage(file,maxWidth,quality){
   maxWidth=maxWidth||1200;quality=quality||0.85;
@@ -995,7 +1005,8 @@ async function handlePhotos(e,slot){
 function updateStep5(){
   const t=document.getElementById('description-field');
   const btn=document.getElementById('continue-5');
-  if(btn)btn.disabled=!(t&&t.value.trim().length>=10);
+  if(btn)btn.disabled=!((t&&t.value.trim().length>=10)||(formData.photos&&formData.photos.length));
+  try{if(t)localStorage.setItem('sbc_form_desc',t.value);}catch(e){}
 }
 function renderPhotoPreview(){
   const host=document.getElementById('photo-preview');
@@ -1013,6 +1024,7 @@ function renderPhotoPreview(){
     }).join('');
   }
   renderShotGrid();
+  try{updateStep5();}catch(e){}
 }
 /* The follow-up questions all sit on step 4, so "4 of 5" alone looked stuck.
    The bar now moves with each question and the count says which one it is:
@@ -1029,7 +1041,7 @@ function showStep(s){document.querySelectorAll('.step').forEach(x=>x.classList.r
 function goToStep(s){
   showStep(s);
   if(s==='supplies')renderSupplies();
-  if(s===9)renderReview();
+  if(s===9||s===8)renderReview();
   if(s===1)showSiteMenu();else hideSiteMenu();
   if(s==='success')document.querySelector('.progress').style.display='none';
   if(typeof s==='number'){
@@ -1054,12 +1066,7 @@ function renderReview(){
       ${formData.photos.length?`<div class="review-row"><span class="review-label">Photos</span><span class="review-value">${formData.photos.length} attached</span></div>`:''}
       ${formData.timeline?`<div class="review-row"><span class="review-label">Timeline</span><span class="review-value">${esc(formData.timeline)}</span></div>`:''}
     </div>
-    <div class="review-block">
-      <div class="review-row"><span class="review-label">Name</span><span class="review-value">${esc(formData.name)||'—'}</span></div>
-      <div class="review-row"><span class="review-label">Phone</span><span class="review-value">${esc(formData.phone)||'—'}</span></div>
-      <div class="review-row"><span class="review-label">Email</span><span class="review-value">${esc(formData.email)||'—'}</span></div>
-      ${formData.address?`<div class="review-row"><span class="review-label">Address</span><span class="review-value">${esc(formData.address)}</span></div>`:''}
-    </div>`;
+`;
 }
 /* ── FINAL QUESTION: materials the customer supplies themselves ──────────────
    Deliberately a fixed list, not AI-generated: the strings flow straight into the
@@ -1193,11 +1200,14 @@ function showSuccess(ref){
   document.getElementById('ref-email').textContent=formData.email;
   const next=new Date();next.setDate(next.getDate()+1);
   document.getElementById('ref-date').textContent=next.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  try{localStorage.removeItem('sbc_form_contact');localStorage.removeItem('sbc_form_desc');}catch(e){}
   goToStep('success');
 }
 /* The AI photo analysis step and its two functions are removed. Retired from
    the flow on Jul 27 and unreachable since; deleted now. */
 renderServices();
+/* Coming back: what they already typed is still there. */
+try{var _c=JSON.parse(localStorage.getItem('sbc_form_contact')||'{}');['name','phone','email','address'].forEach(function(k){var el=document.getElementById(k+'-field');if(el&&_c[k])el.value=_c[k];});var _d=localStorage.getItem('sbc_form_desc');var _t=document.getElementById('description-field');if(_t&&_d){_t.value=_d;saveDesc();}updateContact();updateStep5();}catch(e){}
 
 /* ══ "GET THIS LOOK" FROM THE GALLERY ════════════════════════════════════════
    A visitor tapped "Get this look" on a gallery photo: /estimate?look=<photo>
