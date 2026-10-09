@@ -46,7 +46,9 @@ function currentOf(e) {
   const scope = A(e.manualCustomerScopeDraft && e.manualCustomerScopeDraft.services);
   return { projectTitle: e.projectTitle, summary: e.summary || e.overview, markupPct: e.markupPct, labor: ln('labor'), materials: ln('materials'),
     services: scope.map((x) => ({ name: x.name, included: x.included, excluded: x.excluded, supplied: x.supplied })),
-    workSteps: A(e.workSteps).map((w) => ({ title: w.title, text: w.text })), timelineText: e.timelineText, total: e.totals && e.totals.total };
+    workSteps: A(e.workSteps).map((w) => ({ title: w.title, text: w.text })), timelineText: e.timelineText, total: e.totals && e.totals.total,
+    alternative: e.choice && e.choice.alt ? { baseLabel: e.choice.base && e.choice.base.label, baseDescription: e.choice.base && e.choice.base.description, label: e.choice.alt.label, description: e.choice.alt.description, included: e.choice.alt.included, labor: ln2(e.choice.alt.labor), materials: ln2(e.choice.alt.materials) } : undefined };
+  function ln2(a) { return A(a).map((l) => ({ section: l.section, item: s(l.item).slice(0, 140), qty: Number(l.qty) || 0, unit: l.unit, rate: Number(l.rate) || 0, bookId: l.bookId || undefined })); }
 }
 
 function prompt(job, current, history, msg, nPhotos) {
@@ -82,7 +84,8 @@ SCOPE OF WORK (what the customer signs):
 - "priceBasis": 2-5 short lines the CUSTOMER reads under "This price is based on", in we-language (e.g. "Your bathroom is about 5 x 8 ft with an 8 ft ceiling"). Never write "owner", "photos show", "answered" or anything from his private notes.
 - "services": per service, "included" (short lines the customer reads), "excluded" (his exclusions + honest limits), "supplied" (what the customer provides).
 - "summary": 2-3 sentences for the customer: what we do and the result. "timelineText": realistic, e.g. "About 5 working days".
-- Never write a price in any text. Never say "licensed". No gas work, no TV mounting. No options or alternatives.
+- Never write a price in any text. Never say "licensed". No gas work, no TV mounting. No options or alternatives, EXCEPT the one below when he asks for it.
+- TWO OPTIONS (only when he asks for options / two ways to do the job): the main labor/materials = Option 1 (the smaller job). "alternative" = Option 2, holding ONLY the EXTRA lines Option 2 adds on top of Option 1 (priced from the book like any line). Option 2 must cost more than Option 1. "baseLabel" starts "Option 1 — ", "label" starts "Option 2 — "; both descriptions are 1-2 sentences for the customer saying when that option applies (e.g. small-format wall tile vs large-format wall tile we cannot remove one row at a time). "included": the extra work Option 2 adds. Keep an existing alternative unless he says to drop it; send "alternative": null to drop it.
 
 HOW TO TALK ("reply"): plain contractor talk, short. If you changed the estimate, say in 2-5 short lines what you changed and why, and any mistake or missing piece you caught. At most 2 questions, only when the answer changes real money. No markdown.
 
@@ -105,7 +108,8 @@ Return JSON only:
    "services":[{"name":"Bathroom","included":[""],"excluded":[""],"supplied":[""]}],
    "workSteps":[{"service":"which service this step belongs to","title":"2-4 words","text":"1-2 sentences"}],
    "labor":[{"section":"Bathroom","item":"","qty":1,"unit":"job","rate":0,"bookId":"","priced":"book|his|ai","hours":0}],
-   "materials":[{"section":"Bathroom","item":"","qty":1,"unit":"ea","rate":0,"bookId":"","priced":"book|his|ai"}]}}`;
+   "materials":[{"section":"Bathroom","item":"","qty":1,"unit":"ea","rate":0,"bookId":"","priced":"book|his|ai"}],
+   "alternative": null | {"baseLabel":"Option 1 — ","baseDescription":"","label":"Option 2 — ","description":"","included":[""],"labor":[],"materials":[]}}}`;
 }
 
 /* The law, in code. Returns { estimate, warnings } or null when there is no change. */
@@ -154,6 +158,16 @@ function validate(change, previous) {
   const steps = A(change.workSteps).filter((w) => w && s(w.text) && !BAN.test(s(w.title) + ' ' + s(w.text))).slice(0, 16)
     .map((w) => ({ service: (services.find((x) => norm(x.name) === norm(w.service)) || services[0] || {}).name || est.labor[0].section, title: txt(w.title, 40) || 'Step', text: txt(w.text, 360), fromBrain: true, cure: 0 }));
   const summary = txt(change.summary, 600);
+  /* Option 2: only the extra lines, priced by the same law. */
+  const alt = change.alternative;
+  let choice;
+  if (alt && typeof alt === 'object' && s(alt.label)) {
+    const al = A(alt.labor).map((l) => line(l, 'labor')).filter(Boolean).slice(0, 30), am = A(alt.materials).map((l) => line(l, 'materials')).filter(Boolean).slice(0, 30);
+    if (al.length || am.length) {
+      const lab = (v, n) => { const x = txt(v, 90); return /^option\s*\d/i.test(x) ? x : 'Option ' + n + ' — ' + (x || (n === 1 ? 'Standard' : 'Extended')); };
+      choice = { base: { label: lab(alt.baseLabel, 1), description: txt(alt.baseDescription, 300) }, alt: { label: lab(alt.label, 2), description: txt(alt.description, 300), included: list(alt.included, 12), labor: al, materials: am } };
+    }
+  } else if (alt === undefined && prev.choice) choice = prev.choice;
   Object.assign(est, {
     projectTitle: txt(change.projectTitle, 90) || prev.projectTitle,
     summary, overview: summary,
@@ -165,6 +179,7 @@ function validate(change, previous) {
     priceBasis: list(change.priceBasis, 8).length ? list(change.priceBasis, 8) : A(prev.priceBasis).filter((x) => !/\b(owner|photos show|assumed|answered)\b/i.test(String(x))),
     scheduleEdit: Number(change.workDays) > 0 && Number(change.workDays) <= 60 ? Object.assign({}, prev.scheduleEdit, { workDays: Math.round(Number(change.workDays)) }) : prev.scheduleEdit,
     dayPlan: A(change.dayPlan).map((d) => ({ day: Number(d && d.day) || 0, text: txt(d && d.text, 140) })).filter((d) => d.text && !BAN.test(d.text)).slice(0, 30).length ? A(change.dayPlan).map((d) => ({ day: Number(d && d.day) || 0, text: txt(d && d.text, 140) })).filter((d) => d.text && !BAN.test(d.text)).slice(0, 30) : A(prev.dayPlan),
+    choice,
     showLaborCost: undefined, showMaterialsCost: undefined, displayMode: undefined,
     warnings, brainAt: new Date().toISOString(),
   });

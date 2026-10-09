@@ -316,10 +316,20 @@ async function brainReply(record, msg, att) {
     const hasMarkup = previous.markupPct != null && (A(previous.labor).length || A(previous.materials).length);
     next.markupPct = hasMarkup ? previous.markupPct : Math.round(engine.markupFor([].concat(est.labor, est.materials).reduce((a, l) => a + l.qty * l.rate, 0)) * 1000) / 10;
     engine.retotal(next);
+    /* Option 2's price = its extra lines with the same markup; it rides the
+       existing customer options (quote-options.js prices it on the server). */
+    next.options = A(previous.options).filter((x) => x && !x.fromChoice);
+    if (next.choice && next.choice.alt) {
+      const extra = [].concat(A(next.choice.alt.labor), A(next.choice.alt.materials)).reduce((a, l) => a + (Number(l.qty) || 0) * (Number(l.rate) || 0), 0);
+      next.choice.alt.price = Math.round(extra * (1 + (Number(next.markupPct) || 0) / 100) * 100) / 100;
+      next.options.push({ section: (A(next.labor)[0] || {}).section || 'Project', label: next.choice.alt.label, description: next.choice.alt.description, price: next.choice.alt.price, fromChoice: true });
+    }
     if (Number(previous.totalSetByHand) > 0) next.warnings = A(next.warnings).concat(['You set your own total by hand. Tap Set my own total again after Apply if you want it back.']);
     withBreakdown(next);
     const changes = engine.diff(previous, next).map((c) => { const l = [].concat(next.labor, next.materials).find((x) => x.item === c.what && x.section === c.section); return l && l.aiPriced ? Object.assign(c, { what: c.what + ' · AI priced' }) : c; });
     if (JSON.stringify(A(previous.workSteps).map((w) => w.text)) !== JSON.stringify(A(next.workSteps).map((w) => w.text))) changes.push({ type: 'add', what: 'Scope of work rewritten (' + A(next.workSteps).length + ' steps)', money: 0 });
+    if (next.choice && next.choice.alt && !(previous.choice && previous.choice.alt && previous.choice.alt.price === next.choice.alt.price && previous.choice.alt.label === next.choice.alt.label)) changes.push({ type: 'add', what: next.choice.alt.label + ' (customer can choose it, +$' + Math.round(next.choice.alt.price).toLocaleString('en-US') + ')', money: 0 });
+    if (!next.choice && previous.choice) changes.push({ type: 'remove', what: 'Option 2 removed', money: 0 });
     pending = { estimate: next, changes };
   }
   return { reply, chips, pending };
