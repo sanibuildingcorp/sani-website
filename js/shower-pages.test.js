@@ -79,7 +79,7 @@ console.log('\n3. Google can find both\n');
   const sm = read('sitemap.xml');
   ok('the sitemap lists the new page', /<loc>https:\/\/www\.sanibuildingcorp\.com\/shower-waterproofing<\/loc>/.test(sm));
   const ll = read('llms.txt');
-  ok('llms.txt describes both, vinyl panels over tile', /\(https:\/\/www\.sanibuildingcorp\.com\/shower-waterproofing\)/.test(ll) && /waterproof rigid-core vinyl shower wall panels/i.test(ll));
+  ok('llms.txt describes both, vinyl panels over tile', /\(https:\/\/www\.sanibuildingcorp\.com\/shower-waterproofing\)/.test(ll) && /waterproof rigid-core vinyl panels/i.test(ll) && /glued directly over existing shower tile/i.test(ll));
 }
 
 console.log('\n4. The navy button can be read\n');
