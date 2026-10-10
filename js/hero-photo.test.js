@@ -38,7 +38,7 @@ console.log('\n2. Every other page: the same, written by ops/hero-photo.js\n');
 {
   const LEFT = { 'about.html': 'photo in its own box', 'handyman.html': 'photo beside the words', 'kitchen-cabinet-installation.html': 'photo beside the words', 'finish-carpentry-millwork.html': 'photo beside the words',
     'bathroom-wall-panels.html': 'before/after slider', 'shower-waterproofing.html': 'photo in its own box', 'painting.html': 'a slideshow, kept' };
-  const PRIVATE = ['dashboard.html', 'dashboard-shell.html', 'bid-analyzer.html', 'quote.html', 'invoice.html', 'contract.html', 'agreement.html', 'crew.html', 'estimate.html', 'handyman-estimate.html', 'review.html', 'googlee822c2a7421a7276.html', '404.html', 'index.html', 'bathroom-renovation.html'];
+  const PRIVATE = ['dashboard.html', 'dashboard-shell.html', 'bid-analyzer.html', 'quote.html', 'invoice.html', 'contract.html', 'agreement.html', 'crew.html', 'estimate.html', 'handyman-estimate.html', 'review.html', 'privacy.html', 'googlee822c2a7421a7276.html', '404.html', 'index.html', 'bathroom-renovation.html'];
   const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
   const pages = fs.readdirSync(ROOT).filter((f) => f.endsWith('.html') && PRIVATE.indexOf(f) === -1 && !LEFT[f]);
   const blockOf = (h) => { const m = h.match(/<!-- SBC-HERO:START -->([\s\S]*?)<!-- SBC-HERO:END -->/); return m ? m[1] : ''; };

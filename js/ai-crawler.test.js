@@ -128,7 +128,7 @@ console.log('\nllms.txt maps every public page, not a subset\n');
 {
   const SKIP = new Set(['dashboard', 'image-studio', 'page-editor', 'dashboard-shell', 'bid-analyzer',
     'seo-content', 'keyword-volumes', 'invoice', 'agreement', 'crew', 'contract', 'quote', 'estimate',
-    'handyman-estimate', 'googlee822c2a7421a7276', '404', 'review', 'index', 'sitemap']);
+    'handyman-estimate', 'googlee822c2a7421a7276', '404', 'review', 'index', 'sitemap', 'privacy']);
   const pages = fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html'); })
     .map(function (f) { return f.slice(0, -5); }).filter(function (p) { return !SKIP.has(p); });
   const listed = new Set((LLMS.match(/sanibuildingcorp\.com\/([a-z0-9-]+)/g) || [])
