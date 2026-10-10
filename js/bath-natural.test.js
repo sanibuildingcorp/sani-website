@@ -50,7 +50,9 @@ ok('NO RED anywhere in the look (its rules, not its comments)', !/#(c00|f00|e00|
     /* the bottom bar's line under "Free Estimate" ("About 30 seconds" became "Reply within 24 hours") */
     .replace(/Free Estimate (About 30 seconds|Reply within 24 hours)/g, 'Free Estimate LINE')
     /* "one name everywhere": the no-demo service is called Bathroom Wall Panels (No Demo) */
-    .replace(/Bathroom (Refresh|Wall Panels) \(No Demo\)/g, 'NODEMO');
+    .replace(/Bathroom (Refresh|Wall Panels) \(No Demo\)/g, 'NODEMO')
+    /* the owner: wall panels take 1-3 days for shower areas */
+    .replace(/1&ndash;[23] days|1–[23] days/g, 'PANELDAYS');
   let before = null; try { before = cp.execSync('git show HEAD:bathroom-renovation.html', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString(); } catch (e) {}
   if (before && /NATURAL-CSS/.test(before)) before = null;  /* already committed: compare with the last page without it */
   if (!before) { try { const sha = cp.execSync('git log --format=%H -n 1 -S "NATURAL-CSS:START" -- bathroom-renovation.html', { cwd: ROOT }).toString().trim(); if (sha) before = cp.execSync('git show ' + sha + '~1:bathroom-renovation.html', { cwd: ROOT }).toString(); } catch (e) {} }

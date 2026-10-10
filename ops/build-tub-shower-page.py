@@ -265,7 +265,7 @@ main = f'''<main class="wp">
     <div class="section-head reveal">
       <span class="eyebrow">Keeping the tub?</span>
       <h2>Want to keep your tub but fix the walls?</h2>
-      <p>If you like your tub and only the walls around it are old, cracked or leaking, waterproof PVC wall panels go right over the old tile in 1–2 days, with no demolition.</p>
+      <p>If you like your tub and only the walls around it are old, cracked or leaking, waterproof vinyl wall panels go right over the old tile in 1–3 days, with no demolition.</p>
       <p style="margin-top:22px"><a href="/bathroom-wall-panels" class="btn btn-navy">See bathroom wall panels (no demo)</a></p>
     </div>
   </div>
