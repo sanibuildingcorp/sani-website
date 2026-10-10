@@ -3112,6 +3112,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
 <script src="/js/dashboard-auth.js"></script>
 <script>
 const TABS = [
+  { id: "handyman", label: "🔧 Handyman" },
   { id: "all", label: "All" },
   { id: "new", label: "New" },
   { id: "drafted", label: "Drafts" },
@@ -3122,7 +3123,6 @@ const TABS = [
   { id: "completed", label: "Completed" },
   { id: "declined", label: "Declined" },
   { id: "cancelled", label: "Cancelled" },
-  { id: "handyman", label: "🔧 Handyman" },
   { id: "visits", label: "📅 Visits" },
   { id: "customers", label: "👤 Customers" },
   { id: "google", label: "🔎 Google" },
@@ -11743,6 +11743,8 @@ window.addEventListener('load', function() {
 <script>
 // ===== SBC MOBILE DRAWER =====
 var SBC_TABS = [
+  {id:'handyman', icon:'🔧', label:'Handyman'},
+  null,
   {id:'all',      icon:'📋', label:'All'},
   {id:'new',      icon:'🔔', label:'New'},
   {id:'drafted',  icon:'✏️',  label:'Drafts'},
@@ -11754,7 +11756,6 @@ var SBC_TABS = [
   {id:'declined', icon:'❌', label:'Declined'},
   {id:'cancelled', icon:'🚫', label:'Cancelled'},
   null,
-  {id:'handyman', icon:'🔧', label:'Handyman'},
   {id:'visits',   icon:'📅', label:'Visits'},
   {id:'customers', icon:'👤', label:'Customers'},
   {id:'google', icon:'🔎', label:'Google Search'},

@@ -39,9 +39,10 @@ ok('both spell the id the dispatcher checks for', /if \(activeTab === "visits"\)
 ok('...and renderVisitsTab is still the real screen, with the form and the groups',
   /function renderVisitsTab\(\)\{/.test(HTML) && /Schedule a site visit/.test(HTML) && /group\("→ Tomorrow"/.test(HTML));
 ok('the ☰ menu already counts open visits for the badge', /counts\.visits = visits\.filter\(function\(v\)\{ return !v\.done; \}\)\.length;/.test(HTML));
-ok('it sits next to Handyman, before Customers, in both',
-  TABS.findIndex(t => t.id === 'visits') === TABS.findIndex(t => t.id === 'handyman') + 1 &&
-  SBC.findIndex(t => t && t.id === 'visits') === SBC.findIndex(t => t && t.id === 'handyman') + 1);
+ok('Handyman is first, and Visits sits before Customers, in both',
+  TABS[0].id === 'handyman' && SBC.filter(Boolean)[0].id === 'handyman' &&
+  TABS.findIndex(t => t.id === 'visits') < TABS.findIndex(t => t.id === 'customers') &&
+  SBC.findIndex(t => t && t.id === 'visits') < SBC.findIndex(t => t && t.id === 'customers'));
 ok('the one-tap Google Calendar link is still on every visit card', /href="'\+gcalLink\(v\)\+'"/.test(HTML) && /function gcalLink\(v\)\{/.test(HTML));
 
 /* ══ THE ENDPOINT IS GATED AND THE PAGE SENDS THE KEY ═════════════════════ */
