@@ -14800,7 +14800,7 @@ function pzRender() {
     '<div class="pz-row" style="margin-top:10px"><span>Markup</span><b id="pz-mkl">' + mk + '%</b></div><input type="range" min="0" max="60" value="' + esc(String(mk)) + '" style="width:100%" oninput="pzMarkup(this.value)" onchange="pzDirty()">' +
     '<div class="pz-row" style="margin-top:8px"><span>Payment</span><select onchange="pzTerm(\'payment\',this.value)">' + Object.keys(PZ_PAY).map(function (v) { return '<option value="' + v + '"' + ((tm.payment || "contract") === v ? ' selected' : '') + '>' + PZ_PAY[v] + '</option>'; }).join("") + '</select></div>' +
     '<table class="pz-t" id="pz-pay" style="margin-top:6px"></table>' +
-    '<div class="pz-row" style="margin-top:8px"><span>Warranty</span><select onchange="pzTerm(\'warranty\',this.value)">' + ["3-year workmanship", "1-year workmanship", "3-year workmanship", "90-day workmanship"].map(function (v) { return '<option' + ((tm.warranty || "3-year workmanship") === v ? ' selected' : '') + '>' + v + '</option>'; }).join("") + '</select></div>' +
+    '<div class="pz-row" style="margin-top:8px"><span>Warranty</span><select onchange="pzTerm(\'warranty\',this.value)">' + ["3-year workmanship", "1-year workmanship", "2-year workmanship", "90-day workmanship"].map(function (v) { return '<option' + ((tm.warranty || "3-year workmanship") === v ? ' selected' : '') + '>' + v + '</option>'; }).join("") + '</select></div>' +
     '<div class="pz-row" style="margin-top:8px"><span>Valid for</span><select onchange="pzTerm(\'validDays\',Number(this.value))">' + [14, 30, 60].map(function (v) { return '<option' + (Number(tm.validDays || 30) === v ? ' selected' : '') + '>' + v + '</option>'; }).join("") + '</select> days</div></div>';
 
   /* 4 · What we need from the customer */
