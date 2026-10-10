@@ -2820,6 +2820,14 @@ body {
 .crw-b{border:1px solid #c9d2e3;background:#fff;color:#14213d;border-radius:10px;padding:9px 12px;font-size:13.5px;font-weight:600;text-decoration:none}
 .crw-sent{margin-top:12px;background:#e7f5ec;border:1px solid #bfe3cc;border-radius:12px;padding:12px;font-size:14px;color:#14532d}
 .crw-ph{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.crw-ph a{position:relative;display:block}.crw-ph img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block}.crw-ph small{position:absolute;left:3px;bottom:3px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;border-radius:4px;padding:0 4px}
+
+/* FULL-PAGE SCREENSHOTS. A booking, an estimate or an invoice used to open
+   as a pop-up that scrolled inside itself, so the iPhone "Full Page"
+   screenshot only caught the visible part. Now, while one is open, it IS the
+   page: the list behind it is hidden and the page itself scrolls. */
+body:has(#handyman-modal.show) #app,body:has(#edit-modal.show) #app,body:has(#invoice-modal.show) #app{display:none}
+body:has(#handyman-modal.show),body:has(#edit-modal.show),body:has(#invoice-modal.show){overflow:auto !important;background:rgba(0,0,0,.7)}
+#handyman-modal.show,#edit-modal.show,#invoice-modal.show{position:absolute;inset:auto;top:0;left:0;right:0;min-height:100vh;overflow:visible}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -15775,6 +15783,24 @@ async function pcCreate(){
   }catch(e){err.textContent='Could not create: '+e.message;err.style.display='block';}
   btn.disabled=false;btn.textContent='Create and build';
 }
+</script>
+
+<script>
+/* Opening one of them starts at its top; closing it goes back to where the
+   list was. (They are the page now, so the page's own scroll is theirs.) */
+(function () {
+  var Y = {};
+  ['handyman-modal', 'edit-modal', 'invoice-modal'].forEach(function (id) {
+    var el = document.getElementById(id); if (!el || !window.MutationObserver) return;
+    var open = el.classList.contains('show');
+    new MutationObserver(function () {
+      var now = el.classList.contains('show');
+      if (now === open) return; open = now;
+      if (now) { Y[id] = window.scrollY; window.scrollTo(0, 0); }
+      else { var y = Y[id] || 0; setTimeout(function () { window.scrollTo(0, y); }, 0); }
+    }).observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+})();
 </script>
 </body>
 </html>
