@@ -2828,6 +2828,23 @@ body {
 body:has(#handyman-modal.show) #app,body:has(#edit-modal.show) #app,body:has(#invoice-modal.show) #app{display:none}
 body:has(#handyman-modal.show),body:has(#edit-modal.show),body:has(#invoice-modal.show){overflow:auto !important;background:rgba(0,0,0,.7)}
 #handyman-modal.show,#edit-modal.show,#invoice-modal.show{position:absolute;inset:auto;top:0;left:0;right:0;min-height:100vh;overflow:visible}
+
+.hd-head{align-items:flex-start}
+.hd-card,.hd-card *{box-sizing:border-box}.hd-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px}
+.hd-name{font-size:18px;font-weight:700;color:var(--ink)}.hd-addr{display:block;font-size:14px;color:#14213d;margin-top:3px}.hd-when{font-size:13px;color:var(--ink-muted);margin-top:4px}
+.hd-contact{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px}.hd-contact a{display:block;text-align:center;border:1px solid #d6dbe6;border-radius:10px;padding:10px 6px;font-weight:700;font-size:14px;color:#14213d;text-decoration:none;background:#f7f9fd}
+.hd-said{font-size:14px;line-height:1.5;color:#444;font-style:italic;background:#f7f5ef;border-radius:10px;padding:10px 12px;margin-top:10px}
+.hd-photos{display:flex;gap:6px;overflow-x:auto;margin-top:10px}.hd-photos img{width:84px;height:84px;object-fit:cover;border-radius:9px;flex:0 0 auto;cursor:pointer}
+.hd-acts{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin:12px 0 4px}
+.hd-acts button{border-radius:11px;padding:13px 6px;font-weight:700;font-size:14px;border:1px solid transparent;cursor:pointer}
+.hd-go{background:#c4a35a;color:#14213d}.hd-alt{background:#fff;border-color:#d9c690 !important;color:#14213d}.hd-no{background:#fff;border-color:#e3c4c4 !important;color:#a12a2a}
+.hd-warn{background:#fff6e5;border-radius:10px;padding:9px 11px;font-size:13px;line-height:1.45;color:#5a3d00;margin:8px 0}
+.hb-fold{border-top:1px solid #efe6cc;padding:10px 0}.hb-fold>summary{font-weight:700;font-size:14px;color:#14213d;cursor:pointer;list-style:none}.hb-fold>summary::before{content:"▸ ";color:#c4a35a}.hb-fold[open]>summary::before{content:"▾ "}
+.hb-p{font-size:13.5px;line-height:1.5;color:#333;margin:8px 0}
+.hd-dec{margin-top:10px;background:#fff;border:1px solid #e3c4c4;border-radius:12px;padding:12px}.hd-dec textarea{width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:9px;padding:9px;font:inherit;font-size:14px;line-height:1.45}
+.hd-dec .hd-acts{grid-template-columns:1fr 1fr}
+.hd-fold{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}.hd-fold>summary{font-weight:700;font-size:14.5px;color:var(--ink);cursor:pointer;list-style:none}.hd-fold>summary::before{content:"▸ ";color:#c4a35a}.hd-fold[open]>summary::before{content:"▾ "}.hd-fold[open]>summary{margin-bottom:12px}
+.hd-more-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.hd-more-row button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:600;color:var(--ink)}.hd-more-row button.on{background:#14213d;color:#fff}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -10486,7 +10503,7 @@ function hbSay() {
 }
 function hbList(title, arr, cls) {
   if (!arr || !arr.length) return '';
-  return '<div class="hb-block ' + (cls || '') + '"><div class="hb-k">' + title + '</div><ul>' + arr.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+  return '<div class="hb-block ' + (cls || '') + '">' + (title ? '<div class="hb-k">' + title + '</div>' : '') + '<ul>' + arr.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
 }
 function hbShow(st) {
   HB.st = st; HB.send = st.send || null;
@@ -10500,23 +10517,29 @@ function hbShow(st) {
   var h = '<div class="hb-head"><div><div class="hb-k">Sani brain</div><div class="hb-title">' + esc(p ? p.title : 'Reading the job') + '</div></div>' +
     (p ? '<div class="hb-conf hb-' + esc(p.confidence) + '">' + esc(p.confidence === 'high' ? 'Ready to send' : p.confidence === 'low' ? 'Ask first' : 'Check it') + '</div>' : '') + '</div>';
   if (p) {
+    var sent = String((currentHandymanBooking || {}).agreement_status || '');
     h += '<div class="hb-price"><div><div class="hb-big">' + hbMoney(pr.total) + '</div><div class="hb-sub">' +
       (pr.flat ? 'Your flat price' : (pr.minimumApplied ? 'Your minimum visit' : pr.laborHours + ' labor hrs × ' + hbMoney(r.hourly) + ' + materials')) +
-      (p.visitHours ? ' · ' + esc(p.visitHours) + ' on site' : '') + '</div></div>' +
-      '<button class="hb-use" onclick="openConfirmationModal()">Use this price</button></div>' +
-      '<div class="hb-money"><span>Labor ' + hbMoney(pr.labor) + '</span><span>Materials ' + hbMoney(pr.materials) + ' (cost ' + hbMoney(pr.materialCost) + ')</span><span>Profit ' + hbMoney(pr.profit) + '</span>' + (p.deposit > 0 ? '<span>Deposit ' + hbMoney(p.deposit) + '</span>' : '') + '</div>' +
-      '<div class="hb-tasks">' + p.tasks.map(function (t) {
+      (p.visitHours ? ' · ' + esc(p.visitHours) + ' on site' : '') + '</div></div></div>' +
+      '<div class="hb-money"><span>Labor ' + hbMoney(pr.labor) + '</span><span>Materials ' + hbMoney(pr.materials) + '</span><span>Profit ' + hbMoney(pr.profit) + '</span>' + (p.deposit > 0 ? '<span>Deposit ' + hbMoney(p.deposit) + '</span>' : '') + '</div>' +
+      '<div class="hd-acts">' +
+        '<button class="hd-go" onclick="openConfirmationModal()">' + (sent ? 'Send new price' : 'Send price') + '</button>' +
+        '<button class="hd-alt" onclick="hbFocus()">Change price</button>' +
+        '<button class="hd-no" onclick="hdDeclineOpen()">Not for us</button>' +
+      '</div><div id="hd-decline"></div>' +
+      (p.warnings.length ? '<div class="hd-warn"><b>' + p.warnings.length + ' thing' + (p.warnings.length === 1 ? '' : 's') + ' to watch:</b> ' + esc(p.warnings[0]) + (p.warnings.length > 1 ? ' …' : '') + '</div>' : '') +
+      '<details class="hb-fold"><summary>Tasks and hours (' + p.tasks.length + ')</summary><div class="hb-tasks">' + p.tasks.map(function (t) {
         return '<div class="hb-task"><div><b>' + esc(t.task) + '</b>' + (t.note ? '<div class="hb-note">' + esc(t.note) + '</div>' : '') + '</div><div class="hb-h">' + t.hours + ' h' + (t.workers > 1 ? ' × ' + t.workers : '') + (t.materialCost ? '<br>' + hbMoney(t.materialCost) + ' mat.' : '') + '</div></div>';
-      }).join('') + '</div>' +
-      hbList('Warnings', p.warnings, 'hb-warn') +
-      hbList('Ask the customer', p.askCustomer, 'hb-ask') +
-      '<div class="hb-two">' + hbList('Tools to bring', p.tools) + hbList('Materials to bring', p.materials) + '</div>' +
-      '<details class="hb-cust"><summary>What the customer will see</summary>' +
-        (p.customer.scope ? '<p>' + esc(p.customer.scope) + '</p>' : '') +
+      }).join('') + '</div></details>' +
+      (p.warnings.length ? '<details class="hb-fold"><summary>Warnings (' + p.warnings.length + ')</summary>' + hbList('', p.warnings, 'hb-warn') + '</details>' : '') +
+      (p.askCustomer.length ? '<details class="hb-fold"><summary>Ask the customer (' + p.askCustomer.length + ')</summary>' + hbList('', p.askCustomer, 'hb-ask') + '</details>' : '') +
+      '<details class="hb-fold"><summary>Tools and materials</summary><div class="hb-two">' + hbList('Tools to bring', p.tools) + hbList('Materials to bring', p.materials) + '</div></details>' +
+      '<details class="hb-fold"><summary>What the customer will see</summary>' +
+        (p.customer.scope ? '<p class="hb-p">' + esc(p.customer.scope) + '</p>' : '') +
         hbList('What we will do', p.customer.steps) + hbList('Please have ready', p.customer.ready) + hbList('Not included', p.customer.notIncluded) +
       '</details>';
   }
-  var chat = (st.chat || []).slice(-6);
+  var chat = (st.chat || []).slice(-2);
   if (chat.length) h += '<div class="hb-chat">' + chat.map(function (m) { return '<div class="hb-m hb-' + (m.from === 'owner' ? 'me' : 'ai') + '">' + esc(m.text) + '</div>'; }).join('') + '</div>';
   if (busy) h += '<div class="hb-wait">Thinking… this takes about 30–60 seconds.</div>';
   if (st.status === 'error') h += '<div class="hb-err">' + esc(st.error || 'Something went wrong') + ' <button onclick="hbRun(\'\')">Try again</button></div>';
@@ -10526,8 +10549,8 @@ function hbShow(st) {
     h += (chips.length ? '<div class="hb-chips">' + chips.map(function (c) { return '<button onclick="hbRun(this.textContent)">' + esc(c) + '</button>'; }).join('') + '</div>' : '') +
       '<div class="hb-say"><textarea id="hb-input" rows="2" placeholder="Tell the brain… e.g. 2 hours, $350 flat, we bring touch-up paint"></textarea><button onclick="hbSay()">Send</button></div>';
   }
-  h += '<div class="hb-rates">' + (r.draft ? '<b>Draft rates — set yours:</b> ' : 'Your rates: ') +
-    '$<input id="hb-r-h" type="number" inputmode="decimal" value="' + (r.hourly || '') + '">/hr · min $<input id="hb-r-m" type="number" inputmode="decimal" value="' + (r.minimumCharge != null ? r.minimumCharge : '') + '"> · materials +<input id="hb-r-p" type="number" inputmode="decimal" value="' + (r.materialMarkupPct != null ? r.materialMarkupPct : '') + '">% <button onclick="hbRates()">Save</button></div>';
+  h += '<details class="hb-fold"' + (r.draft ? ' open' : '') + '><summary>' + (r.draft ? 'Set your rates (draft now)' : 'Your rates: ' + hbMoney(r.hourly) + '/hr · min ' + hbMoney(r.minimumCharge)) + '</summary><div class="hb-rates">' +
+    '$<input id="hb-r-h" type="number" inputmode="decimal" value="' + (r.hourly || '') + '">/hr · min $<input id="hb-r-m" type="number" inputmode="decimal" value="' + (r.minimumCharge != null ? r.minimumCharge : '') + '"> · materials +<input id="hb-r-p" type="number" inputmode="decimal" value="' + (r.materialMarkupPct != null ? r.materialMarkupPct : '') + '">% <button onclick="hbRates()">Save</button></div></details>';
   box.innerHTML = h;
 }
 async function hbRates() {
@@ -10555,7 +10578,7 @@ function crStage(b, job) {
 }
 function crSteps(b, job) {
   var n = crStage(b, job), names = ['Price', 'Customer signs', 'Crew', 'Done'];
-  var hint = n === 1 ? 'Check the brain price below, then tap “Use this price” to send it to the customer to sign.'
+  var hint = n === 1 ? 'Check the price, then tap “Send price”. Not a job for you? Tap “Not for us”.'
     : n === 2 ? (String(b.agreement_status) === 'changes_requested' ? 'The customer asked for changes: read them in “Sent to customer”, fix the price and send again.' : 'Waiting for the customer to sign. You get an email when they do.')
     : n === 3 ? 'Signed. Send the job to your crew below, or do it yourself.'
     : n === 3.5 ? 'Your crew has the job. You get an email when they tap “Job done”.'
@@ -10581,6 +10604,7 @@ function crPhoneDigits(p) { var d = String(p || '').replace(/\D/g, ''); if (d.le
 function crShow() {
   var box = document.getElementById('crew-box'), b = currentHandymanBooking; if (!box || !b) return;
   var n = crStage(b, CR.job), ag = (b.agreements || [])[0] || {};
+  box.style.display = n >= 3 ? '' : 'none';
   var h = '<div class="crw-head"><div class="hb-k">Crew</div>' + (n < 3 ? '<span class="crw-note">Usually after the customer signs</span>' : '') + '</div>';
   if (CR.job) {
     var j = CR.job, steps = Object.keys(j.steps || {}).filter(function (k) { return j.steps[k]; }).length;
@@ -10640,6 +10664,30 @@ async function crAssign() {
   } catch (e) { toast('Not sent: ' + e.message, true); }
 }
 
+/* "Change price": jump to the brain chat. */
+function hbFocus() { var el = document.getElementById('hb-input'); if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(function () { el.focus(); }, 300); } }
+/* "NOT FOR US": a polite email he reads and can edit before it goes, then
+   the job is closed (cancelled). */
+function hdDeclineOpen() {
+  var b = currentHandymanBooking; if (!b) return;
+  var first = String(b.customer_name || '').split(' ')[0] || 'there';
+  var txt = 'Hi ' + first + ',\n\nThank you for reaching out to Sani Building Corp about your ' + String(b.service_name || 'project').toLowerCase() + '. We looked at it carefully, and unfortunately we are not able to take this job on right now. We would not want to keep you waiting, so we wanted to let you know right away.\n\nThank you for thinking of us, and we hope to help you with a future project.\n\nSani Building Corp\n(332) 277-0990';
+  document.getElementById('hd-decline').innerHTML = '<div class="hd-dec"><div class="hb-k">Email to ' + esc(b.customer_email || 'the customer') + '</div><textarea id="hd-dec-t" rows="9">' + esc(txt) + '</textarea>' +
+    '<div class="hd-acts"><button class="hd-no" onclick="hdDeclineSend()">Send and close job</button><button class="hd-alt" onclick="document.getElementById(\'hd-decline\').innerHTML=\'\'">Keep the job</button></div>' +
+    '<button class="crw-link" onclick="hdDeclineSend(true)">Close the job without emailing</button></div>';
+}
+async function hdDeclineSend(silent) {
+  var b = currentHandymanBooking; if (!b) return;
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-decline', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: b.ref, text: silent ? '' : document.getElementById('hd-dec-t').value }) });
+    var j = await r.json().catch(function () { return {}; }); if (!r.ok) throw new Error(j.error || r.status);
+    toast(silent ? 'Job closed' : 'Email sent · job closed');
+    b.status = 'cancelled';
+    var i = (handymanBookings || []).findIndex(function (x) { return x.ref === b.ref; }); if (i >= 0) handymanBookings[i].status = 'cancelled';
+    closeHandymanModal(); renderHandymanList();
+  } catch (e) { toast('Not sent: ' + e.message, true); }
+}
+
 function closeHandymanModal() {
   document.getElementById("handyman-modal").classList.remove("show");
   document.body.style.overflow = "";
@@ -10670,32 +10718,39 @@ function renderHandymanModal(b) {
                        urgency === 'emergency-today' ? '🚨 EMERGENCY' :
                        '🗓 FLEXIBLE';
 
+  /* THE DECISION CARD. "many buttons and confusing": the booking now reads
+     top to bottom as one decision. Steps → who/where/when with Call/Text/
+     Email → the brain price with Send price / Change price / Not for us →
+     (after signing) the crew → what was sent. Everything else is folded. */
+  const when = [b.preferred_date ? fmtDate(b.preferred_date + 'T12:00:00') : '', b.preferred_time || ''].filter(Boolean).join(' · ');
+  const said = String(b.customer_description || '').trim();
+  const smsTo = String(b.customer_phone || '').replace(/[^\d+]/g, '');
   document.getElementById("handyman-card").innerHTML =
-    '<div class="modal-head">' +
-      '<div>' +
+    '<div class="modal-head hd-head">' +
+      '<div style="min-width:0">' +
         '<h2 style="display:flex;align-items:center;gap:10px">' + icon + ' ' + esc(b.service_name || b.service_id) + '</h2>' +
-        '<div class="ref-sub">' + esc(b.ref) + ' · ' + fmtDate(b.submitted_at) + ' · <span class="badge h-' + status + '">' + esc(status) + '</span></div>' +
+        '<div class="ref-sub">' + esc(b.ref) + ' · ' + fmtDate(b.submitted_at) + '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;align-items:center">' +
-        '<button class="h-send-conf-btn" onclick="openConfirmationModal()">📧 Send to customer to sign</button>' +
-        '<button class="h-print-btn" onclick="window.print()">🖨 Print Job Brief</button>' +
-        '<button class="modal-close" onclick="closeHandymanModal()">×</button>' +
-      '</div>' +
-    '</div>' +
-    '<div class="h-alert-bar">' +
-      '<div class="h-alert-left">' +
-        '<div class="h-alert-conf-circle ' + conf + '">' + (b.confidence_score || 0) + '</div>' +
-        '<div>' +
-          '<div class="h-alert-text-label ' + conf + '">' + confLabel + '</div>' +
-          '<div class="h-alert-text-sub">' + confSub + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="h-alert-urgency ' + urgency + '">' + urgencyLabel + '</div>' +
+      '<button class="modal-close" onclick="closeHandymanModal()" aria-label="Close">×</button>' +
     '</div>' +
     crSteps(b) +
-    handymanBrief(b) +
-    '<div id="crew-box" class="crw"></div>' +
+    '<div class="hd-card">' +
+      '<div class="hd-who"><div><div class="hd-name">' + esc(b.customer_name) + '</div>' +
+        (b.customer_address ? '<a class="hd-addr" href="https://maps.google.com/?q=' + encodeURIComponent(b.customer_address) + '" target="_blank">' + esc(b.customer_address) + '</a>' : '') +
+        '<div class="hd-when">' + esc(urgencyLabel.replace(/^\S+\s/, '')) + (when ? ' · prefers ' + esc(when) : '') + '</div></div></div>' +
+      '<div class="hd-contact">' +
+        (b.customer_phone ? '<a href="tel:' + esc(b.customer_phone) + '">Call</a><a href="sms:' + esc(smsTo) + '">Text</a>' : '') +
+        (b.customer_email ? '<a href="mailto:' + esc(b.customer_email) + '">Email</a>' : '') +
+      '</div>' +
+      (said ? '<div class="hd-said">“' + esc(said.length > 260 ? said.slice(0, 260) + '…' : said) + '”</div>' : '') +
+      (photoUrls.length ? '<div class="hd-photos">' + photoUrls.map(function (url) { return '<img src="' + esc(url) + '" alt="Customer photo" onclick="openLightbox(\'' + esc(url) + '\')">'; }).join('') + '</div>' : '') +
+    '</div>' +
     '<div id="hb-box" class="hb"><div class="hb-wait">Sani brain is reading this job…</div></div>' +
+    '<div id="crew-box" class="crw" style="display:none"></div>' +
+    /* What has actually gone out to this customer, and what was in it. */
+    handymanSentPanel(b) +
+    '<details class="hd-fold"><summary>Everything the customer answered</summary>' +
+    handymanBrief(b) +
     '<div class="h-hero-grid">' +
       '<div class="h-hero-block">' +
         '<div class="h-hero-block-title">' +
@@ -10767,24 +10822,6 @@ function renderHandymanModal(b) {
         '<ul>' + warnings.map(function(w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' +
       '</div>'
     ) : '') +
-    '<div class="h-customer-row">' +
-      '<div class="h-cust-cell">' +
-        '<span class="ccl">👤 Customer</span>' +
-        '<span class="ccv">' + esc(b.customer_name) + '</span>' +
-      '</div>' +
-      '<div class="h-cust-cell">' +
-        '<span class="ccl">📞 Phone</span>' +
-        '<span class="ccv"><a href="tel:' + esc(b.customer_phone) + '">' + esc(b.customer_phone) + '</a></span>' +
-      '</div>' +
-      '<div class="h-cust-cell">' +
-        '<span class="ccl">📍 Address</span>' +
-        '<span class="ccv">' + esc(b.customer_address) + '</span>' +
-      '</div>' +
-      '<div class="h-cust-cell">' +
-        '<span class="ccl">✉ Email</span>' +
-        '<span class="ccv"><a href="mailto:' + esc(b.customer_email) + '">' + esc(b.customer_email) + '</a></span>' +
-      '</div>' +
-    '</div>' +
     '<div class="h-estimate-bar">' +
       '<div class="h-est-bar-cell">' +
         '<div class="ebl">⏱ Time</div>' +
@@ -10803,16 +10840,15 @@ function renderHandymanModal(b) {
         '<div class="ebv">' + (b.deposit_amount > 0 ? '$' + b.deposit_amount : 'None') + '</div>' +
       '</div>' +
     '</div>' +
-    /* What has actually gone out to this customer, and what was in it. */
-    handymanSentPanel(b) +
-    '<div class="h-section" style="border-bottom:none;padding-bottom:0;margin-bottom:14px">' +
-      '<div class="h-section-title">🎯 Booking Status</div>' +
-      '<div class="h-status-row">' +
-        ['new','confirmed','in-progress','completed','cancelled'].map(function(s) {
-          return '<button class="h-status-btn ' + (status === s ? 'active' : '') + '" onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'' + s + '\')">' + s.replace('-', ' ') + '</button>';
-        }).join('') +
+    '</details>' +
+    '<details class="hd-fold hd-more"><summary>More</summary>' +
+      '<div class="hd-more-row">' +
+        '<button onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'completed\')"' + (status === 'completed' ? ' class="on"' : '') + '>Mark completed</button>' +
+        '<button onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'cancelled\')"' + (status === 'cancelled' ? ' class="on"' : '') + '>Cancel job</button>' +
+        (status === 'completed' || status === 'cancelled' ? '<button onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'new\')">Reopen</button>' : '') +
+        '<button onclick="openConfirmationModal()">Send screen (manual price)</button>' +
+        '<button onclick="window.print()">Print job brief</button>' +
       '</div>' +
-    '</div>' +
     (Object.keys(answers).length > 0 ? (
       '<div class="h-collapsible" id="collapse-answers">' +
         '<div class="h-collapsible-header" onclick="toggleCollapse(\'collapse-answers\')">' +
@@ -10843,13 +10879,7 @@ function renderHandymanModal(b) {
         '<button onclick="saveContractorNotes(\'' + esc(b.ref) + '\')" style="margin-top:8px;padding:8px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">💾 Save Notes</button>' +
       '</div>' +
     '</div>' +
-    '<div class="modal-actions" style="margin-top:18px">' +
-      '<button class="btn-secondary" onclick="closeHandymanModal()">Close</button>' +
-      '<div class="modal-actions-right">' +
-        '<a href="tel:' + esc(b.customer_phone) + '" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">📞 Call</a>' +
-        '<a href="mailto:' + esc(b.customer_email) + '" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">✉ Email</a>' +
-      '</div>' +
-    '</div>';
+    '</details>';
 }
 
 function toggleCollapse(id) {
