@@ -18,7 +18,7 @@ const H = read('handyman-estimate.html');
 
 console.log('\n1. The form\n');
 ok('no "Full Handyman Day", no day rate, no "From $" prices on the page', !/Full Handyman Day|full-handyman-day|\/day|From \$/i.test(H));
-ok('Bathroom Refresh is a service, with its own items', /id: "bathroom-refresh", icon: "🛁", name: "Bathroom Refresh"/.test(H) && /"Regrout tub \/ shower", "Re-caulk", "New faucet"/.test(H));
+ok('Bathroom Refresh is a service, with its own items', /id: "bathroom-refresh", icon: '<svg[^']+<\/svg>', name: "Bathroom Refresh"/.test(H) && /"Regrout tub \/ shower", "Re-caulk", "New faucet"/.test(H));
 ok('...and /handyman-estimate?service=bathroom-refresh opens with it ticked', /get\('service'\)/.test(H) && /\/handyman-estimate\?service=bathroom-refresh/.test(read('handyman.html')));
 ok('SEVERAL SERVICES: a card toggles, it does not jump to the next step', /function toggleService\(id\)/.test(H) && /state\.services\.splice\(i, 1\)/.test(H) && !/setTimeout\(function\(\) \{ goToStep\(2\)/.test(H));
 ok('SEVERAL ITEMS per service, tapped as chips, plus the list in their own words', /state\.items\[id\]/.test(H) && /id="own-words"/.test(H));

@@ -156,6 +156,31 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
 .step { display:none; }
 .step.active { display:block; animation:fadeIn .25s; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+/* trust and polish */
+.trust { margin-top:16px; display:flex; flex-direction:column; gap:4px; }
+.trust-g { color:var(--ink); text-decoration:none; font-size:16px; }
+.stars { color:#c8922e; letter-spacing:1px; }
+.trust-i { font-size:16px; color:var(--soft); }
+.work-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:16px; }
+.work-strip img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px; display:block; background:var(--line); }
+.hdr-mini { display:none; justify-content:space-between; align-items:center; gap:10px; padding:4px 2px 14px; font-size:16px; color:var(--soft); }
+body.past-1 .hdr { display:none; }
+body.past-1 .hdr-mini { display:flex; }
+.service-icon { width:40px; height:40px; border-radius:10px; background:#fff; border:1px solid var(--line); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:0; }
+.service-icon svg { width:24px; height:24px; }
+.service-card.selected .service-icon { border-color:#e2cfa6; }
+.svc-head svg { width:20px; height:20px; color:var(--gold); vertical-align:-4px; margin-right:2px; }
+.pz-icon { color:var(--gold); display:inline-block; }
+.field-note { font-size:16px; color:var(--muted); margin-top:6px; }
+/* Continue stays in reach; Back becomes a quiet link */
+.step .btn-row { position:sticky; bottom:0; z-index:5; background:linear-gradient(to top,#fff 78%,rgba(255,255,255,0)); padding:14px 0 calc(10px + env(safe-area-inset-bottom)); margin-bottom:-10px; }
+.step .btn-row .btn-secondary[onclick^="goToStep"] { flex:0 0 auto; background:none; border:0; color:var(--soft); font-weight:600; padding:12px 14px; text-decoration:underline; text-underline-offset:3px; }
+@media (max-width:480px) { .step .btn-row .btn-secondary[onclick^="goToStep"] { padding:6px; } }
+#step-6 .btn-row { position:static; background:none; padding:0; margin-bottom:0; flex-direction:column-reverse; }
+.done-team { margin-top:14px; padding:14px 16px; border-radius:12px; background:var(--cream); font-size:16px; color:var(--soft); }
+.done-team a, .done-links a { color:var(--ink); font-weight:700; }
+.done-links { text-align:center; margin-top:16px; font-size:16px; color:var(--muted); }
 </style>
 </head>
 <body>
@@ -166,7 +191,17 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
     <div class="eyebrow">Handyman · NYC Metro</div>
     <h1>Get a free handyman quote</h1>
     <p>One repair or a whole list. Tell us what needs fixing, add a few photos, and we'll send you a clear flat-rate quote.</p>
+    <div class="trust">
+      <a class="trust-g" href="https://g.page/r/CXtX_n13XF6aEBE" target="_blank" rel="noopener"><span class="stars">★★★★★</span> <b>4.9</b> · 68 Google reviews</a>
+      <span class="trust-i">Fully insured · Free, no obligation · You approve the price before we start</span>
+    </div>
+    <div class="work-strip" aria-label="Our recent work">
+      <img src="images/handyman/work-1.jpg" alt="Drywall and paint repair by Sani Building Corp" loading="lazy">
+      <img src="images/handyman/work-2.jpg" alt="Door and lock repair by Sani Building Corp" loading="lazy">
+      <img src="images/handyman/work-3.jpg" alt="Tile and grout repair by Sani Building Corp" loading="lazy">
+    </div>
   </header>
+  <div class="hdr-mini" id="hdr-mini"><a href="https://www.sanibuildingcorp.com" class="brand">Sani Building Corp</a><span><span class="stars">★</span> 4.9 · Fully insured</span></div>
 
   <div class="progress" id="progress">
     <div class="progress-top"><strong id="step-name">What needs doing</strong><span id="step-count">Step 1 of 5</span></div>
@@ -246,7 +281,7 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
       <div class="step-title">Add photos</div>
       <div class="step-sub">Optional, but it helps us quote without a visit. One photo of each job works best.</div>
       <label class="photo-zone" for="photo-input">
-        <span class="pz-icon">📷</span>
+        <span class="pz-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
         <span class="pz-title">Tap to add photos</span>
         <span class="pz-sub">Up to 5 photos</span>
       </label>
@@ -284,7 +319,8 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
       </div>
       <div class="question">
         <label class="question-label" for="cust-phone">Phone<span class="req">*</span></label>
-        <input type="tel" class="input-text" id="cust-phone" autocomplete="tel" placeholder="(555) 555-1234">
+        <input type="tel" class="input-text" id="cust-phone" autocomplete="tel" placeholder="(555) 555-1234" inputmode="tel">
+        <div class="field-note">We only use your number to schedule your job. No spam, ever.</div>
       </div>
       <div class="question">
         <label class="question-label" for="cust-email">Email<span class="req">*</span></label>
@@ -297,6 +333,7 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
       <div class="question">
         <label class="question-label" for="cust-date">Preferred date <span class="question-hint">Optional</span></label>
         <input type="date" class="input-text" id="cust-date">
+        <div class="field-note" id="date-note">Tap the box to pick a day</div>
         <div class="date-clash" id="date-clash" hidden>
           <div id="date-clash-text"></div>
           <div class="date-clash-btns">
@@ -348,14 +385,16 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
       </div>
       <ol class="next-steps">
         <li><strong>We review your list and photos.</strong> Every job on your list is priced.</li>
-        <li><strong>You get a flat-rate quote by email.</strong> You approve the price before we start.</li>
+        <li><strong>You get a flat-rate quote by email, usually within one business day.</strong> You approve the price before we start.</li>
         <li><strong>We call to schedule.</strong> Same-day visits when we can.</li>
       </ol>
+      <div class="done-team">Your request is with our team. We'll reach out from <a href="tel:+13322770990">(332) 277-0990</a>, so it's worth saving the number.</div>
       <div id="submit-error"></div>
       <div class="btn-row">
-        <a href="https://www.sanibuildingcorp.com" class="btn btn-secondary">← Back to website</a>
+        <a href="sms:+13322770990" class="btn btn-secondary">Text us</a>
         <a href="tel:+13322770990" class="btn btn-primary">Call (332) 277-0990</a>
       </div>
+      <div class="done-links"><a href="https://g.page/r/CXtX_n13XF6aEBE" target="_blank" rel="noopener">Read our 68 Google reviews</a> · <a href="https://www.sanibuildingcorp.com">Back to website</a></div>
     </div>
   </div>
 
@@ -372,21 +411,21 @@ input[type="date"]::-webkit-date-and-time-value { text-align:left; }
    The day-rate booking is not offered any more; Bathroom Refresh is.
    ════════════════════════════════════════════════════════════════════ */
 const SERVICES = [
-  { id: "general-repairs", icon: "🔨", name: "General Repairs", desc: "Doors, windows, locks, drywall, shelves",
+  { id: "general-repairs", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l4 4M12 8l6-6 4 4-6 6M13 9L3 19a1.4 1.4 0 002 2l10-10"/></svg>', name: "General Repairs", desc: "Doors, windows, locks, drywall, shelves",
     items: ["Door", "Window", "Lock", "Hinge", "Drywall hole", "Caulking", "Cabinet door", "Shelf or rod", "Other"] },
-  { id: "painting-touchups", icon: "🎨", name: "Painting Touch-Ups", desc: "Walls, ceilings, trim, scuffs, patches",
+  { id: "painting-touchups", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="15" height="6" rx="1.5"/><path d="M18 6h2v5h-8v3M11 14h2v7h-2z"/></svg>', name: "Painting Touch-Ups", desc: "Walls, ceilings, trim, scuffs, patches",
     items: ["Wall", "Ceiling", "Trim / baseboard", "Door", "Cabinet", "Other"] },
-  { id: "furniture-assembly", icon: "🪑", name: "Furniture Assembly", desc: "IKEA, beds, desks, wardrobes",
+  { id: "furniture-assembly", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v11M18 3v11M6 8h12M5 14h14M7 14v7M17 14v7"/></svg>', name: "Furniture Assembly", desc: "IKEA, beds, desks, wardrobes",
     items: ["Bed frame", "Wardrobe / closet", "Desk", "Bookshelf", "Table", "Chair", "Dresser", "Other"] },
-  { id: "leak-plumbing", icon: "🚰", name: "Leak & Plumbing", desc: "Faucets, toilets, drains, supply lines",
+  { id: "leak-plumbing", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h9a3 3 0 013 3v1M8 9V6M5 6h6M16 16c0 1.5-1 2.5-1 3.5a1 1 0 002 0c0-1-1-2-1-3.5z"/></svg>', name: "Leak & Plumbing", desc: "Faucets, toilets, drains, supply lines",
     items: ["Faucet", "Toilet", "Drain", "Showerhead", "Supply line", "Other"] },
-  { id: "tile-grout", icon: "🧱", name: "Tile & Grout Repair", desc: "Cracked tiles, regrouting, recaulking",
+  { id: "tile-grout", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18M12 3v18"/></svg>', name: "Tile & Grout Repair", desc: "Cracked tiles, regrouting, recaulking",
     items: ["Cracked tiles", "Loose tiles", "Regrouting", "Recaulking", "Other"] },
-  { id: "light-electrical", icon: "💡", name: "Light & Electrical", desc: "Fixtures, fans, outlets, switches",
+  { id: "light-electrical", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z"/></svg>', name: "Light & Electrical", desc: "Fixtures, fans, outlets, switches",
     items: ["Light fixture", "Ceiling fan", "Outlet", "Switch", "Other"] },
-  { id: "bathroom-refresh", icon: "🛁", name: "Bathroom Refresh", desc: "Regrout, re-caulk, new faucet, vanity or toilet",
+  { id: "bathroom-refresh", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18v3a5 5 0 01-5 5H8a5 5 0 01-5-5zM6 12V5a2 2 0 014 0M7 20l-1 2M17 20l1 2"/></svg>', name: "Bathroom Refresh", desc: "Regrout, re-caulk, new faucet, vanity or toilet",
     items: ["Regrout tub / shower", "Re-caulk", "New faucet", "New vanity", "New toilet", "Grab bars / accessories", "Shower wall panels", "Other"] },
-  { id: "property-manager", icon: "🏢", name: "Property Manager", desc: "Multi-unit, turnover, ongoing maintenance",
+  { id: "property-manager", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4h10v17M14 9h6v12M2 21h20M7 8h1M10 8h1M7 12h1M10 12h1M7 16h1M10 16h1M17 13h1M17 17h1"/></svg>', name: "Property Manager", desc: "Multi-unit, turnover, ongoing maintenance",
     items: ["Turnover / make-ready", "Ongoing maintenance", "On-call repairs", "Emergency response", "Other"] }
 ];
 const byId = {};
@@ -443,11 +482,25 @@ function goToStep(n) {
 }
 
 function updateProgress(n) {
+  document.body.classList.toggle('past-1', n > 1);
+  document.getElementById('progress').style.display = n > 5 ? 'none' : '';
   document.getElementById('step-name').textContent = STEP_NAMES[n - 1];
   document.getElementById('step-count').textContent = n <= 5 ? 'Step ' + n + ' of 5' : 'Sent';
   document.getElementById('bar-fill').style.width = Math.min(100, n * 20) + '%';
 }
 
+function fmtPhone(v) {
+  var d = String(v || '').replace(/\D/g, '');
+  if (d.length === 11 && d[0] === '1') d = d.slice(1);
+  if (d.length > 10 || /^\+/.test(v)) return v;
+  if (d.length < 4) return d;
+  if (d.length < 7) return '(' + d.slice(0, 3) + ') ' + d.slice(3);
+  return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6);
+}
+document.addEventListener('input', function (e) {
+  if (e.target && e.target.id === 'cust-phone' && !(e.inputType || '').startsWith('delete')) e.target.value = fmtPhone(e.target.value);
+  if (e.target && e.target.id === 'cust-date') { var n = document.getElementById('date-note'); if (n) n.style.display = e.target.value ? 'none' : ''; }
+});
 function showErr(id, msg) { const e = document.getElementById(id); if (e) e.textContent = msg || ''; }
 
 /* ════════════════════════════════════════════════════════════════════

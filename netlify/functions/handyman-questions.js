@@ -132,6 +132,8 @@ async function generateForForm(apiKey, serviceName, photos, known, items) {
     "NEVER ask again about anything listed above: not the services or items, not how many things, not the place, floor, elevator or access, " +
     "not who buys the parts or materials, not timing or urgency, not contact details, not price. " +
     "Fewer is better: if the list and photos are clear, ask one question or none. " +
+    "Write like a friendly person talking to a homeowner, not a form: each question is plain, short (under 10 words) and asks ONE thing, for example \"What's wrong with the door?\" or \"Is the wood damaged?\". Never use slashes, brackets or trade jargon in questions or options. " +
+    "Options are 2-5 everyday words each, like \"Sticks or won't close\", \"Sags, gap at the top\", \"Just scratches\". " +
     "Use single_select or multi_select with 3-5 short options; every one ends with \"Not sure\". " +
     "Never require measurements, brands or model numbers. Set required:false on every question. " +
     "Return ONLY raw JSON: {\"questions\":[{\"id\":\"slug\",\"label\":\"...\",\"type\":\"single_select|multi_select\",\"required\":false,\"options\":[\"..\"]}]}.";
@@ -192,6 +194,11 @@ function slug(s, i) {
   return base ? base.slice(0, 32) : "q_" + i;
 }
 
+/* "hinge/scratch/knob" reads like a form; "hinge, scratch or knob" reads like a person */
+function softSlash(s) {
+  return s.replace(/\s*\/\s*/g, function (m, i, all) { return /\d$/.test(all.slice(0, i)) ? '/' : ' or '; })
+    .replace(/(\w+) or (\w+) or /g, '$1, $2 or ');
+}
 function sanitizeQuestions(arr) {
   const out = [];
   const seen = {};
@@ -201,9 +208,9 @@ function sanitizeQuestions(arr) {
     let id = slug(q.id || q.label, i);
     while (seen[id]) id = id + "_" + i;
     seen[id] = true;
-    const item = { id: id, label: String(q.label).slice(0, 140), type: type, required: q.required !== false };
+    const item = { id: id, label: softSlash(String(q.label)).slice(0, 140), type: type, required: q.required !== false };
     if (type === "single_select" || type === "multi_select") {
-      const opts = (Array.isArray(q.options) ? q.options : []).map(function (o) { return String(o).slice(0, 60); }).filter(Boolean).slice(0, 6);
+      const opts = (Array.isArray(q.options) ? q.options : []).map(function (o) { return softSlash(String(o)).slice(0, 60); }).filter(Boolean).slice(0, 6);
       if (opts.length < 2) { item.type = "text"; }
       else { item.options = opts; }
     }
