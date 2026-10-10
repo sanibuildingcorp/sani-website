@@ -55,7 +55,28 @@ function sheet(booking, plan, job) {
     materials: A(p.materials).map((x) => C(x, 160)).filter(Boolean),
     warnings: A(p.warnings).map((x) => C(x, 220)).filter(Boolean),
     notIncluded: A(p.customer && p.customer.notIncluded).map((x) => C(x, 200)).filter(Boolean),
+    watch: watchList(building, A(p.warnings).map((x) => C(x, 220)).filter(Boolean)),
   };
+}
+
+/* WATCH OUT, SHORT. One line per topic (no COI twice, no elevator twice),
+   office paperwork replaced by one line for the worker, max 3 lines. */
+const TOPICS = [["coi", /\bCOI\b|certificate of insurance|insurance cert|managing agent/i], ["elevator", /elevator/i], ["parking", /parking/i], ["super", /\bsuper\b|doorman|front desk/i], ["walkup", /walk-?up|stairs only/i]];
+function watchList(building, warnings) {
+  const seen = {}, out = [];
+  let coi = false;
+  building.concat(warnings).forEach((x) => {
+    String(x).split(/\s*[,;]\s*(?=[A-Z])/).forEach((line) => {
+      line = line.trim(); if (!line) return;
+      const topic = (TOPICS.find((tp) => tp[1].test(line)) || [line.toLowerCase().slice(0, 30)])[0];
+      if (topic === "coi") { coi = true; return; }
+      if (/^none of these$/i.test(line) || seen[topic]) return;
+      seen[topic] = 1;
+      out.push(line.length > 110 ? line.slice(0, 110).replace(/\s+\S*$/, "") + "…" : line);
+    });
+  });
+  if (coi) out.unshift("COI (insurance paper): the office handles it. If the super asks for it, call the office before you start.");
+  return out.slice(0, 3);
 }
 
 /* The text he sends from his phone (Messages or WhatsApp). */
@@ -72,4 +93,4 @@ function message(sh, url) {
   return "Sani job: " + sh.title + (when ? " · " + when : "") + (sh.address ? " · " + sh.address : "") + "\nEverything you need is here: " + url;
 }
 
-module.exports = { niceDay, sheet, message, stepsOf };
+module.exports = { watchList, niceDay, sheet, message, stepsOf };

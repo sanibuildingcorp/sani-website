@@ -37,6 +37,11 @@ ul{margin:0;padding-left:20px}li{font-size:15px;line-height:1.5;margin:4px 0}
 textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:15px;min-height:70px}
 .done-banner{background:#e7f5ec;color:var(--ok);border:1px solid #bfe3cc;font-weight:700;text-align:center}
 .err{padding:40px 20px;text-align:center;color:var(--muted)}
+.started{background:#eef7f1;border-color:#cfe8d6;color:#1e7a45;font-weight:700;font-size:15px}
+.fl{display:block;font-size:14px;font-weight:700;color:#14213d;margin-bottom:10px}
+.fl input{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:12px;font-size:16px;border:1.5px solid #ddd;border-radius:10px;font-family:inherit}
+details.how{margin-top:6px;font-size:15px;color:#444;line-height:1.5}
+details.how summary{color:#8a6a1c;font-weight:700;font-size:14px;cursor:pointer;padding:4px 0}
 </style>
 </head>
 <body>
@@ -59,10 +64,31 @@ function list(title, arr, key) {
   return '<div class="card"><div class="k">' + title + '</div>' + arr.map(function (x, i) { var id = key + i; return '<div class="chk' + (LOCAL[id] ? ' on' : '') + '" onclick="tick(\'' + id + '\',this)"><i></i><span>' + esc(x) + '</span></div>'; }).join('') + '</div>';
 }
 function tick(id, el) { LOCAL[id] = !LOCAL[id]; el.classList.toggle('on', LOCAL[id]); try { localStorage.setItem('crew_chk_' + T, JSON.stringify(LOCAL)); } catch (e) {} }
+function tm(iso) { return iso ? new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''; }
+function dayTm(iso) { return iso ? new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + tm(iso) : ''; }
+function thumbs(arr) { return '<div class="photos">' + arr.map(function (p) { var u = '/.netlify/functions/crew?photo=' + p.id; return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="' + p.kind + '"></a>'; }).join('') + '</div>'; }
 function render() {
   var s = S, done = s.steps.filter(function (_, i) { return P.steps[i]; }).length;
   var h = '<header><div class="brand">SANI BUILDING CORP · JOB SHEET</div><h1>' + esc(s.title) + '</h1>' + (s.jobType ? '<span class="type">' + esc(s.jobType) + '</span>' : '') + '</header><main>';
-  if (P.doneAt) h += '<div class="card done-banner">Job marked done. Thank you.</div>';
+  /* CLOSED: a short summary instead of the whole sheet */
+  if (P.doneAt) {
+    var work = P.photos.filter(function (p) { return p.kind !== 'receipt'; }), rec = P.photos.filter(function (p) { return p.kind === 'receipt'; });
+    h += '<div class="card done-banner">Job marked done. Thank you.</div>' +
+      '<div class="card"><div class="k">Summary</div>' +
+      (s.address ? '<div class="row"><span>Address</span><span>' + esc(s.address) + '</span></div>' : '') +
+      (P.startedAt ? '<div class="row"><span>Started</span><span>' + esc(dayTm(P.startedAt)) + '</span></div>' : '') +
+      '<div class="row"><span>Done</span><span>' + esc(dayTm(P.doneAt)) + '</span></div>' +
+      (s.steps.length ? '<div class="row"><span>Steps</span><span>' + done + ' of ' + s.steps.length + '</span></div>' : '') +
+      (P.hoursWorked ? '<div class="row"><span>Hours worked</span><span>' + P.hoursWorked + '</span></div>' : '') +
+      (P.materialsSpent ? '<div class="row"><span>Materials spent</span><span>$' + Number(P.materialsSpent).toFixed(P.materialsSpent % 1 ? 2 : 0) + '</span></div>' : '') + '</div>' +
+      (work.length ? '<div class="card"><div class="k">Photos sent to the office</div>' + thumbs(work) + '</div>' : '') +
+      (rec.length ? '<div class="card"><div class="k">Receipts</div>' + thumbs(rec) + '</div>' : '') +
+      '<p style="text-align:center;font-size:14px;color:#666">This job is closed. <a style="color:#14213d;font-weight:700" href="tel:+13322770990">Call the office</a> to change anything.</p>' +
+      '<p style="text-align:center;font-size:12px;color:#999;margin:18px 0 30px">' + esc(s.ref) + ' · private job link, do not share</p></main>';
+    document.getElementById('app').innerHTML = h; return;
+  }
+  h += P.startedAt ? '<div class="card started">Started ' + esc(tm(P.startedAt)) + ' · the office can see you are on site</div>'
+    : '<div class="card"><button class="btn navy" onclick="startJob()">I\'m here · Start job</button><p style="font-size:13px;color:#666;margin:8px 0 0;text-align:center">Tap when you arrive. The office sees the time.</p></div>';
   h += '<div class="card"><div class="k">Where and when</div>' +
     (s.address ? '<div class="row"><span>Address</span><span><a href="https://maps.google.com/?q=' + encodeURIComponent(s.address) + '">' + esc(s.address) + '</a></span></div>' : '') +
     ((s.date || s.time) ? '<div class="row"><span>When</span><span>' + esc([niceDate(s.date), s.time].filter(Boolean).join(' · ')) + '</span></div>' : '') +
@@ -71,22 +97,29 @@ function render() {
     (s.phone ? '<div class="row"><span>Customer phone</span><span><a href="tel:' + esc(s.phone) + '">' + esc(fmtPhone(s.phone)) + '</a></span></div>' : '') +
     '<div class="row"><span>Questions?</span><span><a href="tel:+13322770990">Call the office</a></span></div></div>';
   h += '<div class="card"><div class="k">The job</div>' + (s.explain ? '<p>' + esc(s.explain) + '</p>' : '') + (s.customerSaid ? '<div class="said">Customer wrote: “' + esc(s.customerSaid) + '”</div>' : '') + '</div>';
-  if (s.building.length || s.warnings.length) h += '<div class="card warn"><div class="k">Watch out</div><ul>' + s.building.concat(s.warnings).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
-  if (s.photos.length) h += '<div class="card"><div class="k">Customer photos</div><div class="photos">' + s.photos.map(function (u) { return '<a href="' + esc(u) + '" target="_blank"><img src="' + esc(u) + '" alt="Job photo" loading="lazy"></a>'; }).join('') + '</div></div>';
+  var watch = s.watch || s.building.concat(s.warnings).slice(0, 3);
+  if (watch.length) h += '<div class="card warn"><div class="k">Watch out</div><ul>' + watch.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+  if (s.photos.length) h += '<div class="card"><div class="k">Customer photos</div><div class="photos">' + s.photos.map(function (u) { return '<a href="' + esc(u) + '" target="_blank"><img src="' + esc(u) + '" alt="Job photo" onerror="this.parentNode.style.display=\'none\'"></a>'; }).join('') + '</div></div>';
   h += '<div class="two">' + list('Tools to bring', s.tools, 't') + list('Materials to bring', s.materials, 'm') + '</div>';
   if (s.steps.length) h += '<div class="card"><div class="k">Step by step · ' + done + ' of ' + s.steps.length + ' done</div><div class="bar"><i style="width:' + Math.round(100 * done / s.steps.length) + '%"></i></div>' +
-    s.steps.map(function (x, i) { return '<div class="step' + (P.steps[i] ? ' done' : '') + '"' + (P.doneAt ? '' : ' onclick="step(' + i + ')"') + '><div class="box">' + (P.steps[i] ? '✓' : '') + '</div><div><div class="n">STEP ' + (i + 1) + '</div><b>' + esc(x.step) + '</b>' + (x.how ? '<div class="how">' + esc(x.how) + '</div>' : '') + '</div></div>'; }).join('') + '</div>';
+    s.steps.map(function (x, i) { return '<div class="step' + (P.steps[i] ? ' done' : '') + '" onclick="step(' + i + ')"><div class="box">' + (P.steps[i] ? '✓' : '') + '</div><div style="flex:1"><div class="n">STEP ' + (i + 1) + '</div><b>' + esc(x.step) + '</b>' + (x.how ? '<details class="how" onclick="event.stopPropagation()"><summary>How</summary>' + esc(x.how) + '</details>' : '') + '</div></div>'; }).join('') + '</div>';
   h += list('Check before you leave', s.checks, 'c');
   if (s.notIncluded.length) h += '<div class="card"><div class="k">Not in this job · call the office first</div><ul>' + s.notIncluded.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
-  var before = P.photos.filter(function (p) { return p.kind === 'before'; }).length, after = P.photos.length - before;
-  if (P.doneAt) h += '<div class="card"><div class="k">Photos for the office</div><p style="font-size:14px;color:#666">' + (before ? before + ' before' : '') + (before && after ? ' · ' : '') + (after ? after + ' after' : '') + (P.photos.length ? ' · sent to the office.' : 'No photos were added.') + ' This job is closed. Call the office to change anything.</p></div>';
-  else h += '<div class="card"><div class="k">Photos for the office</div><p style="font-size:14px;color:#666">Before you start and when you finish.</p>' +
+  var before = P.photos.filter(function (p) { return p.kind === 'before'; }).length, after = P.photos.filter(function (p) { return p.kind === 'after'; }).length, rc = P.photos.filter(function (p) { return p.kind === 'receipt'; }).length;
+  h += '<div class="card"><div class="k">Photos for the office</div><p style="font-size:14px;color:#666">Before you start and when you finish.</p>' +
     '<button class="btn ghost" onclick="pick(\'before\')">Add before photo' + (before ? ' (' + before + ')' : '') + '</button>' +
     '<button class="btn ghost" onclick="pick(\'after\')">Add after photo' + (after ? ' (' + after + ')' : '') + '</button>' +
     '<input type="file" id="ph" accept="image/*" capture="environment" hidden></div>';
-  if (!P.doneAt) h += '<div class="card"><div class="k">Finished?</div><textarea id="note" placeholder="Anything the office should know (optional)"></textarea><button class="btn navy" onclick="finish()">Job done</button></div>';
+  h += '<div class="card"><div class="k">Finished?</div>' +
+    '<label class="fl">Hours you worked<input id="hrs" type="number" inputmode="decimal" step="0.25" min="0" placeholder="e.g. 3.5"></label>' +
+    '<label class="fl">Money you spent on materials ($)<input id="mat" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0 if none"></label>' +
+    '<button class="btn ghost" onclick="pick(\'receipt\')">Add receipt photo' + (rc ? ' (' + rc + ')' : '') + '</button>' +
+    '<textarea id="note" placeholder="Anything the office should know (optional)"></textarea><button class="btn navy" onclick="finish()">Job done</button></div>';
   h += '<p style="text-align:center;font-size:12px;color:#999;margin:18px 0 30px">' + esc(s.ref) + ' · private job link, do not share</p></main>';
   document.getElementById('app').innerHTML = h;
+}
+async function startJob() {
+  try { var j = await api({ action: 'start' }); P = j.progress; render(); } catch (e) { alert(e.message); }
 }
 async function step(i) {
   P.steps[i] = !P.steps[i]; render();
@@ -106,8 +139,10 @@ function upload(file) {
   rd.readAsDataURL(file);
 }
 async function finish() {
-  if (!confirm('Mark this job as done?')) return;
-  try { var j = await api({ action: 'done', note: (document.getElementById('note') || {}).value || '' }); P = j.progress; render(); window.scrollTo(0, 0); } catch (e) { alert(e.message); }
+  var hrs = (document.getElementById('hrs') || {}).value, mat = (document.getElementById('mat') || {}).value;
+  if (!hrs) { alert('Please write the hours you worked.'); document.getElementById('hrs').focus(); return; }
+  if (!confirm('Mark this job as done?\n\n' + hrs + ' hours' + (mat ? ' · $' + mat + ' materials' : ''))) return;
+  try { var j = await api({ action: 'done', hours: hrs, materials: mat || 0, note: (document.getElementById('note') || {}).value || '' }); P = j.progress; render(); window.scrollTo(0, 0); } catch (e) { alert(e.message); }
 }
 (async function () {
   try { var j = await api(); S = j.sheet; P = j.progress || P; render(); }
