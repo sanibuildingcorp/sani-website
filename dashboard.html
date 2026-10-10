@@ -2800,6 +2800,26 @@ body {
 .hbl-head{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;background:none;border:0;padding:8px 2px;color:var(--ink);font:inherit;cursor:pointer}
 .hbl-head b{font-size:15px}.hbl-head i{font-style:normal;font-size:12px;font-weight:700;background:#14213d;color:#fff;border-radius:99px;padding:1px 8px;margin-left:6px}
 .hbl-head small{display:block;font-size:12px;color:var(--ink-muted);margin-top:2px}
+
+.crs{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 12px 10px;margin:0 0 14px}
+.crs-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.crs-s{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:#9a9a9a;text-align:center;line-height:1.2}
+.crs-s i{font-style:normal;width:26px;height:26px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;background:#fff}
+.crs-s.ok{color:#1e7a45}.crs-s.ok i{background:#1e7a45;border-color:#1e7a45;color:#fff}
+.crs-s.now{color:#14213d;font-weight:700}.crs-s.now i{border-color:#c4a35a;background:#faf5e8;color:#14213d}
+.crs-hint{font-size:13px;color:#444;margin-top:10px;line-height:1.45;text-align:center}
+.crw,.crw *{box-sizing:border-box}.crw{border:1px solid #d7dfee;background:#f7f9fd;border-radius:14px;padding:14px;margin:0 0 16px}
+.crw-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}.crw-note{font-size:12px;color:#777}
+.crw-sub{font-size:13px;color:#555;margin:6px 0;line-height:1.45}
+.crw-form{display:grid;gap:10px}.crw-form label{display:grid;gap:4px;font-size:12.5px;color:#555;font-weight:600}
+.crw-form select,.crw-form input:not([type=checkbox]){border:1px solid #d6dbe6;border-radius:9px;padding:9px 10px;font:inherit;font-size:15px;background:#fff;width:100%}
+.crw-form .crw-chk{display:flex;gap:8px;align-items:center;font-weight:500;font-size:13.5px;color:#333}
+.crw-link{background:none;border:0;color:#14213d;text-decoration:underline;font-size:13px;padding:4px 0;text-align:left}
+.crw-r{display:flex;gap:6px;margin:6px 0}.crw-r input{flex:1;min-width:0;border:1px solid #d6dbe6;border-radius:9px;padding:9px;font-size:15px}.crw-r button{border:0;background:none;font-size:20px;color:#999}
+.crw-job{font-size:14.5px;color:#222}.crw-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.crw-b{border:1px solid #c9d2e3;background:#fff;color:#14213d;border-radius:10px;padding:9px 12px;font-size:13.5px;font-weight:600;text-decoration:none}
+.crw-sent{margin-top:12px;background:#e7f5ec;border:1px solid #bfe3cc;border-radius:12px;padding:12px;font-size:14px;color:#14532d}
+.crw-ph{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.crw-ph a{position:relative;display:block}.crw-ph img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block}.crw-ph small{position:absolute;left:3px;bottom:3px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;border-radius:4px;padding:0 4px}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -10399,6 +10419,7 @@ async function openHandymanDetail(ref) {
     currentHandymanBooking = b;
     renderHandymanModal(b);
     hbStart(b.ref);
+    crLoad(b);
     document.getElementById("handyman-modal").classList.add("show");
     document.body.style.overflow = "hidden";
   } catch (e) {
@@ -10511,6 +10532,106 @@ async function hbRates() {
   } catch (e) { toast('Rates not saved: ' + e.message, true); }
 }
 
+/* ═══ THE CREW STEP ══════════════════════════════════════════════════════
+   1 Price → 2 Customer signs → 3 Crew → 4 Done. After the customer signs he
+   picks a worker and sends him a private job link (crew.html): where, when,
+   what kind of job, steps with HOW, tools and materials, photos. No prices. */
+var CR = { roster: [], job: null, ref: null };
+function crStage(b, job) {
+  var st = String(b.status || 'new').toLowerCase(), ag = String(b.agreement_status || '').toLowerCase();
+  if (st === 'completed' || (job && job.doneAt)) return 4;
+  if (job) return 3.5;
+  if (ag === 'signed' || st === 'confirmed' || st === 'in-progress') return 3;
+  if (ag === 'sent' || ag === 'changes_requested') return 2;
+  return 1;
+}
+function crSteps(b, job) {
+  var n = crStage(b, job), names = ['Price', 'Customer signs', 'Crew', 'Done'];
+  var hint = n === 1 ? 'Check the brain price below, then tap “Use this price” to send it to the customer to sign.'
+    : n === 2 ? (String(b.agreement_status) === 'changes_requested' ? 'The customer asked for changes: read them in “Sent to customer”, fix the price and send again.' : 'Waiting for the customer to sign. You get an email when they do.')
+    : n === 3 ? 'Signed. Send the job to your crew below, or do it yourself.'
+    : n === 3.5 ? 'Your crew has the job. You get an email when they tap “Job done”.'
+    : 'Done.';
+  return '<div id="cr-steps" class="crs"><div class="crs-bar">' + names.map(function (x, i) {
+      var k = i + 1, cls = n >= k + 1 || (k === 3 && n === 3.5) ? 'ok' : (Math.floor(n) === k ? 'now' : '');
+      if (k === 4 && n === 4) cls = 'ok';
+      return '<div class="crs-s ' + cls + '"><i>' + (cls === 'ok' ? '✓' : k) + '</i><span>' + x + '</span></div>';
+    }).join('') + '</div><div class="crs-hint">' + esc(hint) + '</div></div>';
+}
+async function crLoad(b) {
+  CR = { roster: [], job: null, ref: b.ref };
+  try {
+    var r1 = await sbcFetch('/.netlify/functions/crew?roster=1'), r2 = await sbcFetch('/.netlify/functions/crew?ref=' + encodeURIComponent(b.ref));
+    CR.roster = ((await r1.json()) || {}).roster || [];
+    CR.job = ((await r2.json()) || {}).job || null;
+  } catch (e) {}
+  if (CR.ref !== b.ref) return;
+  var s = document.getElementById('cr-steps'); if (s) s.outerHTML = crSteps(b, CR.job);
+  crShow();
+}
+function crPhoneDigits(p) { var d = String(p || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d; }
+function crShow() {
+  var box = document.getElementById('crew-box'), b = currentHandymanBooking; if (!box || !b) return;
+  var n = crStage(b, CR.job), ag = (b.agreements || [])[0] || {};
+  var h = '<div class="crw-head"><div class="hb-k">Crew</div>' + (n < 3 ? '<span class="crw-note">Usually after the customer signs</span>' : '') + '</div>';
+  if (CR.job) {
+    var j = CR.job, steps = Object.keys(j.steps || {}).filter(function (k) { return j.steps[k]; }).length;
+    h += '<div class="crw-job"><b>' + esc(j.crewName) + '</b> has this job' + (j.doneAt ? ' · <span style="color:#1e7a45;font-weight:700">done ' + fmtDate(j.doneAt) + '</span>' : '') +
+      '<div class="crw-sub">' + steps + ' step' + (steps === 1 ? '' : 's') + ' ticked · ' + (j.photos || []).length + ' photo' + ((j.photos || []).length === 1 ? '' : 's') + (j.sharePhone ? ' · customer phone shared' : '') + '</div>' +
+      ((j.photos || []).length ? '<div class="crw-ph">' + j.photos.map(function (p) { var u = '/.netlify/functions/crew?photo=' + p.id; return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="' + p.kind + '"><small>' + p.kind + '</small></a>'; }).join('') + '</div>' : '') +
+      (j.doneNote ? '<div class="crw-sub">Note: ' + esc(j.doneNote) + '</div>' : '') +
+      '<div class="crw-btns"><a class="crw-b" href="' + esc(j.url) + '" target="_blank">Open job sheet</a><button class="crw-b" onclick="crResend()">Send again / other worker</button></div></div>';
+    box.innerHTML = h; return;
+  }
+  if (!CR.roster.length) {
+    h += '<div class="crw-sub">Add your workers once. Then each signed job goes to one of them with a private job sheet (no prices).</div>' + crRosterForm();
+    box.innerHTML = h; return;
+  }
+  h += '<div class="crw-form"><label>Worker<select id="cr-w">' + CR.roster.map(function (w) { return '<option value="' + esc(w.id) + '">' + esc(w.name) + '</option>'; }).join('') + '</select></label>' +
+    '<label>Date<input id="cr-d" type="date" value="' + esc(ag.appointment_date || b.preferred_date || '') + '"></label>' +
+    '<label>Time<input id="cr-t" value="' + esc(ag.appointment_time || b.preferred_time || '') + '" placeholder="10:00 AM"></label>' +
+    '<label class="crw-chk"><input id="cr-p" type="checkbox"> Share the customer’s phone with the worker</label>' +
+    '<button class="hb-use" style="width:100%" onclick="crAssign()">Send to crew</button>' +
+    '<button class="crw-link" onclick="crEditRoster()">Edit my crew list</button></div><div id="cr-out"></div>';
+  box.innerHTML = h;
+}
+function crRosterForm() {
+  var rows = (CR.roster.length ? CR.roster : [{ id: '', name: '', phone: '' }]).map(function (w) {
+    return '<div class="crw-r"><input class="cr-n" placeholder="Name" value="' + esc(w.name) + '"><input class="cr-ph" type="tel" placeholder="Phone" value="' + esc(w.phone) + '"><input class="cr-id" type="hidden" value="' + esc(w.id) + '"><button onclick="this.parentNode.remove()">×</button></div>';
+  }).join('');
+  return '<div id="cr-roster">' + rows + '</div><button class="crw-link" onclick="crAddRow()">+ Add worker</button><button class="hb-use" style="width:100%;margin-top:8px" onclick="crSaveRoster()">Save crew list</button>';
+}
+function crAddRow() { document.getElementById('cr-roster').insertAdjacentHTML('beforeend', '<div class="crw-r"><input class="cr-n" placeholder="Name"><input class="cr-ph" type="tel" placeholder="Phone"><input class="cr-id" type="hidden" value=""><button onclick="this.parentNode.remove()">×</button></div>'); }
+function crEditRoster() { document.getElementById('crew-box').innerHTML = '<div class="crw-head"><div class="hb-k">My crew</div></div>' + crRosterForm(); }
+async function crSaveRoster() {
+  var roster = Array.prototype.map.call(document.querySelectorAll('#cr-roster .crw-r'), function (r) { return { id: r.querySelector('.cr-id').value, name: r.querySelector('.cr-n').value.trim(), phone: r.querySelector('.cr-ph').value.trim() }; }).filter(function (w) { return w.name; });
+  try {
+    var r = await sbcFetch('/.netlify/functions/crew', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roster: roster }) });
+    var j = await r.json(); if (!r.ok) throw new Error(j.error || r.status);
+    CR.roster = j.roster; toast('Crew list saved'); crShow();
+  } catch (e) { toast('Not saved: ' + e.message, true); }
+}
+function crResend() { CR.job = null; crShow(); }
+async function crAssign() {
+  var b = currentHandymanBooking; if (!b) return;
+  var body = { action: 'assign', ref: b.ref, crewId: document.getElementById('cr-w').value, sharePhone: document.getElementById('cr-p').checked, appointmentDate: document.getElementById('cr-d').value, appointmentTime: document.getElementById('cr-t').value.trim() };
+  try {
+    var r = await sbcFetch('/.netlify/functions/crew', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    var j = await r.json(); if (!r.ok) throw new Error(j.error || r.status);
+    CR.job = j.job;
+    /* Plans written before the crew part existed: ask the brain to add it.
+       The job sheet reads the plan live, so the steps appear on it. */
+    if (j.needsCrewSteps && typeof hbRun === 'function') hbRun('Write the crew part for the worker (job type, simple explanation, steps with how, checks before leaving). Keep the price and everything else.');
+    var w = CR.roster.find(function (x) { return x.id === body.crewId; }) || {}, d = crPhoneDigits(w.phone);
+    crShow();
+    document.getElementById('crew-box').insertAdjacentHTML('beforeend', '<div class="crw-sent"><b>Job link ready for ' + esc(w.name || 'your worker') + '.</b> Send it from your phone:' +
+      '<div class="crw-btns"><a class="crw-b" href="sms:' + (d ? '+' + d : '') + '?&body=' + encodeURIComponent(j.text) + '">Text message</a>' +
+      '<a class="crw-b" href="https://wa.me/' + d + '?text=' + encodeURIComponent(j.text) + '" target="_blank">WhatsApp</a>' +
+      '<button class="crw-b" onclick="navigator.clipboard.writeText(' + esc(JSON.stringify(j.url)) + ').then(function(){toast(\'Link copied\')})">Copy link</button></div></div>');
+    var s = document.getElementById('cr-steps'); if (s) s.outerHTML = crSteps(b, CR.job);
+  } catch (e) { toast('Not sent: ' + e.message, true); }
+}
+
 function closeHandymanModal() {
   document.getElementById("handyman-modal").classList.remove("show");
   document.body.style.overflow = "";
@@ -10548,7 +10669,7 @@ function renderHandymanModal(b) {
         '<div class="ref-sub">' + esc(b.ref) + ' · ' + fmtDate(b.submitted_at) + ' · <span class="badge h-' + status + '">' + esc(status) + '</span></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;align-items:center">' +
-        '<button class="h-send-conf-btn" onclick="openConfirmationModal()">📧 Send Confirmation</button>' +
+        '<button class="h-send-conf-btn" onclick="openConfirmationModal()">📧 Send to customer to sign</button>' +
         '<button class="h-print-btn" onclick="window.print()">🖨 Print Job Brief</button>' +
         '<button class="modal-close" onclick="closeHandymanModal()">×</button>' +
       '</div>' +
@@ -10563,7 +10684,9 @@ function renderHandymanModal(b) {
       '</div>' +
       '<div class="h-alert-urgency ' + urgency + '">' + urgencyLabel + '</div>' +
     '</div>' +
+    crSteps(b) +
     handymanBrief(b) +
+    '<div id="crew-box" class="crw"></div>' +
     '<div id="hb-box" class="hb"><div class="hb-wait">Sani brain is reading this job…</div></div>' +
     '<div class="h-hero-grid">' +
       '<div class="h-hero-block">' +
