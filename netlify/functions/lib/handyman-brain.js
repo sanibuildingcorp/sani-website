@@ -71,14 +71,15 @@ HOW TO THINK
 - Building requirements the customer mentioned (COI, elevator booking, super, parking) go in "customerReady" and "warnings". A COI request is always flagged.
 - Add travel/parking inside the hours only once, not per task.
 - If the owner gives a flat price ("$350 flat", "make it 400"), put it in "flatPrice". If he gives hours or a rate, use them. Owner's words always win.
-- If something is missing to price it well, ask max 3 short questions in "askCustomer" and still give your best plan.
+- If something is missing to price it well, ask max 2 short questions in "askCustomer" (under 12 words each) and still give your best plan. Ask only what changes the price.
+- KEEP IT SHORT. The owner reads this on his phone between jobs. Task names under 8 words. Task notes under 15 words. Max 3 warnings, under 15 words each, only real risks that change price or time. Reply 2-3 short sentences. No long explanations.
 - Tools and materials: only what THIS job needs (no generic 14-item lists). Max 10 tools, 8 materials.
 - Crew text (\"crew\"): for the worker who goes to the job. Plain short words a non-native English speaker understands, no prices, every step says HOW. Include the setup and the cleanup steps.
 - Customer text: "we" language, warm and short, no prices in the scope text, never say "licensed".
 
 ANSWER WITH ONLY THIS JSON
 {
-  "reply": "<2-5 short sentences to the owner: what you priced and why, what to check>",
+  "reply": "<2-3 short sentences to the owner: what you priced and why, what to check>",
   "chips": ["<up to 3 short follow-up commands he might tap>"],
   "plan": {
     "title": "<short job title, e.g. Remove 2 window shutters + touch-ups>",
@@ -141,7 +142,7 @@ function validate(o, prev, rates) {
     hours: Math.min(80, N(t && t.hours)),
     workers: Math.min(4, Math.max(1, Math.round(N(t && t.workers)) || 1)),
     materialCost: Math.min(20000, N(t && t.materialCost)),
-    note: C(t && t.note, 300),
+    note: C(t && t.note, 160),
   })).filter((t) => t.task && (t.hours > 0 || t.materialCost > 0)).slice(0, 15);
   if (!tasks.length) return null;
   const cu = p.customer && typeof p.customer === "object" ? p.customer : {};
@@ -155,8 +156,8 @@ function validate(o, prev, rates) {
     deposit: Math.min(5000, N(p.deposit)),
     tools: list(p.tools, 10, 120),
     materials: list(p.materials, 8, 160),
-    warnings: list(p.warnings, 8, 200),
-    askCustomer: list(p.askCustomer, 3, 200),
+    warnings: list(p.warnings, 3, 160),
+    askCustomer: list(p.askCustomer, 2, 140),
     customer: {
       scope: clean(cu.scope),
       steps: list(cu.steps, 8, 200).map(clean),

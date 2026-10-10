@@ -2886,6 +2886,17 @@ body:has(#handyman-modal.show),body:has(#edit-modal.show),body:has(#invoice-moda
 .hd-del{display:block;margin:18px auto 6px;background:none;border:0;color:#b42318;font:inherit;font-size:14px;text-decoration:underline;cursor:pointer;padding:8px}
 .hbl-del{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line-soft,#eee);border-radius:12px;margin:8px 0;font-size:14px;color:#55555a}
 .hbl-del button{flex:none;background:#fff;border:1.5px solid #14213d;color:#14213d;border-radius:10px;padding:8px 12px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+
+.hq{border:1px solid var(--line-soft,#eee);border-radius:12px;padding:12px 14px;margin:12px 0;background:#fff}
+.hq-k{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#8a6a1c;margin:10px 0 4px}
+.hq-k:first-child{margin-top:0}
+.hq-row{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:5px 0;border-bottom:1px solid #f2f2f2}
+.hq-row:last-of-type{border-bottom:0}.hq-row b{flex:none;color:#14213d}
+.hq-w,.hq-q{font-size:14px;line-height:1.4;padding:3px 0 3px 14px;position:relative;color:#333}
+.hq-w:before{content:"";position:absolute;left:0;top:10px;width:6px;height:6px;border-radius:50%;background:#e8742a}
+.hq-q:before{content:"?";position:absolute;left:0;top:3px;font-weight:800;color:#14213d}
+.hb-more summary{list-style:none;cursor:pointer}.hb-more summary::-webkit-details-marker{display:none}
+.hb-more u{color:#8a6a1c;font-size:13px}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -10556,6 +10567,8 @@ async function openHandymanDetail(ref) {
    the customer must have ready, and the customer scope. He talks to it to
    change anything; "Use this price" fills the Send screen. */
 var HB = { ref: null, st: null, send: null, timer: null };
+function hbClip(s, n) { s = String(s || '').replace(/\s+/g, ' ').trim(); if (s.length <= n) return s; var c = s.slice(0, n); var k = Math.max(c.lastIndexOf(' — '), c.lastIndexOf('; '), c.lastIndexOf(', ')); return (k > n * 0.5 ? c.slice(0, k) : c.replace(/\s+\S*$/, '')) + '…'; }
+function hbSentences(s, n) { var m = String(s || '').match(/[^.!?]+[.!?]+(\s|$)/g); if (!m || m.length <= n) return String(s || ''); return m.slice(0, n).join('').trim(); }
 function hbMoney(n) { return '$' + Math.round(Number(n) || 0).toLocaleString('en-US'); }
 async function hbStart(ref) {
   HB = { ref: ref, st: null, send: null, timer: null };
@@ -10626,20 +10639,31 @@ function hbShow(st) {
         '<button class="hd-alt" onclick="hbFocus()">Change price</button>' +
         '<button class="hd-no" onclick="hdDeclineOpen()">Not for us</button>' +
       '</div><div id="hd-decline"></div>' +
-      (p.warnings.length ? '<div class="hd-warn"><b>' + p.warnings.length + ' thing' + (p.warnings.length === 1 ? '' : 's') + ' to watch:</b> ' + esc(p.warnings[0]) + (p.warnings.length > 1 ? ' …' : '') + '</div>' : '') +
-      '<details class="hb-fold"><summary>Tasks and hours (' + p.tasks.length + ')</summary><div class="hb-tasks">' + p.tasks.map(function (t) {
-        return '<div class="hb-task"><div><b>' + esc(t.task) + '</b>' + (t.note ? '<div class="hb-note">' + esc(t.note) + '</div>' : '') + '</div><div class="hb-h">' + t.hours + ' h' + (t.workers > 1 ? ' × ' + t.workers : '') + (t.materialCost ? '<br>' + hbMoney(t.materialCost) + ' mat.' : '') + '</div></div>';
-      }).join('') + '</div></details>' +
-      (p.warnings.length ? '<details class="hb-fold"><summary>Warnings (' + p.warnings.length + ')</summary>' + hbList('', p.warnings, 'hb-warn') + '</details>' : '') +
-      (p.askCustomer.length ? '<details class="hb-fold"><summary>Ask the customer (' + p.askCustomer.length + ')</summary>' + hbList('', p.askCustomer, 'hb-ask') + '</details>' : '') +
-      '<details class="hb-fold"><summary>Tools and materials</summary><div class="hb-two">' + hbList('Tools to bring', p.tools) + hbList('Materials to bring', p.materials) + '</div></details>' +
-      '<details class="hb-fold"><summary>What the customer will see</summary>' +
-        (p.customer.scope ? '<p class="hb-p">' + esc(p.customer.scope) + '</p>' : '') +
-        hbList('What we will do', p.customer.steps) + hbList('Please have ready', p.customer.ready) + hbList('Not included', p.customer.notIncluded) +
+      /* SHORT AND PRACTICAL: one line per task, the top 2 risks, the 2
+         questions. Everything longer sits under one "More details". */
+      '<div class="hq">' +
+        '<div class="hq-k">The work</div>' + p.tasks.slice(0, 6).map(function (t) {
+          return '<div class="hq-row"><span>' + esc(hbClip(t.task, 60)) + '</span><b>' + t.hours + ' h' + (t.workers > 1 ? ' × ' + t.workers : '') + '</b></div>';
+        }).join('') +
+        (p.warnings.length ? '<div class="hq-k">Watch</div>' + p.warnings.slice(0, 2).map(function (w) { return '<div class="hq-w">' + esc(hbClip(w, 90)) + '</div>'; }).join('') : '') +
+        (p.askCustomer.length ? '<div class="hq-k">Ask the customer</div>' + p.askCustomer.slice(0, 2).map(function (q) { return '<div class="hq-q">' + esc(hbClip(q, 90)) + '</div>'; }).join('') : '') +
+      '</div>' +
+      '<details class="hb-fold"><summary>More details</summary>' +
+        '<div class="hb-tasks">' + p.tasks.map(function (t) {
+          return '<div class="hb-task"><div><b>' + esc(t.task) + '</b>' + (t.note ? '<div class="hb-note">' + esc(t.note) + '</div>' : '') + '</div><div class="hb-h">' + t.hours + ' h' + (t.workers > 1 ? ' × ' + t.workers : '') + (t.materialCost ? '<br>' + hbMoney(t.materialCost) + ' mat.' : '') + '</div></div>';
+        }).join('') + '</div>' +
+        (p.warnings.length > 2 ? hbList('All risks', p.warnings, 'hb-warn') : '') +
+        '<div class="hb-two">' + hbList('Tools to bring', p.tools) + hbList('Materials to bring', p.materials) + '</div>' +
+        (p.customer.scope ? '<div class="hq-k">What the customer will see</div><p class="hb-p">' + esc(p.customer.scope) + '</p>' : '') +
+        hbList('Please have ready', p.customer.ready) + hbList('Not included', p.customer.notIncluded) +
       '</details>';
   }
   var chat = (st.chat || []).slice(-2);
-  if (chat.length) h += '<div class="hb-chat">' + chat.map(function (m) { return '<div class="hb-m hb-' + (m.from === 'owner' ? 'me' : 'ai') + '">' + esc(m.text) + '</div>'; }).join('') + '</div>';
+  /* only the brain's last answer, cut to two sentences; tap for the rest */
+  if (chat.length) h += '<div class="hb-chat">' + chat.map(function (m) {
+    var full = String(m.text || ''), s = hbSentences(full, 2);
+    return '<div class="hb-m hb-' + (m.from === 'owner' ? 'me' : 'ai') + '">' + (s.length < full.length ? '<details class="hb-more"><summary>' + esc(s) + ' <u>more</u></summary>' + esc(full.slice(s.length)) + '</details>' : esc(full)) + '</div>';
+  }).join('') + '</div>';
   if (busy) h += '<div class="hb-wait">Thinking… this takes about 30–60 seconds.</div>';
   if (st.status === 'error') h += '<div class="hb-err">' + esc(st.error || 'Something went wrong') + ' <button onclick="hbRun(\'\')">Try again</button></div>';
   var last = chat.length ? chat[chat.length - 1] : null;
@@ -10648,7 +10672,7 @@ function hbShow(st) {
     h += (chips.length ? '<div class="hb-chips">' + chips.map(function (c) { return '<button onclick="hbRun(this.textContent)">' + esc(c) + '</button>'; }).join('') + '</div>' : '') +
       '<div class="hb-say"><textarea id="hb-input" rows="2" placeholder="Tell the brain… e.g. 2 hours, $350 flat, we bring touch-up paint"></textarea><button onclick="hbSay()">Send</button></div>';
   }
-  h += '<details class="hb-fold"' + (r.draft ? ' open' : '') + '><summary>' + (r.draft ? 'Set your rates (draft now)' : 'Your rates: ' + hbMoney(r.hourly) + '/hr · min ' + hbMoney(r.minimumCharge)) + '</summary><div class="hb-rates">' +
+  h += '<details class="hb-fold"><summary>' + (r.draft ? 'Your rates (draft): ' + hbMoney(r.hourly) + '/hr · min ' + hbMoney(r.minimumCharge) : 'Your rates: ' + hbMoney(r.hourly) + '/hr · min ' + hbMoney(r.minimumCharge)) + '</summary><div class="hb-rates">' +
     '$<input id="hb-r-h" type="number" inputmode="decimal" value="' + (r.hourly || '') + '">/hr · min $<input id="hb-r-m" type="number" inputmode="decimal" value="' + (r.minimumCharge != null ? r.minimumCharge : '') + '"> · materials +<input id="hb-r-p" type="number" inputmode="decimal" value="' + (r.materialMarkupPct != null ? r.materialMarkupPct : '') + '">% <button onclick="hbRates()">Save</button></div></details>';
   box.innerHTML = h;
 }
