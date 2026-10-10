@@ -154,27 +154,35 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
 .team-role{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#c8860a;font-weight:700;margin-bottom:12px}
 .team-card p{font-size:16px;line-height:1.7;color:var(--gray,#4a5568);margin:0}
 
-/* HERO: finished-room photo behind, services rolling up on the right */
-.about-hero--roll{position:relative;background:#0a1628 url(/images/services-strip/interior.jpg) center/cover no-repeat;isolation:isolate}
-.about-hero--roll:before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(10,22,40,.94) 0%,rgba(10,22,40,.82) 48%,rgba(10,22,40,.55) 100%)}
+/* HERO: finished-room photo behind, a narrow column of services rolling up on the right */
+.about-hero--roll{position:relative;background:#0a1628 url(/images/services-strip/interior.jpg) center/cover no-repeat;isolation:isolate;grid-template-columns:minmax(0,1fr) minmax(260px,30%);overflow:hidden}
+.about-hero--roll:before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(10,22,40,.94) 0%,rgba(10,22,40,.84) 55%,rgba(10,22,40,.6) 100%)}
 .about-hero--roll h1{color:#fff}.about-hero--roll h1 em{color:#f0a500}
 .about-hero--roll p{color:rgba(255,255,255,.82)}
 .about-hero--roll .breadcrumb,.about-hero--roll .breadcrumb span{color:rgba(255,255,255,.6)}
 .about-hero--roll .about-hero-ctas .btn-secondary{color:#fff;border-color:rgba(255,255,255,.5)}
 .about-hero--roll .about-hero-ctas .btn-primary{background:#c8860a!important;border-color:#c8860a!important;color:#fff!important}
-.about-hero--roll .about-hero-pic{display:flex;align-items:center;justify-content:center;padding:40px clamp(20px,4vw,56px)}
-.about-hero--roll .about-hero-pic::after{display:none}
-.sv-roll{width:100%;max-width:400px;height:540px;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(180deg,transparent,#000 12%,#000 88%,transparent)}
-.sv-track{animation:svUp 46s linear infinite}
+.about-hero--roll .about-hero-pic{position:relative;min-height:0;order:0}
+.about-hero--roll .about-hero-pic::after{content:'';display:block;position:absolute;left:0;right:0;top:0;height:34%;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(10,22,40,.85),rgba(10,22,40,0));-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);-webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);mask-image:linear-gradient(180deg,#000 30%,transparent)}
+.sv-roll{position:absolute;top:0;bottom:0;left:0;right:clamp(12px,3vw,48px);overflow:hidden;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 22%,#000 90%,transparent);mask-image:linear-gradient(180deg,transparent 0,#000 22%,#000 90%,transparent)}
+.sv-track{animation:svUp 60s linear infinite}
 .sv-roll:hover .sv-track,.sv-roll:focus-within .sv-track{animation-play-state:paused}
 @keyframes svUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
-.sv-card{position:relative;display:block;height:150px;margin-bottom:14px;border-radius:16px;overflow:hidden;text-decoration:none;border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 34px rgba(0,0,0,.35)}
+.sv-card{position:relative;display:block;height:150px;margin-bottom:12px;border-radius:14px;overflow:hidden;text-decoration:none;border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 30px rgba(0,0,0,.35)}
 .sv-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s}
 .sv-card:hover img{transform:scale(1.05)}
-.sv-card span{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;padding:28px 16px 13px;background:linear-gradient(180deg,transparent,rgba(10,22,40,.92));color:#fff;font-weight:700;font-size:17px;letter-spacing:.01em}
-.sv-card i{font-style:normal;color:#f0a500;font-size:24px;line-height:1}
-@media(max-width:900px){.about-hero--roll{grid-template-columns:1fr}.about-hero--roll:before{background:linear-gradient(180deg,rgba(10,22,40,.9),rgba(10,22,40,.82))}
- .about-hero--roll .about-hero-pic{padding:0 20px 36px;order:0;min-height:0}.sv-roll{max-width:none;height:340px}.sv-card{height:132px}}
+.sv-card span{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:6px;padding:24px 12px 10px;background:linear-gradient(180deg,transparent,rgba(10,22,40,.92));color:#fff;font-weight:700;font-size:15px;line-height:1.2}
+.sv-card i{font-style:normal;color:#f0a500;font-size:20px;line-height:1}
+@media(max-width:900px){
+ .about-hero--roll{grid-template-columns:minmax(0,1fr) 36%}
+ .about-hero--roll .about-hero-text{padding:36px 14px 40px 20px}
+ .about-hero--roll h1{font-size:30px}
+ .about-hero--roll p{font-size:15px!important;line-height:1.55!important}
+ .about-hero--roll .about-hero-ctas{flex-direction:column}
+ .about-hero--roll .about-hero-ctas a{text-align:center;padding-left:10px;padding-right:10px}
+ .sv-roll{right:10px}.sv-card{height:104px;margin-bottom:9px;border-radius:12px}
+ .sv-card span{font-size:12px;padding:18px 8px 7px}.sv-card i{display:none}
+}
 @media(prefers-reduced-motion:reduce){.sv-track{animation:none}.sv-roll{overflow-y:auto}.sv-dup{display:none}}
 </style>
 <link rel="stylesheet" href="partials/site.css">
