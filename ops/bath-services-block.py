@@ -22,7 +22,7 @@ SERVICES = [
     ("/tub-to-shower-conversion", "tub-to-shower", "Bathtub to Walk-In Shower",
      "No more stepping over the tub. A safe, low-entry shower, ideal for seniors."),
     ("/bathroom-wall-panels", "wall-panels", "Bathroom Wall Panels (No Demo)",
-     "Waterproof PVC panels right over your old wall tile. Done in 1&ndash;2 days."),
+     "Waterproof vinyl panels glued over your old wall tile. Done in 1&ndash;3 days."),
     ("/bathroom-floor-tile-installation", "tile", "Bathroom &amp; Shower Tile",
      "New floor or shower tile, laid flat, waterproofed and sealed."),
     ("/shower-waterproofing", "waterproofing", "Shower Waterproofing &amp; Leaks",
