@@ -52,6 +52,7 @@ async function api(body) {
   if (!r.ok) throw new Error(j.error || 'Something went wrong');
   return j;
 }
+function fmtPhone(v) { var d = String(v || '').replace(/\D/g, ''); if (d.length === 11 && d[0] === '1') d = d.slice(1); return d.length === 10 ? '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6) : v; }
 function niceDate(d) { if (!/^\d{4}-\d{2}-\d{2}$/.test(d || '')) return d || ''; var x = new Date(d + 'T12:00:00'); return x.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
 function list(title, arr, key) {
   if (!arr || !arr.length) return '';
@@ -67,18 +68,19 @@ function render() {
     ((s.date || s.time) ? '<div class="row"><span>When</span><span>' + esc([niceDate(s.date), s.time].filter(Boolean).join(' · ')) + '</span></div>' : '') +
     (s.hours ? '<div class="row"><span>Time on site</span><span>' + esc(s.hours) + '</span></div>' : '') +
     (s.customer ? '<div class="row"><span>Customer</span><span>' + esc(s.customer) + '</span></div>' : '') +
-    (s.phone ? '<div class="row"><span>Customer phone</span><span><a href="tel:' + esc(s.phone) + '">' + esc(s.phone) + '</a></span></div>' : '') +
+    (s.phone ? '<div class="row"><span>Customer phone</span><span><a href="tel:' + esc(s.phone) + '">' + esc(fmtPhone(s.phone)) + '</a></span></div>' : '') +
     '<div class="row"><span>Questions?</span><span><a href="tel:+13322770990">Call the office</a></span></div></div>';
   h += '<div class="card"><div class="k">The job</div>' + (s.explain ? '<p>' + esc(s.explain) + '</p>' : '') + (s.customerSaid ? '<div class="said">Customer wrote: “' + esc(s.customerSaid) + '”</div>' : '') + '</div>';
   if (s.building.length || s.warnings.length) h += '<div class="card warn"><div class="k">Watch out</div><ul>' + s.building.concat(s.warnings).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
   if (s.photos.length) h += '<div class="card"><div class="k">Customer photos</div><div class="photos">' + s.photos.map(function (u) { return '<a href="' + esc(u) + '" target="_blank"><img src="' + esc(u) + '" alt="Job photo" loading="lazy"></a>'; }).join('') + '</div></div>';
   h += '<div class="two">' + list('Tools to bring', s.tools, 't') + list('Materials to bring', s.materials, 'm') + '</div>';
   if (s.steps.length) h += '<div class="card"><div class="k">Step by step · ' + done + ' of ' + s.steps.length + ' done</div><div class="bar"><i style="width:' + Math.round(100 * done / s.steps.length) + '%"></i></div>' +
-    s.steps.map(function (x, i) { return '<div class="step' + (P.steps[i] ? ' done' : '') + '" onclick="step(' + i + ')"><div class="box">' + (P.steps[i] ? '✓' : '') + '</div><div><div class="n">STEP ' + (i + 1) + '</div><b>' + esc(x.step) + '</b>' + (x.how ? '<div class="how">' + esc(x.how) + '</div>' : '') + '</div></div>'; }).join('') + '</div>';
+    s.steps.map(function (x, i) { return '<div class="step' + (P.steps[i] ? ' done' : '') + '"' + (P.doneAt ? '' : ' onclick="step(' + i + ')"') + '><div class="box">' + (P.steps[i] ? '✓' : '') + '</div><div><div class="n">STEP ' + (i + 1) + '</div><b>' + esc(x.step) + '</b>' + (x.how ? '<div class="how">' + esc(x.how) + '</div>' : '') + '</div></div>'; }).join('') + '</div>';
   h += list('Check before you leave', s.checks, 'c');
   if (s.notIncluded.length) h += '<div class="card"><div class="k">Not in this job · call the office first</div><ul>' + s.notIncluded.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
   var before = P.photos.filter(function (p) { return p.kind === 'before'; }).length, after = P.photos.length - before;
-  h += '<div class="card"><div class="k">Photos for the office</div><p style="font-size:14px;color:#666">Before you start and when you finish.</p>' +
+  if (P.doneAt) h += '<div class="card"><div class="k">Photos for the office</div><p style="font-size:14px;color:#666">' + (before ? before + ' before' : '') + (before && after ? ' · ' : '') + (after ? after + ' after' : '') + (P.photos.length ? ' · sent to the office.' : 'No photos were added.') + ' This job is closed. Call the office to change anything.</p></div>';
+  else h += '<div class="card"><div class="k">Photos for the office</div><p style="font-size:14px;color:#666">Before you start and when you finish.</p>' +
     '<button class="btn ghost" onclick="pick(\'before\')">Add before photo' + (before ? ' (' + before + ')' : '') + '</button>' +
     '<button class="btn ghost" onclick="pick(\'after\')">Add after photo' + (after ? ' (' + after + ')' : '') + '</button>' +
     '<input type="file" id="ph" accept="image/*" capture="environment" hidden></div>';

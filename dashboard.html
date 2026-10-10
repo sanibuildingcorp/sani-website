@@ -2861,6 +2861,27 @@ body:has(#handyman-modal.show),body:has(#edit-modal.show),body:has(#invoice-moda
 .hbc-tags .hbc-pill{font-weight:700}
 .hbc-pill.gold{background:#fbf3df;color:#8a6a1c}.hbc-pill.red{background:#fde8e8;color:#a12a2a}.hbc-pill.blue{background:#e8effd;color:#1d4ed8}
 .hbc-pill.ok{background:#e7f5ec;color:#1e7a45}.hbc-pill.warn{background:#fff1dd;color:#9a5a00}.hbc-pill.mute{background:#eee;color:#666}
+
+.dn{background:#f3faf5;border:1px solid #cfe8d6;border-radius:14px;padding:16px;margin:12px 0}
+.dn-k{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#1e7a45;margin-bottom:10px}
+.dn-money{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.dn-money>div{background:#fff;border:1px solid #e3efe6;border-radius:10px;padding:10px}
+.dn-money span{display:block;font-size:12px;color:#6b6b70}
+.dn-money b{display:block;font-size:20px;color:#14213d;margin-top:2px}
+.dn-bal b{color:#9a5a00}.dn-bal.ok b{color:#1e7a45}
+.dn-tick{display:flex;align-items:center;gap:6px;font-size:13px;color:#444;margin-top:6px;cursor:pointer}
+.dn-acts{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.dn-acts .hd-go{width:100%}
+.dn-rev{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.dn-sub{width:100%;font-size:13px;font-weight:700;color:#14213d}
+.dn-rev .hd-alt{flex:1;text-align:center;text-decoration:none}
+.dn-log{font-size:13px;color:#6b6b70;margin-top:10px}
+.dn-more{margin-top:10px;background:none;border:0;padding:0;color:#55555a;text-decoration:underline;font:inherit;font-size:13px;cursor:pointer}
+#handyman-card.is-done:not(.show-brain) #hb-box{display:none}
+.dn .hd-go,.dn .hd-alt{display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:12px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;box-sizing:border-box;padding:10px 14px}
+.dn .hd-go{background:#c4a35a;color:#14213d;border:0}
+.dn .hd-go:disabled{opacity:.45;cursor:not-allowed}
+.dn .hd-alt{background:#fff;color:#14213d;border:1.5px solid #14213d}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -10392,7 +10413,13 @@ async function hbLoadPrices() {
 }
 function hbShortHours(h) {
   /* "measure visit 1 hour, install day 8-9 hours" -> "8-9 hrs"; "4-5 hours on site" -> "4-5 hrs" */
-  var m = String(h || '').match(/(\d+(?:\.\d+)?(?:\s*[-–]\s*\d+(?:\.\d+)?)?)\s*(?:h|hr|hrs|hour|hours)\b/gi);
+  var s = String(h || '').replace(/(\d)\s*to\s*(\d)/gi, '$1-$2');
+  var m = s.match(/(\d+(?:\.\d+)?(?:\s*[-–]\s*\d+(?:\.\d+)?)?)\s*(?:h|hr|hrs|hour|hours)\b/gi);
+  var days = s.match(/(\d+(?:\s*[-–]\s*\d+)?)\s*(?:full\s+)?days?\b/i);
+  /* "measure visit 1 hour + install day": the install day is the real length */
+  var longest = m ? Math.max.apply(null, m.map(function (x) { return parseFloat(x.replace(/\s*(h|hr|hrs|hour|hours)$/i, '').split(/[-–]/).pop()); })) : 0;
+  if (days && longest < 6) return days[1].replace(/\s+/g, '') === '1' ? 'Full day' : days[1].replace(/\s+/g, '') + ' days';
+  if (longest < 6 && /\b(install|full|work)\s+day\b/i.test(s)) return 'Full day';
   if (!m) return '';
   /* several parts (measure visit + install day): show the longest one */
   var best = m.map(function (x) { return x.replace(/\s*(h|hr|hrs|hour|hours)$/i, '').replace(/\s+/g, ''); })
@@ -10448,6 +10475,7 @@ function renderHandymanList() {
   var seenKey = {};
   handymanBookings.forEach(function (b) {
     if (hbGroup(b) === 'done') return;
+    if (!HB_SHOW_TESTS && hbIsTest(b)) return;
     var k = String(b.customer_phone || '').replace(/\D/g, '').slice(-10) || String(b.customer_email || '').toLowerCase();
     if (!k) return;
     (seenKey[k] = seenKey[k] || []).push(b);
@@ -10611,6 +10639,88 @@ async function hbRates() {
    picks a worker and sends him a private job link (crew.html): where, when,
    what kind of job, steps with HOW, tools and materials, photos. No prices. */
 var CR = { roster: [], job: null, ref: null };
+/* ════════════════════════════════════════════════════════════════════
+   THE DONE CARD. When the job is finished the price buttons make no sense.
+   It shows the money (price, deposit, balance), the crew photos and two
+   jobs left: send the invoice and ask for a Google review. The price and
+   the brain notes fold away under "Show price and brain notes".
+   ════════════════════════════════════════════════════════════════════ */
+var HD = { ref: null, state: {} };
+function hdNums(b) {
+  var a = (b.agreements || [])[0] || {}, bp = HB_PRICES[b.ref] || {};
+  var total = Number(a.fixed_price != null ? a.fixed_price : (a.price_max != null ? a.price_max : bp.total)) || 0;
+  var dep = a.pay_now_enabled ? Number(a.pay_now_amount) || 0 : 0;
+  var got = HD.state.depositPaid ? Math.min(total, dep) : 0;
+  return { total: total, deposit: dep, got: got, balance: HD.state.paid ? 0 : total - got, scope: String(a.scope_summary || '') };
+}
+function hdLines(b, n) {
+  var l = n.scope.split(/\n/).filter(function (x) { return /^\s*[-•]/.test(x); }).map(function (x) { return x.replace(/^\s*[-•]\s*/, '').trim(); }).filter(Boolean);
+  if (!l.length) { var bp = HB_PRICES[b.ref] || {}; if (bp.title) l = [bp.title]; }
+  return l;
+}
+async function hdDoneLoad(b) {
+  HD = { ref: b.ref, state: {} };
+  try { var r = await sbcFetch('/.netlify/functions/handyman-done?ref=' + encodeURIComponent(b.ref)); HD.state = ((await r.json()) || {}).state || {}; } catch (e) {}
+  if (HD.ref !== b.ref) return;
+  hdDoneShow(b);
+}
+function hdDoneShow(b) {
+  var box = document.getElementById('done-box'); if (!box) return;
+  var card = document.getElementById('handyman-card'); if (card) card.classList.add('is-done');
+  var n = hdNums(b), s = HD.state, j = CR.job || {}, inv = (s.invoices || []).slice(-1)[0];
+  var ph = (j.photos || []).map(function (p) { var u = '/.netlify/functions/crew?photo=' + p.id; return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="' + p.kind + '"><small>' + p.kind + '</small></a>'; }).join('');
+  var smsTo = String(b.customer_phone || '').replace(/[^\d+]/g, '');
+  var first = String(b.customer_name || '').trim().split(/\s+/)[0] || 'there';
+  var revText = 'Hi ' + first + ', thank you for having us. If you\'re happy with the work, a short Google review would mean a lot to our small team: https://g.page/r/CXtX_n13XF6aEBE/review';
+  box.innerHTML = '<div class="dn">' +
+    '<div class="dn-k">Job done' + (j.doneAt ? ' · ' + fmtDate(j.doneAt) : '') + (j.crewName ? ' · ' + esc(j.crewName) : '') + '</div>' +
+    '<div class="dn-money">' +
+      '<div><span>Price</span><b>' + hbMoney(n.total) + '</b></div>' +
+      (n.deposit ? '<div><span>Deposit</span><b>' + hbMoney(n.deposit) + '</b><label class="dn-tick"><input type="checkbox"' + (s.depositPaid ? ' checked' : '') + ' onchange="hdSet(\'deposit\', this.checked)"> Received</label></div>' : '') +
+      '<div class="dn-bal' + (s.paid ? ' ok' : '') + '"><span>' + (s.paid ? 'Paid in full' : 'Balance due') + '</span><b>' + hbMoney(n.balance) + '</b><label class="dn-tick"><input type="checkbox"' + (s.paid ? ' checked' : '') + ' onchange="hdSet(\'paid\', this.checked)"> Paid</label></div>' +
+    '</div>' +
+    (ph ? '<div class="crw-ph">' + ph + '</div>' : '') +
+    '<div class="dn-acts">' +
+      '<button class="hd-go" onclick="hdInvoice()" ' + (s.paid ? 'disabled' : '') + '>' + (inv ? 'Send invoice again' : 'Send invoice') + '</button>' +
+      '<div class="dn-rev"><div class="dn-sub">Ask for a Google review</div>' +
+        (smsTo ? '<a class="hd-alt" href="sms:' + esc(smsTo) + '&body=' + encodeURIComponent(revText) + '" onclick="hdSet(\'review-texted\')">Text it</a>' : '') +
+        (b.customer_email ? '<button class="hd-alt" onclick="hdReview()">Email it</button>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="dn-log">' +
+      (inv ? 'Invoice sent ' + fmtDate(inv.at) + ' · balance ' + hbMoney(inv.balance) + '. ' : 'No invoice sent yet. ') +
+      (s.reviewAt ? 'Review asked ' + fmtDate(s.reviewAt) + ' by ' + esc(s.reviewBy || 'email') + '.' : 'Review not asked yet.') +
+    '</div>' +
+    '<button class="dn-more" onclick="document.getElementById(\'handyman-card\').classList.toggle(\'show-brain\')">Show price and brain notes</button>' +
+  '</div>';
+}
+async function hdPost(body) {
+  var r = await sbcFetch('/.netlify/functions/handyman-done', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ ref: HD.ref }, body)) });
+  var j = await r.json().catch(function () { return {}; });
+  if (!r.ok) throw new Error(j.error || 'Could not save');
+  HD.state = j.state || HD.state;
+  hdDoneShow(currentHandymanBooking);
+}
+async function hdSet(what, on) {
+  try { await hdPost(what === 'review-texted' ? { action: 'review-texted' } : { action: what, on: !!on }); }
+  catch (e) { toast(e.message, true); }
+}
+async function hdInvoice() {
+  var b = currentHandymanBooking, n = hdNums(b);
+  if (!b.customer_email) { toast('No email on this booking. Call or text the customer instead.', true); return; }
+  var lines = hdLines(b, n);
+  var msg = 'Send this invoice to ' + b.customer_email + '?\n\nTotal ' + hbMoney(n.total) + (n.got ? '\nDeposit received -' + hbMoney(n.got) : '') + '\nBalance due ' + hbMoney(n.total - n.got) +
+    (n.deposit && !HD.state.depositPaid ? '\n\nThe $' + n.deposit + ' deposit is NOT ticked as received, so it is not taken off.' : '');
+  if (!confirm(msg)) return;
+  try { await hdPost({ action: 'invoice', total: n.total, deposit: n.deposit, lines: lines }); toast('Invoice sent'); }
+  catch (e) { toast(e.message, true); }
+}
+async function hdReview() {
+  var b = currentHandymanBooking;
+  if (!confirm('Email ' + b.customer_email + ' a short thank-you with your Google review link?')) return;
+  try { await hdPost({ action: 'review' }); toast('Review request sent'); }
+  catch (e) { toast(e.message, true); }
+}
 function crStage(b, job) {
   var st = String(b.status || 'new').toLowerCase(), ag = String(b.agreement_status || '').toLowerCase();
   if (st === 'completed' || (job && job.doneAt)) return 4;
@@ -10642,6 +10752,7 @@ async function crLoad(b) {
   if (CR.ref !== b.ref) return;
   var s = document.getElementById('cr-steps'); if (s) s.outerHTML = crSteps(b, CR.job);
   crShow();
+  if (crStage(b, CR.job) === 4) hdDoneLoad(b);
 }
 function crPhoneDigits(p) { var d = String(p || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d; }
 function crShow() {
@@ -10788,6 +10899,7 @@ function renderHandymanModal(b) {
       (said ? '<div class="hd-said">“' + esc(said.length > 260 ? said.slice(0, 260) + '…' : said) + '”</div>' : '') +
       (photoUrls.length ? '<div class="hd-photos">' + photoUrls.map(function (url) { return '<img src="' + esc(url) + '" alt="Customer photo" onclick="openLightbox(\'' + esc(url) + '\')">'; }).join('') + '</div>' : '') +
     '</div>' +
+    '<div id="done-box"></div>' +
     '<div id="hb-box" class="hb"><div class="hb-wait">Sani brain is reading this job…</div></div>' +
     '<div id="crew-box" class="crw" style="display:none"></div>' +
     /* What has actually gone out to this customer, and what was in it. */

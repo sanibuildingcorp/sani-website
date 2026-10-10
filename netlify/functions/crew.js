@@ -68,6 +68,7 @@ exports.handler = async function (event) {
         const sheet = crewJob.sheet(bk, await planOf(job.ref), job);
         return out(200, { sheet, progress: { steps: job.steps || {}, photos: job.photos || [], doneAt: job.doneAt || "" } });
       }
+      if (job.doneAt && (b.action === "step" || b.action === "photo")) return out(409, { error: "This job is closed. Call the office to change anything." });
       if (b.action === "step") {
         job.steps = job.steps || {}; job.steps[String(Number(b.i) || 0)] = !!b.done;
       } else if (b.action === "photo") {
