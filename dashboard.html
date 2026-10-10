@@ -10343,7 +10343,7 @@ function handymanSentPanel(b) {
     rows.map(function (a, i) {
       var when = a.created_at ? new Date(a.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
       var st = String(a.status || '').toLowerCase();
-      var appt = [a.appointment_date, a.appointment_time, a.duration_text].filter(Boolean).join(' · ');
+      var appt = [a.appointment_date && /^\d{4}-\d{2}-\d{2}$/.test(a.appointment_date) ? new Date(a.appointment_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : a.appointment_date, a.appointment_time, a.duration_text].filter(Boolean).join(' · ');
       return '<div style="border:1px solid var(--line,rgba(13,27,42,.14));border-radius:10px;padding:11px 13px;margin-bottom:8px;' +
         (i === 0 ? 'background:rgba(29,78,216,.04)' : 'opacity:.72') + '">' +
         '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline">' +
@@ -10394,8 +10394,10 @@ function hbShortHours(h) {
   /* "measure visit 1 hour, install day 8-9 hours" -> "8-9 hrs"; "4-5 hours on site" -> "4-5 hrs" */
   var m = String(h || '').match(/(\d+(?:\.\d+)?(?:\s*[-–]\s*\d+(?:\.\d+)?)?)\s*(?:h|hr|hrs|hour|hours)\b/gi);
   if (!m) return '';
-  var last = m[m.length - 1].replace(/\s*(h|hr|hrs|hour|hours)$/i, '').replace(/\s+/g, '');
-  return last + ' hrs';
+  /* several parts (measure visit + install day): show the longest one */
+  var best = m.map(function (x) { return x.replace(/\s*(h|hr|hrs|hour|hours)$/i, '').replace(/\s+/g, ''); })
+    .sort(function (a, b) { return parseFloat(b.split(/[-–]/).pop()) - parseFloat(a.split(/[-–]/).pop()); })[0];
+  return best + ' hrs';
 }
 function hbCard(b) {
   const status = (b.status || "new").toLowerCase();
@@ -10425,6 +10427,7 @@ function hbCard(b) {
     '<div class="hbc-who">' + esc(b.customer_name || '') + ' · ' + fmtDate(b.submitted_at) + '</div>' +
     '<div class="hbc-tags">' +
       (pill ? '<span class="hbc-pill ' + pill[1] + '">' + pill[0] + '</span>' : '') +
+      (HB_DUP[b.ref] ? '<span class="hbc-pill warn">Same customer · ' + HB_DUP[b.ref] + ' requests</span>' : '') +
       (a.place ? '<span>' + esc(b.answers.place) + '</span>' : '') +
       (a.job_size ? '<span>' + esc(b.answers.job_size) + '</span>' : '') +
       (photoCount ? '<span>' + photoCount + ' photo' + (photoCount === 1 ? '' : 's') + '</span>' : '') +
@@ -10433,12 +10436,23 @@ function hbCard(b) {
 }
 function hbToggle(k) { HB_OPEN[k] = !HB_OPEN[k]; renderHandymanList(); }
 function hbTests() { HB_SHOW_TESTS = !HB_SHOW_TESTS; renderHandymanList(); }
+var HB_DUP = {};
 function renderHandymanList() {
   const host = document.getElementById("list-host");
   if (handymanBookings.length === 0) {
     host.innerHTML = '<div class="empty"><div class="empty-icon">🔧</div><h3>No handyman bookings yet</h3><p>Customer bookings from handyman-estimate.html will appear here.</p></div>';
     return;
   }
+  /* the same customer asking twice: flag it so the job is not priced twice */
+  HB_DUP = {};
+  var seenKey = {};
+  handymanBookings.forEach(function (b) {
+    if (hbGroup(b) === 'done') return;
+    var k = String(b.customer_phone || '').replace(/\D/g, '').slice(-10) || String(b.customer_email || '').toLowerCase();
+    if (!k) return;
+    (seenKey[k] = seenKey[k] || []).push(b);
+  });
+  Object.keys(seenKey).forEach(function (k) { if (seenKey[k].length > 1) seenKey[k].forEach(function (b) { HB_DUP[b.ref] = seenKey[k].length; }); });
   var tests = handymanBookings.filter(hbIsTest);
   var real = HB_SHOW_TESTS ? handymanBookings : handymanBookings.filter(function (b) { return !hbIsTest(b); });
   var groups = [
@@ -10548,9 +10562,11 @@ function hbShow(st) {
     h += '<div class="hb-price"><div><div class="hb-big">' + hbMoney(pr.total) + '</div><div class="hb-sub">' +
       (pr.flat ? 'Your flat price' : (pr.minimumApplied ? 'Your minimum visit' : pr.laborHours + ' labor hrs × ' + hbMoney(r.hourly) + ' + materials')) +
       (p.visitHours ? ' · ' + esc(p.visitHours) + ' on site' : '') + '</div></div></div>' +
-      '<div class="hb-money"><span>Labor ' + hbMoney(pr.labor) + '</span><span>Materials ' + hbMoney(pr.materials) + '</span><span>Profit ' + hbMoney(pr.profit) + '</span>' + (p.deposit > 0 ? '<span>Deposit ' + hbMoney(p.deposit) + '</span>' : '') + '</div>' +
+      '<div class="hb-money"><span>Labor ' + hbMoney(pr.labor) + '</span><span>Materials ' + hbMoney(pr.materials) + '</span><span title="Price minus materials. Crew pay still comes out of this.">Left after materials ' + hbMoney(pr.profit) + ' <small style="opacity:.7">(before crew pay)</small></span>' + (p.deposit > 0 ? '<span>Deposit ' + hbMoney(p.deposit) + '</span>' : '') + '</div>' +
       '<div class="hd-acts">' +
-        '<button class="hd-go" onclick="openConfirmationModal()">' + (sent ? 'Send new price' : 'Send price') + '</button>' +
+        (sent === 'signed'
+          ? '<button class="hd-alt" onclick="if (confirm(\'The customer already signed this price. Send them a NEW agreement to sign again?\')) openConfirmationModal()">Change after signing</button>'
+          : '<button class="hd-go" onclick="openConfirmationModal()">' + (sent ? 'Send new price' : 'Send price') + '</button>') +
         '<button class="hd-alt" onclick="hbFocus()">Change price</button>' +
         '<button class="hd-no" onclick="hdDeclineOpen()">Not for us</button>' +
       '</div><div id="hd-decline"></div>' +
@@ -11002,7 +11018,7 @@ function openConfirmationModal() {
   document.getElementById('price-fixed').value = '';
   document.getElementById('price-cap').value = b.estimated_labor_max || '';
   document.getElementById('appt-date').value = b.preferred_date || '';
-  document.getElementById('appt-time').value = '';
+  document.getElementById('appt-time').value = ({ morning: 'Morning (8–12)', afternoon: 'Afternoon (12–5)', evening: 'Evening (5–8)' })[String(b.preferred_time || '').toLowerCase()] || '';
   document.getElementById('appt-duration').value = 
     (b.estimated_time_min && b.estimated_time_max) 
       ? b.estimated_time_min + '-' + b.estimated_time_max + ' hours'

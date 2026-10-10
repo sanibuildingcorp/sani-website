@@ -199,6 +199,9 @@ body {
   color:var(--gold-2);
   margin-bottom:4px;
 }
+.sn-h { font-weight:700; color:var(--ink); margin:10px 0 4px; font-size:13.5px; }
+.sn-list { margin:0 0 4px 18px; padding:0; }
+.sn-list li { margin:3px 0; }
 .special-notes-text {
   font-size:13px;
   color:var(--ink-soft);
@@ -216,9 +219,9 @@ body {
   font-size:13.5px;
   color:var(--ink-soft);
   line-height:1.6;
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
+  display:block;
+  position:relative;
+  padding-left:26px;
 }
 .terms-list li:last-child { border-bottom:none; }
 .terms-list li::before {
@@ -226,7 +229,9 @@ body {
   color:var(--gold);
   font-weight:700;
   font-size:16px;
-  flex-shrink:0;
+  position:absolute;
+  left:0;
+  top:11px;
 }
 
 /* PRICE HERO */
@@ -379,6 +384,8 @@ body {
   display:flex;
   justify-content:space-between;
   align-items:center;
+  gap:10px;
+  min-width:0;
   padding:8px 0;
   border-bottom:1px dashed var(--line);
   font-size:14px;
@@ -398,8 +405,19 @@ body {
   display:flex;
   align-items:center;
   gap:8px;
+  min-width:0;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  text-align:right;
+}
+@media (max-width:480px) {
+  .zelle-detail-row { flex-direction:column; align-items:flex-start; gap:4px; }
+  .zelle-detail-value { justify-content:space-between; width:100%; font-size:13px; text-align:left; }
+  .zelle-detail-value .copy-btn { margin-left:auto; }
 }
 .copy-btn {
+  flex-shrink:0;
+
   background:var(--gold-soft);
   border:1px solid var(--gold);
   color:var(--gold-2);
@@ -714,8 +732,8 @@ body {
   <div class="hdr">
     <div class="brand">SANI BUILDING CORP</div>
     <div class="tag">Service Agreement</div>
-    <h1>Your <em>Appointment</em> Awaits</h1>
-    <div class="hdr-sub">Review the details, then sign to confirm or request changes</div>
+    <h1 id="hdr-title">Your <em>Appointment</em> Awaits</h1>
+    <div class="hdr-sub" id="hdr-sub">Review the details, then sign to confirm or request changes</div>
     <div class="ref-badge" id="ref-badge">Loading...</div>
   </div>
 
@@ -790,12 +808,12 @@ body {
         <div class="deposit-banner">
           <div class="db-label" id="deposit-label">Deposit Required</div>
           <div class="db-amount" id="deposit-amount">—</div>
-          <div class="db-note">Helps secure your appointment slot</div>
+          <div class="db-note">Holds your appointment slot · pay now or before your visit</div>
         </div>
 
         <!-- ZELLE PAYMENT SECTION -->
         <div class="pay-section">
-          <div class="pay-section-label">💳 Pay Deposit (Optional)</div>
+          <div class="pay-section-label">💳 Pay your deposit</div>
           <div class="pay-section-title">Pay with Zelle</div>
           <div class="pay-section-sub">
             Send your deposit instantly using Zelle. Most major banks support it — no fees, money arrives in seconds.
@@ -851,7 +869,7 @@ body {
       <div class="scope-box">
         <div class="scope-text" id="scope-text">—</div>
         <div class="special-notes" id="special-notes" style="display:none">
-          <div class="special-notes-label">Special Notes:</div>
+          <div class="special-notes-label">Good to know</div>
           <div class="special-notes-text" id="special-notes-text"></div>
         </div>
       </div>
@@ -1004,6 +1022,20 @@ function showError(msg) {
 /* ════════════════════════════════════════════════════════════════════
    RENDER
    ════════════════════════════════════════════════════════════════════ */
+/* "Please have ready: a; b. Not included: c; d" -> two short lists */
+function notesHtml(s) {
+  function esc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  var parts = String(s).split(/(Please have ready:|Not included:)/i);
+  var html = '', label = '';
+  parts.forEach(function (p) {
+    if (/^(Please have ready:|Not included:)$/i.test(p)) { label = p.replace(/:$/, ''); return; }
+    var items = p.split(/;\s+/).map(function (x) { return x.trim().replace(/[.;]\s*$/, ''); }).filter(Boolean);
+    if (!items.length) return;
+    html += (label ? '<div class="sn-h">' + esc(label) + '</div>' : '') +
+      (items.length > 1 || label ? '<ul class="sn-list">' + items.map(function (x) { return '<li>' + esc(x.charAt(0).toUpperCase() + x.slice(1)) + '</li>'; }).join('') + '</ul>' : '<p>' + esc(items[0]) + '</p>');
+  });
+  return html || esc(s);
+}
 function renderAgreement() {
   const a = STATE.agreement;
 
@@ -1023,7 +1055,8 @@ function renderAgreement() {
     const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     whenDisplay = a.appointment_time ? dateStr + ' · ' + a.appointment_time : dateStr;
   }
-  document.getElementById('appt-when').textContent = whenDisplay;
+  document.getElementById('appt-when').textContent = whenDisplay.split(' · ')[0];
+  if (a.appointment_date && a.appointment_time) document.getElementById('appt-when').insertAdjacentHTML('beforeend', '<div style="font-family:var(--body);font-size:15px;font-weight:600;margin-top:6px;opacity:.85">' + String(a.appointment_time).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>');
   document.getElementById('appt-duration').textContent = a.duration_text || 'TBD';
   document.getElementById('appt-customer').textContent = a.customer_name || '';
   document.getElementById('appt-location').textContent = a.customer_address || '';
@@ -1047,13 +1080,13 @@ function renderAgreement() {
   document.getElementById('scope-text').textContent = a.scope_summary || '';
   if (a.special_notes && a.special_notes.trim().length > 0) {
     document.getElementById('special-notes').style.display = 'block';
-    document.getElementById('special-notes-text').textContent = a.special_notes;
+    document.getElementById('special-notes-text').innerHTML = notesHtml(a.special_notes);
   }
 
   // Deposit (if enabled)
   if (a.pay_now_enabled && a.pay_now_amount > 0) {
     document.getElementById('deposit-block').style.display = 'block';
-    document.getElementById('deposit-label').textContent = (a.pay_now_label || 'Deposit') + ' Required';
+    document.getElementById('deposit-label').textContent = (a.pay_now_label || 'Deposit');
     document.getElementById('deposit-amount').textContent = '$' + a.pay_now_amount;
     // Populate Zelle payment section
     document.getElementById('zelle-btn-amount').textContent = '$' + a.pay_now_amount;
@@ -1070,6 +1103,8 @@ function renderAgreement() {
         month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' 
       });
     }
+    document.getElementById('hdr-title').innerHTML = 'You\'re <em>booked</em>';
+    document.getElementById('hdr-sub').textContent = (whenDisplay !== 'To be confirmed' ? 'See you ' + whenDisplay + '. ' : '') + 'A copy of this agreement is in your email.';
     // Hide action card if already signed
     document.getElementById('action-card').style.display = 'none';
     STATE.hasSigned = true;

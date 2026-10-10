@@ -47,7 +47,7 @@ var S = null, P = { steps: {}, photos: [] }, LOCAL = {};
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 try { LOCAL = JSON.parse(localStorage.getItem('crew_chk_' + T) || '{}'); } catch (e) {}
 async function api(body) {
-  var r = await fetch('/.netlify/functions/crew', body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ t: T }, body)) } : undefined);
+  var r = await fetch('/.netlify/functions/crew' + (body ? '' : '?t=' + encodeURIComponent(T)), body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ t: T }, body)) } : undefined);
   var j = await r.json().catch(function () { return {}; });
   if (!r.ok) throw new Error(j.error || 'Something went wrong');
   return j;
