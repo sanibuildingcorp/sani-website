@@ -32,6 +32,10 @@ FAQ = [
     ("Can you convert my bathtub into a walk-in shower?",
      "Yes. We take out the tub, build a new waterproofed shower floor that slopes to the drain, waterproof the walls, tile it, "
      "and finish with a glass door or panel. Most NYC bathrooms with a standard tub alcove can be converted."),
+    ("Why do you remove the bottom row of tile to take out the tub?",
+     "A bathtub has a raised edge, called the flange, that is fastened to the wall studs and hidden behind the bottom row of wall tile. "
+     "To release the tub we have to reach that edge and its fasteners. Removing only the bottom row gives that access and helps protect the tiles above. "
+     "How much tile comes off depends on the tub, the wall behind the tile and the condition of the waterproofing."),
     ("Do I have to replace all the wall tile?",
      "Not always. If your wall tile is small, like subway tile or small squares, we can often remove only the tub and the bottom rows of tile "
      "and continue with a matching tile, so the upper walls stay. If the tile is large format, or no exact match can be found, "
@@ -162,6 +166,11 @@ main = f'''<main class="wp">
         <h3>Keep the upper wall tile</h3>
         <p>We remove the tub and only the bottom rows of wall tile, build and waterproof the new shower floor and lower walls, and continue with a matching tile. Your upper walls stay as they are.</p>
         <p class="ts-when"><b>Works when:</b> your wall tile is small, like subway tile or small squares, and we can find an exact or very close match.</p>
+        <div class="ts-why">
+          <h4>Why remove the bottom tile row?</h4>
+          <p>A bathtub has a raised edge, called the flange, that is fastened to the wall and hidden behind the bottom row of tile. The tub cannot come out without reaching it. Removing only that row lets us release the tub cleanly and protects the tiles above it.</p>
+          {fig("why-remove-bottom-tile-row.jpg", "Why remove the bottom tile row: the tub flange is hidden behind the tile, the bottom row is removed to expose the flange and fasteners, then the tub is released and removed", 1774, 887, "1. The tub edge is hidden. 2. Remove the bottom row. 3. Release and remove the tub.")}
+        </div>
         {fig("walk-in-shower-step-by-step-pan-liner.jpg", "Walk-in shower step by step: tub removed, shower pan liner, cement board, wall waterproofing, finished matching tile and sloped shower floor", 1024, 1536, "Step by step: tub out, pan liner, cement board, waterproofing, matching tile.")}
       </article>
       <article class="ts-way reveal">
@@ -301,6 +310,9 @@ PAGE_CSS = """<style>
 .ts-fig{margin:6px 0 0}
 .ts-fig img{width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--line)}
 .ts-fig figcaption{font-size:15px;color:#5a6474;margin-top:8px}
+.ts-why{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fbfaf7}
+.ts-why h4{margin:0 0 8px;font-size:19px;color:#0a1628}
+.ts-why p{margin:0 0 6px}
 .ts-safe{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:760px;margin:30px auto 0}
 .ts-trend{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 28px}
 .ts-tr{background:#f7f5f2;border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px}
