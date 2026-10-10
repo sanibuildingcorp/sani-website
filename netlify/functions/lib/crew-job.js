@@ -59,9 +59,17 @@ function sheet(booking, plan, job) {
 }
 
 /* The text he sends from his phone (Messages or WhatsApp). */
+/* "2026-10-10" -> "Sat, Oct 10" (a person reads it, not a computer) */
+function niceDay(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d || ""));
+  if (!m) return String(d || "");
+  const x = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12));
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][x.getUTCDay()] + ", " +
+    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][x.getUTCMonth()] + " " + x.getUTCDate();
+}
 function message(sh, url) {
-  const when = [sh.date, sh.time].filter(Boolean).join(" ");
+  const when = [niceDay(sh.date), sh.time].filter(Boolean).join(", ");
   return "Sani job: " + sh.title + (when ? " · " + when : "") + (sh.address ? " · " + sh.address : "") + "\nEverything you need is here: " + url;
 }
 
-module.exports = { sheet, message, stepsOf };
+module.exports = { niceDay, sheet, message, stepsOf };
