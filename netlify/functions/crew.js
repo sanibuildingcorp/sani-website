@@ -47,6 +47,9 @@ async function booking(ref) {
   try { b.agreements = await supa("GET", "/rest/v1/agreements?booking_ref=eq." + encodeURIComponent(ref) + "&order=created_at.desc"); } catch (_) { b.agreements = []; }
   return b;
 }
+function progressOf(job) {
+  return { steps: job.steps || {}, photos: job.photos || [], doneAt: job.doneAt || "", startedAt: job.startedAt || "", hoursWorked: job.hoursWorked || 0, materialsSpent: job.materialsSpent || 0 };
+}
 async function planOf(ref) { const v = await brainStore().get(ref, { type: "json" }).catch(() => null); return (v && v.plan) || null; }
 
 exports.handler = async function (event) {
@@ -66,10 +69,12 @@ exports.handler = async function (event) {
       if (event.httpMethod === "GET") {
         const bk = await booking(job.ref);
         const sheet = crewJob.sheet(bk, await planOf(job.ref), job);
-        return out(200, { sheet, progress: { steps: job.steps || {}, photos: job.photos || [], doneAt: job.doneAt || "" } });
+        return out(200, { sheet, progress: progressOf(job) });
       }
-      if (job.doneAt && (b.action === "step" || b.action === "photo")) return out(409, { error: "This job is closed. Call the office to change anything." });
-      if (b.action === "step") {
+      if (job.doneAt && (b.action === "step" || b.action === "photo" || b.action === "start")) return out(409, { error: "This job is closed. Call the office to change anything." });
+      if (b.action === "start") {
+        if (!job.startedAt) job.startedAt = now();
+      } else if (b.action === "step") {
         job.steps = job.steps || {}; job.steps[String(Number(b.i) || 0)] = !!b.done;
       } else if (b.action === "photo") {
         const data = s(b.data, 3000000);
@@ -77,18 +82,20 @@ exports.handler = async function (event) {
         job.photos = (job.photos || []).slice(-19);
         const id = crypto.randomBytes(8).toString("hex");
         await st.set("photo:" + id, data);
-        job.photos.push({ id, kind: b.kind === "before" ? "before" : "after", at: now() });
+        job.photos.push({ id, kind: b.kind === "before" ? "before" : b.kind === "receipt" ? "receipt" : "after", at: now() });
       } else if (b.action === "done") {
         job.doneAt = now(); job.doneNote = s(b.note, 1000);
+        job.hoursWorked = Math.max(0, Math.min(200, Number(b.hours) || 0));
+        job.materialsSpent = Math.max(0, Math.min(100000, Math.round((Number(b.materials) || 0) * 100) / 100));
         try { await supa("PATCH", "/rest/v1/bookings?ref=eq." + encodeURIComponent(job.ref), { status: "completed", completed_at: job.doneAt }); } catch (e) { console.error("crew done: status", e.message); }
         try {
           const { sendResend, esc } = require("./lib/send-email");
           await sendResend({ from: ADDR.FROM_SYSTEM, to: [ADDR.alertsTo ? ADDR.alertsTo() : ADDR.ALERTS_DEFAULT], subject: "Job done: " + job.ref + " (" + (job.crewName || "crew") + ")",
-            html: "<p><b>" + esc(job.crewName || "Your crew") + "</b> marked job <b>" + esc(job.ref) + "</b> as done.</p>" + (job.doneNote ? "<p>Note: " + esc(job.doneNote) + "</p>" : "") + "<p>" + (job.photos || []).length + " photo(s) on the job page. Open the booking in your dashboard to check.</p>" });
+            html: "<p><b>" + esc(job.crewName || "Your crew") + "</b> marked job <b>" + esc(job.ref) + "</b> as done.</p>" + "<p>" + (job.startedAt ? "Started " + new Date(job.startedAt).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + ". " : "") + (job.hoursWorked ? job.hoursWorked + " hours worked. " : "") + (job.materialsSpent ? "$" + job.materialsSpent + " spent on materials." : "") + "</p>" + (job.doneNote ? "<p>Note: " + esc(job.doneNote) + "</p>" : "") + "<p>" + (job.photos || []).length + " photo(s) on the job page. Open the booking in your dashboard to check.</p>" });
         } catch (e) { console.error("crew done: email", e.message); }
       } else return out(400, { error: "Unknown action" });
       await st.setJSON("job:" + token, job);
-      return out(200, { ok: true, progress: { steps: job.steps || {}, photos: job.photos || [], doneAt: job.doneAt || "" } });
+      return out(200, { ok: true, progress: progressOf(job) });
     }
 
     /* Photo bytes for the worker page and the dashboard: by id, public but unguessable. */

@@ -10731,6 +10731,7 @@ function hdDoneShow(b) {
       (n.deposit ? '<div><span>Deposit</span><b>' + hbMoney(n.deposit) + '</b><label class="dn-tick"><input type="checkbox"' + (s.depositPaid ? ' checked' : '') + ' onchange="hdSet(\'deposit\', this.checked)"> Received</label></div>' : '') +
       '<div class="dn-bal' + (s.paid ? ' ok' : '') + '"><span>' + (s.paid ? 'Paid in full' : 'Balance due') + '</span><b>' + hbMoney(n.balance) + '</b><label class="dn-tick"><input type="checkbox"' + (s.paid ? ' checked' : '') + ' onchange="hdSet(\'paid\', this.checked)"> Paid</label></div>' +
     '</div>' +
+    ((j.hoursWorked || j.materialsSpent) ? '<div class="dn-log" style="margin-top:8px"><b>Real job:</b> ' + [j.hoursWorked ? j.hoursWorked + ' h worked' : '', j.materialsSpent ? hbMoney(j.materialsSpent) + ' materials' : '', 'left after materials ' + hbMoney(n.total - (j.materialsSpent || 0))].filter(Boolean).join(' · ') + '</div>' : '') +
     (ph ? '<div class="crw-ph">' + ph + '</div>' : '') +
     '<div class="dn-acts">' +
       '<button class="hd-go" onclick="hdInvoice()" ' + (s.paid ? 'disabled' : '') + '>' + (inv ? 'Send invoice again' : 'Send invoice') + '</button>' +
@@ -10811,11 +10812,14 @@ function crShow() {
   var box = document.getElementById('crew-box'), b = currentHandymanBooking; if (!box || !b) return;
   var n = crStage(b, CR.job), ag = (b.agreements || [])[0] || {};
   box.style.display = n >= 3 ? '' : 'none';
-  var h = '<div class="crw-head"><div class="hb-k">Crew</div>' + (n < 3 ? '<span class="crw-note">Usually after the customer signs</span>' : '') + '</div>';
+  var ans = b.answers || {}, coi = /\bCOI\b|certificate of insurance/i.test([ans.building_needs, ans.access, b.customer_description, b.contractor_notes].join(' '));
+  var h = '<div class="crw-head"><div class="hb-k">Crew</div>' + (n < 3 ? '<span class="crw-note">Usually after the customer signs</span>' : '') + '</div>' +
+    (coi && n < 4 ? '<div class="hd-warn"><b>COI for this building:</b> get the managing agent\'s name, email and wording, and send the certificate before the job day. Your crew only sees "the office handles it".</div>' : '');
   if (CR.job) {
     var j = CR.job, steps = Object.keys(j.steps || {}).filter(function (k) { return j.steps[k]; }).length;
     h += '<div class="crw-job"><b>' + esc(j.crewName) + '</b> has this job' + (j.doneAt ? ' · <span style="color:#1e7a45;font-weight:700">done ' + fmtDate(j.doneAt) + '</span>' : '') +
       '<div class="crw-sub">' + steps + ' step' + (steps === 1 ? '' : 's') + ' ticked · ' + (j.photos || []).length + ' photo' + ((j.photos || []).length === 1 ? '' : 's') + (j.sharePhone ? ' · customer phone shared' : '') + '</div>' +
+      (j.startedAt || j.hoursWorked || j.materialsSpent ? '<div class="crw-sub"><b>' + [j.startedAt ? 'Started ' + new Date(j.startedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '', j.hoursWorked ? j.hoursWorked + ' h worked' : '', j.materialsSpent ? hbMoney(j.materialsSpent) + ' materials spent' : ''].filter(Boolean).join(' · ') + '</b></div>' : '') +
       ((j.photos || []).length ? '<div class="crw-ph">' + j.photos.map(function (p) { var u = '/.netlify/functions/crew?photo=' + p.id; return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="' + p.kind + '"><small>' + p.kind + '</small></a>'; }).join('') + '</div>' : '') +
       (j.doneNote ? '<div class="crw-sub">Note: ' + esc(j.doneNote) + '</div>' : '') +
       '<div class="crw-btns"><a class="crw-b" href="' + esc(j.url) + '" target="_blank">Open job sheet</a><button class="crw-b" onclick="crResend()">Send again / other worker</button></div></div>';
