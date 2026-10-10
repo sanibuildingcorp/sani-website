@@ -2882,6 +2882,10 @@ body:has(#handyman-modal.show),body:has(#edit-modal.show),body:has(#invoice-moda
 .dn .hd-go{background:#c4a35a;color:#14213d;border:0}
 .dn .hd-go:disabled{opacity:.45;cursor:not-allowed}
 .dn .hd-alt{background:#fff;color:#14213d;border:1.5px solid #14213d}
+
+.hd-del{display:block;margin:18px auto 6px;background:none;border:0;color:#b42318;font:inherit;font-size:14px;text-decoration:underline;cursor:pointer;padding:8px}
+.hbl-del{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line-soft,#eee);border-radius:12px;margin:8px 0;font-size:14px;color:#55555a}
+.hbl-del button{flex:none;background:#fff;border:1.5px solid #14213d;color:#14213d;border-radius:10px;padding:8px 12px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -3427,6 +3431,10 @@ async function loadEstimates() {
     if (handymanRes && handymanRes.ok) {
       const data = await handymanRes.json();
       handymanBookings = data.bookings || [];
+      /* "Deleted" orders stay in the database, only hidden here */
+      try { var hr = await sbcFetch('/.netlify/functions/handyman-hide'); HB_DELETED = ((await hr.json()) || {}).deleted || {}; } catch (e) {}
+      HB_TRASH = handymanBookings.filter(function (b) { return HB_DELETED[b.ref]; });
+      handymanBookings = handymanBookings.filter(function (b) { return !HB_DELETED[b.ref]; });
     }
     if (visitsRes && visitsRes.ok) {
       const data = await visitsRes.json();
@@ -10389,7 +10397,23 @@ function handymanSentPanel(b) {
    Was: one long list, everything "NEW", test bookings mixed in, wide AI
    ranges. Now: Needs your price / Sent / Booked / Follow up / Done, the
    brain's firm price on each card, and his own test bookings hidden. */
-var HB_PRICES = {}, HB_SHOW_TESTS = false, HB_OPEN = {};
+var HB_PRICES = {}, HB_SHOW_TESTS = false, HB_OPEN = {}, HB_DELETED = {}, HB_TRASH = [], HB_SHOW_TRASH = false;
+/* DELETE AN ORDER. Reversible: it moves to "Deleted" at the bottom of the list. */
+async function hbDelete(ref, on) {
+  var b = (on ? handymanBookings : HB_TRASH).filter(function (x) { return x.ref === ref; })[0]; if (!b) return;
+  if (on && !confirm('Delete this order from your list?\n\n' + (b.customer_name || '') + ' · ' + (b.service_name || '') + '\n\nNothing is sent to the customer. You can bring it back from "Deleted" at the bottom of the list.')) return;
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-hide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: ref, deleted: on }) });
+    if (!r.ok) throw new Error('Could not save. Try again.');
+    HB_DELETED = ((await r.json()) || {}).deleted || {};
+    if (on) { HB_TRASH.push(b); handymanBookings = handymanBookings.filter(function (x) { return x.ref !== ref; }); }
+    else { handymanBookings.push(b); HB_TRASH = HB_TRASH.filter(function (x) { return x.ref !== ref; }); }
+    if (on && typeof closeHandymanModal === 'function') closeHandymanModal();
+    renderTabs(); renderHandymanList();
+    toast(on ? 'Order deleted' : 'Order brought back');
+  } catch (e) { toast(e.message, true); }
+}
+function hbTrash() { HB_SHOW_TRASH = !HB_SHOW_TRASH; renderHandymanList(); }
 function hbIsTest(b) {
   var n = String(b.customer_name || '').toLowerCase(), m = String(b.customer_email || '').toLowerCase();
   return /sani building|^test\b/.test(n) || /sanibuildingcorp/.test(m);
@@ -10466,7 +10490,7 @@ function hbTests() { HB_SHOW_TESTS = !HB_SHOW_TESTS; renderHandymanList(); }
 var HB_DUP = {};
 function renderHandymanList() {
   const host = document.getElementById("list-host");
-  if (handymanBookings.length === 0) {
+  if (handymanBookings.length === 0 && !HB_TRASH.length) {
     host.innerHTML = '<div class="empty"><div class="empty-icon">🔧</div><h3>No handyman bookings yet</h3><p>Customer bookings from handyman-estimate.html will appear here.</p></div>';
     return;
   }
@@ -10499,6 +10523,10 @@ function renderHandymanList() {
     h += '<div class="hbl-sec"><button class="hbl-head" onclick="hbToggle(\'' + g[0] + '\')"><span><b>' + g[1] + '</b> <i>' + items.length + '</i><small>' + g[2] + '</small></span><span>' + (open ? '▾' : '▸') + '</span></button>' +
       (open ? items.map(hbCard).join('') : '') + '</div>';
   });
+  if (HB_TRASH.length) {
+    h += '<div class="hbl-sec"><button class="hbl-head" onclick="hbTrash()"><span><b>Deleted</b> <i>' + HB_TRASH.length + '</i><small>Hidden from your list. Tap one to bring it back.</small></span><span>' + (HB_SHOW_TRASH ? '▾' : '▸') + '</span></button>' +
+      (HB_SHOW_TRASH ? HB_TRASH.map(function (b) { return '<div class="hbl-del"><span><b>' + esc(b.customer_name || '—') + '</b> · ' + esc(b.service_name || '') + ' · ' + esc(b.ref) + '</span><button onclick="hbDelete(\'' + esc(b.ref) + '\', false)">Bring back</button></div>'; }).join('') : '') + '</div>';
+  }
   host.innerHTML = h;
   document.querySelectorAll(".hbc").forEach(function(card) {
     card.addEventListener("click", function() { openHandymanDetail(card.dataset.ref); });
@@ -10904,6 +10932,7 @@ function renderHandymanModal(b) {
     '<div id="crew-box" class="crw" style="display:none"></div>' +
     /* What has actually gone out to this customer, and what was in it. */
     handymanSentPanel(b) +
+    '<button class="hd-del" onclick="hbDelete(\'' + esc(b.ref) + '\', true)">Delete this order</button>' +
     '<details class="hd-fold"><summary>Everything the customer answered</summary>' +
     handymanBrief(b) +
     '<div class="h-hero-grid">' +
