@@ -23,7 +23,7 @@ ok('...and /handyman-estimate?service=bathroom-refresh opens with it ticked', /g
 ok('SEVERAL SERVICES: a card toggles, it does not jump to the next step', /function toggleService\(id\)/.test(H) && /state\.services\.splice\(i, 1\)/.test(H) && !/setTimeout\(function\(\) \{ goToStep\(2\)/.test(H));
 ok('SEVERAL ITEMS per service, tapped as chips, plus the list in their own words', /state\.items\[id\]/.test(H) && /id="own-words"/.test(H));
 const groups = (H.slice(0, H.indexOf('<script>')).match(/data-single="(\w+)"/g) || []).map((x) => x.match(/"(\w+)"/)[1]);
-ok('SIZE AND PLACE: how many things, where, floor and access, parts, how soon', JSON.stringify(groups) === JSON.stringify(['job_size', 'place', 'access', 'parts', 'when']), groups.join(','));
+ok('SIZE AND PLACE: how many things, where, floor and access, parts, how soon', JSON.stringify(groups) === JSON.stringify(['fix_or_replace', 'job_size', 'place', 'access', 'parts', 'when']), groups.join(','));
 ok('...how many, where and how soon are required; access and parts are optional', /\[\['job_size', 'how many things'\], \['place', 'where the job is'\], \['when', 'how soon'\]\]/.test(H));
 ok('...a restaurant and an office are places, not only homes', /<div class="chip">Restaurant<\/div>/.test(H) && /<div class="chip">Office or store<\/div>/.test(H));
 ok('never TV mounting, never "licensed"', !/\bTV\b/.test(H) && !/\blicensed\b/i.test(H));

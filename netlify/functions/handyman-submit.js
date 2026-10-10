@@ -502,7 +502,7 @@ async function sendCustomerEmail(booking) {
 function jobBriefHtml(a) {
   a = a || {};
   const list = Array.isArray(a.job_list) ? a.job_list : [];
-  const rows = [["Size", a.job_size], ["Place", a.place], ["Floor / access", a.access], ["Parts", a.parts], ["How soon", a.when]]
+  const rows = [["Fix or replace", a.fix_or_replace], ["Size", a.job_size], ["Place", a.place], ["Floor / access", a.access], ["Parts", a.parts], ["How soon", a.when]]
     .filter(function (r) { return r[1]; });
   if (!list.length && !rows.length) return "";
   return `<div style="background:#faf8f4;border:1px solid #e4ddd0;border-radius:10px;padding:18px;margin-bottom:20px">

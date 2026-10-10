@@ -10273,7 +10273,7 @@ const SERVICE_ICONS = {
 function handymanBrief(b) {
   var a = (b && b.answers) || {};
   var list = Array.isArray(a.job_list) ? a.job_list : [];
-  var rows = [["📏 Size", a.job_size], ["🏠 Place", a.place], ["🪜 Floor / access", a.access], ["📦 Parts", a.parts], ["⏰ How soon", a.when],
+  var rows = [["🔧 Fix or replace", a.fix_or_replace], ["📏 Size", a.job_size], ["🏠 Place", a.place], ["🪜 Floor / access", a.access], ["📦 Parts", a.parts], ["⏰ How soon", a.when],
     ["📅 Preferred", [b.preferred_date, b.preferred_time].filter(Boolean).join(" · ")]].filter(function (r) { return r[1]; });
   if (!list.length && !rows.length) return "";
   return '<div class="h-section" id="h-brief" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px">' +
