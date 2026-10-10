@@ -72,8 +72,8 @@ console.log('\n2. /shower-waterproofing: the four shower jobs\n');
 console.log('\n3. Google can find both\n');
 {
   const menu = read('partials/menu.html'), foot = read('partials/footer.html');
-  ok('THE MENU says "Shower Wall Panels" (it said "Bathroom Refresh") and lists shower waterproofing, desktop and phone', (menu.match(/href="\/bathroom-wall-panels"[^>]*>(?:<span[^>]*>)?Shower Wall Panels/g) || []).length === 2 && (menu.match(/href="\/shower-waterproofing"/g) || []).length === 2 && !/Bathroom Refresh/.test(menu));
-  ok('...so does the footer', /href="\/bathroom-wall-panels">Shower Wall Panels/.test(foot) && /href="\/shower-waterproofing"/.test(foot));
+  ok('THE MENU says "Bathroom Wall Panels (No Demo)" (it said "Bathroom Refresh") and lists shower waterproofing, desktop and phone', (menu.match(/href="\/bathroom-wall-panels"[^>]*>(?:<span[^>]*>)?Bathroom Wall Panels \(No Demo\)/g) || []).length === 2 && (menu.match(/href="\/shower-waterproofing"/g) || []).length === 2 && !/Bathroom Refresh/.test(menu));
+  ok('...so does the footer', /href="\/bathroom-wall-panels">Bathroom Wall Panels \(No Demo\)/.test(foot) && /href="\/shower-waterproofing"/.test(foot));
   ['bathroom-renovation', 'bathroom-renovation-brooklyn', 'bathroom-renovation-manhattan', 'bathroom-renovation-queens', 'tile-grouting-restoration', 'water-damage'].forEach((p) =>
     ok('/' + p + ' links the shower page and "Shower Wall Panels"', /class="sbc-ilink" href="\/shower-waterproofing"/.test(read(p + '.html')) && /class="sbc-ilink" href="\/bathroom-wall-panels">Shower Wall Panels</.test(read(p + '.html'))));
   const sm = read('sitemap.xml');

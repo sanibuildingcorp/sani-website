@@ -385,6 +385,33 @@ html body section.page-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[clas
   </div>
 </section>
 
+<!-- BATH-SERVICES:START -->
+<style>
+.bsx{padding:64px 22px;background:#fff;border-top:1px solid rgba(10,22,40,.08)}
+.bsx-in{max-width:1180px;margin:0 auto}
+.bsx-eye{color:#c8860a;font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin:0 0 10px;text-align:center}
+.bsx h2{font-size:clamp(26px,3.6vw,38px);line-height:1.15;color:#0a1628;margin:0 0 10px;text-align:center}
+.bsx-lead{color:#4a5566;text-align:center;max-width:640px;margin:0 auto 32px}
+.bsx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.bsx-card{display:flex;flex-direction:column;background:#fff;border:1px solid rgba(10,22,40,.1);border-radius:14px;overflow:hidden;text-decoration:none;color:#0a1628;transition:box-shadow .25s,transform .25s,border-color .25s}
+.bsx-card:hover{box-shadow:0 14px 34px rgba(10,22,40,.12);transform:translateY(-3px);border-color:#c8860a}
+.bsx-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.bsx-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px;flex:1}
+.bsx-name{font-weight:700;font-size:19px;line-height:1.25}
+.bsx-for{color:#4a5566;font-size:16px;line-height:1.5}
+.bsx-go{margin-top:auto;padding-top:8px;color:#b07400;font-weight:700;font-size:15px}
+.bsx-card.here{border:2px solid #c8860a;cursor:default}
+.bsx-card.here .bsx-go{color:#0a1628}
+.bsx-more{display:flex;flex-wrap:wrap;gap:10px 22px;justify-content:center;align-items:center;margin-top:28px;color:#4a5566;font-size:16px}
+.bsx-more b{color:#0a1628}
+.bsx-more a{color:#0a1628;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#c8860a}
+@media(max-width:900px){.bsx-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.bsx{padding:48px 16px}.bsx-grid{grid-template-columns:1fr;gap:12px}
+ .bsx-card{flex-direction:row;align-items:stretch}.bsx-card img{width:118px;aspect-ratio:auto;height:auto;min-height:118px;flex:none}
+ .bsx-body{padding:12px 14px}.bsx-name{font-size:17px}.bsx-for{font-size:15px}.bsx-go{font-size:14px;padding-top:4px}}
+</style>
+<section class="bsx" aria-labelledby="bsx-title"><div class="bsx-in"><p class="bsx-eye">All bathroom services</p><h2 id="bsx-title">Other bathroom services</h2><p class="bsx-lead">One crew for every bathroom job, from a small grout repair to a full renovation.</p><div class="bsx-grid"><a class="bsx-card" href="/bathroom-renovation"><img src="/images/bath-services/renovation.jpg" alt="Full Bathroom Renovation in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Full Bathroom Renovation</span><span class="bsx-for">A whole new bathroom: layout, tile, vanity, fixtures. Start to finish.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/tub-to-shower-conversion"><img src="/images/bath-services/tub-to-shower.jpg" alt="Bathtub to Walk-In Shower in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Bathtub to Walk-In Shower</span><span class="bsx-for">No more stepping over the tub. A safe, low-entry shower, ideal for seniors.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/bathroom-wall-panels"><img src="/images/bath-services/wall-panels.jpg" alt="Bathroom Wall Panels (No Demo) in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Bathroom Wall Panels (No Demo)</span><span class="bsx-for">Waterproof PVC panels right over your old wall tile. Done in 1&ndash;2 days.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/bathroom-floor-tile-installation"><img src="/images/bath-services/tile.jpg" alt="Bathroom and Shower Tile in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Bathroom &amp; Shower Tile</span><span class="bsx-for">New floor or shower tile, laid flat, waterproofed and sealed.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/shower-waterproofing"><img src="/images/bath-services/waterproofing.jpg" alt="Shower Waterproofing and Leaks in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Shower Waterproofing &amp; Leaks</span><span class="bsx-for">Water stain below the bathroom? We find the leak and fix it at the source.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/tile-grouting-restoration"><img src="/images/bath-services/grout.jpg" alt="Grout Repair and Regrouting in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Grout Repair &amp; Regrouting</span><span class="bsx-for">Cracked, dirty or moldy grout renewed, without replacing the tile.</span><span class="bsx-go">See this service &rarr;</span></span></a></div><p class="bsx-more"><span><b>Guides:</b> <a href="/tile-installation-cost-nyc">Tile installation cost</a> &middot; <a href="/commercial-tile-installation">Commercial tile</a></span><span><b>Areas:</b> <a href="/bathroom-renovation-manhattan">Manhattan</a> &middot; <a href="/bathroom-renovation-queens">Queens</a> &middot; <a href="/renovation-contractor-bronx">Bronx</a> &middot; <a href="/renovation-contractor-staten-island">Staten Island</a></span></p></div></section>
+<!-- BATH-SERVICES:END -->
 <style>.sbc-ilink{display:inline-block;padding:11px 20px;background:#fff;border:1px solid rgba(10,22,40,0.12);border-radius:30px;color:#0a1628;text-decoration:none;font-size:14px;font-weight:500;transition:all .2s}.sbc-ilink:hover{border-color:#c8860a;color:#c8860a;box-shadow:0 4px 16px rgba(0,0,0,.06)}</style>
 <section style="padding:72px 28px;background:#f7f5f2">
   <div style="max-width:960px;margin:0 auto;text-align:center">
