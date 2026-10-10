@@ -1,0 +1,12 @@
+const assert = require('assert');
+const c = require('./crew-job');
+const bk = { ref: 'SBC-H-1', customer_name: 'Matthew Zaudtke', customer_phone: '917 000 0000', customer_address: '1 Main St', answers: { access: 'Ground floor', building_needs: 'Building needs a COI' }, photo_urls: ['https://x/a.jpg'], agreements: [{ appointment_date: '2026-10-14', appointment_time: '9:00 AM' }] };
+const plan = { title: 'Drywall + tile', price: { total: 805 }, tasks: [{ task: 'Patch', note: 'tape it' }], crew: { jobType: 'Drywall patch', explain: 'Fix 2 holes', steps: [{ step: 'Protect floor', how: 'drop cloth' }], checks: ['flat under light'] }, tools: ['knife'] };
+const s = c.sheet(bk, plan, { sharePhone: false });
+assert.strictEqual(s.customer, 'Matthew'); assert.strictEqual(s.phone, '');
+assert.strictEqual(s.date, '2026-10-14'); assert.strictEqual(s.steps[0].step, 'Protect floor');
+assert.ok(s.building.join(' ').includes('COI'));
+assert.ok(!JSON.stringify(s).includes('805'), 'no prices on the crew sheet');
+assert.strictEqual(c.sheet(bk, plan, { sharePhone: true }).phone, '917 000 0000');
+assert.strictEqual(c.sheet(bk, { tasks: [{ task: 'Patch', note: 'tape it' }] }, {}).steps[0].how, 'tape it');
+console.log('crew-job: 7 pass');

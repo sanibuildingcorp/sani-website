@@ -73,6 +73,7 @@ HOW TO THINK
 - If the owner gives a flat price ("$350 flat", "make it 400"), put it in "flatPrice". If he gives hours or a rate, use them. Owner's words always win.
 - If something is missing to price it well, ask max 3 short questions in "askCustomer" and still give your best plan.
 - Tools and materials: only what THIS job needs (no generic 14-item lists). Max 10 tools, 8 materials.
+- Crew text (\"crew\"): for the worker who goes to the job. Plain short words a non-native English speaker understands, no prices, every step says HOW. Include the setup and the cleanup steps.
 - Customer text: "we" language, warm and short, no prices in the scope text, never say "licensed".
 
 ANSWER WITH ONLY THIS JSON
@@ -94,6 +95,12 @@ ANSWER WITH ONLY THIS JSON
       "steps": ["<short step>"],
       "ready": ["<what the customer should have ready, e.g. COI request sent to building>"],
       "notIncluded": ["<clear exclusions>"]
+    },
+    "crew": {
+      "jobType": "<what kind of job in 3-6 words, e.g. Drywall patch + tile chip repair>",
+      "explain": "<2-3 simple sentences for the worker: what the customer wants and what a good result looks like>",
+      "steps": [{ "step": "<short action>", "how": "<how to do it right, simple words, the trade tips that matter>" }],
+      "checks": ["<check before leaving, e.g. patch is flat under a light, plate fits, area vacuumed>"]
     },
     "confidence": "<high|medium|low>",
     "confidenceWhy": "<one sentence>"
@@ -156,6 +163,10 @@ function validate(o, prev, rates) {
       ready: list(cu.ready, 6, 200).map(clean),
       notIncluded: list(cu.notIncluded, 6, 200).map(clean),
     },
+    crew: (function () { const cr = p.crew && typeof p.crew === "object" ? p.crew : (prev && prev.crew) || {};
+      return { jobType: C(cr.jobType, 120), explain: C(cr.explain, 1200),
+        steps: A(cr.steps).map((x) => ({ step: C(x && x.step, 160), how: C(x && x.how, 500) })).filter((x) => x.step).slice(0, 15),
+        checks: list(cr.checks, 10, 200) }; })(),
     confidence: conf,
     confidenceWhy: C(p.confidenceWhy, 200),
   };

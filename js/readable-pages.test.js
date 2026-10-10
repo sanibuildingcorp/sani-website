@@ -17,7 +17,7 @@ let pass = 0, fail = 0;
 const ok = (n, c, d) => { c === true ? pass++ : fail++; console.log((c === true ? 'PASS  ' : 'FAIL  ') + n + (d ? '\n        ' + d : '')); };
 
 const PRIVATE = ['dashboard.html', 'dashboard-shell.html', 'bid-analyzer.html', 'quote.html', 'invoice.html', 'contract.html',
-  'agreement.html', 'estimate.html', 'handyman-estimate.html', 'review.html', 'googlee822c2a7421a7276.html'];
+  'agreement.html', 'crew.html', 'estimate.html', 'handyman-estimate.html', 'review.html', 'googlee822c2a7421a7276.html'];
 const pages = fs.readdirSync(ROOT).filter((f) => f.endsWith('.html') && PRIVATE.indexOf(f) === -1);
 const head = (h) => h.slice(0, h.indexOf('</head>'));
 const blockOf = (h) => { const m = h.match(/<!-- SBC-READABLE:START -->([\s\S]*?)<!-- SBC-READABLE:END -->/); return m ? m[1] : ''; };

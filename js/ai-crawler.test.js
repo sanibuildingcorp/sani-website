@@ -127,7 +127,7 @@ console.log('\nautomated systems are told they may USE the content, not just rea
 console.log('\nllms.txt maps every public page, not a subset\n');
 {
   const SKIP = new Set(['dashboard', 'image-studio', 'page-editor', 'dashboard-shell', 'bid-analyzer',
-    'seo-content', 'keyword-volumes', 'invoice', 'agreement', 'contract', 'quote', 'estimate',
+    'seo-content', 'keyword-volumes', 'invoice', 'agreement', 'crew', 'contract', 'quote', 'estimate',
     'handyman-estimate', 'googlee822c2a7421a7276', '404', 'review', 'index', 'sitemap']);
   const pages = fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html'); })
     .map(function (f) { return f.slice(0, -5); }).filter(function (p) { return !SKIP.has(p); });
@@ -220,7 +220,7 @@ ok('robots.txt points at it', /llms\.txt/i.test(ROBOTS));
 console.log('\nthe structured data an AI reads instead of the JavaScript menu\n');
 {
   const SKIPH = new Set(['dashboard.html', 'dashboard-shell.html',
-    'bid-analyzer.html', 'invoice.html', 'agreement.html',
+    'bid-analyzer.html', 'invoice.html', 'agreement.html', 'crew.html',
     'contract.html', 'quote.html', 'estimate.html', 'handyman-estimate.html',
     'googlee822c2a7421a7276.html', '404.html', 'review.html']);
   const pages = fs.readdirSync(ROOT).filter(function (f) { return f.endsWith('.html') && !SKIPH.has(f); });
