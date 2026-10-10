@@ -2845,6 +2845,22 @@ body:has(#handyman-modal.show),body:has(#edit-modal.show),body:has(#invoice-moda
 .hd-dec .hd-acts{grid-template-columns:1fr 1fr}
 .hd-fold{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}.hd-fold>summary{font-weight:700;font-size:14.5px;color:var(--ink);cursor:pointer;list-style:none}.hd-fold>summary::before{content:"▸ ";color:#c4a35a}.hd-fold[open]>summary::before{content:"▾ "}.hd-fold[open]>summary{margin-bottom:12px}
 .hd-more-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.hd-more-row button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:600;color:var(--ink)}.hd-more-row button.on{background:#14213d;color:#fff}
+
+.hbc,.hbc *{box-sizing:border-box}
+.hbc{background:#fff;border:1px solid #ebe4d0;border-radius:14px;padding:14px 16px;margin:0 0 10px;cursor:pointer;box-shadow:0 1px 2px rgba(20,33,61,.04);transition:border-color .15s,box-shadow .15s}
+.hbc:active{border-color:#c4a35a;box-shadow:0 2px 10px rgba(20,33,61,.08)}
+.hbc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.hbc-t{flex:1;min-width:0;font-family:var(--body);font-size:16px;font-weight:700;line-height:1.3;color:#14213d;letter-spacing:0;text-transform:none}
+.hbc-p{flex:0 0 auto;text-align:right;line-height:1.15}
+.hbc-p b{display:block;font-size:19px;font-weight:800;color:#14213d}
+.hbc-p small{display:block;font-size:12px;color:#8a8a8f;margin-top:3px;white-space:nowrap}
+.hbc-np{font-size:12.5px;color:#a08850;font-weight:600;white-space:nowrap}
+.hbc-who{font-size:13.5px;color:#6b6b70;margin-top:5px}
+.hbc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.hbc-tags span{font-size:12px;color:#55555a;background:#f4f2ec;border-radius:99px;padding:4px 10px;line-height:1.2}
+.hbc-tags .hbc-pill{font-weight:700}
+.hbc-pill.gold{background:#fbf3df;color:#8a6a1c}.hbc-pill.red{background:#fde8e8;color:#a12a2a}.hbc-pill.blue{background:#e8effd;color:#1d4ed8}
+.hbc-pill.ok{background:#e7f5ec;color:#1e7a45}.hbc-pill.warn{background:#fff1dd;color:#9a5a00}.hbc-pill.mute{background:#eee;color:#666}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -10374,33 +10390,44 @@ async function hbLoadPrices() {
     if (activeTab === 'handyman') renderHandymanList();
   } catch (e) {}
 }
+function hbShortHours(h) {
+  /* "measure visit 1 hour, install day 8-9 hours" -> "8-9 hrs"; "4-5 hours on site" -> "4-5 hrs" */
+  var m = String(h || '').match(/(\d+(?:\.\d+)?(?:\s*[-–]\s*\d+(?:\.\d+)?)?)\s*(?:h|hr|hrs|hour|hours)\b/gi);
+  if (!m) return '';
+  var last = m[m.length - 1].replace(/\s*(h|hr|hrs|hour|hours)$/i, '').replace(/\s+/g, '');
+  return last + ' hrs';
+}
 function hbCard(b) {
-  const icon = SERVICE_ICONS[b.service_id] || "🔧";
   const status = (b.status || "new").toLowerCase();
   const urgency = (b.urgency || "flexible").toLowerCase();
   const photoCount = (b.photo_urls || []).length;
   const bp = HB_PRICES[b.ref];
-  const sent = (b.agreements || [])[0];
-  return '<div class="handyman-card" data-ref="' + esc(b.ref) + '">' +
-    '<div class="h-icon">' + icon + '</div>' +
-    '<div class="h-main">' +
-      '<div class="h-title">' + esc(bp && bp.title ? bp.title : (b.service_name || b.service_id)) + '</div>' +
-      '<div class="h-meta">' +
-        '<span>' + esc(b.customer_name) + '</span><span>·</span><span>' + fmtDate(b.submitted_at) + '</span>' +
-        (photoCount > 0 ? '<span>·</span><span>📷 ' + photoCount + '</span>' : '') +
-        ((b.answers || {}).job_size ? '<span>·</span><span>📏 ' + esc(b.answers.job_size) + '</span>' : '') +
-        ((b.answers || {}).place ? '<span>·</span><span>🏠 ' + esc(b.answers.place) + '</span>' : '') +
-      '</div>' +
-      '<div class="h-badges">' +
-        (status !== 'new' ? '<span class="badge h-' + status + '">' + esc(status.replace('-', ' ')) + '</span>' : '') +
-        handymanSentBadge(b) +
-        (urgency === "today" || urgency === "emergency-today" ? '<span class="badge h-urgency-today">⚡ TODAY</span>' :
-         urgency === "this-week" ? '<span class="badge h-urgency-this-week">📅 This week</span>' : '') +
-      '</div>' +
+  const g = hbGroup(b);
+  const a = b.answers || {};
+  const title = bp && bp.title ? bp.title : (b.service_name || b.service_id || 'Handyman job');
+  const ag = String(b.agreement_status || '').toLowerCase();
+  /* one status pill, the one that matters */
+  const pill = g === 'done' ? (status === 'cancelled' ? ['Closed', 'mute'] : ['Completed', 'ok'])
+    : ag === 'signed' ? ['Signed', 'ok']
+    : status === 'in-progress' ? ['Crew on it', 'ok']
+    : status === 'confirmed' ? ['Confirmed', 'ok']
+    : ag === 'changes_requested' ? ['Changes asked', 'warn']
+    : ag === 'sent' ? ['Price sent', 'blue']
+    : (urgency === 'today' || urgency === 'emergency-today') ? ['Today', 'red']
+    : urgency === 'this-week' ? ['This week', 'gold'] : null;
+  const hrs = bp ? hbShortHours(bp.visitHours) : '';
+  return '<div class="hbc" data-ref="' + esc(b.ref) + '">' +
+    '<div class="hbc-top">' +
+      '<div class="hbc-t">' + esc(title) + '</div>' +
+      '<div class="hbc-p">' + (bp ? '<b>$' + Math.round(bp.total).toLocaleString('en-US') + '</b>' + (hrs ? '<small>' + esc(hrs) + '</small>' : '')
+        : (g === 'booked' || g === 'done' ? '' : '<span class="hbc-np">Open to price</span>')) + '</div>' +
     '</div>' +
-    '<div class="h-right">' +
-      (bp ? '<div class="est-total-label">Brain price</div><div class="h-total">$' + Math.round(bp.total).toLocaleString('en-US') + '</div>' + (bp.visitHours ? '<div class="h-time">' + esc(bp.visitHours) + '</div>' : '')
-          : (hbGroup(b) === 'booked' || hbGroup(b) === 'done' ? '' : '<div class="est-total-label">Not priced</div><div class="h-time">Open to price</div>')) +
+    '<div class="hbc-who">' + esc(b.customer_name || '') + ' · ' + fmtDate(b.submitted_at) + '</div>' +
+    '<div class="hbc-tags">' +
+      (pill ? '<span class="hbc-pill ' + pill[1] + '">' + pill[0] + '</span>' : '') +
+      (a.place ? '<span>' + esc(b.answers.place) + '</span>' : '') +
+      (a.job_size ? '<span>' + esc(b.answers.job_size) + '</span>' : '') +
+      (photoCount ? '<span>' + photoCount + ' photo' + (photoCount === 1 ? '' : 's') + '</span>' : '') +
     '</div>' +
   '</div>';
 }
@@ -10431,7 +10458,7 @@ function renderHandymanList() {
       (open ? items.map(hbCard).join('') : '') + '</div>';
   });
   host.innerHTML = h;
-  document.querySelectorAll(".handyman-card").forEach(function(card) {
+  document.querySelectorAll(".hbc").forEach(function(card) {
     card.addEventListener("click", function() { openHandymanDetail(card.dataset.ref); });
   });
 }
