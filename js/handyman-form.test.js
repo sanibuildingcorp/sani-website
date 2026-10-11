@@ -18,12 +18,12 @@ const H = read('handyman-estimate.html');
 
 console.log('\n1. The form\n');
 ok('no "Full Handyman Day", no day rate, no "From $" prices on the page', !/Full Handyman Day|full-handyman-day|\/day|From \$/i.test(H));
-ok('Bathroom Refresh is a service, with its own items', /id: "bathroom-refresh", icon: "🛁", name: "Bathroom Refresh"/.test(H) && /"Regrout tub \/ shower", "Re-caulk", "New faucet"/.test(H));
+ok('Bathroom Refresh is a service, with its own items', /id: "bathroom-refresh", icon: '<svg[^']+<\/svg>', name: "Bathroom Refresh"/.test(H) && /"Regrout tub \/ shower", "Re-caulk", "New faucet"/.test(H));
 ok('...and /handyman-estimate?service=bathroom-refresh opens with it ticked', /get\('service'\)/.test(H) && /\/handyman-estimate\?service=bathroom-refresh/.test(read('handyman.html')));
 ok('SEVERAL SERVICES: a card toggles, it does not jump to the next step', /function toggleService\(id\)/.test(H) && /state\.services\.splice\(i, 1\)/.test(H) && !/setTimeout\(function\(\) \{ goToStep\(2\)/.test(H));
 ok('SEVERAL ITEMS per service, tapped as chips, plus the list in their own words', /state\.items\[id\]/.test(H) && /id="own-words"/.test(H));
 const groups = (H.slice(0, H.indexOf('<script>')).match(/data-single="(\w+)"/g) || []).map((x) => x.match(/"(\w+)"/)[1]);
-ok('SIZE AND PLACE: how many things, where, floor and access, parts, how soon', JSON.stringify(groups) === JSON.stringify(['job_size', 'place', 'access', 'parts', 'when']), groups.join(','));
+ok('SIZE AND PLACE: how many things, where, floor and access, parts, how soon', JSON.stringify(groups) === JSON.stringify(['fix_or_replace', 'job_size', 'place', 'access', 'parts', 'when']), groups.join(','));
 ok('...how many, where and how soon are required; access and parts are optional', /\[\['job_size', 'how many things'\], \['place', 'where the job is'\], \['when', 'how soon'\]\]/.test(H));
 ok('...a restaurant and an office are places, not only homes', /<div class="chip">Restaurant<\/div>/.test(H) && /<div class="chip">Office or store<\/div>/.test(H));
 ok('never TV mounting, never "licensed"', !/\bTV\b/.test(H) && !/\blicensed\b/i.test(H));
@@ -55,7 +55,7 @@ ok('the brief goes first in answers: services, job list, own words, size, place,
 ok('urgency is sent as the dashboard reads it ("this-week", "emergency-today")', /toLowerCase\(\)\.replace\(\/\\s\+\/g, '-'\)/.test(H));
 ok('same endpoints as before', ['handyman-questions', 'handyman-analyze', 'handyman-submit'].every((f) => H.indexOf('/.netlify/functions/' + f) > -1));
 const D = read('dashboard.html');
-ok('DASHBOARD: "Job at a glance" sits above the photos in the booking', /handymanBrief\(b\) \+\s*'<div class="h-hero-grid">'/.test(D));
+ok('DASHBOARD: "Job at a glance" sits above the photos in the booking', /handymanBrief\(b\) \+\s*('<div id="(hb|crew)-box"[^\n]*\n\s*)*'<div class="h-hero-grid">'/.test(D));
 ok('...and the list shows the size and the place', /esc\(b\.answers\.job_size\)/.test(D) && /esc\(b\.answers\.place\)/.test(D));
 {
   const src = D.slice(D.indexOf('function handymanBrief(b)'), D.indexOf('let currentHandymanBooking'));

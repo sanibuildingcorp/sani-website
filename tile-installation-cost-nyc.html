@@ -141,6 +141,27 @@ html body section.page-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[clas
     </div>
   </div>
 </section>
+<!-- BATH-GLANCE:START -->
+<style>
+.bgl{padding:56px 20px;background:#fff;border-bottom:1px solid rgba(10,22,40,.08)}
+.bgl-in{max-width:1080px;margin:0 auto}
+.bgl-eye{color:#c8860a;font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin:0 0 8px}
+.bgl h2{font-size:clamp(26px,3.4vw,36px);line-height:1.15;color:#0a1628;margin:0 0 20px}
+.bgl-dl{display:grid;grid-template-columns:200px 1fr;margin:0;border:1px solid rgba(10,22,40,.1);border-radius:14px;overflow:hidden}
+.bgl-dl dt,.bgl-dl dd{margin:0;padding:14px 18px;border-top:1px solid rgba(10,22,40,.08)}
+.bgl-dl dt:first-of-type,.bgl-dl dt:first-of-type+dd{border-top:0}
+.bgl-dl dt{background:#f7f5f2;font-weight:700;color:#0a1628}
+.bgl-dl dd{color:#2c3646;line-height:1.6}
+.bgl-why{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:22px}
+.bgl-why div{background:#0a1628;color:#fff;border-radius:12px;padding:14px 12px;text-align:center}
+.bgl-why b{display:block;color:#f0a500;font-size:17px;line-height:1.2}.bgl-why span{display:block;font-size:14px;color:rgba(255,255,255,.78);margin-top:4px}
+.bgl-cta{margin:20px 0 0;font-weight:600;color:#0a1628}.bgl-cta a{color:#b07400}
+@media(max-width:900px){.bgl-why{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.bgl{padding:42px 16px}.bgl-dl{grid-template-columns:1fr}.bgl-dl dt{border-top:1px solid rgba(10,22,40,.08);padding:12px 14px 4px;background:#fff;color:#b07400;font-size:14px;text-transform:uppercase;letter-spacing:.06em}
+ .bgl-dl dd{border-top:0;padding:0 14px 12px}.bgl-dl dt:first-of-type{border-top:0}.bgl-why{grid-template-columns:1fr 1fr}}
+</style>
+<section class="bgl" aria-labelledby="bgl-title"><div class="bgl-in"><p class="bgl-eye">At a glance</p><h2 id="bgl-title">Tile installation cost in NYC with Sani Building Corp</h2><dl class="bgl-dl"><dt>Bathroom tile</dt><dd>$15–$35 per square foot installed — labor, setting materials, waterproofing where needed and grout.</dd><dt>Commercial tile</dt><dd>$18–$45 per square foot installed.</dd><dt>Not included</dt><dd>The tile itself, which varies widely by material; we can supply tile at trade pricing.</dd><dt>How we price</dt><dd>A fixed written price for the scope after we see the space or clear photos — never by the hour.</dd><dt>Where</dt><dd>All five NYC boroughs — Brooklyn, Manhattan, Queens, the Bronx and Staten Island — plus Long Island and Nassau County.</dd><dt>Guarantee</dt><dd>Fully insured, 3-year workmanship warranty, insurance certificate (COI) for your building on request.</dd></dl><div class="bgl-why" aria-label="Why NYC customers choose Sani Building Corp"><div><b>Since 2015</b><span>Serving NYC homes and businesses</span></div><div><b>4.9 ★ on Google</b><span>Rated by real customers</span></div><div><b>Fully insured</b><span>COI for your building on request</span></div><div><b>3-year warranty</b><span>On our workmanship</span></div><div><b>One crew</b><span>Start to finish, no hand-offs</span></div><div><b>Written price</b><span>Free estimate within 24 hours</span></div></div><p class="bgl-cta">Questions? Call <a href="tel:3322770990">(332) 277-0990</a> or send photos for a free estimate.</p></div></section>
+<!-- BATH-GLANCE:END -->
 
 <div class="sub-services-bar">
   <div class="sub-services-inner">
@@ -283,6 +304,33 @@ html body section.page-hero :is(h1,h2,p,[class*="pill"],[class*="eyebrow"],[clas
 </section>
 
 <!-- RELATED -->
+<!-- BATH-SERVICES:START -->
+<style>
+.bsx{padding:64px 22px;background:#fff;border-top:1px solid rgba(10,22,40,.08)}
+.bsx-in{max-width:1180px;margin:0 auto}
+.bsx-eye{color:#c8860a;font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin:0 0 10px;text-align:center}
+.bsx h2{font-size:clamp(26px,3.6vw,38px);line-height:1.15;color:#0a1628;margin:0 0 10px;text-align:center}
+.bsx-lead{color:#4a5566;text-align:center;max-width:640px;margin:0 auto 32px}
+.bsx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.bsx-card{display:flex;flex-direction:column;background:#fff;border:1px solid rgba(10,22,40,.1);border-radius:14px;overflow:hidden;text-decoration:none;color:#0a1628;transition:box-shadow .25s,transform .25s,border-color .25s}
+.bsx-card:hover{box-shadow:0 14px 34px rgba(10,22,40,.12);transform:translateY(-3px);border-color:#c8860a}
+.bsx-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.bsx-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px;flex:1}
+.bsx-name{font-weight:700;font-size:19px;line-height:1.25}
+.bsx-for{color:#4a5566;font-size:16px;line-height:1.5}
+.bsx-go{margin-top:auto;padding-top:8px;color:#b07400;font-weight:700;font-size:15px}
+.bsx-card.here{border:2px solid #c8860a;cursor:default}
+.bsx-card.here .bsx-go{color:#0a1628}
+.bsx-more{display:flex;flex-wrap:wrap;gap:10px 22px;justify-content:center;align-items:center;margin-top:28px;color:#4a5566;font-size:16px}
+.bsx-more b{color:#0a1628}
+.bsx-more a{color:#0a1628;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#c8860a}
+@media(max-width:900px){.bsx-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.bsx{padding:48px 16px}.bsx-grid{grid-template-columns:1fr;gap:12px}
+ .bsx-card{flex-direction:row;align-items:stretch}.bsx-card img{width:118px;aspect-ratio:auto;height:auto;min-height:118px;flex:none}
+ .bsx-body{padding:12px 14px}.bsx-name{font-size:17px}.bsx-for{font-size:15px}.bsx-go{font-size:14px;padding-top:4px}}
+</style>
+<section class="bsx" aria-labelledby="bsx-title"><div class="bsx-in"><p class="bsx-eye">All bathroom services</p><h2 id="bsx-title">Other bathroom services</h2><p class="bsx-lead">One crew for every bathroom job, from a small grout repair to a full renovation.</p><div class="bsx-grid"><a class="bsx-card" href="/bathroom-renovation"><img src="/images/bath-services/renovation.jpg" alt="Full Bathroom Renovation in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Full Bathroom Renovation</span><span class="bsx-for">A whole new bathroom: layout, tile, vanity, fixtures. Start to finish.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/tub-to-shower-conversion"><img src="/images/bath-services/tub-to-shower.jpg" alt="Bathtub to Walk-In Shower in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Bathtub to Walk-In Shower</span><span class="bsx-for">No more stepping over the tub. A safe, low-entry shower, ideal for seniors.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/bathroom-wall-panels"><img src="/images/bath-services/wall-panels.jpg" alt="Bathroom Wall Panels (No Demo) in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Bathroom Wall Panels (No Demo)</span><span class="bsx-for">Waterproof vinyl panels glued over your old wall tile. Done in 1&ndash;3 days.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/bathroom-floor-tile-installation"><img src="/images/bath-services/tile.jpg" alt="Bathroom and Shower Tile in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Bathroom &amp; Shower Tile</span><span class="bsx-for">New floor or shower tile, laid flat, waterproofed and sealed.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/shower-waterproofing"><img src="/images/bath-services/waterproofing.jpg" alt="Shower Waterproofing and Leaks in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Shower Waterproofing &amp; Leaks</span><span class="bsx-for">Water stain below the bathroom? We find the leak and fix it at the source.</span><span class="bsx-go">See this service &rarr;</span></span></a><a class="bsx-card" href="/tile-grouting-restoration"><img src="/images/bath-services/grout.jpg" alt="Grout Repair and Regrouting in NYC by Sani Building Corp" width="480" height="360" loading="lazy" decoding="async"><span class="bsx-body"><span class="bsx-name">Grout Repair &amp; Regrouting</span><span class="bsx-for">Cracked, dirty or moldy grout renewed, without replacing the tile.</span><span class="bsx-go">See this service &rarr;</span></span></a></div><p class="bsx-more"><span><b>Guides:</b> <a href="/commercial-tile-installation">Commercial tile</a></span><span><b>Areas:</b> <a href="/bathroom-renovation-brooklyn">Brooklyn</a> &middot; <a href="/bathroom-renovation-manhattan">Manhattan</a> &middot; <a href="/bathroom-renovation-queens">Queens</a> &middot; <a href="/renovation-contractor-bronx">Bronx</a> &middot; <a href="/renovation-contractor-staten-island">Staten Island</a></span></p></div></section>
+<!-- BATH-SERVICES:END -->
 <style>.sbc-ilink{display:inline-block;padding:11px 20px;background:#fff;border:1px solid rgba(10,22,40,0.12);border-radius:30px;color:#0a1628;text-decoration:none;font-size:14px;font-weight:500;transition:all .2s}.sbc-ilink:hover{border-color:#c8860a;color:#c8860a;box-shadow:0 4px 16px rgba(0,0,0,.06)}</style>
 <section style="padding:72px 28px;background:#f7f5f2">
   <div style="max-width:960px;margin:0 auto;text-align:center">

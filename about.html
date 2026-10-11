@@ -144,6 +144,48 @@ body{font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white)
   .about-stats{grid-template-columns:1fr 1fr}
   .cred-item{flex:1 1 40%}
 }
+.team-section{padding:80px 24px;background:var(--light,#f7f4ee)}
+.team-grid{max-width:820px;margin:36px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.team-card{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:18px;padding:30px 26px;text-align:center}
+.team-ph{position:relative;width:132px;height:132px;margin:0 auto 18px;border-radius:50%;overflow:hidden;background:#0a1628;display:flex;align-items:center;justify-content:center;border:3px solid #c8860a}
+.team-ph span{font-family:'Playfair Display',serif;font-size:40px;color:#f0a500;letter-spacing:.04em}
+.team-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.team-card h3{font-family:'Playfair Display',serif;font-size:24px;color:var(--black,#0a1628);margin:0 0 4px}
+.team-role{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#c8860a;font-weight:700;margin-bottom:12px}
+.team-card p{font-size:16px;line-height:1.7;color:var(--gray,#4a5568);margin:0}
+
+/* HERO: finished-room photo behind, a narrow column of services rolling up on the right */
+.about-hero--roll{position:relative;background:#0a1628 url(/images/services-strip/interior.jpg) center/cover no-repeat;isolation:isolate;grid-template-columns:minmax(0,1fr) minmax(260px,30%);overflow:hidden}
+.about-hero--roll:before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(10,22,40,.84) 0%,rgba(10,22,40,.62) 50%,rgba(10,22,40,.18) 100%)}
+.about-hero--roll h1{color:#fff}.about-hero--roll h1 em{color:#f0a500}
+.about-hero--roll p{color:rgba(255,255,255,.9)}
+.about-hero--roll .about-hero-text{text-shadow:0 1px 10px rgba(0,0,0,.45)}
+.about-hero--roll .breadcrumb,.about-hero--roll .breadcrumb span{color:rgba(255,255,255,.6)}
+.about-hero--roll .about-hero-ctas .btn-secondary{color:#fff;border-color:rgba(255,255,255,.5)}
+.about-hero--roll .about-hero-ctas .btn-primary{background:#c8860a!important;border-color:#c8860a!important;color:#fff!important}
+.about-hero--roll .about-hero-pic{position:relative;min-height:0;order:0;margin-top:-68px;background:transparent!important;box-shadow:none!important}
+.about-hero--roll .about-hero-pic::after{display:none!important}
+.about-hero--roll .about-hero-pic::after{content:'';display:block;position:absolute;left:0;right:0;top:0;height:34%;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(10,22,40,.45),rgba(10,22,40,0));-webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);mask-image:linear-gradient(180deg,#000 30%,transparent)}
+.sv-roll{position:absolute;top:0;bottom:0;left:0;right:clamp(12px,3vw,48px);overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 0,#000 90%,transparent);mask-image:linear-gradient(180deg,#000 0,#000 90%,transparent)}
+.sv-track{animation:svUp 60s linear infinite}
+.sv-roll:hover .sv-track,.sv-roll:focus-within .sv-track{animation-play-state:paused}
+@keyframes svUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.sv-card{position:relative;display:block;height:150px;margin-bottom:12px;border-radius:14px;overflow:hidden;text-decoration:none;border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.sv-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s}
+.sv-card:hover img{transform:scale(1.05)}
+.sv-card span{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:6px;padding:24px 12px 10px;background:linear-gradient(180deg,transparent,rgba(10,22,40,.92));color:#fff;font-weight:700;font-size:15px;line-height:1.2}
+.sv-card i{font-style:normal;color:#f0a500;font-size:20px;line-height:1}
+@media(max-width:900px){
+ .about-hero--roll{grid-template-columns:minmax(0,1fr) 36%}
+ .about-hero--roll .about-hero-text{padding:36px 14px 40px 20px}
+ .about-hero--roll h1{font-size:30px}
+ .about-hero--roll p{font-size:15px!important;line-height:1.55!important}
+ .about-hero--roll .about-hero-ctas{flex-direction:column}
+ .about-hero--roll .about-hero-ctas a{text-align:center;padding-left:10px;padding-right:10px}
+ .sv-roll{right:10px}.sv-card{height:104px;margin-bottom:9px;border-radius:12px}
+ .sv-card span{font-size:12px;padding:18px 8px 7px}.sv-card i{display:none}
+}
+@media(prefers-reduced-motion:reduce){.sv-track{animation:none}.sv-roll{overflow-y:auto}.sv-dup{display:none}}
 </style>
 <link rel="stylesheet" href="partials/site.css">
 <link rel="stylesheet" href="partials/elegance.css">
@@ -171,7 +213,7 @@ html body :is(.craft-inner p){color:#3b4450!important}
 <div id="site-menu"></div>
 
 <!-- HERO -->
-<section class="about-hero">
+<section class="about-hero about-hero--roll">
   <div class="about-hero-text">
     <div class="breadcrumb"><a href="/">Home</a> <span>&rsaquo;</span> <span>About</span></div>
     <h1>NYC's Most Trusted <br> <em>Renovation Partner</em></h1>
@@ -181,8 +223,8 @@ html body :is(.craft-inner p){color:#3b4450!important}
       <a href="tel:3322770990" class="btn-secondary">&#x1F4DE; 332-277-0990</a>
     </div>
   </div>
-  <div class="about-hero-pic">
-    <img src="images/about/hero.jpg?v=1782438425891" alt="Sani Building Corp renovation team at work in NYC">
+  <div class="about-hero-pic" aria-label="Our services">
+    <div class="sv-roll"><div class="sv-track"><a class="sv-card" href="/bathroom-renovation"><img src="/images/services-strip/bathroom.jpg" alt="Bathroom Renovation by Sani Building Corp" loading="lazy"><span>Bathroom Renovation<i>&rsaquo;</i></span></a><a class="sv-card" href="/kitchen-cabinet-installation"><img src="/images/services-strip/kitchen.jpg" alt="Kitchen Cabinets by Sani Building Corp" loading="lazy"><span>Kitchen Cabinets<i>&rsaquo;</i></span></a><a class="sv-card" href="/services"><img src="/images/services-strip/interior.jpg" alt="Interior Renovation by Sani Building Corp" loading="lazy"><span>Interior Renovation<i>&rsaquo;</i></span></a><a class="sv-card" href="/painting"><img src="/images/services-strip/painting.jpg" alt="Painting by Sani Building Corp" loading="lazy"><span>Painting<i>&rsaquo;</i></span></a><a class="sv-card" href="/flooring"><img src="/images/services-strip/flooring.jpg" alt="Flooring by Sani Building Corp" loading="lazy"><span>Flooring<i>&rsaquo;</i></span></a><a class="sv-card" href="/carpentry"><img src="/images/services-strip/carpentry.jpg" alt="Carpentry by Sani Building Corp" loading="lazy"><span>Carpentry<i>&rsaquo;</i></span></a><a class="sv-card" href="/water-damage"><img src="/images/services-strip/water-damage.jpg" alt="Water Damage Repair by Sani Building Corp" loading="lazy"><span>Water Damage Repair<i>&rsaquo;</i></span></a><a class="sv-card" href="/painting"><img src="/images/services-strip/exterior.jpg" alt="Exterior Painting by Sani Building Corp" loading="lazy"><span>Exterior Painting<i>&rsaquo;</i></span></a><a class="sv-card" href="/handyman"><img src="/images/services-strip/repairs.jpg" alt="Repairs and Restoration by Sani Building Corp" loading="lazy"><span>Repairs & Restoration<i>&rsaquo;</i></span></a><a class="sv-card" href="/handyman"><img src="/images/services-strip/handyman.jpg" alt="Handyman Services by Sani Building Corp" loading="lazy"><span>Handyman Services<i>&rsaquo;</i></span></a><div aria-hidden="true" class="sv-dup"><a tabindex="-1" class="sv-card" href="/bathroom-renovation"><img src="/images/services-strip/bathroom.jpg" alt="Bathroom Renovation by Sani Building Corp" loading="lazy"><span>Bathroom Renovation<i>&rsaquo;</i></span></a><a tabindex="-1" class="sv-card" href="/kitchen-cabinet-installation"><img src="/images/services-strip/kitchen.jpg" alt="Kitchen Cabinets by Sani Building Corp" loading="lazy"><span>Kitchen Cabinets<i>&rsaquo;</i></span></a><a tabindex="-1" class="sv-card" href="/services"><img src="/images/services-strip/interior.jpg" alt="Interior Renovation by Sani Building Corp" loading="lazy"><span>Interior Renovation<i>&rsaquo;</i></span></a><a tabindex="-1" class="sv-card" href="/painting"><img src="/images/services-strip/painting.jpg" alt="Painting by Sani Building Corp" loading="lazy"><span>Painting<i>&rsaquo;</i></span></a><a tabindex="-1" class="sv-card" href="/flooring"><img src="/images/services-strip/flooring.jpg" alt="Flooring by Sani Building Corp" loading="lazy"><span>Flooring<i>&rsaquo;</i></span></a><a tabindex="-1" class="sv-card" href="/carpentry"><img src="/images/services-strip/carpentry.jpg" alt="Carpentry by Sani Building Corp" loading="lazy"><span>Carpentry<i>&rsaquo;</i></span></a><a tabindex="-1" class="sv-card" href="/water-damage"><img src="/images/services-strip/water-damage.jpg" alt="Water Damage Repair by Sani Building Corp" loading="lazy"><span>Water Damage Repair<i>&rsaquo;</i></span></a><a tabindex="-1" class="sv-card" href="/painting"><img src="/images/services-strip/exterior.jpg" alt="Exterior Painting by Sani Building Corp" loading="lazy"><span>Exterior Painting<i>&rsaquo;</i></span></a><a tabindex="-1" class="sv-card" href="/handyman"><img src="/images/services-strip/repairs.jpg" alt="Repairs and Restoration by Sani Building Corp" loading="lazy"><span>Repairs & Restoration<i>&rsaquo;</i></span></a><a tabindex="-1" class="sv-card" href="/handyman"><img src="/images/services-strip/handyman.jpg" alt="Handyman Services by Sani Building Corp" loading="lazy"><span>Handyman Services<i>&rsaquo;</i></span></a></div></div></div>
   </div>
 </section>
 
@@ -200,7 +242,7 @@ html body :is(.craft-inner p){color:#3b4450!important}
 <!-- OUR STORY -->
 <div class="about-grid">
   <div class="about-img">
-    <img src="images/about/owner.jpg" alt="Sani Building Corp founder and renovation team NYC Brooklyn">
+    <img src="images/gallery/marble-tub-brass-2.jpg" alt="Finished marble bathroom with brass fixtures by Sani Building Corp in NYC" style="object-position:center">
     <div class="about-img-badge">
       <div class="num">10+</div>
       <div class="label">Years in NYC</div>
@@ -211,7 +253,7 @@ html body :is(.craft-inner p){color:#3b4450!important}
     <h2>Craftsmanship You Can<br> <em>Actually Trust</em></h2>
     <p>Sani Building Corp was founded in 2015 on a simple promise: deliver honest, high-quality renovation work at fair prices &mdash; and show up when we say we will. What began with precise, dependable repairs grew into a full-service renovation company trusted across New York City.</p>
     <p>Today we're the go-to contractor for homeowners, property managers, hotels, restaurants, retail stores and offices throughout all five boroughs. One team handles every trade &mdash; bathrooms, kitchens, painting, flooring, carpentry, water damage and everyday repairs &mdash; so your project stays seamless from first call to final walkthrough.</p>
-    <p>Led by founder Zura, our crew brings precision, pride and genuine care to every job, large or small. We treat your space like our own &mdash; and we don't consider a job finished until you're completely happy with it.</p>
+    <p>Led by founder Zurabi Asanashvili, our crew brings precision, pride and genuine care to every job, large or small. We treat your space like our own &mdash; and we don't consider a job finished until you're completely happy with it.</p>
     <div class="about-stats">
       <div class="stat-box"><div class="num">500+</div><div class="label">Projects Completed</div></div>
       <div class="stat-box"><div class="num">4.9&#9733;</div><div class="label">Google Rating</div></div>
@@ -221,6 +263,28 @@ html body :is(.craft-inner p){color:#3b4450!important}
     <a href="/contact" class="btn-primary">Work With Us</a>
   </div>
 </div>
+
+<!-- MEET THE TEAM -->
+<section class="team-section">
+  <div style="max-width:1100px;margin:0 auto;text-align:center">
+    <div class="section-eyebrow center"><div class="line"></div><span>Meet the Team</span><div class="line"></div></div>
+    <h2 class="section-title">The People <em>You'll Talk To</em></h2>
+  </div>
+  <div class="team-grid">
+    <div class="team-card">
+      <div class="team-ph"><img src="/images/team/zurabi-asanashvili.jpg" alt="Zurabi Asanashvili, founder of Sani Building Corp" loading="lazy" onerror="this.remove()"><span>ZA</span></div>
+      <h3>Zurabi Asanashvili</h3>
+      <div class="team-role">Founder</div>
+      <p>Zurabi started Sani Building Corp in 2015. He prices every job himself, visits the sites and checks the work before we call it finished.</p>
+    </div>
+    <div class="team-card">
+      <div class="team-ph"><img src="/images/team/sandra-gogolauri.jpg" alt="Sandra Gogolauri, office manager at Sani Building Corp" loading="lazy" onerror="this.remove()"><span>SG</span></div>
+      <h3>Sandra Gogolauri</h3>
+      <div class="team-role">Office Manager</div>
+      <p>Sandra answers your emails, plans the schedule and keeps every job organized, from the first estimate to the final invoice.</p>
+    </div>
+  </div>
+</section>
 
 <!-- WHAT SETS US APART -->
 <section class="values-section">
@@ -249,6 +313,12 @@ html body :is(.craft-inner p){color:#3b4450!important}
       <div class="value-ic"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
       <h3>Fully Insured &amp; Vetted</h3>
       <p>Sani Building Corp is fully insured in New York State, and every crew member is experienced and background-checked.</p>
+      <p>Need it for your building? We send an insurance certificate (COI) on request, before work begins.</p>
+    </div>
+    <div class="value-card">
+      <div class="value-ic"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <h3>3-Year Workmanship Warranty</h3>
+      <p>If something we installed fails because of our work within 3 years, we come back and fix it at no cost to you.</p>
     </div>
     <div class="value-card">
       <div class="value-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
@@ -313,18 +383,18 @@ html body :is(.craft-inner p){color:#3b4450!important}
     <h2 class="section-title white" style="margin-top:8px">Serving All of <em>New York City</em></h2>
     <p class="section-sub center" style="color:rgba(255,255,255,.6)">Renovation, repair and handyman services across Manhattan, Brooklyn, Queens and beyond.</p>
     <div class="areas-pills">
-      <a href="/contact" class="area-pill hot">Manhattan</a>
-      <a href="/contact" class="area-pill hot">Brooklyn</a>
-      <a href="/contact" class="area-pill">Queens</a>
-      <a href="/contact" class="area-pill">Bronx</a>
-      <a href="/contact" class="area-pill">Staten Island</a>
-      <a href="/contact" class="area-pill">Long Island</a>
-      <a href="/contact" class="area-pill">Nassau County</a>
-      <a href="/contact" class="area-pill">Brighton Beach</a>
-      <a href="/contact" class="area-pill">Park Slope</a>
-      <a href="/contact" class="area-pill">Williamsburg</a>
-      <a href="/contact" class="area-pill">Upper East Side</a>
-      <a href="/contact" class="area-pill">Astoria</a>
+      <a href="/renovation-contractor-manhattan" class="area-pill hot">Manhattan</a>
+      <a href="/renovation-contractor-brooklyn" class="area-pill hot">Brooklyn</a>
+      <a href="/renovation-contractor-queens" class="area-pill">Queens</a>
+      <a href="/renovation-contractor-bronx" class="area-pill">Bronx</a>
+      <a href="/renovation-contractor-staten-island" class="area-pill">Staten Island</a>
+      <a href="/renovation-contractor-long-island" class="area-pill">Long Island</a>
+      <a href="/renovation-contractor-nassau-county" class="area-pill">Nassau County</a>
+      <a href="/renovation-contractor-brooklyn" class="area-pill">Brighton Beach</a>
+      <a href="/renovation-contractor-brooklyn" class="area-pill">Park Slope</a>
+      <a href="/renovation-contractor-brooklyn" class="area-pill">Williamsburg</a>
+      <a href="/renovation-contractor-manhattan" class="area-pill">Upper East Side</a>
+      <a href="/renovation-contractor-queens" class="area-pill">Astoria</a>
     </div>
   </div>
 </section>

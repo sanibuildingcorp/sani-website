@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Job sheet · Sani Building Corp</title>
+<style>
+:root{--navy:#14213d;--gold:#c4a35a;--gold-soft:#faf5e8;--ink:#1d1d1f;--muted:#6b6b70;--line:#e7e2d6;--ok:#1e7a45;--warn:#8a5a00}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;background:#f6f4ef;color:var(--ink);-webkit-font-smoothing:antialiased}
+header{background:var(--navy);color:#fff;padding:18px 18px 22px}
+.brand{font-size:12px;letter-spacing:2px;font-weight:700;color:var(--gold)}
+h1{font-size:23px;line-height:1.25;margin:8px 0 6px}
+.type{display:inline-block;background:rgba(255,255,255,.12);border-radius:99px;padding:4px 11px;font-size:13px;margin-top:4px}
+main{padding:14px;max-width:640px;margin:0 auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 12px}
+.k{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:#8a7a52;font-weight:700;margin-bottom:8px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #f1ede3;font-size:15px}.row:last-child{border:0}
+.row span:first-child{color:var(--muted)}.row span:last-child{text-align:right;font-weight:600}
+.row a{color:var(--navy)}
+p{font-size:15.5px;line-height:1.55;margin:0}
+.said{font-style:italic;color:#444;background:#f7f5ef;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:14.5px}
+.warn{background:#fff6e5;border-color:#f1dfb6}.warn li{color:#5a3d00}
+ul{margin:0;padding-left:20px}li{font-size:15px;line-height:1.5;margin:4px 0}
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.photos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
+.step{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f1ede3;cursor:pointer}.step:last-child{border:0}
+.box{flex:0 0 28px;height:28px;border:2px solid #c9c2ae;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;margin-top:1px}
+.step.done .box{background:var(--ok);border-color:var(--ok)}
+.step.done b{color:#6b6b70;text-decoration:line-through}
+.n{font-size:12px;color:#8a7a52;font-weight:700}.step b{display:block;font-size:16px;line-height:1.35}.how{font-size:14.5px;line-height:1.5;color:#444;margin-top:4px}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:15px;line-height:1.4;cursor:pointer}.chk i{flex:0 0 20px;height:20px;border:2px solid #c9c2ae;border-radius:5px;margin-top:1px}.chk.on i{background:var(--navy);border-color:var(--navy)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:560px){.two{grid-template-columns:1fr}}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px;font-size:16px;font-weight:700;margin-top:10px;cursor:pointer}
+.gold{background:var(--gold);color:var(--navy)}.navy{background:var(--navy);color:#fff}.ghost{background:#fff;border:1px solid var(--line);color:var(--navy)}
+.bar{height:6px;background:#eee8d8;border-radius:99px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--ok);width:0}
+textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:15px;min-height:70px}
+.done-banner{background:#e7f5ec;color:var(--ok);border:1px solid #bfe3cc;font-weight:700;text-align:center}
+.err{padding:40px 20px;text-align:center;color:var(--muted)}
+.started{background:#eef7f1;border-color:#cfe8d6;color:#1e7a45;font-weight:700;font-size:15px}
+.fl{display:block;font-size:14px;font-weight:700;color:#14213d;margin-bottom:10px}
+.fl input{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:12px;font-size:16px;border:1.5px solid #ddd;border-radius:10px;font-family:inherit}
+details.how{margin-top:6px;font-size:15px;color:#444;line-height:1.5}
+details.how summary{color:#8a6a1c;font-weight:700;font-size:14px;cursor:pointer;padding:4px 0}
+</style>
+</head>
+<body>
+<div id="app"><div class="err">Loading your job…</div></div>
+<script>
+var T = new URLSearchParams(location.search).get('t') || '';
+var S = null, P = { steps: {}, photos: [] }, LOCAL = {};
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+try { LOCAL = JSON.parse(localStorage.getItem('crew_chk_' + T) || '{}'); } catch (e) {}
+async function api(body) {
+  var r = await fetch('/.netlify/functions/crew' + (body ? '' : '?t=' + encodeURIComponent(T)), body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ t: T }, body)) } : undefined);
+  var j = await r.json().catch(function () { return {}; });
+  if (!r.ok) throw new Error(j.error || 'Something went wrong');
+  return j;
+}
+function fmtPhone(v) { var d = String(v || '').replace(/\D/g, ''); if (d.length === 11 && d[0] === '1') d = d.slice(1); return d.length === 10 ? '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6) : v; }
+function niceDate(d) { if (!/^\d{4}-\d{2}-\d{2}$/.test(d || '')) return d || ''; var x = new Date(d + 'T12:00:00'); return x.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
+function list(title, arr, key) {
+  if (!arr || !arr.length) return '';
+  return '<div class="card"><div class="k">' + title + '</div>' + arr.map(function (x, i) { var id = key + i; return '<div class="chk' + (LOCAL[id] ? ' on' : '') + '" onclick="tick(\'' + id + '\',this)"><i></i><span>' + esc(x) + '</span></div>'; }).join('') + '</div>';
+}
+function tick(id, el) { LOCAL[id] = !LOCAL[id]; el.classList.toggle('on', LOCAL[id]); try { localStorage.setItem('crew_chk_' + T, JSON.stringify(LOCAL)); } catch (e) {} }
+function tm(iso) { return iso ? new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''; }
+function dayTm(iso) { return iso ? new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + tm(iso) : ''; }
+function thumbs(arr) { return '<div class="photos">' + arr.map(function (p) { var u = '/.netlify/functions/crew?photo=' + p.id; return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="' + p.kind + '"></a>'; }).join('') + '</div>'; }
+function render() {
+  var s = S, done = s.steps.filter(function (_, i) { return P.steps[i]; }).length;
+  var h = '<header><div class="brand">SANI BUILDING CORP · JOB SHEET</div><h1>' + esc(s.title) + '</h1>' + (s.jobType ? '<span class="type">' + esc(s.jobType) + '</span>' : '') + '</header><main>';
+  /* CLOSED: a short summary instead of the whole sheet */
+  if (P.doneAt) {
+    var work = P.photos.filter(function (p) { return p.kind !== 'receipt'; }), rec = P.photos.filter(function (p) { return p.kind === 'receipt'; });
+    h += '<div class="card done-banner">Job marked done. Thank you.</div>' +
+      '<div class="card"><div class="k">Summary</div>' +
+      (s.address ? '<div class="row"><span>Address</span><span>' + esc(s.address) + '</span></div>' : '') +
+      (P.startedAt ? '<div class="row"><span>Started</span><span>' + esc(dayTm(P.startedAt)) + '</span></div>' : '') +
+      '<div class="row"><span>Done</span><span>' + esc(dayTm(P.doneAt)) + '</span></div>' +
+      (s.steps.length ? '<div class="row"><span>Steps</span><span>' + done + ' of ' + s.steps.length + '</span></div>' : '') +
+      (P.hoursWorked ? '<div class="row"><span>Hours worked</span><span>' + P.hoursWorked + '</span></div>' : '') +
+      (P.materialsSpent ? '<div class="row"><span>Materials spent</span><span>$' + Number(P.materialsSpent).toFixed(P.materialsSpent % 1 ? 2 : 0) + '</span></div>' : '') + '</div>' +
+      (work.length ? '<div class="card"><div class="k">Photos sent to the office</div>' + thumbs(work) + '</div>' : '') +
+      (rec.length ? '<div class="card"><div class="k">Receipts</div>' + thumbs(rec) + '</div>' : '') +
+      '<p style="text-align:center;font-size:14px;color:#666">This job is closed. <a style="color:#14213d;font-weight:700" href="tel:+13322770990">Call the office</a> to change anything.</p>' +
+      '<p style="text-align:center;font-size:12px;color:#999;margin:18px 0 30px">' + esc(s.ref) + ' · private job link, do not share</p></main>';
+    document.getElementById('app').innerHTML = h; return;
+  }
+  h += P.startedAt ? '<div class="card started">Started ' + esc(tm(P.startedAt)) + ' · the office can see you are on site</div>'
+    : '<div class="card"><button class="btn navy" onclick="startJob()">I\'m here · Start job</button><p style="font-size:13px;color:#666;margin:8px 0 0;text-align:center">Tap when you arrive. The office sees the time.</p></div>';
+  h += '<div class="card"><div class="k">Where and when</div>' +
+    (s.address ? '<div class="row"><span>Address</span><span><a href="https://maps.google.com/?q=' + encodeURIComponent(s.address) + '">' + esc(s.address) + '</a></span></div>' : '') +
+    ((s.date || s.time) ? '<div class="row"><span>When</span><span>' + esc([niceDate(s.date), s.time].filter(Boolean).join(' · ')) + '</span></div>' : '') +
+    (s.hours ? '<div class="row"><span>Time on site</span><span>' + esc(s.hours) + '</span></div>' : '') +
+    (s.customer ? '<div class="row"><span>Customer</span><span>' + esc(s.customer) + '</span></div>' : '') +
+    (s.phone ? '<div class="row"><span>Customer phone</span><span><a href="tel:' + esc(s.phone) + '">' + esc(fmtPhone(s.phone)) + '</a></span></div>' : '') +
+    '<div class="row"><span>Questions?</span><span><a href="tel:+13322770990">Call the office</a></span></div></div>';
+  h += '<div class="card"><div class="k">The job</div>' + (s.explain ? '<p>' + esc(s.explain) + '</p>' : '') + (s.customerSaid ? '<div class="said">Customer wrote: “' + esc(s.customerSaid) + '”</div>' : '') + '</div>';
+  var watch = s.watch || s.building.concat(s.warnings).slice(0, 3);
+  if (watch.length) h += '<div class="card warn"><div class="k">Watch out</div><ul>' + watch.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+  if (s.photos.length) h += '<div class="card"><div class="k">Customer photos</div><div class="photos">' + s.photos.map(function (u) { return '<a href="' + esc(u) + '" target="_blank"><img src="' + esc(u) + '" alt="Job photo" onerror="this.parentNode.style.display=\'none\'"></a>'; }).join('') + '</div></div>';
+  h += '<div class="two">' + list('Tools to bring', s.tools, 't') + list('Materials to bring', s.materials, 'm') + '</div>';
+  if (s.steps.length) h += '<div class="card"><div class="k">Step by step · ' + done + ' of ' + s.steps.length + ' done</div><div class="bar"><i style="width:' + Math.round(100 * done / s.steps.length) + '%"></i></div>' +
+    s.steps.map(function (x, i) { return '<div class="step' + (P.steps[i] ? ' done' : '') + '" onclick="step(' + i + ')"><div class="box">' + (P.steps[i] ? '✓' : '') + '</div><div style="flex:1"><div class="n">STEP ' + (i + 1) + '</div><b>' + esc(x.step) + '</b>' + (x.how ? '<details class="how" onclick="event.stopPropagation()"><summary>How</summary>' + esc(x.how) + '</details>' : '') + '</div></div>'; }).join('') + '</div>';
+  h += list('Check before you leave', s.checks, 'c');
+  if (s.notIncluded.length) h += '<div class="card"><div class="k">Not in this job · call the office first</div><ul>' + s.notIncluded.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+  var before = P.photos.filter(function (p) { return p.kind === 'before'; }).length, after = P.photos.filter(function (p) { return p.kind === 'after'; }).length, rc = P.photos.filter(function (p) { return p.kind === 'receipt'; }).length;
+  h += '<div class="card"><div class="k">Photos for the office</div><p style="font-size:14px;color:#666">Before you start and when you finish.</p>' +
+    '<button class="btn ghost" onclick="pick(\'before\')">Add before photo' + (before ? ' (' + before + ')' : '') + '</button>' +
+    '<button class="btn ghost" onclick="pick(\'after\')">Add after photo' + (after ? ' (' + after + ')' : '') + '</button>' +
+    '<input type="file" id="ph" accept="image/*" capture="environment" hidden></div>';
+  h += '<div class="card"><div class="k">Finished?</div>' +
+    '<label class="fl">Hours you worked<input id="hrs" type="number" inputmode="decimal" step="0.25" min="0" placeholder="e.g. 3.5"></label>' +
+    '<label class="fl">Money you spent on materials ($)<input id="mat" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0 if none"></label>' +
+    '<button class="btn ghost" onclick="pick(\'receipt\')">Add receipt photo' + (rc ? ' (' + rc + ')' : '') + '</button>' +
+    '<textarea id="note" placeholder="Anything the office should know (optional)"></textarea><button class="btn navy" onclick="finish()">Job done</button></div>';
+  h += '<p style="text-align:center;font-size:12px;color:#999;margin:18px 0 30px">' + esc(s.ref) + ' · private job link, do not share</p></main>';
+  document.getElementById('app').innerHTML = h;
+}
+async function startJob() {
+  try { var j = await api({ action: 'start' }); P = j.progress; render(); } catch (e) { alert(e.message); }
+}
+async function step(i) {
+  P.steps[i] = !P.steps[i]; render();
+  try { var j = await api({ action: 'step', i: i, done: P.steps[i] }); P = j.progress; } catch (e) { alert(e.message); }
+}
+var KIND = 'after';
+function pick(kind) { KIND = kind; var el = document.getElementById('ph'); el.onchange = function () { if (el.files[0]) upload(el.files[0]); }; el.click(); }
+function upload(file) {
+  var img = new Image(), rd = new FileReader();
+  rd.onload = function () { img.src = rd.result; };
+  img.onload = async function () {
+    var k = Math.min(1, 1400 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    try { var j = await api({ action: 'photo', kind: KIND, data: c.toDataURL('image/jpeg', 0.8) }); P = j.progress; render(); } catch (e) { alert('Photo not saved: ' + e.message); }
+  };
+  rd.readAsDataURL(file);
+}
+async function finish() {
+  var hrs = (document.getElementById('hrs') || {}).value, mat = (document.getElementById('mat') || {}).value;
+  if (!hrs) { alert('Please write the hours you worked.'); document.getElementById('hrs').focus(); return; }
+  if (!confirm('Mark this job as done?\n\n' + hrs + ' hours' + (mat ? ' · $' + mat + ' materials' : ''))) return;
+  try { var j = await api({ action: 'done', hours: hrs, materials: mat || 0, note: (document.getElementById('note') || {}).value || '' }); P = j.progress; render(); window.scrollTo(0, 0); } catch (e) { alert(e.message); }
+}
+(async function () {
+  try { var j = await api(); S = j.sheet; P = j.progress || P; render(); }
+  catch (e) { document.getElementById('app').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }
+})();
+</script>
+</body>
+</html>

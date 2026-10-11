@@ -20,7 +20,7 @@ ok('the page opens with the site menu showing, so the slim bar is hidden', /<bod
 ok('...leaving step 1 hides the menu and brings the slim bar back; going back to step 1 swaps them again', /function hideSiteMenu\(\)\{[^}]*classList\.add\('hidden'\);document\.body\.classList\.remove\('menu-on'\)\}/.test(H) && /function showSiteMenu\(\)\{[^}]*classList\.remove\('hidden'\);document\.body\.classList\.add\('menu-on'\)\}/.test(H));
 
 console.log('\n2. The counter moves through the follow-ups\n');
-ok('the counter has a place for "· Question 2 of 3"', /<span id="step-num">1<\/span> of <span id="step-total">5<\/span><span id="step-sub"><\/span>/.test(H));
+ok('the counter has a place for "· Question 2 of 3"', /<span id="step-num">1<\/span> of <span id="step-total">4<\/span><span id="step-sub"><\/span>/.test(H));
 ok('every follow-up question moves the bar and says which one it is', /function followUpProgress\(last\)\{/.test(H) && /function renderAIQuestion\(q\)\{[\s\S]{0,2500}followUpProgress\(\);\n  const c=document\.getElementById\('ai-question-container'\)/.test(H) && /' · Question '\+i\+' of '\+n/.test(H));
 ok('...the supplies screen says "Last question" with the bar nearly full', /followUpProgress\(true\);\s*const sl=document\.getElementById\('step-label'\);if\(sl\)sl\.textContent='Last One';/.test(H) && /last\?0\.92/.test(H) && /' · Last question'/.test(H));
 ok('...and a normal step clears it', /const ss=document\.getElementById\('step-sub'\);if\(ss\)ss\.textContent='';/.test(H));

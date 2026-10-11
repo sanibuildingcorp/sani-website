@@ -77,8 +77,10 @@ ok('an unknown status is still shown rather than swallowed',
 /* `handymanSentBadge(b)` also matches the function's own DECLARATION, so the
    first version of this assertion passed with the call site deleted. Anchored on
    the concatenation that only appears where it is actually rendered. */
-ok('the badge is rendered on the card, beside the work status rather than instead of it',
-  /handymanSentBadge\(b\) \+\n/.test(HTML) && /'<span class="badge h-' \+ status \+ '">'/.test(HTML));
+/* The list card now shows ONE status pill that covers both: what was sent
+   (Price sent / Changes asked / Signed) and the work (Confirmed / Crew on it). */
+ok('the card pill shows what was sent (sent, changes asked, signed) as well as the work status',
+  /ag === 'signed' \? \['Signed'/.test(HTML) && /ag === 'sent' \? \['Price sent'/.test(HTML) && /ag === 'changes_requested' \? \['Changes asked'/.test(HTML) && /status === 'confirmed' \? \['Confirmed'/.test(HTML));
 
 console.log('\nwhat was sent, when the booking is reopened weeks later\n');
 {

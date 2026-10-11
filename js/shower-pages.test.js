@@ -34,16 +34,16 @@ console.log('\n1. The wall panels page says what people search\n');
 {
   const h = read('bathroom-wall-panels.html');
   const t = tag(h, /<title>([^<]*)<\/title>/), d = tag(h, /<meta name="description" content="([^"]*)"/);
-  ok('THE TITLE SAYS "Shower Wall Panels Installation", acrylic and PVC', /Shower Wall Panels Installation NYC/.test(t) && /Acrylic &amp; PVC/.test(t) && t.length <= 70, t);
-  ok('...the description says acrylic, PVC, shower surround, grout-free', /acrylic and PVC shower wall panels/i.test(d) && /shower surround/i.test(d) && /grout-free/i.test(d), d);
+  ok('THE TITLE SAYS "Shower Wall Panels Installation", over existing tile (he installs vinyl panels glued over tile, not acrylic)', /Shower Wall Panels Installation NYC/.test(t) && /Over Existing Tile/.test(t) && t.length <= 70, t);
+  ok('...the description says waterproof vinyl, over existing tile, no grout, 1-3 days', /waterproof vinyl shower wall panels/i.test(d) && /over your existing tile/i.test(d) && /no grout/i.test(d) && /1–3 days/.test(d), d);
   ok('the one h1 says shower wall panel installation', (h.match(/<h1[\s>]/g) || []).length === 1 && /<h1>Shower &amp; Bathroom Wall Panel Installation/.test(h));
-  ok('an "Acrylic & PVC shower wall panels" section, with a grout-free alternative to tile, linking the shower page', /<h2>Acrylic &amp; PVC shower wall panels<\/h2>/.test(h) && /<h2>A grout-free alternative to shower tile<\/h2>/.test(h) && /href="\/shower-waterproofing"/.test(h));
+  ok('a "Glued straight over your existing tile" section, with a grout-free alternative to tile, linking the shower page', /<h2>Glued straight over your existing tile<\/h2>/.test(h) && /<h2>A grout-free alternative to shower tile<\/h2>/.test(h) && /href="\/shower-waterproofing"/.test(h) && !/acrylic/i.test(h));
   ok('...it never offers what he does not install (solid surface, laminate)', !/solid surface|laminate/i.test(h));
   const svc = lds(h).find((x) => x['@type'] === 'Service');
-  ok('the schema names acrylic, PVC and shower surround panels', ['Acrylic Shower Wall Panels', 'PVC Shower Wall Panels', 'Shower Surround Panels'].every((s) => svc.serviceType.indexOf(s) !== -1));
+  ok('the schema names vinyl, over-tile and shower surround panels', ['Vinyl Shower Wall Panels', 'Waterproof Wall Panels Over Tile', 'Shower Surround Panels'].every((s) => svc.serviceType.indexOf(s) !== -1));
   const bc = lds(h).find((x) => x['@type'] === 'BreadcrumbList');
   ok('the breadcrumb points at the canonical address (www, no .html)', bc.itemListElement.every((i) => /^https:\/\/www\.sanibuildingcorp\.com\//.test(i.item) && !/\.html$/.test(i.item)));
-  ok('THE FAQ SCHEMA IS WORD FOR WORD THE VISIBLE FAQ, new questions included', faqSame(h) && /Acrylic or PVC shower wall panels/.test(h) && /Can wall panels fix a leaking shower\?/.test(h));
+  ok('THE FAQ SCHEMA IS WORD FOR WORD THE VISIBLE FAQ, new questions included', faqSame(h) && /What are the wall panels made of\?/.test(h) && /Can wall panels fix a leaking shower\?/.test(h));
 }
 
 console.log('\n2. /shower-waterproofing: the four shower jobs\n');
@@ -72,14 +72,14 @@ console.log('\n2. /shower-waterproofing: the four shower jobs\n');
 console.log('\n3. Google can find both\n');
 {
   const menu = read('partials/menu.html'), foot = read('partials/footer.html');
-  ok('THE MENU says "Shower Wall Panels" (it said "Bathroom Refresh") and lists shower waterproofing, desktop and phone', (menu.match(/href="\/bathroom-wall-panels"[^>]*>(?:<span[^>]*>)?Shower Wall Panels/g) || []).length === 2 && (menu.match(/href="\/shower-waterproofing"/g) || []).length === 2 && !/Bathroom Refresh/.test(menu));
-  ok('...so does the footer', /href="\/bathroom-wall-panels">Shower Wall Panels/.test(foot) && /href="\/shower-waterproofing"/.test(foot));
+  ok('THE MENU says "Bathroom Wall Panels (No Demo)" (it said "Bathroom Refresh") and lists shower waterproofing, desktop and phone', (menu.match(/href="\/bathroom-wall-panels"[^>]*>(?:<span[^>]*>)?Bathroom Wall Panels \(No Demo\)/g) || []).length === 2 && (menu.match(/href="\/shower-waterproofing"/g) || []).length === 2 && !/Bathroom Refresh/.test(menu));
+  ok('...so does the footer', /href="\/bathroom-wall-panels">Bathroom Wall Panels \(No Demo\)/.test(foot) && /href="\/shower-waterproofing"/.test(foot));
   ['bathroom-renovation', 'bathroom-renovation-brooklyn', 'bathroom-renovation-manhattan', 'bathroom-renovation-queens', 'tile-grouting-restoration', 'water-damage'].forEach((p) =>
     ok('/' + p + ' links the shower page and "Shower Wall Panels"', /class="sbc-ilink" href="\/shower-waterproofing"/.test(read(p + '.html')) && /class="sbc-ilink" href="\/bathroom-wall-panels">Shower Wall Panels</.test(read(p + '.html'))));
   const sm = read('sitemap.xml');
   ok('the sitemap lists the new page', /<loc>https:\/\/www\.sanibuildingcorp\.com\/shower-waterproofing<\/loc>/.test(sm));
   const ll = read('llms.txt');
-  ok('llms.txt describes both, PVC included', /\(https:\/\/www\.sanibuildingcorp\.com\/shower-waterproofing\)/.test(ll) && /acrylic and PVC shower wall panels/i.test(ll));
+  ok('llms.txt describes both, vinyl panels over tile', /\(https:\/\/www\.sanibuildingcorp\.com\/shower-waterproofing\)/.test(ll) && /waterproof rigid-core vinyl panels/i.test(ll) && /glued directly over existing shower tile/i.test(ll));
 }
 
 console.log('\n4. The navy button can be read\n');

@@ -71,6 +71,7 @@ exports.handler = async function (event) {
       submittedAt: e.submittedAt,
       updatedAt: e.updatedAt,
       sentAt: e.sentAt,
+      openedAt: e.openedAt,
       acceptedAt: e.acceptedAt,
       /* When the job was finished - the list badge and the assistant read it. */
       completedAt: e.estimate?.completedAt || null,

@@ -2763,6 +2763,140 @@ body {
 .badge.waiting-customer{background:#6b5b95;color:#fff}
 @media(max-width:600px){.cnv-msg{max-width:93%}.cnv-body{max-height:300px}}
 
+
+/* Sani brain card (handyman) */
+.hb,.hb *{box-sizing:border-box}.hb{overflow:hidden;width:100%;max-width:100%;overflow-wrap:anywhere}.hb-head>div,.hb-price>div,.hb-task>div:first-child{min-width:0}.hb-say textarea{min-width:0;width:100%}
+.hb{border:1px solid #e3d6b0;background:#fffdf7;border-radius:14px;padding:16px;margin:0 0 16px}
+.hb-k{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#8a7a52;font-weight:700;margin-bottom:4px}
+.hb-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+.hb-title{font-size:17px;font-weight:700;color:#14213d;line-height:1.3}
+.hb-conf{font-size:12px;font-weight:700;padding:5px 10px;border-radius:99px;white-space:nowrap}
+.hb-high{background:#e7f5ec;color:#1e7a45}.hb-medium{background:#fff4dc;color:#8a5a00}.hb-low{background:#fde8e8;color:#a12a2a}
+.hb-price{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid #efe6cc;border-bottom:1px solid #efe6cc}
+.hb-big{font-size:30px;font-weight:800;color:#14213d;line-height:1}
+.hb-sub{font-size:12.5px;color:#6b6b6b;margin-top:5px}
+.hb-use{background:#c4a35a;color:#14213d;border:0;border-radius:10px;padding:11px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+.hb-money{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:#555;margin:10px 0}
+.hb-tasks{display:grid;gap:8px;margin:6px 0 12px}
+.hb-task{display:flex;justify-content:space-between;gap:10px;background:#fff;border:1px solid #eee3c6;border-radius:10px;padding:10px 12px;font-size:14px;color:#222}
+.hb-note{font-size:12.5px;color:#777;margin-top:3px;line-height:1.4}
+.hb-h{font-size:12.5px;color:#14213d;font-weight:700;text-align:right;white-space:nowrap}
+.hb-block{margin:10px 0}.hb-block ul{margin:4px 0 0;padding-left:18px}.hb-block li{font-size:13.5px;line-height:1.45;color:#333;margin:2px 0}
+.hb-warn{background:#fff6e5;border-radius:10px;padding:10px 12px}.hb-ask{background:#eef4ff;border-radius:10px;padding:10px 12px}
+.hb-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.hb-two{grid-template-columns:1fr}}
+.hb-cust{margin:10px 0;border:1px solid #e6e6e6;border-radius:10px;padding:10px 12px;background:#fff}.hb-cust summary{font-weight:700;font-size:14px;color:#14213d}.hb-cust p{font-size:13.5px;line-height:1.5;color:#333}
+.hb-chat{display:grid;gap:6px;margin:12px 0}.hb-m{font-size:13.5px;line-height:1.45;padding:9px 11px;border-radius:12px;max-width:92%}
+.hb-me{background:#14213d;color:#fff;justify-self:end}.hb-ai{background:#f1ede2;color:#222}
+.hb-wait{font-size:13.5px;color:#8a7a52;padding:6px 0}.hb-err{font-size:13.5px;color:#a12a2a}.hb-err button{margin-left:6px}
+.hb-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.hb-chips button{border:1px solid #d9c690;background:#fff;border-radius:99px;padding:6px 11px;font-size:12.5px;color:#14213d}
+.hb-say{display:flex;gap:8px;align-items:flex-end}.hb-say textarea{flex:1;border:1px solid #d9d2bd;border-radius:10px;padding:9px 10px;font:inherit;font-size:14px;resize:vertical}
+.hb-say button{background:#14213d;color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700}
+.hb-rates{margin-top:12px;font-size:12.5px;color:#666;line-height:2}.hb-rates input{width:58px;border:1px solid #ddd;border-radius:6px;padding:3px 5px;font-size:13px}.hb-rates button{border:1px solid #ccc;background:#fff;border-radius:6px;padding:3px 9px;font-size:12.5px}
+#handyman-card.hb-on .h-alert-bar,#handyman-card.hb-on .h-hero-grid .h-hero-block:nth-child(2),#handyman-card.hb-on .h-action-grid,#handyman-card.hb-on .h-warnings,#handyman-card.hb-on .h-estimate-bar,#handyman-card.hb-on .h-special-order{display:none}
+#handyman-card.hb-on .h-hero-grid{grid-template-columns:1fr}
+
+.hbl-tests{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:12.5px;color:var(--ink-soft)}
+.hbl-sec{margin:0 0 14px}
+.hbl-head{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;background:none;border:0;padding:8px 2px;color:var(--ink);font:inherit;cursor:pointer}
+.hbl-head b{font-size:15px}.hbl-head i{font-style:normal;font-size:12px;font-weight:700;background:#14213d;color:#fff;border-radius:99px;padding:1px 8px;margin-left:6px}
+.hbl-head small{display:block;font-size:12px;color:var(--ink-muted);margin-top:2px}
+
+.crs{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 12px 10px;margin:0 0 14px}
+.crs-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.crs-s{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:#9a9a9a;text-align:center;line-height:1.2}
+.crs-s i{font-style:normal;width:26px;height:26px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;background:#fff}
+.crs-s.ok{color:#1e7a45}.crs-s.ok i{background:#1e7a45;border-color:#1e7a45;color:#fff}
+.crs-s.now{color:#14213d;font-weight:700}.crs-s.now i{border-color:#c4a35a;background:#faf5e8;color:#14213d}
+.crs-hint{font-size:13px;color:#444;margin-top:10px;line-height:1.45;text-align:center}
+.crw,.crw *{box-sizing:border-box}.crw{border:1px solid #d7dfee;background:#f7f9fd;border-radius:14px;padding:14px;margin:0 0 16px}
+.crw-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}.crw-note{font-size:12px;color:#777}
+.crw-sub{font-size:13px;color:#555;margin:6px 0;line-height:1.45}
+.crw-form{display:grid;gap:10px}.crw-form label{display:grid;gap:4px;font-size:12.5px;color:#555;font-weight:600}
+.crw-form select,.crw-form input:not([type=checkbox]){border:1px solid #d6dbe6;border-radius:9px;padding:9px 10px;font:inherit;font-size:15px;background:#fff;width:100%}
+.crw-form .crw-chk{display:flex;gap:8px;align-items:center;font-weight:500;font-size:13.5px;color:#333}
+.crw-link{background:none;border:0;color:#14213d;text-decoration:underline;font-size:13px;padding:4px 0;text-align:left}
+.crw-r{display:flex;gap:6px;margin:6px 0}.crw-r input{flex:1;min-width:0;border:1px solid #d6dbe6;border-radius:9px;padding:9px;font-size:15px}.crw-r button{border:0;background:none;font-size:20px;color:#999}
+.crw-job{font-size:14.5px;color:#222}.crw-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.crw-b{border:1px solid #c9d2e3;background:#fff;color:#14213d;border-radius:10px;padding:9px 12px;font-size:13.5px;font-weight:600;text-decoration:none}
+.crw-sent{margin-top:12px;background:#e7f5ec;border:1px solid #bfe3cc;border-radius:12px;padding:12px;font-size:14px;color:#14532d}
+.crw-ph{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.crw-ph a{position:relative;display:block}.crw-ph img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block}.crw-ph small{position:absolute;left:3px;bottom:3px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;border-radius:4px;padding:0 4px}
+
+/* FULL-PAGE SCREENSHOTS. A booking, an estimate or an invoice used to open
+   as a pop-up that scrolled inside itself, so the iPhone "Full Page"
+   screenshot only caught the visible part. Now, while one is open, it IS the
+   page: the list behind it is hidden and the page itself scrolls. */
+body:has(#handyman-modal.show) #app,body:has(#edit-modal.show) #app,body:has(#invoice-modal.show) #app{display:none}
+body:has(#handyman-modal.show),body:has(#edit-modal.show),body:has(#invoice-modal.show){overflow:auto !important;background:rgba(0,0,0,.7)}
+#handyman-modal.show,#edit-modal.show,#invoice-modal.show{position:absolute;inset:auto;top:0;left:0;right:0;min-height:100vh;overflow:visible}
+
+.hd-head{align-items:flex-start}
+.hd-card,.hd-card *{box-sizing:border-box}.hd-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px}
+.hd-name{font-size:18px;font-weight:700;color:var(--ink)}.hd-addr{display:block;font-size:14px;color:#14213d;margin-top:3px}.hd-when{font-size:13px;color:var(--ink-muted);margin-top:4px}
+.hd-contact{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px}.hd-contact a{display:block;text-align:center;border:1px solid #d6dbe6;border-radius:10px;padding:10px 6px;font-weight:700;font-size:14px;color:#14213d;text-decoration:none;background:#f7f9fd}
+.hd-said{font-size:14px;line-height:1.5;color:#444;font-style:italic;background:#f7f5ef;border-radius:10px;padding:10px 12px;margin-top:10px}
+.hd-photos{display:flex;gap:6px;overflow-x:auto;margin-top:10px}.hd-photos img{width:84px;height:84px;object-fit:cover;border-radius:9px;flex:0 0 auto;cursor:pointer}
+.hd-acts{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin:12px 0 4px}
+.hd-acts button{border-radius:11px;padding:13px 6px;font-weight:700;font-size:14px;border:1px solid transparent;cursor:pointer}
+.hd-go{background:#c4a35a;color:#14213d}.hd-alt{background:#fff;border-color:#d9c690 !important;color:#14213d}.hd-no{background:#fff;border-color:#e3c4c4 !important;color:#a12a2a}
+.hd-warn{background:#fff6e5;border-radius:10px;padding:9px 11px;font-size:13px;line-height:1.45;color:#5a3d00;margin:8px 0}
+.hb-fold{border-top:1px solid #efe6cc;padding:10px 0}.hb-fold>summary{font-weight:700;font-size:14px;color:#14213d;cursor:pointer;list-style:none}.hb-fold>summary::before{content:"▸ ";color:#c4a35a}.hb-fold[open]>summary::before{content:"▾ "}
+.hb-p{font-size:13.5px;line-height:1.5;color:#333;margin:8px 0}
+.hd-dec{margin-top:10px;background:#fff;border:1px solid #e3c4c4;border-radius:12px;padding:12px}.hd-dec textarea{width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:9px;padding:9px;font:inherit;font-size:14px;line-height:1.45}
+.hd-dec .hd-acts{grid-template-columns:1fr 1fr}
+.hd-fold{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}.hd-fold>summary{font-weight:700;font-size:14.5px;color:var(--ink);cursor:pointer;list-style:none}.hd-fold>summary::before{content:"▸ ";color:#c4a35a}.hd-fold[open]>summary::before{content:"▾ "}.hd-fold[open]>summary{margin-bottom:12px}
+.hd-more-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.hd-more-row button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:600;color:var(--ink)}.hd-more-row button.on{background:#14213d;color:#fff}
+
+.hbc,.hbc *{box-sizing:border-box}
+.hbc{background:#fff;border:1px solid #ebe4d0;border-radius:14px;padding:14px 16px;margin:0 0 10px;cursor:pointer;box-shadow:0 1px 2px rgba(20,33,61,.04);transition:border-color .15s,box-shadow .15s}
+.hbc:active{border-color:#c4a35a;box-shadow:0 2px 10px rgba(20,33,61,.08)}
+.hbc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.hbc-t{flex:1;min-width:0;font-family:var(--body);font-size:16px;font-weight:700;line-height:1.3;color:#14213d;letter-spacing:0;text-transform:none}
+.hbc-p{flex:0 0 auto;text-align:right;line-height:1.15}
+.hbc-p b{display:block;font-size:19px;font-weight:800;color:#14213d}
+.hbc-p small{display:block;font-size:12px;color:#8a8a8f;margin-top:3px;white-space:nowrap}
+.hbc-np{font-size:12.5px;color:#a08850;font-weight:600;white-space:nowrap}
+.hbc-who{font-size:13.5px;color:#6b6b70;margin-top:5px}
+.hbc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.hbc-tags span{font-size:12px;color:#55555a;background:#f4f2ec;border-radius:99px;padding:4px 10px;line-height:1.2}
+.hbc-tags .hbc-pill{font-weight:700}
+.hbc-pill.gold{background:#fbf3df;color:#8a6a1c}.hbc-pill.red{background:#fde8e8;color:#a12a2a}.hbc-pill.blue{background:#e8effd;color:#1d4ed8}
+.hbc-pill.ok{background:#e7f5ec;color:#1e7a45}.hbc-pill.warn{background:#fff1dd;color:#9a5a00}.hbc-pill.mute{background:#eee;color:#666}
+
+.dn{background:#f3faf5;border:1px solid #cfe8d6;border-radius:14px;padding:16px;margin:12px 0}
+.dn-k{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#1e7a45;margin-bottom:10px}
+.dn-money{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.dn-money>div{background:#fff;border:1px solid #e3efe6;border-radius:10px;padding:10px}
+.dn-money span{display:block;font-size:12px;color:#6b6b70}
+.dn-money b{display:block;font-size:20px;color:#14213d;margin-top:2px}
+.dn-bal b{color:#9a5a00}.dn-bal.ok b{color:#1e7a45}
+.dn-tick{display:flex;align-items:center;gap:6px;font-size:13px;color:#444;margin-top:6px;cursor:pointer}
+.dn-acts{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.dn-acts .hd-go{width:100%}
+.dn-rev{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.dn-sub{width:100%;font-size:13px;font-weight:700;color:#14213d}
+.dn-rev .hd-alt{flex:1;text-align:center;text-decoration:none}
+.dn-log{font-size:13px;color:#6b6b70;margin-top:10px}
+.dn-more{margin-top:10px;background:none;border:0;padding:0;color:#55555a;text-decoration:underline;font:inherit;font-size:13px;cursor:pointer}
+#handyman-card.is-done:not(.show-brain) #hb-box{display:none}
+.dn .hd-go,.dn .hd-alt{display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:12px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;box-sizing:border-box;padding:10px 14px}
+.dn .hd-go{background:#c4a35a;color:#14213d;border:0}
+.dn .hd-go:disabled{opacity:.45;cursor:not-allowed}
+.dn .hd-alt{background:#fff;color:#14213d;border:1.5px solid #14213d}
+
+.hd-del{display:block;margin:18px auto 6px;background:none;border:0;color:#b42318;font:inherit;font-size:14px;text-decoration:underline;cursor:pointer;padding:8px}
+.hbl-del{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line-soft,#eee);border-radius:12px;margin:8px 0;font-size:14px;color:#55555a}
+.hbl-del button{flex:none;background:#fff;border:1.5px solid #14213d;color:#14213d;border-radius:10px;padding:8px 12px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+
+.hq{border:1px solid var(--line-soft,#eee);border-radius:12px;padding:12px 14px;margin:12px 0;background:#fff}
+.hq-k{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#8a6a1c;margin:10px 0 4px}
+.hq-k:first-child{margin-top:0}
+.hq-row{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:5px 0;border-bottom:1px solid #f2f2f2}
+.hq-row:last-of-type{border-bottom:0}.hq-row b{flex:none;color:#14213d}
+.hq-w,.hq-q{font-size:14px;line-height:1.4;padding:3px 0 3px 14px;position:relative;color:#333}
+.hq-w:before{content:"";position:absolute;left:0;top:10px;width:6px;height:6px;border-radius:50%;background:#e8742a}
+.hq-q:before{content:"?";position:absolute;left:0;top:3px;font-weight:800;color:#14213d}
+.hb-more summary{list-style:none;cursor:pointer}.hb-more summary::-webkit-details-marker{display:none}
+.hb-more u{color:#8a6a1c;font-size:13px}
 </style>
 <style>
 /* Photo strips — force single horizontal row */
@@ -2846,7 +2980,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
 
   <div class="list-section">
     <div class="sbc-search"><input id="sbc-q" type="search" inputmode="search" autocomplete="off" placeholder="🔍 Search name, phone, address, project…" oninput="sbcQ=this.value;if(window.sbcTrash)sbcTrash.on=false;renderList()"><button type="button" id="sbc-qx" aria-label="Clear" onclick="var i=document.getElementById('sbc-q');i.value='';sbcQ='';renderList();i.focus()">×</button><button type="button" class="sbc-trash-btn" aria-label="Trash" title="Trash" onclick="sbcTrashOpen(true)">🗑</button></div>
-    <button type="button" class="ei-open" onclick="eiOpen()">📥 New request from email</button>
+    <div class="ei-row"><button type="button" class="ei-open" onclick="pcOpen()">📞 New estimate from a call</button><button type="button" class="ei-open" onclick="eiOpen()">📥 New request from email</button></div>
     <div id="list-host"></div>
   </div>
 </div>
@@ -2993,6 +3127,7 @@ button[onclick*="saveContractorNotes"]{color:#102236 !important}
 <script src="/js/dashboard-auth.js"></script>
 <script>
 const TABS = [
+  { id: "handyman", label: "🔧 Handyman" },
   { id: "all", label: "All" },
   { id: "new", label: "New" },
   { id: "drafted", label: "Drafts" },
@@ -3003,7 +3138,6 @@ const TABS = [
   { id: "completed", label: "Completed" },
   { id: "declined", label: "Declined" },
   { id: "cancelled", label: "Cancelled" },
-  { id: "handyman", label: "🔧 Handyman" },
   { id: "visits", label: "📅 Visits" },
   { id: "customers", label: "👤 Customers" },
   { id: "google", label: "🔎 Google" },
@@ -3151,7 +3285,7 @@ function calcTotal(est) {
 function calcCustomerView(est) {
   const t = calcTotal(est);
   let showLabor, showMaterials;
-  if (/^v5/.test(String(est.engine || "")) && !est.displayByHand) {
+  if (/^(v5|brain)/.test(String(est.engine || "")) && !est.displayByHand) {
     showLabor = false; showMaterials = false;   /* v5: one total, labor + materials */
   } else if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") {
     showLabor = est.showLaborCost !== false;
@@ -3205,8 +3339,13 @@ function toast(msg, isError) {
   toast._t = setTimeout(function() { t.classList.remove("show"); }, isError ? 6000 : 3000);
 }
 
+function pzNewEngine() { var e = (currentRecord && currentRecord.estimate) || {}; return /^(v5|brain)/.test(String(e.engine || "")) && !e.displayByHand; }
 function normalizeDisplayFlags(est) {
   if (!est) return;
+  /* New estimator: one total, no old labor/material switches. */
+  if (/^(v5|brain)/.test(String(est.engine || "")) && !est.displayByHand) {
+    delete est.showLaborCost; delete est.showMaterialsCost; delete est.displayMode; return;
+  }
   if (typeof est.showLaborCost === "boolean" || typeof est.showMaterialsCost === "boolean") return;
   if (est.displayMode === "total") {
     est.showLaborCost = false;
@@ -3288,6 +3427,8 @@ async function loadEstimates() {
     if (estimateRes && estimateRes.ok) {
       const data = await estimateRes.json();
       estimates = data.estimates || [];
+      /* Sent, then a stale save wrote "drafted" back: it was sent. */
+      estimates.forEach(function (r) { if (r && r.status === "drafted" && r.sentAt) r.status = "sent"; if (r && r.status === "sent" && r.openedAt) r.status = "opened"; });
     } else {
       let detail = "";
       try { const t = await estimateRes.text(); const j = JSON.parse(t); detail = String(j.error || j.message || ""); } catch (e) {}
@@ -3301,6 +3442,10 @@ async function loadEstimates() {
     if (handymanRes && handymanRes.ok) {
       const data = await handymanRes.json();
       handymanBookings = data.bookings || [];
+      /* "Deleted" orders stay in the database, only hidden here */
+      try { var hr = await sbcFetch('/.netlify/functions/handyman-hide'); HB_DELETED = ((await hr.json()) || {}).deleted || {}; } catch (e) {}
+      HB_TRASH = handymanBookings.filter(function (b) { return HB_DELETED[b.ref]; });
+      handymanBookings = handymanBookings.filter(function (b) { return !HB_DELETED[b.ref]; });
     }
     if (visitsRes && visitsRes.ok) {
       const data = await visitsRes.json();
@@ -3478,6 +3623,7 @@ function renderList() {
 
   if (activeTab === "handyman") {
     renderHandymanList();
+    if (!HB_PRICES._loaded) { HB_PRICES._loaded = true; hbLoadPrices(); }
     return;
   }
 
@@ -8895,8 +9041,8 @@ function gatherForm() {
        untouched rather than blanking it on every save. */
     notes: String((currentRecord.estimate && currentRecord.estimate.notes) || "").trim(),
     markupPct: parseFloat(document.getElementById("f-markup").value) || 0,
-    showLaborCost: currentRecord.estimate.showLaborCost !== false,
-    showMaterialsCost: currentRecord.estimate.showMaterialsCost === true,
+    showLaborCost: pzNewEngine() ? undefined : currentRecord.estimate.showLaborCost !== false,
+    showMaterialsCost: pzNewEngine() ? undefined : currentRecord.estimate.showMaterialsCost === true,
     showSectionSubtotals: currentRecord.estimate.showSectionSubtotals !== false,
     showLaborLines: currentRecord.estimate.showLaborLines === true,
     showMaterialLines: currentRecord.estimate.showMaterialLines === true,
@@ -10167,7 +10313,7 @@ const SERVICE_ICONS = {
 function handymanBrief(b) {
   var a = (b && b.answers) || {};
   var list = Array.isArray(a.job_list) ? a.job_list : [];
-  var rows = [["📏 Size", a.job_size], ["🏠 Place", a.place], ["🪜 Floor / access", a.access], ["📦 Parts", a.parts], ["⏰ How soon", a.when],
+  var rows = [["🔧 Fix or replace", a.fix_or_replace], ["📏 Size", a.job_size], ["🏠 Place", a.place], ["🪜 Floor / access", a.access], ["📦 Parts", a.parts], ["⏰ How soon", a.when],
     ["📅 Preferred", [b.preferred_date, b.preferred_time].filter(Boolean).join(" · ")]].filter(function (r) { return r[1]; });
   if (!list.length && !rows.length) return "";
   return '<div class="h-section" id="h-brief" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px">' +
@@ -10237,7 +10383,7 @@ function handymanSentPanel(b) {
     rows.map(function (a, i) {
       var when = a.created_at ? new Date(a.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
       var st = String(a.status || '').toLowerCase();
-      var appt = [a.appointment_date, a.appointment_time, a.duration_text].filter(Boolean).join(' · ');
+      var appt = [a.appointment_date && /^\d{4}-\d{2}-\d{2}$/.test(a.appointment_date) ? new Date(a.appointment_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : a.appointment_date, a.appointment_time, a.duration_text].filter(Boolean).join(' · ');
       return '<div style="border:1px solid var(--line,rgba(13,27,42,.14));border-radius:10px;padding:11px 13px;margin-bottom:8px;' +
         (i === 0 ? 'background:rgba(29,78,216,.04)' : 'opacity:.72') + '">' +
         '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline">' +
@@ -10258,72 +10404,142 @@ function handymanSentPanel(b) {
     '</div>';
 }
 
+/* THE HANDYMAN LIST, SORTED BY WHAT HE HAS TO DO NEXT.
+   Was: one long list, everything "NEW", test bookings mixed in, wide AI
+   ranges. Now: Needs your price / Sent / Booked / Follow up / Done, the
+   brain's firm price on each card, and his own test bookings hidden. */
+var HB_PRICES = {}, HB_SHOW_TESTS = false, HB_OPEN = {}, HB_DELETED = {}, HB_TRASH = [], HB_SHOW_TRASH = false;
+/* DELETE AN ORDER. Reversible: it moves to "Deleted" at the bottom of the list. */
+async function hbDelete(ref, on) {
+  var b = (on ? handymanBookings : HB_TRASH).filter(function (x) { return x.ref === ref; })[0]; if (!b) return;
+  if (on && !confirm('Delete this order from your list?\n\n' + (b.customer_name || '') + ' · ' + (b.service_name || '') + '\n\nNothing is sent to the customer. You can bring it back from "Deleted" at the bottom of the list.')) return;
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-hide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: ref, deleted: on }) });
+    if (!r.ok) throw new Error('Could not save. Try again.');
+    HB_DELETED = ((await r.json()) || {}).deleted || {};
+    if (on) { HB_TRASH.push(b); handymanBookings = handymanBookings.filter(function (x) { return x.ref !== ref; }); }
+    else { handymanBookings.push(b); HB_TRASH = HB_TRASH.filter(function (x) { return x.ref !== ref; }); }
+    if (on && typeof closeHandymanModal === 'function') closeHandymanModal();
+    renderTabs(); renderHandymanList();
+    toast(on ? 'Order deleted' : 'Order brought back');
+  } catch (e) { toast(e.message, true); }
+}
+function hbTrash() { HB_SHOW_TRASH = !HB_SHOW_TRASH; renderHandymanList(); }
+function hbIsTest(b) {
+  var n = String(b.customer_name || '').toLowerCase(), m = String(b.customer_email || '').toLowerCase();
+  return /sani building|^test\b/.test(n) || /sanibuildingcorp/.test(m);
+}
+function hbGroup(b) {
+  var st = String(b.status || 'new').toLowerCase(), ag = String(b.agreement_status || '').toLowerCase();
+  var age = (Date.now() - new Date(b.submitted_at || 0).getTime()) / 864e5;
+  if (st === 'completed' || st === 'cancelled') return 'done';
+  if (st === 'confirmed' || st === 'in-progress' || ag === 'signed') return 'booked';
+  if (age > 14) return 'follow';
+  if (ag === 'sent' || ag === 'changes_requested') return 'sent';
+  return 'price';
+}
+async function hbLoadPrices() {
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-brain?list=1');
+    if (!r.ok) return;
+    HB_PRICES = Object.assign({ _loaded: true }, (await r.json()).prices || {});
+    if (activeTab === 'handyman') renderHandymanList();
+  } catch (e) {}
+}
+function hbShortHours(h) {
+  /* "measure visit 1 hour, install day 8-9 hours" -> "8-9 hrs"; "4-5 hours on site" -> "4-5 hrs" */
+  var s = String(h || '').replace(/(\d)\s*to\s*(\d)/gi, '$1-$2');
+  var m = s.match(/(\d+(?:\.\d+)?(?:\s*[-–]\s*\d+(?:\.\d+)?)?)\s*(?:h|hr|hrs|hour|hours)\b/gi);
+  var days = s.match(/(\d+(?:\s*[-–]\s*\d+)?)\s*(?:full\s+)?days?\b/i);
+  /* "measure visit 1 hour + install day": the install day is the real length */
+  var longest = m ? Math.max.apply(null, m.map(function (x) { return parseFloat(x.replace(/\s*(h|hr|hrs|hour|hours)$/i, '').split(/[-–]/).pop()); })) : 0;
+  if (days && longest < 6) return days[1].replace(/\s+/g, '') === '1' ? 'Full day' : days[1].replace(/\s+/g, '') + ' days';
+  if (longest < 6 && /\b(install|full|work)\s+day\b/i.test(s)) return 'Full day';
+  if (!m) return '';
+  /* several parts (measure visit + install day): show the longest one */
+  var best = m.map(function (x) { return x.replace(/\s*(h|hr|hrs|hour|hours)$/i, '').replace(/\s+/g, ''); })
+    .sort(function (a, b) { return parseFloat(b.split(/[-–]/).pop()) - parseFloat(a.split(/[-–]/).pop()); })[0];
+  return best + ' hrs';
+}
+function hbCard(b) {
+  const status = (b.status || "new").toLowerCase();
+  const urgency = (b.urgency || "flexible").toLowerCase();
+  const photoCount = (b.photo_urls || []).length;
+  const bp = HB_PRICES[b.ref];
+  const g = hbGroup(b);
+  const a = b.answers || {};
+  const title = bp && bp.title ? bp.title : (b.service_name || b.service_id || 'Handyman job');
+  const ag = String(b.agreement_status || '').toLowerCase();
+  /* one status pill, the one that matters */
+  const pill = g === 'done' ? (status === 'cancelled' ? ['Closed', 'mute'] : ['Completed', 'ok'])
+    : ag === 'signed' ? ['Signed', 'ok']
+    : status === 'in-progress' ? ['Crew on it', 'ok']
+    : status === 'confirmed' ? ['Confirmed', 'ok']
+    : ag === 'changes_requested' ? ['Changes asked', 'warn']
+    : ag === 'sent' ? ['Price sent', 'blue']
+    : (urgency === 'today' || urgency === 'emergency-today') ? ['Today', 'red']
+    : urgency === 'this-week' ? ['This week', 'gold'] : null;
+  const hrs = bp ? hbShortHours(bp.visitHours) : '';
+  return '<div class="hbc" data-ref="' + esc(b.ref) + '">' +
+    '<div class="hbc-top">' +
+      '<div class="hbc-t">' + esc(title) + '</div>' +
+      '<div class="hbc-p">' + (bp ? '<b>$' + Math.round(bp.total).toLocaleString('en-US') + '</b>' + (hrs ? '<small>' + esc(hrs) + '</small>' : '')
+        : (g === 'booked' || g === 'done' ? '' : '<span class="hbc-np">Open to price</span>')) + '</div>' +
+    '</div>' +
+    '<div class="hbc-who">' + esc(b.customer_name || '') + ' · ' + fmtDate(b.submitted_at) + '</div>' +
+    '<div class="hbc-tags">' +
+      (pill ? '<span class="hbc-pill ' + pill[1] + '">' + pill[0] + '</span>' : '') +
+      (HB_DUP[b.ref] ? '<span class="hbc-pill warn">Same customer · ' + HB_DUP[b.ref] + ' requests</span>' : '') +
+      (a.place ? '<span>' + esc(b.answers.place) + '</span>' : '') +
+      (a.job_size ? '<span>' + esc(b.answers.job_size) + '</span>' : '') +
+      (photoCount ? '<span>' + photoCount + ' photo' + (photoCount === 1 ? '' : 's') + '</span>' : '') +
+    '</div>' +
+  '</div>';
+}
+function hbToggle(k) { HB_OPEN[k] = !HB_OPEN[k]; renderHandymanList(); }
+function hbTests() { HB_SHOW_TESTS = !HB_SHOW_TESTS; renderHandymanList(); }
+var HB_DUP = {};
 function renderHandymanList() {
   const host = document.getElementById("list-host");
-
-  if (handymanBookings.length === 0) {
-    host.innerHTML =
-      '<div class="empty">' +
-        '<div class="empty-icon">🔧</div>' +
-        '<h3>No handyman bookings yet</h3>' +
-        '<p>Customer bookings from handyman-estimate.html will appear here.</p>' +
-      '</div>';
+  if (handymanBookings.length === 0 && !HB_TRASH.length) {
+    host.innerHTML = '<div class="empty"><div class="empty-icon">🔧</div><h3>No handyman bookings yet</h3><p>Customer bookings from handyman-estimate.html will appear here.</p></div>';
     return;
   }
-
-  host.innerHTML =
-    '<div class="list-header">' +
-      '<div class="list-count">' + handymanBookings.length + ' handyman booking' + (handymanBookings.length === 1 ? '' : 's') + '</div>' +
-    '</div>' +
-    handymanBookings.map(function(b) {
-      const icon = SERVICE_ICONS[b.service_id] || "🔧";
-      const conf = (b.confidence_label || "maybe").toLowerCase();
-      const status = (b.status || "new").toLowerCase();
-      const urgency = (b.urgency || "flexible").toLowerCase();
-
-      const totalMin = (b.estimated_labor_min || 0) + (b.estimated_material_min || 0);
-      const totalMax = (b.estimated_labor_max || 0) + (b.estimated_material_max || 0);
-
-      const photoCount = (b.photo_urls || []).length;
-
-      return '<div class="handyman-card" data-ref="' + esc(b.ref) + '">' +
-        '<div class="h-icon">' + icon + '</div>' +
-        '<div class="h-main">' +
-          '<div class="h-title">' + esc(b.service_name || b.service_id) + '</div>' +
-          '<div class="h-meta">' +
-            '<span>' + esc(b.customer_name) + '</span>' +
-            '<span>·</span>' +
-            '<span>' + fmtDate(b.submitted_at) + '</span>' +
-            (photoCount > 0 ? '<span>·</span><span>📷 ' + photoCount + '</span>' : '') +
-            /* the size and the place, so a long list is seen before it is opened */
-            ((b.answers || {}).job_size ? '<span>·</span><span>📏 ' + esc(b.answers.job_size) + '</span>' : '') +
-            ((b.answers || {}).place ? '<span>·</span><span>🏠 ' + esc(b.answers.place) + '</span>' : '') +
-            '<span>·</span>' +
-            '<span style="font-family:monospace;font-size:11px">' + esc(b.ref) + '</span>' +
-          '</div>' +
-          '<div class="h-badges">' +
-            '<span class="badge h-' + status + '">' + esc(status) + '</span>' +
-            /* WHETHER A CONFIRMATION HAS GONE OUT. The booking status (new /
-               confirmed / in-progress) is about the WORK; agreement_status is
-               about whether a price was ever sent to this customer, and it was
-               written on the record all along and shown nowhere. So a booking
-               that had been quoted looked identical to one that had not, and
-               after a day there was no way to remember which was which. */
-            handymanSentBadge(b) +
-            '<span class="badge h-' + conf + '">' + (b.confidence_score || 0) + '% · ' + esc(conf) + '</span>' +
-            (urgency === "today" ? '<span class="badge h-urgency-today">⚡ TODAY</span>' :
-             urgency === "this-week" ? '<span class="badge h-urgency-this-week">📅 This Week</span>' : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="h-right">' +
-          '<div class="est-total-label">Estimate</div>' +
-          '<div class="h-total">$' + totalMin + '-$' + totalMax + '</div>' +
-          '<div class="h-time">' + (b.estimated_time_min || '?') + '-' + (b.estimated_time_max || '?') + ' hrs</div>' +
-        '</div>' +
-      '</div>';
-    }).join("");
-
-  document.querySelectorAll(".handyman-card").forEach(function(card) {
+  /* the same customer asking twice: flag it so the job is not priced twice */
+  HB_DUP = {};
+  var seenKey = {};
+  handymanBookings.forEach(function (b) {
+    if (hbGroup(b) === 'done') return;
+    if (!HB_SHOW_TESTS && hbIsTest(b)) return;
+    var k = String(b.customer_phone || '').replace(/\D/g, '').slice(-10) || String(b.customer_email || '').toLowerCase();
+    if (!k) return;
+    (seenKey[k] = seenKey[k] || []).push(b);
+  });
+  Object.keys(seenKey).forEach(function (k) { if (seenKey[k].length > 1) seenKey[k].forEach(function (b) { HB_DUP[b.ref] = seenKey[k].length; }); });
+  var tests = handymanBookings.filter(hbIsTest);
+  var real = HB_SHOW_TESTS ? handymanBookings : handymanBookings.filter(function (b) { return !hbIsTest(b); });
+  var groups = [
+    ['price', 'Needs your price', 'New requests from the last 14 days', true],
+    ['sent', 'Sent · waiting for the customer', 'Price sent, not signed yet', true],
+    ['booked', 'Booked', 'Signed or confirmed: plan the visit', true],
+    ['follow', 'Follow up', 'Older than 14 days with no answer: call or text, or close them', false],
+    ['done', 'Done & closed', 'Completed or cancelled', false],
+  ];
+  var h = '<div class="list-header"><div class="list-count">' + real.length + ' handyman booking' + (real.length === 1 ? '' : 's') + '</div>' +
+    (tests.length ? '<button class="hbl-tests" onclick="hbTests()">' + (HB_SHOW_TESTS ? 'Hide' : 'Show') + ' my test bookings (' + tests.length + ')</button>' : '') + '</div>';
+  groups.forEach(function (g) {
+    var items = real.filter(function (b) { return hbGroup(b) === g[0]; });
+    if (!items.length) return;
+    var open = HB_OPEN[g[0]] === undefined ? g[3] : HB_OPEN[g[0]];
+    h += '<div class="hbl-sec"><button class="hbl-head" onclick="hbToggle(\'' + g[0] + '\')"><span><b>' + g[1] + '</b> <i>' + items.length + '</i><small>' + g[2] + '</small></span><span>' + (open ? '▾' : '▸') + '</span></button>' +
+      (open ? items.map(hbCard).join('') : '') + '</div>';
+  });
+  if (HB_TRASH.length) {
+    h += '<div class="hbl-sec"><button class="hbl-head" onclick="hbTrash()"><span><b>Deleted</b> <i>' + HB_TRASH.length + '</i><small>Hidden from your list. Tap one to bring it back.</small></span><span>' + (HB_SHOW_TRASH ? '▾' : '▸') + '</span></button>' +
+      (HB_SHOW_TRASH ? HB_TRASH.map(function (b) { return '<div class="hbl-del"><span><b>' + esc(b.customer_name || '—') + '</b> · ' + esc(b.service_name || '') + ' · ' + esc(b.ref) + '</span><button onclick="hbDelete(\'' + esc(b.ref) + '\', false)">Bring back</button></div>'; }).join('') : '') + '</div>';
+  }
+  host.innerHTML = h;
+  document.querySelectorAll(".hbc").forEach(function(card) {
     card.addEventListener("click", function() { openHandymanDetail(card.dataset.ref); });
   });
 }
@@ -10335,11 +10551,351 @@ async function openHandymanDetail(ref) {
     const b = await r.json();
     currentHandymanBooking = b;
     renderHandymanModal(b);
+    hbStart(b.ref);
+    crLoad(b);
     document.getElementById("handyman-modal").classList.add("show");
     document.body.style.overflow = "hidden";
   } catch (e) {
     toast("Load failed: " + e.message, true);
   }
+}
+
+/* ═══ SANI BRAIN FOR HANDYMAN BOOKINGS ═══════════════════════════════════
+   One strong brain reads the customer's words, answers and photos, and
+   writes the plan: tasks with hours, a firm price from HIS rates, the visit
+   brief (only the tools and materials this job needs, real warnings), what
+   the customer must have ready, and the customer scope. He talks to it to
+   change anything; "Use this price" fills the Send screen. */
+var HB = { ref: null, st: null, send: null, timer: null };
+function hbClip(s, n) { s = String(s || '').replace(/\s+/g, ' ').trim(); if (s.length <= n) return s; var c = s.slice(0, n); var k = Math.max(c.lastIndexOf(' — '), c.lastIndexOf('; '), c.lastIndexOf(', ')); return (k > n * 0.5 ? c.slice(0, k) : c.replace(/\s+\S*$/, '')) + '…'; }
+function hbSentences(s, n) { var m = String(s || '').match(/[^.!?]+[.!?]+(\s|$)/g); if (!m || m.length <= n) return String(s || ''); return m.slice(0, n).join('').trim(); }
+function hbMoney(n) { return '$' + Math.round(Number(n) || 0).toLocaleString('en-US'); }
+async function hbStart(ref) {
+  HB = { ref: ref, st: null, send: null, timer: null };
+  var st = await hbGet(ref);
+  if (!st) return;
+  if (st.status === 'none') { await hbRun(''); return; }
+  hbShow(st);
+}
+async function hbGet(ref) {
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-brain?ref=' + encodeURIComponent(ref));
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    return j;
+  } catch (e) { var box = document.getElementById('hb-box'); if (box) box.innerHTML = '<div class="hb-wait">Brain unavailable: ' + esc(e.message) + '</div>'; return null; }
+}
+async function hbRun(message) {
+  var ref = HB.ref; if (!ref) return;
+  var st = HB.st || { chat: [] };
+  st.status = 'running';
+  if (message) st.chat = (st.chat || []).concat([{ from: 'owner', text: message }]);
+  hbShow(st);
+  try {
+    await sbcFetch('/.netlify/functions/handyman-brain-background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: ref, message: message || '' }) });
+  } catch (e) { toast('Brain did not start: ' + e.message, true); }
+  hbPoll(ref, Date.now());
+}
+function hbPoll(ref, t0) {
+  clearTimeout(HB.timer);
+  HB.timer = setTimeout(async function () {
+    if (HB.ref !== ref || !currentHandymanBooking) return;
+    var st = await hbGet(ref);
+    if (!st) return;
+    if (st.status === 'running' && Date.now() - t0 < 6 * 60 * 1000) { hbShow(st); hbPoll(ref, t0); return; }
+    hbShow(st);
+  }, 3000);
+}
+function hbSay() {
+  var el = document.getElementById('hb-input'); if (!el) return;
+  var v = el.value.trim(); if (!v) return;
+  el.value = ''; hbRun(v);
+}
+function hbList(title, arr, cls) {
+  if (!arr || !arr.length) return '';
+  return '<div class="hb-block ' + (cls || '') + '">' + (title ? '<div class="hb-k">' + title + '</div>' : '') + '<ul>' + arr.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+}
+function hbShow(st) {
+  HB.st = st; HB.send = st.send || null;
+  if (st.plan && HB.ref && st.plan.price) HB_PRICES[HB.ref] = { total: st.plan.price.total, title: st.plan.title, visitHours: st.plan.visitHours };
+  var box = document.getElementById('hb-box'); if (!box) return;
+  var p = st.plan, busy = st.status === 'running', pr = p && p.price, r = st.rates || {};
+  /* With a plan, the old AI blocks (wide price ranges, generic lists, the
+     confidence score) are replaced by the brain's own. */
+  var card = document.getElementById('handyman-card');
+  if (card) card.classList.toggle('hb-on', !!p);
+  var h = '<div class="hb-head"><div><div class="hb-k">Sani brain</div><div class="hb-title">' + esc(p ? p.title : 'Reading the job') + '</div></div>' +
+    (p ? '<div class="hb-conf hb-' + esc(p.confidence) + '">' + esc(p.confidence === 'high' ? 'Ready to send' : p.confidence === 'low' ? 'Ask first' : 'Check it') + '</div>' : '') + '</div>';
+  if (p) {
+    var sent = String((currentHandymanBooking || {}).agreement_status || '');
+    h += '<div class="hb-price"><div><div class="hb-big">' + hbMoney(pr.total) + '</div><div class="hb-sub">' +
+      (pr.flat ? 'Your flat price' : (pr.minimumApplied ? 'Your minimum visit' : pr.laborHours + ' labor hrs × ' + hbMoney(r.hourly) + ' + materials')) +
+      (p.visitHours ? ' · ' + esc(p.visitHours) + ' on site' : '') + '</div></div></div>' +
+      '<div class="hb-money"><span>Labor ' + hbMoney(pr.labor) + '</span><span>Materials ' + hbMoney(pr.materials) + '</span><span title="Price minus materials. Crew pay still comes out of this.">Left after materials ' + hbMoney(pr.profit) + ' <small style="opacity:.7">(before crew pay)</small></span>' + (p.deposit > 0 ? '<span>Deposit ' + hbMoney(p.deposit) + '</span>' : '') + '</div>' +
+      '<div class="hd-acts">' +
+        (sent === 'signed'
+          ? '<button class="hd-alt" onclick="if (confirm(\'The customer already signed this price. Send them a NEW agreement to sign again?\')) openConfirmationModal()">Change after signing</button>'
+          : '<button class="hd-go" onclick="openConfirmationModal()">' + (sent ? 'Send new price' : 'Send price') + '</button>') +
+        '<button class="hd-alt" onclick="hbFocus()">Change price</button>' +
+        '<button class="hd-no" onclick="hdDeclineOpen()">Not for us</button>' +
+      '</div><div id="hd-decline"></div>' +
+      /* SHORT AND PRACTICAL: one line per task, the top 2 risks, the 2
+         questions. Everything longer sits under one "More details". */
+      '<div class="hq">' +
+        '<div class="hq-k">The work</div>' + p.tasks.slice(0, 6).map(function (t) {
+          return '<div class="hq-row"><span>' + esc(hbClip(t.task, 60)) + '</span><b>' + t.hours + ' h' + (t.workers > 1 ? ' × ' + t.workers : '') + '</b></div>';
+        }).join('') +
+        (p.warnings.length ? '<div class="hq-k">Watch</div>' + p.warnings.slice(0, 2).map(function (w) { return '<div class="hq-w">' + esc(hbClip(w, 90)) + '</div>'; }).join('') : '') +
+        (p.askCustomer.length ? '<div class="hq-k">Ask the customer</div>' + p.askCustomer.slice(0, 2).map(function (q) { return '<div class="hq-q">' + esc(hbClip(q, 90)) + '</div>'; }).join('') : '') +
+      '</div>' +
+      '<details class="hb-fold"><summary>More details</summary>' +
+        '<div class="hb-tasks">' + p.tasks.map(function (t) {
+          return '<div class="hb-task"><div><b>' + esc(t.task) + '</b>' + (t.note ? '<div class="hb-note">' + esc(t.note) + '</div>' : '') + '</div><div class="hb-h">' + t.hours + ' h' + (t.workers > 1 ? ' × ' + t.workers : '') + (t.materialCost ? '<br>' + hbMoney(t.materialCost) + ' mat.' : '') + '</div></div>';
+        }).join('') + '</div>' +
+        (p.warnings.length > 2 ? hbList('All risks', p.warnings, 'hb-warn') : '') +
+        '<div class="hb-two">' + hbList('Tools to bring', p.tools) + hbList('Materials to bring', p.materials) + '</div>' +
+        (p.customer.scope ? '<div class="hq-k">What the customer will see</div><p class="hb-p">' + esc(p.customer.scope) + '</p>' : '') +
+        hbList('Please have ready', p.customer.ready) + hbList('Not included', p.customer.notIncluded) +
+      '</details>';
+  }
+  var chat = (st.chat || []).slice(-2);
+  /* only the brain's last answer, cut to two sentences; tap for the rest */
+  if (chat.length) h += '<div class="hb-chat">' + chat.map(function (m) {
+    var full = String(m.text || ''), s = hbSentences(full, 2);
+    return '<div class="hb-m hb-' + (m.from === 'owner' ? 'me' : 'ai') + '">' + (s.length < full.length ? '<details class="hb-more"><summary>' + esc(s) + ' <u>more</u></summary>' + esc(full.slice(s.length)) + '</details>' : esc(full)) + '</div>';
+  }).join('') + '</div>';
+  if (busy) h += '<div class="hb-wait">Thinking… this takes about 30–60 seconds.</div>';
+  if (st.status === 'error') h += '<div class="hb-err">' + esc(st.error || 'Something went wrong') + ' <button onclick="hbRun(\'\')">Try again</button></div>';
+  var last = chat.length ? chat[chat.length - 1] : null;
+  var chips = (last && last.chips) || (p ? ['Make it a flat price', 'Add a second worker', 'Write the customer note shorter'] : []);
+  if (!busy) {
+    h += (chips.length ? '<div class="hb-chips">' + chips.map(function (c) { return '<button onclick="hbRun(this.textContent)">' + esc(c) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="hb-say"><textarea id="hb-input" rows="2" placeholder="Tell the brain… e.g. 2 hours, $350 flat, we bring touch-up paint"></textarea><button onclick="hbSay()">Send</button></div>';
+  }
+  h += '<details class="hb-fold"><summary>' + (r.draft ? 'Your rates (draft): ' + hbMoney(r.hourly) + '/hr · min ' + hbMoney(r.minimumCharge) : 'Your rates: ' + hbMoney(r.hourly) + '/hr · min ' + hbMoney(r.minimumCharge)) + '</summary><div class="hb-rates">' +
+    '$<input id="hb-r-h" type="number" inputmode="decimal" value="' + (r.hourly || '') + '">/hr · min $<input id="hb-r-m" type="number" inputmode="decimal" value="' + (r.minimumCharge != null ? r.minimumCharge : '') + '"> · materials +<input id="hb-r-p" type="number" inputmode="decimal" value="' + (r.materialMarkupPct != null ? r.materialMarkupPct : '') + '">% <button onclick="hbRates()">Save</button></div></details>';
+  box.innerHTML = h;
+}
+async function hbRates() {
+  var body = { rates: { hourly: document.getElementById('hb-r-h').value, minimumCharge: document.getElementById('hb-r-m').value, materialMarkupPct: document.getElementById('hb-r-p').value } };
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-brain', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    toast('Rates saved');
+    var st = await hbGet(HB.ref); if (st) hbShow(st);
+  } catch (e) { toast('Rates not saved: ' + e.message, true); }
+}
+
+/* ═══ THE CREW STEP ══════════════════════════════════════════════════════
+   1 Price → 2 Customer signs → 3 Crew → 4 Done. After the customer signs he
+   picks a worker and sends him a private job link (crew.html): where, when,
+   what kind of job, steps with HOW, tools and materials, photos. No prices. */
+var CR = { roster: [], job: null, ref: null };
+/* ════════════════════════════════════════════════════════════════════
+   THE DONE CARD. When the job is finished the price buttons make no sense.
+   It shows the money (price, deposit, balance), the crew photos and two
+   jobs left: send the invoice and ask for a Google review. The price and
+   the brain notes fold away under "Show price and brain notes".
+   ════════════════════════════════════════════════════════════════════ */
+var HD = { ref: null, state: {} };
+function hdNums(b) {
+  var a = (b.agreements || [])[0] || {}, bp = HB_PRICES[b.ref] || {};
+  var total = Number(a.fixed_price != null ? a.fixed_price : (a.price_max != null ? a.price_max : bp.total)) || 0;
+  var dep = a.pay_now_enabled ? Number(a.pay_now_amount) || 0 : 0;
+  var got = HD.state.depositPaid ? Math.min(total, dep) : 0;
+  return { total: total, deposit: dep, got: got, balance: HD.state.paid ? 0 : total - got, scope: String(a.scope_summary || '') };
+}
+function hdLines(b, n) {
+  var l = n.scope.split(/\n/).filter(function (x) { return /^\s*[-•]/.test(x); }).map(function (x) { return x.replace(/^\s*[-•]\s*/, '').trim(); }).filter(Boolean);
+  if (!l.length) { var bp = HB_PRICES[b.ref] || {}; if (bp.title) l = [bp.title]; }
+  return l;
+}
+async function hdDoneLoad(b) {
+  HD = { ref: b.ref, state: {} };
+  try { var r = await sbcFetch('/.netlify/functions/handyman-done?ref=' + encodeURIComponent(b.ref)); HD.state = ((await r.json()) || {}).state || {}; } catch (e) {}
+  if (HD.ref !== b.ref) return;
+  hdDoneShow(b);
+}
+function hdDoneShow(b) {
+  var box = document.getElementById('done-box'); if (!box) return;
+  var card = document.getElementById('handyman-card'); if (card) card.classList.add('is-done');
+  var n = hdNums(b), s = HD.state, j = CR.job || {}, inv = (s.invoices || []).slice(-1)[0];
+  var ph = (j.photos || []).map(function (p) { var u = '/.netlify/functions/crew?photo=' + p.id; return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="' + p.kind + '"><small>' + p.kind + '</small></a>'; }).join('');
+  var smsTo = String(b.customer_phone || '').replace(/[^\d+]/g, '');
+  var first = String(b.customer_name || '').trim().split(/\s+/)[0] || 'there';
+  var revText = 'Hi ' + first + ', thank you for having us. If you\'re happy with the work, a short Google review would mean a lot to our small team: https://g.page/r/CXtX_n13XF6aEBE/review';
+  box.innerHTML = '<div class="dn">' +
+    '<div class="dn-k">Job done' + (j.doneAt ? ' · ' + fmtDate(j.doneAt) : '') + (j.crewName ? ' · ' + esc(j.crewName) : '') + '</div>' +
+    '<div class="dn-money">' +
+      '<div><span>Price</span><b>' + hbMoney(n.total) + '</b></div>' +
+      (n.deposit ? '<div><span>Deposit</span><b>' + hbMoney(n.deposit) + '</b><label class="dn-tick"><input type="checkbox"' + (s.depositPaid ? ' checked' : '') + ' onchange="hdSet(\'deposit\', this.checked)"> Received</label></div>' : '') +
+      '<div class="dn-bal' + (s.paid ? ' ok' : '') + '"><span>' + (s.paid ? 'Paid in full' : 'Balance due') + '</span><b>' + hbMoney(n.balance) + '</b><label class="dn-tick"><input type="checkbox"' + (s.paid ? ' checked' : '') + ' onchange="hdSet(\'paid\', this.checked)"> Paid</label></div>' +
+    '</div>' +
+    ((j.hoursWorked || j.materialsSpent) ? '<div class="dn-log" style="margin-top:8px"><b>Real job:</b> ' + [j.hoursWorked ? j.hoursWorked + ' h worked' : '', j.materialsSpent ? hbMoney(j.materialsSpent) + ' materials' : '', 'left after materials ' + hbMoney(n.total - (j.materialsSpent || 0))].filter(Boolean).join(' · ') + '</div>' : '') +
+    (ph ? '<div class="crw-ph">' + ph + '</div>' : '') +
+    '<div class="dn-acts">' +
+      '<button class="hd-go" onclick="hdInvoice()" ' + (s.paid ? 'disabled' : '') + '>' + (inv ? 'Send invoice again' : 'Send invoice') + '</button>' +
+      '<div class="dn-rev"><div class="dn-sub">Ask for a Google review</div>' +
+        (smsTo ? '<a class="hd-alt" href="sms:' + esc(smsTo) + '&body=' + encodeURIComponent(revText) + '" onclick="hdSet(\'review-texted\')">Text it</a>' : '') +
+        (b.customer_email ? '<button class="hd-alt" onclick="hdReview()">Email it</button>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="dn-log">' +
+      (inv ? 'Invoice sent ' + fmtDate(inv.at) + ' · balance ' + hbMoney(inv.balance) + '. ' : 'No invoice sent yet. ') +
+      (s.reviewAt ? 'Review asked ' + fmtDate(s.reviewAt) + ' by ' + esc(s.reviewBy || 'email') + '.' : 'Review not asked yet.') +
+    '</div>' +
+    '<button class="dn-more" onclick="document.getElementById(\'handyman-card\').classList.toggle(\'show-brain\')">Show price and brain notes</button>' +
+  '</div>';
+}
+async function hdPost(body) {
+  var r = await sbcFetch('/.netlify/functions/handyman-done', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ ref: HD.ref }, body)) });
+  var j = await r.json().catch(function () { return {}; });
+  if (!r.ok) throw new Error(j.error || 'Could not save');
+  HD.state = j.state || HD.state;
+  hdDoneShow(currentHandymanBooking);
+}
+async function hdSet(what, on) {
+  try { await hdPost(what === 'review-texted' ? { action: 'review-texted' } : { action: what, on: !!on }); }
+  catch (e) { toast(e.message, true); }
+}
+async function hdInvoice() {
+  var b = currentHandymanBooking, n = hdNums(b);
+  if (!b.customer_email) { toast('No email on this booking. Call or text the customer instead.', true); return; }
+  var lines = hdLines(b, n);
+  var msg = 'Send this invoice to ' + b.customer_email + '?\n\nTotal ' + hbMoney(n.total) + (n.got ? '\nDeposit received -' + hbMoney(n.got) : '') + '\nBalance due ' + hbMoney(n.total - n.got) +
+    (n.deposit && !HD.state.depositPaid ? '\n\nThe $' + n.deposit + ' deposit is NOT ticked as received, so it is not taken off.' : '');
+  if (!confirm(msg)) return;
+  try { await hdPost({ action: 'invoice', total: n.total, deposit: n.deposit, lines: lines }); toast('Invoice sent'); }
+  catch (e) { toast(e.message, true); }
+}
+async function hdReview() {
+  var b = currentHandymanBooking;
+  if (!confirm('Email ' + b.customer_email + ' a short thank-you with your Google review link?')) return;
+  try { await hdPost({ action: 'review' }); toast('Review request sent'); }
+  catch (e) { toast(e.message, true); }
+}
+function crStage(b, job) {
+  var st = String(b.status || 'new').toLowerCase(), ag = String(b.agreement_status || '').toLowerCase();
+  if (st === 'completed' || (job && job.doneAt)) return 4;
+  if (job) return 3.5;
+  if (ag === 'signed' || st === 'confirmed' || st === 'in-progress') return 3;
+  if (ag === 'sent' || ag === 'changes_requested') return 2;
+  return 1;
+}
+function crSteps(b, job) {
+  var n = crStage(b, job), names = ['Price', 'Customer signs', 'Crew', 'Done'];
+  var hint = n === 1 ? 'Check the price, then tap “Send price”. Not a job for you? Tap “Not for us”.'
+    : n === 2 ? (String(b.agreement_status) === 'changes_requested' ? 'The customer asked for changes: read them in “Sent to customer”, fix the price and send again.' : 'Waiting for the customer to sign. You get an email when they do.')
+    : n === 3 ? 'Signed. Send the job to your crew below, or do it yourself.'
+    : n === 3.5 ? 'Your crew has the job. You get an email when they tap “Job done”.'
+    : 'Done.';
+  return '<div id="cr-steps" class="crs"><div class="crs-bar">' + names.map(function (x, i) {
+      var k = i + 1, cls = n >= k + 1 || (k === 3 && n === 3.5) ? 'ok' : (Math.floor(n) === k ? 'now' : '');
+      if (k === 4 && n === 4) cls = 'ok';
+      return '<div class="crs-s ' + cls + '"><i>' + (cls === 'ok' ? '✓' : k) + '</i><span>' + x + '</span></div>';
+    }).join('') + '</div><div class="crs-hint">' + esc(hint) + '</div></div>';
+}
+async function crLoad(b) {
+  CR = { roster: [], job: null, ref: b.ref };
+  try {
+    var r1 = await sbcFetch('/.netlify/functions/crew?roster=1'), r2 = await sbcFetch('/.netlify/functions/crew?ref=' + encodeURIComponent(b.ref));
+    CR.roster = ((await r1.json()) || {}).roster || [];
+    CR.job = ((await r2.json()) || {}).job || null;
+  } catch (e) {}
+  if (CR.ref !== b.ref) return;
+  var s = document.getElementById('cr-steps'); if (s) s.outerHTML = crSteps(b, CR.job);
+  crShow();
+  if (crStage(b, CR.job) === 4) hdDoneLoad(b);
+}
+function crPhoneDigits(p) { var d = String(p || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d; }
+function crShow() {
+  var box = document.getElementById('crew-box'), b = currentHandymanBooking; if (!box || !b) return;
+  var n = crStage(b, CR.job), ag = (b.agreements || [])[0] || {};
+  box.style.display = n >= 3 ? '' : 'none';
+  var ans = b.answers || {}, coi = /\bCOI\b|certificate of insurance/i.test([ans.building_needs, ans.access, b.customer_description, b.contractor_notes].join(' '));
+  var h = '<div class="crw-head"><div class="hb-k">Crew</div>' + (n < 3 ? '<span class="crw-note">Usually after the customer signs</span>' : '') + '</div>' +
+    (coi && n < 4 ? '<div class="hd-warn"><b>COI for this building:</b> get the managing agent\'s name, email and wording, and send the certificate before the job day. Your crew only sees "the office handles it".</div>' : '');
+  if (CR.job) {
+    var j = CR.job, steps = Object.keys(j.steps || {}).filter(function (k) { return j.steps[k]; }).length;
+    h += '<div class="crw-job"><b>' + esc(j.crewName) + '</b> has this job' + (j.doneAt ? ' · <span style="color:#1e7a45;font-weight:700">done ' + fmtDate(j.doneAt) + '</span>' : '') +
+      '<div class="crw-sub">' + steps + ' step' + (steps === 1 ? '' : 's') + ' ticked · ' + (j.photos || []).length + ' photo' + ((j.photos || []).length === 1 ? '' : 's') + (j.sharePhone ? ' · customer phone shared' : '') + '</div>' +
+      (j.startedAt || j.hoursWorked || j.materialsSpent ? '<div class="crw-sub"><b>' + [j.startedAt ? 'Started ' + new Date(j.startedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '', j.hoursWorked ? j.hoursWorked + ' h worked' : '', j.materialsSpent ? hbMoney(j.materialsSpent) + ' materials spent' : ''].filter(Boolean).join(' · ') + '</b></div>' : '') +
+      ((j.photos || []).length ? '<div class="crw-ph">' + j.photos.map(function (p) { var u = '/.netlify/functions/crew?photo=' + p.id; return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="' + p.kind + '"><small>' + p.kind + '</small></a>'; }).join('') + '</div>' : '') +
+      (j.doneNote ? '<div class="crw-sub">Note: ' + esc(j.doneNote) + '</div>' : '') +
+      '<div class="crw-btns"><a class="crw-b" href="' + esc(j.url) + '" target="_blank">Open job sheet</a><button class="crw-b" onclick="crResend()">Send again / other worker</button></div></div>';
+    box.innerHTML = h; return;
+  }
+  if (!CR.roster.length) {
+    h += '<div class="crw-sub">Add your workers once. Then each signed job goes to one of them with a private job sheet (no prices).</div>' + crRosterForm();
+    box.innerHTML = h; return;
+  }
+  h += '<div class="crw-form"><label>Worker<select id="cr-w">' + CR.roster.map(function (w) { return '<option value="' + esc(w.id) + '">' + esc(w.name) + '</option>'; }).join('') + '</select></label>' +
+    '<label>Date<input id="cr-d" type="date" value="' + esc(ag.appointment_date || b.preferred_date || '') + '"></label>' +
+    '<label>Time<input id="cr-t" value="' + esc(ag.appointment_time || b.preferred_time || '') + '" placeholder="10:00 AM"></label>' +
+    '<label class="crw-chk"><input id="cr-p" type="checkbox"> Share the customer’s phone with the worker</label>' +
+    '<button class="hb-use" style="width:100%" onclick="crAssign()">Send to crew</button>' +
+    '<button class="crw-link" onclick="crEditRoster()">Edit my crew list</button></div><div id="cr-out"></div>';
+  box.innerHTML = h;
+}
+function crRosterForm() {
+  var rows = (CR.roster.length ? CR.roster : [{ id: '', name: '', phone: '' }]).map(function (w) {
+    return '<div class="crw-r"><input class="cr-n" placeholder="Name" value="' + esc(w.name) + '"><input class="cr-ph" type="tel" placeholder="Phone" value="' + esc(w.phone) + '"><input class="cr-id" type="hidden" value="' + esc(w.id) + '"><button onclick="this.parentNode.remove()">×</button></div>';
+  }).join('');
+  return '<div id="cr-roster">' + rows + '</div><button class="crw-link" onclick="crAddRow()">+ Add worker</button><button class="hb-use" style="width:100%;margin-top:8px" onclick="crSaveRoster()">Save crew list</button>';
+}
+function crAddRow() { document.getElementById('cr-roster').insertAdjacentHTML('beforeend', '<div class="crw-r"><input class="cr-n" placeholder="Name"><input class="cr-ph" type="tel" placeholder="Phone"><input class="cr-id" type="hidden" value=""><button onclick="this.parentNode.remove()">×</button></div>'); }
+function crEditRoster() { document.getElementById('crew-box').innerHTML = '<div class="crw-head"><div class="hb-k">My crew</div></div>' + crRosterForm(); }
+async function crSaveRoster() {
+  var roster = Array.prototype.map.call(document.querySelectorAll('#cr-roster .crw-r'), function (r) { return { id: r.querySelector('.cr-id').value, name: r.querySelector('.cr-n').value.trim(), phone: r.querySelector('.cr-ph').value.trim() }; }).filter(function (w) { return w.name; });
+  try {
+    var r = await sbcFetch('/.netlify/functions/crew', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roster: roster }) });
+    var j = await r.json(); if (!r.ok) throw new Error(j.error || r.status);
+    CR.roster = j.roster; toast('Crew list saved'); crShow();
+  } catch (e) { toast('Not saved: ' + e.message, true); }
+}
+function crResend() { CR.job = null; crShow(); }
+async function crAssign() {
+  var b = currentHandymanBooking; if (!b) return;
+  var body = { action: 'assign', ref: b.ref, crewId: document.getElementById('cr-w').value, sharePhone: document.getElementById('cr-p').checked, appointmentDate: document.getElementById('cr-d').value, appointmentTime: document.getElementById('cr-t').value.trim() };
+  try {
+    var r = await sbcFetch('/.netlify/functions/crew', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    var j = await r.json(); if (!r.ok) throw new Error(j.error || r.status);
+    CR.job = j.job;
+    /* Plans written before the crew part existed: ask the brain to add it.
+       The job sheet reads the plan live, so the steps appear on it. */
+    if (j.needsCrewSteps && typeof hbRun === 'function') hbRun('Write the crew part for the worker (job type, simple explanation, steps with how, checks before leaving). Keep the price and everything else.');
+    var w = CR.roster.find(function (x) { return x.id === body.crewId; }) || {}, d = crPhoneDigits(w.phone);
+    crShow();
+    document.getElementById('crew-box').insertAdjacentHTML('beforeend', '<div class="crw-sent"><b>Job link ready for ' + esc(w.name || 'your worker') + '.</b> Send it from your phone:' +
+      '<div class="crw-btns"><a class="crw-b" href="sms:' + (d ? '+' + d : '') + '?&body=' + encodeURIComponent(j.text) + '">Text message</a>' +
+      '<a class="crw-b" href="https://wa.me/' + d + '?text=' + encodeURIComponent(j.text) + '" target="_blank">WhatsApp</a>' +
+      '<button class="crw-b" onclick="navigator.clipboard.writeText(' + esc(JSON.stringify(j.url)) + ').then(function(){toast(\'Link copied\')})">Copy link</button></div></div>');
+    var s = document.getElementById('cr-steps'); if (s) s.outerHTML = crSteps(b, CR.job);
+  } catch (e) { toast('Not sent: ' + e.message, true); }
+}
+
+/* "Change price": jump to the brain chat. */
+function hbFocus() { var el = document.getElementById('hb-input'); if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(function () { el.focus(); }, 300); } }
+/* "NOT FOR US": a polite email he reads and can edit before it goes, then
+   the job is closed (cancelled). */
+function hdDeclineOpen() {
+  var b = currentHandymanBooking; if (!b) return;
+  var first = String(b.customer_name || '').split(' ')[0] || 'there';
+  var txt = 'Hi ' + first + ',\n\nThank you for reaching out to Sani Building Corp about your ' + String(b.service_name || 'project').toLowerCase() + '. We looked at it carefully, and unfortunately we are not able to take this job on right now. We would not want to keep you waiting, so we wanted to let you know right away.\n\nThank you for thinking of us, and we hope to help you with a future project.\n\nSani Building Corp\n(332) 277-0990';
+  document.getElementById('hd-decline').innerHTML = '<div class="hd-dec"><div class="hb-k">Email to ' + esc(b.customer_email || 'the customer') + '</div><textarea id="hd-dec-t" rows="9">' + esc(txt) + '</textarea>' +
+    '<div class="hd-acts"><button class="hd-no" onclick="hdDeclineSend()">Send and close job</button><button class="hd-alt" onclick="document.getElementById(\'hd-decline\').innerHTML=\'\'">Keep the job</button></div>' +
+    '<button class="crw-link" onclick="hdDeclineSend(true)">Close the job without emailing</button></div>';
+}
+async function hdDeclineSend(silent) {
+  var b = currentHandymanBooking; if (!b) return;
+  try {
+    var r = await sbcFetch('/.netlify/functions/handyman-decline', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: b.ref, text: silent ? '' : document.getElementById('hd-dec-t').value }) });
+    var j = await r.json().catch(function () { return {}; }); if (!r.ok) throw new Error(j.error || r.status);
+    toast(silent ? 'Job closed' : 'Email sent · job closed');
+    b.status = 'cancelled';
+    var i = (handymanBookings || []).findIndex(function (x) { return x.ref === b.ref; }); if (i >= 0) handymanBookings[i].status = 'cancelled';
+    closeHandymanModal(); renderHandymanList();
+  } catch (e) { toast('Not sent: ' + e.message, true); }
 }
 
 function closeHandymanModal() {
@@ -10372,28 +10928,40 @@ function renderHandymanModal(b) {
                        urgency === 'emergency-today' ? '🚨 EMERGENCY' :
                        '🗓 FLEXIBLE';
 
+  /* THE DECISION CARD. "many buttons and confusing": the booking now reads
+     top to bottom as one decision. Steps → who/where/when with Call/Text/
+     Email → the brain price with Send price / Change price / Not for us →
+     (after signing) the crew → what was sent. Everything else is folded. */
+  const when = [b.preferred_date ? fmtDate(b.preferred_date + 'T12:00:00') : '', b.preferred_time || ''].filter(Boolean).join(' · ');
+  const said = String(b.customer_description || '').trim();
+  const smsTo = String(b.customer_phone || '').replace(/[^\d+]/g, '');
   document.getElementById("handyman-card").innerHTML =
-    '<div class="modal-head">' +
-      '<div>' +
+    '<div class="modal-head hd-head">' +
+      '<div style="min-width:0">' +
         '<h2 style="display:flex;align-items:center;gap:10px">' + icon + ' ' + esc(b.service_name || b.service_id) + '</h2>' +
-        '<div class="ref-sub">' + esc(b.ref) + ' · ' + fmtDate(b.submitted_at) + ' · <span class="badge h-' + status + '">' + esc(status) + '</span></div>' +
+        '<div class="ref-sub">' + esc(b.ref) + ' · ' + fmtDate(b.submitted_at) + '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;align-items:center">' +
-        '<button class="h-send-conf-btn" onclick="openConfirmationModal()">📧 Send Confirmation</button>' +
-        '<button class="h-print-btn" onclick="window.print()">🖨 Print Job Brief</button>' +
-        '<button class="modal-close" onclick="closeHandymanModal()">×</button>' +
-      '</div>' +
+      '<button class="modal-close" onclick="closeHandymanModal()" aria-label="Close">×</button>' +
     '</div>' +
-    '<div class="h-alert-bar">' +
-      '<div class="h-alert-left">' +
-        '<div class="h-alert-conf-circle ' + conf + '">' + (b.confidence_score || 0) + '</div>' +
-        '<div>' +
-          '<div class="h-alert-text-label ' + conf + '">' + confLabel + '</div>' +
-          '<div class="h-alert-text-sub">' + confSub + '</div>' +
-        '</div>' +
+    crSteps(b) +
+    '<div class="hd-card">' +
+      '<div class="hd-who"><div><div class="hd-name">' + esc(b.customer_name) + '</div>' +
+        (b.customer_address ? '<a class="hd-addr" href="https://maps.google.com/?q=' + encodeURIComponent(b.customer_address) + '" target="_blank">' + esc(b.customer_address) + '</a>' : '') +
+        '<div class="hd-when">' + esc(urgencyLabel.replace(/^\S+\s/, '')) + (when ? ' · prefers ' + esc(when) : '') + '</div></div></div>' +
+      '<div class="hd-contact">' +
+        (b.customer_phone ? '<a href="tel:' + esc(b.customer_phone) + '">Call</a><a href="sms:' + esc(smsTo) + '">Text</a>' : '') +
+        (b.customer_email ? '<a href="mailto:' + esc(b.customer_email) + '">Email</a>' : '') +
       '</div>' +
-      '<div class="h-alert-urgency ' + urgency + '">' + urgencyLabel + '</div>' +
+      (said ? '<div class="hd-said">“' + esc(said.length > 260 ? said.slice(0, 260) + '…' : said) + '”</div>' : '') +
+      (photoUrls.length ? '<div class="hd-photos">' + photoUrls.map(function (url) { return '<img src="' + esc(url) + '" alt="Customer photo" onclick="openLightbox(\'' + esc(url) + '\')">'; }).join('') + '</div>' : '') +
     '</div>' +
+    '<div id="done-box"></div>' +
+    '<div id="hb-box" class="hb"><div class="hb-wait">Sani brain is reading this job…</div></div>' +
+    '<div id="crew-box" class="crw" style="display:none"></div>' +
+    /* What has actually gone out to this customer, and what was in it. */
+    handymanSentPanel(b) +
+    '<button class="hd-del" onclick="hbDelete(\'' + esc(b.ref) + '\', true)">Delete this order</button>' +
+    '<details class="hd-fold"><summary>Everything the customer answered</summary>' +
     handymanBrief(b) +
     '<div class="h-hero-grid">' +
       '<div class="h-hero-block">' +
@@ -10466,24 +11034,6 @@ function renderHandymanModal(b) {
         '<ul>' + warnings.map(function(w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' +
       '</div>'
     ) : '') +
-    '<div class="h-customer-row">' +
-      '<div class="h-cust-cell">' +
-        '<span class="ccl">👤 Customer</span>' +
-        '<span class="ccv">' + esc(b.customer_name) + '</span>' +
-      '</div>' +
-      '<div class="h-cust-cell">' +
-        '<span class="ccl">📞 Phone</span>' +
-        '<span class="ccv"><a href="tel:' + esc(b.customer_phone) + '">' + esc(b.customer_phone) + '</a></span>' +
-      '</div>' +
-      '<div class="h-cust-cell">' +
-        '<span class="ccl">📍 Address</span>' +
-        '<span class="ccv">' + esc(b.customer_address) + '</span>' +
-      '</div>' +
-      '<div class="h-cust-cell">' +
-        '<span class="ccl">✉ Email</span>' +
-        '<span class="ccv"><a href="mailto:' + esc(b.customer_email) + '">' + esc(b.customer_email) + '</a></span>' +
-      '</div>' +
-    '</div>' +
     '<div class="h-estimate-bar">' +
       '<div class="h-est-bar-cell">' +
         '<div class="ebl">⏱ Time</div>' +
@@ -10502,16 +11052,15 @@ function renderHandymanModal(b) {
         '<div class="ebv">' + (b.deposit_amount > 0 ? '$' + b.deposit_amount : 'None') + '</div>' +
       '</div>' +
     '</div>' +
-    /* What has actually gone out to this customer, and what was in it. */
-    handymanSentPanel(b) +
-    '<div class="h-section" style="border-bottom:none;padding-bottom:0;margin-bottom:14px">' +
-      '<div class="h-section-title">🎯 Booking Status</div>' +
-      '<div class="h-status-row">' +
-        ['new','confirmed','in-progress','completed','cancelled'].map(function(s) {
-          return '<button class="h-status-btn ' + (status === s ? 'active' : '') + '" onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'' + s + '\')">' + s.replace('-', ' ') + '</button>';
-        }).join('') +
+    '</details>' +
+    '<details class="hd-fold hd-more"><summary>More</summary>' +
+      '<div class="hd-more-row">' +
+        '<button onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'completed\')"' + (status === 'completed' ? ' class="on"' : '') + '>Mark completed</button>' +
+        '<button onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'cancelled\')"' + (status === 'cancelled' ? ' class="on"' : '') + '>Cancel job</button>' +
+        (status === 'completed' || status === 'cancelled' ? '<button onclick="updateHandymanStatus(\'' + esc(b.ref) + '\', \'new\')">Reopen</button>' : '') +
+        '<button onclick="openConfirmationModal()">Send screen (manual price)</button>' +
+        '<button onclick="window.print()">Print job brief</button>' +
       '</div>' +
-    '</div>' +
     (Object.keys(answers).length > 0 ? (
       '<div class="h-collapsible" id="collapse-answers">' +
         '<div class="h-collapsible-header" onclick="toggleCollapse(\'collapse-answers\')">' +
@@ -10542,13 +11091,7 @@ function renderHandymanModal(b) {
         '<button onclick="saveContractorNotes(\'' + esc(b.ref) + '\')" style="margin-top:8px;padding:8px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">💾 Save Notes</button>' +
       '</div>' +
     '</div>' +
-    '<div class="modal-actions" style="margin-top:18px">' +
-      '<button class="btn-secondary" onclick="closeHandymanModal()">Close</button>' +
-      '<div class="modal-actions-right">' +
-        '<a href="tel:' + esc(b.customer_phone) + '" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">📞 Call</a>' +
-        '<a href="mailto:' + esc(b.customer_email) + '" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">✉ Email</a>' +
-      '</div>' +
-    '</div>';
+    '</details>';
 }
 
 function toggleCollapse(id) {
@@ -10644,7 +11187,7 @@ function openConfirmationModal() {
   document.getElementById('price-fixed').value = '';
   document.getElementById('price-cap').value = b.estimated_labor_max || '';
   document.getElementById('appt-date').value = b.preferred_date || '';
-  document.getElementById('appt-time').value = '';
+  document.getElementById('appt-time').value = ({ morning: 'Morning (8–12)', afternoon: 'Afternoon (12–5)', evening: 'Evening (5–8)' })[String(b.preferred_time || '').toLowerCase()] || '';
   document.getElementById('appt-duration').value = 
     (b.estimated_time_min && b.estimated_time_max) 
       ? b.estimated_time_min + '-' + b.estimated_time_max + ' hours'
@@ -10659,7 +11202,18 @@ function openConfirmationModal() {
   document.getElementById('confirm-send-btn').disabled = false;
   document.getElementById('confirm-send-btn').innerHTML = '📤 Send to Customer';
 
-  setPricingMode('range');
+  /* The brain's plan fills the Send screen: one firm price, its scope, the
+     "please have ready" list and its deposit. He can still change anything. */
+  if (HB.ref === b.ref && HB.send && HB.send.fixedPrice > 0) {
+    document.getElementById('price-fixed').value = HB.send.fixedPrice;
+    if (HB.send.durationText) document.getElementById('appt-duration').value = HB.send.durationText;
+    if (HB.send.scopeSummary) document.getElementById('scope-summary').value = HB.send.scopeSummary;
+    document.getElementById('special-notes').value = HB.send.specialNotes || '';
+    document.getElementById('deposit-toggle').checked = HB.send.deposit > 0;
+    document.getElementById('deposit-amount').value = HB.send.deposit > 0 ? HB.send.deposit : '';
+    document.getElementById('deposit-fields').style.display = HB.send.deposit > 0 ? 'block' : 'none';
+    setPricingMode('fixed');
+  } else setPricingMode('range');
   validateConfirmForm();
 
   document.getElementById('confirm-overlay').classList.add('active');
@@ -11231,6 +11785,7 @@ window.addEventListener('load', function() {
          behaviour; they just live in the menu now instead of on top of the page. -->
     <button id="menu-ai" onclick="sbcCloseDrawer();aiOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">✦ AI Assistant</button>
     <button id="menu-send-link" onclick="sbcCloseDrawer();var o=document.getElementById('send-link-overlay');if(o){o.style.display='flex';document.body.style.overflow='hidden';}" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📤 Send Estimate Link</button>
+    <button onclick="sbcCloseDrawer();pcOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;margin-bottom:8px">📞 New estimate from a call</button>
     <button onclick="sbcCloseDrawer();eiOpen()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:8px">📥 New request from email</button>
     <button id="menu-new-invoice" onclick="sbcCloseDrawer();sbcOpenNewInv()" style="display:block;width:100%;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;-webkit-tap-highlight-color:transparent">💳 Quick invoice (customer not listed)</button>
     <a id="menu-bids" href="/bid-analyzer.html" style="display:block;padding:12px 14px;background:#fbf3d9;border:1px solid #c8860a;border-radius:10px;color:#8a6a08;font-weight:700;text-decoration:none;font-size:13px;margin-bottom:6px;-webkit-tap-highlight-color:transparent">📐 Bid Analyzer</a>
@@ -11245,6 +11800,8 @@ window.addEventListener('load', function() {
 <script>
 // ===== SBC MOBILE DRAWER =====
 var SBC_TABS = [
+  {id:'handyman', icon:'🔧', label:'Handyman'},
+  null,
   {id:'all',      icon:'📋', label:'All'},
   {id:'new',      icon:'🔔', label:'New'},
   {id:'drafted',  icon:'✏️',  label:'Drafts'},
@@ -11256,7 +11813,6 @@ var SBC_TABS = [
   {id:'declined', icon:'❌', label:'Declined'},
   {id:'cancelled', icon:'🚫', label:'Cancelled'},
   null,
-  {id:'handyman', icon:'🔧', label:'Handyman'},
   {id:'visits',   icon:'📅', label:'Visits'},
   {id:'customers', icon:'👤', label:'Customers'},
   {id:'google', icon:'🔎', label:'Google Search'},
@@ -13905,8 +14461,9 @@ function pzChecks() {
     [svcs.length > 0 && svcs.every(function (s) { return (s.excluded || []).length; }), 'Every service has "Not included"'],
     [!sup.length || needs.some(function (x) { return /on site|deliver/i.test(x); }), "Delivery date for customer-supplied " + supName, "deliver"],
     [needs.some(function (x) { return /\bcoi\b|insurance/i.test(x); }), "Building COI mentioned", "coi"],
-    [!/licens|\bgas (line|hook|pipe|connect|appliance)|option [ab]\b/i.test(text.join("\n")), 'No "licensed", no options, no gas work']
-  ];
+    [!/licens|\bgas (line|hook|pipe|connect|appliance)|option [ab]\b/i.test(text.join("\n")), 'No "licensed", no options, no gas work'],
+    e.choice && e.choice.alt ? [Number(e.choice.alt.price) > 0, "Option 2 has a price"] : null
+  ].filter(Boolean);
 }
 
 /* ── render ── */
@@ -14038,7 +14595,7 @@ function pzTalkChatHtml(r, hasLines) {
   var mic = (window.SpeechRecognition || window.webkitSpeechRecognition) ? '<button type="button" class="pz-btn pz-ghost pz-tk-mic" onclick="pzTalkMic()" aria-label="Speak">🎤</button>' : "";
   var h = '<div class="pz-c pz-tk" id="pz-talk"><div class="pz-row"><h2 style="margin:0;font-size:17px">🧠 Estimator</h2><span class="pz-mut" style="font-size:12px">only you</span></div>';
   h += '<div class="pz-tc">';
-  if (!msgs.length && !pend) h += '<div class="pz-mut pz-tc-hi">Talk to it like a person: tell it the job, ask why a number is what it is, or tell it what to change. Then tap ' + (hasLines ? "Regenerate" : "Generate") + '.</div>';
+  if (!msgs.length && !pend) h += '<div class="pz-mut pz-tc-hi">This is the estimator itself. Tell it the job in your own words, correct it, ask why a number is what it is. When you say build, update or change, it rewrites the estimate and the scope of work and shows you the changes to Apply.</div>';
   if (!all && msgs.length > 4) h += '<a href="#" class="pz-tc-more" onclick="PZ.tchat.all=true;PZ.tchat.ref=currentRecord.ref;pzTalkRefresh();return false">Show earlier (' + (msgs.length - 4) + ')</a>';
   var phs = function (list) { var sp2 = Array.isArray(e.sitePhotos) ? e.sitePhotos : []; list = (list || []).filter(function (ix) { return sp2[ix]; }); return list.length ? '<div class="pz-tc-ph">' + list.map(function (ix) { return '<img src="' + esc(sp2[ix].data) + '" alt="">'; }).join("") + '</div>' : ''; };
   show.forEach(function (m) { h += '<div class="pz-tc-m ' + (m.from === "owner" ? "me" : "ai") + '">' + (m.from === "owner" ? phs(m.photos) : '') + esc(String(m.text || "")).replace(/\n/g, "<br>") + '</div>'; });
@@ -14052,11 +14609,17 @@ function pzTalkChatHtml(r, hasLines) {
   h += '<details class="pz-tk-notes"><summary>📝 Your notes' + (nLines ? " (" + nLines + ")" : "") + '</summary>' +
     '<textarea id="pz-onotes" rows="4" placeholder="Anything you always want it to follow on this job" oninput="pzEst().ownerNotes=this.value;pzDirty()">' + esc(notes) + '</textarea></details>';
   h += '<div class="pz-tk-bar">' +
-    (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzRegenerate()">↻ Regenerate</button>'
-              : '<button type="button" class="pz-btn pz-gold" onclick="pzSaveNow().then(function(){pzGenerate()})">Generate estimate</button>') +
+    (hasLines ? '<button type="button" class="pz-btn pz-gold" onclick="pzBrainBuild()">↻ Rebuild from our chat</button>'
+              : '<button type="button" class="pz-btn pz-gold" onclick="pzBrainBuild()">Build the estimate</button>') +
     '</div><span id="pz-gen" class="pz-mut"></span></div>';
   setTimeout(function () { var b = document.querySelector("#pz-talk .pz-tc"); if (b) b.scrollTop = b.scrollHeight; }, 0);
   return h;
+}
+/* The button just asks the same brain to build - one brain, no second generator. */
+function pzBrainBuild() {
+  var has = (((currentRecord || {}).estimate || {}).labor || []).length;
+  return pzTalkSend(has ? "Rebuild the complete estimate and the scope of work from everything we discussed. Check my plan for mistakes and missing pieces first."
+                        : "Build the complete estimate and the scope of work for this job. Check the request for mistakes and missing pieces first.");
 }
 function pzTalkRefresh() {
   var el = document.getElementById("pz-talk"), r = currentRecord; if (!el || !r) return;
@@ -14080,7 +14643,7 @@ async function pzTalkSend(text) {
     var k = await sbcFetch("/.netlify/functions/generate-v5-background", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: ref, jobId: jid, mode: "talk", message: msg, photos: att }) });
     if (k.status !== 202 && !k.ok) throw new Error("HTTP " + k.status);
     var j = null;
-    for (var n = 0; n < 60; n++) {
+    for (var n = 0; n < 100; n++) {
       await new Promise(function (ok) { setTimeout(ok, n < 5 ? 1500 : 2500); });
       var g = await sbcFetch("/.netlify/functions/get-estimate?ref=" + encodeURIComponent(ref) + "&t=" + Date.now());
       j = await g.json().catch(function () { return null; });
@@ -14089,10 +14652,13 @@ async function pzTalkSend(text) {
     if (!j || !j.talkJob || j.talkJob.id !== jid) throw new Error("No answer yet - try again in a minute");
     if (j.talkJob.error) throw new Error(j.talkJob.error);
     if (currentRecord && currentRecord.ref === ref) currentRecord.ownerChat = j.ownerChat || [];
+    /* ONE brain: when it wrote the estimate, show the change list right away (Apply / Cancel). */
+    var built = j.talkJob.built && j.estimateV5Pending && j.estimateV5Pending.jobId === jid ? j.estimateV5Pending : null;
   } catch (e) { err = e.message; }
   if (PZ.tchat) PZ.tchat.pending = null;
   if (currentRecord && currentRecord.ref === ref) {
     pzTalkRefresh();
+    if (!err && built) { PZ.v5mode = "brain"; try { pzV5Changes(ref, built.changes || [], false); } catch (_) {} }
     if (err) { toast("Estimator: " + err, true); if (PZ.tchat) PZ.tchat.att = att; pzTalkRefresh(); var t2 = document.getElementById("pz-tk-txt"); if (t2) t2.value = msg; }
   }
 }
@@ -14224,7 +14790,7 @@ function pzRender() {
   var tm = pzTerms();
   /* Price and terms in ONE card: read the money, move the markup, set your own
      total, check payment - all in one place before Send. Only you see the money rows. */
-  var priceHtml = '<div class="pz-c" id="pz-s4"><h2>5 · Price &amp; terms</h2>' +
+  var priceHtml = pzChoiceHtml() + '<div class="pz-c" id="pz-s4"><h2>5 · Price &amp; terms</h2>' +
     '<div class="pz-ey" style="margin-top:4px">Money (you only)</div>' +
     '<button type="button" class="pz-btn pz-gold pz-sm" style="width:100%;margin:6px 0 8px" onclick="pzSetTotal()">🎯 Set my own total</button>' +
     '<div class="pz-row"><span>Customer price</span><b id="pz-mcus"></b></div>' +
@@ -14276,7 +14842,7 @@ function pzBuilding(r) {
   return out.join(" · ");
 }
 function pzCustomerHtml(r) {
-  var c = r.customer || {}, q = r.request || {}, st = PZ_STATUS[String(r.status || "new").toLowerCase()] || [String(r.status || "New"), "pz-wa"];
+  var c = r.customer || {}, q = r.request || {}, st = PZ_STATUS[String((r.status === "drafted" || r.status === "sent") && r.sentAt ? (r.openedAt ? "opened" : "sent") : (r.status || "new")).toLowerCase()] || [String(r.status || "New"), "pz-wa"];
   var tel = pzDigits(c.phone), addr = String(c.address || "").trim();
   var when = r.submittedAt ? new Date(r.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
   var src = { manual: "added by you", addon: "additional work", bid: "bid", email: "email" }[String(r.source || "").toLowerCase()] || "website form";
@@ -14790,17 +15356,42 @@ function pzPrepare() {
   try { scopeStampBreakdown(); } catch (x) {}
   try { var sch = pzScheduleOf(e); if (sch) e.schedule = sch; } catch (x) {}
 }
+/* Option 2 the customer can choose (estimate.choice): his view of it. */
+function pzChoiceHtml() {
+  var e = (currentRecord && currentRecord.estimate) || {}, ch = e.choice;
+  if (!ch || !ch.alt) return "";
+  var esc2 = function (v) { return String(v == null ? "" : v).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+  var money = function (n) { return "$" + Math.round(Number(n) || 0).toLocaleString("en-US"); };
+  var lines = [].concat(ch.alt.labor || [], ch.alt.materials || []);
+  var cost = lines.reduce(function (a, l) { return a + (Number(l.qty) || 0) * (Number(l.rate) || 0); }, 0);
+  var base = (typeof calcCustomerView === "function") ? calcCustomerView(e).customerTotal : 0;
+  return '<div class="pz-c" id="pz-choice"><div class="pz-ey">Customer chooses one</div>' +
+    '<div style="margin:6px 0 10px"><b>' + esc2(ch.base && ch.base.label) + '</b> · ' + money(base) + '<div class="pz-mut">' + esc2(ch.base && ch.base.description) + '</div></div>' +
+    '<div style="margin:0 0 8px"><b>' + esc2(ch.alt.label) + '</b> · ' + money(base + (Number(ch.alt.price) || 0)) + ' <span class="pz-mut">(+' + money(ch.alt.price) + ')</span><div class="pz-mut">' + esc2(ch.alt.description) + '</div></div>' +
+    '<div class="pz-mut" style="font-size:13px">Extra lines in Option 2 (cost ' + money(cost) + ' before markup):</div><ul style="margin:4px 0 10px;padding-left:18px;font-size:14px">' +
+    lines.map(function (l) { return '<li>' + esc2(l.item) + ' · ' + esc2(l.qty) + ' ' + esc2(l.unit) + ' × ' + money(l.rate) + '</li>'; }).join("") + '</ul>' +
+    '<div class="pz-mut" style="font-size:13px;margin-bottom:8px">To change Option 2, tell the estimator in the chat. Rebuild keeps it.</div>' +
+    '<button type="button" class="pz-btn pz-ghost pz-sm" onclick="pzChoiceDrop()">Remove Option 2</button></div>';
+}
+async function pzChoiceDrop() {
+  if (!confirm("Remove Option 2 from this estimate?")) return;
+  var e = currentRecord.estimate; e.choice = null; e.options = (e.options || []).filter(function (o) { return o && !o.fromChoice; });
+  await pzSaveNow(); if (typeof openEdit === "function") openEdit(currentRecord.ref);
+}
 function pzGather() { pzPrepare(); return JSON.parse(JSON.stringify(pzEst())); }
 async function pzSaveNow() {
   if (!currentRecord || PZ.saving) { if (PZ.saving) pzDirty(); return; }
   PZ.saving = true;
   var s = document.getElementById("pz-saved");
+  /* Hold on to THIS estimate: Send closes the screen (currentRecord = null)
+     while the save is still on its way, and the save itself had succeeded. */
+  var rec = currentRecord;
   try {
-    var body = Object.assign({ ref: currentRecord.ref, estimate: pzGather(), status: currentRecord.status === "new" ? "drafted" : currentRecord.status },
-      currentRecord.customerFinalTotal != null ? { customerFinalTotal: currentRecord.customerFinalTotal } : {});
+    var body = Object.assign({ ref: rec.ref, estimate: pzGather(), status: rec.status === "new" ? "drafted" : rec.status },
+      rec.customerFinalTotal != null ? { customerFinalTotal: rec.customerFinalTotal } : {});
     var r = await sbcFetch("/.netlify/functions/save-estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error("HTTP " + r.status);
-    if (currentRecord.status === "new") currentRecord.status = "drafted";
+    if (rec.status === "new") rec.status = "drafted";
     if (s) s.textContent = "Saved ✓";
   } catch (err) {
     if (s) s.textContent = "Not saved";
@@ -15056,6 +15647,8 @@ function pzFactTick() {
    safety as Update from chat: a change list with Apply / Cancel, Undo after. */
 function pzRegenerate() {
   if (PZ.busy) return;
+  /* ONE brain: Regenerate anywhere = ask the estimator to rebuild (it sees the whole chat). */
+  if (SBC_V5 && document.getElementById("pz-talk")) return pzBrainBuild();
   if (!confirm("Regenerate: the AI reads the whole job again from scratch. You will see every change before anything is applied. Continue?")) return;
   return pzChatUpdate("redo");
 }
@@ -15129,7 +15722,7 @@ function pzV5Changes(ref, ch, full) {
   box.id = "pz-v5box";
   box.style.cssText = "position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
   box.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:18px">' +
-    '<h3 style="margin:0 0 6px">' + (PZ.v5mode === "redo" ? "Changes from Regenerate" : "Changes from the chat") + '</h3>' +
+    '<h3 style="margin:0 0 6px">' + (PZ.v5mode === "brain" ? "The estimator's changes" : PZ.v5mode === "redo" ? "Changes from Regenerate" : "Changes from the chat") + '</h3>' +
     (full ? '<div class="pz-pill pz-wa" style="margin-bottom:8px">This estimate was made before the new brain, so the new brain rebuilt it from your price book. Tick <b>Keep</b> on any old line you want to keep (your own lines). Unticked old lines go; Undo brings them back.</div>' : '') +
     (function () { var e0 = (currentRecord && currentRecord.estimate) || {}, c0 = [].concat(e0.labor || [], e0.materials || []).reduce(function (s, l) { return s + (Number(l.qty) || 0) * (Number(l.rate) || 0); }, 0);
       var own = Number(e0.totalSetByHand) > 0 ? '<div style="background:#fff6df;color:#7a5a00;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-weight:700">You set your own total (' + fmt(Number(e0.totalSetByHand)) + '). After Apply the lines may total differently - tap Set my own total again if you want it back.</div>' : '';
@@ -15383,6 +15976,15 @@ function eiRender() {
 }
 </script>
 <style>
+.ei-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ei-row .ei-open{font-size:14px;padding:12px 8px}
+#pc-ov{position:fixed;inset:0;background:rgba(13,27,42,.55);z-index:9999;display:none;align-items:flex-end;justify-content:center}
+#pc-ov.show{display:flex}#pc-box{background:#fff;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:18px 16px 22px}
+#pc-box h3{margin:0 0 4px;font-size:19px}#pc-box .pc-mut{color:#6b7280;font-size:13px;margin:0 0 12px}
+#pc-box label{display:block;font-size:12px;font-weight:700;color:#4b5563;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+#pc-box input,#pc-box textarea{width:100%;box-sizing:border-box;font-size:16px;padding:11px 12px;border:1px solid #d6d9e0;border-radius:10px;background:#f8f9fb;font-family:inherit}
+#pc-box textarea{min-height:200px;line-height:1.45}#pc-box .pc-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#pc-go{background:#c9a24a;color:#1b1404;border:0;border-radius:10px;font-weight:700;font-size:16px;padding:14px}#pc-box .pc-act button:first-child{border-radius:10px;font-size:16px;padding:14px;background:#fff;border:1px solid #d6d9e0}
+#pc-box .pc-act{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:16px}#pc-err{color:#b42318;font-size:14px;margin-top:10px;display:none}
 .ei-open{display:block;width:100%;margin:8px 0 4px;padding:12px;border:1px solid #c9a24a;background:#fbf5e6;color:#5b4410;border-radius:10px;font-size:15px;font-weight:700}
 .ei-row{display:block;width:100%;text-align:left;border:1px solid #e3e6ec;background:#fff;border-radius:10px;padding:10px 12px;margin:6px 0;color:#13254a;font-size:15px}
 .ei-top{display:flex;justify-content:space-between;gap:8px}.ei-top small{color:#5d6577;white-space:nowrap}.ei-sub{display:block;margin-top:2px}.ei-sn{display:block;color:#5d6577;font-size:13px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ei-in{display:block;color:#1f7a44;font-size:13px;font-weight:700;margin-top:4px}
@@ -15390,5 +15992,58 @@ function eiRender() {
 .ei-ph{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.ei-ph button{padding:0;border:2px solid #c9a24a;border-radius:10px;overflow:hidden;background:#fff;aspect-ratio:1}.ei-ph button.off{opacity:.3;border-color:#d5d9e2}.ei-ph img{width:100%;height:100%;object-fit:cover;display:block}
 </style>
 
+
+<div id="pc-ov" onclick="if(event.target===this)pcClose()"><div id="pc-box">
+  <h3>📞 New estimate from a call</h3>
+  <p class="pc-mut">Type or dictate everything from the call. The estimator builds the estimate and scope from your notes, then you check and send.</p>
+  <label for="pc-name">Customer name *</label><input id="pc-name" autocomplete="off">
+  <div class="pc-2"><div><label for="pc-phone">Phone</label><input id="pc-phone" type="tel"></div><div><label for="pc-email">Email *</label><input id="pc-email" type="email" autocapitalize="off"></div></div>
+  <label for="pc-addr">Job address</label><input id="pc-addr">
+  <label for="pc-title">Project title *</label><input id="pc-title" placeholder="e.g. Tub to walk-in shower">
+  <label for="pc-notes">Call notes *</label><textarea id="pc-notes" placeholder="Sizes, what we remove, what stays, materials, who supplies what, timeline, building rules, anything the customer said."></textarea>
+  <div id="pc-err"></div>
+  <div class="pc-act"><button type="button" class="pz-btn pz-ghost" onclick="pcClose()">Cancel</button><button type="button" class="pz-btn" id="pc-go" onclick="pcCreate()">Create and build</button></div>
+</div></div>
+<script>
+function pcOpen(){document.getElementById('pc-ov').classList.add('show');document.body.style.overflow='hidden';try{var d=JSON.parse(localStorage.getItem('sbc_pc')||'{}');['name','phone','email','addr','title','notes'].forEach(function(k){var e=document.getElementById('pc-'+k);if(e&&d[k]&&!e.value)e.value=d[k];});}catch(e){}}
+function pcClose(){document.getElementById('pc-ov').classList.remove('show');document.body.style.overflow='';pcKeep();}
+function pcVal(k){return document.getElementById('pc-'+k).value.trim();}
+function pcKeep(){try{var d={};['name','phone','email','addr','title','notes'].forEach(function(k){d[k]=pcVal(k);});localStorage.setItem('sbc_pc',JSON.stringify(d));}catch(e){}}
+async function pcCreate(){
+  var err=document.getElementById('pc-err'),btn=document.getElementById('pc-go');err.style.display='none';pcKeep();
+  var name=pcVal('name'),email=pcVal('email'),title=pcVal('title'),notes=pcVal('notes');
+  var miss=[!name&&'name',!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)&&'a valid email',!title&&'project title',notes.length<10&&'call notes'].filter(Boolean);
+  if(miss.length){err.textContent='Please add '+miss.join(', ')+'.';err.style.display='block';return;}
+  btn.disabled=true;btn.textContent='Creating…';
+  try{
+    var r=await sbcFetch('/.netlify/functions/create-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'call',customer:{name:name,email:email,phone:pcVal('phone'),address:pcVal('addr')},projectTitle:title,service:title,description:'Phone call notes:\n'+notes})});
+    var d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
+    try{localStorage.removeItem('sbc_pc');}catch(e){}
+    ['name','phone','email','addr','title','notes'].forEach(function(k){document.getElementById('pc-'+k).value='';});
+    pcClose();toast('✓ Created '+d.ref+' - building the estimate');
+    await loadEstimates();await openEdit(d.ref);
+    var n=0;(function go(){var t=document.getElementById('pz-talk');if(t&&typeof pzBrainBuild==='function'){pzBrainBuild();return;}if(++n<40)setTimeout(go,250);})();
+  }catch(e){err.textContent='Could not create: '+e.message;err.style.display='block';}
+  btn.disabled=false;btn.textContent='Create and build';
+}
+</script>
+
+<script>
+/* Opening one of them starts at its top; closing it goes back to where the
+   list was. (They are the page now, so the page's own scroll is theirs.) */
+(function () {
+  var Y = {};
+  ['handyman-modal', 'edit-modal', 'invoice-modal'].forEach(function (id) {
+    var el = document.getElementById(id); if (!el || !window.MutationObserver) return;
+    var open = el.classList.contains('show');
+    new MutationObserver(function () {
+      var now = el.classList.contains('show');
+      if (now === open) return; open = now;
+      if (now) { Y[id] = window.scrollY; window.scrollTo(0, 0); }
+      else { var y = Y[id] || 0; setTimeout(function () { window.scrollTo(0, y); }, 0); }
+    }).observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+})();
+</script>
 </body>
 </html>

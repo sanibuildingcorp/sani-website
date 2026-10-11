@@ -180,7 +180,7 @@ main = f'''<main class="wp">
     <div class="section-head reveal">
       <span class="eyebrow">Walls only?</span>
       <h2>No need to re-tile the walls</h2>
-      <p>If the pan is sound and the water comes through the grout on the walls, waterproof acrylic or PVC wall panels can go right over the old tile in 1–2 days — with no grout left to fail. We tell you at the estimate which one your shower needs.</p>
+      <p>If the pan is sound and the water comes through the grout on the walls, waterproof vinyl wall panels can go right over the old tile in 1–3 days — with no grout left to fail. We tell you at the estimate which one your shower needs.</p>
       <p style="margin-top:22px"><a href="/bathroom-wall-panels" class="btn btn-navy">See shower wall panels</a></p>
     </div>
   </div>

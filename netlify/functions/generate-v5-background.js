@@ -152,11 +152,14 @@ exports.handler = async (event) => {
     try {
       if (!msg) throw new Error('Empty message');
       if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set');
-      reply = await talkReply(record, msg, att);
+      reply = brainOn() ? await brainReply(record, msg, att) : await talkReply(record, msg, att);
     } catch (e) { err = e.message || 'error'; }
     const fresh = (await store.get(ref, { type: 'json' })) || record;
-    if (!err) fresh.ownerChat = A(fresh.ownerChat).concat([Object.assign({ from: 'owner', text: msg, at: now() }, att.length ? { photos: att } : {}), { from: 'ai', text: reply.reply, chips: reply.chips, at: now() }]).slice(-80);
-    fresh.talkJob = { id: jid, done: true, error: err, at: now() };
+    if (!err) fresh.ownerChat = A(fresh.ownerChat).concat([Object.assign({ from: 'owner', text: msg, at: now() }, att.length ? { photos: att } : {}), Object.assign({ from: 'ai', text: reply.reply, chips: reply.chips, at: now() }, reply.pending ? { built: true } : {})]).slice(-80);
+    /* The brain wrote the estimate: parked as the usual change list. Nothing
+       moves before Apply; Undo brings the previous version back. */
+    if (!err && reply.pending) fresh.estimateV5Pending = Object.assign({ at: now(), jobId: jid, brain: true }, reply.pending);
+    fresh.talkJob = { id: jid, done: true, error: err, at: now(), built: !!(reply && reply.pending) };
     await store.setJSON(ref, fresh);
     return res(202, { ok: true });
   }
@@ -286,6 +289,52 @@ function talkBlocks(record, att) {
   const rest = photoBlocks(record).filter((bk) => !(bk.source && ((bk.source.url && mine.indexOf(bk.source.url) >= 0) || (bk.source.data && mine.some((u) => u.indexOf(bk.source.data.slice(0, 200)) >= 0)))));
   return first.concat(rest).slice(0, 8);
 }
+/* ONE brain (lib/estimator-brain.js): talks AND, when he asks, writes the whole
+   estimate + scope. Off switch: ESTIMATOR_BRAIN=off falls back to talk only. */
+const brain = require('./lib/estimator-brain');
+const brainOn = () => String(process.env.ESTIMATOR_BRAIN || '').trim().toLowerCase() !== 'off';
+async function brainReply(record, msg, att) {
+  const previous = record.estimate && typeof record.estimate === 'object' ? record.estimate : {};
+  const history = A(record.ownerChat).slice(-30).map((m) => (m.from === 'owner' ? 'OWNER: ' : 'YOU: ') + s(m.text).slice(0, 1500)).join('\n');
+  const text = brain.prompt(inputFrom(record), brain.currentOf(previous), history, msg, A(att).length);
+  const call = async (withPhotos) => {
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: MODEL, max_tokens: 16000, messages: [{ role: 'user', content: [].concat(withPhotos ? talkBlocks(record, att).concat(photoBlocks(record)).slice(0, 12) : [], [{ type: 'text', text }]) }] }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((j.error && j.error.message) || 'AI ' + r.status);
+    return (j.content || []).map((b) => b.text || '').join('');
+  };
+  let out; try { out = await call(true); } catch (_) { out = await call(false); }
+  let o = null; try { const m = out.match(/\{[\s\S]*\}/); o = m && JSON.parse(m[0]); } catch (_) {}
+  const reply = s(o && o.reply ? o.reply : out).replace(/\blicen[cs]ed?\b/gi, 'fully insured').slice(0, 2500) || 'Got it.';
+  const chips = A(o && o.chips).map((c) => s(c).slice(0, 40)).filter(Boolean).slice(0, 3);
+  let pending = null;
+  const est = o && brain.validate(o.change, previous);
+  if (est) {
+    const next = Object.assign({}, previous, est, { engine: 'brain', docVersion: 4 });
+    const hasMarkup = previous.markupPct != null && (A(previous.labor).length || A(previous.materials).length);
+    next.markupPct = hasMarkup ? previous.markupPct : Math.round(engine.markupFor([].concat(est.labor, est.materials).reduce((a, l) => a + l.qty * l.rate, 0)) * 1000) / 10;
+    engine.retotal(next);
+    /* Option 2's price = its extra lines with the same markup; it rides the
+       existing customer options (quote-options.js prices it on the server). */
+    next.options = A(previous.options).filter((x) => x && !x.fromChoice);
+    if (next.choice && next.choice.alt) {
+      const extra = [].concat(A(next.choice.alt.labor), A(next.choice.alt.materials)).reduce((a, l) => a + (Number(l.qty) || 0) * (Number(l.rate) || 0), 0);
+      next.choice.alt.price = Math.round(extra * (1 + (Number(next.markupPct) || 0) / 100) * 100) / 100;
+      next.options.push({ section: (A(next.labor)[0] || {}).section || 'Project', label: next.choice.alt.label, description: next.choice.alt.description, price: next.choice.alt.price, fromChoice: true });
+    }
+    if (Number(previous.totalSetByHand) > 0) next.warnings = A(next.warnings).concat(['You set your own total by hand. Tap Set my own total again after Apply if you want it back.']);
+    withBreakdown(next);
+    const changes = engine.diff(previous, next).map((c) => { const l = [].concat(next.labor, next.materials).find((x) => x.item === c.what && x.section === c.section); return l && l.aiPriced ? Object.assign(c, { what: c.what + ' · AI priced' }) : c; });
+    if (JSON.stringify(A(previous.workSteps).map((w) => w.text)) !== JSON.stringify(A(next.workSteps).map((w) => w.text))) changes.push({ type: 'add', what: 'Scope of work rewritten (' + A(next.workSteps).length + ' steps)', money: 0 });
+    if (next.choice && next.choice.alt && !(previous.choice && previous.choice.alt && previous.choice.alt.price === next.choice.alt.price && previous.choice.alt.label === next.choice.alt.label)) changes.push({ type: 'add', what: next.choice.alt.label + ' (customer can choose it, +$' + Math.round(next.choice.alt.price).toLocaleString('en-US') + ')', money: 0 });
+    if (!next.choice && previous.choice) changes.push({ type: 'remove', what: 'Option 2 removed', money: 0 });
+    pending = { estimate: next, changes };
+  }
+  return { reply, chips, pending };
+}
+
 /* Private chat with the estimator: plain talk, short answers, no JSON estimate. */
 async function talkReply(record, msg, att) {
   const e = record.estimate || {};
@@ -294,14 +343,17 @@ async function talkReply(record, msg, att) {
   const sub = lines.reduce((a, l) => a + l.qty * l.rate, 0), mk = Number(e.markupPct) || 0;
   const job = inputFrom(record);
   const history = A(record.ownerChat).slice(-20).map((m) => (m.from === 'owner' ? 'OWNER: ' : 'YOU: ') + s(m.text).slice(0, 1200)).join('\n');
-  const prompt = `You are the estimating brain inside Sani Building Corp's dashboard (renovation contractor, NYC / Long Island). You are talking privately with the owner, an experienced contractor, often on his phone at a job site. The customer never sees this chat.
+  const prompt = `${require('./lib/trade-sense').TRADE_SENSE}
+
+You are the estimating brain inside Sani Building Corp's dashboard (renovation contractor, NYC / Long Island). You are talking privately with the owner, an experienced contractor, often on his phone at a job site. The customer never sees this chat.
 
 How to talk:
 - Plain, direct contractor talk. 1-3 short sentences. No lists unless he asks. No markdown.
 - When the plan is complete, end with ONE full summary of everything to build (every fixture, quantity and choice he gave, e.g. "4 recessed lights on existing wiring"). Regenerate builds exactly your last summary plus his messages, so never leave out something he asked for and never write a summary for something he did not ask for.
 - If he tells you facts or changes ("customer buys tile", "make wall tile $18/sf", "3rd floor walk-up"), confirm in one line what you will change on the next Generate / Regenerate. You cannot change the estimate yourself; he taps Generate or Regenerate.
 - If he asks why a number is what it is, explain from the current lines below (qty x rate). Do not invent numbers that are not there.
-- Ask at most ONE follow-up question, only if its answer really changes the price.
+- Ask at most ONE follow-up question, only if its answer really changes the price. Never ask for sizes the STANDARD SIZES already answer.
+- Your summary must name the demo limit and every wall that is NOT touched, so Regenerate builds the same plan.
 - Never say "licensed". No gas work.
 
 Return JSON only: {"reply":"...","chips":["0-3 short tap replies he might send next, 1-5 words each"]}

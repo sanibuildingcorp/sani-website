@@ -100,7 +100,7 @@ function build(reading, opts) {
   /* A SMALL JOB STAYS SMALL. Full protection + daily cleanup only when the job has
      real renovation work (demo, tile, plumbing rough-in, flooring, big paint, cabinets)
      or runs past ~2 crew-days. A toilet, vanity, fan or repair gets one light setup line. */
-  const MAJOR = new Set(['bath_demo_gut', 'bath_rough_plumb', 'bath_backer', 'waterproof', 'wall_tile', 'floor_tile', 'floor_heat', 'skim', 'floor_remove', 'lvp', 'cabinet_box', 'backsplash']);
+  const MAJOR = new Set(['bath_demo_gut', 'tub_alcove_demo', 'wet_backer', 'shower_pan_mortar', 'bath_rough_plumb', 'bath_backer', 'waterproof', 'wall_tile', 'floor_tile', 'floor_heat', 'skim', 'floor_remove', 'lvp', 'cabinet_box', 'backsplash']);
   const allIds = svcList.flatMap((s) => (s.items || []).map((i) => i.id));
   const bigPaint = svcList.some((s) => (s.items || []).some((i) => /^paint_(walls|ceiling)$/.test(i.id) && Number(i.qty) > 400));
   const smallWork = !allIds.some((id) => MAJOR.has(id)) && !bigPaint && hours < 32;
@@ -127,7 +127,11 @@ function build(reading, opts) {
   // Sort steps: whole-project protect first, cleanup last
   const first = workSteps.filter((s) => s.bookId === 'protect'), last = workSteps.filter((s) => s.bookId === 'cleanup' || s.bookId === 'setup_small');
   const mid = workSteps.filter((s) => !['protect', 'cleanup', 'setup_small'].includes(s.bookId));
-  const steps = first.concat(mid, last);
+  /* His scope, his words: when the reader wrote the steps from his description,
+     those are what the customer reads and signs; the book's standard texts are
+     only the fallback. Protection stays first and cleanup last. */
+  const own = (R.scopeSteps || []).filter((x) => x && x.text).map((x) => ({ service: (services[0] && services[0].name) || 'Project', title: clean(x.title) || 'Step', text: clean(x.text), fromOwner: true, cure: 0 }));
+  const steps = first.concat(own.length ? own : mid, last);
 
   // Money
   const lab = labor.reduce((a, l) => a + l.qty * l.rate, 0), mat = materials.reduce((a, l) => a + l.qty * l.rate, 0);
