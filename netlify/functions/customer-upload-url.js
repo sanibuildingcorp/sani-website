@@ -31,6 +31,10 @@ const DOC_EXT = {
   "image/vnd.dxf": "dxf",
   "application/msword": "doc",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  /* commercial bid form: the unit matrix usually comes as a spreadsheet */
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "text/csv": "csv",
 };
 
 function extFor(type) {
@@ -46,7 +50,7 @@ exports.handler = async function (event) {
     const b = JSON.parse(event.body || "{}");
     const type = String(b.contentType || "").toLowerCase();
     const ext = extFor(type);
-    if (!ext) return json(400, { error: "Only photos, PDF, Word and drawing files" });
+    if (!ext) return json(400, { error: "Only photos, PDF, Word, Excel and drawing files" });
     const size = Number(b.size) || 0;
     if (size > MAX_BYTES) return json(400, { error: "File too large (max 15 MB)" });
     const SUPABASE_URL = process.env.SUPABASE_URL;
