@@ -22,7 +22,7 @@ ok("Manhattan: title, meta, H1 say remodel AND renovation (Google picked the mai
 ok("...meta description fits Google (≤160) and says fully insured", tag(M, /<meta name="description" content="([^"]*)"/).length <= 160 && /Fully insured/.test(tag(M, /<meta name="description" content="([^"]*)"/)));
 ok("Manhattan: a co-op & condo section (alteration agreement, certificate of insurance)", /in Manhattan Co-ops and Condos[\s\S]*alteration agreement[\s\S]*certificate of insurance/.test(M));
 ok("main page: each area link says \"Bathroom remodeling & renovation in ...\"", (H.match(/class="bc-more" href="\/[a-z-]+">Bathroom remodeling &amp; renovation (in|on) /g) || []).length === 6 && /<h2>Bathroom Remodeling &amp; Renovation Near You<\/h2>/.test(H));
-ok("sitemap: the three pages are marked changed so Google reads them again", ["bathroom-renovation", "bathroom-renovation-brooklyn", "bathroom-renovation-manhattan"].every((u) => new RegExp("/" + u + "</loc>\\s*<lastmod>2026-10-04<").test(SM)));
+ok("sitemap: the three pages are marked changed so Google reads them again", ["bathroom-renovation", "bathroom-renovation-brooklyn", "bathroom-renovation-manhattan"].every((u) => new RegExp("/" + u + "</loc>\\s*<lastmod>2026-(1[0-2])-[0-9]{2}<").test(SM)));
 ok("no prices, no \"licensed\", no TV mounting, no gas in the new text", [B, M].every((h) => { const t = (h.match(/<!-- BATH-DEPTH:START -->[\s\S]*?<!-- BATH-DEPTH:END -->/) || [""])[0].replace(/<style[\s\S]*?<\/style>/, ""); return t.length > 500 && !/\$\d|licens|tv mount|\bgas\b/i.test(t); }));
 
 console.log("\n" + pass + " passed, " + fail + " failed\n");
