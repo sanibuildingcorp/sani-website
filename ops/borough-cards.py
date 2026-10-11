@@ -62,7 +62,7 @@ def excerpt(t, n=150):
     return cut + "…"
 
 CARDS = [
-  dict(area="Brooklyn", seo='Bathroom remodeling in Brooklyn brownstones, pre-war apartments and row houses: full gut renovations, walk-in showers, tub-to-shower conversions, marble and porcelain tile, shower waterproofing and new vanities. One crew from demolition to the final caulk line.', form='Brooklyn', title="Bathroom Remodeling in Brooklyn", href="/bathroom-renovation-brooklyn",
+  dict(area="Brooklyn", seo='Bathroom remodeling in Brooklyn brownstones, pre-war apartments and row houses: full gut renovations, walk-in showers, tub-to-shower conversions, marble and porcelain tile, shower waterproofing and new vanities. Our own team from demolition to the final caulk line.', form='Brooklyn', title="Bathroom Remodeling in Brooklyn", href="/bathroom-renovation-brooklyn",
        banner="Free estimate within 24 hours",
        badges=["Brownstones & pre-war", "Walk-in showers"],
        review="Zura and his team were INCREDIBLE",
