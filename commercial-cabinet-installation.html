@@ -36,7 +36,7 @@
 *{box-sizing:border-box}
 body.cc{margin:0;font-family:'Source Sans 3',system-ui,sans-serif;color:var(--ink);background:#fff;-webkit-font-smoothing:antialiased}
 .cc h1,.cc h2,.cc h3{font-family:'Archivo',sans-serif;font-stretch:85%;letter-spacing:-.01em;margin:0}
-.cc a{color:inherit}
+:where(.cc) a{color:inherit}
 .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
 .kick{display:inline-flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.24em;text-transform:uppercase;font-weight:700;color:var(--brass)}
 .kick:before{content:"";width:26px;height:1px;background:currentColor}
@@ -175,7 +175,10 @@ form.bf .chips button{font-size:14px}
 @media(max-width:900px){
   .hero{padding-top:92px}
   .hero-g,.pl,.why,.bid-g{grid-template-columns:1fr}
-  .hero-photo{aspect-ratio:4/3;border-radius:18px 18px 0 0}
+  .hero{padding-top:0}
+  .hero-g{gap:22px}
+  .hero-photo{order:-1;aspect-ratio:16/11;border-radius:0 0 18px 18px;margin:0 -22px}
+  .hero-photo .tag{display:none}
   .scope{grid-template-columns:1fr 1fr}
   .steps{grid-template-columns:1fr 1fr;gap:28px}
   .st:after{display:none}
@@ -212,7 +215,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
 <!-- SBC-READABLE:END -->
 <style>/* bid form file upload */
 .bf-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:2px dashed rgba(10,22,40,.25);border-radius:14px;padding:22px 14px;background:#faf8f4;cursor:pointer;text-align:center;text-transform:none;letter-spacing:0}
-.bf-drop input{position:absolute;width:1px;height:1px;opacity:0}
+.bf .bf-drop{position:relative;overflow:hidden}.bf .bf-drop input{position:absolute;top:0;left:0;width:1px!important;height:1px!important;min-width:0!important;padding:0!important;border:0!important;opacity:0}
 .bf .bf-drop,.bf .bf-drop span{text-transform:none!important;letter-spacing:0!important}.bf-drop span{display:block}.bf-drop-t{font-weight:700;color:#0a1628;font-size:18px}.bf-drop-s{color:#5a6474;font-size:15px;font-weight:400}
 .bf-list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
 .bf-list li{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fff;border:1px solid rgba(10,22,40,.12);border-radius:10px;padding:10px 12px;font-size:15px;overflow-wrap:anywhere}
@@ -393,7 +396,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
         <div><label for="bfPhone">Phone *</label><input id="bfPhone" name="phone" type="tel" required autocomplete="tel"></div>
         <div><label for="bfEmail">Email *</label><input id="bfEmail" name="email" type="email" required autocomplete="email"></div>
         <div class="full"><label for="bfAddr">Project address</label><input id="bfAddr" name="address" placeholder="Street, borough"></div>
-        <div><label for="bfUnits">Number of kitchens</label><input id="bfUnits" type="number" inputmode="numeric" min="1" placeholder="650"></div>
+        <div><label for="bfUnits">Number of kitchens</label><input id="bfUnits" type="number" inputmode="numeric" min="1" placeholder="How many kitchens"></div>
         <div><label for="bfStart">Target start</label><select id="bfStart"><option>Within 1 month</option><option>1&ndash;3 months</option><option>3+ months</option><option>Bidding now</option></select></div>
         <div class="full"><label>Scope</label>
           <div class="chips" id="bfScope">
@@ -470,7 +473,7 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
     document.getElementById('pr').textContent=perWeek.toFixed(1);
     document.getElementById('pf').textContent=Math.max(1,Math.round(perWeek*c*4.3/20));
     document.getElementById('pb').style.width=Math.min(100,weeks/52*100)+'%';
-    var u=document.getElementById('bfUnits');if(u&&!u.dataset.touched)u.value=k;
+    
   }
   if(pk){pk.addEventListener('input',calc);pc.addEventListener('input',calc);chips('pz',true);chips('px');calc();}
   chips('bfScope');
