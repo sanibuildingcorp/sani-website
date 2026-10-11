@@ -82,7 +82,7 @@ def block(page):
     eye, h2, lead = (("Bathroom services", "Choose your bathroom service",
                       "Not sure which one you need? Pick the closest one, or call us and we will tell you for free.")
                      if main else ("All bathroom services", "Other bathroom services",
-                                   "One crew for every bathroom job, from a small grout repair to a full renovation."))
+                                   "Our own team for every bathroom job, from a small grout repair to a full renovation."))
     return (f"<!-- BATH-SERVICES:START -->\n{CSS}\n<section class=\"bsx\" aria-labelledby=\"bsx-title\"><div class=\"bsx-in\">"
             f"<p class=\"bsx-eye\">{eye}</p><h2 id=\"bsx-title\">{h2}</h2><p class=\"bsx-lead\">{lead}</p>"
             f"<div class=\"bsx-grid\">{''.join(cards)}</div>"

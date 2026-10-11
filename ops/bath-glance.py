@@ -23,7 +23,7 @@ WARRANTY = "Fully insured, 3-year workmanship warranty, insurance certificate (C
 
 PAGES = {
     "bathroom-renovation": ("Bathroom renovation", [
-        ("What it is", "A complete bathroom remodel by one crew: demolition, waterproofing, tile, vanity, plumbing fixtures, lighting, painting and final clean-up."),
+        ("What it is", "A complete bathroom remodel by our own team: demolition, waterproofing, tile, vanity, plumbing fixtures, lighting, painting and final clean-up."),
         ("Best for", "Outdated layouts, worn-out bathrooms, small NYC bathrooms that need more storage and light, and full gut renovations."),
         ("How long", "Usually 2–4 weeks; a full gut renovation 4–6 weeks. You get the schedule in writing."),
         ("Price", "A fixed, itemized written price based on size, materials and how much of the layout changes. Free estimate within 24 hours."),
@@ -76,7 +76,7 @@ PAGES = {
 
 WHY = [("Since 2015", "Serving NYC homes and businesses"), ("4.9 ★ on Google", "Rated by real customers"),
        ("Fully insured", "COI for your building on request"), ("3-year warranty", "On our workmanship"),
-       ("One crew", "Start to finish, no hand-offs"), ("Written price", "Free estimate within 24 hours")]
+       ("Our own team", "Start to finish, no subcontractor hand-offs"), ("Written price", "Free estimate within 24 hours")]
 
 CSS = """<style>
 .bgl{padding:56px 20px;background:#fff;border-bottom:1px solid rgba(10,22,40,.08)}
