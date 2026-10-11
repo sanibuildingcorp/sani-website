@@ -210,6 +210,14 @@ html body :is(.wrap.hero-g,.wrap,.pl.rv,.rows,.scope,.steps,.wrap.why,.r,.gal.rv
 html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
 </style>
 <!-- SBC-READABLE:END -->
+<style>/* bid form file upload */
+.bf-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:2px dashed rgba(10,22,40,.25);border-radius:14px;padding:22px 14px;background:#faf8f4;cursor:pointer;text-align:center;text-transform:none;letter-spacing:0}
+.bf-drop input{position:absolute;width:1px;height:1px;opacity:0}
+.bf .bf-drop,.bf .bf-drop span{text-transform:none!important;letter-spacing:0!important}.bf-drop span{display:block}.bf-drop-t{font-weight:700;color:#0a1628;font-size:18px}.bf-drop-s{color:#5a6474;font-size:15px;font-weight:400}
+.bf-list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.bf-list li{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fff;border:1px solid rgba(10,22,40,.12);border-radius:10px;padding:10px 12px;font-size:15px;overflow-wrap:anywhere}
+.bf-list button{border:0;background:none;color:#b07400;font-weight:700;cursor:pointer;flex:none}
+</style>
 </head>
 <body class="cc">
 
@@ -365,8 +373,8 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
   <div class="wrap bid-g">
     <div class="rv">
       <span class="kick">Request a bid</span>
-      <h2 style="font-size:clamp(28px,3.6vw,42px);line-height:1.08;margin:12px 0 14px">Send us the building. We send a written bid in 48 hours.</h2>
-      <p style="color:var(--mut);font-size:17px;line-height:1.6;margin:0">Share the basics now. Drawings and the unit matrix can follow by email to <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a>.</p>
+      <h2 style="font-size:clamp(28px,3.6vw,42px);line-height:1.08;margin:12px 0 14px">Send us your project. We send a written bid in 48 hours.</h2>
+      <p style="color:var(--mut);font-size:17px;line-height:1.6;margin:0">Share the basics and attach drawings, the unit matrix or photos right here. Bigger files can also go by email to <a href="mailto:contact@sanibuildingcorp.com">contact@sanibuildingcorp.com</a>.</p>
       <ul>
         <li>Priced per kitchen type, multiplied by your unit matrix</li>
         <li>Crew plan and kitchens per week, in writing</li>
@@ -393,10 +401,15 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
           </div>
         </div>
         <div class="full"><label for="bfNote">Anything else</label><textarea id="bfNote" placeholder="Kitchen types, floors, schedule, link to drawings"></textarea></div>
+        <div class="full"><label for="bfFiles">Drawings, unit matrix or photos</label>
+          <label class="bf-drop" for="bfFiles"><input type="file" id="bfFiles" multiple accept="image/*,.heic,.heif,application/pdf,.pdf,.dwg,.dxf,.doc,.docx,.xls,.xlsx,.csv"><span class="bf-drop-t">Tap to attach files</span><span class="bf-drop-s">PDF, Excel, Word, CAD or photos &middot; up to 15 MB each</span></label>
+          <ul class="bf-list" id="bfList"></ul>
+        </div>
+        <input type="hidden" name="files" id="bfFileLinks">
         <input type="hidden" name="borough" id="bfBor">
         <div class="full"><button class="btn btn-ink" type="submit" style="width:100%">Send bid request <span aria-hidden="true">&rarr;</span></button></div>
       </form>
-      <div class="ok" id="bfOk"><h3>Thank you. We have your building.</h3><p style="color:var(--mut)">We will reply within one business day. For drawings, reply to our email or send them to contact@sanibuildingcorp.com.</p></div>
+      <div class="ok" id="bfOk"><h3>Thank you. We have your project.</h3><p style="color:var(--mut)">We will reply within one business day. For drawings, reply to our email or send them to contact@sanibuildingcorp.com.</p></div>
     </div>
   </div>
 </section>
@@ -463,6 +476,15 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
   chips('bfScope');
   var u=document.getElementById('bfUnits');if(u)u.addEventListener('input',function(){u.dataset.touched='1';});
 
+  /* bid form files: each file goes straight to storage with a one-time link
+     (customer-upload-url), so a big drawing set is never refused; the links ride
+     in the message and in photos, so they show in the dashboard and the email. */
+  var bfFiles=[];var MAXB=15*1024*1024;
+  function bfType(fl){var n=(fl.name||'').toLowerCase();var m={pdf:'application/pdf',dwg:'application/acad',dxf:'application/dxf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',csv:'text/csv',heic:'image/heic',heif:'image/heif'};var e=n.split('.').pop();return m[e]||fl.type||'application/octet-stream';}
+  function bfDraw(){var ul=document.getElementById('bfList');if(!ul)return;ul.innerHTML='';bfFiles.forEach(function(fl,i){var li=document.createElement('li');var s=document.createElement('span');s.textContent=fl.name+' ('+(fl.size/1048576).toFixed(1)+' MB)';var x=document.createElement('button');x.type='button';x.textContent='Remove';x.onclick=function(){bfFiles.splice(i,1);bfDraw();};li.appendChild(s);li.appendChild(x);ul.appendChild(li);});}
+  var fi=document.getElementById('bfFiles');
+  if(fi)fi.addEventListener('change',function(){[].forEach.call(fi.files,function(fl){if(fl.size>MAXB){alert(fl.name+' is over 15 MB. Please email it to contact@sanibuildingcorp.com.');return;}if(bfFiles.length<20)bfFiles.push(fl);});fi.value='';bfDraw();});
+
   /* bid form: same lead path as the contact page (Netlify form + confirmation + dashboard) */
   var f=document.getElementById('bidForm');
   if(f)f.addEventListener('submit',async function(e){
@@ -470,14 +492,29 @@ html body :is(p,li,dd,td,h1,h2,h3,h4){overflow-wrap:break-word}
     var g=function(i){var x=document.getElementById(i);return x?x.value.trim():'';};
     var scope=[].map.call(document.querySelectorAll('#bfScope .on'),function(b){return b.textContent;}).join(', ');
     var msg='COMMERCIAL CABINET BID REQUEST\nCompany: '+(g('bfCo')||'-')+'\nKitchens: '+(g('bfUnits')||'-')+'\nTarget start: '+g('bfStart')+'\nScope: '+(scope||'-')+'\nPlanner: '+pk.value+' kitchens, '+pc.value+' crews, about '+document.getElementById('pw').textContent+' weeks\n\n'+g('bfNote');
-    document.getElementById('bfMsg').value=msg;
     document.getElementById('bfBor').value='Commercial';
     var btn=f.querySelector('button[type=submit]');btn.disabled=true;btn.textContent='Sending…';
+    var links=[],failed=[];
+    if(bfFiles.length){btn.textContent='Uploading files…';
+      var d0=new Date(),z0=function(n){return String(n).padStart(2,'0')};var ref='bid-'+String(d0.getFullYear()).slice(2)+z0(d0.getMonth()+1)+z0(d0.getDate())+'-'+(Math.random().toString(36)+'0000').slice(2,6);
+      for(var i=0;i<bfFiles.length;i++){var fl=bfFiles[i];
+        try{var ty=bfType(fl);var r=await fetch('/.netlify/functions/customer-upload-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:ref,fileName:fl.name,contentType:ty,size:fl.size})});
+          var j=await r.json();if(!r.ok||!j.signedUrl)throw new Error(j&&j.error||'no link');
+          var put=await fetch(j.signedUrl,{method:'PUT',headers:{'Content-Type':ty,'x-upsert':'true'},body:fl});if(!put.ok)throw new Error('upload '+put.status);
+          links.push(j.publicUrl);
+        }catch(err){console.error('bid file failed',fl.name,err);failed.push(fl.name);}
+      }
+      btn.textContent='Sending…';
+    }
+    if(links.length){msg+='\n\nFILES ('+links.length+'):\n'+links.join('\n');}
+    if(failed.length){msg+='\n\nNOT UPLOADED (ask by email): '+failed.join(', ');}
+    document.getElementById('bfMsg').value=msg;
+    document.getElementById('bfFileLinks').value=links.join('\n');
     var data=new FormData(f);
     try{
       await fetch('/',{method:'POST',body:new URLSearchParams(data)});
       if(!(data.get('bot-field')||'').trim()){
-        var p={form:'contact',name:g('bfName'),email:g('bfEmail'),phone:g('bfPhone'),service:'Commercial Cabinet Installation',area:'Commercial',address:g('bfAddr'),details:msg,photos:[],photoSlots:[],photoCount:0};
+        var p={form:'contact',name:g('bfName'),email:g('bfEmail'),phone:g('bfPhone'),service:'Commercial Cabinet Installation',area:'Commercial',address:g('bfAddr'),details:msg,photos:links,photoSlots:[],photoCount:links.length};
         fetch('/.netlify/functions/send-confirmation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).catch(function(){});
         var d=new Date(),z=function(n){return String(n).padStart(2,'0')};p.contactRef='contact-'+String(d.getFullYear()).slice(2)+z(d.getMonth()+1)+z(d.getDate())+'-'+(Math.random().toString(36)+'0000').slice(2,6);
         fetch('/.netlify/functions/contact-to-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).catch(function(){});
